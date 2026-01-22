@@ -1,66 +1,67 @@
-const tools = [
-  {
-    id: "T0101",
-    name: "Planmeißel",
-    k1: "Planen / Vordrehen",
-    k2: "",
-    print: true
-  },
-  {
-    id: "T0203",
-    name: "Bohrer Ø12.5",
-    k1: "",
-    k2: "Bohren Ø12.5",
-    print: true
+const STORAGE_KEY = "CitiTool_SyncOperator_v1";
+
+function loadPlanData() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return parsed.data || null;
+  } catch {
+    return null;
   }
-];
+}
 
-const table = document.getElementById("toolTable");
+function buildToolMap(state, kanal) {
+  const map = {};
+  const slots = state.slots[kanal] || [];
 
-function render() {
-  table.innerHTML = "";
-  tools.forEach((t, i) => {
+  slots.forEach((opId) => {
+    if (!opId) return;
+    const op = state.library.find(o => o.id === opId);
+    if (!op) return;
+    if (!op.toolNo) return;
+
+    if (!map[op.toolNo]) {
+      map[op.toolNo] = {
+        toolNo: op.toolNo,
+        name: op.toolName || op.title || "",
+        print: true
+      };
+    }
+  });
+
+  return Object.values(map);
+}
+
+function renderKanal(tableBody, tools) {
+  tableBody.innerHTML = "";
+
+  tools.forEach(t => {
     const tr = document.createElement("tr");
 
     tr.innerHTML = `
-      <td>
-        <input type="checkbox" ${t.print ? "checked" : ""}>
-        <div class="controls">
-          <button>↑</button>
-          <button>↓</button>
-        </div>
-      </td>
-      <td>
-        <div class="tool-id">${t.id}</div>
-        <div class="tool-name">${t.name}</div>
-      </td>
-      <td>${t.k1 || "—"}</td>
-      <td>${t.k2 || "—"}</td>
+      <td>${t.toolNo}</td>
+      <td contenteditable="true">${t.name}</td>
+      <td><input type="checkbox" checked /></td>
     `;
 
-    const checkbox = tr.querySelector("input");
-    checkbox.onchange = () => {
-      t.print = checkbox.checked;
-    };
-
-    const [up, down] = tr.querySelectorAll("button");
-
-    up.onclick = () => {
-      if (i > 0) {
-        [tools[i - 1], tools[i]] = [tools[i], tools[i - 1]];
-        render();
-      }
-    };
-
-    down.onclick = () => {
-      if (i < tools.length - 1) {
-        [tools[i + 1], tools[i]] = [tools[i], tools[i + 1]];
-        render();
-      }
-    };
-
-    table.appendChild(tr);
+    tableBody.appendChild(tr);
   });
 }
 
-render();
+function init() {
+  const data = loadPlanData();
+  if (!data) return;
+
+  const tools1 = buildToolMap(data, "1");
+  const tools2 = buildToolMap(data, "2");
+
+  renderKanal(document.getElementById("kanal1Body"), tools1);
+  renderKanal(document.getElementById("kanal2Body"), tools2);
+
+  document.getElementById("printBtn").addEventListener("click", () => {
+    window.print();
+  });
+}
+
+document.addEventListener("DOMContentLoaded", init);
