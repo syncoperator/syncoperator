@@ -1,97 +1,131 @@
-/* ===============================
-   DATA SOURCE
-================================ */
+// einrichte.js
+// Einrichteblatt – Datenquelle: SyncOperator localStorage
 
-// versucht aus SyncOperator zu lesen
-function loadFromSyncOperator() {
+const STORAGE_KEY = "CitiTool_SyncOperator_v1";
+
+/* helpers */
+function $(sel, root = document) {
+  return root.querySelector(sel);
+}
+
+function readSyncOperatorData() {
   try {
-    const raw = localStorage.getItem("CitiTool_SyncOperator_v1");
+    const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
-
     const parsed = JSON.parse(raw);
-    if (!parsed?.data?.slots || !parsed?.data?.library) return null;
-
-    const lib = parsed.data.library;
-    const slots = parsed.data.slots;
-
-    function extract(kanal) {
-      const result = {};
-      slots[kanal].forEach(id => {
-        if (!id) return;
-        const op = lib.find(o => o.id === id);
-        if (!op || !op.toolNo) return;
-
-        if (!result[op.toolNo]) {
-          result[op.toolNo] = {
-            toolNo: op.toolNo,
-            name: op.toolName || op.title || ""
-          };
-        }
-      });
-      return Object.values(result);
-    }
-
-    return {
-      kanal1: extract("1"),
-      kanal2: extract("2")
-    };
+    return parsed.data || null;
   } catch {
     return null;
   }
 }
 
-/* ===============================
-   DEMO FALLBACK
-================================ */
+function buildToolMap(state, kanal) {
+  const result = [];
+  const seen = new Set();
 
-const DEMO_DATA = {
-  kanal1: [
-    { toolNo: "T0101", name: "Planhalter Ø80" },
-    { toolNo: "T0202", name: "Bohrer Ø12.5" },
-    { toolNo: "T0303", name: "Innenstechstahl 2mm" },
-    { toolNo: "T0404", name: "Gewindeschneider M26" }
-  ],
-  kanal2: [
-    { toolNo: "T1101", name: "Abstechstahl 3mm" },
-    { toolNo: "T1202", name: "Radialbohrer Ø5" },
-    { toolNo: "T1303", name: "Entgrater Lochkreis" }
-  ]
-};
+  const slots = state.slots?.[kanal] || [];
+  const library = state.library || [];
 
-const data = loadFromSyncOperator() || DEMO_DATA;
+  for (const opId of slots) {
+    if (!opId) continue;
 
-/* ===============================
-   RENDER
-================================ */
+    const op = library.find(o => o.id === opId);
+    if (!op) continue;
 
-function renderKanal(bodyId, tools) {
-  const body = document.getElementById(bodyId);
-  body.innerHTML = "";
+    const toolNo = (op.toolNo || "").trim();
+    if (!toolNo) continue;
+    if (seen.has(toolNo)) continue;
 
-  tools
-    .sort((a, b) => a.toolNo.localeCompare(b.toolNo))
-    .forEach(t => {
-      const tr = document.createElement("tr");
+    seen.add(toolNo);
 
-      tr.innerHTML = `
-        <td><input type="checkbox" checked></td>
-        <td class="tool-no">${t.toolNo}</td>
-        <td>
-          <input class="tool-name" value="${t.name}">
-        </td>
-      `;
-
-      body.appendChild(tr);
+    result.push({
+      toolNo,
+      name: op.toolName?.trim() || op.title || "",
+      print: true
     });
+  }
+
+  return result;
 }
 
-renderKanal("kanal1Body", data.kanal1);
-renderKanal("kanal2Body", data.kanal2);
+function renderTable(section, tools) {
+  const tbody = $("tbody", section);
+  tbody.innerHTML = "";
 
-/* ===============================
-   PRINT
-================================ */
+  if (!tools.length) {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td colspan="3" class="empty">Keine Werkzeuge</td>`;
+    tbody.appendChild(tr);
+    return;
+  }
 
-document.getElementById("printBtn").addEventListener("click", () => {
-  window.print();
-});
+  tools.forEach(tool => {
+    const tr = document.createElement("tr");
+
+    const tdPrint = document.createElement("td");
+    tdPrint.className = "col-print";
+    const cb = document.createElement("input");
+    cb.type = "checkbox";
+    cb.checked = tool.print;
+    cb.className = "print-toggle";
+    cb.addEventListener("change", () => {
+      tr.classList.toggle("no-print", !cb.checked);
+    });
+    tdPrint.appendChild(cb);
+
+    const tdT = document.createElement("td");
+    tdT.className = "col-t";
+    tdT.textContent = tool.toolNo;
+
+    const tdName = document.createElement("td");
+    tdName.contentEditable = "true";
+    tdName.textContent = tool.name;
+
+    tr.append(tdPrint, tdT, tdName);
+    tbody.appendChild(tr);
+  });
+}
+
+function initEinrichteblatt() {
+  const data = readSyncOperatorData();
+
+  // fallback demo
+  const demo = {
+    "1": [
+      { toolNo: "T0101", name: "Planen / Vordrehen", print: true },
+      { toolNo: "T0202", name: "Außen Schlichten", print: true }
+    ],
+    "2": [
+      { toolNo: "T1101", name: "Planen / Vordrehen", print: true }
+    ]
+  };
+
+  let kanal1 = demo["1"];
+  let kanal2 = demo["2"];
+
+  if (data) {
+    kanal1 = buildToolMap(data, "1");
+    kanal2 = buildToolMap(data, "2");
+  }
+
+  renderTable($(".kanal-1"), kanal1);
+  renderTable($(".kanal-2"), kanal2);
+}
+
+/* PRINT CLEANUP */
+function preparePrint() {
+  document.querySelectorAll("tr.no-print").forEach(tr => {
+    tr.style.display = "none";
+  });
+}
+
+function restoreAfterPrint() {
+  document.querySelectorAll("tr.no-print").forEach(tr => {
+    tr.style.display = "";
+  });
+}
+
+window.addEventListener("beforeprint", preparePrint);
+window.addEventListener("afterprint", restoreAfterPrint);
+
+document.addEventListener("DOMContentLoaded", initEinrichteblatt);
