@@ -1,121 +1,47 @@
-const STORAGE_KEY = "CitiTool_SyncOperator_v1";
+const demoK1 = [
+  { t: "T0101", name: "Planen / Vordrehen", print: true },
+  { t: "T0202", name: "Außen Schlichten", print: true },
+  { t: "T0303", name: "Bohren Ø12.5", print: false },
+];
 
-const $ = id => document.getElementById(id);
+const demoK2 = [
+  { t: "T1101", name: "Planen / Vordrehen", print: true },
+  { t: "T1202", name: "Innen Schlichten", print: true },
+  { t: "T1303", name: "Abstechen", print: false },
+];
 
-function today() {
-  return new Date().toLocaleDateString("de-DE");
-}
+function renderTable(targetId, data) {
+  const tbody = document.getElementById(targetId);
+  tbody.innerHTML = "";
 
-function loadData() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return null;
-    return JSON.parse(raw).data;
-  } catch {
-    return null;
-  }
-}
-
-function buildTools(state, kanal) {
-  const seen = new Set();
-  const list = [];
-
-  const slots = state.slots[kanal] || [];
-  const lib = state.library || [];
-
-  slots.forEach(id => {
-    const op = lib.find(o => o.id === id);
-    if (!op) return;
-
-    const t = (op.toolNo || "").trim();
-    if (!t || seen.has(t)) return;
-
-    seen.add(t);
-
-    list.push({
-      t,
-      name: op.toolName || op.title || "",
-      print: true
-    });
-  });
-
-  return list;
-}
-
-function render(bodyId, tools) {
-  const body = $(bodyId);
-  body.innerHTML = "";
-
-  if (!tools.length) {
-    body.innerHTML = `<tr><td colspan="3" class="empty">Keine Werkzeuge</td></tr>`;
-    return;
-  }
-
-  tools.forEach(tool => {
+  data.forEach(row => {
     const tr = document.createElement("tr");
 
-    const tdP = document.createElement("td");
-    const cb = document.createElement("input");
-    cb.type = "checkbox";
-    cb.checked = tool.print;
-    cb.addEventListener("change", () => {
-      tr.classList.toggle("no-print", !cb.checked);
+    const tdPrint = document.createElement("td");
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.checked = row.print;
+    checkbox.addEventListener("change", () => {
+      tr.classList.toggle("no-print", !checkbox.checked);
     });
-    tdP.appendChild(cb);
+    tdPrint.appendChild(checkbox);
 
     const tdT = document.createElement("td");
-    tdT.textContent = tool.t;
+    tdT.textContent = row.t;
 
-    const tdN = document.createElement("td");
-    tdN.contentEditable = true;
-    tdN.textContent = tool.name;
+    const tdName = document.createElement("td");
+    tdName.textContent = row.name;
 
-    tr.append(tdP, tdT, tdN);
-    body.appendChild(tr);
+    tr.append(tdPrint, tdT, tdName);
+    if (!row.print) tr.classList.add("no-print");
+
+    tbody.appendChild(tr);
   });
 }
 
-function init() {
-  $("dateField").value = today();
-
-  const data = loadData();
-
-  let k1 = [], k2 = [];
-
-  if (data) {
-    k1 = buildTools(data, "1");
-    k2 = buildTools(data, "2");
-  } else {
-    k1 = [{ t: "T0101", name: "Planen / Vordrehen", print: true }];
-    k2 = [{ t: "T1101", name: "Planen / Vordrehen", print: true }];
-  }
-
-  render("kanal1Body", k1);
-  render("kanal2Body", k2);
-
-  $("printAll").onclick = () => {
-    document.querySelectorAll("tbody input[type=checkbox]").forEach(cb => {
-      cb.checked = true;
-      cb.dispatchEvent(new Event("change"));
-    });
-  };
-
-  $("printNone").onclick = () => {
-    document.querySelectorAll("tbody input[type=checkbox]").forEach(cb => {
-      cb.checked = false;
-      cb.dispatchEvent(new Event("change"));
-    });
-  };
-
-  $("printBtn").onclick = () => window.print();
-}
-
-window.addEventListener("beforeprint", () => {
-  document.querySelectorAll("tr.no-print").forEach(tr => tr.style.display = "none");
+document.getElementById("printBtn").addEventListener("click", () => {
+  window.print();
 });
 
-window.addEventListener("afterprint", () => {
-  document.querySelectorAll("tr.no-print").forEach(tr => tr.style.display = "");
-});
-
-document.addEventListener("DOMContentLoaded", init);
+renderTable("kanal1", demoK1);
+renderTable("kanal2", demoK2);
