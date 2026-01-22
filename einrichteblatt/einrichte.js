@@ -1,131 +1,121 @@
-// einrichte.js
-// Einrichteblatt – Datenquelle: SyncOperator localStorage
-
 const STORAGE_KEY = "CitiTool_SyncOperator_v1";
 
-/* helpers */
-function $(sel, root = document) {
-  return root.querySelector(sel);
+const $ = id => document.getElementById(id);
+
+function today() {
+  return new Date().toLocaleDateString("de-DE");
 }
 
-function readSyncOperatorData() {
+function loadData() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    return parsed.data || null;
+    return JSON.parse(raw).data;
   } catch {
     return null;
   }
 }
 
-function buildToolMap(state, kanal) {
-  const result = [];
+function buildTools(state, kanal) {
   const seen = new Set();
+  const list = [];
 
-  const slots = state.slots?.[kanal] || [];
-  const library = state.library || [];
+  const slots = state.slots[kanal] || [];
+  const lib = state.library || [];
 
-  for (const opId of slots) {
-    if (!opId) continue;
+  slots.forEach(id => {
+    const op = lib.find(o => o.id === id);
+    if (!op) return;
 
-    const op = library.find(o => o.id === opId);
-    if (!op) continue;
+    const t = (op.toolNo || "").trim();
+    if (!t || seen.has(t)) return;
 
-    const toolNo = (op.toolNo || "").trim();
-    if (!toolNo) continue;
-    if (seen.has(toolNo)) continue;
+    seen.add(t);
 
-    seen.add(toolNo);
-
-    result.push({
-      toolNo,
-      name: op.toolName?.trim() || op.title || "",
+    list.push({
+      t,
+      name: op.toolName || op.title || "",
       print: true
     });
-  }
+  });
 
-  return result;
+  return list;
 }
 
-function renderTable(section, tools) {
-  const tbody = $("tbody", section);
-  tbody.innerHTML = "";
+function render(bodyId, tools) {
+  const body = $(bodyId);
+  body.innerHTML = "";
 
   if (!tools.length) {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `<td colspan="3" class="empty">Keine Werkzeuge</td>`;
-    tbody.appendChild(tr);
+    body.innerHTML = `<tr><td colspan="3" class="empty">Keine Werkzeuge</td></tr>`;
     return;
   }
 
   tools.forEach(tool => {
     const tr = document.createElement("tr");
 
-    const tdPrint = document.createElement("td");
-    tdPrint.className = "col-print";
+    const tdP = document.createElement("td");
     const cb = document.createElement("input");
     cb.type = "checkbox";
     cb.checked = tool.print;
-    cb.className = "print-toggle";
     cb.addEventListener("change", () => {
       tr.classList.toggle("no-print", !cb.checked);
     });
-    tdPrint.appendChild(cb);
+    tdP.appendChild(cb);
 
     const tdT = document.createElement("td");
-    tdT.className = "col-t";
-    tdT.textContent = tool.toolNo;
+    tdT.textContent = tool.t;
 
-    const tdName = document.createElement("td");
-    tdName.contentEditable = "true";
-    tdName.textContent = tool.name;
+    const tdN = document.createElement("td");
+    tdN.contentEditable = true;
+    tdN.textContent = tool.name;
 
-    tr.append(tdPrint, tdT, tdName);
-    tbody.appendChild(tr);
+    tr.append(tdP, tdT, tdN);
+    body.appendChild(tr);
   });
 }
 
-function initEinrichteblatt() {
-  const data = readSyncOperatorData();
+function init() {
+  $("dateField").value = today();
 
-  // fallback demo
-  const demo = {
-    "1": [
-      { toolNo: "T0101", name: "Planen / Vordrehen", print: true },
-      { toolNo: "T0202", name: "Außen Schlichten", print: true }
-    ],
-    "2": [
-      { toolNo: "T1101", name: "Planen / Vordrehen", print: true }
-    ]
-  };
+  const data = loadData();
 
-  let kanal1 = demo["1"];
-  let kanal2 = demo["2"];
+  let k1 = [], k2 = [];
 
   if (data) {
-    kanal1 = buildToolMap(data, "1");
-    kanal2 = buildToolMap(data, "2");
+    k1 = buildTools(data, "1");
+    k2 = buildTools(data, "2");
+  } else {
+    k1 = [{ t: "T0101", name: "Planen / Vordrehen", print: true }];
+    k2 = [{ t: "T1101", name: "Planen / Vordrehen", print: true }];
   }
 
-  renderTable($(".kanal-1"), kanal1);
-  renderTable($(".kanal-2"), kanal2);
+  render("kanal1Body", k1);
+  render("kanal2Body", k2);
+
+  $("printAll").onclick = () => {
+    document.querySelectorAll("tbody input[type=checkbox]").forEach(cb => {
+      cb.checked = true;
+      cb.dispatchEvent(new Event("change"));
+    });
+  };
+
+  $("printNone").onclick = () => {
+    document.querySelectorAll("tbody input[type=checkbox]").forEach(cb => {
+      cb.checked = false;
+      cb.dispatchEvent(new Event("change"));
+    });
+  };
+
+  $("printBtn").onclick = () => window.print();
 }
 
-/* PRINT CLEANUP */
-function preparePrint() {
-  document.querySelectorAll("tr.no-print").forEach(tr => {
-    tr.style.display = "none";
-  });
-}
+window.addEventListener("beforeprint", () => {
+  document.querySelectorAll("tr.no-print").forEach(tr => tr.style.display = "none");
+});
 
-function restoreAfterPrint() {
-  document.querySelectorAll("tr.no-print").forEach(tr => {
-    tr.style.display = "";
-  });
-}
+window.addEventListener("afterprint", () => {
+  document.querySelectorAll("tr.no-print").forEach(tr => tr.style.display = "");
+});
 
-window.addEventListener("beforeprint", preparePrint);
-window.addEventListener("afterprint", restoreAfterPrint);
-
-document.addEventListener("DOMContentLoaded", initEinrichteblatt);
+document.addEventListener("DOMContentLoaded", init);
