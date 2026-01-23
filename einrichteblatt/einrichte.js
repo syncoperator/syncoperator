@@ -1,47 +1,90 @@
-const demoK1 = [
-  { t: "T0101", name: "Planen / Vordrehen", print: true },
-  { t: "T0202", name: "Außen Schlichten", print: true },
-  { t: "T0303", name: "Bohren Ø12.5", print: false },
-];
+// script.js
+const App = {
+    state: {
+        currentKanal: 1,
+        kanals: { 1: [], 2: [] },
+        lib: [
+            { name: "Bohrer D12", length: 145.5 },
+            { name: "Fräser D25", length: 98.2 },
+            { name: "Gewinde M10", length: 112.0 }
+        ]
+    },
 
-const demoK2 = [
-  { t: "T1101", name: "Planen / Vordrehen", print: true },
-  { t: "T1202", name: "Innen Schlichten", print: true },
-  { t: "T1303", name: "Abstechen", print: false },
-];
+    init() {
+        this.renderLib();
+        this.renderSlots();
+        document.getElementById('report-date').innerText = new Date().toLocaleDateString();
+    },
 
-function renderTable(targetId, data) {
-  const tbody = document.getElementById(targetId);
-  tbody.innerHTML = "";
+    switchKanal(n) {
+        this.state.currentKanal = n;
+        document.querySelectorAll('.k-btn').forEach((b, i) => b.classList.toggle('active', i+1 === n));
+        this.renderSlots();
+    },
 
-  data.forEach(row => {
-    const tr = document.createElement("tr");
+    addSlot() {
+        this.state.kanals[this.state.currentKanal].push({ ...this.state.lib[0] });
+        this.renderSlots();
+    },
 
-    const tdPrint = document.createElement("td");
-    const checkbox = document.createElement("input");
-    checkbox.type = "checkbox";
-    checkbox.checked = row.print;
-    checkbox.addEventListener("change", () => {
-      tr.classList.toggle("no-print", !checkbox.checked);
-    });
-    tdPrint.appendChild(checkbox);
+    renderSlots() {
+        const container = document.getElementById('slot-list');
+        container.innerHTML = this.state.kanals[this.state.currentKanal].map((slot, i) => `
+            <div class="slot-item">
+                <div style="font-weight:800; color:var(--accent)">${i+1}</div>
+                <div>
+                    <b>${slot.name}</b><br>
+                    <small>L-XXXX: <input type="number" value="${slot.length}" onchange="App.updateLen(${i}, this.value)" style="width:60px; border:none; background:#f0f0f0; border-radius:4px;"> mm</small>
+                </div>
+                <button onclick="App.removeSlot(${i})" style="border:none; background:none; color:red">✕</button>
+            </div>
+        `).join('');
+        this.updateReport();
+    },
 
-    const tdT = document.createElement("td");
-    tdT.textContent = row.t;
+    updateLen(index, val) {
+        this.state.kanals[this.state.currentKanal][index].length = parseFloat(val);
+        this.updateReport();
+    },
 
-    const tdName = document.createElement("td");
-    tdName.textContent = row.name;
+    updateReport() {
+        const body = document.getElementById('report-body');
+        const allData = [...this.state.kanals[1], ...this.state.kanals[2]];
+        body.innerHTML = allData.map((s, i) => `
+            <tr>
+                <td>${i+1}</td>
+                <td><b>${s.name}</b></td>
+                <td>H6 / BMT60</td>
+                <td style="font-family:monospace; font-weight:700">${s.length.toFixed(3)}</td>
+                <td><span style="color:green">● READY</span></td>
+            </tr>
+        `).join('');
+    },
 
-    tr.append(tdPrint, tdT, tdName);
-    if (!row.print) tr.classList.add("no-print");
+    toggleView() {
+        const config = document.getElementById('config-view');
+        const report = document.getElementById('report-view');
+        const btn = document.getElementById('view-toggle');
+        
+        const isReport = config.classList.toggle('hidden');
+        report.classList.toggle('hidden');
+        btn.innerText = isReport ? "BACK TO CONFIG" : "EINRICHTEBLATT";
+    },
 
-    tbody.appendChild(tr);
-  });
-}
+    renderLib() {
+        document.getElementById('tool-lib').innerHTML = this.state.lib.map(t => `
+            <div class="lib-card" onclick="App.quickAdd('${t.name}', ${t.length})">
+                <small>TOOL</small><br><b>${t.name}</b>
+            </div>
+        `).join('');
+    },
 
-document.getElementById("printBtn").addEventListener("click", () => {
-  window.print();
-});
+    quickAdd(name, len) {
+        this.state.kanals[this.state.currentKanal].push({ name, length: len });
+        this.renderSlots();
+    },
 
-renderTable("kanal1", demoK1);
-renderTable("kanal2", demoK2);
+    exportPDF() { window.print(); }
+};
+
+App.init();
