@@ -1,188 +1,90 @@
-/**
- * SyncOperator PRO - Core Logic & UI Handler
- */
+// script.js
+const App = {
+    state: {
+        currentKanal: 1,
+        kanals: { 1: [], 2: [] },
+        lib: [
+            { name: "Bohrer D12", length: 145.5 },
+            { name: "Fräser D25", length: 98.2 },
+            { name: "Gewinde M10", length: 112.0 }
+        ]
+    },
 
-let state = {
-    operations: {},
-    slots: { "1": [null, null, null, null, null], "2": [null, null, null, null, null] }
+    init() {
+        this.renderLib();
+        this.renderSlots();
+        document.getElementById('report-date').innerText = new Date().toLocaleDateString();
+    },
+
+    switchKanal(n) {
+        this.state.currentKanal = n;
+        document.querySelectorAll('.k-btn').forEach((b, i) => b.classList.toggle('active', i+1 === n));
+        this.renderSlots();
+    },
+
+    addSlot() {
+        this.state.kanals[this.state.currentKanal].push({ ...this.state.lib[0] });
+        this.renderSlots();
+    },
+
+    renderSlots() {
+        const container = document.getElementById('slot-list');
+        container.innerHTML = this.state.kanals[this.state.currentKanal].map((slot, i) => `
+            <div class="slot-item">
+                <div style="font-weight:800; color:var(--accent)">${i+1}</div>
+                <div>
+                    <b>${slot.name}</b><br>
+                    <small>L-XXXX: <input type="number" value="${slot.length}" onchange="App.updateLen(${i}, this.value)" style="width:60px; border:none; background:#f0f0f0; border-radius:4px;"> mm</small>
+                </div>
+                <button onclick="App.removeSlot(${i})" style="border:none; background:none; color:red">✕</button>
+            </div>
+        `).join('');
+        this.updateReport();
+    },
+
+    updateLen(index, val) {
+        this.state.kanals[this.state.currentKanal][index].length = parseFloat(val);
+        this.updateReport();
+    },
+
+    updateReport() {
+        const body = document.getElementById('report-body');
+        const allData = [...this.state.kanals[1], ...this.state.kanals[2]];
+        body.innerHTML = allData.map((s, i) => `
+            <tr>
+                <td>${i+1}</td>
+                <td><b>${s.name}</b></td>
+                <td>H6 / BMT60</td>
+                <td style="font-family:monospace; font-weight:700">${s.length.toFixed(3)}</td>
+                <td><span style="color:green">● READY</span></td>
+            </tr>
+        `).join('');
+    },
+
+    toggleView() {
+        const config = document.getElementById('config-view');
+        const report = document.getElementById('report-view');
+        const btn = document.getElementById('view-toggle');
+        
+        const isReport = config.classList.toggle('hidden');
+        report.classList.toggle('hidden');
+        btn.innerText = isReport ? "BACK TO CONFIG" : "EINRICHTEBLATT";
+    },
+
+    renderLib() {
+        document.getElementById('tool-lib').innerHTML = this.state.lib.map(t => `
+            <div class="lib-card" onclick="App.quickAdd('${t.name}', ${t.length})">
+                <small>TOOL</small><br><b>${t.name}</b>
+            </div>
+        `).join('');
+    },
+
+    quickAdd(name, len) {
+        this.state.kanals[this.state.currentKanal].push({ name, length: len });
+        this.renderSlots();
+    },
+
+    exportPDF() { window.print(); }
 };
 
-const STORAGE_KEY = 'sync_pro_data';
-
-function init() {
-    loadState();
-    setupEventListeners();
-    renderAll();
-}
-
-function loadState() {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) state = JSON.parse(saved);
-}
-
-function saveState() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    renderAll();
-}
-
-// --- RENDERING ---
-
-function renderAll() {
-    renderSlots("1");
-    renderSlots("2");
-    renderLibrary();
-    renderSetupSheet();
-}
-
-function renderSlots(channel) {
-    const container = document.getElementById(`slots-${channel}`);
-    container.innerHTML = '';
-
-    state.slots[channel].forEach((opId, index) => {
-        const op = state.operations[opId];
-        const slotEl = document.createElement('div');
-        slotEl.className = `slot ${!op ? 'empty' : ''}`;
-        
-        const lCode = `L${channel}1${String(index + 1).padStart(2, '0')}`;
-
-        if (op) {
-            slotEl.innerHTML = `
-                <div class="slot-header">
-                    <strong>${op.title}</strong>
-                    <span class="l-code">${lCode}</span>
-                </div>
-                <div class="slot-footer">
-                    <small style="color:var(--text-dim)">${op.toolNo} • ${op.category}</small>
-                </div>
-            `;
-            slotEl.onclick = () => openModal(opId);
-        } else {
-            slotEl.innerHTML = `<span>+ Leer</span>`;
-            slotEl.onclick = () => openModal(null, channel, index);
-        }
-        
-        // Drag and Drop (Simple implementation for Pro feel)
-        slotEl.draggable = !!op;
-        slotEl.onsdragstart = (e) => {
-            e.dataTransfer.setData('opId', opId);
-            e.dataTransfer.setData('fromChan', channel);
-            e.dataTransfer.setData('fromIdx', index);
-        };
-
-        container.appendChild(slotEl);
-    });
-}
-
-function renderLibrary() {
-    const list = document.getElementById('libraryList');
-    const catF = document.getElementById('filterCategory').value;
-    const spinF = document.getElementById('filterSpindle').value;
-    list.innerHTML = '';
-
-    Object.values(state.operations).forEach(op => {
-        if (catF && op.category !== catF) return;
-        if (spinF && op.spindle !== spinF) return;
-
-        const el = document.createElement('div');
-        el.className = 'op-card';
-        el.innerHTML = `<strong>${op.title}</strong><br><small>${op.toolNo} | ${op.spindle}</small>`;
-        el.onclick = () => openModal(op.id);
-        list.appendChild(el);
-    });
-}
-
-function renderSetupSheet() {
-    const container = document.getElementById('setupBody');
-    container.innerHTML = '';
-    
-    // Group by toolNo
-    const tools = {};
-    [1, 2].forEach(c => {
-        state.slots[c].forEach(id => {
-            if (id && state.operations[id]) {
-                const op = state.operations[id];
-                if (!tools[op.toolNo]) tools[op.toolNo] = { id: op.toolNo, name: op.toolName, ch1: [], ch2: [] };
-                tools[op.toolNo][`ch${c}`].push(op.title);
-            }
-        });
-    });
-
-    Object.values(tools).forEach(t => {
-        const card = document.createElement('div');
-        card.className = 'setup-card';
-        card.innerHTML = `
-            <div style="display:flex; justify-content:space-between">
-                <strong>${t.id}</strong>
-                <small>${t.name || ''}</small>
-            </div>
-            <div class="setup-grid">
-                <div class="setup-box"><strong>CH1:</strong> ${t.ch1.join(', ') || '-'}</div>
-                <div class="setup-box"><strong>CH2:</strong> ${t.ch2.join(', ') || '-'}</div>
-            </div>
-        `;
-        container.appendChild(card);
-    });
-}
-
-// --- UI CONTROLS ---
-
-function setupEventListeners() {
-    // Navigation
-    document.querySelectorAll('.nav-item').forEach(btn => {
-        btn.onclick = () => {
-            document.querySelectorAll('.nav-item, .view-section').forEach(el => el.classList.remove('active'));
-            btn.classList.add('active');
-            document.getElementById(btn.dataset.target).classList.add('active');
-        };
-    });
-
-    // Modal
-    document.getElementById('opForm').onsubmit = (e) => {
-        e.preventDefault();
-        const id = document.getElementById('field-id').value || crypto.randomUUID();
-        const op = {
-            id,
-            title: document.getElementById('field-title').value,
-            code: document.getElementById('field-code').value,
-            spindle: document.getElementById('field-spindle').value,
-            category: document.getElementById('field-category').value,
-            toolNo: document.getElementById('field-toolNo').value,
-            toolName: document.getElementById('field-toolName').value,
-            doppelhalter: document.getElementById('field-doppelhalter').checked
-        };
-        state.operations[id] = op;
-        if (activeContext.channel) state.slots[activeContext.channel][activeContext.index] = id;
-        closeModal();
-        saveState();
-    };
-
-    document.getElementById('closeModalBtn').onclick = closeModal;
-    document.getElementById('addNewOpBtn').onclick = () => openModal();
-}
-
-let activeContext = { channel: null, index: null };
-
-function openModal(opId = null, channel = null, index = null) {
-    activeContext = { channel, index };
-    const form = document.getElementById('opForm');
-    form.reset();
-    document.getElementById('deleteOpBtn').style.display = opId ? 'block' : 'none';
-    
-    if (opId) {
-        const op = state.operations[opId];
-        document.getElementById('field-id').value = op.id;
-        document.getElementById('field-title').value = op.title;
-        document.getElementById('field-code').value = op.code;
-        document.getElementById('field-spindle').value = op.spindle;
-        document.getElementById('field-category').value = op.category;
-        document.getElementById('field-toolNo').value = op.toolNo;
-        document.getElementById('field-toolName').value = op.toolName;
-        document.getElementById('field-doppelhalter').checked = op.doppelhalter;
-    }
-    document.getElementById('opModal').style.display = 'flex';
-}
-
-function closeModal() { document.getElementById('opModal').style.display = 'none'; }
-
-// Init call
-init();
+App.init();
