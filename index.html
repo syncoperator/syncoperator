@@ -2,314 +2,35 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SyncOp | DMG MORI Style</title>
+    <title>SyncOp X</title>
+    <link rel="stylesheet" href="style.css">
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&family=JetBrains+Mono:wght@500;700&display=swap');
-        
-        :root {
-            /* DMG MORI Corporate Colors */
-            --dmg-black: #1a1a1a;
-            --dmg-green: #87b926; /* The specific DMG Green */
-            --dmg-grey: #f5f5f5;
-            --dmg-border: #e0e0e0;
-            --dmg-text: #333333;
-        }
-
-        body { font-family: 'Inter', sans-serif; background-color: var(--dmg-grey); color: var(--dmg-text); }
-        .mono { font-family: 'JetBrains Mono', monospace; }
-        
-        /* UI Components */
-        .dmg-header { background: #ffffff; border-bottom: 3px solid var(--dmg-green); }
-        .btn-green { background: var(--dmg-green); color: white; border-radius: 0; font-weight: 700; text-transform: uppercase; transition: 0.2s; }
-        .btn-green:hover { background: #76a020; }
-        .btn-outline { background: white; border: 1px solid var(--dmg-border); color: var(--dmg-text); border-radius: 0; font-weight: 700; text-transform: uppercase; }
-        .btn-outline:hover { border-color: var(--dmg-green); color: var(--dmg-green); }
-        
-        .card { background: white; border: 1px solid var(--dmg-border); box-shadow: 0 4px 0 rgba(0,0,0,0.02); border-left: 4px solid transparent; transition: 0.2s; }
-        .card:hover { border-left-color: var(--dmg-green); }
-        
-        .active-tab { background: white; color: var(--dmg-green); border-top: 3px solid var(--dmg-green); font-weight: 800; }
-        .inactive-tab { background: #eeeeee; color: #999; border-top: 3px solid transparent; }
-
-        /* PDF Styles - Exact Match */
-        .pdf-page { width: 297mm; background: white; padding: 10mm; color: #000; box-sizing: border-box; }
-        .pdf-table { width: 100%; border-collapse: collapse; font-size: 9px; font-family: 'Inter', sans-serif; table-layout: fixed; }
-        .pdf-table th, .pdf-table td { border: 1px solid #999; padding: 4px 6px; vertical-align: middle; }
-        
-        /* Headers mimic DMG MORI Control headers */
-        .header-black { background: var(--dmg-black); color: white; text-align: center; font-weight: 900; text-transform: uppercase; padding: 8px; letter-spacing: 1px; }
-        .header-sub { background: #ddd; color: black; font-weight: 800; text-align: center; font-size: 8px; text-transform: uppercase; }
-        
-        .row-num { background: #f0f0f0; text-align: center; font-weight: 800; width: 25px; }
-        .op-main { font-weight: 800; font-size: 10px; color: #000; }
-        .op-sub { font-family: 'JetBrains Mono'; font-size: 8px; color: #555; margin-top: 2px; }
-        .empty-cell { background: #fcfcfc; }
-        
-        /* Specific column coloring from screenshot */
-        .col-green { background: #dcfce7; } /* Light green tint */
-        .col-blue { background: #dbeafe; }  /* Light blue tint */
-
-        .lib-btn {
-            background: white; border: 1px solid #ddd; padding: 8px; font-size: 10px; font-weight: 700; text-transform: uppercase;
-            border-left: 3px solid transparent;
-        }
-        .lib-btn:hover { border-left-color: var(--dmg-green); border-color: #bbb; }
-    </style>
-</head>
-<body class="h-screen flex flex-col overflow-hidden">
-
-    <nav class="dmg-header px-6 py-4 flex justify-between items-center shadow-sm z-10">
-        <div class="flex items-center gap-3">
-            <h1 class="text-2xl font-black tracking-tighter text-black italic">DMG <span class="text-[#87b926]">MORI</span> <span class="not-italic text-xs font-normal text-gray-400 ml-2">SYNC MANAGER</span></h1>
-        </div>
+    </head>
+<body>
+    <header class="p-4 bg-white border-b-2 border-slate-900 flex justify-between items-center shadow-sm">
+        <div class="text-xl font-black italic">SyncOp <span class="text-blue-600">X</span></div>
         <div class="flex gap-2">
-            <button onclick="previewTools()" class="btn-outline flex items-center gap-2 px-4 py-2 text-xs">
-                <i data-lucide="wrench" class="w-3 h-3"></i> Werkzeugliste
-            </button>
-            <button onclick="previewPlan()" class="btn-green flex items-center gap-2 px-4 py-2 text-xs shadow-lg">
-                <i data-lucide="printer" class="w-3 h-3"></i> Export Plan
-            </button>
+            <button onclick="SyncOp.exportPDF('tools')" class="px-4 py-2 border border-slate-300 font-bold text-xs uppercase">Werkzeugliste</button>
+            <button onclick="SyncOp.exportPDF('plan')" class="px-4 py-2 bg-slate-900 text-white font-bold text-xs uppercase shadow-md">Export Plan</button>
         </div>
-    </nav>
+    </header>
 
-    <div class="flex border-b border-gray-200 bg-[#eeeeee]">
-        <button onclick="switchChannel('1')" id="tab-1" class="flex-1 py-3 text-xs font-black uppercase tracking-widest active-tab transition-all">Kanal 1</button>
-        <button onclick="switchChannel('2')" id="tab-2" class="flex-1 py-3 text-xs font-black uppercase tracking-widest inactive-tab transition-all">Kanal 2</button>
-    </div>
-
-    <main class="flex-1 overflow-y-auto p-5 space-y-3" id="scroll-area">
-        <div id="slot-container" class="space-y-2 max-w-4xl mx-auto"></div>
-        <div class="max-w-4xl mx-auto pt-4">
-            <button onclick="addNewSlot()" class="w-full py-4 border border-dashed border-gray-400 text-gray-400 text-xs font-black uppercase tracking-widest hover:border-[#87b926] hover:text-[#87b926] transition-all bg-transparent">+ Neuer Slot</button>
+    <main class="p-6">
+        <div id="ui-root" class="max-w-4xl mx-auto">
+            <p class="text-center text-slate-400 text-sm">Здесь будет список слотов для редактирования...</p>
         </div>
     </main>
 
-    <div id="op-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
-        <div class="bg-white w-full max-w-lg shadow-2xl overflow-hidden border-t-4 border-[#87b926]">
-            <div class="p-4 border-b bg-gray-50 flex justify-between items-center">
-                <h3 class="font-black uppercase text-xs tracking-widest text-black">Operation Details</h3>
-                <button onclick="closeModal()"><i data-lucide="x" class="text-gray-400 hover:text-black"></i></button>
-            </div>
-            <div class="p-6 space-y-5">
-                <div class="grid grid-cols-3 gap-2" id="lib-grid"></div>
-                
-                <div class="space-y-4 pt-2">
-                    <input type="text" id="in-title" placeholder="BEZEICHNUNG" class="w-full border border-gray-300 p-3 font-bold text-sm focus:border-[#87b926] outline-none rounded-none placeholder-gray-300">
-                    <input type="text" id="in-tool-name" placeholder="WERKZEUG SPEZIFIKATION" class="w-full border border-gray-300 p-3 font-medium text-sm focus:border-[#87b926] outline-none rounded-none placeholder-gray-300">
-                    <div class="grid grid-cols-2 gap-4">
-                        <input type="text" id="in-tool" placeholder="T-NR" class="w-full border border-gray-300 p-3 font-black text-center text-sm mono focus:border-[#87b926] outline-none rounded-none placeholder-gray-300">
-                        <select id="in-spindle" class="w-full border border-gray-300 p-3 font-bold text-sm appearance-none text-center focus:border-[#87b926] outline-none rounded-none bg-white">
-                            <option value="SP4">SPINDEL 4</option>
-                            <option value="SP3">SPINDEL 3</option>
-                        </select>
-                    </div>
-                </div>
-                <button onclick="saveOp()" class="w-full py-4 bg-[#87b926] text-white font-black text-xs uppercase tracking-widest hover:bg-[#76a020]">Übernehmen</button>
-            </div>
-        </div>
-    </div>
+    <div id="pdf-buffer" style="position: absolute; left: -9999px;"></div>
 
-    <div style="position: absolute; left: -9999px;">
-        <div id="pdf-root" class="pdf-page">
-            <div id="pdf-content"></div>
-        </div>
-    </div>
-
+    <script src="app.js"></script>
     <script>
-        const library = [
-            { id: 'scr', label: 'Schruppen', t: 'T1', n: 'CNMG 120408', sp: 'SP4' },
-            { id: 'fin', label: 'Schlichten', t: 'T2', n: 'DCMT 070204', sp: 'SP4' },
-            { id: 'dril', label: 'Bohren', t: 'T5', n: 'VHM D10.0', sp: 'SP3' },
-            { id: 'gew', label: 'Gewinde', t: 'T8', n: 'M10 x 1.5', sp: 'SP3' },
-            { id: 'stec', label: 'Abstechen', t: 'T12', n: 'Breite 3mm', sp: 'SP4' },
-            { id: 'zent', label: 'Zentrieren', t: 'T3', n: 'NC 90 Grad', sp: 'SP4' }
-        ];
-
-        let state = JSON.parse(localStorage.getItem('sync_v14_state')) || {
-            slots: { "1": Array(10).fill(null), "2": Array(10).fill(null) },
-            currentChannel: "1"
+        // Инициализация UI при загрузке
+        window.onload = () => {
+            // Здесь можно вызвать SyncOp.renderUI(), если дописать отрисовку кнопок управления
+            console.log("SyncOp Ready");
         };
-        let currentIdx = null;
-
-        function save() { localStorage.setItem('sync_v14_state', JSON.stringify(state)); render(); }
-
-        function render() {
-            const container = document.getElementById('slot-container');
-            const ch = state.currentChannel;
-            const prefix = ch === "1" ? "L11" : "L21";
-            
-            container.innerHTML = state.slots[ch].map((op, idx) => `
-                <div class="card p-3 flex items-center justify-between group" data-id="${idx}">
-                    <div class="flex items-center gap-4 flex-1 cursor-pointer" onclick="openModal(${idx})">
-                        <div class="w-8 h-8 bg-[#f0f0f0] flex items-center justify-center font-black text-[10px] text-gray-500 mono border border-gray-300">
-                            ${(idx+1).toString().padStart(2, '0')}
-                        </div>
-                        <div class="flex-1">
-                            <div class="text-[10px] font-bold text-gray-400 mono">${prefix}${(idx+1).toString().padStart(2, '0')}</div>
-                            <div class="text-xs font-black uppercase tracking-tight ${op ? 'text-black' : 'text-gray-300'}">
-                                ${op ? op.title : '--- LEER ---'}
-                            </div>
-                            ${op ? `<div class="text-[9px] font-bold text-gray-500 mt-1 uppercase flex items-center gap-2">
-                                <span class="mono text-black bg-[#dcfce7] px-1">${op.tool}</span> 
-                                <span>${op.toolName}</span>
-                                <span class="text-[#87b926] ml-auto">${op.spindle}</span>
-                            </div>` : ''}
-                        </div>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <button onclick="removeSlot(${idx})" class="p-2 text-gray-300 hover:text-red-600 transition-all"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-                        <div class="handle p-2 cursor-grab text-gray-300 hover:text-black"><i data-lucide="grip-vertical" class="w-4 h-4"></i></div>
-                    </div>
-                </div>
-            `).join('');
-            lucide.createIcons();
-            Sortable.create(container, { handle: '.handle', animation: 150, ghostClass: 'bg-gray-50', onEnd: (e) => {
-                const items = state.slots[state.currentChannel];
-                const moved = items.splice(e.oldIndex, 1)[0];
-                items.splice(e.newIndex, 0, moved);
-                save();
-            }});
-        }
-
-        function openModal(idx) {
-            currentIdx = idx;
-            const op = state.slots[state.currentChannel][idx];
-            document.getElementById('in-title').value = op ? op.title : "";
-            document.getElementById('in-tool-name').value = op ? op.toolName : "";
-            document.getElementById('in-tool').value = op ? op.tool : "";
-            document.getElementById('in-spindle').value = op ? op.spindle : "SP4";
-            
-            document.getElementById('lib-grid').innerHTML = library.map(i => `
-                <button onclick="loadLib('${i.id}')" class="lib-btn">${i.label}</button>
-            `).join('');
-            document.getElementById('op-modal').classList.remove('hidden');
-        }
-
-        function loadLib(id) {
-            const i = library.find(x => x.id === id);
-            document.getElementById('in-title').value = i.label;
-            document.getElementById('in-tool-name').value = i.n;
-            document.getElementById('in-tool').value = i.t;
-            document.getElementById('in-spindle').value = i.sp;
-        }
-
-        function saveOp() {
-            state.slots[state.currentChannel][currentIdx] = {
-                title: document.getElementById('in-title').value,
-                toolName: document.getElementById('in-tool-name').value,
-                tool: document.getElementById('in-tool').value,
-                spindle: document.getElementById('in-spindle').value
-            };
-            save(); closeModal();
-        }
-
-        function switchChannel(ch) {
-            state.currentChannel = ch;
-            document.getElementById('tab-1').className = ch==='1' ? 'flex-1 py-3 text-xs font-black uppercase tracking-widest active-tab transition-all' : 'flex-1 py-3 text-xs font-black uppercase tracking-widest inactive-tab transition-all';
-            document.getElementById('tab-2').className = ch==='2' ? 'flex-1 py-3 text-xs font-black uppercase tracking-widest active-tab transition-all' : 'flex-1 py-3 text-xs font-black uppercase tracking-widest inactive-tab transition-all';
-            render();
-        }
-        function removeSlot(i) { state.slots[state.currentChannel].splice(i,1); save(); }
-        function addNewSlot() { state.slots[state.currentChannel].push(null); save(); }
-        function closeModal() { document.getElementById('op-modal').classList.add('hidden'); }
-
-        // --- PDF LOGIC ---
-
-        function previewPlan() {
-            const max = Math.max(state.slots["1"].length, state.slots["2"].length);
-            let rows = "";
-            for(let i=0; i<max; i++) {
-                const op1 = state.slots["1"][i]; const op2 = state.slots["2"][i];
-                const l1 = `L11${(i+1).toString().padStart(2,'0')}`; const l2 = `L21${(i+1).toString().padStart(2,'0')}`;
-                
-                const cell = (op, sp, l) => (op && op.spindle === sp) ? 
-                    `<div class="op-main">${op.title}</div><div class="op-sub">${l} ${op.tool}</div>` : "";
-
-                // Цветной фон для ячеек шпинделей (как в DMG CELOS)
-                const bgSp4 = "background:#f0fdf4;"; // Light Greenish
-                const bgSp3 = "background:#eff6ff;"; // Light Blueish
-
-                rows += `<tr>
-                    <td class="row-num">${i+1}</td>
-                    <td style="${bgSp4}" class="${!op1 || op1.spindle !== 'SP4' ? 'empty-cell' : ''}">${cell(op1, 'SP4', l1)}</td>
-                    <td style="${bgSp3}" class="${!op1 || op1.spindle !== 'SP3' ? 'empty-cell' : ''}">${cell(op1, 'SP3', l1)}</td>
-                    <td style="${bgSp3}" class="${!op2 || op2.spindle !== 'SP3' ? 'empty-cell' : ''}">${cell(op2, 'SP3', l2)}</td>
-                    <td style="${bgSp4}" class="${!op2 || op2.spindle !== 'SP4' ? 'empty-cell' : ''}">${cell(op2, 'SP4', l2)}</td>
-                </tr>`;
-            }
-
-            document.getElementById('pdf-content').innerHTML = `
-                <table class="pdf-table">
-                    <thead>
-                        <tr><th style="border:none"></th><th colspan="2" class="header-black">Kanal 1 - 1000.MPF</th><th colspan="2" class="header-black">Kanal 2 - 2000.MPF</th></tr>
-                        <tr>
-                            <th class="row-num">#</th>
-                            <th class="header-sub" style="border-bottom:2px solid #87b926">Spindel 4</th>
-                            <th class="header-sub" style="border-bottom:2px solid #3b82f6">Spindel 3</th>
-                            <th class="header-sub" style="border-bottom:2px solid #3b82f6">Spindel 3</th>
-                            <th class="header-sub" style="border-bottom:2px solid #87b926">Spindel 4</th>
-                        </tr>
-                    </thead>
-                    <tbody>${rows}</tbody>
-                </table>`;
-            print('Production_Plan');
-        }
-
-        function previewTools() {
-            // Сбор всех инструментов
-            const tools = [];
-            [1,2].forEach(ch => state.slots[ch].forEach(op => { if(op && op.tool) tools.push({...op, ch}) }));
-            
-            // Разделение на две группы для двух колонок
-            const sp4Tools = tools.filter(t => t.spindle === 'SP4').sort((a,b) => a.tool.localeCompare(b.tool, undefined, {numeric:true}));
-            const sp3Tools = tools.filter(t => t.spindle === 'SP3').sort((a,b) => a.tool.localeCompare(b.tool, undefined, {numeric:true}));
-            
-            const maxRows = Math.max(sp4Tools.length, sp3Tools.length);
-            
-            let rows = "";
-            for(let i=0; i<maxRows; i++) {
-                const t4 = sp4Tools[i];
-                const t3 = sp3Tools[i];
-                
-                // Helper для ячейки инструмента
-                const renderTool = (t) => t ? `<div class="op-main mono" style="font-size:11px">${t.tool}</div><div class="op-sub" style="font-size:9px">${t.toolName}</div>` : "";
-
-                rows += `<tr>
-                    <td class="row-num">${i+1}</td>
-                    <td style="background:#f0fdf4">${renderTool(t4)}</td>
-                    <td style="background:#eff6ff">${renderTool(t3)}</td>
-                </tr>`;
-            }
-
-            // Рендер таблицы 1:1 как Operation Plan (Две большие колонки)
-            document.getElementById('pdf-content').innerHTML = `
-                <table class="pdf-table">
-                    <thead>
-                        <tr><th style="border:none"></th><th class="header-black">Werkzeuge Spindel 4</th><th class="header-black">Werkzeuge Spindel 3</th></tr>
-                        <tr>
-                            <th class="row-num">#</th>
-                            <th class="header-sub" style="border-bottom:2px solid #87b926; text-align:left; padding-left:10px;">T-NR / BEZEICHNUNG</th>
-                            <th class="header-sub" style="border-bottom:2px solid #3b82f6; text-align:left; padding-left:10px;">T-NR / BEZEICHNUNG</th>
-                        </tr>
-                    </thead>
-                    <tbody>${rows}</tbody>
-                </table>
-            `;
-            print('Werkzeugliste_DMG');
-        }
-
-        function print(filename) {
-            html2pdf().from(document.getElementById('pdf-root')).set({
-                margin: 5, filename: filename + '.pdf', image:{type:'jpeg',quality:0.98}, html2canvas:{scale:2}, jsPDF:{orientation:'landscape', unit:'mm', format:'a4'}
-            }).outputPdf('bloburl').then(url => window.open(url));
-        }
-
-        render();
     </script>
 </body>
 </html>
