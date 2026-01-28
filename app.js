@@ -1,77 +1,58 @@
 const App = {
-    state: JSON.parse(localStorage.getItem('sync_v18')) || {
-        slots: { "1": Array(10).fill(null), "2": Array(10).fill(null) },
+    state: JSON.parse(localStorage.getItem('sync_v20')) || {
+        slots: { "1": Array(8).fill(null), "2": Array(8).fill(null) },
         currentChannel: "1"
     },
+    currentIdx: null,
 
-    init() {
-        this.renderUI();
-    },
-
-    switchChannel(ch) {
-        this.state.currentChannel = ch;
-        this.renderUI();
-    },
+    init() { this.renderUI(); },
 
     renderUI() {
-        const root = document.getElementById('ui-root');
         const ch = this.state.currentChannel;
-        const slots = this.state.slots[ch];
-
-        root.innerHTML = `
-            <div style="display:flex; margin-bottom:20px; gap:10px;">
-                <button onclick="App.switchChannel('1')" class="btn ${ch==='1'?'btn-accent':'btn-primary'}">Kanal 1</button>
-                <button onclick="App.switchChannel('2')" class="btn ${ch==='2'?'btn-accent':'btn-primary'}">Kanal 2</button>
-            </div>
-            ${slots.map((s, i) => `
-                <div class="slot-card ${!s?'empty':''}" onclick="App.editSlot(${i})">
-                    <div>
-                        <small style="color:#999">${ch==='1'?'L11':'L21'}${i+1}</small>
-                        <div style="font-weight:bold">${s ? s.title : '--- LEER ---'}</div>
-                        ${s ? `<small>${s.tool} | ${s.spindle}</small>` : ''}
-                    </div>
-                    ${s ? `<button onclick="event.stopPropagation(); App.deleteSlot(${i})" style="color:red; background:none; border:none; cursor:pointer;">✖</button>` : ''}
+        const root = document.getElementById('ui-root');
+        root.innerHTML = this.state.slots[ch].map((s, i) => `
+            <div class="card" onclick="App.openModal(${i})">
+                <div>
+                    <div style="font-size:9px; color:#999; font-family:monospace">${ch==='1'?'L11':'L21'}${i+1}</div>
+                    <div style="font-weight:900; text-transform:uppercase">${s ? s.title : '---'}</div>
+                    ${s ? `<div style="font-size:10px; color:var(--dmg-blue)">${s.tool} | ${s.spindle}</div>` : ''}
                 </div>
-            `).join('')}
-        `;
+                <button onclick="event.stopPropagation(); App.deleteSlot(${i})" style="opacity:0.3 hover:opacity:1">✖</button>
+            </div>
+        `).join('');
     },
 
-    editSlot(i) {
-        const title = prompt("Operation Name:", this.state.slots[this.state.currentChannel][i]?.title || "");
-        if (title === null) return;
-        const tool = prompt("T-Nummer (z.B. T1):", "T1");
-        const sp = prompt("Spindel (SP4 или SP3):", "SP4");
-        
-        this.state.slots[this.state.currentChannel][i] = { title, tool, spindle: sp, toolName: "Spezifikation..." };
+    openModal(i) {
+        this.currentIdx = i;
+        const s = this.state.slots[this.state.currentChannel][i];
+        document.getElementById('in-title').value = s ? s.title : "";
+        document.getElementById('in-tool').value = s ? s.tool : "";
+        document.getElementById('modal').classList.remove('hidden');
+    },
+
+    saveSlot() {
+        this.state.slots[this.state.currentChannel][this.currentIdx] = {
+            title: document.getElementById('in-title').value,
+            tool: document.getElementById('in-tool').value,
+            spindle: document.getElementById('in-spindle').value,
+            toolName: "Standard Tool"
+        };
         this.save();
+        this.closeModal();
     },
 
-    deleteSlot(i) {
-        this.state.slots[this.state.currentChannel][i] = null;
-        this.save();
-    },
-
-    save() {
-        localStorage.setItem('sync_v18', JSON.stringify(this.state));
-        this.renderUI();
-    },
+    deleteSlot(i) { this.state.slots[this.state.currentChannel][i] = null; this.save(); },
+    save() { localStorage.setItem('sync_v20', JSON.stringify(this.state)); this.renderUI(); },
+    closeModal() { document.getElementById('modal').classList.add('hidden'); },
+    switchChannel(ch) { this.state.currentChannel = ch; this.renderUI(); },
 
     exportPDF(type) {
         const buf = document.getElementById('pdf-buffer');
-        const html = (type === 'plan') 
-            ? TableRenderer.renderOperationPlan(this.state.slots["1"], this.state.slots["2"])
-            : TableRenderer.renderToolList(this.state.slots["1"], this.state.slots["2"]);
-
         buf.innerHTML = `<div class="pdf-page">
-            <h2 style="text-transform:uppercase; margin-bottom:20px;">${type==='plan'?'Operation Plan':'Werkzeugliste'}</h2>
-            ${html}
+            <h2 style="text-transform:uppercase; margin-bottom:15px; border-bottom:2px solid #000">${type==='plan'?'Operation Plan':'Werkzeugliste'}</h2>
+            ${type==='plan' ? TableRenderer.renderOperationPlan(this.state.slots["1"], this.state.slots["2"]) : TableRenderer.renderToolList(this.state.slots["1"], this.state.slots["2"])}
         </div>`;
-
-        html2pdf().from(buf).set({
-            margin: 5, filename: `SyncOp_${type}.pdf`,
-            jsPDF: { orientation: 'landscape', unit: 'mm', format: 'a4' }
-        }).save();
+        html2pdf().from(buf).set({ margin: 5, filename: `SyncOp_${type}.pdf`, jsPDF: { orientation: 'landscape', format: 'a4' } }).save();
     }
 };
-
 App.init();
