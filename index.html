@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SyncOperator v8 | Print Preview</title>
+    <title>SyncOperator v9 | Full System</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
@@ -15,99 +15,129 @@
         .active-tab { border-bottom: 3px solid #3b82f6; color: #3b82f6; }
         .handle { cursor: grab; touch-action: none; }
         
-        /* Стили для PDF, имитирующие скриншот */
-        .pdf-page { width: 297mm; padding: 10mm; background: white; font-family: sans-serif; }
-        .pdf-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #ccc; padding-bottom: 10px; margin-bottom: 10px; }
-        .table-container { display: flex; gap: 0; border: 1px solid #ccc; }
-        .chan-col { flex: 1; border-right: 1px solid #ccc; }
+        /* PDF Layout (Landscape) */
+        .pdf-page { width: 297mm; padding: 10mm; background: white; font-family: sans-serif; display: block; }
+        .pdf-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #000; padding-bottom: 8px; margin-bottom: 10px; }
+        .table-container { display: flex; border: 1px solid #000; }
+        .chan-col { flex: 1; border-right: 1px solid #000; }
         .chan-col:last-child { border-right: none; }
-        .chan-title { background: #e5e7eb; text-align: center; font-weight: bold; font-size: 10px; padding: 4px; border-bottom: 1px solid #ccc; }
-        .sp-header { display: flex; font-size: 9px; font-weight: bold; text-align: center; color: white; }
-        .sp-4 { flex: 1; background: #4ade80; padding: 4px; border-right: 1px solid #ccc; }
-        .sp-3 { flex: 1; background: #3b82f6; padding: 4px; }
-        .row { display: flex; border-bottom: 1px solid #eee; min-height: 25px; font-size: 9px; align-items: center; }
-        .row-num { width: 25px; text-align: center; border-right: 1px solid #ccc; background: #f9fafb; font-size: 8px; font-weight: bold; flex-shrink: 0; }
-        .cell { flex: 1; padding: 2px 6px; border-right: 1px solid #eee; display: flex; align-items: center; }
+        .chan-title { background: #e5e7eb; text-align: center; font-weight: bold; font-size: 11px; padding: 5px; border-bottom: 1px solid #000; }
+        .sp-header { display: flex; font-size: 10px; font-weight: bold; text-align: center; color: white; }
+        .sp-4 { flex: 1; background: #4ade80; padding: 5px; border-right: 1px solid #000; color: #000; }
+        .sp-3 { flex: 1; background: #3b82f6; padding: 5px; color: #fff; }
+        .row { display: flex; border-bottom: 1px solid #ccc; min-height: 28px; font-size: 10px; align-items: center; }
+        .row-num { width: 30px; text-align: center; border-right: 1px solid #000; background: #f0f0f0; font-weight: bold; flex-shrink: 0; }
+        .cell { flex: 1; padding: 2px 8px; border-right: 1px solid #ccc; display: flex; justify-content: space-between; align-items: center; height: 100%; }
         .cell:last-child { border-right: none; }
-        .op-text { font-weight: 500; }
-        .op-meta { color: #666; font-size: 7px; margin-left: auto; font-family: monospace; }
     </style>
 </head>
 <body class="flex flex-col h-screen overflow-hidden">
 
-    <header class="bg-slate-900 text-white px-5 py-4 flex justify-between items-center shrink-0">
-        <h1 class="font-black italic uppercase text-xl text-blue-400">SyncOp <span class="text-white text-[10px] not-italic opacity-50">V8.0</span></h1>
-        <button onclick="previewPDF()" class="p-2 bg-blue-600 rounded-lg text-[10px] font-black uppercase flex items-center gap-2 px-4">
-            <i data-lucide="printer" class="w-4 h-4"></i> PREVIEW & PRINT
-        </button>
+    <header class="bg-slate-900 text-white px-5 py-4 flex justify-between items-center shrink-0 shadow-lg">
+        <h1 class="font-black italic uppercase text-xl text-blue-400">SyncOp <span class="text-white text-[10px] opacity-50">V9.0</span></h1>
+        <div class="flex gap-2">
+            <button onclick="previewEinrichteblatt()" class="p-2 bg-slate-700 rounded-lg text-[9px] font-black uppercase flex items-center gap-1">
+                <i data-lucide="wrench" class="w-3 h-3"></i> TOOLS
+            </button>
+            <button onclick="previewSyncPlan()" class="p-2 bg-blue-600 rounded-lg text-[9px] font-black uppercase flex items-center gap-1 px-3">
+                <i data-lucide="printer" class="w-3 h-3"></i> PRINT PLAN
+            </button>
+        </div>
     </header>
 
     <div class="flex bg-white border-b shrink-0">
-        <button onclick="switchChannel('1')" id="tab-1" class="flex-1 py-4 text-[10px] font-black uppercase active-tab">Kanal 1 (1000)</button>
-        <button onclick="switchChannel('2')" id="tab-2" class="flex-1 py-4 text-[10px] font-black uppercase text-slate-400">Kanal 2 (2000)</button>
+        <button onclick="switchChannel('1')" id="tab-1" class="flex-1 py-4 text-[10px] font-black uppercase active-tab">Kanal 1</button>
+        <button onclick="switchChannel('2')" id="tab-2" class="flex-1 py-4 text-[10px] font-black uppercase text-slate-400">Kanal 2</button>
     </div>
 
-    <main class="flex-1 overflow-y-auto p-4 space-y-2" id="slot-list-container">
+    <main class="flex-1 overflow-y-auto p-4 space-y-2 pb-24" id="main-content">
         <div id="slot-container" class="space-y-2"></div>
-        <button onclick="addNewSlot()" class="w-full py-4 border-2 border-dashed border-slate-300 rounded-xl text-slate-400 text-[10px] font-black uppercase mt-4">+ Neuer Slot</button>
+        <button onclick="addNewSlot()" class="w-full py-4 border-2 border-dashed border-slate-300 rounded-xl text-slate-400 text-[10px] font-black uppercase mt-4">+ Slot hinzufügen</button>
     </main>
 
     <div style="position: absolute; left: -9999px; top: -9999px;">
-        <div id="print-template" class="pdf-page">
+        <div id="print-plan-template" class="pdf-page">
             <div class="pdf-header">
-                <span style="font-weight: 900; font-size: 14px;">SYNCOPERATOR PLAN</span>
-                <span id="print-date" style="font-size: 10px;"></span>
+                <span style="font-weight: 900; font-size: 16px;">SYNCOPERATOR | PRODUCTION PLAN</span>
+                <span id="pdf-date-plan" style="font-size: 10px; font-weight: bold;"></span>
             </div>
             <div class="table-container">
                 <div class="chan-col">
                     <div class="chan-title">Kanal 1 - 1000.MPF</div>
-                    <div class="sp-header">
-                        <div class="sp-4" style="background: #4ade80;">Spindel 4</div>
-                        <div class="sp-3" style="background: #3b82f6;">Spindel 3</div>
-                    </div>
-                    <div id="pdf-rows-k1"></div>
+                    <div class="sp-header"><div class="sp-4">Spindel 4</div><div class="sp-3">Spindel 3</div></div>
+                    <div id="rows-k1"></div>
                 </div>
                 <div class="chan-col">
                     <div class="chan-title">Kanal 2 - 2000.MPF</div>
-                    <div class="sp-header">
-                        <div class="sp-3" style="background: #3b82f6;">Spindel 3</div>
-                        <div class="sp-4" style="background: #4ade80;">Spindel 4</div>
-                    </div>
-                    <div id="pdf-rows-k2"></div>
+                    <div class="sp-header"><div class="sp-3">Spindel 3</div><div class="sp-4">Spindel 4</div></div>
+                    <div id="rows-k2"></div>
                 </div>
             </div>
         </div>
+
+        <div id="print-tools-template" style="width: 210mm; padding: 15mm; background: white;">
+            <h1 style="font-size: 20px; font-weight: 900; border-bottom: 3px solid black; padding-bottom: 10px; margin-bottom: 20px;">EINRICHTEBLATT / WERKZEUGLISTE</h1>
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="background: #f0f0f0; font-size: 12px; border: 1px solid black;">
+                        <th style="padding: 10px; border: 1px solid black; text-align: left;">T-Nr</th>
+                        <th style="padding: 10px; border: 1px solid black; text-align: left;">Werkzeug Name</th>
+                        <th style="padding: 10px; border: 1px solid black; text-align: left;">Spindel</th>
+                        <th style="padding: 10px; border: 1px solid black; text-align: left;">Kanal</th>
+                    </tr>
+                </thead>
+                <tbody id="rows-tools" style="font-size: 11px;"></tbody>
+            </table>
+        </div>
     </div>
 
-    <div id="op-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden z-[100] p-4 flex items-center justify-center">
+    <div id="op-modal" class="fixed inset-0 bg-black/80 backdrop-blur-md hidden z-[100] p-4 flex items-center justify-center">
         <div class="bg-white w-full max-w-lg rounded-[2rem] shadow-2xl overflow-hidden">
             <div class="p-5 border-b flex justify-between items-center bg-slate-50">
-                <span class="text-[10px] font-black uppercase tracking-widest text-slate-400">Operation Details</span>
+                <span class="text-[10px] font-black uppercase text-slate-400">Operation Setup</span>
                 <button onclick="closeModal()"><i data-lucide="x"></i></button>
             </div>
-            <div class="p-8 space-y-4">
+            <div class="p-6 space-y-4">
+                <div class="bg-blue-50 p-3 rounded-xl border border-blue-100 mb-2">
+                    <label class="text-[9px] font-black uppercase text-blue-600">Aus Bibliothek laden</label>
+                    <select onchange="loadFromLib(this.value)" class="w-full mt-1 p-2 bg-white border rounded-lg text-xs font-bold">
+                        <option value="">-- Vorlage wählen --</option>
+                        <option value="schruppen">Schruppen (Standard)</option>
+                        <option value="schlichten">Schlichten (Finish)</option>
+                        <option value="bohren">Bohren (VHM)</option>
+                        <option value="gewinde">Gewinde</option>
+                    </select>
+                </div>
                 <input type="text" id="in-title" placeholder="Bezeichnung" class="w-full p-4 bg-slate-100 rounded-xl font-bold outline-none border-2 border-transparent focus:border-blue-500">
+                <input type="text" id="in-tool-name" placeholder="Werkzeug Name" class="w-full p-4 bg-slate-100 rounded-xl font-bold outline-none">
                 <div class="grid grid-cols-2 gap-3">
-                    <input type="text" id="in-tool" placeholder="T-Nr" class="p-4 bg-slate-100 rounded-xl font-bold mono uppercase">
+                    <input type="text" id="in-tool" placeholder="T-Nr" class="p-4 bg-slate-100 rounded-xl font-bold mono">
                     <select id="in-spindle" class="p-4 bg-slate-100 rounded-xl font-bold">
                         <option value="SP4">Spindel 4</option>
                         <option value="SP3">Spindel 3</option>
                     </select>
                 </div>
-                <button onclick="saveOperation()" class="w-full py-5 bg-black text-white rounded-2xl font-black uppercase tracking-widest shadow-xl">Speichern</button>
+                <button onclick="saveOp()" class="w-full py-5 bg-black text-white rounded-2xl font-black uppercase tracking-widest">Speichern</button>
             </div>
         </div>
     </div>
 
     <script>
-        let state = JSON.parse(localStorage.getItem('sync_v8_state')) || {
-            slots: { "1": Array(18).fill(null), "2": Array(18).fill(null) },
+        const lib = {
+            schruppen: { title: "Schruppen", tool: "T1", toolName: "CNMG 120408", spindle: "SP4" },
+            schlichten: { title: "Schlichten", tool: "T2", toolName: "DCMT 070204", spindle: "SP4" },
+            bohren: { title: "Bohren D10", tool: "T5", toolName: "VHM Bohrer IK", spindle: "SP3" },
+            gewinde: { title: "Gewinde M10", tool: "T8", toolName: "Gewindebohrer", spindle: "SP3" }
+        };
+
+        let state = JSON.parse(localStorage.getItem('sync_v9_state')) || {
+            slots: { "1": Array(10).fill(null), "2": Array(10).fill(null) },
             currentChannel: "1"
         };
 
-        let currentEditingIdx = null;
+        let currentIdx = null;
 
-        function save() { localStorage.setItem('sync_v8_state', JSON.stringify(state)); render(); }
+        function save() { localStorage.setItem('sync_v9_state', JSON.stringify(state)); render(); }
 
         function render() {
             const container = document.getElementById('slot-container');
@@ -119,26 +149,22 @@
                         <span class="mono text-[10px] font-black text-slate-300 w-8">${prefix}${(idx+1).toString().padStart(2, '0')}</span>
                         <div class="flex-1">
                             <div class="text-[12px] font-black uppercase ${op ? 'text-black' : 'text-slate-200'}">${op ? op.title : 'Leer'}</div>
-                            ${op ? `<div class="text-[9px] font-bold text-blue-500 uppercase">${op.tool} | ${op.spindle}</div>` : ''}
+                            ${op ? `<div class="text-[9px] font-bold text-blue-500 uppercase">${op.tool} | ${op.toolName || '-'} | ${op.spindle}</div>` : ''}
                         </div>
                     </div>
-                    <div class="handle p-2 text-slate-300"><i data-lucide="grip-vertical" class="w-5 h-5"></i></div>
+                    <div class="flex items-center gap-2">
+                        <button onclick="removeSlot(${idx})" class="p-2 text-slate-300 hover:text-red-500"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                        <div class="handle p-2 text-slate-300"><i data-lucide="grip-vertical" class="w-5 h-5"></i></div>
+                    </div>
                 </div>
             `).join('');
             lucide.createIcons();
-            initSortable();
-        }
-
-        function initSortable() {
-            Sortable.create(document.getElementById('slot-container'), {
-                handle: '.handle', animation: 150,
-                onEnd: (evt) => {
-                    const items = state.slots[state.currentChannel];
-                    const moved = items.splice(evt.oldIndex, 1)[0];
-                    items.splice(evt.newIndex, 0, moved);
-                    save();
-                }
-            });
+            Sortable.create(container, { handle: '.handle', animation: 150, onEnd: (evt) => {
+                const items = state.slots[state.currentChannel];
+                const moved = items.splice(evt.oldIndex, 1)[0];
+                items.splice(evt.newIndex, 0, moved);
+                save();
+            }});
         }
 
         function switchChannel(ch) {
@@ -149,76 +175,65 @@
         }
 
         function openModal(idx) {
-            currentEditingIdx = idx;
+            currentIdx = idx;
             const op = state.slots[state.currentChannel][idx];
             document.getElementById('in-title').value = op ? op.title : "";
+            document.getElementById('in-tool-name').value = op ? op.toolName : "";
             document.getElementById('in-tool').value = op ? op.tool : "";
             document.getElementById('in-spindle').value = op ? op.spindle : "SP4";
             document.getElementById('op-modal').classList.remove('hidden');
         }
 
-        function saveOperation() {
-            state.slots[state.currentChannel][currentEditingIdx] = {
+        function loadFromLib(val) {
+            if(!val) return;
+            const t = lib[val];
+            document.getElementById('in-title').value = t.title;
+            document.getElementById('in-tool-name').value = t.toolName;
+            document.getElementById('in-tool').value = t.tool;
+            document.getElementById('in-spindle').value = t.spindle;
+        }
+
+        function saveOp() {
+            state.slots[state.currentChannel][currentIdx] = {
                 title: document.getElementById('in-title').value,
+                toolName: document.getElementById('in-tool-name').value,
                 tool: document.getElementById('in-tool').value,
                 spindle: document.getElementById('in-spindle').value
             };
             save(); closeModal();
         }
 
+        function removeSlot(idx) { state.slots[state.currentChannel].splice(idx, 1); save(); }
         function addNewSlot() { state.slots[state.currentChannel].push(null); save(); }
         function closeModal() { document.getElementById('op-modal').classList.add('hidden'); }
 
-        // ПРЕДПРОСМОТР PDF
-        async function previewPDF() {
-            document.getElementById('print-date').innerText = new Date().toLocaleString();
-            
-            const renderRows = (ch, targetId) => {
-                const target = document.getElementById(targetId);
-                target.innerHTML = "";
+        // EXPORTS
+        function previewSyncPlan() {
+            const date = new Date().toLocaleString();
+            document.getElementById('pdf-date-plan').innerText = date;
+            const generate = (ch, id) => {
+                const target = document.getElementById(id); target.innerHTML = "";
                 const max = Math.max(state.slots["1"].length, state.slots["2"].length);
                 const prefix = ch === "1" ? "L11" : "L21";
-                
                 for(let i=0; i<max; i++) {
                     const op = state.slots[ch][i];
-                    const lCode = `${prefix}${(i+1).toString().padStart(2,'0')}`;
-                    
-                    // Порядок колонок SP4/SP3 меняется как на скриншоте
-                    const isK2 = ch === "2";
-                    const colA = !isK2 ? "SP4" : "SP3";
-                    const colB = !isK2 ? "SP3" : "SP4";
-
-                    const contentA = op && op.spindle === colA ? `<span class="op-text">${op.title}</span> <span class="op-meta">${lCode} ${op.tool}</span>` : "";
-                    const contentB = op && op.spindle === colB ? `<span class="op-text">${op.title}</span> <span class="op-meta">${lCode} ${op.tool}</span>` : "";
-
-                    target.innerHTML += `
-                        <div class="row">
-                            <div class="row-num">${i+1}</div>
-                            <div class="cell">${contentA}</div>
-                            <div class="cell">${contentB}</div>
-                        </div>
-                    `;
+                    const spA = (ch === "1" ? "SP4" : "SP3"), spB = (ch === "1" ? "SP3" : "SP4");
+                    const content = (s) => (op && op.spindle === s) ? `<span style="font-weight:bold">${op.title}</span> <span style="font-size:7px; color:#666">${prefix}${(i+1).toString().padStart(2,'0')} ${op.tool}</span>` : "";
+                    target.innerHTML += `<div class="row"><div class="row-num">${i+1}</div><div class="cell">${content(spA)}</div><div class="cell">${content(spB)}</div></div>`;
                 }
             };
+            generate("1", "rows-k1"); generate("2", "rows-k2");
+            html2pdf().from(document.getElementById('print-plan-template')).set({margin:0, filename:'Plan.pdf', jsPDF:{orientation:'landscape'}}).outputPdf('bloburl').then(url => window.open(url));
+        }
 
-            renderRows("1", "pdf-rows-k1");
-            renderRows("2", "pdf-rows-k2");
-
-            const element = document.getElementById('print-template');
-            
-            // Вместо скачивания используем output('bloburl') для предпросмотра
-            const opt = {
-                margin: 0,
-                filename: 'SyncPlan.pdf',
-                image: { type: 'jpeg', quality: 1 },
-                html2canvas: { scale: 2 },
-                jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
-            };
-
-            // Генерируем PDF и открываем в новом окне (превью)
-            html2pdf().set(opt).from(element).outputPdf('bloburl').then(function(pdfUrl) {
-                window.open(pdfUrl, '_blank');
+        function previewEinrichteblatt() {
+            const tbody = document.getElementById('rows-tools'); tbody.innerHTML = "";
+            const tools = [];
+            [1,2].forEach(ch => state.slots[ch].forEach(op => { if(op && op.tool) tools.push({...op, ch}) }));
+            tools.sort((a,b) => a.tool.localeCompare(b.tool)).forEach(t => {
+                tbody.innerHTML += `<tr style="border:1px solid black"><td style="padding:8px; border:1px solid black">${t.tool}</td><td style="padding:8px; border:1px solid black">${t.toolName}</td><td style="padding:8px; border:1px solid black">${t.spindle}</td><td style="padding:8px; border:1px solid black">K${t.ch}</td></tr>`;
             });
+            html2pdf().from(document.getElementById('print-tools-template')).set({margin:10, filename:'Tools.pdf'}).outputPdf('bloburl').then(url => window.open(url));
         }
 
         render();
