@@ -3,197 +3,199 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SyncOperator Mobile</title>
+    <title>SyncOperator | Mobile CNC Planning</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@500&display=swap');
-        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; color: #111827; -webkit-tap-highlight-color: transparent; }
+        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; color: #111827; }
         .mono { font-family: 'JetBrains Mono', monospace; }
-        .drawer-transition { transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
         .active-tab { border-bottom: 3px solid #000; color: #000; }
+        .dragging { opacity: 0.5; transform: scale(0.95); }
     </style>
 </head>
 <body class="flex flex-col h-screen overflow-hidden">
 
-    <header class="bg-black text-white px-5 py-4 flex justify-between items-center shadow-lg z-50">
-        <div class="flex items-center gap-3">
-            <button onclick="toggleDrawer()" class="p-2 -ml-2"><i data-lucide="menu"></i></button>
+    <header class="bg-black text-white px-5 py-4 flex justify-between items-center shadow-lg z-50 shrink-0">
+        <div class="flex items-center gap-2">
             <h1 class="font-extrabold tracking-tighter text-lg italic uppercase">Sync<span class="text-slate-400">Op</span></h1>
+            <span class="text-[8px] bg-blue-600 px-1.5 py-0.5 rounded font-bold">V 3.0</span>
         </div>
-        <div class="flex gap-3">
-            <button onclick="toggleSetup()" class="p-2 bg-white/10 rounded-lg"><i data-lucide="clipboard-list" class="w-5 h-5"></i></button>
-            <button onclick="resetDemo()" class="p-2 bg-blue-600 rounded-lg text-[10px] font-bold uppercase">Demo</button>
+        <div class="flex gap-2">
+            <button onclick="exportToPDF()" class="p-2 bg-white/10 rounded-lg"><i data-lucide="file-text" class="w-5 h-5"></i></button>
+            <button onclick="resetToDemo()" class="p-2 bg-blue-600 rounded-lg text-[10px] font-bold uppercase">Demo</button>
         </div>
     </header>
 
-    <div class="flex bg-white border-b border-slate-200">
+    <div class="flex bg-white border-b border-slate-200 shrink-0">
         <button onclick="switchChannel('1')" id="tab-1" class="flex-1 py-3 text-xs font-black uppercase tracking-widest active-tab">Kanal 1</button>
         <button onclick="switchChannel('2')" id="tab-2" class="flex-1 py-3 text-xs font-black uppercase tracking-widest text-slate-400">Kanal 2</button>
     </div>
 
-    <main class="flex-1 overflow-y-auto p-4 pb-24" id="channel-container">
-        <div id="channel-view" class="space-y-3">
-            </div>
-    </main>
+    <main class="flex-1 overflow-y-auto p-4 space-y-2 pb-20" id="slot-list">
+        </main>
 
-    <div id="drawer-overlay" onclick="toggleDrawer()" class="fixed inset-0 bg-black/50 z-[60] hidden opacity-0 transition-opacity duration-300"></div>
-    <aside id="drawer" class="fixed inset-y-0 left-0 w-4/5 max-w-xs bg-[#0a0a0a] text-white z-[70] drawer-transition -translate-x-full flex flex-col">
-        <div class="p-6 border-b border-white/10 flex justify-between items-center">
-            <span class="font-bold text-xs uppercase tracking-widest text-slate-500">Operation Library</span>
-            <button onclick="toggleDrawer()"><i data-lucide="x" class="w-5 h-5 text-slate-500"></i></button>
-        </div>
-        <div class="flex-1 overflow-y-auto p-4 space-y-3" id="library-container"></div>
-        <div class="p-4 border-t border-white/10">
-            <button onclick="addNewOpPrompt()" class="w-full py-4 bg-white text-black text-[10px] font-black uppercase rounded-xl">Neue Operation</button>
-        </div>
-    </aside>
-
-    <div id="setup-modal" class="fixed inset-0 bg-black/60 backdrop-blur-md hidden z-[100] p-4 flex items-center">
-        <div class="bg-white w-full max-h-[80vh] rounded-[2.5rem] overflow-hidden flex flex-col">
-            <div class="p-6 border-b flex justify-between items-center bg-slate-50">
-                <h3 class="font-black text-xs uppercase">Einrichteblatt</h3>
-                <button onclick="toggleSetup()"><i data-lucide="x"></i></button>
+    <div id="op-modal" class="fixed inset-0 bg-black/60 backdrop-blur-md hidden z-[100] p-4 flex items-center">
+        <div class="bg-white w-full rounded-[2.5rem] overflow-hidden shadow-2xl">
+            <div class="p-6 border-b bg-slate-50 flex justify-between items-center">
+                <h3 id="modal-title" class="font-black text-xs uppercase">Neue Operation</h3>
+                <button onclick="closeModal()"><i data-lucide="x"></i></button>
             </div>
-            <div class="p-4 overflow-y-auto" id="setup-content"></div>
+            <div class="p-6 space-y-4">
+                <div>
+                    <label class="text-[10px] font-bold uppercase text-slate-400">Bezeichnung</label>
+                    <input type="text" id="in-title" placeholder="z.B. Schruppen" class="w-full p-4 bg-slate-100 rounded-2xl border-none outline-none font-bold">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-[10px] font-bold uppercase text-slate-400">Werkzeug (T)</label>
+                        <input type="text" id="in-tool" placeholder="T1" class="w-full p-4 bg-slate-100 rounded-2xl border-none outline-none font-bold mono">
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-bold uppercase text-slate-400">Spindel</label>
+                        <select id="in-spindle" class="w-full p-4 bg-slate-100 rounded-2xl border-none outline-none font-bold">
+                            <option value="SP3">Spindel 3</option>
+                            <option value="SP4">Spindel 4</option>
+                        </select>
+                    </div>
+                </div>
+                <button onclick="saveOperation()" class="w-full py-5 bg-black text-white rounded-2xl font-black uppercase tracking-widest mt-2">Speichern</button>
+            </div>
         </div>
     </div>
 
     <script>
         // --- LOGIC CORE ---
-        class SyncOperatorCore {
-            constructor() {
-                this.state = JSON.parse(localStorage.getItem('sync_mobile_state')) || {
-                    operations: [],
-                    slots: { "1": Array(8).fill(null), "2": Array(8).fill(null) },
-                    currentChannel: "1"
-                };
-            }
-            save() { localStorage.setItem('sync_mobile_state', JSON.stringify(this.state)); }
-            addOp(title, tool) {
-                const id = 'op_' + Date.now();
-                this.state.operations.push({ id, title, toolNo: tool });
-                this.save(); return id;
-            }
-            assign(opId, ch, idx) { this.state.slots[ch][idx] = opId; this.save(); }
-            clear(ch, idx) { this.state.slots[ch][idx] = null; this.save(); }
-            getPlan(ch) {
-                return this.state.slots[ch].map((id, i) => {
-                    const op = this.state.operations.find(o => o.id === id);
-                    return { id, name: op ? op.title : "LEER", tool: op ? op.toolNo : "-", lCode: (ch === "1" ? "L11" : "L21") + (i+1).toString().padStart(2,'0') };
-                });
-            }
-            getSetup() {
-                const map = {};
-                Object.keys(this.state.slots).forEach(ch => {
-                    this.state.slots[ch].forEach(id => {
-                        const op = this.state.operations.find(o => o.id === id);
-                        if (!op) return;
-                        if (!map[op.toolNo]) map[op.toolNo] = { tool: op.toolNo, oben: [], unten: [] };
-                        const key = ch === "1" ? 'oben' : 'unten';
-                        if (!map[op.toolNo][key].includes(op.title)) map[op.toolNo][key].push(op.title);
-                    });
-                });
-                return Object.values(map);
-            }
+        let state = JSON.parse(localStorage.getItem('sync_v3_state')) || {
+            slots: { "1": [], "2": [] },
+            currentChannel: "1"
+        };
+
+        // Initialisierung von 20 leeren Slots pro Kanal
+        if (state.slots["1"].length === 0) {
+            for(let i=0; i<20; i++) { state.slots["1"].push(null); state.slots["2"].push(null); }
         }
 
-        const Core = new SyncOperatorCore();
-        let selectedOpId = null;
+        let currentEditingSlot = null;
 
-        // --- UI FUNCTIONS ---
-        function toggleDrawer() {
-            const d = document.getElementById('drawer');
-            const o = document.getElementById('drawer-overlay');
-            d.classList.toggle('-translate-x-full');
-            o.classList.toggle('hidden');
-            setTimeout(() => o.classList.toggle('opacity-0'), 10);
+        function saveState() {
+            localStorage.setItem('sync_v3_state', JSON.stringify(state));
+            renderSlots();
         }
 
         function switchChannel(ch) {
-            Core.state.currentChannel = ch;
-            document.getElementById('tab-1').className = ch === '1' ? 'flex-1 py-3 text-xs font-black uppercase active-tab' : 'flex-1 py-3 text-xs font-black uppercase text-slate-400';
-            document.getElementById('tab-2').className = ch === '2' ? 'flex-1 py-3 text-xs font-black uppercase active-tab' : 'flex-1 py-3 text-xs font-black uppercase text-slate-400';
-            renderChannels();
+            state.currentChannel = ch;
+            document.getElementById('tab-1').classList.toggle('active-tab', ch === '1');
+            document.getElementById('tab-1').classList.toggle('text-slate-400', ch !== '1');
+            document.getElementById('tab-2').classList.toggle('active-tab', ch === '2');
+            document.getElementById('tab-2').classList.toggle('text-slate-400', ch !== '2');
+            renderSlots();
         }
 
-        function renderLibrary() {
-            const container = document.getElementById('library-container');
-            container.innerHTML = Core.state.operations.map(op => `
-                <div onclick="selectOp('${op.id}')" class="p-4 rounded-2xl bg-[#1a1a1a] border-2 ${selectedOpId === op.id ? 'border-blue-500' : 'border-transparent'}">
-                    <div class="text-[8px] font-bold text-blue-500 mono mb-1">${op.toolNo}</div>
-                    <div class="text-sm font-bold">${op.title}</div>
-                </div>
-            `).join('');
-        }
+        function renderSlots() {
+            const container = document.getElementById('slot-list');
+            const ch = state.currentChannel;
+            const prefix = ch === "1" ? "L11" : "L21";
 
-        function selectOp(id) {
-            selectedOpId = id;
-            renderLibrary();
-            toggleDrawer(); // Schließt Drawer nach Auswahl
-        }
-
-        function renderChannels() {
-            const ch = Core.state.currentChannel;
-            const plan = Core.getPlan(ch);
-            document.getElementById('channel-view').innerHTML = plan.map((slot, idx) => `
-                <div onclick="handleSlotClick('${ch}', ${idx})" class="bg-white p-5 rounded-[1.5rem] shadow-sm flex justify-between items-center border border-slate-100">
-                    <div class="flex items-center gap-4">
-                        <span class="mono text-[10px] font-bold text-slate-400">${slot.lCode}</span>
+            container.innerHTML = state.slots[ch].map((op, idx) => `
+                <div class="slot-item bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between gap-3 active:scale-95 transition-transform"
+                     draggable="true" 
+                     onsubmit="return false;"
+                     onclick="openOpModal(${idx})"
+                     ondragstart="handleDragStart(event, ${idx})"
+                     ondragover="handleDragOver(event)"
+                     ondrop="handleDrop(event, ${idx})">
+                    
+                    <div class="flex items-center gap-4 pointer-events-none">
+                        <span class="mono text-[10px] font-bold text-slate-300 w-8">${prefix}${(idx+1).toString().padStart(2, '0')}</span>
+                        <div class="h-8 w-px bg-slate-100"></div>
                         <div>
-                            <div class="text-sm font-black ${slot.id ? 'text-black' : 'text-slate-200'}">${slot.name}</div>
-                            <div class="text-[10px] mono text-slate-400 font-bold">${slot.tool}</div>
+                            <div class="text-xs font-black uppercase ${op ? 'text-black' : 'text-slate-300 italic'}">
+                                ${op ? op.title : 'Leerer Slot'}
+                            </div>
+                            ${op ? `<div class="text-[10px] font-bold text-blue-600 mono">${op.tool} <span class="text-slate-400 ml-2">${op.spindle}</span></div>` : ''}
                         </div>
                     </div>
-                    ${slot.id ? `<button onclick="event.stopPropagation(); Core.clear('${ch}', ${idx}); renderChannels();" class="text-slate-300"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : `<i data-lucide="plus" class="text-slate-200 w-4 h-4"></i>`}
+                    
+                    <div class="flex items-center gap-2">
+                        ${op ? `<button onclick="event.stopPropagation(); deleteOp(${idx})" class="p-2 text-slate-300"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : ''}
+                        <i data-lucide="grip-vertical" class="text-slate-200 w-5 h-5"></i>
+                    </div>
                 </div>
             `).join('');
             lucide.createIcons();
         }
 
-        function handleSlotClick(ch, idx) {
-            if (selectedOpId) {
-                Core.assign(selectedOpId, ch, idx);
-                selectedOpId = null;
-                renderChannels();
-                renderLibrary();
-            } else {
-                toggleDrawer(); // Wenn nichts gewählt, Bibliothek öffnen
+        // --- DRAG & DROP LOGIC ---
+        let dragSourceIndex = null;
+
+        function handleDragStart(e, idx) {
+            dragSourceIndex = idx;
+            e.target.classList.add('dragging');
+        }
+
+        function handleDragOver(e) { e.preventDefault(); }
+
+        function handleDrop(e, targetIdx) {
+            e.preventDefault();
+            const ch = state.currentChannel;
+            const movedItem = state.slots[ch].splice(dragSourceIndex, 1)[0];
+            state.slots[ch].splice(targetIdx, 0, movedItem);
+            saveState();
+        }
+
+        // --- MODAL & CRUD ---
+        function openOpModal(idx) {
+            currentEditingSlot = idx;
+            const op = state.slots[state.currentChannel][idx];
+            document.getElementById('modal-title').innerText = op ? "Operation bearbeiten" : "Neue Operation";
+            document.getElementById('in-title').value = op ? op.title : "";
+            document.getElementById('in-tool').value = op ? op.tool : "";
+            document.getElementById('in-spindle').value = op ? op.spindle : "SP3";
+            document.getElementById('op-modal').classList.remove('hidden');
+        }
+
+        function closeModal() { document.getElementById('op-modal').classList.add('hidden'); }
+
+        function saveOperation() {
+            const title = document.getElementById('in-title').value;
+            const tool = document.getElementById('in-tool').value;
+            const spindle = document.getElementById('in-spindle').value;
+
+            if (title) {
+                state.slots[state.currentChannel][currentEditingSlot] = { title, tool, spindle };
+                saveState();
+                closeModal();
             }
         }
 
-        function resetDemo() {
-            localStorage.clear();
-            const o1 = Core.addOp("Planen / Schruppen", "T0101");
-            const o2 = Core.addOp("Zentrieren", "T0303");
-            const o3 = Core.addOp("Abstechen", "T1212");
-            Core.assign(o1, "1", 0);
-            Core.assign(o2, "1", 1);
-            Core.assign(o1, "2", 0);
-            renderChannels();
-            renderLibrary();
+        function deleteOp(idx) {
+            state.slots[state.currentChannel][idx] = null;
+            saveState();
         }
 
-        function toggleSetup() {
-            const m = document.getElementById('setup-modal');
-            m.classList.toggle('hidden');
-            if(!m.classList.contains('hidden')) {
-                const data = Core.getSetup();
-                document.getElementById('setup-content').innerHTML = data.map(d => `
-                    <div class="mb-4 p-4 bg-slate-50 rounded-2xl">
-                        <div class="text-blue-600 font-black mono text-xs mb-2">${d.tool}</div>
-                        <div class="grid grid-cols-2 gap-2 text-[10px] uppercase font-bold">
-                            <div class="text-slate-400">Oben: <span class="text-black">${d.oben.join(', ') || '-'}</span></div>
-                            <div class="text-slate-400">Unten: <span class="text-black">${d.unten.join(', ') || '-'}</span></div>
-                        </div>
-                    </div>
-                `).join('');
-            }
+        // --- EXPORT & DEMO ---
+        function exportToPDF() {
+            const element = document.getElementById('slot-list');
+            const opt = {
+                margin: 10,
+                filename: `Programmplan_Kanal_${state.currentChannel}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2 },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+            html2pdf().set(opt).from(element).save();
         }
 
-        lucide.createIcons();
-        renderChannels();
-        renderLibrary();
+        function resetToDemo() {
+            state.slots["1"][0] = { title: "Schruppen", tool: "T1", spindle: "SP4" };
+            state.slots["1"][1] = { title: "Bohrung Vordrehen", tool: "T5", spindle: "SP4" };
+            state.slots["2"][0] = { title: "Schruppen", tool: "T1", spindle: "SP3" };
+            saveState();
+        }
+
+        renderSlots();
     </script>
 </body>
 </html>
