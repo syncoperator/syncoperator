@@ -3,18 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SyncOperator | Drag & Plan</title>
+    <title>SyncOperator Pro | Export & Plan</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@500&display=swap');
-        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; color: #111827; overflow: hidden; }
+        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; color: #111827; }
         .mono { font-family: 'JetBrains Mono', monospace; }
         .active-tab { border-bottom: 3px solid #000; color: #000; }
-        .sortable-ghost { opacity: 0.3; background: #dbeafe !important; border: 2px dashed #3b82f6 !important; }
         .handle { cursor: grab; padding: 10px; }
-        .handle:active { cursor: grabbing; }
+        .sortable-ghost { opacity: 0.1; background: #3b82f6; }
     </style>
 </head>
 <body class="flex flex-col h-screen">
@@ -22,9 +22,13 @@
     <header class="bg-black text-white px-5 py-4 flex justify-between items-center shadow-lg shrink-0">
         <h1 class="font-extrabold tracking-tighter text-lg italic uppercase">Sync<span class="text-slate-400">Op</span></h1>
         <div class="flex gap-2">
-            <button onclick="addNewSlot()" class="p-2 bg-blue-600 rounded-xl flex items-center gap-1 px-3">
-                <i data-lucide="plus" class="w-4 h-4"></i>
-                <span class="text-[10px] font-black uppercase italic">Add Slot</span>
+            <button onclick="exportSetupSheet()" class="p-2 bg-white/10 rounded-xl flex items-center gap-2 px-3">
+                <i data-lucide="wrench" class="w-4 h-4 text-blue-400"></i>
+                <span class="text-[9px] font-black uppercase">Tools</span>
+            </button>
+            <button onclick="exportSyncPlan()" class="p-2 bg-white/10 rounded-xl flex items-center gap-2 px-3">
+                <i data-lucide="file-text" class="w-4 h-4 text-green-400"></i>
+                <span class="text-[9px] font-black uppercase">Plan</span>
             </button>
         </div>
     </header>
@@ -34,32 +38,53 @@
         <button onclick="switchChannel('2')" id="tab-2" class="flex-1 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Kanal 2</button>
     </div>
 
-    <main class="flex-1 overflow-y-auto p-4 space-y-2 pb-10" id="slot-container">
-        </main>
+    <main class="flex-1 overflow-y-auto p-4 space-y-2 pb-24" id="export-area">
+        <div id="slot-container" class="space-y-2">
+            </div>
+        <button onclick="addNewSlot()" class="w-full py-4 border-2 border-dashed border-slate-200 rounded-2xl text-slate-400 text-[10px] font-bold uppercase mt-4">
+            + Weiteren Slot hinzufügen
+        </button>
+    </main>
+
+    <div id="setup-sheet-template" class="hidden p-8 bg-white text-black">
+        <h1 class="text-2xl font-black uppercase mb-2">Einrichteblatt / Werkzeugliste</h1>
+        <p class="text-xs text-slate-500 mb-6 uppercase tracking-widest">Generiert von SyncOperator Pro</p>
+        <table class="w-full border-collapse">
+            <thead>
+                <tr class="border-b-2 border-black text-[10px] uppercase font-bold text-left">
+                    <th class="py-2">T-No</th>
+                    <th class="py-2">Werkzeug Name</th>
+                    <th class="py-2">Kanal</th>
+                    <th class="py-2">Spindel</th>
+                </tr>
+            </thead>
+            <tbody id="setup-table-body" class="text-xs"></tbody>
+        </table>
+    </div>
 
     <div id="op-modal" class="fixed inset-0 bg-black/60 backdrop-blur-md hidden z-[100] p-4 flex items-center">
         <div class="bg-white w-full rounded-[2.5rem] overflow-hidden shadow-2xl">
             <div class="p-6 border-b bg-slate-50 flex justify-between items-center">
-                <h3 class="font-black text-xs uppercase italic tracking-widest">Operation Setup</h3>
+                <h3 class="font-black text-xs uppercase tracking-widest">Operation Setup</h3>
                 <button onclick="closeModal()"><i data-lucide="x"></i></button>
             </div>
             <div class="p-6 space-y-4">
-                <input type="text" id="in-title" placeholder="Bezeichnung" class="w-full p-4 bg-slate-100 rounded-2xl border-none outline-none font-bold">
-                <input type="text" id="in-tool-name" placeholder="Werkzeug Name" class="w-full p-4 bg-slate-100 rounded-2xl border-none outline-none font-bold">
+                <input type="text" id="in-title" placeholder="Bezeichnung (z.B. Planen)" class="w-full p-4 bg-slate-100 rounded-2xl border-none outline-none font-bold">
+                <input type="text" id="in-tool-name" placeholder="Werkzeug Name (z.B. Wendeplatte)" class="w-full p-4 bg-slate-100 rounded-2xl border-none outline-none font-bold">
                 <div class="grid grid-cols-2 gap-4">
-                    <input type="text" id="in-tool" placeholder="T-Nummer" class="p-4 bg-slate-100 rounded-2xl border-none outline-none font-bold mono">
-                    <select id="in-spindle" class="p-4 bg-slate-100 rounded-2xl border-none outline-none font-bold uppercase">
+                    <input type="text" id="in-tool" placeholder="T-Nr (z.T1)" class="p-4 bg-slate-100 rounded-2xl border-none outline-none font-bold mono">
+                    <select id="in-spindle" class="p-4 bg-slate-100 rounded-2xl border-none outline-none font-bold">
                         <option value="SP3">SP 3</option>
                         <option value="SP4">SP 4</option>
                     </select>
                 </div>
-                <button onclick="saveOperation()" class="w-full py-5 bg-black text-white rounded-2xl font-black uppercase tracking-widest mt-2 active:scale-95 transition-transform">Save Data</button>
+                <button onclick="saveOperation()" class="w-full py-5 bg-black text-white rounded-2xl font-black uppercase tracking-widest mt-2 active:bg-blue-600 transition-colors">Daten Speichern</button>
             </div>
         </div>
     </div>
 
     <script>
-        let state = JSON.parse(localStorage.getItem('sync_v4_state')) || {
+        let state = JSON.parse(localStorage.getItem('sync_v5_state')) || {
             slots: { "1": Array(5).fill(null), "2": Array(5).fill(null) },
             currentChannel: "1"
         };
@@ -68,16 +93,14 @@
         let sortableInstance = null;
 
         function save() {
-            localStorage.setItem('sync_v4_state', JSON.stringify(state));
+            localStorage.setItem('sync_v5_state', JSON.stringify(state));
             render();
         }
 
         function switchChannel(ch) {
             state.currentChannel = ch;
-            document.getElementById('tab-1').classList.toggle('active-tab', ch === '1');
-            document.getElementById('tab-1').classList.toggle('text-slate-400', ch !== '1');
-            document.getElementById('tab-2').classList.toggle('active-tab', ch === '2');
-            document.getElementById('tab-2').classList.toggle('text-slate-400', ch !== '2');
+            document.getElementById('tab-1').className = ch === '1' ? 'flex-1 py-4 text-[10px] font-black uppercase tracking-widest active-tab' : 'flex-1 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400';
+            document.getElementById('tab-2').className = ch === '2' ? 'flex-1 py-4 text-[10px] font-black uppercase tracking-widest active-tab' : 'flex-1 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400';
             render();
         }
 
@@ -89,18 +112,18 @@
             container.innerHTML = state.slots[ch].map((op, idx) => `
                 <div class="slot-item bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between" data-id="${idx}">
                     <div class="flex items-center gap-4 flex-1" onclick="openModal(${idx})">
-                        <span class="mono text-[10px] font-bold text-slate-300 w-10">${prefix}${(idx+1).toString().padStart(2, '0')}</span>
-                        <div class="h-8 w-[1px] bg-slate-100"></div>
+                        <span class="mono text-[10px] font-black text-slate-300 w-10">${prefix}${(idx+1).toString().padStart(2, '0')}</span>
+                        <div class="h-10 w-px bg-slate-100"></div>
                         <div class="flex-1">
-                            <div class="text-[11px] font-black uppercase ${op ? 'text-black' : 'text-slate-200'}">
+                            <div class="text-[12px] font-black uppercase ${op ? 'text-black' : 'text-slate-200 italic'}">
                                 ${op ? op.title : 'Leerer Slot'}
                             </div>
-                            ${op ? `<div class="text-[9px] font-bold text-blue-500 uppercase mono">${op.tool} | ${op.toolName}</div>` : ''}
+                            ${op ? `<div class="text-[9px] font-bold text-blue-500 uppercase mono">${op.tool} | ${op.toolName || '-'}</div>` : ''}
                         </div>
                     </div>
                     <div class="flex items-center gap-1">
-                        ${op ? `<button onclick="deleteOp(${idx})" class="p-2 text-slate-200"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : ''}
-                        <div class="handle text-slate-300"><i data-lucide="grip-vertical" class="w-5 h-5"></i></div>
+                        ${op ? `<button onclick="deleteOp(${idx})" class="p-2 text-slate-300"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : ''}
+                        <div class="handle text-slate-300 p-2"><i data-lucide="grip-vertical" class="w-5 h-5"></i></div>
                     </div>
                 </div>
             `).join('');
@@ -112,16 +135,12 @@
         function initSortable() {
             const el = document.getElementById('slot-container');
             if (sortableInstance) sortableInstance.destroy();
-            
             sortableInstance = Sortable.create(el, {
-                handle: '.handle',
-                animation: 150,
-                ghostClass: 'sortable-ghost',
+                handle: '.handle', animation: 150, ghostClass: 'sortable-ghost',
                 onEnd: (evt) => {
                     const ch = state.currentChannel;
-                    const items = state.slots[ch];
-                    const movedItem = items.splice(evt.oldIndex, 1)[0];
-                    items.splice(evt.newIndex, 0, movedItem);
+                    const movedItem = state.slots[ch].splice(evt.oldIndex, 1)[0];
+                    state.slots[ch].splice(evt.newIndex, 0, movedItem);
                     save();
                 }
             });
@@ -161,6 +180,50 @@
             state.slots["1"].push(null);
             state.slots["2"].push(null);
             save();
+        }
+
+        // --- EXPORT LOGIC ---
+        function exportSyncPlan() {
+            const element = document.getElementById('export-area');
+            html2pdf().set({ 
+                margin: 10, 
+                filename: `SyncPlan_Kanal_${state.currentChannel}.pdf`, 
+                html2canvas: { scale: 2 } 
+            }).from(element).save();
+        }
+
+        function exportSetupSheet() {
+            const tbody = document.getElementById('setup-table-body');
+            tbody.innerHTML = "";
+            
+            const tools = [];
+            [1, 2].forEach(ch => {
+                state.slots[ch.toString()].forEach(op => {
+                    if (op) tools.push({ ...op, ch: ch });
+                });
+            });
+
+            // Sort by Tool Number
+            tools.sort((a, b) => a.tool.localeCompare(b.tool));
+
+            tools.forEach(t => {
+                tbody.innerHTML += `
+                    <tr class="border-b">
+                        <td class="py-3 font-bold text-blue-600 mono">${t.tool}</td>
+                        <td class="py-3 font-bold uppercase">${t.toolName}</td>
+                        <td class="py-3 text-slate-400 font-bold">K${t.ch}</td>
+                        <td class="py-3 font-bold">${t.spindle}</td>
+                    </tr>
+                `;
+            });
+
+            const element = document.getElementById('setup-sheet-template');
+            element.classList.remove('hidden');
+            html2pdf().set({ 
+                margin: 10, 
+                filename: 'Einrichteblatt_SyncOperator.pdf',
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            }).from(element).save().then(() => element.classList.add('hidden'));
         }
 
         render();
