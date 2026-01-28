@@ -3,32 +3,43 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SyncOperator Pro v7</title>
+    <title>SyncOperator v8 | Print Preview</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=JetBrains+Mono:wght@500&display=swap');
-        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; -webkit-tap-highlight-color: transparent; }
+        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
         .mono { font-family: 'JetBrains Mono', monospace; }
         .active-tab { border-bottom: 3px solid #3b82f6; color: #3b82f6; }
         .handle { cursor: grab; touch-action: none; }
-        #pdf-export-container { width: 297mm; padding: 10mm; background: white; }
-        .pdf-table { width: 100%; border-collapse: collapse; font-size: 10px; }
-        .pdf-table th, .pdf-table td { border: 1px solid #000; padding: 5px; text-align: left; }
-        .bg-sp4 { background-color: #4ade80 !important; }
-        .bg-sp3 { background-color: #3b82f6 !important; color: white !important; }
+        
+        /* Стили для PDF, имитирующие скриншот */
+        .pdf-page { width: 297mm; padding: 10mm; background: white; font-family: sans-serif; }
+        .pdf-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #ccc; padding-bottom: 10px; margin-bottom: 10px; }
+        .table-container { display: flex; gap: 0; border: 1px solid #ccc; }
+        .chan-col { flex: 1; border-right: 1px solid #ccc; }
+        .chan-col:last-child { border-right: none; }
+        .chan-title { background: #e5e7eb; text-align: center; font-weight: bold; font-size: 10px; padding: 4px; border-bottom: 1px solid #ccc; }
+        .sp-header { display: flex; font-size: 9px; font-weight: bold; text-align: center; color: white; }
+        .sp-4 { flex: 1; background: #4ade80; padding: 4px; border-right: 1px solid #ccc; }
+        .sp-3 { flex: 1; background: #3b82f6; padding: 4px; }
+        .row { display: flex; border-bottom: 1px solid #eee; min-height: 25px; font-size: 9px; align-items: center; }
+        .row-num { width: 25px; text-align: center; border-right: 1px solid #ccc; background: #f9fafb; font-size: 8px; font-weight: bold; flex-shrink: 0; }
+        .cell { flex: 1; padding: 2px 6px; border-right: 1px solid #eee; display: flex; align-items: center; }
+        .cell:last-child { border-right: none; }
+        .op-text { font-weight: 500; }
+        .op-meta { color: #666; font-size: 7px; margin-left: auto; font-family: monospace; }
     </style>
 </head>
 <body class="flex flex-col h-screen overflow-hidden">
 
     <header class="bg-slate-900 text-white px-5 py-4 flex justify-between items-center shrink-0">
-        <h1 class="font-black italic uppercase text-xl tracking-tighter text-blue-400">SyncOp <span class="text-white text-xs not-italic font-bold ml-1">v7.0</span></h1>
-        <div class="flex gap-2">
-            <button onclick="exportEinrichteblatt()" class="p-2 bg-slate-700 rounded-lg text-[10px] font-bold uppercase">Einrichteblatt</button>
-            <button onclick="generateSyncPDF()" class="p-2 bg-blue-600 rounded-lg text-[10px] font-bold uppercase">Export Plan</button>
-        </div>
+        <h1 class="font-black italic uppercase text-xl text-blue-400">SyncOp <span class="text-white text-[10px] not-italic opacity-50">V8.0</span></h1>
+        <button onclick="previewPDF()" class="p-2 bg-blue-600 rounded-lg text-[10px] font-black uppercase flex items-center gap-2 px-4">
+            <i data-lucide="printer" class="w-4 h-4"></i> PREVIEW & PRINT
+        </button>
     </header>
 
     <div class="flex bg-white border-b shrink-0">
@@ -36,96 +47,99 @@
         <button onclick="switchChannel('2')" id="tab-2" class="flex-1 py-4 text-[10px] font-black uppercase text-slate-400">Kanal 2 (2000)</button>
     </div>
 
-    <main class="flex-1 overflow-y-auto p-4 space-y-2" id="main-view">
+    <main class="flex-1 overflow-y-auto p-4 space-y-2" id="slot-list-container">
         <div id="slot-container" class="space-y-2"></div>
-        <button onclick="addNewSlot()" class="w-full py-4 border-2 border-dashed border-slate-300 rounded-xl text-slate-400 text-[10px] font-black uppercase mt-4">+ Slot hinzufügen</button>
+        <button onclick="addNewSlot()" class="w-full py-4 border-2 border-dashed border-slate-300 rounded-xl text-slate-400 text-[10px] font-black uppercase mt-4">+ Neuer Slot</button>
     </main>
 
-    <div id="op-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden z-[100] p-4 flex items-center justify-center">
-        <div class="bg-white w-full max-w-lg rounded-[2rem] overflow-hidden shadow-2xl">
-            <div class="p-5 bg-slate-50 border-b flex justify-between items-center">
-                <span class="text-[10px] font-black uppercase tracking-widest text-slate-400">Operation Setup</span>
-                <button onclick="closeModal()"><i data-lucide="x"></i></button>
+    <div style="position: absolute; left: -9999px; top: -9999px;">
+        <div id="print-template" class="pdf-page">
+            <div class="pdf-header">
+                <span style="font-weight: 900; font-size: 14px;">SYNCOPERATOR PLAN</span>
+                <span id="print-date" style="font-size: 10px;"></span>
             </div>
-            <div class="p-6 space-y-4">
-                <div class="bg-blue-50 p-4 rounded-xl border border-blue-100">
-                    <label class="text-[9px] font-bold uppercase text-blue-600">Aus Bibliothek laden</label>
-                    <select onchange="loadFromLibrary(this.value)" class="w-full mt-1 p-2 bg-white border rounded-lg text-xs font-bold outline-none">
-                        <option value="">-- Vorlage wählen --</option>
-                        <option value="schruppen">Schruppen (Standard)</option>
-                        <option value="schlichten">Schlichten (Finish)</option>
-                        <option value="bohren">Bohren (Zentral)</option>
-                        <option value="gewinde">Gewinde schneiden</option>
-                        <option value="abstechen">Abstechen / Übergabe</option>
-                    </select>
-                </div>
-
-                <div class="space-y-3">
-                    <input type="text" id="in-title" placeholder="Bezeichnung" class="w-full p-4 bg-slate-100 rounded-xl font-bold outline-none">
-                    <input type="text" id="in-tool-name" placeholder="Werkzeug Name" class="w-full p-4 bg-slate-100 rounded-xl font-bold outline-none">
-                    <div class="grid grid-cols-2 gap-3">
-                        <input type="text" id="in-tool" placeholder="T-Nummer" class="p-4 bg-slate-100 rounded-xl font-bold mono">
-                        <select id="in-spindle" class="p-4 bg-slate-100 rounded-xl font-bold">
-                            <option value="SP4">Spindel 4</option>
-                            <option value="SP3">Spindel 3</option>
-                        </select>
+            <div class="table-container">
+                <div class="chan-col">
+                    <div class="chan-title">Kanal 1 - 1000.MPF</div>
+                    <div class="sp-header">
+                        <div class="sp-4" style="background: #4ade80;">Spindel 4</div>
+                        <div class="sp-3" style="background: #3b82f6;">Spindel 3</div>
                     </div>
+                    <div id="pdf-rows-k1"></div>
                 </div>
-                <button onclick="saveOperation()" class="w-full py-5 bg-blue-600 text-white rounded-2xl font-black uppercase tracking-widest shadow-lg">Speichern</button>
+                <div class="chan-col">
+                    <div class="chan-title">Kanal 2 - 2000.MPF</div>
+                    <div class="sp-header">
+                        <div class="sp-3" style="background: #3b82f6;">Spindel 3</div>
+                        <div class="sp-4" style="background: #4ade80;">Spindel 4</div>
+                    </div>
+                    <div id="pdf-rows-k2"></div>
+                </div>
             </div>
         </div>
     </div>
 
-    <div class="hidden">
-        <div id="pdf-plan-template">
-            <h2 class="text-xl font-black uppercase mb-4">Sync Plan: Kanal 1 & 2</h2>
-            <div class="flex gap-4 border border-black">
-                <div class="flex-1"><table class="pdf-table" id="pdf-plan-k1"></table></div>
-                <div class="flex-1"><table class="pdf-table" id="pdf-plan-k2"></table></div>
+    <div id="op-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden z-[100] p-4 flex items-center justify-center">
+        <div class="bg-white w-full max-w-lg rounded-[2rem] shadow-2xl overflow-hidden">
+            <div class="p-5 border-b flex justify-between items-center bg-slate-50">
+                <span class="text-[10px] font-black uppercase tracking-widest text-slate-400">Operation Details</span>
+                <button onclick="closeModal()"><i data-lucide="x"></i></button>
             </div>
-        </div>
-        <div id="pdf-tool-template" class="p-10">
-            <h1 class="text-2xl font-black uppercase mb-6">Einrichteblatt / Werkzeugliste</h1>
-            <table class="pdf-table w-full" id="pdf-tool-body"></table>
+            <div class="p-8 space-y-4">
+                <input type="text" id="in-title" placeholder="Bezeichnung" class="w-full p-4 bg-slate-100 rounded-xl font-bold outline-none border-2 border-transparent focus:border-blue-500">
+                <div class="grid grid-cols-2 gap-3">
+                    <input type="text" id="in-tool" placeholder="T-Nr" class="p-4 bg-slate-100 rounded-xl font-bold mono uppercase">
+                    <select id="in-spindle" class="p-4 bg-slate-100 rounded-xl font-bold">
+                        <option value="SP4">Spindel 4</option>
+                        <option value="SP3">Spindel 3</option>
+                    </select>
+                </div>
+                <button onclick="saveOperation()" class="w-full py-5 bg-black text-white rounded-2xl font-black uppercase tracking-widest shadow-xl">Speichern</button>
+            </div>
         </div>
     </div>
 
     <script>
-        const library = {
-            schruppen: { title: "Schruppen", tool: "T1", toolName: "WSP CNMG 1204", spindle: "SP4" },
-            schlichten: { title: "Schlichten", tool: "T2", toolName: "WSP DCMT 0702", spindle: "SP4" },
-            bohren: { title: "Bohren D10", tool: "T5", toolName: "VHM Bohrer", spindle: "SP3" },
-            gewinde: { title: "Gewinde M10", tool: "T8", toolName: "Gewindebohrer", spindle: "SP3" },
-            abstechen: { title: "Abstechen", tool: "T12", toolName: "Abstechschwert 3mm", spindle: "SP4" }
-        };
-
-        let state = JSON.parse(localStorage.getItem('sync_v7_state')) || {
-            slots: { "1": Array(5).fill(null), "2": Array(5).fill(null) },
+        let state = JSON.parse(localStorage.getItem('sync_v8_state')) || {
+            slots: { "1": Array(18).fill(null), "2": Array(18).fill(null) },
             currentChannel: "1"
         };
 
-        // Add Demo Data if empty
-        if(!state.slots["1"][0]) {
-            state.slots["1"] = [
-                { title: "Planen", tool: "T1", toolName: "WSP CNMG", spindle: "SP4" },
-                { title: "Schruppen", tool: "T1", toolName: "WSP CNMG", spindle: "SP4" },
-                { title: "Bohren D20", tool: "T5", toolName: "Wendeplattenbohrer", spindle: "SP3" },
-                { title: "Schlichten", tool: "T2", toolName: "WSP VCMT", spindle: "SP4" },
-                { title: "NOP_OP", tool: "-", toolName: "-", spindle: "SP4" }
-            ];
-            state.slots["2"] = [
-                { title: "Zentrieren", tool: "T3", toolName: "NC-Anbohrer", spindle: "SP3" },
-                { title: "Bohren D8", tool: "T6", toolName: "VHM Bohrer", spindle: "SP3" },
-                { title: "Schruppen", tool: "T1", toolName: "WSP CNMG", spindle: "SP4" },
-                { title: "Schlichten", tool: "T2", toolName: "WSP VCMT", spindle: "SP4" },
-                { title: "Abstechen", tool: "T12", toolName: "Abstecher 3.0", spindle: "SP4" }
-            ];
+        let currentEditingIdx = null;
+
+        function save() { localStorage.setItem('sync_v8_state', JSON.stringify(state)); render(); }
+
+        function render() {
+            const container = document.getElementById('slot-container');
+            const ch = state.currentChannel;
+            const prefix = ch === "1" ? "L11" : "L21";
+            container.innerHTML = state.slots[ch].map((op, idx) => `
+                <div class="bg-white p-4 rounded-xl border flex items-center justify-between shadow-sm" data-id="${idx}">
+                    <div class="flex items-center gap-4 flex-1" onclick="openModal(${idx})">
+                        <span class="mono text-[10px] font-black text-slate-300 w-8">${prefix}${(idx+1).toString().padStart(2, '0')}</span>
+                        <div class="flex-1">
+                            <div class="text-[12px] font-black uppercase ${op ? 'text-black' : 'text-slate-200'}">${op ? op.title : 'Leer'}</div>
+                            ${op ? `<div class="text-[9px] font-bold text-blue-500 uppercase">${op.tool} | ${op.spindle}</div>` : ''}
+                        </div>
+                    </div>
+                    <div class="handle p-2 text-slate-300"><i data-lucide="grip-vertical" class="w-5 h-5"></i></div>
+                </div>
+            `).join('');
+            lucide.createIcons();
+            initSortable();
         }
 
-        let currentEditingIdx = null;
-        let sortable = null;
-
-        function save() { localStorage.setItem('sync_v7_state', JSON.stringify(state)); render(); }
+        function initSortable() {
+            Sortable.create(document.getElementById('slot-container'), {
+                handle: '.handle', animation: 150,
+                onEnd: (evt) => {
+                    const items = state.slots[state.currentChannel];
+                    const moved = items.splice(evt.oldIndex, 1)[0];
+                    items.splice(evt.newIndex, 0, moved);
+                    save();
+                }
+            });
+        }
 
         function switchChannel(ch) {
             state.currentChannel = ch;
@@ -134,112 +148,77 @@
             render();
         }
 
-        function render() {
-            const container = document.getElementById('slot-container');
-            const ch = state.currentChannel;
-            const prefix = ch === "1" ? "L11" : "L21";
-
-            container.innerHTML = state.slots[ch].map((op, idx) => `
-                <div class="bg-white p-4 rounded-xl shadow-sm border flex items-center justify-between" data-id="${idx}">
-                    <div class="flex items-center gap-4 flex-1" onclick="openModal(${idx})">
-                        <span class="mono text-[10px] font-black text-slate-300 w-10">${prefix}${(idx+1).toString().padStart(2, '0')}</span>
-                        <div class="flex-1">
-                            <div class="text-[12px] font-black uppercase ${op ? 'text-black' : 'text-slate-200'}">${op ? op.title : 'Leerer Slot'}</div>
-                            ${op ? `<div class="text-[9px] font-bold text-blue-500 mono uppercase">${op.tool} | ${op.spindle} | ${op.toolName}</div>` : ''}
-                        </div>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <button onclick="deleteSlot(${idx})" class="p-2 text-slate-300 hover:text-red-500"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
-                        <div class="handle p-2 text-slate-300"><i data-lucide="grip-vertical" class="w-5 h-5"></i></div>
-                    </div>
-                </div>
-            `).join('');
-            lucide.createIcons();
-            initSortable();
-        }
-
-        function initSortable() {
-            if(sortable) sortable.destroy();
-            sortable = Sortable.create(document.getElementById('slot-container'), {
-                handle: '.handle', animation: 150,
-                onEnd: (evt) => {
-                    const ch = state.currentChannel;
-                    const items = state.slots[ch];
-                    const moved = items.splice(evt.oldIndex, 1)[0];
-                    items.splice(evt.newIndex, 0, moved);
-                    save();
-                }
-            });
-        }
-
         function openModal(idx) {
             currentEditingIdx = idx;
             const op = state.slots[state.currentChannel][idx];
             document.getElementById('in-title').value = op ? op.title : "";
-            document.getElementById('in-tool-name').value = op ? op.toolName : "";
             document.getElementById('in-tool').value = op ? op.tool : "";
             document.getElementById('in-spindle').value = op ? op.spindle : "SP4";
             document.getElementById('op-modal').classList.remove('hidden');
         }
 
-        function loadFromLibrary(key) {
-            if(!key) return;
-            const template = library[key];
-            document.getElementById('in-title').value = template.title;
-            document.getElementById('in-tool-name').value = template.toolName;
-            document.getElementById('in-tool').value = template.tool;
-            document.getElementById('in-spindle').value = template.spindle;
-        }
-
         function saveOperation() {
             state.slots[state.currentChannel][currentEditingIdx] = {
                 title: document.getElementById('in-title').value,
-                toolName: document.getElementById('in-tool-name').value,
                 tool: document.getElementById('in-tool').value,
                 spindle: document.getElementById('in-spindle').value
             };
             save(); closeModal();
         }
 
-        function deleteSlot(idx) {
-            state.slots[state.currentChannel].splice(idx, 1);
-            save();
-        }
-
-        function addNewSlot() {
-            state.slots[state.currentChannel].push(null);
-            save();
-        }
-
+        function addNewSlot() { state.slots[state.currentChannel].push(null); save(); }
         function closeModal() { document.getElementById('op-modal').classList.add('hidden'); }
 
-        // PDF LOGIC (Professional Layout)
-        function generateSyncPDF() {
-            const buildTable = (ch, elId) => {
+        // ПРЕДПРОСМОТР PDF
+        async function previewPDF() {
+            document.getElementById('print-date').innerText = new Date().toLocaleString();
+            
+            const renderRows = (ch, targetId) => {
+                const target = document.getElementById(targetId);
+                target.innerHTML = "";
+                const max = Math.max(state.slots["1"].length, state.slots["2"].length);
                 const prefix = ch === "1" ? "L11" : "L21";
-                let html = `<thead><tr><th>Pos</th><th class="bg-sp4">SP4</th><th class="bg-sp3">SP3</th></tr></thead><tbody>`;
-                state.slots[ch].forEach((op, i) => {
-                    const content = op ? `<b>${op.title}</b><br>${prefix}${(i+1).toString().padStart(2,'0')} <small>${op.tool}</small>` : "";
-                    html += `<tr><td>${i+1}</td><td>${op?.spindle === 'SP4' ? content : ''}</td><td>${op?.spindle === 'SP3' ? content : ''}</td></tr>`;
-                });
-                document.getElementById(elId).innerHTML = html + "</tbody>";
-            };
-            buildTable("1", "pdf-plan-k1");
-            buildTable("2", "pdf-plan-k2");
-            html2pdf().from(document.getElementById('pdf-plan-template')).set({margin: 10, filename: 'SyncPlan.pdf', jsPDF: {format: 'a4', orientation: 'landscape'}}).save();
-        }
+                
+                for(let i=0; i<max; i++) {
+                    const op = state.slots[ch][i];
+                    const lCode = `${prefix}${(i+1).toString().padStart(2,'0')}`;
+                    
+                    // Порядок колонок SP4/SP3 меняется как на скриншоте
+                    const isK2 = ch === "2";
+                    const colA = !isK2 ? "SP4" : "SP3";
+                    const colB = !isK2 ? "SP3" : "SP4";
 
-        function exportEinrichteblatt() {
-            const tools = {};
-            [1, 2].forEach(ch => state.slots[ch.toString()].forEach(op => {
-                if(op && op.tool !== "-") tools[op.tool] = op;
-            }));
-            let html = `<thead><tr><th>T-Nr</th><th>Name</th><th>Spindel</th></tr></thead><tbody>`;
-            Object.values(tools).forEach(t => {
-                html += `<tr><td class="mono"><b>${t.tool}</b></td><td>${t.toolName}</td><td>${t.spindle}</td></tr>`;
+                    const contentA = op && op.spindle === colA ? `<span class="op-text">${op.title}</span> <span class="op-meta">${lCode} ${op.tool}</span>` : "";
+                    const contentB = op && op.spindle === colB ? `<span class="op-text">${op.title}</span> <span class="op-meta">${lCode} ${op.tool}</span>` : "";
+
+                    target.innerHTML += `
+                        <div class="row">
+                            <div class="row-num">${i+1}</div>
+                            <div class="cell">${contentA}</div>
+                            <div class="cell">${contentB}</div>
+                        </div>
+                    `;
+                }
+            };
+
+            renderRows("1", "pdf-rows-k1");
+            renderRows("2", "pdf-rows-k2");
+
+            const element = document.getElementById('print-template');
+            
+            // Вместо скачивания используем output('bloburl') для предпросмотра
+            const opt = {
+                margin: 0,
+                filename: 'SyncPlan.pdf',
+                image: { type: 'jpeg', quality: 1 },
+                html2canvas: { scale: 2 },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
+            };
+
+            // Генерируем PDF и открываем в новом окне (превью)
+            html2pdf().set(opt).from(element).outputPdf('bloburl').then(function(pdfUrl) {
+                window.open(pdfUrl, '_blank');
             });
-            document.getElementById('pdf-tool-body').innerHTML = html + "</tbody>";
-            html2pdf().from(document.getElementById('pdf-tool-template')).set({margin: 10, filename: 'Einrichteblatt.pdf'}).save();
         }
 
         render();
