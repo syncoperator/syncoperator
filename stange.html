@@ -3,81 +3,105 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stangenrechner Pro | CNC Logik</title>
+    <title>Stangenrechner Pro | CNC Tool</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
         body { font-family: 'Inter', sans-serif; background-color: #0f172a; }
+        .modal-animate { animation: fadeIn 0.2s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
     </style>
 </head>
-<body class="text-slate-200 min-h-screen p-4 md:p-8">
+<body class="text-slate-200 min-h-screen flex items-center justify-center p-4">
 
-    <div class="max-w-xl mx-auto space-y-6">
+    <div class="max-w-md w-full space-y-4">
         <div class="bg-slate-800 rounded-3xl shadow-2xl border border-slate-700 overflow-hidden">
-            <div class="bg-gradient-to-r from-indigo-600 to-blue-700 p-6 flex justify-between items-center">
+            <div class="bg-gradient-to-r from-blue-600 to-indigo-700 p-6 flex justify-between items-center">
                 <div>
                     <h1 class="text-2xl font-bold text-white tracking-tight">Stangenrechner</h1>
-                    <p class="text-blue-100 text-xs opacity-80 uppercase tracking-widest">Logic Engine v2.0</p>
+                    <p class="text-blue-100 text-[10px] uppercase tracking-widest opacity-70">Roboter-Optimierung</p>
                 </div>
-                <i data-lucide="calculator" class="text-white/20 w-10 h-10"></i>
+                <button onclick="toggleModal()" class="bg-white/10 hover:bg-white/20 p-2 rounded-full transition-all">
+                    <i data-lucide="info" class="text-white w-6 h-6"></i>
+                </button>
             </div>
 
             <div class="p-6 space-y-6">
                 <div class="grid grid-cols-2 gap-4">
                     <div class="space-y-2">
                         <label class="text-[10px] font-bold text-slate-400 uppercase">Fertigteil (mm)</label>
-                        <input type="number" id="fertigteil" value="51" oninput="calculate()" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white focus:ring-2 focus:ring-blue-500 outline-none">
+                        <input type="number" id="fertigteil" value="51" oninput="calculate()" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white outline-none focus:ring-2 focus:ring-blue-500">
                     </div>
                     <div class="space-y-2">
                         <label class="text-[10px] font-bold text-slate-400 uppercase">Ausspannen (mm)</label>
-                        <input type="number" id="ausspann" value="55" oninput="calculate()" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white focus:ring-2 focus:ring-blue-500 outline-none">
+                        <input type="number" id="ausspann" value="55" oninput="calculate()" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white outline-none focus:ring-2 focus:ring-blue-500">
                     </div>
                 </div>
 
-                <div class="bg-blue-600 rounded-2xl p-6 text-center shadow-lg shadow-blue-900/20">
-                    <p class="text-blue-100 text-sm mb-1 uppercase font-semibold">Optimale Stangenlänge</p>
+                <div class="bg-slate-900 rounded-2xl p-6 border border-blue-500/30 text-center">
+                    <p class="text-blue-400 text-xs font-bold uppercase mb-1">Optimale Stangenlänge</p>
                     <div class="text-5xl font-black text-white" id="res-optimiert">979 mm</div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="bg-slate-900/50 p-4 rounded-xl border border-slate-700 text-center">
+                        <p class="text-[10px] text-slate-500 uppercase font-bold">Teile</p>
+                        <p class="text-xl font-bold text-slate-200" id="res-teile">16</p>
+                    </div>
+                    <div class="bg-red-500/5 p-4 rounded-xl border border-red-500/20 text-center">
+                        <p class="text-[10px] text-red-400 uppercase font-bold">Reststück (Butzen)</p>
+                        <p class="text-xl font-bold text-red-400" id="res-rest">115 mm</p>
+                    </div>
                 </div>
             </div>
         </div>
+    </div>
 
-        <div class="bg-slate-800/50 rounded-3xl p-6 border border-slate-700 space-y-4">
-            <h2 class="text-sm font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                <i data-lucide="info" class="w-4 h-4 text-blue-400"></i>
-                Berechnungsweg
-            </h2>
-            
-            <div class="space-y-3 text-sm">
-                <div class="flex justify-between border-b border-slate-700/50 pb-2">
-                    <span class="text-slate-400">1. Material pro Teil (+3mm Schnitt)</span>
+    <div id="modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50">
+        <div class="bg-slate-800 border border-slate-700 w-full max-w-sm rounded-3xl overflow-hidden modal-animate shadow-2xl">
+            <div class="p-6 border-b border-slate-700 flex justify-between items-center">
+                <h3 class="text-lg font-bold flex items-center gap-2">
+                    <i data-lucide="binary" class="text-blue-400 w-5 h-5"></i> Berechnungsweg
+                </h3>
+                <button onclick="toggleModal()" class="text-slate-400 hover:text-white">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+            <div class="p-6 space-y-4 text-sm">
+                <div class="flex justify-between">
+                    <span class="text-slate-400">Teil + 3mm Schnitt</span>
                     <span id="step-verlust" class="font-mono text-blue-300">54 mm</span>
                 </div>
-                <div class="flex justify-between border-b border-slate-700/50 pb-2">
-                    <span class="text-slate-400">2. Max. Teile im Arbeitsraum (920mm)</span>
+                <div class="flex justify-between">
+                    <span class="text-slate-400">Max. Teile (920mm)</span>
                     <span id="step-teile" class="font-mono text-blue-300">17 Stk.</span>
                 </div>
-                <div class="flex justify-between border-b border-slate-700/50 pb-2">
-                    <span class="text-slate-400">3. Rohmaß (Teile + Zange + Ausspann + Tol.)</span>
-                    <span id="step-rohmass" class="font-mono text-blue-300">1033 mm</span>
+                <div class="flex justify-between pt-4 border-t border-slate-700">
+                    <span class="text-slate-400 italic">Rohmaß (inkl. Zange/Toleranz)</span>
+                    <span id="step-rohmass" class="font-mono">1033 mm</span>
                 </div>
-                <div class="flex justify-between pt-2">
-                    <span class="text-slate-400 font-bold">4. Roboter-Korrektur (&lt;1000mm)</span>
-                    <span id="step-korrektur" class="font-mono text-green-400">- 1 Teil</span>
+                <div class="flex justify-between text-orange-400 font-bold">
+                    <span>Roboter-Check (&gt;1000mm)</span>
+                    <span id="step-korrektur">-1 Teil</span>
                 </div>
             </div>
-
-            <div class="mt-4 p-4 bg-slate-900 rounded-xl font-mono text-[11px] text-slate-500 leading-relaxed">
-                <p class="text-blue-400 mb-1">// Mathematische Formel</p>
-                L = (Anzahl * (L_Fertig + 3)) + 50 + L_Ausspann + 10
+            <div class="bg-slate-900 p-4 text-[11px] text-slate-500 font-mono italic">
+                Formel: (Teile * Durchlauf) + 50 (Zange) + Ausspannen + 10 (Toleranz)
             </div>
         </div>
     </div>
 
     <script>
+        function toggleModal() {
+            const m = document.getElementById('modal');
+            m.classList.toggle('hidden');
+        }
+
         function calculate() {
             const f = parseFloat(document.getElementById('fertigteil').value) || 0;
             const a = parseFloat(document.getElementById('ausspann').value) || 0;
+            
             const SCHNITT = 3;
             const MAX_RAUM = 920;
             const ZANGE = 50;
@@ -88,24 +112,28 @@
             let roh = (anzahlMax * verlust) + ZANGE + a + TOL;
             
             let finaleTeile = anzahlMax;
-            let korrekturText = "Keine";
+            let korrektur = "In Ordnung";
 
             if (roh > 1000) {
                 roh -= verlust;
                 finaleTeile -= 1;
-                korrekturText = "- 1 Teil (" + verlust + "mm)";
+                korrektur = "- 1 Teil";
             }
 
             // UI Update
             document.getElementById('res-optimiert').innerText = Math.round(roh) + ' mm';
+            document.getElementById('res-teile').innerText = finaleTeile;
+            document.getElementById('res-rest').innerText = (ZANGE + a + TOL) + ' mm';
+
+            // Modal Update
             document.getElementById('step-verlust').innerText = verlust + ' mm';
             document.getElementById('step-teile').innerText = anzahlMax + ' Stk.';
             document.getElementById('step-rohmass').innerText = Math.round((anzahlMax * verlust) + ZANGE + a + TOL) + ' mm';
-            document.getElementById('step-korrektur').innerText = korrekturText;
+            document.getElementById('step-korrektur').innerText = korrektur;
         }
 
         lucide.createIcons();
-        calculate(); // Start-Berechnung
+        calculate();
     </script>
 </body>
 </html>
