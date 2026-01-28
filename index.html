@@ -3,83 +3,159 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SyncOperator | Industrial Control</title>
+    <title>SyncOperator Pro | Industrial Design</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=JetBrains+Mono:wght@500&display=swap');
-        
-        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; color: #111827; }
+        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; color: #111827; overflow: hidden; }
         .mono { font-family: 'JetBrains Mono', monospace; }
-        .slot-drop { transition: all 0.2s ease; border: 2px dashed #e5e7eb; }
-        .slot-drop.active { border-color: #000; background-color: #fff; }
-        .op-card { cursor: grab; transition: transform 0.1s; }
-        .op-card:active { cursor: grabbing; transform: scale(0.98); }
-        
-        /* Industrial Scrollbar */
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #f3f4f6; }
-        ::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
+        .dmg-sidebar { background-color: #000000; border-right: 1px solid #2d2d2d; }
+        .slot-drop { transition: all 0.2s ease; border: 1px solid #e5e7eb; position: relative; }
+        .slot-drop.active { border-color: #3b82f6; background-color: #eff6ff; transform: scale(1.01); }
+        .op-card { cursor: grab; transition: all 0.2s; border: 1px solid #2d2d2d; }
+        .op-card:hover { border-color: #4b5563; background-color: #1a1a1a; }
+        .op-card:active { cursor: grabbing; }
+        .setup-modal { backdrop-filter: blur(8px); }
     </style>
 </head>
-<body class="flex h-screen overflow-hidden">
+<body class="flex h-screen">
 
-    <aside class="w-80 bg-black text-white flex flex-col shrink-0">
+    <aside class="w-72 dmg-sidebar text-white flex flex-col shrink-0">
         <div class="p-6 border-b border-white/10">
             <h1 class="font-black tracking-tighter text-xl italic uppercase">Sync<span class="text-slate-500">Operator</span></h1>
-            <p class="text-[9px] tracking-[0.3em] text-slate-500 font-bold uppercase mt-1">Operation Library</p>
+            <p class="text-[8px] tracking-[0.3em] text-slate-500 font-bold uppercase mt-1">Logic Core v2.0</p>
         </div>
         
         <div class="p-4 flex-1 overflow-y-auto space-y-3" id="library-container">
             </div>
 
-        <div class="p-4 border-t border-white/10">
-            <button onclick="addNewOpPrompt()" class="w-full py-3 bg-white text-black text-xs font-black uppercase tracking-widest rounded-xl hover:bg-slate-200 transition-all flex items-center justify-center gap-2">
-                <i data-lucide="plus" class="w-4 h-4"></i> Neue Operation
+        <div class="p-4 border-t border-white/10 bg-black/50">
+            <button onclick="addNewOpPrompt()" class="w-full py-4 bg-white text-black text-[10px] font-black uppercase tracking-[0.2em] rounded-xl hover:bg-blue-400 transition-all flex items-center justify-center gap-2">
+                <i data-lucide="plus-circle" class="w-4 h-4"></i> Operation hinzufügen
             </button>
         </div>
     </aside>
 
     <main class="flex-1 flex flex-col overflow-hidden">
-        <header class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-8">
+        <header class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-8 shadow-sm">
             <div class="flex items-center gap-4">
-                <span class="text-[10px] font-black bg-black text-white px-2 py-1 rounded">V 1.0</span>
-                <h2 class="text-xs font-bold uppercase tracking-widest text-slate-400">Programmplanung / Dual-Channel</h2>
+                <h2 class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Programmplanung / Dual-Channel</h2>
             </div>
             <div class="flex gap-2">
-                <button onclick="renderSetupSheet()" class="p-2 hover:bg-slate-100 rounded-lg text-slate-600 border border-slate-200"><i data-lucide="clipboard-list"></i></button>
-                <button onclick="exportJSON()" class="p-2 hover:bg-slate-100 rounded-lg text-slate-600 border border-slate-200"><i data-lucide="download"></i></button>
+                <button onclick="toggleSetup()" class="p-2 hover:bg-slate-100 rounded-lg text-slate-600 border border-slate-200 flex items-center gap-2 px-4">
+                    <i data-lucide="clipboard-list" class="w-4 h-4"></i>
+                    <span class="text-[10px] font-bold uppercase">Einrichteblatt</span>
+                </button>
             </div>
         </header>
 
         <div class="flex-1 overflow-x-auto p-8 flex gap-8">
-            
-            <div class="flex-1 min-w-[400px] flex flex-col gap-4">
-                <div class="flex items-center justify-between px-2">
-                    <h3 class="font-black text-sm uppercase tracking-widest flex items-center gap-2">
-                        <span class="w-3 h-3 bg-blue-500 rounded-full"></span> 1000.MPF <span class="text-slate-400 text-[10px] ml-2">Kanal 1</span>
-                    </h3>
+            <div class="flex-1 min-w-[400px] space-y-4">
+                <div class="flex items-center gap-2 px-2">
+                    <div class="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                    <h3 class="font-black text-[10px] uppercase tracking-widest">Kanal 1: 1000.MPF</h3>
                 </div>
-                <div id="channel-1" class="space-y-2">
-                    </div>
+                <div id="channel-1" class="space-y-2"></div>
             </div>
 
-            <div class="flex-1 min-w-[400px] flex flex-col gap-4">
-                <div class="flex items-center justify-between px-2">
-                    <h3 class="font-black text-sm uppercase tracking-widest flex items-center gap-2">
-                        <span class="w-3 h-3 bg-orange-500 rounded-full"></span> 2000.MPF <span class="text-slate-400 text-[10px] ml-2">Kanal 2</span>
-                    </h3>
+            <div class="flex-1 min-w-[400px] space-y-4">
+                <div class="flex items-center gap-2 px-2">
+                    <div class="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>
+                    <h3 class="font-black text-[10px] uppercase tracking-widest">Kanal 2: 2000.MPF</h3>
                 </div>
-                <div id="channel-2" class="space-y-2">
-                    </div>
+                <div id="channel-2" class="space-y-2"></div>
             </div>
-
         </div>
     </main>
 
-    <script src="core.js"></script> <script>
-        // UI REFRESH LOGIC
+    <div id="setup-modal" class="fixed inset-0 bg-black/60 setup-modal hidden flex items-center justify-center z-[100] p-6">
+        <div class="bg-white w-full max-w-2xl rounded-[2rem] shadow-2xl overflow-hidden">
+            <div class="p-6 bg-slate-50 border-b flex justify-between items-center">
+                <h3 class="font-black text-xs uppercase tracking-widest">Automatisches Einrichteblatt</h3>
+                <button onclick="toggleSetup()" class="p-2 hover:bg-slate-200 rounded-full"><i data-lucide="x"></i></button>
+            </div>
+            <div class="p-6 overflow-y-auto max-h-[70vh]">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="text-[10px] font-black text-slate-400 uppercase border-b">
+                            <th class="py-4 px-2">Werkzeug</th>
+                            <th class="py-4 px-2">Oben (K1)</th>
+                            <th class="py-4 px-2">Unten (K2)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="setup-table-body" class="text-xs">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /** --- CORE LOGIC --- **/
+        class SyncOperatorCore {
+            constructor() {
+                this.STORAGE_KEY = 'sync_operator_state';
+                this.state = {
+                    operations: [],
+                    slots: { "1": Array(8).fill(null), "2": Array(8).fill(null) }
+                };
+                this.load();
+            }
+            save() { localStorage.setItem(this.STORAGE_KEY, JSON.stringify(this.state)); }
+            load() {
+                const saved = localStorage.getItem(this.STORAGE_KEY);
+                if (saved) this.state = JSON.parse(saved);
+                this._validate();
+            }
+            addOperation(data) {
+                const id = 'op_' + Date.now();
+                this.state.operations.push({ id, ...data });
+                this.save(); return id;
+            }
+            deleteOperation(id) {
+                this.state.operations = this.state.operations.filter(o => o.id !== id);
+                Object.keys(this.state.slots).forEach(ch => {
+                    this.state.slots[ch] = this.state.slots[ch].map(sId => sId === id ? null : sId);
+                });
+                this.save();
+            }
+            assign(opId, ch, idx) { this.state.slots[ch][idx] = opId; this.save(); }
+            clear(ch, idx) { this.state.slots[ch][idx] = null; this.save(); }
+            getProgramPlan(ch) {
+                return this.state.slots[ch].map((id, i) => {
+                    const op = this.state.operations.find(o => o.id === id);
+                    const prefix = ch === "1" ? "L11" : "L21";
+                    return { 
+                        name: op ? op.title : "EMPTY", 
+                        tool: op ? op.toolNo : "-", 
+                        lCode: `${prefix}${(i+1).toString().padStart(2,'0')}` 
+                    };
+                });
+            }
+            getSetup() {
+                const map = {};
+                Object.keys(this.state.slots).forEach(ch => {
+                    this.state.slots[ch].forEach(id => {
+                        const op = this.state.operations.find(o => o.id === id);
+                        if (!op) return;
+                        if (!map[op.toolNo]) map[op.toolNo] = { tool: op.toolNo, oben: [], unten: [] };
+                        const pos = ch === "1" ? 'oben' : 'unten';
+                        if (!map[op.toolNo][pos].includes(op.title)) map[op.toolNo][pos].push(op.title);
+                    });
+                });
+                return Object.values(map);
+            }
+            _validate() {
+                Object.keys(this.state.slots).forEach(ch => {
+                    while(this.state.slots[ch].length < 8) this.state.slots[ch].push(null);
+                });
+            }
+        }
+
+        const SyncOperator = new SyncOperatorCore();
+
+        /** --- UI BRIDGE --- **/
         function refreshUI() {
             renderLibrary();
             renderChannels();
@@ -89,14 +165,12 @@
         function renderLibrary() {
             const container = document.getElementById('library-container');
             container.innerHTML = SyncOperator.state.operations.map(op => `
-                <div class="op-card bg-slate-900 p-4 rounded-xl border border-white/5 hover:border-white/20 transition-all" 
-                     draggable="true" ondragstart="onDragStart(event, '${op.id}')">
-                    <div class="flex justify-between items-start mb-2">
-                        <span class="text-[9px] font-bold text-blue-400 uppercase tracking-tighter">${op.toolNo}</span>
-                        <button onclick="SyncOperator.deleteOperation('${op.id}'); refreshUI();" class="text-slate-600 hover:text-red-500"><i data-lucide="trash-2" class="w-3 h-3"></i></button>
+                <div class="op-card bg-[#111] p-4 rounded-xl shadow-lg" draggable="true" ondragstart="event.dataTransfer.setData('text', '${op.id}')">
+                    <div class="flex justify-between items-start mb-1">
+                        <span class="mono text-[9px] font-bold text-blue-500">${op.toolNo}</span>
+                        <button onclick="SyncOperator.deleteOperation('${op.id}'); refreshUI();" class="text-slate-700 hover:text-red-500"><i data-lucide="x" class="w-3 h-3"></i></button>
                     </div>
-                    <div class="text-xs font-bold text-slate-100 truncate">${op.title}</div>
-                    <div class="text-[8px] text-slate-500 mt-1 uppercase">${op.category} | ${op.spindle}</div>
+                    <div class="text-[11px] font-bold text-white truncate uppercase">${op.title}</div>
                 </div>
             `).join('');
         }
@@ -104,61 +178,53 @@
         function renderChannels() {
             [1, 2].forEach(ch => {
                 const plan = SyncOperator.getProgramPlan(ch.toString());
-                const container = document.getElementById(`channel-${ch}`);
-                container.innerHTML = plan.map((slot, idx) => `
-                    <div class="slot-drop bg-white rounded-xl p-3 flex items-center justify-between gap-4"
-                         ondragover="onDragOver(event)" 
-                         ondrop="onDrop(event, '${ch}', ${idx})">
+                document.getElementById(`channel-${ch}`).innerHTML = plan.map((slot, idx) => `
+                    <div class="slot-drop bg-white p-3 rounded-xl flex items-center justify-between" 
+                         ondragover="event.preventDefault(); event.currentTarget.classList.add('active')" 
+                         ondragleave="event.currentTarget.classList.remove('active')"
+                         ondrop="event.preventDefault(); SyncOperator.assign(event.dataTransfer.getData('text'), '${ch}', ${idx}); refreshUI(); event.currentTarget.classList.remove('active')">
                         <div class="flex items-center gap-4">
-                            <span class="mono text-[10px] font-bold text-slate-400 w-10">${slot.lCode}</span>
-                            <div class="h-8 w-[2px] bg-slate-100"></div>
+                            <span class="mono text-[10px] font-bold text-slate-300">${slot.lCode}</span>
+                            <div class="h-6 w-[1px] bg-slate-100"></div>
                             <div>
-                                <div class="text-[11px] font-bold ${slot.name === 'EMPTY' ? 'text-slate-300 italic' : 'text-black'}">${slot.name}</div>
-                                <div class="text-[9px] font-medium text-slate-400">${slot.toolNo}</div>
+                                <div class="text-[11px] font-bold ${slot.name === 'EMPTY' ? 'text-slate-200 italic' : 'text-black'}">${slot.name}</div>
+                                <div class="text-[8px] font-bold text-slate-400 mono">${slot.tool}</div>
                             </div>
                         </div>
-                        ${slot.name !== 'EMPTY' ? `<button onclick="SyncOperator.clearSlot('${ch}', ${idx}); refreshUI();" class="text-slate-300 hover:text-black"><i data-lucide="x" class="w-4 h-4"></i></button>` : ''}
+                        ${slot.name !== 'EMPTY' ? `<button onclick="SyncOperator.clear('${ch}', ${idx}); refreshUI();" class="text-slate-200 hover:text-red-500"><i data-lucide="trash-2" class="w-3 h-3"></i></button>` : ''}
                     </div>
                 `).join('');
             });
         }
 
-        // DRAG & DROP BRIDGE
-        function onDragStart(e, opId) {
-            e.dataTransfer.setData('text/plain', opId);
-        }
-
-        function onDragOver(e) {
-            e.preventDefault();
-            e.currentTarget.classList.add('active');
-        }
-
-        function onDrop(e, channel, slotIdx) {
-            e.preventDefault();
-            e.currentTarget.classList.remove('active');
-            const opId = e.dataTransfer.getData('text/plain');
-            SyncOperator.assignOpToSlot(opId, channel, slotIdx);
-            refreshUI();
-        }
-
-        // INITIAL LOAD
-        window.onload = () => {
-            if(SyncOperator.state.operations.length === 0) {
-                // Beispiel-Daten falls leer
-                SyncOperator.addOperation({title: "Planen", toolNo: "T0101", category: "Außen", spindle: "SP3"});
-                SyncOperator.addOperation({title: "Bohren", toolNo: "T0505", category: "Innen", spindle: "SP3"});
+        function toggleSetup() {
+            const modal = document.getElementById('setup-modal');
+            modal.classList.toggle('hidden');
+            if(!modal.classList.contains('hidden')) {
+                const data = SyncOperator.getSetup();
+                document.getElementById('setup-table-body').innerHTML = data.map(row => `
+                    <tr class="border-b border-slate-50 hover:bg-slate-50">
+                        <td class="py-4 px-2 font-bold mono text-blue-600">${row.tool}</td>
+                        <td class="py-4 px-2 text-slate-500">${row.oben.join(', ') || '-'}</td>
+                        <td class="py-4 px-2 text-slate-500">${row.unten.join(', ') || '-'}</td>
+                    </tr>
+                `).join('');
+                lucide.createIcons();
             }
-            refreshUI();
-        };
+        }
 
         function addNewOpPrompt() {
-            const title = prompt("Name der Operation:");
-            const tool = prompt("Werkzeugnummer (z.B. T0101):");
-            if(title && tool) {
-                SyncOperator.addOperation({title, toolNo: tool});
-                refreshUI();
-            }
+            const title = prompt("Name (z.B. Planen):");
+            const tool = prompt("Werkzeug (z.B. T0101):");
+            if(title && tool) { SyncOperator.addOperation({title, toolNo: tool}); refreshUI(); }
         }
+
+        // INIT
+        if(SyncOperator.state.operations.length === 0) {
+            SyncOperator.addOperation({title: "Schruppen", toolNo: "T0101"});
+            SyncOperator.addOperation({title: "Zentrieren", toolNo: "T0303"});
+        }
+        refreshUI();
     </script>
 </body>
 </html>
