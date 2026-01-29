@@ -3,231 +3,275 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Mess-Profi Premium</title>
-    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+    <title>QS-Control Pro</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <style>
         :root {
             --primary: #007AFF;
-            --bg: #F2F2F7;
+            --bg: #F8F9FA;
             --card: #FFFFFF;
-            --text: #1C1C1E;
+            --text: #1D1D1F;
             --accent: #34C759;
-            --radius: 14px;
+            --danger: #FF3B30;
+            --radius: 18px;
         }
 
         body {
-            font-family: -apple-system, system-ui, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             background-color: var(--bg);
             color: var(--text);
-            margin: 0; padding: 15px;
-            display: flex; flex-direction: column; align-items: center;
+            margin: 0; padding: 0;
+            -webkit-font-smoothing: antialiased;
         }
 
-        .container { width: 100%; max-width: 500px; }
+        /* Layout */
+        .app-shell { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
+        h1 { font-size: 24px; font-weight: 700; margin: 0; }
 
-        /* Projekt-Selector */
-        .project-header {
-            background: var(--card);
-            padding: 15px;
-            border-radius: var(--radius);
-            margin-bottom: 20px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        /* Dashboard & Karten */
+        .card {
+            background: var(--card); border-radius: var(--radius);
+            padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            margin-bottom: 15px; transition: transform 0.2s;
+        }
+        .project-card { cursor: pointer; display: flex; justify-content: space-between; align-items: center; border-left: 6px solid var(--primary); }
+        .project-card:active { transform: scale(0.98); }
+
+        /* Modals */
+        .modal {
+            display: none; position: fixed; z-index: 1000; left: 0; top: 0;
+            width: 100%; height: 100%; background: rgba(0,0,0,0.4);
+            backdrop-filter: blur(5px);
+        }
+        .modal-content {
+            background: var(--card); margin: 15% auto; padding: 25px;
+            width: 85%; max-width: 400px; border-radius: 24px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
         }
 
-        select, input, textarea {
-            width: 100%; border: 1px solid #E5E5EA;
-            background: #F8F8FA; border-radius: 10px;
-            padding: 12px; margin-bottom: 10px;
-            font-size: 16px; box-sizing: border-box; outline: none;
+        /* Formular Elemente */
+        input, textarea {
+            width: 100%; padding: 14px; margin: 10px 0;
+            border: 1px solid #E5E5E5; border-radius: 12px;
+            font-size: 16px; box-sizing: border-box; background: #F5F5F7;
         }
-
-        .btn-row { display: flex; gap: 10px; margin-top: 5px; }
-        
         button {
-            flex: 1; border: none; border-radius: 10px;
-            padding: 12px; font-weight: 600; cursor: pointer;
-            transition: opacity 0.2s;
+            border: none; border-radius: 12px; padding: 14px 20px;
+            font-weight: 600; cursor: pointer; font-size: 16px;
         }
-
-        .btn-primary { background: var(--primary); color: white; }
-        .btn-success { background: var(--accent); color: white; }
-        .btn-outline { background: #E5E5EA; color: var(--text); }
+        .btn-main { background: var(--primary); color: white; width: 100%; }
+        .btn-add-float {
+            position: fixed; bottom: 30px; right: 30px;
+            width: 60px; height: 60px; border-radius: 30px;
+            background: var(--primary); color: white; font-size: 30px;
+            box-shadow: 0 4px 15px rgba(0,122,255,0.4);
+        }
 
         /* Messliste */
-        #print-area { width: 100%; }
-        .list-item {
-            background: var(--card); margin-bottom: 10px;
-            padding: 15px; border-radius: var(--radius);
-            box-shadow: 0 2px 8px rgba(0,0,0,0.03);
-            border-left: 5px solid var(--primary);
+        .measure-item {
+            background: white; margin: 8px 0; padding: 15px;
+            border-radius: 12px; display: flex; align-items: center;
+            border: 1px solid #EEE;
         }
+        .drag-handle { margin-right: 15px; color: #CCC; cursor: grab; }
+        .measure-info { flex-grow: 1; }
+        .measure-val { font-weight: 700; color: var(--primary); }
 
-        .item-main { display: flex; justify-content: space-between; align-items: center; }
-        .dim-text { font-weight: 700; color: var(--primary); font-size: 18px; }
-        .drag-handle { color: #C7C7CC; cursor: grab; font-size: 20px; }
+        /* PDF Style (Hidden on Screen) */
+        #pdf-template { display: none; padding: 40px; color: black; }
+        .pdf-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        .pdf-table th, .pdf-table td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+        .pdf-header { border-bottom: 3px solid var(--primary); padding-bottom: 10px; margin-bottom: 20px; }
 
-        .comment-display {
-            margin-top: 10px; padding: 8px;
-            background: #F2F2F7; border-radius: 8px;
-            font-size: 14px; color: #48484A; font-style: italic;
-        }
-
-        @media print {
-            .no-print { display: none; }
-        }
+        .hidden { display: none; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div class="header no-print">
-        <h1 style="margin-bottom:5px;">Mess-Protokoll</h1>
-        <p style="color:#8E8E93; margin-top:0;">Premium Cloud-Local Edition 2026</p>
+<div class="app-shell" id="main-view">
+    <div class="header">
+        <h1>Meine Zeichnungen</h1>
+        <button onclick="openModal('projectModal')" style="background:none; color:var(--primary); font-size:14px;">+ Neu</button>
     </div>
+    <div id="project-list"></div>
+</div>
 
-    <div class="project-header no-print">
-        <label style="font-size: 12px; font-weight: bold; color: var(--primary);">PROJEKT WÄHLEN / NEU</label>
-        <select id="projectSelect" onchange="loadProject()"></select>
-        <div class="btn-row">
-            <button class="btn-outline" onclick="newProject()">Neu</button>
-            <button class="btn-outline" onclick="deleteProject()" style="color:#FF3B30">Löschen</button>
-        </div>
+<div class="app-shell hidden" id="detail-view">
+    <div class="header">
+        <button onclick="showDashboard()" style="background:none; color:var(--primary);">← Zurück</button>
+        <h1 id="current-project-title">Details</h1>
+        <button onclick="exportPDF()" style="background:none; color:var(--accent);">PDF</button>
     </div>
+    <div id="measure-list"></div>
+    <button class="btn-add-float" onclick="openModal('measureModal')">+</button>
+</div>
 
-    <div class="project-header no-print">
-        <input type="text" id="dimInput" placeholder="Soll-Maß (z.B. 29 -0.2)">
-        <textarea id="commentInput" placeholder="Messwert oder Anmerkung..."></textarea>
-        <button class="btn-primary" onclick="addMeasurement()">Messwert hinzufügen</button>
-        <button class="btn-success" style="margin-top:10px;" onclick="exportPDF()">Als PDF exportieren</button>
-    </div>
-
-    <div id="print-area">
-        <div id="pdf-header" style="padding: 10px; border-bottom: 2px solid #000; margin-bottom: 20px;">
-            <h2 id="display-title" style="margin:0;">Protokoll: -</h2>
-            <p id="display-zn" style="margin:5px 0 0 0; color:#444;">Zeichnung: -</p>
-        </div>
-        <div id="measurementList"></div>
+<div id="projectModal" class="modal">
+    <div class="modal-content">
+        <h3>Neue Zeichnung</h3>
+        <input type="text" id="new-proj-title" placeholder="Bezeichnung (z.B. Nippel)">
+        <input type="text" id="new-proj-zn" placeholder="Zeichnungsnummer">
+        <button class="btn-main" onclick="saveProject()">Erstellen</button>
+        <button onclick="closeModal('projectModal')" style="background:none; width:100%; margin-top:10px; color:var(--danger);">Abbrechen</button>
     </div>
 </div>
 
+<div id="measureModal" class="modal">
+    <div class="modal-content">
+        <h3>Messwert eintragen</h3>
+        <input type="text" id="new-measure-dim" placeholder="Soll-Maß (z.B. 29 -0.2)">
+        <textarea id="new-measure-note" placeholder="Messwert / Kommentar"></textarea>
+        <button class="btn-main" onclick="addMeasure()">Hinzufügen</button>
+        <button onclick="closeModal('measureModal')" style="background:none; width:100%; margin-top:10px; color:var(--danger);">Abbrechen</button>
+    </div>
+</div>
+
+<div id="pdf-template">
+    <div class="pdf-header">
+        <h1 id="pdf-proj-name">Prüfbericht</h1>
+        <p id="pdf-proj-zn">Zeichnungs-Nr: </p>
+        <p>Datum: <span id="pdf-date"></span></p>
+    </div>
+    <table class="pdf-table">
+        <thead>
+            <tr>
+                <th>Position / Soll-Maß</th>
+                <th>Ist-Wert / Kommentar</th>
+            </tr>
+        </thead>
+        <tbody id="pdf-body"></tbody>
+    </table>
+</div>
+
 <script>
-    let projects = JSON.parse(localStorage.getItem('measureProjects')) || {};
-    let currentProject = localStorage.getItem('lastProject') || "";
+    let db = JSON.parse(localStorage.getItem('qs_data_2026')) || [];
+    let activeProjectId = null;
 
-    function init() {
-        const select = document.getElementById('projectSelect');
-        select.innerHTML = "";
-        Object.keys(projects).forEach(name => {
-            let opt = document.createElement('option');
-            opt.value = name; opt.innerText = name;
-            select.appendChild(opt);
+    function saveToLS() { localStorage.setItem('qs_data_2026', JSON.stringify(db)); }
+
+    function openModal(id) { document.getElementById(id).style.display = 'block'; }
+    function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+
+    function showDashboard() {
+        document.getElementById('main-view').classList.remove('hidden');
+        document.getElementById('detail-view').classList.add('hidden');
+        renderProjects();
+    }
+
+    function renderProjects() {
+        const list = document.getElementById('project-list');
+        list.innerHTML = db.length === 0 ? '<p style="text-align:center; color:#888;">Keine Zeichnungen gespeichert.</p>' : '';
+        db.forEach((proj, index) => {
+            const card = document.createElement('div');
+            card.className = 'card project-card';
+            card.onclick = () => openProject(index);
+            card.innerHTML = `
+                <div>
+                    <div style="font-weight:700;">${proj.title}</div>
+                    <div style="font-size:13px; color:#666;">ZN: ${proj.zn}</div>
+                </div>
+                <div style="color:#CCC;">❯</div>
+            `;
+            list.appendChild(card);
         });
-        if (currentProject && projects[currentProject]) {
-            select.value = currentProject;
-            loadProject();
-        } else if (Object.keys(projects).length > 0) {
-            currentProject = Object.keys(projects)[0];
-            loadProject();
-        }
     }
 
-    function newProject() {
-        let name = prompt("Bezeichnung & Zeichnungsnummer (z.B. Nippel 234185):");
-        if (name) {
-            projects[name] = { title: name, measurements: [] };
-            currentProject = name;
-            saveAll();
-            init();
-        }
+    function saveProject() {
+        const title = document.getElementById('new-proj-title').value;
+        const zn = document.getElementById('new-proj-zn').value;
+        if(!title) return;
+        db.push({ title, zn, measures: [] });
+        saveToLS();
+        closeModal('projectModal');
+        renderProjects();
     }
 
-    function loadProject() {
-        currentProject = document.getElementById('projectSelect').value;
-        localStorage.setItem('lastProject', currentProject);
-        const p = projects[currentProject];
-        document.getElementById('display-title').innerText = "Protokoll: " + p.title;
-        renderList();
+    function openProject(index) {
+        activeProjectId = index;
+        const proj = db[index];
+        document.getElementById('current-project-title').innerText = proj.title;
+        document.getElementById('main-view').classList.add('hidden');
+        document.getElementById('detail-view').classList.remove('hidden');
+        renderMeasures();
     }
 
-    function addMeasurement() {
-        if (!currentProject) return alert("Zuerst Projekt erstellen!");
-        const dim = document.getElementById('dimInput').value;
-        const note = document.getElementById('commentInput').value;
-        if (!dim) return;
-
-        projects[currentProject].measurements.push({ id: Date.now(), dim, note });
-        saveAll();
-        renderList();
-        document.getElementById('dimInput').value = '';
-        document.getElementById('commentInput').value = '';
+    function addMeasure() {
+        const dim = document.getElementById('new-measure-dim').value;
+        const note = document.getElementById('new-measure-note').value;
+        if(!dim) return;
+        db[activeProjectId].measures.push({ id: Date.now(), dim, note });
+        saveToLS();
+        closeModal('measureModal');
+        renderMeasures();
+        document.getElementById('new-measure-dim').value = '';
+        document.getElementById('new-measure-note').value = '';
     }
 
-    function renderList() {
-        const list = document.getElementById('measurementList');
+    function renderMeasures() {
+        const list = document.getElementById('measure-list');
         list.innerHTML = "";
-        projects[currentProject].measurements.forEach(m => {
-            let div = document.createElement('div');
-            div.className = 'list-item';
+        db[activeProjectId].measures.forEach((m, idx) => {
+            const div = document.createElement('div');
+            div.className = 'measure-item';
             div.dataset.id = m.id;
             div.innerHTML = `
-                <div class="item-main">
-                    <div class="dim-text">${m.dim}</div>
-                    <div class="drag-handle no-print">☰</div>
+                <div class="drag-handle">☰</div>
+                <div class="measure-info">
+                    <div class="measure-val">${m.dim}</div>
+                    <div style="font-size:14px; color:#666;">${m.note || '-'}</div>
                 </div>
-                ${m.note ? `<div class="comment-display">${m.note}</div>` : ''}
-                <button class="no-print" onclick="removeMe(${m.id})" style="color:#FF3B30; background:none; font-size:11px; text-align:right; width:100%; padding:0; margin-top:5px;">Löschen</button>
+                <div onclick="deleteMeasure(${idx})" style="color:var(--danger); font-size:12px;">Entfernen</div>
             `;
             list.appendChild(div);
         });
     }
 
-    function removeMe(id) {
-        projects[currentProject].measurements = projects[currentProject].measurements.filter(m => m.id != id);
-        saveAll();
-        renderList();
-    }
-
-    function deleteProject() {
-        if (confirm("Ganzes Projekt löschen?")) {
-            delete projects[currentProject];
-            currentProject = "";
-            saveAll();
-            init();
-        }
-    }
-
-    function saveAll() {
-        localStorage.setItem('measureProjects', JSON.stringify(projects));
+    function deleteMeasure(idx) {
+        db[activeProjectId].measures.splice(idx, 1);
+        saveToLS();
+        renderMeasures();
     }
 
     function exportPDF() {
-        const element = document.getElementById('print-area');
+        const proj = db[activeProjectId];
+        document.getElementById('pdf-proj-name').innerText = "Prüfbericht: " + proj.title;
+        document.getElementById('pdf-proj-zn').innerText = "Zeichnungs-Nummer: " + proj.zn;
+        document.getElementById('pdf-date').innerText = new Date().toLocaleDateString();
+        
+        const body = document.getElementById('pdf-body');
+        body.innerHTML = "";
+        proj.measures.forEach(m => {
+            body.innerHTML += `<tr><td>${m.dim}</td><td>${m.note}</td></tr>`;
+        });
+
+        const element = document.getElementById('pdf-template');
+        element.style.display = 'block';
         const opt = {
-            margin:       10,
-            filename:     `Protokoll_${currentProject}.pdf`,
-            image:        { type: 'jpeg', quality: 0.98 },
-            html2canvas:  { scale: 2 },
-            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            margin: 10, filename: `QS_${proj.zn}.pdf`,
+            html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
-        html2pdf().set(opt).from(element).save();
+        html2pdf().set(opt).from(element).save().then(() => {
+            element.style.display = 'none';
+        });
     }
 
-    new Sortable(document.getElementById('measurementList'), {
-        handle: '.drag-handle',
-        animation: 150,
+    // Sortable Initialisierung
+    new Sortable(document.getElementById('measure-list'), {
+        handle: '.drag-handle', animation: 150,
         onEnd: () => {
             let newOrder = [];
-            document.querySelectorAll('.list-item').forEach(el => {
-                let m = projects[currentProject].measurements.find(x => x.id == el.dataset.id);
+            document.querySelectorAll('.measure-item').forEach(el => {
+                let m = db[activeProjectId].measurements.find(x => x.id == el.dataset.id);
                 newOrder.push(m);
             });
-            projects[currentProject].measurements = newOrder;
-            saveAll();
+            db[activeProjectId].measures = newOrder;
+            saveToLS();
         }
     });
 
-    init();
+    renderProjects();
 </script>
 </body>
 </html>
