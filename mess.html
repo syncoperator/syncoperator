@@ -3,169 +3,144 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Engineering QS Pro</title>
+    <title>QS CORE v5</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         :root {
-            --primary: #007AFF;
-            --bg: #F0F2F5;
-            --card-bg: rgba(255, 255, 255, 0.9);
-            --text-main: #1d1d1f;
-            --text-sub: #86868b;
-            --success: #34C759;
-            --danger: #FF3B30;
-            --shadow: 0 10px 30px rgba(0,0,0,0.08);
-            --radius-lg: 24px;
-            --radius-md: 16px;
+            --accent: #000000;
+            --bg: #FFFFFF;
+            --card-border: #D1D1D6;
+            --secondary-bg: #F2F2F7;
+            --text-main: #000000;
+            --text-sub: #3A3A3C;
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif;
+            font-family: 'Inter', -apple-system, sans-serif;
             background: var(--bg); color: var(--text-main); margin: 0; padding: 0;
-            line-height: 1.5;
         }
 
-        .app-wrapper { max-width: 500px; margin: 0 auto; padding: 20px; padding-bottom: 100px; }
+        .app-shell { max-width: 500px; margin: 0 auto; min-height: 100vh; display: flex; flex-direction: column; }
 
-        /* Header Area */
-        .glass-header {
-            background: var(--card-bg); backdrop-filter: blur(20px);
-            padding: 25px; border-radius: var(--radius-lg);
-            box-shadow: var(--shadow); margin-bottom: 30px;
-            display: flex; justify-content: space-between; align-items: center;
-            border: 1px solid rgba(255,255,255,0.5);
+        /* Industrielles Header Design */
+        .top-bar {
+            padding: 40px 20px 20px 20px;
+            border-bottom: 2px solid var(--accent);
+            display: flex; justify-content: space-between; align-items: flex-end;
         }
-        .glass-header h1 { font-size: 24px; font-weight: 800; margin: 0; letter-spacing: -0.5px; }
-        .glass-header span { font-size: 12px; color: var(--primary); text-transform: uppercase; font-weight: 700; letter-spacing: 1px; }
+        .top-bar h1 { font-size: 32px; font-weight: 900; margin: 0; letter-spacing: -1.5px; text-transform: uppercase; }
+        .top-bar span { font-size: 12px; font-weight: 700; color: var(--text-sub); }
 
-        /* List Cards */
-        .card {
-            background: var(--card-bg); border-radius: var(--radius-md);
-            padding: 20px; margin-bottom: 15px; box-shadow: var(--shadow);
-            border: 1px solid rgba(255,255,255,0.4); transition: 0.3s ease;
-            position: relative; overflow: hidden;
+        /* Projekt-Liste */
+        .list-container { padding: 20px; }
+        .proj-box {
+            border: 1px solid var(--card-border); border-radius: 0px;
+            padding: 20px; margin-bottom: 15px; display: flex; 
+            justify-content: space-between; align-items: center;
+            cursor: pointer; transition: background 0.2s;
         }
-        .card:active { transform: scale(0.98); }
-        .project-card { border-left: 8px solid var(--primary); display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+        .proj-box:active { background: var(--secondary-bg); }
+        .proj-box b { font-size: 18px; text-transform: uppercase; }
 
-        /* Measurement Items */
-        .m-item { display: grid; grid-template-columns: 40px 1fr auto; align-items: center; gap: 15px; }
-        .check-btn { 
-            width: 24px; height: 24px; border-radius: 50%; border: 2px solid #ddd; 
-            display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s;
+        /* Messwert Zeilen */
+        .measure-row {
+            border-bottom: 1px solid #000; padding: 15px 0;
+            display: grid; grid-template-columns: 30px 1fr auto; align-items: center;
         }
-        .check-btn.active { background: var(--success); border-color: var(--success); color: white; }
-        .m-info b { font-size: 17px; display: block; }
-        .m-info small { color: var(--text-sub); font-family: 'Courier New', Courier, monospace; }
+        .check-box { width: 20px; height: 20px; border: 2px solid #000; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .check-box.checked::after { content: "✖"; font-size: 14px; font-weight: bold; }
 
-        /* Actions & Inputs */
-        .btn-fab { 
-            position: fixed; bottom: 30px; right: 20px; width: 65px; height: 65px;
-            background: var(--primary); border-radius: 50%; color: white; font-size: 30px;
-            border: none; box-shadow: 0 10px 25px rgba(0,122,255,0.4); cursor: pointer;
-            display: flex; align-items: center; justify-content: center; z-index: 100;
+        /* Floating Button */
+        .fab {
+            position: fixed; bottom: 30px; right: 20px;
+            background: #000; color: #fff; border: none;
+            width: 60px; height: 60px; font-size: 30px; font-weight: bold;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
         }
 
-        .btn-action {
-            background: var(--primary); color: white; border: none; padding: 16px;
-            border-radius: var(--radius-md); font-weight: 700; width: 100%; margin-top: 10px;
-        }
-
-        /* Bottom Sheet Modal */
+        /* Modals - Klar & Kantig */
         .modal { 
-            display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); 
-            z-index: 1000; animation: fadeIn 0.3s;
+            display: none; position: fixed; inset: 0; background: rgba(255,255,255,0.95); 
+            z-index: 1000; padding: 20px;
         }
-        .modal-content {
-            position: absolute; bottom: 0; left: 0; right: 0;
-            background: white; border-radius: 30px 30px 0 0;
-            padding: 30px; box-shadow: 0 -10px 40px rgba(0,0,0,0.1);
-            animation: slideUp 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+        .modal-inner { margin-top: 60px; }
+        input {
+            width: 100%; border: 2px solid #000; padding: 15px;
+            font-size: 18px; font-weight: bold; margin-bottom: 15px; box-sizing: border-box;
         }
+        .btn-black { background: #000; color: #fff; border: none; padding: 20px; width: 100%; font-weight: 900; text-transform: uppercase; font-size: 16px; cursor: pointer; }
 
-        /* PDF Styles - Modern & Bunt */
-        #pdf-export-area { padding: 40px; color: #333; display: none; background: #fff; }
-        .pdf-header-box { 
-            background: #00416A; padding: 25px; color: white; border-radius: 8px; 
-            margin-bottom: 30px; display: flex; justify-content: space-between;
-        }
-        .pdf-table { width: 100%; border-collapse: collapse; }
-        .pdf-table th { background: #f2f2f7; padding: 12px; text-align: left; border-bottom: 2px solid #00416A; }
-        .pdf-table td { padding: 12px; border-bottom: 1px solid #eee; }
-
-        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        /* PDF Layout - Schwarz/Weiß Fokus */
+        #pdf-content { display: none; padding: 30px; background: white; color: black; font-family: 'Courier', monospace; }
+        .pdf-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        .pdf-table th, .pdf-table td { border: 1px solid black; padding: 8px; text-align: left; font-size: 12px; }
+        .pdf-header { border-bottom: 4px solid black; padding-bottom: 10px; margin-bottom: 20px; }
 
         .hidden { display: none; }
     </style>
 </head>
 <body>
 
-<div id="dashboard" class="app-wrapper">
-    <div class="glass-header">
-        <div><span>Quality Management</span><h1>Engineering</h1></div>
-        <button onclick="openModal('projModal')" style="border:none; background:var(--bg); border-radius:50%; width:40px; height:40px; color:var(--primary); font-weight:bold;">+</button>
+<div class="app-shell" id="view-dash">
+    <div class="top-bar">
+        <div><h1>QS-CORE</h1><span>PROJEKTÜBERSICHT</span></div>
+        <button onclick="openM('modal-p')" style="background:none; border:2px solid #000; font-weight:bold; padding:5px 10px;">NEU</button>
     </div>
-    <div id="project-list"></div>
+    <div class="list-container" id="project-list"></div>
 </div>
 
-<div id="detail-view" class="app-wrapper hidden">
-    <div class="glass-header">
-        <button onclick="closeDetails()" style="border:none; background:none; font-size:20px;">←</button>
-        <div style="text-align:center;"><span id="zn-label">ZN: -</span><h1 id="title-label">Projekt</h1></div>
-        <button onclick="openPreview()" style="border:none; background:none; color:var(--primary); font-weight:bold;">PDF</button>
+<div class="app-shell hidden" id="view-detail">
+    <div class="top-bar">
+        <button onclick="closeDetail()" style="background:none; border:none; font-size:24px; font-weight:900;">←</button>
+        <div style="text-align:right;"><span id="zn-head">ZN: -</span><h1 id="title-head" style="font-size:24px;">DETAIL</h1></div>
     </div>
-    <div id="measure-list"></div>
-    <button class="btn-fab" onclick="openModal('measureModal')">+</button>
+    <div style="padding:20px;">
+        <div id="measure-list"></div>
+        <button class="btn-black" style="margin-top:20px;" onclick="openPreview()">VORSCHAU & PDF</button>
+    </div>
+    <button class="fab" onclick="openM('modal-m')">+</button>
 </div>
 
-<div id="projModal" class="modal">
-    <div class="modal-content">
-        <h2 style="margin-top:0">Neues Projekt</h2>
-        <input type="text" id="p-title" placeholder="Bezeichnung (z.B. Nippel)" style="width:100%; padding:15px; border-radius:12px; border:1px solid #ddd; margin-bottom:10px; font-size:16px;">
-        <input type="text" id="p-zn" placeholder="Zeichnungsnummer" style="width:100%; padding:15px; border-radius:12px; border:1px solid #ddd; margin-bottom:20px; font-size:16px;">
-        <button class="btn-action" onclick="addProject()">Projekt anlegen</button>
-        <button onclick="closeModal('projModal')" style="width:100%; background:none; border:none; color:var(--danger); padding:15px;">Abbrechen</button>
-    </div>
-</div>
-
-<div id="measureModal" class="modal">
-    <div class="modal-content">
-        <h2 style="margin-top:0">Maß hinzufügen</h2>
-        <input type="text" id="m-dim" placeholder="Soll (z.B. 29 -0.1)" style="width:100%; padding:15px; border-radius:12px; border:1px solid #ddd; margin-bottom:10px; font-size:16px;">
-        <input type="text" id="m-ist" placeholder="Ist-Wert / Ergebnis" style="width:100%; padding:15px; border-radius:12px; border:1px solid #ddd; margin-bottom:20px; font-size:16px;">
-        <button class="btn-action" onclick="saveMeasure()">Maß speichern</button>
-        <button onclick="closeModal('measureModal')" style="width:100%; background:none; border:none; color:var(--danger); padding:15px;">Abbrechen</button>
+<div id="modal-p" class="modal">
+    <div class="modal-inner">
+        <h1>NEUES PROJEKT</h1>
+        <input type="text" id="p-t" placeholder="BEZEICHNUNG">
+        <input type="text" id="p-z" placeholder="ZEICHNUNGSNUMMER">
+        <button class="btn-black" onclick="addP()">SPEICHERN</button>
+        <button onclick="closeM('modal-p')" style="width:100%; background:none; border:none; margin-top:20px; font-weight:bold;">ABBRECHEN</button>
     </div>
 </div>
 
-<div id="previewModal" class="modal">
-    <div class="modal-content" style="height: 80vh; overflow-y: auto;">
-        <div style="display:flex; justify-content:space-between; margin-bottom:20px;">
-            <button onclick="closeModal('previewModal')" style="border:none; background:none; color:var(--danger);">Schließen</button>
-            <button onclick="generatePDF()" class="btn-action" style="width:auto; margin:0; padding:10px 20px;">Download PDF</button>
-        </div>
-        <div id="pdf-view-box" style="zoom:0.5; border:1px solid #eee; box-shadow:0 0 20px rgba(0,0,0,0.1);"></div>
+<div id="modal-m" class="modal">
+    <div class="modal-inner">
+        <h1>NEUES MASS</h1>
+        <input type="text" id="m-d" placeholder="SOLL-MASS (z.B. 29 -0.1)">
+        <input type="text" id="m-i" placeholder="IST-WERT">
+        <button class="btn-black" onclick="saveM()">HINZUFÜGEN</button>
+        <button onclick="closeM('modal-m')" style="width:100%; background:none; border:none; margin-top:20px; font-weight:bold;">ABBRECHEN</button>
     </div>
 </div>
 
-<div id="pdf-export-area">
-    <div class="pdf-header-box">
-        <div>
-            <h1 style="margin:0">MESS-PROTOKOLL</h1>
-            <p id="pdf-zn" style="margin:5px 0 0 0; opacity:0.8"></p>
-        </div>
-        <div style="text-align:right">
-            <h2 id="pdf-title" style="margin:0"></h2>
-        </div>
+<div id="modal-prev" class="modal" style="overflow-y: auto;">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+        <button onclick="closeM('modal-prev')" style="background:none; border:2px solid #000; padding:10px;">ZURÜCK</button>
+        <button class="btn-black" style="width:auto; padding:10px 30px;" onclick="downloadPDF()">DRUCKEN (PDF)</button>
+    </div>
+    <div id="pdf-preview-container" style="margin-top:20px; border:1px solid #000; zoom:0.6;"></div>
+</div>
+
+<div id="pdf-content">
+    <div class="pdf-header">
+        <h1 id="pdf-t" style="margin:0; font-size:24px;"></h1>
+        <p id="pdf-z" style="margin:5px 0 0 0; font-weight:bold;"></p>
     </div>
     <table class="pdf-table">
         <thead>
             <tr>
-                <th>Prüfmerkmal</th>
-                <th>Soll-Bereich</th>
-                <th>Messwert</th>
-                <th>Status</th>
+                <th width="40%">MERKMAL (SOLL)</th>
+                <th width="30%">TOLERANZ (MIN / MAX)</th>
+                <th width="30%">IST-WERT</th>
             </tr>
         </thead>
         <tbody id="pdf-body"></tbody>
@@ -173,124 +148,103 @@
 </div>
 
 <script>
-    let db = JSON.parse(localStorage.getItem('qs_v4_data')) || [];
-    let currentIdx = null;
+    let db = JSON.parse(localStorage.getItem('qs_v5_data')) || [];
+    let cur = null;
 
-    function save() { localStorage.setItem('qs_v4_data', JSON.stringify(db)); }
-    function openModal(id) { document.getElementById(id).style.display = 'block'; }
-    function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+    function save() { localStorage.setItem('qs_v5_data', JSON.stringify(db)); }
+    function openM(id) { document.getElementById(id).style.display = 'block'; }
+    function closeM(id) { document.getElementById(id).style.display = 'none'; }
 
-    // Smart Toleranz Rechner (Soll + Toleranz)
-    function getTol(str) {
-        let nenn = parseFloat(str);
-        let plus = 0, minus = 0;
-        let matches = str.match(/([+-]\d*\.?\d+)/g);
+    function getTol(s) {
+        let n = parseFloat(s), p = 0, m = 0;
+        let matches = s.match(/([+-]\d*\.?\d+)/g);
         if (matches) {
-            matches.forEach(m => {
-                if (m.startsWith('+')) plus = parseFloat(m);
-                if (m.startsWith('-')) minus = parseFloat(m);
+            matches.forEach(v => {
+                if (v.startsWith('+')) p = parseFloat(v);
+                if (v.startsWith('-')) m = parseFloat(v);
             });
         }
-        return { 
-            min: (nenn + minus).toFixed(3), 
-            max: (nenn + plus).toFixed(3) 
-        };
+        return { min: (n + m).toFixed(2), max: (n + p).toFixed(2) };
     }
 
-    function addProject() {
-        let t = document.getElementById('p-title').value;
-        let z = document.getElementById('p-zn').value;
+    function addP() {
+        let t = document.getElementById('p-t').value, z = document.getElementById('p-z').value;
         if(!t) return;
-        db.push({ title: t, zn: z, measures: [] });
-        save(); closeModal('projModal'); renderDash();
+        db.push({ t, z, items: [] });
+        save(); closeM('modal-p'); renderD();
     }
 
-    function renderDash() {
-        const list = document.getElementById('project-list');
-        list.innerHTML = "";
+    function renderD() {
+        const l = document.getElementById('project-list');
+        l.innerHTML = "";
         db.forEach((p, i) => {
-            list.innerHTML += `<div class="card project-card" onclick="showDetails(${i})">
-                <div><b>${p.title}</b><br><small>ZN: ${p.zn}</small></div>
-                <div style="color:var(--primary)">❯</div>
+            l.innerHTML += `<div class="proj-box" onclick="showDet(${i})"><b>${p.t}</b><span>${p.z}</span></div>`;
+        });
+    }
+
+    function showDet(i) {
+        cur = i;
+        document.getElementById('view-dash').classList.add('hidden');
+        document.getElementById('view-detail').classList.remove('hidden');
+        document.getElementById('title-head').innerText = db[i].t;
+        document.getElementById('zn-head').innerText = "ZN: " + db[i].z;
+        renderM();
+    }
+
+    function closeDetail() {
+        document.getElementById('view-dash').classList.remove('hidden');
+        document.getElementById('view-detail').classList.add('hidden');
+        renderD();
+    }
+
+    function saveM() {
+        let d = document.getElementById('m-d').value, i = document.getElementById('m-i').value;
+        if(!d) return;
+        let t = getTol(d);
+        db[cur].items.push({ d, i, min: t.min, max: t.max, ok: false });
+        save(); renderM(); closeM('modal-m');
+        document.getElementById('m-d').value = ''; document.getElementById('m-i').value = '';
+    }
+
+    function renderM() {
+        const l = document.getElementById('measure-list');
+        l.innerHTML = "";
+        db[cur].items.forEach((m, i) => {
+            l.innerHTML += `
+            <div class="measure-row">
+                <div class="check-box ${m.ok ? 'checked' : ''}" onclick="tog(${i})"></div>
+                <div style="margin-left:15px;"><b>${m.d}</b><br><small>Min: ${m.min} / Max: ${m.max}</small></div>
+                <div style="font-weight:900;">${m.i || '---'}</div>
             </div>`;
         });
     }
 
-    function showDetails(i) {
-        currentIdx = i;
-        document.getElementById('dashboard').classList.add('hidden');
-        document.getElementById('detail-view').classList.remove('hidden');
-        document.getElementById('title-label').innerText = db[i].title;
-        document.getElementById('zn-label').innerText = "ZN: " + db[i].zn;
-        renderMeasures();
-    }
-
-    function closeDetails() {
-        document.getElementById('dashboard').classList.remove('hidden');
-        document.getElementById('detail-view').classList.add('hidden');
-    }
-
-    function saveMeasure() {
-        let dim = document.getElementById('m-dim').value;
-        let ist = document.getElementById('m-ist').value;
-        if(!dim) return;
-        let t = getTol(dim);
-        db[currentIdx].measures.push({ dim, ist, min: t.min, max: t.max, ok: false });
-        save(); renderMeasures(); closeModal('measureModal');
-    }
-
-    function renderMeasures() {
-        const list = document.getElementById('measure-list');
-        list.innerHTML = "";
-        db[currentIdx].measures.forEach((m, i) => {
-            list.innerHTML += `
-            <div class="card m-item">
-                <div class="check-btn ${m.ok ? 'active' : ''}" onclick="toggleCheck(${i})">${m.ok ? '✓' : ''}</div>
-                <div class="m-info">
-                    <b>${m.dim}</b>
-                    <small>Min: ${m.min} / Max: ${m.max}</small>
-                    <div style="color:var(--primary); font-weight:bold; margin-top:4px;">${m.ist || '---'}</div>
-                </div>
-                <button onclick="delM(${i})" style="border:none; background:none; color:var(--danger)">✕</button>
-            </div>`;
-        });
-    }
-
-    function toggleCheck(i) {
-        db[currentIdx].measures[i].ok = !db[currentIdx].measures[i].ok;
-        save(); renderMeasures();
-    }
-
-    function delM(i) { db[currentIdx].measures.splice(i,1); save(); renderMeasures(); }
+    function tog(i) { db[cur].items[i].ok = !db[cur].items[i].ok; save(); renderM(); }
 
     function openPreview() {
-        const p = db[currentIdx];
-        document.getElementById('pdf-title').innerText = p.title;
-        document.getElementById('pdf-zn').innerText = "Zeichnungsnummer: " + p.zn;
-        const body = document.getElementById('pdf-body');
-        body.innerHTML = "";
-        p.measures.forEach(m => {
-            body.innerHTML += `<tr>
-                <td><b>${m.dim}</b></td>
-                <td>${m.min} - ${m.max}</td>
-                <td style="color:#007AFF">${m.ist}</td>
-                <td>${m.ok ? '✅ OK' : '❌'}</td>
-            </tr>`;
+        const p = db[cur];
+        document.getElementById('pdf-t').innerText = p.t;
+        document.getElementById('pdf-z').innerText = "ZEICHNUNGS-NR: " + p.z;
+        const b = document.getElementById('pdf-body');
+        b.innerHTML = "";
+        p.items.forEach(m => {
+            b.innerHTML += `<tr><td>${m.d}</td><td>${m.min} / ${m.max}</td><td>${m.i}</td></tr>`;
         });
-        const area = document.getElementById('pdf-export-area');
+        const area = document.getElementById('pdf-content');
         area.style.display = 'block';
-        document.getElementById('pdf-view-box').innerHTML = area.outerHTML;
+        document.getElementById('pdf-preview-container').innerHTML = area.outerHTML;
         area.style.display = 'none';
-        openModal('previewModal');
+        openM('modal-prev');
     }
 
-    function generatePDF() {
-        const el = document.querySelector('#pdf-view-box div');
-        const opt = { margin:10, filename: `QS_${db[currentIdx].zn}.pdf`, html2canvas:{scale:2}, jsPDF:{unit:'mm', format:'a4'} };
+    function downloadPDF() {
+        const el = document.querySelector('#pdf-preview-container #pdf-content');
+        el.style.display = 'block';
+        const opt = { margin:10, filename: `QS_${db[cur].z}.pdf`, html2canvas:{scale:2}, jsPDF:{unit:'mm', format:'a4'} };
         html2pdf().set(opt).from(el).save();
     }
 
-    renderDash();
+    renderD();
 </script>
 </body>
 </html>
