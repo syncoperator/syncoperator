@@ -3,223 +3,231 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Mess-Profi 2026</title>
+    <title>Mess-Profi Premium</title>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         :root {
             --primary: #007AFF;
             --bg: #F2F2F7;
             --card: #FFFFFF;
             --text: #1C1C1E;
-            --text-secondary: #8E8E93;
-            --radius: 12px;
+            --accent: #34C759;
+            --radius: 14px;
         }
 
         body {
             font-family: -apple-system, system-ui, sans-serif;
             background-color: var(--bg);
             color: var(--text);
-            margin: 0;
-            padding: 15px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+            margin: 0; padding: 15px;
+            display: flex; flex-direction: column; align-items: center;
         }
 
-        .app-container {
-            width: 100%;
-            max-width: 450px;
-        }
+        .container { width: 100%; max-width: 500px; }
 
-        .header {
-            padding: 20px 0;
-            text-align: left;
-            width: 100%;
-        }
-
-        h1 { font-size: 28px; font-weight: 800; margin: 0; letter-spacing: -0.5px; }
-        .subtitle { color: var(--text-secondary); font-size: 14px; }
-
-        .input-card {
+        /* Projekt-Selector */
+        .project-header {
             background: var(--card);
-            padding: 20px;
+            padding: 15px;
             border-radius: var(--radius);
-            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
             margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
         }
 
-        input, textarea {
-            width: 100%;
-            border: 1px solid #E5E5EA;
-            background: #F8F8FA;
-            border-radius: 8px;
-            padding: 12px;
-            margin-bottom: 10px;
-            font-size: 16px;
-            box-sizing: border-box;
-            outline: none;
+        select, input, textarea {
+            width: 100%; border: 1px solid #E5E5EA;
+            background: #F8F8FA; border-radius: 10px;
+            padding: 12px; margin-bottom: 10px;
+            font-size: 16px; box-sizing: border-box; outline: none;
         }
 
-        button.add-btn {
-            width: 100%;
-            background: var(--primary);
-            color: white;
-            border: none;
-            padding: 15px;
-            border-radius: 10px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-        }
-
-        .list-item {
-            background: var(--card);
-            margin-bottom: 10px;
-            padding: 15px;
-            border-radius: var(--radius);
-            box-shadow: 0 2px 10px rgba(0,0,0,0.03);
-            display: flex;
-            flex-direction: column;
-            border-left: 4px solid var(--primary);
-        }
-
-        .item-top {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .drag-icon {
-            font-size: 20px;
-            color: #C7C7CC;
-            cursor: grab;
-        }
-
-        .info-title { font-weight: 700; font-size: 16px; }
-        .info-sub { font-size: 13px; color: var(--text-secondary); margin-top: 2px; }
+        .btn-row { display: flex; gap: 10px; margin-top: 5px; }
         
-        .comment-box {
-            margin-top: 10px;
-            padding: 8px;
-            background: #F2F2F7;
-            border-radius: 6px;
-            font-size: 14px;
-            color: #48484A;
+        button {
+            flex: 1; border: none; border-radius: 10px;
+            padding: 12px; font-weight: 600; cursor: pointer;
+            transition: opacity 0.2s;
         }
 
-        .actions {
-            display: flex;
-            justify-content: flex-end;
-            margin-top: 10px;
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-success { background: var(--accent); color: white; }
+        .btn-outline { background: #E5E5EA; color: var(--text); }
+
+        /* Messliste */
+        #print-area { width: 100%; }
+        .list-item {
+            background: var(--card); margin-bottom: 10px;
+            padding: 15px; border-radius: var(--radius);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+            border-left: 5px solid var(--primary);
         }
 
-        .del-link {
-            color: #FF3B30;
-            font-size: 12px;
-            text-decoration: none;
-            cursor: pointer;
+        .item-main { display: flex; justify-content: space-between; align-items: center; }
+        .dim-text { font-weight: 700; color: var(--primary); font-size: 18px; }
+        .drag-handle { color: #C7C7CC; cursor: grab; font-size: 20px; }
+
+        .comment-display {
+            margin-top: 10px; padding: 8px;
+            background: #F2F2F7; border-radius: 8px;
+            font-size: 14px; color: #48484A; font-style: italic;
         }
 
-        /* Sortable styles */
-        .sortable-ghost { opacity: 0.4; border: 2px dashed var(--primary); }
+        @media print {
+            .no-print { display: none; }
+        }
     </style>
 </head>
 <body>
 
-<div class="app-container">
-    <div class="header">
-        <h1>Qualitätssicherung</h1>
-        <div class="subtitle">Einschraubnippel DN20/25 & Co.</div>
+<div class="container">
+    <div class="header no-print">
+        <h1 style="margin-bottom:5px;">Mess-Protokoll</h1>
+        <p style="color:#8E8E93; margin-top:0;">Premium Cloud-Local Edition 2026</p>
     </div>
 
-    <div class="input-card">
-        <input type="text" id="title" placeholder="Bauteil (z.B. Nippel)">
-        <input type="text" id="drawNo" placeholder="Zeichnungs-Nr. (z.B. 234185)">
-        <input type="text" id="dim" placeholder="Maß & Toleranz (z.B. 29 -0.2)">
-        <textarea id="note" placeholder="Anmerkung / Messwert..."></textarea>
-        <button class="add-btn" onclick="addNew()">Eintrag Speichern</button>
+    <div class="project-header no-print">
+        <label style="font-size: 12px; font-weight: bold; color: var(--primary);">PROJEKT WÄHLEN / NEU</label>
+        <select id="projectSelect" onchange="loadProject()"></select>
+        <div class="btn-row">
+            <button class="btn-outline" onclick="newProject()">Neu</button>
+            <button class="btn-outline" onclick="deleteProject()" style="color:#FF3B30">Löschen</button>
+        </div>
     </div>
 
-    <div id="list"></div>
+    <div class="project-header no-print">
+        <input type="text" id="dimInput" placeholder="Soll-Maß (z.B. 29 -0.2)">
+        <textarea id="commentInput" placeholder="Messwert oder Anmerkung..."></textarea>
+        <button class="btn-primary" onclick="addMeasurement()">Messwert hinzufügen</button>
+        <button class="btn-success" style="margin-top:10px;" onclick="exportPDF()">Als PDF exportieren</button>
+    </div>
+
+    <div id="print-area">
+        <div id="pdf-header" style="padding: 10px; border-bottom: 2px solid #000; margin-bottom: 20px;">
+            <h2 id="display-title" style="margin:0;">Protokoll: -</h2>
+            <p id="display-zn" style="margin:5px 0 0 0; color:#444;">Zeichnung: -</p>
+        </div>
+        <div id="measurementList"></div>
+    </div>
 </div>
 
 <script>
-    const list = document.getElementById('list');
+    let projects = JSON.parse(localStorage.getItem('measureProjects')) || {};
+    let currentProject = localStorage.getItem('lastProject') || "";
 
-    // Laden
-    document.addEventListener('DOMContentLoaded', () => {
-        const saved = JSON.parse(localStorage.getItem('measureData')) || [];
-        saved.forEach(data => createRow(data));
-    });
-
-    function addNew() {
-        const data = {
-            id: Date.now(),
-            title: document.getElementById('title').value,
-            drawNo: document.getElementById('drawNo').value,
-            dim: document.getElementById('dim').value,
-            note: document.getElementById('note').value
-        };
-
-        if(!data.title || !data.dim) return alert("Titel und Maß fehlen!");
-
-        createRow(data);
-        save();
-        
-        // Reset
-        document.getElementById('dim').value = '';
-        document.getElementById('note').value = '';
-    }
-
-    function createRow(data) {
-        const div = document.createElement('div');
-        div.className = 'list-item';
-        div.dataset.id = data.id;
-        div.innerHTML = `
-            <div class="item-top">
-                <div>
-                    <div class="info-title">${data.title}</div>
-                    <div class="info-sub">ZN: ${data.drawNo} | <strong style="color:var(--primary)">${data.dim}</strong></div>
-                </div>
-                <div class="drag-icon">☰</div>
-            </div>
-            ${data.note ? `<div class="comment-box">${data.note}</div>` : ''}
-            <div class="actions">
-                <span class="del-link" onclick="removeRow(this)">Löschen</span>
-            </div>
-        `;
-        list.appendChild(div);
-    }
-
-    function removeRow(el) {
-        if(confirm("Löschen?")) {
-            el.closest('.list-item').remove();
-            save();
+    function init() {
+        const select = document.getElementById('projectSelect');
+        select.innerHTML = "";
+        Object.keys(projects).forEach(name => {
+            let opt = document.createElement('option');
+            opt.value = name; opt.innerText = name;
+            select.appendChild(opt);
+        });
+        if (currentProject && projects[currentProject]) {
+            select.value = currentProject;
+            loadProject();
+        } else if (Object.keys(projects).length > 0) {
+            currentProject = Object.keys(projects)[0];
+            loadProject();
         }
     }
 
-    function save() {
-        const rows = [];
-        document.querySelectorAll('.list-item').forEach(item => {
-            rows.push({
-                id: item.dataset.id,
-                title: item.querySelector('.info-title').innerText,
-                drawNo: item.querySelector('.info-sub').innerText.split('|')[0].replace('ZN: ','').trim(),
-                dim: item.querySelector('strong').innerText,
-                note: item.querySelector('.comment-box') ? item.querySelector('.comment-box').innerText : ''
-            });
-        });
-        localStorage.setItem('measureData', JSON.stringify(rows));
+    function newProject() {
+        let name = prompt("Bezeichnung & Zeichnungsnummer (z.B. Nippel 234185):");
+        if (name) {
+            projects[name] = { title: name, measurements: [] };
+            currentProject = name;
+            saveAll();
+            init();
+        }
     }
 
-    // Drag and Drop
-    new Sortable(list, {
-        animation: 150,
-        handle: '.drag-icon',
-        ghostClass: 'sortable-ghost',
-        onEnd: save
-    });
-</script>
+    function loadProject() {
+        currentProject = document.getElementById('projectSelect').value;
+        localStorage.setItem('lastProject', currentProject);
+        const p = projects[currentProject];
+        document.getElementById('display-title').innerText = "Protokoll: " + p.title;
+        renderList();
+    }
 
+    function addMeasurement() {
+        if (!currentProject) return alert("Zuerst Projekt erstellen!");
+        const dim = document.getElementById('dimInput').value;
+        const note = document.getElementById('commentInput').value;
+        if (!dim) return;
+
+        projects[currentProject].measurements.push({ id: Date.now(), dim, note });
+        saveAll();
+        renderList();
+        document.getElementById('dimInput').value = '';
+        document.getElementById('commentInput').value = '';
+    }
+
+    function renderList() {
+        const list = document.getElementById('measurementList');
+        list.innerHTML = "";
+        projects[currentProject].measurements.forEach(m => {
+            let div = document.createElement('div');
+            div.className = 'list-item';
+            div.dataset.id = m.id;
+            div.innerHTML = `
+                <div class="item-main">
+                    <div class="dim-text">${m.dim}</div>
+                    <div class="drag-handle no-print">☰</div>
+                </div>
+                ${m.note ? `<div class="comment-display">${m.note}</div>` : ''}
+                <button class="no-print" onclick="removeMe(${m.id})" style="color:#FF3B30; background:none; font-size:11px; text-align:right; width:100%; padding:0; margin-top:5px;">Löschen</button>
+            `;
+            list.appendChild(div);
+        });
+    }
+
+    function removeMe(id) {
+        projects[currentProject].measurements = projects[currentProject].measurements.filter(m => m.id != id);
+        saveAll();
+        renderList();
+    }
+
+    function deleteProject() {
+        if (confirm("Ganzes Projekt löschen?")) {
+            delete projects[currentProject];
+            currentProject = "";
+            saveAll();
+            init();
+        }
+    }
+
+    function saveAll() {
+        localStorage.setItem('measureProjects', JSON.stringify(projects));
+    }
+
+    function exportPDF() {
+        const element = document.getElementById('print-area');
+        const opt = {
+            margin:       10,
+            filename:     `Protokoll_${currentProject}.pdf`,
+            image:        { type: 'jpeg', quality: 0.98 },
+            html2canvas:  { scale: 2 },
+            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+        html2pdf().set(opt).from(element).save();
+    }
+
+    new Sortable(document.getElementById('measurementList'), {
+        handle: '.drag-handle',
+        animation: 150,
+        onEnd: () => {
+            let newOrder = [];
+            document.querySelectorAll('.list-item').forEach(el => {
+                let m = projects[currentProject].measurements.find(x => x.id == el.dataset.id);
+                newOrder.push(m);
+            });
+            projects[currentProject].measurements = newOrder;
+            saveAll();
+        }
+    });
+
+    init();
+</script>
 </body>
 </html>
