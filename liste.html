@@ -3,269 +3,199 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>QS-TOOL V4.0 FINAL</title>
+    <title>QS-TOOL V5.0 PIXEL PERFECT</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <style>
         :root { --black: #000; --white: #fff; --gray: #f4f4f4; }
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; background: var(--gray); color: var(--black); }
+        * { box-sizing: border-box; }
+        body { font-family: 'Helvetica', Arial, sans-serif; margin: 0; background: var(--gray); }
 
-        /* UI STRUKTUR */
-        .app-container { max-width: 500px; margin: 0 auto; background: var(--white); min-height: 100vh; padding-bottom: 80px; }
-        .header-ui { padding: 40px 20px 20px; border-bottom: 4px solid var(--black); background: var(--white); }
-        .header-ui h1 { margin: 0; font-size: 28px; font-weight: 900; letter-spacing: -1px; }
-        
-        /* LISTE */
-        .item-card { border: 2px solid var(--black); margin: 10px 15px; padding: 15px; display: flex; justify-content: space-between; align-items: center; background: white; }
-        .tool-entry { display: grid; grid-template-columns: 40px 80px 1fr 40px; gap: 10px; align-items: center; border: 2px solid var(--black); margin: 8px 15px; padding: 10px; background: white; }
-        
-        /* MODALS */
-        .modal-overlay { display: none; position: fixed; inset: 0; background: var(--white); z-index: 1000; padding: 25px; overflow-y: auto; }
-        .input-group { margin-bottom: 20px; }
-        .input-group label { display: block; font-weight: 900; font-size: 12px; margin-bottom: 5px; text-transform: uppercase; }
-        input[type="text"], textarea { width: 100%; border: 2px solid var(--black); padding: 15px; font-size: 16px; font-weight: bold; font-family: inherit; }
-        
-        .btn-main { background: var(--black); color: var(--white); border: none; padding: 18px; width: 100%; font-weight: 900; font-size: 14px; text-transform: uppercase; cursor: pointer; }
-        .fab { position: fixed; bottom: 25px; right: 20px; width: 60px; height: 60px; background: var(--black); color: white; border-radius: 50%; border: none; font-size: 30px; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+        /* APP UI */
+        .ui-header { padding: 30px 20px; background: white; border-bottom: 4px solid #000; }
+        .ui-card { border: 2px solid #000; margin: 10px; padding: 15px; background: white; cursor: pointer; display: flex; justify-content: space-between; }
+        .btn-black { background: #000; color: #fff; border: none; padding: 18px; width: 100%; font-weight: 900; cursor: pointer; }
+        .modal { display: none; position: fixed; inset: 0; background: #fff; z-index: 1000; padding: 20px; }
+        .input-f { width: 100%; border: 2px solid #000; padding: 15px; margin-bottom: 10px; font-weight: bold; font-size: 16px; }
 
-        /* --- PDF PRINT ARCHITEKTUR (DIN A4) --- */
-        #pdf-master-template {
+        /* --- PDF LAYOUT (MATHEMATISCH EXAKT) --- */
+        #pdf-master {
             width: 210mm;
             height: 297mm;
-            padding: 15mm;
             background: white;
-            display: none; /* Versteckt in der App */
+            padding: 10mm;
+            display: none; /* In App versteckt */
+            position: relative;
         }
-        .print-border {
+        .outer-frame {
             border: 1.5pt solid black;
-            height: 100%;
+            height: 277mm; /* 297 - 20mm Padding */
+            width: 190mm;  /* 210 - 20mm Padding */
+            padding: 8mm;
             display: flex;
             flex-direction: column;
-            padding: 10mm;
+            position: relative;
         }
-        .print-header {
-            border-bottom: 4pt solid black;
-            padding-bottom: 10px;
-            margin-bottom: 20px;
+        .header-line {
             display: flex;
             align-items: baseline;
+            border-bottom: 4pt solid black;
+            padding-bottom: 10pt;
+            margin-bottom: 15pt;
         }
-        .print-title { font-size: 38pt; font-weight: 900; text-transform: uppercase; margin-right: 15pt; }
-        .print-sub { font-size: 20pt; font-weight: 400; color: #555; }
+        .title-main { font-size: 42pt; font-weight: 900; text-transform: uppercase; margin-right: 15pt; }
+        .title-sub { font-size: 22pt; font-weight: 400; color: #666; }
+
+        .data-table { width: 100%; border-collapse: collapse; }
+        .data-table th { border: 1.5pt solid black; padding: 10pt; background: #f0f0f0; text-align: left; font-size: 10pt; font-weight: 900; }
+        .data-table td { border: 1.5pt solid black; padding: 12pt 10pt; font-size: 12pt; font-weight: 600; }
         
-        .print-table { width: 100%; border-collapse: collapse; }
-        .print-table th { background: #eee; border: 1.5pt solid black; padding: 12pt; text-align: left; font-size: 11pt; font-weight: 900; }
-        .print-table td { border: 1.5pt solid black; padding: 12pt; font-size: 12pt; font-weight: 600; }
+        .tool-row-ui { display: grid; grid-template-columns: 80px 1fr 40px; gap: 10px; border: 2px solid #000; margin: 5px 10px; padding: 10px; background: #fff; }
     </style>
 </head>
 <body>
 
-<div id="dash-view" class="app-container">
-    <div class="header-ui">
-        <h1>DATABASE</h1>
-        <div style="display:flex; justify-content: space-between; align-items: center; margin-top: 5px;">
-            <span style="font-weight: bold; opacity: 0.5;">V4.0 PREMIUM</span>
-            <button onclick="backup()" style="background:none; border: 1px solid #000; font-size: 10px; padding: 2px 5px;">EXPORT JSON</button>
-        </div>
-    </div>
-    <div id="proj-list" style="margin-top: 20px;"></div>
-    <button class="fab" onclick="openProjModal()">+</button>
+<div id="view-dash">
+    <div class="ui-header"><h1>DATABASE</h1></div>
+    <div id="proj-list"></div>
+    <button class="btn-black" onclick="openM('m-proj')" style="position:fixed; bottom:20px; right:20px; width:60px; height:60px; border-radius:50%;">+</button>
 </div>
 
-<div id="detail-view" class="app-container" style="display:none;">
-    <div class="header-ui">
-        <div style="display:flex; align-items: center; gap: 15px;">
-            <button onclick="goHome()" style="background:none; border:none; font-size:25px; font-weight:900; cursor:pointer;">←</button>
-            <div>
-                <h1 id="det-title" style="font-size:20px;"></h1>
-                <span id="det-zn" style="font-size:14px; opacity:0.6; font-weight:bold;"></span>
-            </div>
-        </div>
+<div id="view-detail" style="display:none;">
+    <div class="ui-header" style="display:flex; align-items:center; gap:20px;">
+        <button onclick="goHome()" style="background:none; border:none; font-size:30px; font-weight:bold;">←</button>
+        <div><h2 id="det-name" style="margin:0;"></h2><small id="det-num"></small></div>
     </div>
-    <div style="padding: 15px;">
-        <button class="btn-main" onclick="openModal('import-modal')">Liste Importieren</button>
-    </div>
+    <div style="padding:15px;"><button class="btn-black" onclick="openM('m-import')">IMPORT</button></div>
     <div id="tool-list"></div>
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 15px;">
-        <button class="btn-main" onclick="preparePreview()">Vorschau</button>
-        <button class="btn-main" style="background:#b00;" onclick="clearList()">Leeren</button>
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; padding:15px;">
+        <button class="btn-black" onclick="showPreview()">VORSCHAU</button>
+        <button class="btn-black" style="background:red;" onclick="clearTools()">LÖSCHEN</button>
     </div>
-    <button class="fab" onclick="openToolModal()">+</button>
 </div>
 
-<div id="proj-modal" class="modal-overlay">
-    <h1 style="font-weight:900; font-size:30px; margin-bottom:30px;">PROJEKT</h1>
-    <input type="hidden" id="edit-p-idx">
-    <div class="input-group">
-        <label>Bauteil Name</label>
-        <input type="text" id="in-p-bz" placeholder="z.B. BUCHSE">
-    </div>
-    <div class="input-group">
-        <label>Zeichnungs-Nummer</label>
-        <input type="text" id="in-p-zn" placeholder="z.B. 233562RO.O">
-    </div>
-    <button class="btn-main" onclick="saveProj()">Speichern</button>
-    <button onclick="closeModal('proj-modal')" style="width:100%; background:none; border:none; margin-top:20px; font-weight:bold; text-decoration:underline;">Abbrechen</button>
+<div id="m-proj" class="modal">
+    <h2>PROJEKT</h2>
+    <input id="p-name" class="input-f" placeholder="BUCHSE">
+    <input id="p-num" class="input-f" placeholder="233562">
+    <button class="btn-black" onclick="addProj()">SPEICHERN</button>
+    <button onclick="closeM('m-proj')" style="width:100%; border:none; background:none; margin-top:10px;">Abbrechen</button>
 </div>
 
-<div id="tool-modal" class="modal-overlay">
-    <h1 style="font-weight:900; font-size:30px;">WERKZEUG</h1>
-    <input type="hidden" id="edit-t-idx">
-    <div class="input-group">
-        <label>T-Nummer</label>
-        <input type="text" id="in-t-id" placeholder="T0101">
-    </div>
-    <div class="input-group">
-        <label>Bezeichnung</label>
-        <input type="text" id="in-t-nm" placeholder="Kopierstahl R0.8">
-    </div>
-    <button class="btn-main" onclick="saveTool()">Hinzufügen</button>
-    <button onclick="closeModal('tool-modal')" style="width:100%; background:none; border:none; margin-top:20px;">Abbrechen</button>
+<div id="m-import" class="modal">
+    <h2>IMPORT</h2>
+    <textarea id="import-area" class="input-f" style="height:250px;" placeholder="T0101..."></textarea>
+    <button class="btn-black" onclick="runImport()">START</button>
+    <button onclick="closeM('m-import')" style="width:100%; border:none; background:none; margin-top:10px;">Zurück</button>
 </div>
 
-<div id="import-modal" class="modal-overlay">
-    <h1>DATA IMPORT</h1>
-    <textarea id="import-txt" rows="12" placeholder="T-Code einfügen..."></textarea>
-    <button class="btn-main" style="margin-top:15px;" onclick="runImport()">Import Starten</button>
-    <button onclick="closeModal('import-modal')" style="width:100%; border:none; background:none; margin-top:20px;">Zurück</button>
-</div>
-
-<div id="prev-modal" class="modal-overlay" style="background: #222;">
-    <div style="background:#fff; padding:15px; display:flex; justify-content:space-between; align-items:center; position:sticky; top:0; z-index:1100; border-bottom:2px solid #000;">
-        <button onclick="closeModal('prev-modal')" style="font-weight:900; border:2px solid #000; background:none; padding:8px 15px;">ZURÜCK</button>
-        <button class="btn-main" style="width:auto; padding:10px 25px;" onclick="generatePDF()">PDF SPEICHERN</button>
+<div id="m-prev" class="modal" style="background:#444; overflow:auto;">
+    <div style="background:#fff; padding:15px; display:flex; justify-content:space-between; position:sticky; top:0; z-index:10;">
+        <button onclick="closeM('m-prev')" style="border:2px solid #000; background:none; padding:10px;">ZURÜCK</button>
+        <button class="btn-black" style="width:auto; padding:10px 30px;" onclick="savePDF()">PDF SPEICHERN</button>
     </div>
-    <div id="preview-stage" style="transform: scale(0.4); transform-origin: top center; margin-top:20px;"></div>
+    <div id="preview-wrap" style="transform: scale(0.35); transform-origin: top center; padding-top:20px;"></div>
 </div>
 
-<div id="pdf-master-template">
-    <div class="print-border">
-        <div class="print-header">
-            <span id="pdf-val-bz" class="print-title"></span>
-            <span id="pdf-val-zn" class="print-sub"></span>
+<div id="pdf-master">
+    <div class="outer-frame">
+        <div class="header-line">
+            <span id="pdf-val-name" class="title-main"></span>
+            <span id="pdf-val-num" class="title-sub"></span>
         </div>
-        <table class="print-table">
+        <table class="data-table">
             <thead>
                 <tr>
-                    <th style="width:20%">T-NR</th>
-                    <th style="width:80%">WERKZEUG / KOMMENTAR / NULLPUNKT</th>
+                    <th style="width:20%;">T-NR</th>
+                    <th>WERKZEUGNAME / KOMMENTAR / NULLPUNKT</th>
                 </tr>
             </thead>
             <tbody id="pdf-val-body"></tbody>
         </table>
-        <div style="flex-grow:1;"></div>
     </div>
 </div>
 
 <script>
-    let db = JSON.parse(localStorage.getItem('qs_db_v4')) || [];
-    let curP = null;
+    let db = JSON.parse(localStorage.getItem('qs_v5')) || [];
+    let cur = null;
 
-    const saveDB = () => localStorage.setItem('qs_db_v4', JSON.stringify(db));
-    const openModal = (id) => document.getElementById(id).style.display = 'block';
-    const closeModal = (id) => document.getElementById(id).style.display = 'none';
+    const openM = (id) => document.getElementById(id).style.display = 'block';
+    const closeM = (id) => document.getElementById(id).style.display = 'none';
 
-    function renderDash() {
-        const c = document.getElementById('proj-list'); c.innerHTML = "";
+    function render() {
+        const l = document.getElementById('proj-list'); l.innerHTML = "";
         db.forEach((p, i) => {
-            c.innerHTML += `<div class="item-card" onclick="openDetail(${i})">
-                <div><div style="font-weight:900; font-size:18px;">${p.bz}</div><div style="font-size:12px; opacity:0.5;">${p.zn}</div></div>
-                <div>
-                    <button onclick="event.stopPropagation(); editProj(${i})" style="border:none; background:none; font-size:20px;">✎</button>
-                    <button onclick="event.stopPropagation(); deleteProj(${i})" style="border:none; background:none; color:red; font-size:20px; margin-left:10px;">✕</button>
-                </div>
-            </div>`;
+            l.innerHTML += `<div class="ui-card" onclick="openDetail(${i})"><b>${p.name}</b> <span>${p.num}</span></div>`;
         });
     }
 
     function openDetail(i) {
-        curP = i;
-        document.getElementById('dash-view').style.display = 'none';
-        document.getElementById('detail-view').style.display = 'block';
-        document.getElementById('det-title').innerText = db[i].bz;
-        document.getElementById('det-zn').innerText = db[i].zn;
+        cur = i;
+        document.getElementById('view-dash').style.display = 'none';
+        document.getElementById('view-detail').style.display = 'block';
+        document.getElementById('det-name').innerText = db[i].name;
+        document.getElementById('det-num').innerText = db[i].num;
         renderTools();
     }
 
     function renderTools() {
-        const c = document.getElementById('tool-list'); c.innerHTML = "";
-        db[curP].tools.forEach((t, i) => {
-            c.innerHTML += `<div class="tool-entry" data-id="${i}">
-                <div style="color:#ccc; cursor:grab;">☰</div>
-                <div style="font-weight:900;" onclick="editTool(${i})">${t.tid}</div>
-                <div onclick="editTool(${i})">${t.tnm}</div>
-                <button onclick="deleteTool(${i})" style="border:none; background:none; color:red;">✕</button>
-            </div>`;
+        const l = document.getElementById('tool-list'); l.innerHTML = "";
+        db[cur].tools.forEach((t, i) => {
+            l.innerHTML += `<div class="tool-row-ui"><b>${t.id}</b> <span>${t.nm}</span> <button onclick="delT(${i})" style="border:none; color:red;">✕</button></div>`;
         });
     }
 
     function runImport() {
-        const txt = document.getElementById('import-txt').value;
-        const lines = txt.split('\n').filter(l => l.trim().length > 0);
-        let lastT = null; let desc = [];
-        lines.forEach(l => {
-            if(/^[T][O0-9]/i.test(l)) {
-                if(lastT) db[curP].tools.push({tid: lastT, tnm: desc.join(' ')});
-                lastT = l.trim().toUpperCase(); desc = [];
-            } else if(lastT) desc.push(l.trim());
+        const lines = document.getElementById('import-area').value.split('\n');
+        let tid = null; let tnm = [];
+        lines.forEach(line => {
+            if(/^[T][0-9]/i.test(line)) {
+                if(tid) db[cur].tools.push({id: tid, nm: tnm.join(' ')});
+                tid = line.trim().toUpperCase(); tnm = [];
+            } else if(tid) tnm.push(line.trim());
         });
-        if(lastT) db[curP].tools.push({tid: lastT, tnm: desc.join(' ')});
-        saveDB(); renderTools(); closeModal('import-modal');
-        document.getElementById('import-txt').value = "";
+        if(tid) db[cur].tools.push({id: tid, nm: tnm.join(' ')});
+        localStorage.setItem('qs_v5', JSON.stringify(db));
+        renderTools(); closeM('m-import');
     }
 
-    function preparePreview() {
-        const p = db[curP];
-        document.getElementById('pdf-val-bz').innerText = p.bz;
-        document.getElementById('pdf-val-zn').innerText = p.zn;
-        const body = document.getElementById('pdf-val-body'); body.innerHTML = "";
+    function showPreview() {
+        const p = db[cur];
+        document.getElementById('pdf-val-name').innerText = p.name;
+        document.getElementById('pdf-val-num').innerText = p.num;
+        const b = document.getElementById('pdf-val-body'); b.innerHTML = "";
         p.tools.forEach(t => {
-            body.innerHTML += `<tr><td>${t.tid}</td><td>${t.tnm}</td></tr>`;
+            b.innerHTML += `<tr><td style="font-weight:900;">${t.id}</td><td>${t.nm}</td></tr>`;
         });
-        const master = document.getElementById('pdf-master-template');
+        const master = document.getElementById('pdf-master');
         master.style.display = 'block';
-        document.getElementById('preview-stage').innerHTML = master.outerHTML;
+        document.getElementById('preview-wrap').innerHTML = master.outerHTML;
         master.style.display = 'none';
-        openModal('prev-modal');
+        openM('m-prev');
     }
 
-    function generatePDF() {
-        const el = document.querySelector('#preview-stage #pdf-master-template');
+    function savePDF() {
+        const el = document.querySelector('#preview-wrap #pdf-master');
         const opt = {
             margin: 0,
-            filename: `Setup_${db[curP].bz}.pdf`,
-            html2canvas: { scale: 3, useCORS: true },
+            filename: `Setup_${db[cur].name}.pdf`,
+            image: { type: 'jpeg', quality: 1 },
+            html2canvas: { scale: 4, logging: false, useCORS: true },
             jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
         html2pdf().set(opt).from(el).save();
     }
 
-    /* CRUD HELPER */
-    function openProjModal() { document.getElementById('edit-p-idx').value = ""; openModal('proj-modal'); }
-    function editProj(i) { document.getElementById('edit-p-idx').value = i; document.getElementById('in-p-bz').value = db[i].bz; document.getElementById('in-p-zn').value = db[i].zn; openModal('proj-modal'); }
-    function saveProj() {
-        const bz = document.getElementById('in-p-bz').value; const zn = document.getElementById('in-p-zn').value;
-        const idx = document.getElementById('edit-p-idx').value;
-        if(idx === "") db.push({bz, zn, tools: []}); else { db[idx].bz = bz; db[idx].zn = zn; }
-        saveDB(); renderDash(); closeModal('proj-modal');
+    function addProj() {
+        db.push({ name: document.getElementById('p-name').value, num: document.getElementById('p-num').value, tools: [] });
+        localStorage.setItem('qs_v5', JSON.stringify(db));
+        render(); closeM('m-proj');
     }
-    function openToolModal() { document.getElementById('edit-t-idx').value = ""; openModal('tool-modal'); }
-    function editTool(i) { document.getElementById('edit-t-idx').value = i; document.getElementById('in-t-id').value = db[curP].tools[i].tid; document.getElementById('in-t-nm').value = db[curP].tools[i].tnm; openModal('tool-modal'); }
-    function saveTool() {
-        const tid = document.getElementById('in-t-id').value; const tnm = document.getElementById('in-t-nm').value;
-        const idx = document.getElementById('edit-t-idx').value;
-        if(idx === "") db[curP].tools.push({tid, tnm}); else db[curP].tools[idx] = {tid, tnm};
-        saveDB(); renderTools(); closeModal('tool-modal');
-    }
-    function deleteProj(i) { if(confirm("Löschen?")) { db.splice(i,1); saveDB(); renderDash(); } }
-    function deleteTool(i) { db[curP].tools.splice(i,1); saveDB(); renderTools(); }
-    function clearList() { if(confirm("Alles löschen?")) { db[curP].tools = []; saveDB(); renderTools(); } }
-    function goHome() { document.getElementById('dash-view').style.display = 'block'; document.getElementById('detail-view').style.display = 'none'; renderDash(); }
-    function backup() { const blob = new Blob([JSON.stringify(db)], {type:'application/json'}); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download="QS_Backup.json"; a.click(); }
 
-    new Sortable(document.getElementById('tool-list'), { animation: 150 });
-    renderDash();
+    function goHome() { document.getElementById('view-dash').style.display='block'; document.getElementById('view-detail').style.display='none'; }
+    function delT(i) { db[cur].tools.splice(i,1); localStorage.setItem('qs_v5', JSON.stringify(db)); renderTools(); }
+    function clearTools() { db[cur].tools = []; localStorage.setItem('qs_v5', JSON.stringify(db)); renderTools(); }
+
+    render();
 </script>
 </body>
 </html>
