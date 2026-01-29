@@ -3,45 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>QS-TOOL CORE 2026</title>
+    <title>QS-TOOL CORE v2.1</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <style>
         :root { --accent: #000; --bg: #FFF; --border: #000; --soft: #F2F2F7; }
-        body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); color: var(--accent); margin: 0; padding: 0; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--accent); margin: 0; padding: 0; }
         .app-shell { max-width: 600px; margin: 0 auto; min-height: 100vh; display: flex; flex-direction: column; }
         
-        /* Typography & Header */
         .top-bar { padding: 40px 20px 20px; border-bottom: 5px solid var(--accent); display: flex; justify-content: space-between; align-items: flex-end; }
-        .top-bar h1 { font-size: 26px; font-weight: 900; margin: 0; text-transform: uppercase; letter-spacing: -1px; }
+        .top-bar h1 { font-size: 26px; font-weight: 900; margin: 0; text-transform: uppercase; }
 
-        /* DB Dashboard */
-        .search-box { padding: 15px 20px; background: var(--soft); border-bottom: 2px solid #000; }
-        .proj-card { border: 2px solid #000; margin: 10px 20px; padding: 15px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
-
-        /* Tool List Layout - Optimiert */
+        .proj-card { border: 2px solid #000; margin: 10px 20px; padding: 15px; display: flex; justify-content: space-between; align-items: center; }
+        
         .tool-row { 
             border: 2px solid var(--border); margin: 8px 15px; padding: 10px; 
-            display: grid; grid-template-columns: 30px 60px 1fr 100px 40px; 
+            display: grid; grid-template-columns: 30px 60px 1fr 80px 40px; 
             gap: 10px; align-items: center; background: #fff;
         }
-        .t-num { font-weight: 900; border-right: 2px solid #000; padding-right: 5px; }
-        .t-name { font-weight: 700; text-transform: uppercase; word-break: break-all; font-size: 14px; }
-        .t-comment { font-size: 11px; color: #666; font-style: italic; border-left: 1px solid #ddd; padding-left: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .t-num { font-weight: 900; border-right: 2px solid #000; cursor: pointer; }
+        .t-name { font-weight: 700; text-transform: uppercase; cursor: pointer; word-break: break-all; }
+        .t-comment { font-size: 11px; color: #666; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-        /* Inputs & Buttons */
-        .btn-black { background: #000; color: #fff; border: none; padding: 15px; font-weight: 900; text-transform: uppercase; cursor: pointer; }
-        input { width: 100%; border: 2px solid #000; padding: 12px; font-size: 16px; font-weight: bold; box-sizing: border-box; }
-        .fab { position: fixed; bottom: 30px; right: 20px; background: #000; color: #fff; border: none; width: 60px; height: 60px; font-size: 30px; border-radius: 50%; box-shadow: 0 4px 15px rgba(0,0,0,0.3); z-index: 100; }
+        .btn-black { background: #000; color: #fff; border: none; padding: 15px; font-weight: 900; text-transform: uppercase; cursor: pointer; width: 100%; }
+        input { width: 100%; border: 2px solid #000; padding: 12px; font-size: 16px; font-weight: bold; box-sizing: border-box; margin-bottom: 10px; }
+        .fab { position: fixed; bottom: 30px; right: 20px; background: #000; color: #fff; border: none; width: 60px; height: 60px; font-size: 30px; border-radius: 50%; z-index: 100; }
 
-        /* Modal */
-        .modal { display: none; position: fixed; inset: 0; background: #fff; z-index: 1000; padding: 20px; overflow-y: auto; }
-
-        /* PDF S/W - Kommentare schmal */
-        #pdf-content { display: none; padding: 30px; background: white; color: black; font-family: 'Courier', monospace; }
-        .pdf-table { width: 100%; border-collapse: collapse; }
-        .pdf-table th, .pdf-table td { border: 1px solid black; padding: 8px; text-align: left; font-size: 12px; }
-        
+        .modal { display: none; position: fixed; inset: 0; background: #fff; z-index: 1000; padding: 20px; }
         .hidden { display: none; }
     </style>
 </head>
@@ -50,16 +38,10 @@
 <div id="view-dash" class="app-shell">
     <div class="top-bar">
         <div><h1>DATABASE</h1><span>ZEICHNUNGEN</span></div>
-        <div style="display:flex; gap:5px;">
-            <button onclick="exportData()" style="font-size:10px; border:1px solid #000; background:none;">EXPORT</button>
-            <button onclick="importData()" style="font-size:10px; border:1px solid #000; background:none;">IMPORT</button>
-        </div>
+        <button onclick="exportData()" style="font-size:10px; border:1px solid #000; background:none; padding:5px;">EXPORT</button>
     </div>
-    <div class="search-box">
-        <input type="text" id="db-search" placeholder="SUCHEN (NAME ODER ZN)..." oninput="renderDash()">
-    </div>
-    <div id="project-list" style="margin-top:10px;"></div>
-    <button class="fab" onclick="openM('modal-p')">+</button>
+    <div id="project-list" style="margin-top:20px;"></div>
+    <button class="fab" onclick="openM_P()">+</button>
 </div>
 
 <div id="view-detail" class="app-shell hidden">
@@ -68,109 +50,116 @@
         <div style="text-align:right;"><span id="zn-head"></span><h1 id="title-head" style="font-size:20px;"></h1></div>
     </div>
     <div id="tool-list" style="margin-top:20px;"></div>
-    <div style="padding:20px;"><button class="btn-black" style="width:100%" onclick="openPreview()">VORSCHAU & PDF</button></div>
-    <button class="fab" onclick="openM('modal-t')">+</button>
+    <div style="padding:20px;"><button class="btn-black" onclick="openPreview()">VORSCHAU & PDF</button></div>
+    <button class="fab" onclick="openM_T()">+</button>
 </div>
 
 <div id="modal-p" class="modal">
-    <h1>NEUE ZEICHNUNG</h1>
+    <h1 id="p-modal-title">ZEICHNUNG</h1>
+    <input type="hidden" id="p-edit-idx">
     <input type="text" id="p-zn" placeholder="ZEICHNUNGSNUMMER">
-    <input type="text" id="p-bezeichnung" placeholder="BEZEICHNUNG">
-    <button class="btn-black" style="width:100%; margin-top:10px;" onclick="addProject()">ANLEGEN</button>
+    <input type="text" id="p-bz" placeholder="BEZEICHNUNG">
+    <button class="btn-black" onclick="saveProject()">SPEICHERN</button>
     <button onclick="closeM('modal-p')" style="width:100%; background:none; border:none; margin-top:20px; font-weight:bold;">ABBRECHEN</button>
 </div>
 
 <div id="modal-t" class="modal">
-    <h1>WERKZEUG</h1>
-    <input type="hidden" id="edit-idx">
-    <input type="text" id="t-id" placeholder="T-NR (z.B. T12)">
-    <input type="text" id="t-name" placeholder="WERKZEUGNAME (LANG)">
-    <input type="text" id="t-note" placeholder="KOMMENTAR (KURZ)">
-    <button class="btn-black" style="width:100%; margin-top:10px;" onclick="saveTool()">SPEICHERN</button>
+    <h1 id="t-modal-title">WERKZEUG</h1>
+    <input type="hidden" id="t-edit-idx">
+    <input type="text" id="t-id" placeholder="T-NR (z.B. T01)">
+    <input type="text" id="t-name" placeholder="WERKZEUGNAME">
+    <input type="text" id="t-note" placeholder="KOMMENTAR">
+    <button class="btn-black" onclick="saveT()">SPEICHERN</button>
     <button onclick="closeM('modal-t')" style="width:100%; background:none; border:none; margin-top:20px; font-weight:bold;">ABBRECHEN</button>
 </div>
 
 <div id="modal-prev" class="modal">
-    <div style="display:flex; justify-content:space-between; align-items:center;">
-        <button onclick="closeM('modal-prev')" style="border:2px solid #000; background:none; padding:10px;">ZURÜCK</button>
-        <button class="btn-black" onclick="downloadPDF()">JETZT DRUCKEN</button>
-    </div>
-    <div id="pdf-view" style="margin-top:20px; border:1px solid #000; zoom:0.5;"></div>
-</div>
-
-<div id="pdf-content">
-    <div style="border-bottom: 5px solid #000; padding-bottom: 5px; margin-bottom: 15px;">
-        <h1 style="margin:0; font-size:24px;">WERKZEUGLISTE</h1>
-        <p id="pdf-header-data" style="margin:0; font-weight:bold;"></p>
-    </div>
-    <table class="pdf-table">
-        <thead>
-            <tr>
-                <th width="10%">T-NR</th>
-                <th width="60%">WERKZEUGNAME</th>
-                <th width="30%">KOMMENTAR</th>
-            </tr>
-        </thead>
-        <tbody id="pdf-body"></tbody>
-    </table>
+    <button onclick="closeM('modal-prev')" style="border:2px solid #000; background:none; padding:10px; margin-bottom:10px;">ZURÜCK</button>
+    <button class="btn-black" onclick="downloadPDF()" style="width:auto; float:right;">DOWNLOAD</button>
+    <div id="pdf-view" style="border:1px solid #000; zoom:0.5; clear:both;"></div>
 </div>
 
 <script>
-    let db = JSON.parse(localStorage.getItem('qs_tool_db_2026')) || [];
+    let db = JSON.parse(localStorage.getItem('tool_db_final')) || [];
     let curIdx = null;
 
-    const save = () => localStorage.setItem('qs_tool_db_2026', JSON.stringify(db));
-    const openM = (id) => document.getElementById(id).style.display = 'block';
+    const save = () => localStorage.setItem('tool_db_final', JSON.stringify(db));
     const closeM = (id) => document.getElementById(id).style.display = 'none';
 
-    function addProject() {
+    // --- PROJEKT LOGIK ---
+    function openM_P(idx = null) {
+        if(idx !== null) {
+            document.getElementById('p-edit-idx').value = idx;
+            document.getElementById('p-zn').value = db[idx].zn;
+            document.getElementById('p-bz').value = db[idx].bz;
+            document.getElementById('p-modal-title').innerText = "BEARBEITEN";
+        } else {
+            document.getElementById('p-edit-idx').value = "";
+            document.getElementById('p-zn').value = "";
+            document.getElementById('p-bz').value = "";
+            document.getElementById('p-modal-title').innerText = "NEU ANLEGEN";
+        }
+        document.getElementById('modal-p').style.display = 'block';
+    }
+
+    function saveProject() {
         let zn = document.getElementById('p-zn').value;
-        let bz = document.getElementById('p-bezeichnung').value;
-        if(!zn || !bz) return;
-        db.push({ zn, bz, tools: [] });
+        let bz = document.getElementById('p-bz').value;
+        let idx = document.getElementById('p-edit-idx').value;
+        if(!zn) return;
+
+        if(idx !== "") {
+            db[idx].zn = zn; db[idx].bz = bz;
+        } else {
+            db.push({ zn, bz, tools: [] });
+        }
         save(); closeM('modal-p'); renderDash();
     }
 
     function renderDash() {
-        const query = document.getElementById('db-search').value.toLowerCase();
         const list = document.getElementById('project-list');
         list.innerHTML = "";
         db.forEach((p, i) => {
-            if(p.zn.toLowerCase().includes(query) || p.bz.toLowerCase().includes(query)) {
-                list.innerHTML += `
-                <div class="proj-card">
-                    <div onclick="showDetail(${i})" style="flex-grow:1;">
-                        <b>${p.zn}</b><br><small>${p.bz}</small>
-                    </div>
-                    <button onclick="delProj(${i})" style="border:none; background:none; color:red;">✕</button>
-                </div>`;
-            }
+            list.innerHTML += `
+            <div class="proj-card">
+                <div onclick="showDetail(${i})" style="flex-grow:1;"><b>${p.zn}</b><br><small>${p.bz}</small></div>
+                <button onclick="openM_P(${i})" style="margin-right:10px; border:none; background:none;">✎</button>
+                <button onclick="delP(${i})" style="border:none; background:none; color:red;">✕</button>
+            </div>`;
         });
     }
 
-    function showDetail(i) {
-        curIdx = i;
-        document.getElementById('view-dash').classList.add('hidden');
-        document.getElementById('view-detail').classList.remove('hidden');
-        document.getElementById('zn-head').innerText = "ZN: " + db[i].zn;
-        document.getElementById('title-head').innerText = db[i].bz;
-        renderTools();
+    // --- TOOL LOGIK ---
+    function openM_T(idx = null) {
+        if(idx !== null) {
+            let t = db[curIdx].tools[idx];
+            document.getElementById('t-edit-idx').value = idx;
+            document.getElementById('t-id').value = t.tid;
+            document.getElementById('t-name').value = t.tnm;
+            document.getElementById('t-note').value = t.tnt;
+            document.getElementById('t-modal-title').innerText = "T BEARBEITEN";
+        } else {
+            document.getElementById('t-edit-idx').value = "";
+            document.getElementById('t-id').value = "";
+            document.getElementById('t-name').value = "";
+            document.getElementById('t-note').value = "";
+            document.getElementById('t-modal-title').innerText = "NEUES T";
+        }
+        document.getElementById('modal-t').style.display = 'block';
     }
 
-    function closeDetail() {
-        document.getElementById('view-dash').classList.remove('hidden');
-        document.getElementById('view-detail').classList.add('hidden');
-        renderDash();
-    }
-
-    function saveTool() {
+    function saveT() {
         let tid = document.getElementById('t-id').value;
         let tnm = document.getElementById('t-name').value;
         let tnt = document.getElementById('t-note').value;
+        let idx = document.getElementById('t-edit-idx').value;
         if(!tid) return;
-        db[curIdx].tools.push({ tid, tnm, tnt });
+
+        let obj = { tid, tnm, tnt };
+        if(idx !== "") db[curIdx].tools[idx] = obj;
+        else db[curIdx].tools.push(obj);
+
         save(); renderTools(); closeM('modal-t');
-        document.getElementById('t-id').value = ""; document.getElementById('t-name').value = ""; document.getElementById('t-note').value = "";
     }
 
     function renderTools() {
@@ -180,59 +169,31 @@
             list.innerHTML += `
             <div class="tool-row" data-id="${i}">
                 <div class="drag-handle">☰</div>
-                <div class="t-num">${t.tid}</div>
-                <div class="t-name">${t.tnm}</div>
-                <div class="t-comment">${t.tnt || ''}</div>
-                <button onclick="delTool(${i})" style="border:none; background:none; color:red;">✕</button>
+                <div class="t-num" onclick="openM_T(${i})">${t.tid}</div>
+                <div class="t-name" onclick="openM_T(${i})">${t.tnm}</div>
+                <div class="t-comment" onclick="openM_T(${i})">${t.tnt}</div>
+                <button onclick="delT(${i})" style="border:none; background:none; color:red;">✕</button>
             </div>`;
         });
     }
 
-    function delTool(i) { db[curIdx].tools.splice(i,1); save(); renderTools(); }
-    function delProj(i) { if(confirm("Löschen?")) { db.splice(i,1); save(); renderDash(); } }
-
-    function openPreview() {
-        const p = db[curIdx];
-        document.getElementById('pdf-header-data').innerText = `ZN: ${p.zn} | ${p.bz}`;
-        const body = document.getElementById('pdf-body');
-        body.innerHTML = "";
-        p.tools.forEach(t => {
-            body.innerHTML += `<tr><td><b>${t.tid}</b></td><td>${t.tnm}</td><td>${t.tnt}</td></tr>`;
-        });
-        const area = document.getElementById('pdf-content');
-        area.style.display = 'block';
-        document.getElementById('pdf-view').innerHTML = area.outerHTML;
-        area.style.display = 'none';
-        openM('modal-prev');
+    // --- SYSTEM FUNKTIONEN ---
+    function showDetail(i) {
+        curIdx = i;
+        document.getElementById('view-dash').classList.add('hidden');
+        document.getElementById('view-detail').classList.remove('hidden');
+        document.getElementById('zn-head').innerText = db[i].zn;
+        document.getElementById('title-head').innerText = db[i].bz;
+        renderTools();
     }
-
-    function downloadPDF() {
-        const el = document.querySelector('#pdf-view #pdf-content');
-        el.style.display = 'block';
-        html2pdf().set({ margin:10, filename: `Tools_${db[curIdx].zn}.pdf`, html2canvas:{scale:2}, jsPDF:{unit:'mm', format:'a4'} }).from(el).save();
-    }
+    function closeDetail() { document.getElementById('view-dash').classList.remove('hidden'); document.getElementById('view-detail').classList.add('hidden'); renderDash(); }
+    function delP(i) { if(confirm("Löschen?")) { db.splice(i,1); save(); renderDash(); } }
+    function delT(i) { db[curIdx].tools.splice(i,1); save(); renderTools(); }
 
     function exportData() {
-        const dataStr = JSON.stringify(db);
-        const blob = new Blob([dataStr], {type: "application/json"});
-        const url = URL.createObjectURL(blob);
+        const blob = new Blob([JSON.stringify(db)], {type: "application/json"});
         const a = document.createElement('a');
-        a.href = url; a.download = "QS_Backup_2026.json"; a.click();
-    }
-
-    function importData() {
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.onchange = e => {
-            const file = e.target.files[0];
-            const reader = new FileReader();
-            reader.onload = readerEvent => {
-                db = JSON.parse(readerEvent.target.result);
-                save(); renderDash();
-            }
-            reader.readAsText(file);
-        }
-        input.click();
+        a.href = URL.createObjectURL(blob); a.download = "Werkzeuge_Backup.json"; a.click();
     }
 
     new Sortable(document.getElementById('tool-list'), {
