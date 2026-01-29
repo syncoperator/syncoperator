@@ -3,41 +3,53 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>QS-TOOL CORE v2.1</title>
+    <title>QS-TOOL CORE v2.2</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <style>
         :root { --accent: #000; --bg: #FFF; --border: #000; --soft: #F2F2F7; }
-        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--accent); margin: 0; padding: 0; }
+        body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); color: var(--accent); margin: 0; padding: 0; }
         .app-shell { max-width: 600px; margin: 0 auto; min-height: 100vh; display: flex; flex-direction: column; }
         
+        /* Header */
         .top-bar { padding: 40px 20px 20px; border-bottom: 5px solid var(--accent); display: flex; justify-content: space-between; align-items: flex-end; }
-        .top-bar h1 { font-size: 26px; font-weight: 900; margin: 0; text-transform: uppercase; }
+        .top-bar h1 { font-size: 26px; font-weight: 900; margin: 0; text-transform: uppercase; letter-spacing: -1px; }
 
-        .proj-card { border: 2px solid #000; margin: 10px 20px; padding: 15px; display: flex; justify-content: space-between; align-items: center; }
+        /* Dashboard */
+        .proj-card { border: 2px solid #000; margin: 10px 20px; padding: 15px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
         
+        /* Tool Rows */
         .tool-row { 
             border: 2px solid var(--border); margin: 8px 15px; padding: 10px; 
-            display: grid; grid-template-columns: 30px 60px 1fr 80px 40px; 
+            display: grid; grid-template-columns: 30px 60px 1fr 100px 40px; 
             gap: 10px; align-items: center; background: #fff;
         }
         .t-num { font-weight: 900; border-right: 2px solid #000; cursor: pointer; }
-        .t-name { font-weight: 700; text-transform: uppercase; cursor: pointer; word-break: break-all; }
-        .t-comment { font-size: 11px; color: #666; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .t-name { font-weight: 700; text-transform: uppercase; cursor: pointer; word-break: break-all; font-size: 14px; }
+        .t-comment { font-size: 11px; color: #666; font-style: italic; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
 
+        /* Buttons & Inputs */
         .btn-black { background: #000; color: #fff; border: none; padding: 15px; font-weight: 900; text-transform: uppercase; cursor: pointer; width: 100%; }
         input { width: 100%; border: 2px solid #000; padding: 12px; font-size: 16px; font-weight: bold; box-sizing: border-box; margin-bottom: 10px; }
-        .fab { position: fixed; bottom: 30px; right: 20px; background: #000; color: #fff; border: none; width: 60px; height: 60px; font-size: 30px; border-radius: 50%; z-index: 100; }
+        .fab { position: fixed; bottom: 30px; right: 20px; background: #000; color: #fff; border: none; width: 60px; height: 60px; font-size: 30px; border-radius: 50%; z-index: 100; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
 
-        .modal { display: none; position: fixed; inset: 0; background: #fff; z-index: 1000; padding: 20px; }
+        /* Modals */
+        .modal { display: none; position: fixed; inset: 0; background: #fff; z-index: 1000; padding: 20px; overflow-y: auto; }
+
+        /* PDF S/W Layout */
+        #pdf-content { display: none; padding: 30px; background: white; color: black; font-family: 'Courier', monospace; }
+        .pdf-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        .pdf-table th, .pdf-table td { border: 1px solid black; padding: 8px; text-align: left; font-size: 12px; }
+        
         .hidden { display: none; }
+        .ghost { opacity: 0.3; }
     </style>
 </head>
 <body>
 
 <div id="view-dash" class="app-shell">
     <div class="top-bar">
-        <div><h1>DATABASE</h1><span>ZEICHNUNGEN</span></div>
+        <div><h1>DATABASE</h1><span>WERKZEUGE</span></div>
         <button onclick="exportData()" style="font-size:10px; border:1px solid #000; background:none; padding:5px;">EXPORT</button>
     </div>
     <div id="project-list" style="margin-top:20px;"></div>
@@ -74,19 +86,51 @@
 </div>
 
 <div id="modal-prev" class="modal">
-    <button onclick="closeM('modal-prev')" style="border:2px solid #000; background:none; padding:10px; margin-bottom:10px;">ZURÜCK</button>
-    <button class="btn-black" onclick="downloadPDF()" style="width:auto; float:right;">DOWNLOAD</button>
-    <div id="pdf-view" style="border:1px solid #000; zoom:0.5; clear:both;"></div>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+        <button onclick="closeM('modal-prev')" style="border:2px solid #000; background:none; padding:10px;">ZURÜCK</button>
+        <button class="btn-black" onclick="downloadPDF()" style="width:auto; padding:10px 20px;">JETZT DRUCKEN</button>
+    </div>
+    <div id="pdf-view-container" style="border:1px solid #000; zoom:0.5; background:#fff;"></div>
+</div>
+
+<div id="pdf-content">
+    <div style="border-bottom: 5px solid #000; padding-bottom: 5px; margin-bottom: 15px;">
+        <h1 style="margin:0; font-size:24px;">WERKZEUGLISTE</h1>
+        <p id="pdf-header-info" style="margin:5px 0 0 0; font-weight:bold; font-size:14px;"></p>
+    </div>
+    <table class="pdf-table">
+        <thead>
+            <tr>
+                <th width="10%">T-NR</th>
+                <th width="65%">WERKZEUGNAME</th>
+                <th width="25%">KOMMENTAR</th>
+            </tr>
+        </thead>
+        <tbody id="pdf-body"></tbody>
+    </table>
 </div>
 
 <script>
-    let db = JSON.parse(localStorage.getItem('tool_db_final')) || [];
+    let db = JSON.parse(localStorage.getItem('tool_db_v22')) || [];
     let curIdx = null;
 
-    const save = () => localStorage.setItem('tool_db_final', JSON.stringify(db));
+    const save = () => localStorage.setItem('tool_db_v22', JSON.stringify(db));
     const closeM = (id) => document.getElementById(id).style.display = 'none';
 
-    // --- PROJEKT LOGIK ---
+    // DASHBOARD
+    function renderDash() {
+        const list = document.getElementById('project-list');
+        list.innerHTML = "";
+        db.forEach((p, i) => {
+            list.innerHTML += `
+            <div class="proj-card">
+                <div onclick="showDetail(${i})" style="flex-grow:1;"><b>${p.zn}</b><br><small>${p.bz}</small></div>
+                <button onclick="openM_P(${i})" style="margin-right:15px; border:none; background:none; font-size:18px;">✎</button>
+                <button onclick="delP(${i})" style="border:none; background:none; color:red; font-size:18px;">✕</button>
+            </div>`;
+        });
+    }
+
     function openM_P(idx = null) {
         if(idx !== null) {
             document.getElementById('p-edit-idx').value = idx;
@@ -97,7 +141,7 @@
             document.getElementById('p-edit-idx').value = "";
             document.getElementById('p-zn').value = "";
             document.getElementById('p-bz').value = "";
-            document.getElementById('p-modal-title').innerText = "NEU ANLEGEN";
+            document.getElementById('p-modal-title').innerText = "NEUE ZEICHNUNG";
         }
         document.getElementById('modal-p').style.display = 'block';
     }
@@ -107,29 +151,27 @@
         let bz = document.getElementById('p-bz').value;
         let idx = document.getElementById('p-edit-idx').value;
         if(!zn) return;
-
-        if(idx !== "") {
-            db[idx].zn = zn; db[idx].bz = bz;
-        } else {
-            db.push({ zn, bz, tools: [] });
-        }
+        if(idx !== "") { db[idx].zn = zn; db[idx].bz = bz; }
+        else { db.push({ zn, bz, tools: [] }); }
         save(); closeM('modal-p'); renderDash();
     }
 
-    function renderDash() {
-        const list = document.getElementById('project-list');
+    // TOOLS
+    function renderTools() {
+        const list = document.getElementById('tool-list');
         list.innerHTML = "";
-        db.forEach((p, i) => {
+        db[curIdx].tools.forEach((t, i) => {
             list.innerHTML += `
-            <div class="proj-card">
-                <div onclick="showDetail(${i})" style="flex-grow:1;"><b>${p.zn}</b><br><small>${p.bz}</small></div>
-                <button onclick="openM_P(${i})" style="margin-right:10px; border:none; background:none;">✎</button>
-                <button onclick="delP(${i})" style="border:none; background:none; color:red;">✕</button>
+            <div class="tool-row" data-id="${i}">
+                <div class="drag-handle">☰</div>
+                <div class="t-num" onclick="openM_T(${i})">${t.tid}</div>
+                <div class="t-name" onclick="openM_T(${i})">${t.tnm}</div>
+                <div class="t-comment" onclick="openM_T(${i})">${t.tnt || ''}</div>
+                <button onclick="delT(${i})" style="border:none; background:none; color:red;">✕</button>
             </div>`;
         });
     }
 
-    // --- TOOL LOGIK ---
     function openM_T(idx = null) {
         if(idx !== null) {
             let t = db[curIdx].tools[idx];
@@ -143,7 +185,7 @@
             document.getElementById('t-id').value = "";
             document.getElementById('t-name').value = "";
             document.getElementById('t-note').value = "";
-            document.getElementById('t-modal-title').innerText = "NEUES T";
+            document.getElementById('t-modal-title').innerText = "NEUES WERKZEUG";
         }
         document.getElementById('modal-t').style.display = 'block';
     }
@@ -154,30 +196,37 @@
         let tnt = document.getElementById('t-note').value;
         let idx = document.getElementById('t-edit-idx').value;
         if(!tid) return;
-
         let obj = { tid, tnm, tnt };
         if(idx !== "") db[curIdx].tools[idx] = obj;
         else db[curIdx].tools.push(obj);
-
         save(); renderTools(); closeM('modal-t');
     }
 
-    function renderTools() {
-        const list = document.getElementById('tool-list');
-        list.innerHTML = "";
-        db[curIdx].tools.forEach((t, i) => {
-            list.innerHTML += `
-            <div class="tool-row" data-id="${i}">
-                <div class="drag-handle">☰</div>
-                <div class="t-num" onclick="openM_T(${i})">${t.tid}</div>
-                <div class="t-name" onclick="openM_T(${i})">${t.tnm}</div>
-                <div class="t-comment" onclick="openM_T(${i})">${t.tnt}</div>
-                <button onclick="delT(${i})" style="border:none; background:none; color:red;">✕</button>
-            </div>`;
+    // VORSCHAU & PDF
+    function openPreview() {
+        const p = db[curIdx];
+        document.getElementById('pdf-header-info').innerText = `ZN: ${p.zn} | BEZEICHNUNG: ${p.bz}`;
+        const tbody = document.getElementById('pdf-body');
+        tbody.innerHTML = "";
+        p.tools.forEach(t => {
+            tbody.innerHTML += `<tr><td><b>${t.tid}</b></td><td>${t.tnm}</td><td>${t.tnt || ''}</td></tr>`;
         });
+        
+        const content = document.getElementById('pdf-content');
+        content.style.display = 'block';
+        document.getElementById('pdf-view-container').innerHTML = content.outerHTML;
+        content.style.display = 'none';
+        document.getElementById('modal-prev').style.display = 'block';
     }
 
-    // --- SYSTEM FUNKTIONEN ---
+    function downloadPDF() {
+        const el = document.querySelector('#pdf-view-container #pdf-content');
+        el.style.display = 'block';
+        const opt = { margin:10, filename: `Tools_${db[curIdx].zn}.pdf`, html2canvas:{scale:2}, jsPDF:{unit:'mm', format:'a4'} };
+        html2pdf().set(opt).from(el).save();
+    }
+
+    // NAVIGATION
     function showDetail(i) {
         curIdx = i;
         document.getElementById('view-dash').classList.add('hidden');
@@ -193,11 +242,11 @@
     function exportData() {
         const blob = new Blob([JSON.stringify(db)], {type: "application/json"});
         const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob); a.download = "Werkzeuge_Backup.json"; a.click();
+        a.href = URL.createObjectURL(blob); a.download = "Backup_Tools.json"; a.click();
     }
 
     new Sortable(document.getElementById('tool-list'), {
-        handle: '.drag-handle', animation: 150,
+        handle: '.drag-handle', animation: 150, ghostClass: 'ghost',
         onEnd: () => {
             let n = [];
             document.querySelectorAll('.tool-row').forEach(r => n.push(db[curIdx].tools[r.dataset.id]));
