@@ -3,55 +3,82 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>QS-TOOL CORE v3.2 - A4 Perfect</title>
+    <title>QS-TOOL PREMIUM v3.3</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <style>
         :root { --accent: #000; --bg: #FFF; --border: #000; }
-        body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); color: var(--accent); margin: 0; padding: 0; }
+        body { font-family: 'Helvetica Neue', Arial, sans-serif; background: var(--bg); color: var(--accent); margin: 0; padding: 0; }
         .app-shell { max-width: 600px; margin: 0 auto; min-height: 100vh; display: flex; flex-direction: column; }
         
         /* App UI */
         .top-bar { padding: 40px 20px 20px; border-bottom: 5px solid var(--accent); display: flex; justify-content: space-between; align-items: flex-end; }
         .top-bar h1 { font-size: 24px; font-weight: 900; margin: 0; text-transform: uppercase; }
-        .proj-card { border: 2px solid #000; margin: 10px 20px; padding: 15px; display: flex; justify-content: space-between; align-items: center; background: #fff; }
+        .proj-card { border: 2px solid #000; margin: 10px 20px; padding: 15px; display: flex; justify-content: space-between; align-items: center; background: #fff; cursor: pointer; }
         .tool-row { border: 2px solid var(--border); margin: 8px 15px; padding: 12px; display: grid; grid-template-columns: 30px 80px 1fr 40px; gap: 10px; align-items: center; background: #fff; }
         
-        /* Modal Fix */
+        /* Modal Style */
         .modal { display: none; position: fixed; inset: 0; background: #fff; z-index: 1000; padding: 30px; overflow-y: auto; }
-        .modal input { display: block; width: 100%; margin-bottom: 15px; padding: 15px; border: 2px solid #000; font-size: 16px; font-weight: bold; box-sizing: border-box; }
+        .modal input { display: block; width: 100%; margin-bottom: 15px; padding: 18px; border: 2px solid #000; font-size: 16px; font-weight: bold; box-sizing: border-box; outline: none; }
         
-        .btn-black { background: #000; color: #fff; border: none; padding: 18px; font-weight: 900; text-transform: uppercase; cursor: pointer; width: 100%; }
-        .fab { position: fixed; bottom: 30px; right: 20px; background: #000; color: #fff; border: none; width: 60px; height: 60px; font-size: 30px; border-radius: 50%; z-index: 100; }
+        .btn-black { background: #000; color: #fff; border: none; padding: 20px; font-weight: 900; text-transform: uppercase; cursor: pointer; width: 100%; letter-spacing: 1px; }
+        .fab { position: fixed; bottom: 30px; right: 20px; background: #000; color: #fff; border: none; width: 65px; height: 65px; font-size: 30px; border-radius: 50%; z-index: 100; box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
         .hidden { display: none; }
-        .drag-handle { cursor: grab; color: #ccc; }
+        .drag-handle { cursor: grab; color: #ccc; font-size: 24px; }
 
-        /* PDF DIN A4 STYLING */
-        #pdf-outer-frame { 
-            width: 190mm; /* A4 Breite minus Margins */
-            margin: 0 auto;
-            padding: 10mm;
-            border: 2px solid #000; /* Äußerer Rahmen für das Blatt */
+        /* --- PREMIUM PDF LAYOUT --- */
+        #pdf-render-area {
+            width: 210mm; 
+            min-height: 297mm;
+            padding: 15mm;
             background: #fff;
-            min-height: 270mm; /* Fast volle A4 Höhe */
             box-sizing: border-box;
-            display: none;
+            display: none; /* Nur für Export aktiv */
+            position: relative;
         }
-        .pdf-header { border-bottom: 4px solid #000; padding-bottom: 15px; margin-bottom: 20px; display: flex; align-items: baseline; gap: 20px; }
-        .pdf-bz { font-size: 32pt; font-weight: 900; text-transform: uppercase; }
-        .pdf-zn { font-size: 20pt; font-weight: 500; color: #444; }
+        /* Der äußere Rahmen um das ganze Blatt */
+        .page-border {
+            border: 1.5pt solid #000;
+            padding: 10mm;
+            min-height: 260mm;
+            display: flex;
+            flex-direction: column;
+            box-sizing: border-box;
+        }
+        .pdf-header { 
+            border-bottom: 3pt solid #000; 
+            padding-bottom: 10pt; 
+            margin-bottom: 20pt; 
+            display: flex; 
+            align-items: baseline;
+        }
+        .pdf-bz { font-size: 36pt; font-weight: 900; text-transform: uppercase; margin-right: 15pt; }
+        .pdf-zn { font-size: 22pt; font-weight: 400; color: #666; }
         
-        .pdf-table { width: 100%; border-collapse: collapse; border: 2px solid #000; }
-        .pdf-table th, .pdf-table td { border: 1.5px solid #000; padding: 12px; text-align: left; font-size: 12pt; }
-        .pdf-table th { background: #eee; font-weight: 900; }
+        .pdf-table { width: 100%; border-collapse: collapse; margin-top: 10pt; }
+        .pdf-table th { 
+            background: #f2f2f2; 
+            border: 1.5pt solid #000; 
+            padding: 12pt; 
+            text-align: left; 
+            font-size: 10pt; 
+            text-transform: uppercase; 
+            letter-spacing: 1pt;
+        }
+        .pdf-table td { 
+            border: 1.5pt solid #000; 
+            padding: 14pt 12pt; 
+            font-size: 12pt; 
+            font-weight: 500;
+        }
     </style>
 </head>
 <body>
 
 <div id="view-dash" class="app-shell">
     <div class="top-bar">
-        <div><h1>DATABASE</h1><span>WERKZEUGE</span></div>
-        <button onclick="exportData()" style="font-size:10px; border:1px solid #000; background:none; padding:5px;">BACKUP</button>
+        <div><h1>DATABASE</h1><span>PREMIUM SETUP</span></div>
+        <button onclick="exportData()" style="font-size:10px; border:1px solid #000; background:none; padding:5px; cursor:pointer;">BACKUP</button>
     </div>
     <div id="project-list" style="margin-top:20px;"></div>
     <button class="fab" onclick="openM_P()">+</button>
@@ -59,12 +86,12 @@
 
 <div id="view-detail" class="app-shell hidden">
     <div class="top-bar">
-        <button onclick="closeDetail()" style="background:none; border:none; font-size:24px; font-weight:900;">←</button>
+        <button onclick="closeDetail()" style="background:none; border:none; font-size:24px; font-weight:900; cursor:pointer;">←</button>
         <div style="text-align:right;"><h1 id="title-head" style="font-size:18px; margin:0;"></h1><span id="zn-head" style="font-weight:bold; opacity:0.6;"></span></div>
     </div>
     <div style="padding: 15px 15px 5px;"><button class="btn-black" onclick="openM('modal-import')">LISTE IMPORTIEREN</button></div>
     <div id="tool-list"></div>
-    <div style="padding:20px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+    <div style="padding:20px; display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
         <button class="btn-black" onclick="openPreview()">VORSCHAU</button>
         <button class="btn-black" style="background:#cc0000;" onclick="clearTools()">LEEREN</button>
     </div>
@@ -72,60 +99,61 @@
 </div>
 
 <div id="modal-p" class="modal">
-    <h1>PROJEKT DATEN</h1>
+    <h1 style="font-weight:900; margin-bottom:30px;">NEUES PROJEKT</h1>
     <input type="hidden" id="p-edit-idx">
-    <input type="text" id="p-bz" placeholder="BAUTEIL (z.B. BUCHSE)">
-    <input type="text" id="p-zn" placeholder="ZEICHNUNG (z.B. 233562RO.O)">
-    <button class="btn-black" onclick="saveProject()">SPEICHERN</button>
-    <button onclick="closeM('modal-p')" style="width:100%; border:none; background:none; margin-top:20px; text-decoration: underline;">ABBRECHEN</button>
+    <input type="text" id="p-bz" placeholder="BAUTEIL NAME">
+    <input type="text" id="p-zn" placeholder="ZEICHNUNGS-NR">
+    <button class="btn-black" onclick="saveProject()">PROJEKT SPEICHERN</button>
+    <button onclick="closeM('modal-p')" style="width:100%; border:none; background:none; margin-top:25px; text-decoration:underline; font-weight:bold; cursor:pointer;">ABBRECHEN</button>
 </div>
 
 <div id="modal-import" class="modal">
-    <h1>IMPORT</h1>
-    <textarea id="import-area" style="width:100%; border:2px solid #000; padding:10px; font-weight:bold;" rows="12" placeholder="T-Text einfügen..."></textarea>
-    <button class="btn-black" style="margin-top:10px;" onclick="processImport()">IMPORTIEREN</button>
-    <button onclick="closeM('modal-import')" style="width:100%; border:none; background:none; margin-top:20px;">ZURÜCK</button>
+    <h1 style="font-weight:900;">LISTE IMPORT</h1>
+    <textarea id="import-area" style="width:100%; border:2px solid #000; padding:15px; font-size:16px; font-weight:bold; outline:none;" rows="12" placeholder="T-Code hier einfügen..."></textarea>
+    <button class="btn-black" style="margin-top:15px;" onclick="processImport()">DATEN EINLESEN</button>
+    <button onclick="closeM('modal-import')" style="width:100%; border:none; background:none; margin-top:20px; cursor:pointer;">ZURÜCK</button>
 </div>
 
 <div id="modal-t" class="modal">
-    <h1>WERKZEUG</h1>
+    <h1 style="font-weight:900;">WERKZEUG</h1>
     <input type="hidden" id="t-edit-idx">
-    <input type="text" id="t-id" placeholder="T-NR">
-    <input type="text" id="t-name" placeholder="BEZEICHNUNG">
+    <input type="text" id="t-id" placeholder="T-NR (z.B. T0505)">
+    <input type="text" id="t-name" placeholder="BEZEICHNUNG / KOMMENTAR">
     <button class="btn-black" onclick="saveT()">SPEICHERN</button>
-    <button onclick="closeM('modal-t')" style="width:100%; border:none; background:none; margin-top:20px;">ABBRECHEN</button>
+    <button onclick="closeM('modal-t')" style="width:100%; border:none; background:none; margin-top:20px; cursor:pointer;">ABBRECHEN</button>
 </div>
 
 <div id="modal-prev" class="modal">
-    <div style="display:flex; justify-content:space-between; margin-bottom:20px;">
-        <button onclick="closeM('modal-prev')" style="border:2px solid #000; background:none; padding:10px; font-weight:bold;">ZURÜCK</button>
-        <button class="btn-black" onclick="downloadPDF()" style="width:auto; padding:10px 30px;">PDF SPEICHERN</button>
+    <div style="display:flex; justify-content:space-between; margin-bottom:20px; align-items:center;">
+        <button onclick="closeM('modal-prev')" style="border:2px solid #000; background:none; padding:12px 20px; font-weight:900; cursor:pointer;">← ZURÜCK</button>
+        <button class="btn-black" onclick="downloadPDF()" style="width:auto; padding:12px 35px;">JETZT DRUCKEN (A4)</button>
     </div>
-    <div id="pdf-view-box" style="transform: scale(0.45); transform-origin: top center; background:#999; padding: 20px;"></div>
+    <div id="pdf-preview-wrap" style="transform: scale(0.4); transform-origin: top center; background:#555; padding: 40px; border-radius: 8px;"></div>
 </div>
 
-<div id="pdf-outer-frame">
-    <div class="pdf-header">
-        <span id="pdf-bz-val" class="pdf-bz"></span>
-        <span id="pdf-zn-val" class="pdf-zn"></span>
-    </div>
-    <table class="pdf-table">
-        <thead>
-            <tr>
-                <th style="width: 20%;">T-NR</th>
-                <th style="width: 80%;">WERKZEUGNAME / KOMMENTAR / NULLPUNKT</th>
-            </tr>
-        </thead>
-        <tbody id="pdf-body"></tbody>
-    </table>
-    <div style="flex-grow: 1;"></div>
+<div id="pdf-render-area">
+    <div class="page-border">
+        <div class="pdf-header">
+            <span id="pdf-bz-val" class="pdf-bz"></span>
+            <span id="pdf-zn-val" class="pdf-zn"></span>
+        </div>
+        <table class="pdf-table">
+            <thead>
+                <tr>
+                    <th style="width: 20%;">T-NR</th>
+                    <th style="width: 80%;">WERKZEUGNAME / KOMMENTAR / NULLPUNKT</th>
+                </tr>
+            </thead>
+            <tbody id="pdf-body"></tbody>
+        </table>
+        <div style="flex-grow: 1;"></div> </div>
 </div>
 
 <script>
-    let db = JSON.parse(localStorage.getItem('tool_db_v32')) || [];
+    let db = JSON.parse(localStorage.getItem('tool_db_v33')) || [];
     let curIdx = null;
 
-    const save = () => localStorage.setItem('tool_db_v32', JSON.stringify(db));
+    const save = () => localStorage.setItem('tool_db_v33', JSON.stringify(db));
     const openM = (id) => document.getElementById(id).style.display = 'block';
     const closeM = (id) => document.getElementById(id).style.display = 'none';
 
@@ -133,7 +161,7 @@
         const list = document.getElementById('project-list');
         list.innerHTML = "";
         db.forEach((p, i) => {
-            list.innerHTML += `<div class="proj-card"><div onclick="showDetail(${i})" style="flex-grow:1;"><b>${p.bz}</b> | ${p.zn}</div><button onclick="openM_P(${i})" style="border:none; background:none; font-size:20px;">✎</button><button onclick="delP(${i})" style="border:none; background:none; color:red; font-size:20px; margin-left:10px;">✕</button></div>`;
+            list.innerHTML += `<div class="proj-card"><div onclick="showDetail(${i})" style="flex-grow:1;"><span style="font-size:20px; font-weight:900; text-transform:uppercase;">${p.bz}</span><br><small style="color:#666; font-weight:bold;">${p.zn}</small></div><button onclick="openM_P(${i})" style="border:none; background:none; font-size:20px; cursor:pointer;">✎</button><button onclick="delP(${i})" style="border:none; background:none; color:red; font-size:20px; margin-left:10px; cursor:pointer;">✕</button></div>`;
         });
     }
 
@@ -155,7 +183,7 @@
     function renderTools() {
         const list = document.getElementById('tool-list'); list.innerHTML = "";
         db[curIdx].tools.forEach((t, i) => {
-            list.innerHTML += `<div class="tool-row" data-id="${i}"><div class="drag-handle">☰</div><div class="t-num" onclick="openM_T(${i})">${t.tid}</div><div class="t-name" onclick="openM_T(${i})">${t.tnm}</div><button onclick="delT(${i})" style="border:none; background:none; color:red;">✕</button></div>`;
+            list.innerHTML += `<div class="tool-row" data-id="${i}"><div class="drag-handle">☰</div><div class="t-num" onclick="openM_T(${i})" style="cursor:pointer; font-weight:900;">${t.tid}</div><div class="t-name" onclick="openM_T(${i})" style="cursor:pointer;">${t.tnm}</div><button onclick="delT(${i})" style="border:none; background:none; color:red; cursor:pointer;">✕</button></div>`;
         });
     }
 
@@ -195,21 +223,21 @@
         document.getElementById('pdf-zn-val').innerText = p.zn;
         const tbody = document.getElementById('pdf-body'); tbody.innerHTML = "";
         p.tools.forEach(t => {
-            tbody.innerHTML += `<tr><td><strong>${t.tid}</strong></td><td>${t.tnm}</td></tr>`;
+            tbody.innerHTML += `<tr><td style="font-weight:900;">${t.tid}</td><td>${t.tnm}</td></tr>`;
         });
-        const content = document.getElementById('pdf-outer-frame');
+        const content = document.getElementById('pdf-render-area');
         content.style.display = 'block';
-        document.getElementById('pdf-view-box').innerHTML = content.outerHTML;
+        document.getElementById('pdf-preview-wrap').innerHTML = content.outerHTML;
         content.style.display = 'none';
         openM('modal-prev');
     }
 
     function downloadPDF() {
-        const el = document.querySelector('#pdf-view-box #pdf-outer-frame');
+        const el = document.querySelector('#pdf-preview-wrap #pdf-render-area');
         const opt = { 
             margin: 0, 
-            filename: `Setup_${db[curIdx].bz}.pdf`, 
-            html2canvas: { scale: 2, useCORS: true }, 
+            filename: `SETUP_${db[curIdx].bz}.pdf`, 
+            html2canvas: { scale: 2, useCORS: true, letterRendering: true }, 
             jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } 
         };
         html2pdf().set(opt).from(el).save();
@@ -240,7 +268,7 @@
     function delP(i) { if(confirm("Löschen?")) { db.splice(i,1); save(); renderDash(); } }
     function delT(i) { db[curIdx].tools.splice(i,1); save(); renderTools(); }
     function clearTools() { if(confirm("Alles löschen?")) { db[curIdx].tools = []; save(); renderTools(); } }
-    function exportData() { const blob = new Blob([JSON.stringify(db)], {type: "application/json"}); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = "Backup.json"; a.click(); }
+    function exportData() { const blob = new Blob([JSON.stringify(db)], {type: "application/json"}); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = "Setup_Backup.json"; a.click(); }
 
     new Sortable(document.getElementById('tool-list'), { handle: '.drag-handle', animation: 150 });
     renderDash();
