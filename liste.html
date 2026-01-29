@@ -3,37 +3,47 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>QS-TOOL CORE v3.1</title>
+    <title>QS-TOOL CORE v3.2 - A4 Perfect</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <style>
         :root { --accent: #000; --bg: #FFF; --border: #000; }
-        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--accent); margin: 0; padding: 0; }
+        body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); color: var(--accent); margin: 0; padding: 0; }
         .app-shell { max-width: 600px; margin: 0 auto; min-height: 100vh; display: flex; flex-direction: column; }
         
-        /* UI Elements */
+        /* App UI */
         .top-bar { padding: 40px 20px 20px; border-bottom: 5px solid var(--accent); display: flex; justify-content: space-between; align-items: flex-end; }
         .top-bar h1 { font-size: 24px; font-weight: 900; margin: 0; text-transform: uppercase; }
         .proj-card { border: 2px solid #000; margin: 10px 20px; padding: 15px; display: flex; justify-content: space-between; align-items: center; background: #fff; }
         .tool-row { border: 2px solid var(--border); margin: 8px 15px; padding: 12px; display: grid; grid-template-columns: 30px 80px 1fr 40px; gap: 10px; align-items: center; background: #fff; }
         
-        /* Modal Fixes */
+        /* Modal Fix */
         .modal { display: none; position: fixed; inset: 0; background: #fff; z-index: 1000; padding: 30px; overflow-y: auto; }
-        .modal input, .modal textarea { display: block; width: 100%; margin-bottom: 15px; padding: 15px; border: 2px solid #000; font-size: 16px; font-weight: bold; box-sizing: border-box; }
+        .modal input { display: block; width: 100%; margin-bottom: 15px; padding: 15px; border: 2px solid #000; font-size: 16px; font-weight: bold; box-sizing: border-box; }
         
-        .btn-black { background: #000; color: #fff; border: none; padding: 18px; font-weight: 900; text-transform: uppercase; cursor: pointer; width: 100%; font-size: 14px; }
+        .btn-black { background: #000; color: #fff; border: none; padding: 18px; font-weight: 900; text-transform: uppercase; cursor: pointer; width: 100%; }
         .fab { position: fixed; bottom: 30px; right: 20px; background: #000; color: #fff; border: none; width: 60px; height: 60px; font-size: 30px; border-radius: 50%; z-index: 100; }
         .hidden { display: none; }
-        .drag-handle { cursor: grab; color: #ccc; font-size: 20px; }
+        .drag-handle { cursor: grab; color: #ccc; }
 
-        /* PDF Perfection DIN A4 */
-        #pdf-export-container { width: 100%; background: white; padding: 30px; box-sizing: border-box; display: none; }
-        .pdf-header-box { border-bottom: 4px solid #000; padding-bottom: 10px; margin-bottom: 20px; }
-        .pdf-main-title { font-size: 28pt; font-weight: 900; text-transform: uppercase; display: inline-block; margin-right: 15px; }
-        .pdf-sub-title { font-size: 18pt; font-weight: 700; display: inline-block; color: #333; }
-        .pdf-table { width: 100%; border-collapse: collapse; border: 2px solid #000; margin-bottom: 2px; }
-        .pdf-table th, .pdf-table td { border: 2px solid #000; padding: 12px 10px; text-align: left; font-size: 11pt; }
-        .pdf-table th { background: #f0f0f0; font-weight: 900; }
+        /* PDF DIN A4 STYLING */
+        #pdf-outer-frame { 
+            width: 190mm; /* A4 Breite minus Margins */
+            margin: 0 auto;
+            padding: 10mm;
+            border: 2px solid #000; /* Äußerer Rahmen für das Blatt */
+            background: #fff;
+            min-height: 270mm; /* Fast volle A4 Höhe */
+            box-sizing: border-box;
+            display: none;
+        }
+        .pdf-header { border-bottom: 4px solid #000; padding-bottom: 15px; margin-bottom: 20px; display: flex; align-items: baseline; gap: 20px; }
+        .pdf-bz { font-size: 32pt; font-weight: 900; text-transform: uppercase; }
+        .pdf-zn { font-size: 20pt; font-weight: 500; color: #444; }
+        
+        .pdf-table { width: 100%; border-collapse: collapse; border: 2px solid #000; }
+        .pdf-table th, .pdf-table td { border: 1.5px solid #000; padding: 12px; text-align: left; font-size: 12pt; }
+        .pdf-table th { background: #eee; font-weight: 900; }
     </style>
 </head>
 <body>
@@ -64,24 +74,24 @@
 <div id="modal-p" class="modal">
     <h1>PROJEKT DATEN</h1>
     <input type="hidden" id="p-edit-idx">
-    <input type="text" id="p-bz" placeholder="BAUTEIL NAME (z.B. BUCHSE)">
-    <input type="text" id="p-zn" placeholder="ZEICHNUNGS-NR (z.B. 233562RO.O)">
+    <input type="text" id="p-bz" placeholder="BAUTEIL (z.B. BUCHSE)">
+    <input type="text" id="p-zn" placeholder="ZEICHNUNG (z.B. 233562RO.O)">
     <button class="btn-black" onclick="saveProject()">SPEICHERN</button>
     <button onclick="closeM('modal-p')" style="width:100%; border:none; background:none; margin-top:20px; text-decoration: underline;">ABBRECHEN</button>
 </div>
 
 <div id="modal-import" class="modal">
-    <h1>LISTE IMPORTIEREN</h1>
-    <textarea id="import-area" rows="12" placeholder="Programm-Text einfügen..."></textarea>
-    <button class="btn-black" onclick="processImport()">DATEN EINLESEN</button>
+    <h1>IMPORT</h1>
+    <textarea id="import-area" style="width:100%; border:2px solid #000; padding:10px; font-weight:bold;" rows="12" placeholder="T-Text einfügen..."></textarea>
+    <button class="btn-black" style="margin-top:10px;" onclick="processImport()">IMPORTIEREN</button>
     <button onclick="closeM('modal-import')" style="width:100%; border:none; background:none; margin-top:20px;">ZURÜCK</button>
 </div>
 
 <div id="modal-t" class="modal">
-    <h1>WERKZEUG DETAILS</h1>
+    <h1>WERKZEUG</h1>
     <input type="hidden" id="t-edit-idx">
-    <input type="text" id="t-id" placeholder="T-NR (z.B. T0101)">
-    <input type="text" id="t-name" placeholder="BEZEICHNUNG / G-CODE">
+    <input type="text" id="t-id" placeholder="T-NR">
+    <input type="text" id="t-name" placeholder="BEZEICHNUNG">
     <button class="btn-black" onclick="saveT()">SPEICHERN</button>
     <button onclick="closeM('modal-t')" style="width:100%; border:none; background:none; margin-top:20px;">ABBRECHEN</button>
 </div>
@@ -91,30 +101,31 @@
         <button onclick="closeM('modal-prev')" style="border:2px solid #000; background:none; padding:10px; font-weight:bold;">ZURÜCK</button>
         <button class="btn-black" onclick="downloadPDF()" style="width:auto; padding:10px 30px;">PDF SPEICHERN</button>
     </div>
-    <div id="pdf-view-box" style="border:1px solid #ccc; background:#fff; zoom:0.5;"></div>
+    <div id="pdf-view-box" style="transform: scale(0.45); transform-origin: top center; background:#999; padding: 20px;"></div>
 </div>
 
-<div id="pdf-export-container">
-    <div class="pdf-header-box">
-        <span id="pdf-bz-val" class="pdf-main-title"></span>
-        <span id="pdf-zn-val" class="pdf-sub-title"></span>
+<div id="pdf-outer-frame">
+    <div class="pdf-header">
+        <span id="pdf-bz-val" class="pdf-bz"></span>
+        <span id="pdf-zn-val" class="pdf-zn"></span>
     </div>
     <table class="pdf-table">
         <thead>
             <tr>
-                <th style="width: 18%;">T-NR</th>
-                <th style="width: 82%;">WERKZEUGNAME / KOMMENTAR</th>
+                <th style="width: 20%;">T-NR</th>
+                <th style="width: 80%;">WERKZEUGNAME / KOMMENTAR / NULLPUNKT</th>
             </tr>
         </thead>
         <tbody id="pdf-body"></tbody>
     </table>
+    <div style="flex-grow: 1;"></div>
 </div>
 
 <script>
-    let db = JSON.parse(localStorage.getItem('tool_db_v31')) || [];
+    let db = JSON.parse(localStorage.getItem('tool_db_v32')) || [];
     let curIdx = null;
 
-    const save = () => localStorage.setItem('tool_db_v31', JSON.stringify(db));
+    const save = () => localStorage.setItem('tool_db_v32', JSON.stringify(db));
     const openM = (id) => document.getElementById(id).style.display = 'block';
     const closeM = (id) => document.getElementById(id).style.display = 'none';
 
@@ -186,7 +197,7 @@
         p.tools.forEach(t => {
             tbody.innerHTML += `<tr><td><strong>${t.tid}</strong></td><td>${t.tnm}</td></tr>`;
         });
-        const content = document.getElementById('pdf-export-container');
+        const content = document.getElementById('pdf-outer-frame');
         content.style.display = 'block';
         document.getElementById('pdf-view-box').innerHTML = content.outerHTML;
         content.style.display = 'none';
@@ -194,11 +205,11 @@
     }
 
     function downloadPDF() {
-        const el = document.querySelector('#pdf-view-box #pdf-export-container');
+        const el = document.querySelector('#pdf-view-box #pdf-outer-frame');
         const opt = { 
-            margin: 10, 
-            filename: `ToolList_${db[curIdx].bz}.pdf`, 
-            html2canvas: { scale: 3, useCORS: true }, 
+            margin: 0, 
+            filename: `Setup_${db[curIdx].bz}.pdf`, 
+            html2canvas: { scale: 2, useCORS: true }, 
             jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } 
         };
         html2pdf().set(opt).from(el).save();
@@ -229,7 +240,7 @@
     function delP(i) { if(confirm("Löschen?")) { db.splice(i,1); save(); renderDash(); } }
     function delT(i) { db[curIdx].tools.splice(i,1); save(); renderTools(); }
     function clearTools() { if(confirm("Alles löschen?")) { db[curIdx].tools = []; save(); renderTools(); } }
-    function exportData() { const blob = new Blob([JSON.stringify(db)], {type: "application/json"}); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = "QS_Tools_Backup.json"; a.click(); }
+    function exportData() { const blob = new Blob([JSON.stringify(db)], {type: "application/json"}); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = "Backup.json"; a.click(); }
 
     new Sortable(document.getElementById('tool-list'), { handle: '.drag-handle', animation: 150 });
     renderDash();
