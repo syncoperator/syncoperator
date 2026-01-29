@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>QS-TOOL CORE v2.2</title>
+    <title>QS-TOOL CORE v2.5 - Smart Import</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <style>
@@ -11,38 +11,27 @@
         body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); color: var(--accent); margin: 0; padding: 0; }
         .app-shell { max-width: 600px; margin: 0 auto; min-height: 100vh; display: flex; flex-direction: column; }
         
-        /* Header */
         .top-bar { padding: 40px 20px 20px; border-bottom: 5px solid var(--accent); display: flex; justify-content: space-between; align-items: flex-end; }
-        .top-bar h1 { font-size: 26px; font-weight: 900; margin: 0; text-transform: uppercase; letter-spacing: -1px; }
+        .top-bar h1 { font-size: 26px; font-weight: 900; margin: 0; text-transform: uppercase; }
 
-        /* Dashboard */
-        .proj-card { border: 2px solid #000; margin: 10px 20px; padding: 15px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+        .proj-card { border: 2px solid #000; margin: 10px 20px; padding: 15px; display: flex; justify-content: space-between; align-items: center; }
         
-        /* Tool Rows */
         .tool-row { 
             border: 2px solid var(--border); margin: 8px 15px; padding: 10px; 
-            display: grid; grid-template-columns: 30px 60px 1fr 100px 40px; 
+            display: grid; grid-template-columns: 30px 70px 1fr 40px; 
             gap: 10px; align-items: center; background: #fff;
         }
         .t-num { font-weight: 900; border-right: 2px solid #000; cursor: pointer; }
-        .t-name { font-weight: 700; text-transform: uppercase; cursor: pointer; word-break: break-all; font-size: 14px; }
-        .t-comment { font-size: 11px; color: #666; font-style: italic; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
-
-        /* Buttons & Inputs */
+        .t-name { font-weight: 700; text-transform: uppercase; cursor: pointer; word-break: break-all; font-size: 13px; }
+        
         .btn-black { background: #000; color: #fff; border: none; padding: 15px; font-weight: 900; text-transform: uppercase; cursor: pointer; width: 100%; }
-        input { width: 100%; border: 2px solid #000; padding: 12px; font-size: 16px; font-weight: bold; box-sizing: border-box; margin-bottom: 10px; }
+        .btn-outline { background: #fff; border: 2px solid #000; padding: 10px; font-weight: 800; cursor: pointer; margin-bottom: 10px; width: 100%; }
+        
+        input, textarea { width: 100%; border: 2px solid #000; padding: 12px; font-size: 16px; font-weight: bold; box-sizing: border-box; margin-bottom: 10px; font-family: inherit; }
         .fab { position: fixed; bottom: 30px; right: 20px; background: #000; color: #fff; border: none; width: 60px; height: 60px; font-size: 30px; border-radius: 50%; z-index: 100; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
 
-        /* Modals */
         .modal { display: none; position: fixed; inset: 0; background: #fff; z-index: 1000; padding: 20px; overflow-y: auto; }
-
-        /* PDF S/W Layout */
-        #pdf-content { display: none; padding: 30px; background: white; color: black; font-family: 'Courier', monospace; }
-        .pdf-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        .pdf-table th, .pdf-table td { border: 1px solid black; padding: 8px; text-align: left; font-size: 12px; }
-        
         .hidden { display: none; }
-        .ghost { opacity: 0.3; }
     </style>
 </head>
 <body>
@@ -50,7 +39,7 @@
 <div id="view-dash" class="app-shell">
     <div class="top-bar">
         <div><h1>DATABASE</h1><span>WERKZEUGE</span></div>
-        <button onclick="exportData()" style="font-size:10px; border:1px solid #000; background:none; padding:5px;">EXPORT</button>
+        <button onclick="exportData()" style="font-size:10px; border:1px solid #000; background:none; padding:5px;">BACKUP</button>
     </div>
     <div id="project-list" style="margin-top:20px;"></div>
     <button class="fab" onclick="openM_P()">+</button>
@@ -61,9 +50,26 @@
         <button onclick="closeDetail()" style="background:none; border:none; font-size:24px; font-weight:900;">←</button>
         <div style="text-align:right;"><span id="zn-head"></span><h1 id="title-head" style="font-size:20px;"></h1></div>
     </div>
-    <div id="tool-list" style="margin-top:20px;"></div>
-    <div style="padding:20px;"><button class="btn-black" onclick="openPreview()">VORSCHAU & PDF</button></div>
+    
+    <div style="padding: 15px 15px 0;">
+        <button class="btn-outline" onclick="openM('modal-import')">🚀 SCHNELL-IMPORT (LISTE)</button>
+    </div>
+
+    <div id="tool-list"></div>
+    
+    <div style="padding:20px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+        <button class="btn-black" onclick="openPreview()">PDF VORSCHAU</button>
+        <button class="btn-black" style="background:#555;" onclick="clearTools()">LISTE LEEREN</button>
+    </div>
     <button class="fab" onclick="openM_T()">+</button>
+</div>
+
+<div id="modal-import" class="modal">
+    <h1>SMART IMPORT</h1>
+    <p style="font-size: 12px; margin-bottom: 10px;">Liste aus dem Programm hier einfügen (T-Nummer gefolgt von Name):</p>
+    <textarea id="import-area" rows="12" placeholder="T0101&#10;WALTER FRÄSER&#10;T0202&#10;BOHRER D12..."></textarea>
+    <button class="btn-black" onclick="processImport()">IMPORTIEREN</button>
+    <button onclick="closeM('modal-import')" style="width:100%; background:none; border:none; margin-top:20px; font-weight:bold;">ABBRECHEN</button>
 </div>
 
 <div id="modal-p" class="modal">
@@ -78,43 +84,36 @@
 <div id="modal-t" class="modal">
     <h1 id="t-modal-title">WERKZEUG</h1>
     <input type="hidden" id="t-edit-idx">
-    <input type="text" id="t-id" placeholder="T-NR (z.B. T01)">
+    <input type="text" id="t-id" placeholder="T-NR (z.B. T0101)">
     <input type="text" id="t-name" placeholder="WERKZEUGNAME">
-    <input type="text" id="t-note" placeholder="KOMMENTAR">
+    <input type="text" id="t-note" placeholder="KOMMENTAR (OPTIONAL)">
     <button class="btn-black" onclick="saveT()">SPEICHERN</button>
     <button onclick="closeM('modal-t')" style="width:100%; background:none; border:none; margin-top:20px; font-weight:bold;">ABBRECHEN</button>
 </div>
 
 <div id="modal-prev" class="modal">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-        <button onclick="closeM('modal-prev')" style="border:2px solid #000; background:none; padding:10px;">ZURÜCK</button>
-        <button class="btn-black" onclick="downloadPDF()" style="width:auto; padding:10px 20px;">JETZT DRUCKEN</button>
-    </div>
-    <div id="pdf-view-container" style="border:1px solid #000; zoom:0.5; background:#fff;"></div>
+    <button onclick="closeM('modal-prev')" style="border:2px solid #000; background:none; padding:10px; margin-bottom:10px;">ZURÜCK</button>
+    <button class="btn-black" onclick="downloadPDF()" style="width:auto; float:right;">PDF DOWNLOAD</button>
+    <div id="pdf-view-box" style="border:1px solid #000; zoom:0.5; background:#fff; clear:both;"></div>
 </div>
 
-<div id="pdf-content">
-    <div style="border-bottom: 5px solid #000; padding-bottom: 5px; margin-bottom: 15px;">
-        <h1 style="margin:0; font-size:24px;">WERKZEUGLISTE</h1>
-        <p id="pdf-header-info" style="margin:5px 0 0 0; font-weight:bold; font-size:14px;"></p>
+<div id="pdf-content" style="display:none; padding:30px; font-family: 'Courier', monospace;">
+    <div style="border-bottom: 5px solid #000; padding-bottom: 5px;">
+        <h1 style="margin:0; font-size:28px;">WERKZEUGLISTE</h1>
+        <p id="pdf-info" style="margin:5px 0 0 0; font-weight:bold;"></p>
     </div>
-    <table class="pdf-table">
-        <thead>
-            <tr>
-                <th width="10%">T-NR</th>
-                <th width="65%">WERKZEUGNAME</th>
-                <th width="25%">KOMMENTAR</th>
-            </tr>
-        </thead>
+    <table style="width:100%; border-collapse: collapse; margin-top:20px;">
+        <thead><tr><th style="border:1px solid #000; padding:8px; text-align:left; width:15%;">T-NR</th><th style="border:1px solid #000; padding:8px; text-align:left;">WERKZEUGNAME / NOTIZ</th></tr></thead>
         <tbody id="pdf-body"></tbody>
     </table>
 </div>
 
 <script>
-    let db = JSON.parse(localStorage.getItem('tool_db_v22')) || [];
+    let db = JSON.parse(localStorage.getItem('tool_db_v25')) || [];
     let curIdx = null;
 
-    const save = () => localStorage.setItem('tool_db_v22', JSON.stringify(db));
+    const save = () => localStorage.setItem('tool_db_v25', JSON.stringify(db));
+    const openM = (id) => document.getElementById(id).style.display = 'block';
     const closeM = (id) => document.getElementById(id).style.display = 'none';
 
     // DASHBOARD
@@ -122,12 +121,7 @@
         const list = document.getElementById('project-list');
         list.innerHTML = "";
         db.forEach((p, i) => {
-            list.innerHTML += `
-            <div class="proj-card">
-                <div onclick="showDetail(${i})" style="flex-grow:1;"><b>${p.zn}</b><br><small>${p.bz}</small></div>
-                <button onclick="openM_P(${i})" style="margin-right:15px; border:none; background:none; font-size:18px;">✎</button>
-                <button onclick="delP(${i})" style="border:none; background:none; color:red; font-size:18px;">✕</button>
-            </div>`;
+            list.innerHTML += `<div class="proj-card"><div onclick="showDetail(${i})" style="flex-grow:1;"><b>${p.zn}</b><br><small>${p.bz}</small></div><button onclick="openM_P(${i})" style="margin-right:15px; border:none; background:none;">✎</button><button onclick="delP(${i})" style="border:none; background:none; color:red;">✕</button></div>`;
         });
     }
 
@@ -136,40 +130,59 @@
             document.getElementById('p-edit-idx').value = idx;
             document.getElementById('p-zn').value = db[idx].zn;
             document.getElementById('p-bz').value = db[idx].bz;
-            document.getElementById('p-modal-title').innerText = "BEARBEITEN";
         } else {
             document.getElementById('p-edit-idx').value = "";
             document.getElementById('p-zn').value = "";
             document.getElementById('p-bz').value = "";
-            document.getElementById('p-modal-title').innerText = "NEUE ZEICHNUNG";
         }
-        document.getElementById('modal-p').style.display = 'block';
+        openM('modal-p');
     }
 
     function saveProject() {
-        let zn = document.getElementById('p-zn').value;
-        let bz = document.getElementById('p-bz').value;
-        let idx = document.getElementById('p-edit-idx').value;
+        let zn = document.getElementById('p-zn').value, bz = document.getElementById('p-bz').value, idx = document.getElementById('p-edit-idx').value;
         if(!zn) return;
         if(idx !== "") { db[idx].zn = zn; db[idx].bz = bz; }
         else { db.push({ zn, bz, tools: [] }); }
         save(); closeM('modal-p'); renderDash();
     }
 
-    // TOOLS
+    // TOOLS & IMPORT
     function renderTools() {
         const list = document.getElementById('tool-list');
         list.innerHTML = "";
         db[curIdx].tools.forEach((t, i) => {
-            list.innerHTML += `
-            <div class="tool-row" data-id="${i}">
-                <div class="drag-handle">☰</div>
-                <div class="t-num" onclick="openM_T(${i})">${t.tid}</div>
-                <div class="t-name" onclick="openM_T(${i})">${t.tnm}</div>
-                <div class="t-comment" onclick="openM_T(${i})">${t.tnt || ''}</div>
-                <button onclick="delT(${i})" style="border:none; background:none; color:red;">✕</button>
-            </div>`;
+            list.innerHTML += `<div class="tool-row" data-id="${i}"><div class="drag-handle">☰</div><div class="t-num" onclick="openM_T(${i})">${t.tid}</div><div class="t-name" onclick="openM_T(${i})">${t.tnm} ${t.tnt ? '<br><small style="font-weight:normal; color:#666;">'+t.tnt+'</small>' : ''}</div><button onclick="delT(${i})" style="border:none; background:none; color:red;">✕</button></div>`;
         });
+    }
+
+    function processImport() {
+        const text = document.getElementById('import-area').value;
+        const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+        
+        for (let i = 0; i < lines.length; i++) {
+            // Erkennt T-Nummern (z.B. T0101 oder TO101 oder T1)
+            if (lines[i].toUpperCase().startsWith('T')) {
+                let tid = lines[i];
+                let tnm = lines[i+1] || "UNBEKANNT";
+                // Falls der Name nur ein G-Code ist, versuchen wir die nächste Zeile
+                if(tnm.toUpperCase().includes('G54') && lines[i+2]) {
+                    tnm = lines[i+1] + " " + lines[i+2];
+                    i++; 
+                }
+                db[curIdx].tools.push({ tid, tnm, tnt: "" });
+                i++; // Überspringe die Namenszeile in der Schleife
+            }
+        }
+        save(); renderTools(); closeM('modal-import');
+        document.getElementById('import-area').value = "";
+    }
+
+    function saveT() {
+        let tid = document.getElementById('t-id').value, tnm = document.getElementById('t-name').value, tnt = document.getElementById('t-note').value, idx = document.getElementById('t-edit-idx').value;
+        if(!tid) return;
+        if(idx !== "") db[curIdx].tools[idx] = { tid, tnm, tnt };
+        else db[curIdx].tools.push({ tid, tnm, tnt });
+        save(); renderTools(); closeM('modal-t');
     }
 
     function openM_T(idx = null) {
@@ -179,54 +192,36 @@
             document.getElementById('t-id').value = t.tid;
             document.getElementById('t-name').value = t.tnm;
             document.getElementById('t-note').value = t.tnt;
-            document.getElementById('t-modal-title').innerText = "T BEARBEITEN";
         } else {
             document.getElementById('t-edit-idx').value = "";
             document.getElementById('t-id').value = "";
             document.getElementById('t-name').value = "";
             document.getElementById('t-note').value = "";
-            document.getElementById('t-modal-title').innerText = "NEUES WERKZEUG";
         }
-        document.getElementById('modal-t').style.display = 'block';
+        openM('modal-t');
     }
 
-    function saveT() {
-        let tid = document.getElementById('t-id').value;
-        let tnm = document.getElementById('t-name').value;
-        let tnt = document.getElementById('t-note').value;
-        let idx = document.getElementById('t-edit-idx').value;
-        if(!tid) return;
-        let obj = { tid, tnm, tnt };
-        if(idx !== "") db[curIdx].tools[idx] = obj;
-        else db[curIdx].tools.push(obj);
-        save(); renderTools(); closeM('modal-t');
-    }
-
-    // VORSCHAU & PDF
+    // PDF & NAVIGATION
     function openPreview() {
         const p = db[curIdx];
-        document.getElementById('pdf-header-info').innerText = `ZN: ${p.zn} | BEZEICHNUNG: ${p.bz}`;
+        document.getElementById('pdf-info').innerText = `ZN: ${p.zn} | ${p.bz}`;
         const tbody = document.getElementById('pdf-body');
         tbody.innerHTML = "";
         p.tools.forEach(t => {
-            tbody.innerHTML += `<tr><td><b>${t.tid}</b></td><td>${t.tnm}</td><td>${t.tnt || ''}</td></tr>`;
+            tbody.innerHTML += `<tr><td style="border:1px solid #000; padding:8px;"><b>${t.tid}</b></td><td style="border:1px solid #000; padding:8px;">${t.tnm} ${t.tnt ? '<br>'+t.tnt : ''}</td></tr>`;
         });
-        
         const content = document.getElementById('pdf-content');
         content.style.display = 'block';
-        document.getElementById('pdf-view-container').innerHTML = content.outerHTML;
+        document.getElementById('pdf-view-box').innerHTML = content.outerHTML;
         content.style.display = 'none';
-        document.getElementById('modal-prev').style.display = 'block';
+        openM('modal-prev');
     }
 
     function downloadPDF() {
-        const el = document.querySelector('#pdf-view-container #pdf-content');
-        el.style.display = 'block';
-        const opt = { margin:10, filename: `Tools_${db[curIdx].zn}.pdf`, html2canvas:{scale:2}, jsPDF:{unit:'mm', format:'a4'} };
-        html2pdf().set(opt).from(el).save();
+        const el = document.querySelector('#pdf-view-box div');
+        html2pdf().set({ margin:10, filename: `Tools_${db[curIdx].zn}.pdf`, html2canvas:{scale:2}, jsPDF:{unit:'mm', format:'a4'} }).from(el).save();
     }
 
-    // NAVIGATION
     function showDetail(i) {
         curIdx = i;
         document.getElementById('view-dash').classList.add('hidden');
@@ -238,21 +233,9 @@
     function closeDetail() { document.getElementById('view-dash').classList.remove('hidden'); document.getElementById('view-detail').classList.add('hidden'); renderDash(); }
     function delP(i) { if(confirm("Löschen?")) { db.splice(i,1); save(); renderDash(); } }
     function delT(i) { db[curIdx].tools.splice(i,1); save(); renderTools(); }
+    function clearTools() { if(confirm("Ganze Liste löschen?")) { db[curIdx].tools = []; save(); renderTools(); } }
 
-    function exportData() {
-        const blob = new Blob([JSON.stringify(db)], {type: "application/json"});
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob); a.download = "Backup_Tools.json"; a.click();
-    }
-
-    new Sortable(document.getElementById('tool-list'), {
-        handle: '.drag-handle', animation: 150, ghostClass: 'ghost',
-        onEnd: () => {
-            let n = [];
-            document.querySelectorAll('.tool-row').forEach(r => n.push(db[curIdx].tools[r.dataset.id]));
-            db[curIdx].tools = n; save(); renderTools();
-        }
-    });
+    new Sortable(document.getElementById('tool-list'), { handle: '.drag-handle', animation: 150 });
 
     renderDash();
 </script>
