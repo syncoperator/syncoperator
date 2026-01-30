@@ -3,97 +3,221 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>QS-TOOL CAPACITY v10.5</title>
+    <title>QS-TOOL MASTER v11.0</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
         :root { --accent: #007AFF; --bg: #F2F2F7; }
-        * { box-sizing: border-box; font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
-        body { background: var(--bg); margin: 0; padding: 0; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+        
+        /* Устранение проблем со скроллом на мобильных */
+        html, body { 
+            height: 100%; 
+            margin: 0; 
+            overflow: hidden; /* Запрещаем скролл всему телу */
+            background: var(--bg);
+            font-family: 'Inter', sans-serif;
+        }
 
-        /* --- APP UI --- */
-        .app-bar { background: white; padding: 12px 20px; border-bottom: 1px solid #DDD; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
-        .app-bar h1 { margin: 0; font-size: 13px; font-weight: 900; letter-spacing: 1px; }
-        .scroll-area { flex-grow: 1; overflow-y: auto; padding: 15px; -webkit-overflow-scrolling: touch; }
-        .container { max-width: 600px; margin: 0 auto; }
-        .tool-row { display: grid; grid-template-columns: 30px 70px 1fr 60px 40px; gap: 8px; align-items: center; background: white; border-radius: 10px; padding: 10px; margin-bottom: 6px; border: 1px solid #EEE; }
-        .drag-handle { color: #CCC; cursor: grab; font-size: 18px; }
+        /* Главный контейнер приложения */
+        .app-viewport {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
 
-        /* --- MODALS --- */
-        .modal { display: none; position: fixed; inset: 0; background: white; z-index: 2000; padding: 20px; overflow-y: auto; }
-        input { width: 100%; background: #F2F2F7; border: 1px solid #E5E5EA; border-radius: 10px; padding: 14px; margin-bottom: 8px; font-size: 16px; font-weight: 600; outline: none; }
-        .btn { background: #000; color: white; border: none; border-radius: 10px; padding: 16px; width: 100%; font-weight: 800; cursor: pointer; }
-        .btn-sec { background: #E5E5EA; color: black; margin-top: 6px; }
+        /* Фиксированная шапка */
+        .app-bar { 
+            background: white; 
+            padding: 12px 20px; 
+            border-bottom: 1px solid #DDD; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            z-index: 100;
+            flex-shrink: 0;
+        }
 
-        /* --- PREVIEW VIEWPORT --- */
-        #modal-prev { background: #1C1C1E; padding: 0; display: none; flex-direction: column; }
-        .prev-header { background: white; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; z-index: 3000; flex-shrink: 0; }
-        .prev-body { flex-grow: 1; overflow-y: auto; display: flex; justify-content: center; padding: 10px 0; }
-        .pdf-view-wrap { background: white; width: 210mm; min-height: 297mm; box-shadow: 0 10px 30px rgba(0,0,0,0.5); transform: scale(0.35); transform-origin: top center; flex-shrink: 0; }
+        /* Область, которая ДОЛЖНА скроллиться */
+        .scroll-content { 
+            flex-grow: 1; 
+            overflow-y: auto; 
+            padding: 15px;
+            -webkit-overflow-scrolling: touch; /* Плавный скролл для iOS */
+        }
 
-        /* --- PDF LAYOUT OPTIMIZED FOR 18+ TOOLS --- */
-        #pdf-hidden-render { position: absolute; left: -9999px; top: 0; width: 210mm; }
-        .pdf-page { background: white; padding: 12mm; width: 210mm; height: 297mm; color: black; overflow: hidden; }
-        .pdf-border { border: 1.5pt solid #000; height: 270mm; padding: 8mm; display: flex; flex-direction: column; }
-        .pdf-header { border-bottom: 3.5pt solid #000; padding-bottom: 8px; margin-bottom: 15px; }
-        .pdf-label { font-size: 16pt; font-weight: 700; color: #777; text-transform: uppercase; }
-        .pdf-main-num { font-size: 38pt; font-weight: 900; display: block; letter-spacing: -1.5pt; line-height: 0.9; margin-top: 2px; }
-        .pdf-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-        .pdf-table th { text-align: left; padding: 8pt 4pt; font-size: 8.5pt; font-weight: 900; color: #999; border-bottom: 1.5pt solid #000; text-transform: uppercase; }
-        .pdf-table td { padding: 9.5pt 4pt; font-size: 10.5pt; font-weight: 700; border-bottom: 0.3pt solid #DDD; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .pdf-table tr:last-child td { border-bottom: 1.5pt solid #000; }
+        .container { max-width: 600px; margin: 0 auto; padding-bottom: 80px; } /* Отступ снизу для кнопки + */
+        
+        .tool-card { 
+            display: grid; 
+            grid-template-columns: 30px 70px 1fr 50px 40px; 
+            gap: 8px; 
+            align-items: center; 
+            background: white; 
+            border-radius: 12px; 
+            padding: 12px; 
+            margin-bottom: 8px; 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        .drag-handle { color: #CCC; cursor: grab; font-size: 20px; padding: 5px; }
+
+        /* Кнопка Плюс (всегда поверх) */
+        .fab {
+            position: fixed;
+            bottom: 25px;
+            right: 20px;
+            width: 60px;
+            height: 60px;
+            border-radius: 30px;
+            background: black;
+            color: white;
+            border: none;
+            font-size: 30px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            z-index: 500;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Модальные окна */
+        .modal { 
+            display: none; 
+            position: fixed; 
+            inset: 0; 
+            background: white; 
+            z-index: 1000; 
+            flex-direction: column;
+        }
+        
+        .modal-content { padding: 20px; overflow-y: auto; flex-grow: 1; }
+        
+        input { 
+            width: 100%; 
+            background: #F2F2F7; 
+            border: 1px solid #E5E5EA; 
+            border-radius: 10px; 
+            padding: 16px; 
+            margin-bottom: 10px; 
+            font-size: 16px; 
+            font-weight: 600; 
+            outline: none; 
+        }
+
+        .btn { 
+            background: #000; color: white; border: none; border-radius: 12px; 
+            padding: 18px; width: 100%; font-weight: 800; font-size: 16px;
+        }
+
+        /* --- ПРЕВЬЮ PDF --- */
+        #modal-prev { background: #1C1C1E; }
+        .prev-header { background: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; }
+        .prev-scroll { flex-grow: 1; overflow: auto; display: flex; justify-content: center; padding: 20px 0; }
+        
+        /* Компактный PDF для 18+ инструментов */
+        .pdf-page { 
+            background: white; width: 210mm; min-height: 297mm; padding: 12mm; 
+            transform: scale(0.4); transform-origin: top center; flex-shrink: 0;
+        }
+        .pdf-border { border: 2pt solid #000; min-height: 270mm; padding: 8mm; display: flex; flex-direction: column; }
+        .pdf-header { border-bottom: 4pt solid #000; padding-bottom: 8px; margin-bottom: 15px; }
+        .pdf-main-num { font-size: 42pt; font-weight: 900; line-height: 0.9; }
+        .pdf-table { width: 100%; border-collapse: collapse; }
+        .pdf-table th { text-align: left; padding: 8pt 4pt; font-size: 9pt; border-bottom: 2pt solid #000; color: #999; }
+        .pdf-table td { padding: 10pt 4pt; font-size: 11pt; font-weight: 700; border-bottom: 0.5pt solid #EEE; }
+
+        /* Скрытый мастер-рендерер */
+        #pdf-hidden { position: absolute; left: -9999px; top: 0; }
     </style>
 </head>
 <body>
 
-<div id="view-home" style="display:contents;">
-    <div class="app-bar"><h1>PROJECTS</h1></div>
-    <div class="scroll-area"><div id="project-list" class="container"></div></div>
-    <button class="btn" style="position:fixed; bottom:30px; right:20px; width:60px; height:60px; border-radius:30px; z-index:100; box-shadow: 0 4px 12px rgba(0,0,0,0.2);" onclick="openM('modal-p')">+</button>
-</div>
-
-<div id="view-detail" style="display:none; flex-direction:column; height:100vh;">
-    <div class="app-bar">
-        <button onclick="goHome()" style="background:none; border:none; font-size:24px;">←</button>
-        <div style="text-align:right;"><span id="det-num" style="font-weight:900; font-size:17px;"></span><br><small id="det-name" style="color:#888; text-transform:uppercase; font-size:10px;"></small></div>
+<div class="app-viewport">
+    <div id="view-home" style="display: flex; flex-direction: column; height: 100%;">
+        <div class="app-bar"><h1>MEINE PROJEKTE</h1></div>
+        <div class="scroll-content">
+            <div id="project-list" class="container"></div>
+        </div>
+        <button class="fab" onclick="openM('modal-p')">+</button>
     </div>
-    <div class="scroll-area">
-        <div class="container">
-            <button class="btn" style="background:var(--accent);" onclick="openM('modal-import')">SCHNELL-IMPORT</button>
-            <div id="tool-list" style="margin-top:12px;"></div>
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:10px;">
-                <button class="btn" onclick="openPreview()">VORSCHAU</button>
-                <button class="btn btn-sec" onclick="clearTools()" style="color:red;">LEEREN</button>
+
+    <div id="view-detail" style="display: none; flex-direction: column; height: 100%;">
+        <div class="app-bar">
+            <button onclick="goHome()" style="background:none; border:none; font-size:24px;">←</button>
+            <div style="text-align:right;">
+                <span id="det-num" style="font-weight:900; display:block;"></span>
+                <small id="det-name" style="color:#888; text-transform:uppercase;"></small>
             </div>
         </div>
+        <div class="scroll-content">
+            <div class="container">
+                <button class="btn" style="background:var(--accent); margin-bottom:15px;" onclick="openM('modal-import')">IMPORTIEREN</button>
+                <div id="tool-list"></div>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:15px;">
+                    <button class="btn" onclick="openPreview()">VORSCHAU</button>
+                    <button class="btn" style="background:#E5E5EA; color:red;" onclick="clearTools()">LEEREN</button>
+                </div>
+            </div>
+        </div>
+        <button class="fab" onclick="openTModal()">+</button>
     </div>
-    <button class="btn" style="position:fixed; bottom:30px; right:20px; width:60px; height:60px; border-radius:30px; z-index:100;" onclick="openTModal()">+</button>
+</div>
+
+<div id="modal-p" class="modal">
+    <div class="modal-content">
+        <h2 style="font-weight:900;">Neues Projekt</h2>
+        <input id="p-in-num" placeholder="Zeichnungs-Nr (z.B. 233562)">
+        <input id="p-in-name" placeholder="Bauteil Name (z.B. Buchse)">
+        <button class="btn" onclick="saveProject()">Speichern</button>
+        <button class="btn" style="background:none; color:black; margin-top:10px;" onclick="closeModal('modal-p')">Abbrechen</button>
+    </div>
+</div>
+
+<div id="modal-t" class="modal">
+    <div class="modal-content">
+        <h2 style="font-weight:900;">Werkzeug</h2>
+        <input type="hidden" id="t-idx">
+        <input id="t-in-id" placeholder="T-Nummer (T0101)">
+        <input id="t-in-nm" placeholder="Bezeichnung">
+        <input id="t-in-diam" placeholder="Ø Durchmesser">
+        <button class="btn" onclick="saveTool()">Speichern</button>
+        <button class="btn" style="background:none; color:black; margin-top:10px;" onclick="closeModal('modal-t')">Abbrechen</button>
+    </div>
+</div>
+
+<div id="modal-import" class="modal">
+    <div class="modal-content">
+        <h2 style="font-weight:900;">Import</h2>
+        <textarea id="import-area" style="width:100%; height:200px; border-radius:12px; padding:15px; border:1px solid #DDD;" placeholder="T0101 Werkzeug..."></textarea>
+        <button class="btn" style="margin-top:15px;" onclick="runImport()">Einlesen</button>
+        <button class="btn" style="background:none; color:black; margin-top:10px;" onclick="closeModal('modal-import')">Zurück</button>
+    </div>
 </div>
 
 <div id="modal-prev" class="modal">
     <div class="prev-header">
         <button onclick="closeModal('modal-prev')" style="border:none; background:none; font-weight:800; font-size:16px;">← ZURÜCK</button>
-        <button id="download-btn" onclick="downloadPDF()" style="background:#000; color:white; border:none; padding:12px 20px; border-radius:10px; font-weight:900;">PDF SPEICHERN</button>
+        <button id="download-btn" onclick="downloadPDF()" style="background:#000; color:white; border:none; padding:12px 25px; border-radius:10px; font-weight:900;">PDF SPEICHERN</button>
     </div>
-    <div class="prev-body">
-        <div id="preview-stage" class="pdf-view-wrap"></div>
+    <div class="prev-scroll">
+        <div id="preview-stage"></div>
     </div>
 </div>
 
-<div id="pdf-hidden-render">
+<div id="pdf-hidden">
     <div id="pdf-master" class="pdf-page">
         <div class="pdf-border">
             <div class="pdf-header">
-                <span id="pdf-v-name" class="pdf-label"></span>
-                <span id="pdf-v-num" class="pdf-main-num"></span>
+                <div style="font-size:16pt; color:#888; font-weight:700; text-transform:uppercase;" id="pdf-v-name"></div>
+                <div class="pdf-main-num" id="pdf-v-num"></div>
             </div>
             <table class="pdf-table">
                 <thead>
                     <tr>
-                        <th style="width:14%">T-NR</th>
-                        <th style="width:72%">WERKZEUGNAME / KOMMENTAR</th>
-                        <th style="width:14%; text-align:right;">Ø</th>
+                        <th style="width:15%">T-NR</th>
+                        <th style="width:70%">WERKZEUGNAME / KOMMENTAR</th>
+                        <th style="width:15%; text-align:right;">Ø</th>
                     </tr>
                 </thead>
                 <tbody id="pdf-v-body"></tbody>
@@ -102,44 +226,19 @@
     </div>
 </div>
 
-<div id="modal-p" class="modal">
-    <h2>Projekt</h2>
-    <input id="p-in-num" placeholder="Zeichnungs-Nr (Groß)">
-    <input id="p-in-name" placeholder="Bauteil Name (Klein)">
-    <button class="btn" onclick="saveProject()">Speichern</button>
-    <button class="btn btn-sec" onclick="closeModal('modal-p')">Abbrechen</button>
-</div>
-
-<div id="modal-t" class="modal">
-    <h2>Werkzeug</h2>
-    <input type="hidden" id="t-idx">
-    <input id="t-in-id" placeholder="T-Nummer (z.B. T0101)">
-    <input id="t-in-nm" placeholder="Name / Kommentar">
-    <input id="t-in-diam" placeholder="Ø">
-    <button class="btn" onclick="saveTool()">Speichern</button>
-    <button class="btn btn-sec" onclick="closeModal('modal-t')">Abbrechen</button>
-</div>
-
-<div id="modal-import" class="modal">
-    <h2>Schnell-Import</h2>
-    <textarea id="import-area" style="width:100%; height:200px; border-radius:10px; padding:10px; font-size:14px;" placeholder="T0101 Name..."></textarea>
-    <button class="btn" style="margin-top:10px;" onclick="runImport()">Einlesen</button>
-    <button class="btn btn-sec" onclick="closeModal('modal-import')">Abbrechen</button>
-</div>
-
 <script>
-    let db = JSON.parse(localStorage.getItem('qs_v105')) || [];
+    let db = JSON.parse(localStorage.getItem('qs_v11')) || [];
     let curP = null;
 
-    const openM = (id) => { document.getElementById(id).style.display = (id === 'modal-prev' ? 'flex' : 'block'); };
+    const openM = (id) => { document.getElementById(id).style.display = 'flex'; };
     const closeModal = (id) => { document.getElementById(id).style.display = 'none'; };
-    const save = () => localStorage.setItem('qs_v105', JSON.stringify(db));
+    const save = () => localStorage.setItem('qs_v11', JSON.stringify(db));
 
     function renderHome() {
         const list = document.getElementById('project-list'); list.innerHTML = "";
         db.forEach((p, i) => {
-            list.innerHTML += `<div class="tool-row" style="grid-template-columns: 1fr 40px;" onclick="openDetail(${i})">
-                <div><b style="font-size:18px;">${p.num}</b><br><small style="color:#888; font-weight:700;">${p.name}</small></div>
+            list.innerHTML += `<div class="tool-card" style="grid-template-columns: 1fr 40px;" onclick="openDetail(${i})">
+                <div><b style="font-size:18px;">${p.num}</b><br><small style="color:#888;">${p.name}</small></div>
                 <button onclick="event.stopPropagation(); deleteProject(${i})" style="border:none; background:none; color:red;">✕</button>
             </div>`;
         });
@@ -157,16 +256,16 @@
     function renderTools() {
         const list = document.getElementById('tool-list'); list.innerHTML = "";
         db[curP].tools.forEach((t, i) => {
-            list.innerHTML += `<div class="tool-row" onclick="editT(${i})">
+            list.innerHTML += `<div class="tool-card" onclick="editT(${i})">
                 <div class="drag-handle">☰</div>
                 <div style="font-weight:900; color:var(--accent);">${t.id}</div>
                 <div style="font-weight:600;">${t.nm}</div>
-                <div style="font-weight:800; opacity:0.4; text-align:right;">${t.diam || '-'}</div>
+                <div style="font-weight:800; opacity:0.3; text-align:right;">${t.diam || '-'}</div>
                 <button onclick="event.stopPropagation(); delT(${i})" style="border:none; background:none; color:red;">✕</button>
             </div>`;
         });
         new Sortable(list, { handle:'.drag-handle', animation:150, onEnd: () => {
-            const rows = Array.from(list.querySelectorAll('.tool-row'));
+            const rows = Array.from(list.querySelectorAll('.tool-card'));
             db[curP].tools = rows.map(row => {
                 const tid = row.children[1].innerText;
                 return db[curP].tools.find(t => t.id === tid);
@@ -180,7 +279,7 @@
         document.getElementById('pdf-v-num').innerText = db[curP].num;
         const b = document.getElementById('pdf-v-body'); b.innerHTML = "";
         db[curP].tools.forEach(t => { 
-            b.innerHTML += `<tr><td style="font-weight:900;">${t.id}</td><td>${t.nm}</td><td style="text-align:right; font-weight:800; color:#444;">${t.diam || ''}</td></tr>`; 
+            b.innerHTML += `<tr><td style="font-weight:900;">${t.id}</td><td>${t.nm}</td><td style="text-align:right; font-weight:800;">${t.diam || ''}</td></tr>`; 
         });
         document.getElementById('preview-stage').innerHTML = document.getElementById('pdf-master').outerHTML;
         openM('modal-prev');
@@ -188,7 +287,7 @@
 
     function downloadPDF() {
         const btn = document.getElementById('download-btn');
-        btn.innerText = "LÄDT...";
+        btn.innerText = "GENERIEREN...";
         const element = document.getElementById('pdf-master');
         const opt = { 
             margin: 0, filename: `Setup_${db[curP].num}.pdf`, 
@@ -235,8 +334,8 @@
         save(); renderTools(); closeModal('modal-import');
     }
 
-    function goHome() { document.getElementById('view-home').style.display='contents'; document.getElementById('view-detail').style.display='none'; renderHome(); }
-    function deleteProject(i) { if(confirm("Projekt löschen?")) { db.splice(i,1); save(); renderHome(); } }
+    function goHome() { document.getElementById('view-home').style.display='flex'; document.getElementById('view-detail').style.display='none'; renderHome(); }
+    function deleteProject(i) { if(confirm("Löschen?")) { db.splice(i,1); save(); renderHome(); } }
     function delT(i) { db[curP].tools.splice(i,1); save(); renderTools(); }
     function clearTools() { if(confirm("Leeren?")) { db[curP].tools = []; save(); renderTools(); } }
     function openTModal() { document.getElementById('t-idx').value=""; document.getElementById('t-in-id').value=""; document.getElementById('t-in-diam').value=""; document.getElementById('t-in-nm').value=""; openM('modal-t'); }
