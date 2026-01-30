@@ -1,187 +1,123 @@
-let db = JSON.parse(localStorage.getItem('qs_v15_fixed')) || [];
-let curP = null;
+let db = JSON.parse(localStorage.getItem('qs_v16')) || [];
+let cur = null;
 
-// UI FUNCTIONS
+const showM = id => document.getElementById(id).style.display = 'flex';
+const hideM = id => document.getElementById(id).style.display = 'none';
+
+function save() { localStorage.setItem('qs_v16', JSON.stringify(db)); }
+
 function goHome() {
-    document.getElementById('view-detail').classList.remove('active-view');
-    document.getElementById('view-home').classList.add('active-view');
-    renderHome();
+    document.getElementById('v-det').classList.remove('active');
+    document.getElementById('v-home').classList.add('active');
+    renderP();
 }
-function openModal(id) { document.getElementById(id).style.display = 'flex'; }
-function closeModal(id) { document.getElementById(id).style.display = 'none'; }
-function save() { localStorage.setItem('qs_v15_fixed', JSON.stringify(db)); }
 
-// RENDER HOME
-function renderHome() {
-    const list = document.getElementById('project-list');
-    list.innerHTML = "";
+function renderP() {
+    const l = document.getElementById('list-p'); l.innerHTML = "";
     db.forEach((p, i) => {
-        list.innerHTML += `
-        <div class="tool-card" onclick="openDetail(${i})">
-            <div style="flex-grow:1;">
-                <div style="font-weight:900; font-size:18px;">${p.num}</div>
-                <div style="color:#777; font-size:14px;">${p.name}</div>
-            </div>
-            <button onclick="event.stopPropagation(); deleteProject(${i})" class="col-del" style="text-align:center;">✕</button>
+        l.innerHTML += `<div class="card" onclick="openP(${i})">
+            <div style="flex-grow:1"><b>${p.num}</b><br><small>${p.name}</small></div>
+            <button class="c-del" onclick="event.stopPropagation();delP(${i})">✕</button>
         </div>`;
     });
 }
 
-// RENDER TOOLS
-function openDetail(i) {
-    curP = i;
-    document.getElementById('view-home').classList.remove('active-view');
-    document.getElementById('view-detail').classList.add('active-view');
-    document.getElementById('det-num').innerText = db[i].num;
-    document.getElementById('det-name').innerText = db[i].name;
-    renderTools();
+function openP(i) {
+    cur = i;
+    document.getElementById('v-home').classList.remove('active');
+    document.getElementById('v-det').classList.add('active');
+    document.getElementById('d-num').innerText = db[i].num;
+    document.getElementById('d-nam').innerText = db[i].name;
+    renderT();
 }
 
-function renderTools() {
-    const list = document.getElementById('tool-list');
-    list.innerHTML = "";
-    db[curP].tools.forEach((t, i) => {
-        // Мы используем классы col-..., которые прописаны в CSS Flexbox
-        list.innerHTML += `
-        <div class="tool-card" onclick="editTool(${i})">
-            <div class="col-drag">☰</div>
-            <div class="col-id">${t.id}</div>
-            <div class="col-name">${t.nm}</div>
-            <div class="col-diam">${t.diam || ''}</div>
-            <button onclick="event.stopPropagation(); deleteTool(${i})" class="col-del">✕</button>
+function renderT() {
+    const l = document.getElementById('list-t'); l.innerHTML = "";
+    db[cur].tools.forEach((t, i) => {
+        l.innerHTML += `<div class="card" onclick="editT(${i})">
+            <div class="c-drag">☰</div>
+            <div class="c-id">${t.id}</div>
+            <div class="c-name">${t.nm}</div>
+            <div class="c-diam">${t.dia || ''}</div>
+            <button class="c-del" onclick="event.stopPropagation();delT(${i})">✕</button>
         </div>`;
     });
-
-    // Сортировка
-    new Sortable(list, {
-        handle: '.col-drag',
-        animation: 150,
-        onEnd: () => {
-            const rows = Array.from(list.querySelectorAll('.tool-card'));
-            const newTools = rows.map(row => {
-                const id = row.querySelector('.col-id').innerText;
-                // Находим оригинал по ID (упрощенно)
-                return db[curP].tools.find(t => t.id === id); 
-            });
-            db[curP].tools = newTools;
-            save();
-        }
-    });
+    new Sortable(l, { handle:'.c-drag', animation:150, onEnd: () => {
+        const items = Array.from(l.querySelectorAll('.card'));
+        db[cur].tools = items.map(el => {
+            const tid = el.querySelector('.c-id').innerText;
+            return db[cur].tools.find(x => x.id === tid);
+        });
+        save();
+    }});
 }
 
-// LOGIC
-function saveProject() {
-    const num = document.getElementById('p-in-num').value;
-    const name = document.getElementById('p-in-name').value;
-    if(num) {
-        db.push({ num, name, tools: [] });
-        save(); renderHome(); closeModal('modal-p');
-        document.getElementById('p-in-num').value = "";
-        document.getElementById('p-in-name').value = "";
-    }
+function addP() {
+    const num = document.getElementById('p-num').value;
+    const nam = document.getElementById('p-nam').value;
+    if(!num) return;
+    db.push({num, name:nam, tools:[]}); save(); renderP(); hideM('m-p');
 }
 
-function saveTool() {
+function openTAdd() { document.getElementById('t-idx').value=""; document.getElementById('t-id').value=""; document.getElementById('t-nm').value=""; document.getElementById('t-dia').value=""; showM('m-t'); }
+
+function addT() {
     const idx = document.getElementById('t-idx').value;
-    const id = document.getElementById('t-in-id').value;
-    const nm = document.getElementById('t-in-nm').value;
-    const diam = document.getElementById('t-in-diam').value;
-    const obj = { id, nm, diam };
-    
-    if(idx === "") db[curP].tools.push(obj);
-    else db[curP].tools[idx] = obj;
-    
-    save(); renderTools(); closeModal('modal-t');
+    const t = { id: document.getElementById('t-id').value, nm: document.getElementById('t-nm').value, dia: document.getElementById('t-dia').value };
+    if(idx==="") db[cur].tools.push(t); else db[cur].tools[idx]=t;
+    save(); renderT(); hideM('m-t');
 }
 
-function editTool(i) {
-    const t = db[curP].tools[i];
+function editT(i) {
+    const t = db[cur].tools[i];
     document.getElementById('t-idx').value = i;
-    document.getElementById('t-in-id').value = t.id;
-    document.getElementById('t-in-nm').value = t.nm;
-    document.getElementById('t-in-diam').value = t.diam;
-    openModal('modal-t');
+    document.getElementById('t-id').value = t.id;
+    document.getElementById('t-nm').value = t.nm;
+    document.getElementById('t-dia').value = t.dia;
+    showM('m-t');
 }
 
-function openTModal() {
-    document.getElementById('t-idx').value = "";
-    document.getElementById('t-in-id').value = "";
-    document.getElementById('t-in-nm').value = "";
-    document.getElementById('t-in-diam').value = "";
-    openModal('modal-t');
-}
+function delP(i) { if(confirm('Löschen?')) {db.splice(i,1); save(); renderP(); }}
+function delT(i) { db[cur].tools.splice(i,1); save(); renderT(); }
+function clearT() { if(confirm('Leeren?')) {db[cur].tools=[]; save(); renderT(); }}
 
-function runImport() {
-    const text = document.getElementById('import-area').value;
-    const lines = text.split('\n');
+function doImp() {
+    const lines = document.getElementById('i-txt').value.split('\n');
     let cid = null, cnm = [];
     lines.forEach(l => {
-        l = l.trim();
-        if(!l) return;
+        l = l.trim(); if(!l) return;
         if(/^[T][0-9]+/i.test(l)) {
-            if(cid) db[curP].tools.push({ id: cid, nm: cnm.join(' '), diam: '' });
+            if(cid) db[cur].tools.push({id:cid, nm:cnm.join(' '), dia:''});
             cid = l.toUpperCase(); cnm = [];
-        } else if(cid) { cnm.push(l); }
+        } else if(cid) cnm.push(l);
     });
-    if(cid) db[curP].tools.push({ id: cid, nm: cnm.join(' '), diam: '' });
-    save(); renderTools(); closeModal('modal-import');
+    if(cid) db[cur].tools.push({id:cid, nm:cnm.join(' '), dia:''});
+    save(); renderT(); hideM('m-i');
 }
 
-function deleteProject(i) { if(confirm('Löschen?')) { db.splice(i, 1); save(); renderHome(); } }
-function deleteTool(i) { db[curP].tools.splice(i, 1); save(); renderTools(); }
-function clearTools() { if(confirm('Leeren?')) { db[curP].tools = []; save(); renderTools(); } }
-
-// PDF ENGINE (С методом Overlay от белого листа)
-function getPDFHTML() {
-    const p = db[curP];
-    let rows = p.tools.map(t => `<tr><th>${t.id}</th><td>${t.nm}</td><td style="text-align:right">${t.diam||''}</td></tr>`).join('');
-    return `
-    <div class="pdf-border">
-        <div class="pdf-head">
-            <div class="pdf-title">${p.name}</div>
-            <div class="pdf-num">${p.num}</div>
-        </div>
-        <table class="pdf-table">
-            <thead><tr><th width="15%">T-NR</th><th width="70%">WERKZEUGNAME</th><th width="15%" align="right">Ø</th></tr></thead>
-            <tbody>${rows}</tbody>
-        </table>
-    </div>`;
+function getPDF() {
+    const p = db[cur];
+    const rows = p.tools.map(t => `<tr><td>${t.id}</td><td>${t.nm}</td><td style="text-align:right">${t.dia||''}</td></tr>`).join('');
+    return `<div class="pdf-box"><div class="pdf-h"><div class="pdf-title">${p.name}</div><div class="pdf-num">${p.num}</div></div>
+    <table class="pdf-table"><thead><tr><th width="15%">T-NR</th><th width="70%">BEZEICHNUNG</th><th width="15%" style="text-align:right">Ø</th></tr></thead>
+    <tbody>${rows}</tbody></table></div>`;
 }
 
-function openPreview() {
-    document.getElementById('preview-stage').innerHTML = getPDFHTML();
-    openModal('modal-prev');
-}
+function openPre() { document.getElementById('a4').innerHTML = getPDF(); showM('m-pre'); }
 
-async function downloadPDF() {
-    const btn = document.getElementById('download-btn');
-    btn.innerText = "Processing...";
+async function makePDF() {
+    const b = document.getElementById('d-btn'); b.innerText = "WAIT...";
+    const el = document.createElement('div');
+    el.style.width = "210mm"; el.style.background = "white";
+    el.innerHTML = `<div style="padding:15mm">${getPDF()}</div>`;
+    document.body.appendChild(el);
     
-    // Создаем временный слой поверх всего, чтобы браузер его "видел"
-    const layer = document.createElement('div');
-    layer.style.position = 'fixed'; 
-    layer.style.top = '0'; layer.style.left = '0'; 
-    layer.style.zIndex = '9999'; layer.style.background = 'white';
-    // Вставляем контент шириной A4 (210мм)
-    layer.innerHTML = `<div style="width:210mm; padding:0;">${getPDFHTML()}</div>`;
-    document.body.appendChild(layer);
-
-    const opt = {
-        margin: 0,
-        filename: `Setup_${db[curP].num}.pdf`,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, logging: false },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-    };
-
+    const opt = { margin:0, filename:`${db[cur].num}.pdf`, image:{type:'jpeg',quality:1}, html2canvas:{scale:2}, jsPDF:{unit:'mm',format:'a4'} };
+    
     try {
-        await new Promise(r => setTimeout(r, 100)); // Даем браузеру отрисовать
-        await html2pdf().set(opt).from(layer.firstChild).save();
-    } catch(e) { alert("Error"); }
-    finally {
-        document.body.removeChild(layer);
-        btn.innerText = "PDF SPEICHERN";
-    }
+        await html2pdf().set(opt).from(el).save();
+    } catch(e) { alert('Err'); }
+    finally { document.body.removeChild(el); b.innerText = "PDF SPEICHERN"; }
 }
 
-renderHome();
+renderP();
