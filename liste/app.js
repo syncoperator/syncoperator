@@ -1,206 +1,203 @@
 "use strict";
 
-let db = JSON.parse(localStorage.getItem("qs_v20")) || [];
-let cur = null;
-let sortable = null;
+/* ========= STORE ========= */
+const Store = {
+    key: "qs_core_v1",
+    state: {
+        projects: [],
+        current: null
+    },
 
-const $ = id => document.getElementById(id);
-const save = () => localStorage.setItem("qs_v20", JSON.stringify(db));
+    load() {
+        const d = localStorage.getItem(this.key);
+        if (d) this.state = JSON.parse(d);
+    },
 
-const showM = id => $(id).classList.add("active");
-const hideM = id => $(id).classList.remove("active");
+    save() {
+        localStorage.setItem(this.key, JSON.stringify(this.state));
+    },
 
-/* PROJECTS */
-function renderP() {
-    const list = $("list-p");
-    list.innerHTML = "";
+    addProject(num, name) {
+        this.state.projects.push({ num, name, tools: [] });
+        this.save();
+    },
 
-    db.forEach((p, i) => {
-        list.insertAdjacentHTML("beforeend", `
-            <div class="card" onclick="openP(${i})">
-                <div style="flex:1">
-                    <b>${p.num}</b><br>
-                    <small>${p.name}</small>
+    addTool(tool) {
+        this.current().tools.push(tool);
+        this.save();
+    },
+
+    updateTool(oldId, tool) {
+        const tools = this.current().tools;
+        const i = tools.findIndex(t => t.id === oldId);
+        tools[i] = tool;
+        this.save();
+    },
+
+    removeTool(id) {
+        this.current().tools = this.current().tools.filter(t => t.id !== id);
+        this.save();
+    },
+
+    current() {
+        return this.state.projects[this.state.current];
+    }
+};
+
+/* ========= UI ========= */
+const UI = {
+    el: id => document.getElementById(id),
+
+    show(id) { this.el(id).classList.add("active"); },
+    hide(id) { this.el(id).classList.remove("active"); },
+
+    renderProjects() {
+        const l = this.el("project-list");
+        l.innerHTML = "";
+        Store.state.projects.forEach((p, i) => {
+            l.insertAdjacentHTML("beforeend", `
+                <div class="card" onclick="Actions.openProject(${i})">
+                    <div style="flex:1"><b>${p.num}</b><br><small>${p.name}</small></div>
                 </div>
-                <button class="c-del" onclick="event.stopPropagation();delP(${i})">✕</button>
-            </div>
-        `);
-    });
-}
+            `);
+        });
+    },
 
-function addP() {
-    const num = $("p-num").value.trim();
-    const name = $("p-nam").value.trim();
+    renderTools() {
+        const l = this.el("tool-list");
+        l.innerHTML = "";
+        Store.current().tools.forEach(t => {
+            l.insertAdjacentHTML("beforeend", `
+                <div class="card" data-id="${t.id}">
+                    <div class="c-drag">☰</div>
+                    <div class="c-id">${t.id}</div>
+                    <div class="c-name" onclick="Actions.editTool('${t.id}')">${t.name}</div>
+                    <div class="c-dia">${t.dia || "-"}</div>
+                    <button class="c-del" onclick="Actions.deleteTool('${t.id}')">✕</button>
+                </div>
+            `);
+        });
 
-    if (!num) {
-        alert("Nummer fehlt");
-        return;
+        new Sortable(l, {
+            handle: ".c-drag",
+            animation: 150,
+            onEnd() {
+                const ids = [...l.children].map(e => e.dataset.id);
+                Store.current().tools = ids.map(id =>
+                    Store.current().tools.find(t => t.id === id)
+                );
+                Store.save();
+            }
+        });
     }
+};
 
-    db.push({ num, name, tools: [] });
+/* ========= ACTIONS ========= */
+const Actions = {
+    openProjectModal() {
+        UI.show("modal-project");
+    },
 
-    $("p-num").value = "";
-    $("p-nam").value = "";
+    saveProject() {
+        const num = UI.el("mp-num").value.trim();
+        if (!num) return;
+        Store.addProject(num, UI.el("mp-name").value.trim());
+        UI.el("mp-num").value = "";
+        UI.el("mp-name").value = "";
+        UI.hide("modal-project");
+        UI.renderProjects();
+    },
 
-    save();
-    renderP();
-    hideM("m-p");
-}
+    openProject(i) {
+        Store.state.current = i;
+        UI.el("project-num").textContent = Store.current().num;
+        UI.el("project-name").textContent = Store.current().name;
+        UI.el("v-home").classList.remove("active");
+        UI.el("v-project").classList.add("active");
+        UI.renderTools();
+    },
 
-function delP(i) {
-    if (confirm("Löschen?")) {
-        db.splice(i, 1);
-        save();
-        renderP();
-    }
-}
+    goHome() {
+        UI.el("v-project").classList.remove("active");
+        UI.el("v-home").classList.add("active");
+        UI.renderProjects();
+    },
 
-function openP(i) {
-    cur = i;
-    $("v-home").classList.remove("active");
-    $("v-det").classList.add("active");
-    $("d-num").textContent = db[i].num;
-    $("d-nam").textContent = db[i].name;
-    renderT();
-}
+    openToolModal() {
+        UI.el("mt-old").value = "";
+        UI.el("mt-id").value = "";
+        UI.el("mt-name").value = "";
+        UI.el("mt-dia").value = "";
+        UI.show("modal-tool");
+    },
 
-function goHome() {
-    $("v-det").classList.remove("active");
-    $("v-home").classList.add("active");
-    renderP();
-}
+    editTool(id) {
+        const t = Store.current().tools.find(t => t.id === id);
+        UI.el("mt-old").value = t.id;
+        UI.el("mt-id").value = t.id;
+        UI.el("mt-name").value = t.name;
+        UI.el("mt-dia").value = t.dia;
+        UI.show("modal-tool");
+    },
 
-/* TOOLS */
-function renderT() {
-    const list = $("list-t");
-    list.innerHTML = "";
+    saveTool() {
+        const tool = {
+            id: UI.el("mt-id").value.trim(),
+            name: UI.el("mt-name").value.trim(),
+            dia: UI.el("mt-dia").value.trim()
+        };
+        const old = UI.el("mt-old").value;
+        old ? Store.updateTool(old, tool) : Store.addTool(tool);
+        UI.hide("modal-tool");
+        UI.renderTools();
+    },
 
-    db[cur].tools.forEach(t => {
-        list.insertAdjacentHTML("beforeend", `
-            <div class="card" data-id="${t.id}">
-                <div class="c-drag">☰</div>
-                <div class="c-id">${t.id}</div>
-                <div class="c-name" onclick="editT('${t.id}')">${t.nm}</div>
-                <div class="c-diam">${t.dia || "-"}</div>
-                <button class="c-del" onclick="delT('${t.id}')">✕</button>
-            </div>
-        `);
-    });
+    deleteTool(id) {
+        Store.removeTool(id);
+        UI.renderTools();
+    },
 
-    if (sortable) sortable.destroy();
+    openImport() {
+        UI.show("modal-import");
+    },
 
-    sortable = new Sortable(list, {
-        handle: ".c-drag",
-        animation: 150,
-        onEnd() {
-            const ids = [...list.children].map(el => el.dataset.id);
-            db[cur].tools = ids.map(id => db[cur].tools.find(t => t.id === id));
-            save();
-        }
-    });
-}
+    importTools() {
+        const lines = UI.el("mi-text").value.split("\n");
+        let id = null, buf = [];
+        lines.forEach(l => {
+            l = l.trim();
+            if (/^T\d+/i.test(l)) {
+                if (id) Store.addTool({ id, name: buf.join(" "), dia: "" });
+                id = l.match(/^T\d+/i)[0].toUpperCase();
+                buf = [];
+            } else if (id) buf.push(l);
+        });
+        if (id) Store.addTool({ id, name: buf.join(" "), dia: "" });
+        UI.el("mi-text").value = "";
+        UI.hide("modal-import");
+        UI.renderTools();
+    },
 
-function newTool() {
-    $("t-old-id").value = "";
-    $("t-id").value = "";
-    $("t-nm").value = "";
-    $("t-dia").value = "";
-    showM("m-t");
-}
+    exportPDF() {
+        const p = Store.current();
+        const tpl = UI.el("pdf-template");
 
-function editT(id) {
-    const t = db[cur].tools.find(x => x.id === id);
-    $("t-old-id").value = t.id;
-    $("t-id").value = t.id;
-    $("t-nm").value = t.nm;
-    $("t-dia").value = t.dia;
-    showM("m-t");
-}
-
-function saveT() {
-    const id = $("t-id").value.trim();
-    if (!id) return;
-
-    const tool = {
-        id,
-        nm: $("t-nm").value.trim(),
-        dia: $("t-dia").value.trim()
-    };
-
-    const oldId = $("t-old-id").value;
-
-    if (oldId) {
-        const i = db[cur].tools.findIndex(t => t.id === oldId);
-        db[cur].tools[i] = tool;
-    } else {
-        db[cur].tools.push(tool);
-    }
-
-    save();
-    renderT();
-    hideM("m-t");
-}
-
-function delT(id) {
-    db[cur].tools = db[cur].tools.filter(t => t.id !== id);
-    save();
-    renderT();
-}
-
-/* IMPORT */
-function doImp() {
-    const lines = $("i-txt").value.split("\n");
-    let cid = null, buf = [];
-
-    lines.forEach(l => {
-        l = l.trim();
-        if (!l) return;
-
-        if (/^T\d+/i.test(l)) {
-            if (cid) db[cur].tools.push({ id: cid, nm: buf.join(" "), dia: "" });
-            cid = l.match(/^T\d+/i)[0].toUpperCase();
-            buf = [];
-        } else if (cid) {
-            buf.push(l);
-        }
-    });
-
-    if (cid) db[cur].tools.push({ id: cid, nm: buf.join(" "), dia: "" });
-
-    save();
-    renderT();
-    hideM("m-i");
-}
-
-/* PDF */
-function downloadPDF() {
-    const p = db[cur];
-
-    $("pdf-template").innerHTML = `
-        <div class="pdf-border">
-            <p class="pdf-proj">${p.name}</p>
-            <h1 class="pdf-title">${p.num}</h1>
-            <div class="pdf-hr"></div>
-            <table class="pdf-table">
-                <thead>
-                    <tr><th>T</th><th>NAME</th><th>Ø</th></tr>
-                </thead>
-                <tbody>
-                    ${p.tools.map(t => `
-                        <tr>
-                            <td>${t.id}</td>
-                            <td>${t.nm}</td>
-                            <td align="right">${t.dia || "-"}</td>
-                        </tr>
-                    `).join("")}
-                </tbody>
+        tpl.innerHTML = `
+            <h1>${p.num}</h1>
+            <p>${p.name}</p>
+            <table border="1" width="100%">
+                ${p.tools.map(t => `
+                    <tr><td>${t.id}</td><td>${t.name}</td><td>${t.dia||"-"}</td></tr>
+                `).join("")}
             </table>
-        </div>
-    `;
+        `;
 
-    html2pdf().from($("pdf-template")).set({
-        filename: `Setup_${p.num}.pdf`
-    }).save();
-}
+        setTimeout(() => {
+            html2pdf().from(tpl).set({ filename: `Setup_${p.num}.pdf` }).save();
+        }, 50);
+    }
+};
 
-renderP();
+/* INIT */
+Store.load();
+UI.renderProjects();
