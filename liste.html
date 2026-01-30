@@ -3,41 +3,41 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>QS-TOOL ENGINE v12.0</title>
+    <title>QS-TOOL FIX v12.5</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
         :root { --accent: #007AFF; --bg: #F2F2F7; }
         html, body { height: 100%; margin: 0; overflow: hidden; background: var(--bg); font-family: 'Inter', sans-serif; }
-
         .app-viewport { display: flex; flex-direction: column; height: 100%; }
-        .app-bar { background: white; padding: 12px 20px; border-bottom: 1px solid #DDD; display: flex; justify-content: space-between; align-items: center; z-index: 100; flex-shrink: 0; }
+        .app-bar { background: white; padding: 12px 20px; border-bottom: 1px solid #DDD; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
         .scroll-content { flex-grow: 1; overflow-y: auto; padding: 15px; -webkit-overflow-scrolling: touch; }
         .container { max-width: 600px; margin: 0 auto; padding-bottom: 100px; }
-        
         .tool-card { display: grid; grid-template-columns: 30px 60px 1fr 40px 40px; gap: 8px; align-items: center; background: white; border-radius: 12px; padding: 12px; margin-bottom: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
         .drag-handle { color: #CCC; cursor: grab; font-size: 20px; }
-
         .fab { position: fixed; bottom: 25px; right: 20px; width: 64px; height: 64px; border-radius: 32px; background: black; color: white; border: none; font-size: 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); z-index: 500; display: flex; align-items: center; justify-content: center; }
-
         .modal { display: none; position: fixed; inset: 0; background: white; z-index: 1000; flex-direction: column; }
         .modal-content { padding: 20px; overflow-y: auto; flex-grow: 1; }
         input { width: 100%; background: #F2F2F7; border: 1px solid #E5E5EA; border-radius: 10px; padding: 16px; margin-bottom: 10px; font-size: 16px; font-weight: 600; outline: none; }
         .btn { background: #000; color: white; border: none; border-radius: 12px; padding: 18px; width: 100%; font-weight: 800; font-size: 15px; }
-
-        /* PREVIEW - OPTIMIZED */
         #modal-prev { background: #1C1C1E; }
         .prev-header { background: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; }
         .prev-scroll { flex-grow: 1; overflow: auto; display: flex; flex-direction: column; align-items: center; padding: 20px; }
-        
-        /* Die visuelle Vorschau (nur zum Angucken) */
-        .preview-box { background: white; width: 100%; max-width: 210mm; min-height: 297mm; padding: 10mm; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .preview-box { background: white; width: 100%; max-width: 210mm; min-height: 297mm; padding: 10mm; }
 
-        /* DER ECHTE RENDERER (Unsichtbar, volle A4 Power) */
-        #offscreen-export { position: absolute; left: -9999px; top: 0; width: 210mm; background: white; }
-        .pdf-page { width: 210mm; height: 296.8mm; padding: 12mm; box-sizing: border-box; color: black; position: relative; }
-        .pdf-border { border: 2pt solid #000; height: 100%; padding: 8mm; display: flex; flex-direction: column; box-sizing: border-box; }
+        /* PDF LAYOUT STYLES - DO NOT HIDE COMPLETELY */
+        #offscreen-export { 
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            width: 210mm; 
+            z-index: -1; 
+            opacity: 0; 
+            pointer-events: none; 
+        }
+        .pdf-page { width: 210mm; min-height: 296mm; padding: 12mm; background: white; color: black; box-sizing: border-box; }
+        .pdf-border { border: 2pt solid #000; height: 270mm; padding: 8mm; display: flex; flex-direction: column; box-sizing: border-box; }
         .pdf-header { border-bottom: 3.5pt solid #000; padding-bottom: 10px; margin-bottom: 15px; }
         .pdf-table { width: 100%; border-collapse: collapse; }
         .pdf-table th { text-align: left; padding: 8pt 5pt; font-size: 9pt; border-bottom: 2pt solid #000; color: #888; text-transform: uppercase; font-weight: 900; }
@@ -87,12 +87,12 @@
 <div id="modal-import" class="modal"><div class="modal-content"><h2>Import</h2><textarea id="import-area" style="width:100%; height:200px; padding:15px; border-radius:12px; border:1px solid #DDD;"></textarea><button class="btn" onclick="runImport()" style="margin-top:15px;">Einlesen</button><button class="btn" style="background:none; color:black; margin-top:10px;" onclick="closeModal('modal-import')">Zurück</button></div></div>
 
 <script>
-    let db = JSON.parse(localStorage.getItem('qs_v12')) || [];
+    let db = JSON.parse(localStorage.getItem('qs_v125')) || [];
     let curP = null;
 
     const openM = (id) => { document.getElementById(id).style.display = 'flex'; };
     const closeModal = (id) => { document.getElementById(id).style.display = 'none'; };
-    const save = () => localStorage.setItem('qs_v12', JSON.stringify(db));
+    const save = () => localStorage.setItem('qs_v125', JSON.stringify(db));
 
     function renderHome() {
         const list = document.getElementById('project-list'); list.innerHTML = "";
@@ -124,19 +124,27 @@
 
         const exporter = document.getElementById('offscreen-export');
         exporter.innerHTML = buildPDFHTML();
+        
+        // Wait for DOM to catch up
+        await new Promise(r => setTimeout(r, 500));
 
         const opt = {
             margin: 0,
             filename: `Setup_${db[curP].num}.pdf`,
             image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: { scale: 2, useCORS: true, logging: false },
+            html2canvas: { 
+                scale: 2, 
+                useCORS: true, 
+                logging: false,
+                letterRendering: true
+            },
             jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
 
         try {
             await html2pdf().set(opt).from(exporter).save();
         } catch (e) {
-            alert("Fehler beim Download");
+            alert("Fehler!");
         } finally {
             btn.innerText = "PDF SPEICHERN";
             btn.disabled = false;
