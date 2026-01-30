@@ -1,10 +1,11 @@
-let db = JSON.parse(localStorage.getItem('qs_v17')) || [];
+let db = JSON.parse(localStorage.getItem('qs_v18')) || [];
 let cur = null;
 
 const showM = id => document.getElementById(id).style.display = 'flex';
 const hideM = id => document.getElementById(id).style.display = 'none';
-const save = () => localStorage.setItem('qs_v17', JSON.stringify(db));
+const save = () => localStorage.setItem('qs_v18', JSON.stringify(db));
 
+// Навигация
 function goHome() {
     document.getElementById('v-det').classList.remove('active');
     document.getElementById('v-home').classList.add('active');
@@ -15,7 +16,7 @@ function renderP() {
     const l = document.getElementById('list-p'); l.innerHTML = "";
     db.forEach((p, i) => {
         l.innerHTML += `<div class="card" onclick="openP(${i})">
-            <div style="flex-grow:1"><b>${p.num}</b><br><small style="color:#888">${p.name}</small></div>
+            <div style="flex-grow:1"><b>${p.num}</b><br><small>${p.name}</small></div>
             <button class="c-del" onclick="event.stopPropagation();delP(${i})">✕</button>
         </div>`;
     });
@@ -51,20 +52,12 @@ function renderT() {
     }});
 }
 
+// Функции кнопок
 function addP() {
     const num = document.getElementById('p-num').value;
     const nam = document.getElementById('p-nam').value;
     if(!num) return;
     db.push({num, name:nam, tools:[]}); save(); renderP(); hideM('m-p');
-    document.getElementById('p-num').value = ""; document.getElementById('p-nam').value = "";
-}
-
-function openTAdd() { 
-    document.getElementById('t-idx').value=""; 
-    document.getElementById('t-id').value=""; 
-    document.getElementById('t-nm').value=""; 
-    document.getElementById('t-dia').value=""; 
-    showM('m-t'); 
 }
 
 function addT() {
@@ -86,7 +79,6 @@ function editT(i) {
 
 function delP(i) { if(confirm('Löschen?')) {db.splice(i,1); save(); renderP(); }}
 function delT(i) { db[cur].tools.splice(i,1); save(); renderT(); }
-function clearT() { if(confirm('Leeren?')) {db[cur].tools=[]; save(); renderT(); }}
 
 function doImp() {
     const lines = document.getElementById('i-txt').value.split('\n');
@@ -102,64 +94,35 @@ function doImp() {
     save(); renderT(); hideM('m-i');
 }
 
-// PDF ENGINE V17
-function getHTMLForPDF() {
+// --- ЛОГИКА PDF v18 ---
+function buildHTML() {
     const p = db[cur];
-    const rows = p.tools.map(t => `
-        <tr>
-            <td width="20%">${t.id}</td>
-            <td width="65%">${t.nm}</td>
-            <td width="15%" align="right">${t.dia||''}</td>
-        </tr>`).join('');
-    
-    return `
-    <div class="pdf-render-box">
-        <div class="pdf-header">
-            <div class="pdf-title">${p.name}</div>
-            <div class="pdf-num">${p.num}</div>
-        </div>
-        <table class="pdf-table">
-            <thead>
-                <tr><th>T-NR</th><th>WERKZEUGNAME</th><th align="right">Ø</th></tr>
-            </thead>
+    const rows = p.tools.map(t => `<tr><td>${t.id}</td><td>${t.nm}</td><td align="right">${t.dia||''}</td></tr>`).join('');
+    return `<div class="pdf-out">
+        <h2>${p.name}</h2>
+        <h1>${p.num}</h1>
+        <div class="pdf-line"></div>
+        <table>
+            <thead><tr><th width="15%">T-NR</th><th width="70%">WERKZEUG</th><th width="15%" align="right">Ø</th></tr></thead>
             <tbody>${rows}</tbody>
         </table>
     </div>`;
 }
 
 function openPre() {
-    document.getElementById('pdf-area').innerHTML = getHTMLForPDF();
+    document.getElementById('pdf-area').innerHTML = buildHTML();
     showM('m-pre');
 }
 
 async function makePDF() {
-    const btn = document.getElementById('d-btn');
-    btn.innerText = "BITTE WARTEN...";
-    
-    // Создаем невидимый контейнер с фиксированной шириной A4
-    const container = document.createElement('div');
-    container.style.position = 'absolute';
-    container.style.left = '-9999px';
-    container.style.width = '190mm'; // Оставляем поля
-    container.innerHTML = getHTMLForPDF();
-    document.body.appendChild(container);
-
+    const area = document.getElementById('pdf-area');
     const opt = {
-        margin: 10,
-        filename: `Setup_${db[cur].num}.pdf`,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true },
+        margin: 5,
+        filename: `${db[cur].num}.pdf`,
+        html2canvas: { scale: 2, useCORS: true, letterRendering: true },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
     };
-
-    try {
-        await html2pdf().set(opt).from(container).save();
-    } catch(e) {
-        alert("Ошибка PDF");
-    } finally {
-        document.body.removeChild(container);
-        btn.innerText = "PDF SPEICHERN";
-    }
+    await html2pdf().set(opt).from(area.firstElementChild).save();
 }
 
 renderP();
