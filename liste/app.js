@@ -1,22 +1,16 @@
-let db = JSON.parse(localStorage.getItem('qs_v18')) || [];
+let db = JSON.parse(localStorage.getItem('qs_v20')) || [];
 let cur = null;
 
 const showM = id => document.getElementById(id).style.display = 'flex';
 const hideM = id => document.getElementById(id).style.display = 'none';
-const save = () => localStorage.setItem('qs_v18', JSON.stringify(db));
+const save = () => localStorage.setItem('qs_v20', JSON.stringify(db));
 
-// Навигация
-function goHome() {
-    document.getElementById('v-det').classList.remove('active');
-    document.getElementById('v-home').classList.add('active');
-    renderP();
-}
-
+// Рендеринг проектов
 function renderP() {
     const l = document.getElementById('list-p'); l.innerHTML = "";
     db.forEach((p, i) => {
         l.innerHTML += `<div class="card" onclick="openP(${i})">
-            <div style="flex-grow:1"><b>${p.num}</b><br><small>${p.name}</small></div>
+            <div style="flex-grow:1"><b>${p.num}</b><br><small style="color:#888">${p.name}</small></div>
             <button class="c-del" onclick="event.stopPropagation();delP(${i})">✕</button>
         </div>`;
     });
@@ -38,7 +32,7 @@ function renderT() {
             <div class="c-drag">☰</div>
             <div class="c-id">${t.id}</div>
             <div class="c-name">${t.nm}</div>
-            <div class="c-diam">${t.dia || ''}</div>
+            <div class="c-diam">${t.dia || '-'}</div>
             <button class="c-del" onclick="event.stopPropagation();delT(${i})">✕</button>
         </div>`;
     });
@@ -52,7 +46,7 @@ function renderT() {
     }});
 }
 
-// Функции кнопок
+// Логика кнопок
 function addP() {
     const num = document.getElementById('p-num').value;
     const nam = document.getElementById('p-nam').value;
@@ -94,35 +88,50 @@ function doImp() {
     save(); renderT(); hideM('m-i');
 }
 
-// --- ЛОГИКА PDF v18 ---
-function buildHTML() {
+// --- ГЕНЕРАЦИЯ PDF (ФИНАЛ) ---
+async function downloadPDF() {
     const p = db[cur];
-    const rows = p.tools.map(t => `<tr><td>${t.id}</td><td>${t.nm}</td><td align="right">${t.dia||''}</td></tr>`).join('');
-    return `<div class="pdf-out">
-        <h2>${p.name}</h2>
-        <h1>${p.num}</h1>
-        <div class="pdf-line"></div>
-        <table>
-            <thead><tr><th width="15%">T-NR</th><th width="70%">WERKZEUG</th><th width="15%" align="right">Ø</th></tr></thead>
-            <tbody>${rows}</tbody>
-        </table>
-    </div>`;
-}
+    const template = document.getElementById('pdf-template');
+    
+    // Заполняем скрытый шаблон данными
+    const rows = p.tools.map(t => `
+        <tr>
+            <td width="15%">${t.id}</td>
+            <td width="75%">${t.nm}</td>
+            <td width="10%" align="right">${t.dia||'-'}</td>
+        </tr>`).join('');
 
-function openPre() {
-    document.getElementById('pdf-area').innerHTML = buildHTML();
-    showM('m-pre');
-}
+    template.innerHTML = `
+        <div class="pdf-border">
+            <div class="pdf-header">
+                <p class="pdf-proj">${p.name}</p>
+                <h1 class="pdf-title">${p.num}</h1>
+                <div class="pdf-hr"></div>
+            </div>
+            <table class="pdf-table">
+                <thead>
+                    <tr><th>T-NR</th><th>WERKZEUGNAME</th><th align="right">Ø</th></tr>
+                </thead>
+                <tbody>${rows}</tbody>
+            </table>
+        </div>`;
 
-async function makePDF() {
-    const area = document.getElementById('pdf-area');
     const opt = {
-        margin: 5,
-        filename: `${db[cur].num}.pdf`,
-        html2canvas: { scale: 2, useCORS: true, letterRendering: true },
+        margin: 0,
+        filename: `Setup_${p.num}.pdf`,
+        image: { type: 'jpeg', quality: 1 },
+        html2canvas: { scale: 2, useCORS: true, logging: false },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
     };
-    await html2pdf().set(opt).from(area.firstElementChild).save();
+
+    // Генерируем именно из скрытого шаблона
+    html2pdf().set(opt).from(template).save();
+}
+
+function goHome() {
+    document.getElementById('v-det').classList.remove('active');
+    document.getElementById('v-home').classList.add('active');
+    renderP();
 }
 
 renderP();
