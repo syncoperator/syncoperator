@@ -1,10 +1,9 @@
-let db = JSON.parse(localStorage.getItem('qs_v16')) || [];
+let db = JSON.parse(localStorage.getItem('qs_v17')) || [];
 let cur = null;
 
 const showM = id => document.getElementById(id).style.display = 'flex';
 const hideM = id => document.getElementById(id).style.display = 'none';
-
-function save() { localStorage.setItem('qs_v16', JSON.stringify(db)); }
+const save = () => localStorage.setItem('qs_v17', JSON.stringify(db));
 
 function goHome() {
     document.getElementById('v-det').classList.remove('active');
@@ -16,7 +15,7 @@ function renderP() {
     const l = document.getElementById('list-p'); l.innerHTML = "";
     db.forEach((p, i) => {
         l.innerHTML += `<div class="card" onclick="openP(${i})">
-            <div style="flex-grow:1"><b>${p.num}</b><br><small>${p.name}</small></div>
+            <div style="flex-grow:1"><b>${p.num}</b><br><small style="color:#888">${p.name}</small></div>
             <button class="c-del" onclick="event.stopPropagation();delP(${i})">✕</button>
         </div>`;
     });
@@ -57,13 +56,21 @@ function addP() {
     const nam = document.getElementById('p-nam').value;
     if(!num) return;
     db.push({num, name:nam, tools:[]}); save(); renderP(); hideM('m-p');
+    document.getElementById('p-num').value = ""; document.getElementById('p-nam').value = "";
 }
 
-function openTAdd() { document.getElementById('t-idx').value=""; document.getElementById('t-id').value=""; document.getElementById('t-nm').value=""; document.getElementById('t-dia').value=""; showM('m-t'); }
+function openTAdd() { 
+    document.getElementById('t-idx').value=""; 
+    document.getElementById('t-id').value=""; 
+    document.getElementById('t-nm').value=""; 
+    document.getElementById('t-dia').value=""; 
+    showM('m-t'); 
+}
 
 function addT() {
     const idx = document.getElementById('t-idx').value;
     const t = { id: document.getElementById('t-id').value, nm: document.getElementById('t-nm').value, dia: document.getElementById('t-dia').value };
+    if(!t.id) return;
     if(idx==="") db[cur].tools.push(t); else db[cur].tools[idx]=t;
     save(); renderT(); hideM('m-t');
 }
@@ -95,29 +102,64 @@ function doImp() {
     save(); renderT(); hideM('m-i');
 }
 
-function getPDF() {
+// PDF ENGINE V17
+function getHTMLForPDF() {
     const p = db[cur];
-    const rows = p.tools.map(t => `<tr><td>${t.id}</td><td>${t.nm}</td><td style="text-align:right">${t.dia||''}</td></tr>`).join('');
-    return `<div class="pdf-box"><div class="pdf-h"><div class="pdf-title">${p.name}</div><div class="pdf-num">${p.num}</div></div>
-    <table class="pdf-table"><thead><tr><th width="15%">T-NR</th><th width="70%">BEZEICHNUNG</th><th width="15%" style="text-align:right">Ø</th></tr></thead>
-    <tbody>${rows}</tbody></table></div>`;
+    const rows = p.tools.map(t => `
+        <tr>
+            <td width="20%">${t.id}</td>
+            <td width="65%">${t.nm}</td>
+            <td width="15%" align="right">${t.dia||''}</td>
+        </tr>`).join('');
+    
+    return `
+    <div class="pdf-render-box">
+        <div class="pdf-header">
+            <div class="pdf-title">${p.name}</div>
+            <div class="pdf-num">${p.num}</div>
+        </div>
+        <table class="pdf-table">
+            <thead>
+                <tr><th>T-NR</th><th>WERKZEUGNAME</th><th align="right">Ø</th></tr>
+            </thead>
+            <tbody>${rows}</tbody>
+        </table>
+    </div>`;
 }
 
-function openPre() { document.getElementById('a4').innerHTML = getPDF(); showM('m-pre'); }
+function openPre() {
+    document.getElementById('pdf-area').innerHTML = getHTMLForPDF();
+    showM('m-pre');
+}
 
 async function makePDF() {
-    const b = document.getElementById('d-btn'); b.innerText = "WAIT...";
-    const el = document.createElement('div');
-    el.style.width = "210mm"; el.style.background = "white";
-    el.innerHTML = `<div style="padding:15mm">${getPDF()}</div>`;
-    document.body.appendChild(el);
+    const btn = document.getElementById('d-btn');
+    btn.innerText = "BITTE WARTEN...";
     
-    const opt = { margin:0, filename:`${db[cur].num}.pdf`, image:{type:'jpeg',quality:1}, html2canvas:{scale:2}, jsPDF:{unit:'mm',format:'a4'} };
-    
+    // Создаем невидимый контейнер с фиксированной шириной A4
+    const container = document.createElement('div');
+    container.style.position = 'absolute';
+    container.style.left = '-9999px';
+    container.style.width = '190mm'; // Оставляем поля
+    container.innerHTML = getHTMLForPDF();
+    document.body.appendChild(container);
+
+    const opt = {
+        margin: 10,
+        filename: `Setup_${db[cur].num}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+
     try {
-        await html2pdf().set(opt).from(el).save();
-    } catch(e) { alert('Err'); }
-    finally { document.body.removeChild(el); b.innerText = "PDF SPEICHERN"; }
+        await html2pdf().set(opt).from(container).save();
+    } catch(e) {
+        alert("Ошибка PDF");
+    } finally {
+        document.body.removeChild(container);
+        btn.innerText = "PDF SPEICHERN";
+    }
 }
 
 renderP();
