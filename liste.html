@@ -3,52 +3,55 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>QS-TOOL FIX v12.5</title>
+    <title>QS-TOOL FINAL v13</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
         :root { --accent: #007AFF; --bg: #F2F2F7; }
         html, body { height: 100%; margin: 0; overflow: hidden; background: var(--bg); font-family: 'Inter', sans-serif; }
+        
+        /* UI Elements */
         .app-viewport { display: flex; flex-direction: column; height: 100%; }
         .app-bar { background: white; padding: 12px 20px; border-bottom: 1px solid #DDD; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
         .scroll-content { flex-grow: 1; overflow-y: auto; padding: 15px; -webkit-overflow-scrolling: touch; }
         .container { max-width: 600px; margin: 0 auto; padding-bottom: 100px; }
         .tool-card { display: grid; grid-template-columns: 30px 60px 1fr 40px 40px; gap: 8px; align-items: center; background: white; border-radius: 12px; padding: 12px; margin-bottom: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        .drag-handle { color: #CCC; cursor: grab; font-size: 20px; }
-        .fab { position: fixed; bottom: 25px; right: 20px; width: 64px; height: 64px; border-radius: 32px; background: black; color: white; border: none; font-size: 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); z-index: 500; display: flex; align-items: center; justify-content: center; }
-        .modal { display: none; position: fixed; inset: 0; background: white; z-index: 1000; flex-direction: column; }
-        .modal-content { padding: 20px; overflow-y: auto; flex-grow: 1; }
-        input { width: 100%; background: #F2F2F7; border: 1px solid #E5E5EA; border-radius: 10px; padding: 16px; margin-bottom: 10px; font-size: 16px; font-weight: 600; outline: none; }
-        .btn { background: #000; color: white; border: none; border-radius: 12px; padding: 18px; width: 100%; font-weight: 800; font-size: 15px; }
-        #modal-prev { background: #1C1C1E; }
-        .prev-header { background: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; }
-        .prev-scroll { flex-grow: 1; overflow: auto; display: flex; flex-direction: column; align-items: center; padding: 20px; }
-        .preview-box { background: white; width: 100%; max-width: 210mm; min-height: 297mm; padding: 10mm; }
+        .drag-handle { color: #CCC; cursor: grab; padding: 5px; }
+        .fab { position: fixed; bottom: 25px; right: 20px; width: 64px; height: 64px; border-radius: 32px; background: black; color: white; border: none; font-size: 30px; z-index: 500; display: flex; align-items: center; justify-content: center; }
 
-        /* PDF LAYOUT STYLES - DO NOT HIDE COMPLETELY */
-        #offscreen-export { 
-            position: fixed; 
-            top: 0; 
-            left: 0; 
+        /* Preview Modal */
+        .modal { display: none; position: fixed; inset: 0; background: white; z-index: 1000; flex-direction: column; }
+        #modal-prev { background: #555; }
+        .prev-header { background: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; }
+        .prev-scroll { flex-grow: 1; overflow: auto; display: flex; justify-content: center; padding: 0; background: #555; }
+
+        /* PDF Layout - Visible in Preview */
+        .pdf-render-area { 
+            background: white; 
             width: 210mm; 
-            z-index: -1; 
-            opacity: 0; 
-            pointer-events: none; 
+            min-height: 297mm; 
+            padding: 15mm; 
+            box-sizing: border-box; 
+            transform: scale(0.45); 
+            transform-origin: top center;
+            margin-top: 10px;
         }
-        .pdf-page { width: 210mm; min-height: 296mm; padding: 12mm; background: white; color: black; box-sizing: border-box; }
-        .pdf-border { border: 2pt solid #000; height: 270mm; padding: 8mm; display: flex; flex-direction: column; box-sizing: border-box; }
-        .pdf-header { border-bottom: 3.5pt solid #000; padding-bottom: 10px; margin-bottom: 15px; }
+        .pdf-border { border: 2pt solid #000; height: 265mm; padding: 10mm; display: flex; flex-direction: column; box-sizing: border-box; }
+        .pdf-header { border-bottom: 4pt solid #000; padding-bottom: 10px; margin-bottom: 20px; }
         .pdf-table { width: 100%; border-collapse: collapse; }
-        .pdf-table th { text-align: left; padding: 8pt 5pt; font-size: 9pt; border-bottom: 2pt solid #000; color: #888; text-transform: uppercase; font-weight: 900; }
-        .pdf-table td { padding: 9pt 5pt; font-size: 11pt; font-weight: 700; border-bottom: 0.5pt solid #EEE; }
+        .pdf-table th { text-align: left; padding: 10pt 5pt; font-size: 10pt; border-bottom: 2pt solid #000; color: #888; text-transform: uppercase; }
+        .pdf-table td { padding: 10pt 5pt; font-size: 12pt; font-weight: 700; border-bottom: 0.5pt solid #EEE; }
+
+        .btn { background: #000; color: white; border: none; border-radius: 12px; padding: 18px; width: 100%; font-weight: 800; }
+        input, textarea { width: 100%; background: #F2F2F7; border: 1px solid #E5E5EA; border-radius: 10px; padding: 16px; margin-bottom: 10px; font-size: 16px; outline: none; }
     </style>
 </head>
 <body>
 
 <div class="app-viewport">
     <div id="view-home" style="display: flex; flex-direction: column; height: 100%;">
-        <div class="app-bar"><h1>SETUP MASTER</h1></div>
+        <div class="app-bar"><h1>SETUP v13</h1></div>
         <div class="scroll-content"><div id="project-list" class="container"></div></div>
         <button class="fab" onclick="openM('modal-p')">+</button>
     </div>
@@ -56,15 +59,15 @@
     <div id="view-detail" style="display: none; flex-direction: column; height: 100%;">
         <div class="app-bar">
             <button onclick="goHome()" style="background:none; border:none; font-size:24px;">←</button>
-            <div style="text-align:right;"><span id="det-num" style="font-weight:900; display:block;"></span><small id="det-name" style="color:#888; text-transform:uppercase;"></small></div>
+            <div style="text-align:right;"><span id="det-num" style="font-weight:900; display:block;"></span><small id="det-name" style="color:#888;"></small></div>
         </div>
         <div class="scroll-content">
             <div class="container">
-                <button class="btn" style="background:var(--accent); margin-bottom:15px;" onclick="openM('modal-import')">SCHNELL-IMPORT</button>
+                <button class="btn" style="background:var(--accent); margin-bottom:15px;" onclick="openM('modal-import')">IMPORTIEREN</button>
                 <div id="tool-list"></div>
                 <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:20px;">
                     <button class="btn" onclick="openPreview()">VORSCHAU</button>
-                    <button class="btn" style="background:#E5E5EA; color:red;" onclick="clearTools()">LEEREN</button>
+                    <button class="btn" style="background:#CCC; color:black;" onclick="clearTools()">LEEREN</button>
                 </div>
             </div>
         </div>
@@ -73,88 +76,80 @@
 </div>
 
 <div id="modal-prev" class="modal">
-    <div class="prev-header">
+    <div class="prev-header" id="pdffix-header">
         <button onclick="closeModal('modal-prev')" style="border:none; background:none; font-weight:800;">← ZURÜCK</button>
         <button id="download-btn" onclick="downloadPDF()" style="background:#000; color:white; border:none; padding:12px 20px; border-radius:10px; font-weight:900;">PDF SPEICHERN</button>
     </div>
-    <div class="prev-scroll"><div id="preview-stage" class="preview-box"></div></div>
+    <div class="prev-scroll">
+        <div id="pdf-capture-area" class="pdf-render-area">
+            </div>
+    </div>
 </div>
 
-<div id="offscreen-export"></div>
-
-<div id="modal-p" class="modal"><div class="modal-content"><h2>Neues Projekt</h2><input id="p-in-num" placeholder="Zeichnungs-Nr"><input id="p-in-name" placeholder="Bauteil Name"><button class="btn" onclick="saveProject()">Speichern</button><button class="btn" style="background:none; color:black; margin-top:10px;" onclick="closeModal('modal-p')">Abbrechen</button></div></div>
-<div id="modal-t" class="modal"><div class="modal-content"><h2>Werkzeug</h2><input type="hidden" id="t-idx"><input id="t-in-id" placeholder="T-Nummer"><input id="t-in-nm" placeholder="Bezeichnung"><input id="t-in-diam" placeholder="Ø"><button class="btn" onclick="saveTool()">Speichern</button><button class="btn" style="background:none; color:black; margin-top:10px;" onclick="closeModal('modal-t')">Abbrechen</button></div></div>
-<div id="modal-import" class="modal"><div class="modal-content"><h2>Import</h2><textarea id="import-area" style="width:100%; height:200px; padding:15px; border-radius:12px; border:1px solid #DDD;"></textarea><button class="btn" onclick="runImport()" style="margin-top:15px;">Einlesen</button><button class="btn" style="background:none; color:black; margin-top:10px;" onclick="closeModal('modal-import')">Zurück</button></div></div>
+<div id="modal-p" class="modal"><div class="modal-content"><h2>Neues Projekt</h2><input id="p-in-num" placeholder="Nummer"><input id="p-in-name" placeholder="Name"><button class="btn" onclick="saveProject()">Speichern</button></div></div>
+<div id="modal-t" class="modal"><div class="modal-content"><h2>Werkzeug</h2><input type="hidden" id="t-idx"><input id="t-in-id" placeholder="T-Nummer"><input id="t-in-nm" placeholder="Bezeichnung"><input id="t-in-diam" placeholder="Ø"><button class="btn" onclick="saveTool()">Speichern</button></div></div>
+<div id="modal-import" class="modal"><div class="modal-content"><h2>Import</h2><textarea id="import-area" style="height:200px;"></textarea><button class="btn" onclick="runImport()">Einlesen</button></div></div>
 
 <script>
-    let db = JSON.parse(localStorage.getItem('qs_v125')) || [];
+    let db = JSON.parse(localStorage.getItem('qs_v13')) || [];
     let curP = null;
 
     const openM = (id) => { document.getElementById(id).style.display = 'flex'; };
     const closeModal = (id) => { document.getElementById(id).style.display = 'none'; };
-    const save = () => localStorage.setItem('qs_v125', JSON.stringify(db));
+    const save = () => localStorage.setItem('qs_v13', JSON.stringify(db));
 
     function renderHome() {
         const list = document.getElementById('project-list'); list.innerHTML = "";
-        db.forEach((p, i) => { list.innerHTML += `<div class="tool-card" style="grid-template-columns: 1fr 40px;" onclick="openDetail(${i})"><div><b style="font-size:18px;">${p.num}</b><br><small style="color:#888;">${p.name}</small></div><button onclick="event.stopPropagation(); deleteProject(${i})" style="border:none; background:none; color:red;">✕</button></div>`; });
+        db.forEach((p, i) => { list.innerHTML += `<div class="tool-card" style="grid-template-columns: 1fr 40px;" onclick="openDetail(${i})"><div><b style="font-size:18px;">${p.num}</b><br><small>${p.name}</small></div><button onclick="event.stopPropagation(); deleteProject(${i})" style="color:red; border:none; background:none;">✕</button></div>`; });
     }
 
     function openDetail(i) { curP = i; document.getElementById('view-home').style.display = 'none'; document.getElementById('view-detail').style.display = 'flex'; document.getElementById('det-num').innerText = db[i].num; document.getElementById('det-name').innerText = db[i].name; renderTools(); }
 
     function renderTools() {
         const list = document.getElementById('tool-list'); list.innerHTML = "";
-        db[curP].tools.forEach((t, i) => { list.innerHTML += `<div class="tool-card" onclick="editT(${i})"><div class="drag-handle">☰</div><div style="font-weight:900; color:var(--accent);">${t.id}</div><div style="font-weight:600;">${t.nm}</div><div style="font-weight:800; opacity:0.3;">${t.diam || '-'}</div><button onclick="event.stopPropagation(); delT(${i})" style="border:none; background:none; color:red;">✕</button></div>`; });
+        db[curP].tools.forEach((t, i) => { list.innerHTML += `<div class="tool-card" onclick="editT(${i})"><div class="drag-handle">☰</div><div style="font-weight:900;">${t.id}</div><div>${t.nm}</div><div style="font-weight:800; opacity:0.3;">${t.diam || ''}</div><button onclick="event.stopPropagation(); delT(${i})" style="color:red; border:none; background:none;">✕</button></div>`; });
         new Sortable(list, { handle:'.drag-handle', animation:150, onEnd: () => { const rows = Array.from(list.querySelectorAll('.tool-card')); db[curP].tools = rows.map(row => { const tid = row.children[1].innerText; return db[curP].tools.find(t => t.id === tid); }); save(); }});
     }
 
-    function buildPDFHTML() {
-        let rows = db[curP].tools.map(t => `<tr><td style="font-weight:900;">${t.id}</td><td>${t.nm}</td><td style="text-align:right;">${t.diam || ''}</td></tr>`).join('');
-        return `<div class="pdf-page"><div class="pdf-border"><div class="pdf-header"><div style="font-size:16pt; color:#888; font-weight:700;">${db[curP].name}</div><div style="font-size:42pt; font-weight:900;">${db[curP].num}</div></div><table class="pdf-table"><thead><tr><th style="width:15%">T-NR</th><th style="width:70%">WERKZEUGNAME / KOMMENTAR</th><th style="width:15%; text-align:right;">Ø</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
-    }
-
     function openPreview() {
-        document.getElementById('preview-stage').innerHTML = buildPDFHTML();
+        let rows = db[curP].tools.map(t => `<tr><td style="font-weight:900;">${t.id}</td><td>${t.nm}</td><td style="text-align:right;">${t.diam || ''}</td></tr>`).join('');
+        document.getElementById('pdf-capture-area').innerHTML = `<div class="pdf-border"><div class="pdf-header"><div style="font-size:18pt; color:#888;">${db[curP].name}</div><div style="font-size:45pt; font-weight:900;">${db[curP].num}</div></div><table class="pdf-table"><thead><tr><th style="width:15%">T-NR</th><th style="width:70%">WERKZEUGNAME</th><th style="width:15%; text-align:right;">Ø</th></tr></thead><tbody>${rows}</tbody></table></div>`;
         openM('modal-prev');
     }
 
     async function downloadPDF() {
         const btn = document.getElementById('download-btn');
-        btn.innerText = "BITTE WARTEN...";
-        btn.disabled = true;
-
-        const exporter = document.getElementById('offscreen-export');
-        exporter.innerHTML = buildPDFHTML();
+        const area = document.getElementById('pdf-capture-area');
         
-        // Wait for DOM to catch up
-        await new Promise(r => setTimeout(r, 500));
+        btn.innerText = "LÄDT...";
+        
+        // ВАЖНО: Убираем трансформацию масштаба перед снимком, чтобы библиотека видела реальный размер
+        area.style.transform = "none";
+        area.style.margin = "0";
 
         const opt = {
             margin: 0,
             filename: `Setup_${db[curP].num}.pdf`,
-            image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: { 
-                scale: 2, 
-                useCORS: true, 
-                logging: false,
-                letterRendering: true
-            },
+            image: { type: 'jpeg', quality: 1 },
+            html2canvas: { scale: 2, useCORS: true, logging: false },
             jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
 
         try {
-            await html2pdf().set(opt).from(exporter).save();
+            await html2pdf().set(opt).from(area).save();
         } catch (e) {
             alert("Fehler!");
         } finally {
+            // Возвращаем как было для отображения на телефоне
+            area.style.transform = "scale(0.45)";
+            area.style.marginTop = "10px";
             btn.innerText = "PDF SPEICHERN";
-            btn.disabled = false;
-            exporter.innerHTML = "";
         }
     }
 
-    function saveProject() { const name = document.getElementById('p-in-name').value; const num = document.getElementById('p-in-num').value; if(!num) return; db.push({name, num, tools:[]}); save(); renderHome(); closeModal('modal-p'); }
-    function saveTool() { const id = document.getElementById('t-in-id').value; const diam = document.getElementById('t-in-diam').value; const nm = document.getElementById('t-in-nm').value; const idx = document.getElementById('t-idx').value; if(idx === "") db[curP].tools.push({id, diam, nm}); else db[curP].tools[idx] = {id, diam, nm}; save(); renderTools(); closeModal('modal-t'); }
-    function editT(i) { document.getElementById('t-idx').value = i; document.getElementById('t-in-id').value = db[curP].tools[i].id; document.getElementById('t-in-nm').value = db[curP].tools[i].nm; document.getElementById('t-in-diam').value = db[curP].tools[i].diam || ''; openM('modal-t'); }
+    function saveProject() { const n = document.getElementById('p-in-name').value; const num = document.getElementById('p-in-num').value; if(num) { db.push({name:n, num:num, tools:[]}); save(); renderHome(); closeModal('modal-p'); } }
+    function saveTool() { const id = document.getElementById('t-in-id').value; const d = document.getElementById('t-in-diam').value; const nm = document.getElementById('t-in-nm').value; const idx = document.getElementById('t-idx').value; if(idx==="") db[curP].tools.push({id, diam:d, nm}); else db[curP].tools[idx]={id, diam:d, nm}; save(); renderTools(); closeModal('modal-t'); }
+    function editT(i) { document.getElementById('t-idx').value=i; document.getElementById('t-in-id').value=db[curP].tools[i].id; document.getElementById('t-in-nm').value=db[curP].tools[i].nm; document.getElementById('t-in-diam').value=db[curP].tools[i].diam; openM('modal-t'); }
     function runImport() { const lines = document.getElementById('import-area').value.split('\n'); let tid = null; let tnm = []; lines.forEach(l => { if(/^[T][0-9]/i.test(l)) { if(tid) db[curP].tools.push({id: tid, diam: '', nm: tnm.join(' ')}); tid = l.trim().toUpperCase(); tnm = []; } else if(tid) tnm.push(l.trim()); }); if(tid) db[curP].tools.push({id: tid, diam: '', nm: tnm.join(' ')}); save(); renderTools(); closeModal('modal-import'); }
     function goHome() { document.getElementById('view-home').style.display='flex'; document.getElementById('view-detail').style.display='none'; renderHome(); }
     function deleteProject(i) { if(confirm("Löschen?")) { db.splice(i,1); save(); renderHome(); } }
