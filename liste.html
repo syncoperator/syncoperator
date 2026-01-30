@@ -3,65 +3,64 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>QS-TOOL PREMIUM v8.0</title>
+    <title>QS-TOOL ULTIMATE v9.0</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap');
         
         :root { --accent: #007AFF; --bg: #F2F2F7; --text: #000; }
-        * { box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        * { box-sizing: border-box; font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; }
         body { background: var(--bg); color: var(--text); margin: 0; }
 
-        /* App UI */
+        /* --- APP UI --- */
         .app-bar { background: white; padding: 20px; border-bottom: 1px solid #DDD; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
-        .app-bar h1 { margin: 0; font-size: 15px; font-weight: 900; text-transform: uppercase; letter-spacing: 1.2px; }
+        .app-bar h1 { margin: 0; font-size: 14px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; }
         .container { max-width: 600px; margin: 0 auto; padding: 15px; }
         
         .tool-row { display: grid; grid-template-columns: 30px 70px 1fr 60px 40px; gap: 10px; align-items: center; background: white; border-radius: 12px; padding: 14px; margin-bottom: 8px; border: 1px solid #EEE; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-        .drag-handle { color: #CCC; cursor: grab; font-size: 20px; }
+        .drag-handle { color: #CCC; cursor: grab; font-size: 20px; padding: 5px; }
         
         /* Modals */
-        .modal { display: none; position: fixed; inset: 0; background: white; z-index: 1000; padding: 25px; }
-        input { width: 100%; background: #F2F2F7; border: 1px solid #E5E5EA; border-radius: 10px; padding: 16px; margin-bottom: 12px; font-size: 16px; font-weight: 600; outline: none; }
-        .btn { background: #000; color: white; border: none; border-radius: 12px; padding: 18px; width: 100%; font-weight: 800; cursor: pointer; }
+        .modal { display: none; position: fixed; inset: 0; background: white; z-index: 1000; padding: 25px; overflow-y: auto; }
+        input { width: 100%; background: #F2F2F7; border: 1px solid #E5E5EA; border-radius: 12px; padding: 16px; margin-bottom: 12px; font-size: 16px; font-weight: 600; outline: none; }
+        .btn { background: #000; color: white; border: none; border-radius: 12px; padding: 18px; width: 100%; font-weight: 800; cursor: pointer; transition: background 0.2s; }
+        .btn:active { background: #333; }
         .btn-sec { background: #E5E5EA; color: black; margin-top: 8px; }
 
-        /* --- PDF PREMIUM DESIGN --- */
+        /* --- PDF ULTIMATE DESIGN (A4) --- */
         #pdf-render { width: 210mm; height: 297mm; background: white; padding: 15mm; display: none; }
-        .pdf-border { border: 1.5pt solid #000; height: 100%; padding: 10mm; display: flex; flex-direction: column; }
+        .pdf-border { border: 1.5pt solid #000; height: 100%; padding: 12mm; display: flex; flex-direction: column; }
         
-        .pdf-header { display: flex; align-items: baseline; border-bottom: 3.5pt solid #000; padding-bottom: 12px; margin-bottom: 25px; }
-        .pdf-name { font-size: 42pt; font-weight: 900; text-transform: uppercase; margin-right: 15pt; letter-spacing: -2pt; color: #000; }
-        .pdf-num { font-size: 26pt; font-weight: 800; color: #555; } /* Edles Grau für die Nummer */
+        .pdf-header { border-bottom: 4pt solid #000; padding-bottom: 15px; margin-bottom: 30px; display: flex; flex-direction: column; }
+        .pdf-label { font-size: 22pt; font-weight: 700; color: #777; text-transform: uppercase; letter-spacing: -0.5pt; margin-bottom: -5px; }
+        .pdf-main-num { font-size: 46pt; font-weight: 900; color: #000; letter-spacing: -2.5pt; line-height: 1; }
         
         .pdf-table { width: 100%; border-collapse: collapse; }
-        .pdf-table th { text-align: left; padding: 10pt 6pt; font-size: 8.5pt; font-weight: 900; text-transform: uppercase; letter-spacing: 1.2pt; color: #999; border-bottom: 1.5pt solid #000; }
-        .pdf-table td { padding: 14pt 6pt; font-size: 11pt; font-weight: 700; border-bottom: 0.3pt solid #E0E0E0; color: #1a1a1a; }
+        .pdf-table th { text-align: left; padding: 12pt 6pt; font-size: 8pt; font-weight: 900; text-transform: uppercase; letter-spacing: 1.5pt; color: #999; border-bottom: 1.5pt solid #000; }
+        .pdf-table td { padding: 16pt 6pt; font-size: 11pt; font-weight: 700; border-bottom: 0.5pt solid #EEE; color: #1a1a1a; }
         .pdf-table tr:last-child td { border-bottom: 1.5pt solid #000; }
         
-        /* Spaltenbreiten PDF */
         .col-t { width: 15%; }
         .col-name { width: 70%; }
         .col-diam { width: 15%; text-align: right; }
-        .pdf-table th:last-child, .pdf-table td:last-child { text-align: right; }
     </style>
 </head>
 <body>
 
 <div id="view-home">
-    <div class="app-bar"><h1>CNC SETUP v8</h1><button onclick="exportJSON()" style="font-size:10px; opacity:0.4; border:none; background:none;">BACKUP</button></div>
+    <div class="app-bar"><h1>CNC SETUP PRO</h1><button onclick="exportJSON()" style="font-size:10px; opacity:0.4; border:none; background:none;">BACKUP</button></div>
     <div class="container" id="project-list"></div>
-    <button class="btn" style="position:fixed; bottom:30px; right:20px; width:60px; height:60px; border-radius:30px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);" onclick="openPModal()">+</button>
+    <button class="btn" style="position:fixed; bottom:30px; right:20px; width:60px; height:60px; border-radius:30px; box-shadow: 0 5px 15px rgba(0,0,0,0.2);" onclick="openPModal()">+</button>
 </div>
 
 <div id="view-detail" style="display:none;">
     <div class="app-bar">
         <button onclick="goHome()" style="background:none; border:none; font-size:24px;">←</button>
-        <div style="text-align:right;"><span id="det-name" style="font-weight:900;"></span><br><small id="det-num" style="font-weight:800; color:#555;"></small></div>
+        <div style="text-align:right;"><span id="det-num" style="font-weight:900; font-size:18px;"></span><br><small id="det-name" style="font-weight:700; color:#888; text-transform:uppercase;"></small></div>
     </div>
     <div class="container">
-        <button class="btn" style="background:#007AFF;" onclick="openModal('modal-import')">LISTE IMPORTIEREN</button>
+        <button class="btn" style="background:#007AFF;" onclick="openM('modal-import')">IMPORTIEREN</button>
         <div id="tool-list" style="margin-top:20px;"></div>
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:20px;">
             <button class="btn" onclick="openPreview()">VORSCHAU</button>
@@ -73,8 +72,8 @@
 
 <div id="modal-p" class="modal">
     <h2 style="font-weight:900;">Projekt</h2>
-    <input id="p-in-name" placeholder="Bauteil Name">
-    <input id="p-in-num" placeholder="Zeichnungs-Nummer">
+    <input id="p-in-num" placeholder="Zeichnungs-Nummer (Groß)">
+    <input id="p-in-name" placeholder="Bauteil Name (Klein)">
     <button class="btn" onclick="saveProject()">Speichern</button>
     <button class="btn btn-sec" onclick="closeModal('modal-p')">Abbrechen</button>
 </div>
@@ -91,31 +90,31 @@
 
 <div id="modal-import" class="modal">
     <h2 style="font-weight:900;">Import</h2>
-    <textarea id="import-area" style="width:100%; height:200px; background:#F2F2F7; border:none; border-radius:10px; padding:15px; font-weight:600;" placeholder="Text hier einfügen..."></textarea>
+    <textarea id="import-area" style="width:100%; height:200px; background:#F2F2F7; border:none; border-radius:12px; padding:15px; font-weight:600;" placeholder="Text einfügen..."></textarea>
     <button class="btn" style="margin-top:15px;" onclick="runImport()">Einlesen</button>
     <button class="btn btn-sec" onclick="closeModal('modal-import')">Zurück</button>
 </div>
 
 <div id="modal-prev" class="modal" style="background:#1C1C1E; overflow:auto; padding:10px;">
-    <div style="display:flex; justify-content:space-between; margin-bottom:15px; background:white; padding:12px; border-radius:14px; position:sticky; top:0; z-index:1000;">
-        <button onclick="closeModal('modal-prev')" style="border:none; background:none; font-weight:800;">← ZURÜCK</button>
-        <button onclick="downloadPDF()" style="background:#000; color:white; border:none; padding:10px 20px; border-radius:10px; font-weight:800;">PDF DRUCKEN</button>
+    <div style="display:flex; justify-content:space-between; margin:10px; background:white; padding:12px; border-radius:14px; position:sticky; top:0; z-index:1100;">
+        <button onclick="closeModal('modal-prev')" style="border:none; background:none; font-weight:800; cursor:pointer;">← ZURÜCK</button>
+        <button id="download-btn" onclick="downloadPDF()" style="background:#000; color:white; border:none; padding:10px 25px; border-radius:10px; font-weight:800; cursor:pointer;">PDF SPEICHERN</button>
     </div>
-    <div id="preview-stage" style="transform: scale(0.38); transform-origin: top center;"></div>
+    <div id="preview-stage" style="transform: scale(0.38); transform-origin: top center; margin-top:10px;"></div>
 </div>
 
 <div id="pdf-render">
     <div class="pdf-border">
         <div class="pdf-header">
-            <span id="pdf-v-name" class="pdf-name"></span>
-            <span id="pdf-v-num" class="pdf-num"></span>
+            <span id="pdf-v-name" class="pdf-label"></span>
+            <span id="pdf-v-num" class="pdf-main-num"></span>
         </div>
         <table class="pdf-table">
             <thead>
                 <tr>
                     <th class="col-t">T-NR</th>
                     <th class="col-name">WERKZEUGNAME / KOMMENTAR</th>
-                    <th class="col-diam">Ø</th>
+                    <th class="col-diam" style="text-align:right">Ø</th>
                 </tr>
             </thead>
             <tbody id="pdf-v-body"></tbody>
@@ -125,18 +124,18 @@
 </div>
 
 <script>
-    let db = JSON.parse(localStorage.getItem('qs_v80')) || [];
+    let db = JSON.parse(localStorage.getItem('qs_v9')) || [];
     let curP = null;
 
-    const openModal = (id) => document.getElementById(id).style.display = 'block';
+    const openM = (id) => document.getElementById(id).style.display = 'block';
     const closeModal = (id) => document.getElementById(id).style.display = 'none';
-    const save = () => localStorage.setItem('qs_v80', JSON.stringify(db));
+    const save = () => localStorage.setItem('qs_v9', JSON.stringify(db));
 
     function renderHome() {
         const list = document.getElementById('project-list'); list.innerHTML = "";
         db.forEach((p, i) => {
             list.innerHTML += `<div class="tool-row" style="grid-template-columns: 1fr 40px;" onclick="openDetail(${i})">
-                <div><b style="font-size:17px;">${p.name}</b><br><small style="color:#666; font-weight:800;">${p.num}</small></div>
+                <div><b style="font-size:18px; color:#000;">${p.num}</b><br><small style="color:#888; font-weight:700; text-transform:uppercase;">${p.name}</small></div>
                 <button onclick="event.stopPropagation(); editP(${i})" style="border:none; background:none; font-size:18px;">✎</button>
             </div>`;
         });
@@ -146,8 +145,8 @@
         curP = i;
         document.getElementById('view-home').style.display = 'none';
         document.getElementById('view-detail').style.display = 'block';
-        document.getElementById('det-name').innerText = db[i].name;
         document.getElementById('det-num').innerText = db[i].num;
+        document.getElementById('det-name').innerText = db[i].name;
         renderTools();
     }
 
@@ -187,7 +186,7 @@
         document.getElementById('pdf-v-num').innerText = db[curP].num;
         const b = document.getElementById('pdf-v-body'); b.innerHTML = "";
         db[curP].tools.forEach(t => { 
-            b.innerHTML += `<tr><td>${t.id}</td><td>${t.nm}</td><td>${t.diam || ''}</td></tr>`; 
+            b.innerHTML += `<tr><td style="font-weight:900;">${t.id}</td><td>${t.nm}</td><td style="text-align:right; font-weight:800; color:#666;">${t.diam || ''}</td></tr>`; 
         });
         const wrap = document.getElementById('pdf-render'); wrap.style.display = 'block';
         document.getElementById('preview-stage').innerHTML = wrap.outerHTML;
@@ -196,8 +195,18 @@
     }
 
     function downloadPDF() {
+        const btn = document.getElementById('download-btn');
+        btn.innerText = "BITTE WARTEN...";
         const el = document.querySelector('#preview-stage #pdf-render');
-        html2pdf().set({ margin:0, filename: `Setup_${db[curP].name}.pdf`, html2canvas: {scale:4}, jsPDF: {unit:'mm', format:'a4'} }).from(el).save();
+        const opt = { 
+            margin: 0, 
+            filename: `${db[curP].num}.pdf`, 
+            html2canvas: { scale: 4, useCORS: true }, 
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } 
+        };
+        html2pdf().set(opt).from(el).save().then(() => {
+            btn.innerText = "PDF SPEICHERN";
+        });
     }
 
     function saveProject() {
@@ -220,16 +229,16 @@
         document.getElementById('t-in-id').value = db[curP].tools[i].id;
         document.getElementById('t-in-nm').value = db[curP].tools[i].nm;
         document.getElementById('t-in-diam').value = db[curP].tools[i].diam || '';
-        openModal('modal-t');
+        openM('modal-t');
     }
 
-    function openPModal() { document.getElementById('p-in-name').value=""; document.getElementById('p-in-num').value=""; openModal('modal-p'); }
-    function openTModal() { document.getElementById('t-idx').value=""; document.getElementById('t-in-id').value=""; document.getElementById('t-in-diam').value=""; document.getElementById('t-in-nm').value=""; openModal('modal-t'); }
+    function openPModal() { document.getElementById('p-in-name').value=""; document.getElementById('p-in-num').value=""; openM('modal-p'); }
+    function openTModal() { document.getElementById('t-idx').value=""; document.getElementById('t-in-id').value=""; document.getElementById('t-in-diam').value=""; document.getElementById('t-in-nm').value=""; openM('modal-t'); }
+    function editP(i) { /* Edit logic if needed */ }
     function goHome() { document.getElementById('view-home').style.display='block'; document.getElementById('view-detail').style.display='none'; renderHome(); }
     function delT(i) { if(confirm("Löschen?")) { db[curP].tools.splice(i,1); save(); renderTools(); } }
     function clearTools() { if(confirm("Liste leeren?")) { db[curP].tools = []; save(); renderTools(); } }
     function exportJSON() { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(db)], {type:'application/json'})); a.download="QS_Backup.json"; a.click(); }
-    const openM = (id) => document.getElementById(id).style.display = 'block';
 
     renderHome();
 </script>
