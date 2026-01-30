@@ -3,134 +3,141 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>QS-TOOL V5.0 PIXEL PERFECT</title>
+    <title>QS-TOOL v6.0 MODERN</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <style>
-        :root { --black: #000; --white: #fff; --gray: #f4f4f4; }
-        * { box-sizing: border-box; }
-        body { font-family: 'Helvetica', Arial, sans-serif; margin: 0; background: var(--gray); }
+        :root { --accent: #007AFF; --bg: #F2F2F7; --card: #FFFFFF; --text: #000000; }
+        * { box-sizing: border-box; font-family: 'Inter', -apple-system, sans-serif; }
+        body { background: var(--bg); color: var(--text); margin: 0; padding: 0; }
 
-        /* APP UI */
-        .ui-header { padding: 30px 20px; background: white; border-bottom: 4px solid #000; }
-        .ui-card { border: 2px solid #000; margin: 10px; padding: 15px; background: white; cursor: pointer; display: flex; justify-content: space-between; }
-        .btn-black { background: #000; color: #fff; border: none; padding: 18px; width: 100%; font-weight: 900; cursor: pointer; }
-        .modal { display: none; position: fixed; inset: 0; background: #fff; z-index: 1000; padding: 20px; }
-        .input-f { width: 100%; border: 2px solid #000; padding: 15px; margin-bottom: 10px; font-weight: bold; font-size: 16px; }
-
-        /* --- PDF LAYOUT (MATHEMATISCH EXAKT) --- */
-        #pdf-master {
-            width: 210mm;
-            height: 297mm;
-            background: white;
-            padding: 10mm;
-            display: none; /* In App versteckt */
-            position: relative;
-        }
-        .outer-frame {
-            border: 1.5pt solid black;
-            height: 277mm; /* 297 - 20mm Padding */
-            width: 190mm;  /* 210 - 20mm Padding */
-            padding: 8mm;
-            display: flex;
-            flex-direction: column;
-            position: relative;
-        }
-        .header-line {
-            display: flex;
-            align-items: baseline;
-            border-bottom: 4pt solid black;
-            padding-bottom: 10pt;
-            margin-bottom: 15pt;
-        }
-        .title-main { font-size: 42pt; font-weight: 900; text-transform: uppercase; margin-right: 15pt; }
-        .title-sub { font-size: 22pt; font-weight: 400; color: #666; }
-
-        .data-table { width: 100%; border-collapse: collapse; }
-        .data-table th { border: 1.5pt solid black; padding: 10pt; background: #f0f0f0; text-align: left; font-size: 10pt; font-weight: 900; }
-        .data-table td { border: 1.5pt solid black; padding: 12pt 10pt; font-size: 12pt; font-weight: 600; }
+        /* Modern App UI */
+        .app-bar { background: rgba(255,255,255,0.8); backdrop-filter: blur(10px); padding: 20px; position: sticky; top: 0; z-index: 100; border-bottom: 0.5px solid #ccc; display: flex; justify-content: space-between; align-items: center; }
+        .app-bar h1 { margin: 0; font-size: 20px; font-weight: 800; }
         
-        .tool-row-ui { display: grid; grid-template-columns: 80px 1fr 40px; gap: 10px; border: 2px solid #000; margin: 5px 10px; padding: 10px; background: #fff; }
+        .container { max-width: 600px; margin: 0 auto; padding: 15px; }
+        .card { background: var(--card); border-radius: 12px; padding: 16px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; border: 1px solid transparent; transition: 0.2s; }
+        .card:active { transform: scale(0.98); background: #fafafa; }
+        
+        .tool-row { display: grid; grid-template-columns: 40px 80px 1fr 40px; gap: 10px; align-items: center; background: white; border-radius: 10px; padding: 12px; margin-bottom: 8px; border: 1px solid #eee; }
+        .drag-handle { color: #ccc; cursor: grab; font-size: 20px; }
+
+        /* Modals Modern */
+        .modal { display: none; position: fixed; inset: 0; background: white; z-index: 1000; padding: 30px; animation: slideUp 0.3s ease-out; }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        
+        input, textarea { width: 100%; background: #F2F2F7; border: none; border-radius: 10px; padding: 15px; margin-bottom: 15px; font-size: 16px; font-weight: 600; }
+        .btn { background: black; color: white; border: none; border-radius: 12px; padding: 18px; width: 100%; font-weight: 700; font-size: 15px; cursor: pointer; }
+        .btn-secondary { background: #E5E5EA; color: black; margin-top: 10px; }
+
+        /* --- PDF DESIGN "MODERN INDUSTRIAL" --- */
+        #pdf-wrap { width: 210mm; height: 297mm; background: white; padding: 12mm; display: none; }
+        .pdf-frame { border: 2pt solid #000; height: 100%; padding: 10mm; display: flex; flex-direction: column; position: relative; }
+        
+        .pdf-head { display: flex; align-items: baseline; border-bottom: 4pt solid black; padding-bottom: 12px; margin-bottom: 25px; }
+        .pdf-title { font-size: 40pt; font-weight: 900; margin-right: 15pt; letter-spacing: -2pt; }
+        .pdf-sub { font-size: 20pt; font-weight: 300; color: #555; }
+        
+        .pdf-table { width: 100%; border-collapse: collapse; }
+        .pdf-table th { border-bottom: 2pt solid black; padding: 12pt 8pt; text-align: left; font-size: 9pt; text-transform: uppercase; letter-spacing: 1pt; }
+        .pdf-table td { border-bottom: 0.5pt solid #eee; padding: 14pt 8pt; font-size: 12pt; font-weight: 500; }
+        .pdf-table tr:last-child td { border-bottom: 2pt solid black; } /* Schließt Tabelle modern ab */
     </style>
 </head>
 <body>
 
-<div id="view-dash">
-    <div class="ui-header"><h1>DATABASE</h1></div>
-    <div id="proj-list"></div>
-    <button class="btn-black" onclick="openM('m-proj')" style="position:fixed; bottom:20px; right:20px; width:60px; height:60px; border-radius:50%;">+</button>
+<div id="view-home">
+    <div class="app-bar"><h1>PROJECTS</h1><button onclick="exportJSON()" style="background:none; border:none; font-size:12px;">BACKUP</button></div>
+    <div class="container" id="project-list"></div>
+    <button class="btn" style="position:fixed; bottom:30px; right:20px; width:60px; border-radius:30px;" onclick="openPModal()">+</button>
 </div>
 
 <div id="view-detail" style="display:none;">
-    <div class="ui-header" style="display:flex; align-items:center; gap:20px;">
-        <button onclick="goHome()" style="background:none; border:none; font-size:30px; font-weight:bold;">←</button>
-        <div><h2 id="det-name" style="margin:0;"></h2><small id="det-num"></small></div>
+    <div class="app-bar">
+        <button onclick="goHome()" style="background:none; border:none; font-size:24px;">←</button>
+        <div style="text-align:right;"><b id="det-name"></b><br><small id="det-num"></small></div>
     </div>
-    <div style="padding:15px;"><button class="btn-black" onclick="openM('m-import')">IMPORT</button></div>
-    <div id="tool-list"></div>
-    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; padding:15px;">
-        <button class="btn-black" onclick="showPreview()">VORSCHAU</button>
-        <button class="btn-black" style="background:red;" onclick="clearTools()">LÖSCHEN</button>
-    </div>
-</div>
-
-<div id="m-proj" class="modal">
-    <h2>PROJEKT</h2>
-    <input id="p-name" class="input-f" placeholder="BUCHSE">
-    <input id="p-num" class="input-f" placeholder="233562">
-    <button class="btn-black" onclick="addProj()">SPEICHERN</button>
-    <button onclick="closeM('m-proj')" style="width:100%; border:none; background:none; margin-top:10px;">Abbrechen</button>
-</div>
-
-<div id="m-import" class="modal">
-    <h2>IMPORT</h2>
-    <textarea id="import-area" class="input-f" style="height:250px;" placeholder="T0101..."></textarea>
-    <button class="btn-black" onclick="runImport()">START</button>
-    <button onclick="closeM('m-import')" style="width:100%; border:none; background:none; margin-top:10px;">Zurück</button>
-</div>
-
-<div id="m-prev" class="modal" style="background:#444; overflow:auto;">
-    <div style="background:#fff; padding:15px; display:flex; justify-content:space-between; position:sticky; top:0; z-index:10;">
-        <button onclick="closeM('m-prev')" style="border:2px solid #000; background:none; padding:10px;">ZURÜCK</button>
-        <button class="btn-black" style="width:auto; padding:10px 30px;" onclick="savePDF()">PDF SPEICHERN</button>
-    </div>
-    <div id="preview-wrap" style="transform: scale(0.35); transform-origin: top center; padding-top:20px;"></div>
-</div>
-
-<div id="pdf-master">
-    <div class="outer-frame">
-        <div class="header-line">
-            <span id="pdf-val-name" class="title-main"></span>
-            <span id="pdf-val-num" class="title-sub"></span>
+    <div class="container">
+        <button class="btn" style="background: var(--accent);" onclick="openModal('modal-import')">IMPORT LISTE</button>
+        <div id="tool-list" style="margin-top:20px;"></div>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:20px;">
+            <button class="btn" onclick="openPreview()">VORSCHAU</button>
+            <button class="btn btn-secondary" onclick="clearTools()" style="color:red;">LEEREN</button>
         </div>
-        <table class="data-table">
+    </div>
+    <button class="btn" style="position:fixed; bottom:30px; right:20px; width:60px; border-radius:30px;" onclick="openTModal()">+</button>
+</div>
+
+<div id="modal-p" class="modal">
+    <h2 id="p-modal-title">Projekt</h2>
+    <input type="hidden" id="p-idx">
+    <input id="p-in-name" placeholder="Bauteil Name">
+    <input id="p-in-num" placeholder="Zeichnungs-Nr.">
+    <button class="btn" onclick="saveProject()">Speichern</button>
+    <button class="btn btn-secondary" onclick="closeModal('modal-p')">Abbrechen</button>
+</div>
+
+<div id="modal-t" class="modal">
+    <h2>Werkzeug</h2>
+    <input type="hidden" id="t-idx">
+    <input id="t-in-id" placeholder="T-Nummer (z.B. T0101)">
+    <input id="t-in-nm" placeholder="Beschreibung">
+    <button class="btn" onclick="saveTool()">Speichern</button>
+    <button class="btn btn-secondary" onclick="closeModal('modal-t')">Abbrechen</button>
+</div>
+
+<div id="modal-import" class="modal">
+    <h2>Import</h2>
+    <textarea id="import-area" style="height:200px;" placeholder="Programm-Text hier einfügen..."></textarea>
+    <button class="btn" onclick="runImport()">Daten einlesen</button>
+    <button class="btn btn-secondary" onclick="closeModal('modal-import')">Zurück</button>
+</div>
+
+<div id="modal-prev" class="modal" style="background:#1c1c1e; padding:10px; overflow:auto;">
+    <div style="display:flex; justify-content:space-between; margin-bottom:15px; background:white; padding:10px; border-radius:12px;">
+        <button onclick="closeModal('modal-prev')" style="border:none; background:none; font-weight:700;">ZURÜCK</button>
+        <button onclick="downloadPDF()" style="background:var(--accent); color:white; border:none; padding:8px 20px; border-radius:8px; font-weight:700;">PDF SPEICHERN</button>
+    </div>
+    <div id="preview-stage" style="transform: scale(0.4); transform-origin: top center;"></div>
+</div>
+
+<div id="pdf-wrap">
+    <div class="pdf-frame">
+        <div class="pdf-head">
+            <span id="pdf-v-name" class="pdf-title"></span>
+            <span id="pdf-v-num" class="pdf-sub"></span>
+        </div>
+        <table class="pdf-table">
             <thead>
-                <tr>
-                    <th style="width:20%;">T-NR</th>
-                    <th>WERKZEUGNAME / KOMMENTAR / NULLPUNKT</th>
-                </tr>
+                <tr><th style="width:20%">T-NR</th><th>WERKZEUGNAME / KOMMENTAR / NULLPUNKT</th></tr>
             </thead>
-            <tbody id="pdf-val-body"></tbody>
+            <tbody id="pdf-v-body"></tbody>
         </table>
+        <div style="flex-grow:1;"></div>
     </div>
 </div>
 
 <script>
-    let db = JSON.parse(localStorage.getItem('qs_v5')) || [];
-    let cur = null;
+    let db = JSON.parse(localStorage.getItem('qs_v6')) || [];
+    let curP = null;
 
-    const openM = (id) => document.getElementById(id).style.display = 'block';
-    const closeM = (id) => document.getElementById(id).style.display = 'none';
+    const openModal = (id) => document.getElementById(id).style.display = 'block';
+    const closeModal = (id) => document.getElementById(id).style.display = 'none';
+    const save = () => localStorage.setItem('qs_v6', JSON.stringify(db));
 
-    function render() {
-        const l = document.getElementById('proj-list'); l.innerHTML = "";
+    function renderHome() {
+        const list = document.getElementById('project-list'); list.innerHTML = "";
         db.forEach((p, i) => {
-            l.innerHTML += `<div class="ui-card" onclick="openDetail(${i})"><b>${p.name}</b> <span>${p.num}</span></div>`;
+            list.innerHTML += `<div class="card" onclick="openDetail(${i})">
+                <div><b>${p.name}</b><br><small style="color:#888">${p.num}</small></div>
+                <button onclick="event.stopPropagation(); editP(${i})" style="border:none; background:none;">✎</button>
+            </div>`;
         });
     }
 
     function openDetail(i) {
-        cur = i;
-        document.getElementById('view-dash').style.display = 'none';
+        curP = i;
+        document.getElementById('view-home').style.display = 'none';
         document.getElementById('view-detail').style.display = 'block';
         document.getElementById('det-name').innerText = db[i].name;
         document.getElementById('det-num').innerText = db[i].num;
@@ -138,64 +145,75 @@
     }
 
     function renderTools() {
-        const l = document.getElementById('tool-list'); l.innerHTML = "";
-        db[cur].tools.forEach((t, i) => {
-            l.innerHTML += `<div class="tool-row-ui"><b>${t.id}</b> <span>${t.nm}</span> <button onclick="delT(${i})" style="border:none; color:red;">✕</button></div>`;
+        const list = document.getElementById('tool-list'); list.innerHTML = "";
+        db[curP].tools.forEach((t, i) => {
+            list.innerHTML += `<div class="tool-row" onclick="editT(${i})">
+                <div class="drag-handle">☰</div>
+                <div style="font-weight:800">${t.id}</div>
+                <div>${t.nm}</div>
+                <button onclick="event.stopPropagation(); delT(${i})" style="border:none; background:none; color:red;">✕</button>
+            </div>`;
         });
+        new Sortable(list, { handle: '.drag-handle', animation: 150, onEnd: (evt) => {
+            const item = db[curP].tools.splice(evt.oldIndex, 1)[0];
+            db[curP].tools.splice(evt.newIndex, 0, item);
+            save();
+        }});
     }
 
     function runImport() {
         const lines = document.getElementById('import-area').value.split('\n');
         let tid = null; let tnm = [];
-        lines.forEach(line => {
-            if(/^[T][0-9]/i.test(line)) {
-                if(tid) db[cur].tools.push({id: tid, nm: tnm.join(' ')});
-                tid = line.trim().toUpperCase(); tnm = [];
-            } else if(tid) tnm.push(line.trim());
+        lines.forEach(l => {
+            if(/^[T][0-9]/i.test(l)) {
+                if(tid) db[curP].tools.push({id: tid, nm: tnm.join(' ')});
+                tid = l.trim().toUpperCase(); tnm = [];
+            } else if(tid) tnm.push(l.trim());
         });
-        if(tid) db[cur].tools.push({id: tid, nm: tnm.join(' ')});
-        localStorage.setItem('qs_v5', JSON.stringify(db));
-        renderTools(); closeM('m-import');
+        if(tid) db[curP].tools.push({id: tid, nm: tnm.join(' ')});
+        save(); renderTools(); closeModal('modal-import');
     }
 
-    function showPreview() {
-        const p = db[cur];
-        document.getElementById('pdf-val-name').innerText = p.name;
-        document.getElementById('pdf-val-num').innerText = p.num;
-        const b = document.getElementById('pdf-val-body'); b.innerHTML = "";
-        p.tools.forEach(t => {
-            b.innerHTML += `<tr><td style="font-weight:900;">${t.id}</td><td>${t.nm}</td></tr>`;
-        });
-        const master = document.getElementById('pdf-master');
-        master.style.display = 'block';
-        document.getElementById('preview-wrap').innerHTML = master.outerHTML;
-        master.style.display = 'none';
-        openM('m-prev');
+    function openPreview() {
+        document.getElementById('pdf-v-name').innerText = db[curP].name;
+        document.getElementById('pdf-v-num').innerText = db[curP].num;
+        const body = document.getElementById('pdf-v-body'); body.innerHTML = "";
+        db[curP].tools.forEach(t => { body.innerHTML += `<tr><td style="font-weight:700">${t.id}</td><td>${t.nm}</td></tr>`; });
+        const wrap = document.getElementById('pdf-wrap'); wrap.style.display = 'block';
+        document.getElementById('preview-stage').innerHTML = wrap.outerHTML;
+        wrap.style.display = 'none';
+        openModal('modal-prev');
     }
 
-    function savePDF() {
-        const el = document.querySelector('#preview-wrap #pdf-master');
-        const opt = {
-            margin: 0,
-            filename: `Setup_${db[cur].name}.pdf`,
-            image: { type: 'jpeg', quality: 1 },
-            html2canvas: { scale: 4, logging: false, useCORS: true },
-            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-        };
+    function downloadPDF() {
+        const el = document.querySelector('#preview-stage #pdf-wrap');
+        const opt = { margin:0, filename: `${db[curP].name}.pdf`, html2canvas: {scale:3}, jsPDF: {unit:'mm', format:'a4'} };
         html2pdf().set(opt).from(el).save();
     }
 
-    function addProj() {
-        db.push({ name: document.getElementById('p-name').value, num: document.getElementById('p-num').value, tools: [] });
-        localStorage.setItem('qs_v5', JSON.stringify(db));
-        render(); closeM('m-proj');
+    /* Helper Functions */
+    function openPModal() { document.getElementById('p-idx').value = ""; document.getElementById('p-in-name').value=""; document.getElementById('p-in-num').value=""; openModal('modal-p'); }
+    function editP(i) { document.getElementById('p-idx').value = i; document.getElementById('p-in-name').value = db[i].name; document.getElementById('p-in-num').value = db[i].num; openModal('modal-p'); }
+    function saveProject() {
+        const name = document.getElementById('p-in-name').value; const num = document.getElementById('p-in-num').value;
+        const idx = document.getElementById('p-idx').value;
+        if(idx === "") db.push({name, num, tools:[]}); else { db[idx].name = name; db[idx].num = num; }
+        save(); renderHome(); closeModal('modal-p');
     }
+    function openTModal() { document.getElementById('t-idx').value = ""; document.getElementById('t-in-id').value=""; document.getElementById('t-in-nm').value=""; openModal('modal-t'); }
+    function editT(i) { document.getElementById('t-idx').value = i; document.getElementById('t-in-id').value = db[curP].tools[i].id; document.getElementById('t-in-nm').value = db[curP].tools[i].nm; openModal('modal-t'); }
+    function saveTool() {
+        const id = document.getElementById('t-in-id').value; const nm = document.getElementById('t-in-nm').value;
+        const idx = document.getElementById('t-idx').value;
+        if(idx === "") db[curP].tools.push({id, nm}); else db[curP].tools[idx] = {id, nm};
+        save(); renderTools(); closeModal('modal-t');
+    }
+    function goHome() { document.getElementById('view-home').style.display='block'; document.getElementById('view-detail').style.display='none'; renderHome(); }
+    function delT(i) { if(confirm("Löschen?")) { db[curP].tools.splice(i,1); save(); renderTools(); } }
+    function clearTools() { if(confirm("Alles löschen?")) { db[curP].tools = []; save(); renderTools(); } }
+    function exportJSON() { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(db)], {type:'application/json'})); a.download="QS_Backup.json"; a.click(); }
 
-    function goHome() { document.getElementById('view-dash').style.display='block'; document.getElementById('view-detail').style.display='none'; }
-    function delT(i) { db[cur].tools.splice(i,1); localStorage.setItem('qs_v5', JSON.stringify(db)); renderTools(); }
-    function clearTools() { db[cur].tools = []; localStorage.setItem('qs_v5', JSON.stringify(db)); renderTools(); }
-
-    render();
+    renderHome();
 </script>
 </body>
 </html>
