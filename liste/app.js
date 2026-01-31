@@ -1,8 +1,8 @@
 "use strict";
 
-/* ========= CORE STORE ========= */
+/* ========= STORE ========= */
 const Store = {
-    key: "core_v1",
+    key: "core_v2",
     state: {
         projects: [],
         current: null
@@ -18,12 +18,20 @@ const Store = {
     },
 
     addProject(num, name) {
-        this.state.projects.push({ num, name });
+        this.state.projects.push({
+            num,
+            name,
+            entities: { tools: [] }
+        });
         this.save();
     },
 
     currentProject() {
         return this.state.projects[this.state.current];
+    },
+
+    tools() {
+        return this.currentProject().entities.tools;
     }
 };
 
@@ -43,12 +51,27 @@ const UI = {
                 </div>
             `);
         });
+    },
+
+    renderTools() {
+        const l = UI.el("tool-list");
+        l.innerHTML = "";
+        Store.tools().forEach(t => {
+            l.insertAdjacentHTML("beforeend", `
+                <div class="card">
+                    <div class="c-id">${t.id}</div>
+                    <div class="c-name" onclick="Actions.editTool('${t.id}')">${t.name}</div>
+                    <div class="c-dia">${t.dia || "-"}</div>
+                    <button class="c-del" onclick="Actions.deleteTool('${t.id}')">✕</button>
+                </div>
+            `);
+        });
     }
 };
 
 /* ========= PDF MODULE ========= */
 const PdfModule = {
-    buildWhitePage(project) {
+    whitePage() {
         return `
             <div style="
                 width:794px;
@@ -56,19 +79,18 @@ const PdfModule = {
                 padding:60px;
                 font-family:-apple-system,sans-serif;
             ">
-                <!-- deliberately empty -->
             </div>
         `;
     },
 
-    openPreview(project) {
-        UI.el("pdf-preview").innerHTML = this.buildWhitePage(project);
+    preview() {
+        UI.el("pdf-preview").innerHTML = this.whitePage();
         UI.show("modal-pdf");
     },
 
     export(project) {
         const tpl = UI.el("pdf-template");
-        tpl.innerHTML = this.buildWhitePage(project);
+        tpl.innerHTML = this.whitePage();
 
         html2pdf().from(tpl).set({
             filename: `Blank_${project.num}.pdf`,
@@ -101,6 +123,7 @@ const Actions = {
         UI.el("p-name").textContent = p.name;
         UI.el("view-home").classList.remove("active");
         UI.el("view-project").classList.add("active");
+        UI.renderTools();
     },
 
     goHome() {
@@ -109,8 +132,58 @@ const Actions = {
         UI.renderProjects();
     },
 
+    openToolModal() {
+        UI.el("mt-old").value = "";
+        UI.el("mt-id").value = "";
+        UI.el("mt-name").value = "";
+        UI.el("mt-dia").value = "";
+        UI.show("modal-tool");
+    },
+
+    editTool(id) {
+        const t = Store.tools().find(t => t.id === id);
+        UI.el("mt-old").value = t.id;
+        UI.el("mt-id").value = t.id;
+        UI.el("mt-name").value = t.name;
+        UI.el("mt-dia").value = t.dia;
+        UI.show("modal-tool");
+    },
+
+    saveTool() {
+        const id = UI.el("mt-id").value.trim();
+        if (!id) return;
+
+        const tool = {
+            id,
+            name: UI.el("mt-name").value.trim(),
+            dia: UI.el("mt-dia").value.trim()
+        };
+
+        const old = UI.el("mt-old").value;
+        const tools = Store.tools();
+
+        if (old) {
+            const i = tools.findIndex(t => t.id === old);
+            tools[i] = tool;
+        } else {
+            tools.push(tool);
+        }
+
+        Store.save();
+        UI.hide("modal-tool");
+        UI.renderTools();
+    },
+
+    deleteTool(id) {
+        const tools = Store.tools();
+        const i = tools.findIndex(t => t.id === id);
+        tools.splice(i, 1);
+        Store.save();
+        UI.renderTools();
+    },
+
     openPdfPreview() {
-        PdfModule.openPreview(Store.currentProject());
+        PdfModule.preview();
     },
 
     exportPdf() {
