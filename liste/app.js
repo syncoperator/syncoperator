@@ -1,21 +1,21 @@
-let db = JSON.parse(localStorage.getItem('qs_v24')) || [];
+let db = JSON.parse(localStorage.getItem('qs_v25')) || [];
 let cur = null;
 
 const showM = id => document.getElementById(id).style.display = 'flex';
 const hideM = id => document.getElementById(id).style.display = 'none';
-const save = () => localStorage.setItem('qs_v24', JSON.stringify(db));
+const save = () => localStorage.setItem('qs_v25', JSON.stringify(db));
 
-// Демо на 15 инструментов
+// Демо-данные: 15 инструментов для проверки плотности
 function loadDemo() {
     const demoTools = [];
     for(let i=1; i<=15; i++) {
         demoTools.push({
-            id: `T${String(i).padStart(2, '0')}0${i}`,
-            nm: `WERKZEUG BEZEICHNUNG NR ${i} G54 ТЕСТ ДЛИННОГО ТЕКСТА`,
-            dia: i % 3 === 0 ? `${i*2}` : "" // Каждый третий имеет диаметр
+            id: `T01${String(i).padStart(2, '0')}`,
+            nm: `WERKZEUGNAME BEISPIEL NR ${i} KOMMENTAR TEXT`,
+            dia: i === 1 ? "29\n-0.1" : "" // Пример диаметра с допуском как на скрине
         });
     }
-    db.push({num: "737372", name: "ОВОАЛАЛА", tools: demoTools});
+    db.push({num: "233562", name: "BUCHSE", tools: demoTools});
     save(); renderP();
 }
 
@@ -55,7 +55,7 @@ function printPDF() {
         <tr>
             <td class="td-num">${t.id}</td>
             <td class="td-name">${t.nm}</td>
-            <td class="td-dia">${t.dia || ''}</td>
+            <td class="td-dia" style="white-space: pre-line">${t.dia || ''}</td>
         </tr>`).join('');
 
     document.getElementById('print-area').innerHTML = `
@@ -73,20 +73,34 @@ function printPDF() {
     window.print();
 }
 
-// Стандартные функции
+// Управление
 function addP() {
     const num = document.getElementById('p-num').value;
     const nam = document.getElementById('p-nam').value;
     if(!num) return;
-    db.push({num, name:nam, tools:[]}); save(); renderP(); hideM('m-p');
+    db.push({num, name:nam.toUpperCase(), tools:[]}); 
+    save(); renderP(); hideM('m-p');
 }
 
 function addT() {
     const idx = document.getElementById('t-idx').value;
-    const t = { id: document.getElementById('t-id').value, nm: document.getElementById('t-nm').value, dia: document.getElementById('t-dia').value };
+    const t = { 
+        id: document.getElementById('t-id').value.toUpperCase(), 
+        nm: document.getElementById('t-nm').value.toUpperCase(), 
+        dia: document.getElementById('t-dia').value 
+    };
     if(!t.id) return;
     if(idx==="") db[cur].tools.push(t); else db[cur].tools[idx]=t;
     save(); renderT(); hideM('m-t');
+}
+
+function editT(i) {
+    const t = db[cur].tools[i];
+    document.getElementById('t-idx').value = i;
+    document.getElementById('t-id').value = t.id;
+    document.getElementById('t-nm').value = t.nm;
+    document.getElementById('t-dia').value = t.dia;
+    showM('m-t');
 }
 
 function delP(i) { if(confirm('Löschen?')) {db.splice(i,1); save(); renderP(); }}
