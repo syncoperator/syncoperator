@@ -1,18 +1,18 @@
-let db = JSON.parse(localStorage.getItem('qs_v25')) || [];
+let db = JSON.parse(localStorage.getItem('qs_v27')) || [];
 let cur = null;
 
 const showM = id => document.getElementById(id).style.display = 'flex';
 const hideM = id => document.getElementById(id).style.display = 'none';
-const save = () => localStorage.setItem('qs_v25', JSON.stringify(db));
+const save = () => localStorage.setItem('qs_v27', JSON.stringify(db));
 
-// Демо-данные: 15 инструментов для проверки плотности
+// Демо-данные
 function loadDemo() {
     const demoTools = [];
     for(let i=1; i<=15; i++) {
         demoTools.push({
-            id: `T01${String(i).padStart(2, '0')}`,
-            nm: `WERKZEUGNAME BEISPIEL NR ${i} KOMMENTAR TEXT`,
-            dia: i === 1 ? "29\n-0.1" : "" // Пример диаметра с допуском как на скрине
+            id: `T01${String(i).padStart(2,'0')}`,
+            nm: `WERKZEUGNAME NR ${i} KOMMENTAR G54`,
+            dia: i === 1 ? "29\n-0.1" : ""
         });
     }
     db.push({num: "233562", name: "BUCHSE", tools: demoTools});
@@ -55,7 +55,7 @@ function printPDF() {
         <tr>
             <td class="td-num">${t.id}</td>
             <td class="td-name">${t.nm}</td>
-            <td class="td-dia" style="white-space: pre-line">${t.dia || ''}</td>
+            <td class="td-dia">${t.dia || ''}</td>
         </tr>`).join('');
 
     document.getElementById('print-area').innerHTML = `
@@ -73,13 +73,12 @@ function printPDF() {
     window.print();
 }
 
-// Управление
+// Стандартные функции
 function addP() {
     const num = document.getElementById('p-num').value;
     const nam = document.getElementById('p-nam').value;
     if(!num) return;
-    db.push({num, name:nam.toUpperCase(), tools:[]}); 
-    save(); renderP(); hideM('m-p');
+    db.push({num, name:nam.toUpperCase(), tools:[]}); save(); renderP(); hideM('m-p');
 }
 
 function addT() {
