@@ -1,21 +1,21 @@
-let db = JSON.parse(localStorage.getItem('qs_v23')) || [];
+let db = JSON.parse(localStorage.getItem('qs_v24')) || [];
 let cur = null;
 
 const showM = id => document.getElementById(id).style.display = 'flex';
 const hideM = id => document.getElementById(id).style.display = 'none';
-const save = () => localStorage.setItem('qs_v23', JSON.stringify(db));
+const save = () => localStorage.setItem('qs_v24', JSON.stringify(db));
 
-// Функция для 15 демо-инструментов
+// Демо на 15 инструментов
 function loadDemo() {
     const demoTools = [];
     for(let i=1; i<=15; i++) {
         demoTools.push({
-            id: `T${String(i).padStart(2, '0')}${String(i).padStart(2, '0')}`,
-            nm: `DEMO WERKZEUG BEZEICHNUNG NUMMER ${i} MIT EXTRA TEXT G54`,
-            dia: i % 2 === 0 ? `D${i}` : '-'
+            id: `T${String(i).padStart(2, '0')}0${i}`,
+            nm: `WERKZEUG BEZEICHNUNG NR ${i} G54 ТЕСТ ДЛИННОГО ТЕКСТА`,
+            dia: i % 3 === 0 ? `${i*2}` : "" // Каждый третий имеет диаметр
         });
     }
-    db.push({num: "DEMO-737", name: "BEISPIEL PROJEKT", tools: demoTools});
+    db.push({num: "737372", name: "ОВОАЛАЛА", tools: demoTools});
     save(); renderP();
 }
 
@@ -24,7 +24,7 @@ function renderP() {
     db.forEach((p, i) => {
         l.innerHTML += `<div class="card" onclick="openP(${i})">
             <div style="flex-grow:1"><b>${p.num}</b><br><small style="color:#888">${p.name}</small></div>
-            <button onclick="event.stopPropagation();delP(${i})" style="border:none;background:none;color:red;font-size:20px">✕</button>
+            <button onclick="event.stopPropagation();delP(${i})" style="border:none;background:none;color:red;font-size:18px">✕</button>
         </div>`;
     });
 }
@@ -44,7 +44,7 @@ function renderT() {
         l.innerHTML += `<div class="card" onclick="editT(${i})">
             <div class="c-id">${t.id}</div>
             <div class="c-name">${t.nm}</div>
-            <div class="c-diam">${t.dia || '-'}</div>
+            <div class="c-diam">${t.dia || ''}</div>
         </div>`;
     });
 }
@@ -55,7 +55,7 @@ function printPDF() {
         <tr>
             <td class="td-num">${t.id}</td>
             <td class="td-name">${t.nm}</td>
-            <td class="td-dia">${t.dia||'-'}</td>
+            <td class="td-dia">${t.dia || ''}</td>
         </tr>`).join('');
 
     document.getElementById('print-area').innerHTML = `
@@ -73,13 +73,12 @@ function printPDF() {
     window.print();
 }
 
-// Стандартные функции управления
+// Стандартные функции
 function addP() {
     const num = document.getElementById('p-num').value;
     const nam = document.getElementById('p-nam').value;
     if(!num) return;
     db.push({num, name:nam, tools:[]}); save(); renderP(); hideM('m-p');
-    document.getElementById('p-num').value=""; document.getElementById('p-nam').value="";
 }
 
 function addT() {
