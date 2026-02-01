@@ -1,9 +1,9 @@
-let db = JSON.parse(localStorage.getItem('qs_v21_final')) || [];
+let db = JSON.parse(localStorage.getItem('qs_v22')) || [];
 let cur = null;
 
 const showM = id => document.getElementById(id).style.display = 'flex';
 const hideM = id => document.getElementById(id).style.display = 'none';
-const save = () => localStorage.setItem('qs_v21_final', JSON.stringify(db));
+const save = () => localStorage.setItem('qs_v22', JSON.stringify(db));
 
 function renderP() {
     const l = document.getElementById('list-p'); l.innerHTML = "";
@@ -45,7 +45,7 @@ function renderT() {
     }});
 }
 
-// ПЕЧАТЬ В ПРЕЖНЕМ ДИЗАЙНЕ
+// ГЕНЕРАЦИЯ ПЕЧАТИ (СТИЛЬ СКРИНШОТА)
 function printPDF() {
     const p = db[cur];
     const rows = p.tools.map(t => `
@@ -56,13 +56,13 @@ function printPDF() {
         </tr>`).join('');
 
     document.getElementById('print-area').innerHTML = `
-        <div class="pdf-border">
-            <p class="pdf-proj">${p.name}</p>
-            <h1 class="pdf-title">${p.num}</h1>
-            <div class="pdf-hr"></div>
+        <div class="print-frame">
+            <p class="p-label">${p.name}</p>
+            <h1 class="p-title">${p.num}</h1>
+            <div class="p-hr"></div>
             <table>
                 <thead>
-                    <tr><th>T-NR</th><th>WERKZEUGNAME</th><th align="right">Ø</th></tr>
+                    <tr><th>T-NR</th><th>WERKZEUGNAME / KOMMENTAR</th><th align="right">Ø</th></tr>
                 </thead>
                 <tbody>${rows}</tbody>
             </table>
@@ -71,7 +71,6 @@ function printPDF() {
     window.print();
 }
 
-// Стандартные функции
 function addP() {
     const num = document.getElementById('p-num').value;
     const nam = document.getElementById('p-nam').value;
@@ -106,11 +105,11 @@ function doImp() {
     lines.forEach(l => {
         l = l.trim(); if(!l) return;
         if(/^[T][0-9]+/i.test(l)) {
-            if(cid) db[cur].tools.push({id:cid, nm:cnm.join(' '), dia:''});
+            if(cid) db[cur].tools.push({id:cid, nm:cnm.join(' ').toUpperCase(), dia:''});
             cid = l.toUpperCase(); cnm = [];
         } else if(cid) cnm.push(l);
     });
-    if(cid) db[cur].tools.push({id:cid, nm:cnm.join(' '), dia:''});
+    if(cid) db[cur].tools.push({id:cid, nm:cnm.join(' ').toUpperCase(), dia:''});
     save(); renderT(); hideM('m-i');
 }
 
