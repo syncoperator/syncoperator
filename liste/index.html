@@ -5,28 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>QS CENTRAL</title>
     <link rel="stylesheet" href="style.css">
-    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
 </head>
 <body>
-
-    <div id="print-zone" style="display:none;"><div id="pdf-render"></div></div>
 
     <div id="v-home" class="view active">
         <div class="app-bar">
             <div class="app-bar-container">
                 <div class="brand">QS CENTRAL</div>
                 <div class="actions">
-                    <button class="action-btn" onclick="showM('m-json')">IMPORT</button>
-                    <button class="action-btn" onclick="exportJSON()">EXPORT</button>
+                    <button class="action-btn" onclick="modalProject()">+ NEUES PROJEKT</button>
                 </div>
             </div>
         </div>
-        <div class="scroll-content">
-            <div class="section-label">DATENBANK</div>
-            <button class="btn-demo" id="btn-demo">DEMO: 15 WERKZEUGE LADEN</button>
-            <div id="list-projects"></div>
-        </div>
-        <button class="fab-main" onclick="modalProject()">+</button>
+        <div class="scroll-content" id="list-projects"></div>
     </div>
 
     <div id="v-det" class="view">
@@ -34,33 +26,46 @@
             <div class="app-bar-container">
                 <button class="nav-back" onclick="goHome()">←</button>
                 <div class="project-title-block" onclick="modalProject(true)">
-                    <span id="h-num">---</span>
-                    <small id="h-nam">---</small>
+                    <small id="h-nam">NAME</small>
+                    <b id="h-num">000000</b>
+                </div>
+                <div class="actions">
+                    <button class="action-btn" onclick="makePDF()">PDF</button>
                 </div>
             </div>
         </div>
         <div class="scroll-content">
-            <div class="controls-row">
-                <button class="btn-pill" onclick="showM('m-imp')">MASSEN-IMPORT</button>
+            <div style="display:flex; gap:10px; margin-bottom:20px;">
+                <button class="btn-demo" style="flex:1" onclick="modalTool()">+ INSTRUMENT</button>
+                <button class="btn-demo" style="flex:1" onclick="showM('m-imp')">IMPORT</button>
             </div>
             <div id="list-tools"></div>
-            <div class="footer-actions">
-                <button class="btn-primary" onclick="makePDF()">PDF GENERIEREN</button>
-            </div>
         </div>
-        <button class="fab-main" onclick="modalTool()">+</button>
     </div>
 
     <div id="m-p" class="overlay">
         <div class="premium-modal">
+            <div class="modal-head">PROJEKT EINSTELLUNGEN</div>
             <input type="hidden" id="p-idx">
-            <div class="modal-head">PROJEKT DETAILS</div>
-            <label>ZEICHNUNGSNUMMER</label>
-            <input type="text" id="p-num" spellcheck="false">
-            <label>BEZEICHNUNG</label>
-            <input type="text" id="p-nam" spellcheck="false">
+            
+            <label>PROJEKT NR.</label>
+            <input type="text" id="p-num" placeholder="233562">
+            
+            <label>NAME</label>
+            <input type="text" id="p-nam" placeholder="MUSTERPOT">
+
+            <div class="input-row">
+                <div class="col"><label>ABSTAND</label><input type="text" id="p-abs"></div>
+                <div class="col"><label>GREIFBACKEN</label><input type="text" id="p-grf"></div>
+            </div>
+            <div class="input-row">
+                <div class="col"><label>LAUFZEIT</label><input type="text" id="p-lzf"></div>
+                <div class="col"><label>STÜCK A</label><input type="text" id="p-sta"></div>
+                <div class="col"><label>STÜCK B</label><input type="text" id="p-stb"></div>
+            </div>
+
             <div class="modal-btns">
-                <button class="btn-main" onclick="saveProject()">BESTÄTIGEN</button>
+                <button class="btn-main" onclick="saveProject()">SPEICHERN</button>
                 <button class="btn-flat" onclick="hideM('m-p')">ABBRECHEN</button>
             </div>
         </div>
@@ -68,47 +73,34 @@
 
     <div id="m-t" class="overlay">
         <div class="premium-modal">
+            <div class="modal-head">INSTRUMENT</div>
             <input type="hidden" id="t-idx">
-            <div class="modal-head">WERKZEUG EDITIEREN</div>
-            <label>SMART INPUT</label>
-            <input type="text" id="t-smart" placeholder="T01 BOHRER 10.5 -0.02" oninput="runSmart()">
-            <div class="input-row">
-                <div class="col">
-                    <label>T-NR</label>
-                    <input type="text" id="t-id">
-                </div>
-                <div class="col">
-                    <label>Ø / TOLERANZ</label>
-                    <input type="text" id="t-dia">
-                </div>
-            </div>
-            <label>BEZEICHNUNG</label>
-            <input type="text" id="t-nm">
+            <label>T-NR</label>
+            <input type="text" id="t-id" placeholder="T1">
+            <label>NAME / KOMMENTAR</label>
+            <input type="text" id="t-nm" placeholder="WERKZEUG NAME">
+            <label>Ø / TOLERANZ</label>
+            <input type="text" id="t-dia" placeholder="10 -0.02">
             <div class="modal-btns">
-                <button class="btn-main" onclick="saveTool()">SPEICHERN</button>
+                <button class="btn-main" onclick="saveTool()">OK</button>
                 <button id="btn-del-t" class="btn-danger" onclick="deleteTool()">LÖSCHEN</button>
+                <button class="btn-flat" onclick="hideM('m-t')">ABBRECHEN</button>
             </div>
-            <button class="modal-close" onclick="hideM('m-t')">✕</button>
         </div>
     </div>
 
     <div id="m-imp" class="overlay">
         <div class="premium-modal">
-            <div class="modal-head">MASSEN-IMPORT</div>
-            <textarea id="imp-area" rows="10" placeholder="T01 BOHRER 10...&#10;T02 FRAESER 12..."></textarea>
-            <button class="btn-main" onclick="runMassImport()">IMPORTIEREN</button>
-            <button class="btn-flat" onclick="hideM('m-imp')">SCHLIESSEN</button>
+            <div class="modal-head">MASSENIMPORT</div>
+            <textarea id="imp-area" rows="8" placeholder="T01 WERKZEUG 10.0&#10;T02 WERKZEUG 5.0"></textarea>
+            <div class="modal-btns">
+                <button class="btn-main" onclick="runMassImport()">IMPORTIEREN</button>
+                <button class="btn-flat" onclick="hideM('m-imp')">ZURÜCK</button>
+            </div>
         </div>
     </div>
 
-    <div id="m-json" class="overlay">
-        <div class="premium-modal">
-            <div class="modal-head">JSON IMPORT</div>
-            <textarea id="json-area" rows="10" placeholder="Code hier einfügen..."></textarea>
-            <button class="btn-main" onclick="importJSON()">DATEN LADEN</button>
-            <button class="btn-flat" onclick="hideM('m-json')">ABBRECHEN</button>
-        </div>
-    </div>
+    <div id="pdf-render" style="display:none"></div>
 
     <script src="storage.js"></script>
     <script src="logic.js"></script>
