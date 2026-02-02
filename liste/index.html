@@ -3,93 +3,110 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>QS TOOL SYSTEM</title>
+    <title>QS CENTRAL</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 </head>
 <body>
 
-    <div id="print-container" style="display:none;"><div id="pdf-content"></div></div>
+    <div id="print-zone" style="display:none;"><div id="pdf-render"></div></div>
 
     <div id="v-home" class="view active">
-        <div class="header">
-            <div class="header-title">PROJEKTE</div>
-            <div class="header-actions">
-                <button class="btn-icon" onclick="modalImportJSON()">📥</button>
-                <button class="btn-icon" onclick="exportJSON()">📤</button>
+        <div class="app-bar">
+            <div class="app-bar-container">
+                <div class="brand">QS CENTRAL</div>
+                <div class="actions">
+                    <button class="action-btn" onclick="showM('m-json')">IMPORT</button>
+                    <button class="action-btn" onclick="exportJSON()">EXPORT</button>
+                </div>
             </div>
         </div>
-        <div class="content">
-            <button class="btn btn-gray" id="btn-demo">DEMO: 15 WERKZEUGE LADEN</button>
-            <div id="list-projects" class="list-container"></div>
+        <div class="scroll-content">
+            <div class="section-label">DATENBANK</div>
+            <button class="btn-demo" id="btn-demo">DEMO: 15 WERKZEUGE LADEN</button>
+            <div id="list-projects"></div>
         </div>
-        <button class="fab" onclick="modalProject()">+</button>
+        <button class="fab-main" onclick="modalProject()">+</button>
     </div>
 
     <div id="v-det" class="view">
-        <div class="header">
-            <button class="back-btn" onclick="goHome()">←</button>
-            <div class="project-info" onclick="modalProject(true)">
-                <b id="h-num">---</b>
-                <small id="h-nam">---</small>
+        <div class="app-bar">
+            <div class="app-bar-container">
+                <button class="nav-back" onclick="goHome()">←</button>
+                <div class="project-title-block" onclick="modalProject(true)">
+                    <span id="h-num">---</span>
+                    <small id="h-nam">---</small>
+                </div>
             </div>
         </div>
-        <div class="content">
-            <button class="btn btn-black" onclick="showM('m-imp')">MASSEN-IMPORT</button>
-            <div id="list-tools" class="list-container"></div>
-            <button class="btn btn-black" style="margin-top:20px" onclick="makePDF()">PDF GENERIEREN</button>
+        <div class="scroll-content">
+            <div class="controls-row">
+                <button class="btn-pill" onclick="showM('m-imp')">MASSEN-IMPORT</button>
+            </div>
+            <div id="list-tools"></div>
+            <div class="footer-actions">
+                <button class="btn-primary" onclick="makePDF()">PDF GENERIEREN</button>
+            </div>
         </div>
-        <button class="fab" onclick="modalTool()">+</button>
+        <button class="fab-main" onclick="modalTool()">+</button>
     </div>
 
     <div id="m-p" class="overlay">
-        <div class="modal">
+        <div class="premium-modal">
             <input type="hidden" id="p-idx">
-            <label>Zeichnungsnummer</label>
-            <input type="text" id="p-num" placeholder="233562">
-            <label>Bezeichnung</label>
-            <input type="text" id="p-nam" placeholder="BUCHSE">
-            <div class="modal-footer">
-                <button class="btn btn-black" onclick="saveProject()">OK</button>
-                <button class="btn btn-gray" onclick="hideM('m-p')">ABBRECHEN</button>
+            <div class="modal-head">PROJEKT DETAILS</div>
+            <label>ZEICHNUNGSNUMMER</label>
+            <input type="text" id="p-num" spellcheck="false">
+            <label>BEZEICHNUNG</label>
+            <input type="text" id="p-nam" spellcheck="false">
+            <div class="modal-btns">
+                <button class="btn-main" onclick="saveProject()">BESTÄTIGEN</button>
+                <button class="btn-flat" onclick="hideM('m-p')">ABBRECHEN</button>
             </div>
         </div>
     </div>
 
     <div id="m-t" class="overlay">
-        <div class="modal">
+        <div class="premium-modal">
             <input type="hidden" id="t-idx">
-            <label>Smart-Input (T... Name Ø)</label>
-            <input type="text" id="t-smart" placeholder="T01 FRAESER 12 -0.1">
-            <div class="grid-2">
-                <div><label>T-NR</label><input type="text" id="t-id"></div>
-                <div><label>Ø / TOL.</label><input type="text" id="t-dia"></div>
+            <div class="modal-head">WERKZEUG EDITIEREN</div>
+            <label>SMART INPUT</label>
+            <input type="text" id="t-smart" placeholder="T01 BOHRER 10.5 -0.02" oninput="runSmart()">
+            <div class="input-row">
+                <div class="col">
+                    <label>T-NR</label>
+                    <input type="text" id="t-id">
+                </div>
+                <div class="col">
+                    <label>Ø / TOLERANZ</label>
+                    <input type="text" id="t-dia">
+                </div>
             </div>
-            <label>Bezeichnung</label>
+            <label>BEZEICHNUNG</label>
             <input type="text" id="t-nm">
-            <div class="modal-footer">
-                <button class="btn btn-black" onclick="saveTool()">SPEICHERN</button>
-                <button id="btn-del-t" class="btn btn-red" onclick="deleteTool()">LÖSCHEN</button>
-                <button class="btn btn-gray" onclick="hideM('m-t')">X</button>
+            <div class="modal-btns">
+                <button class="btn-main" onclick="saveTool()">SPEICHERN</button>
+                <button id="btn-del-t" class="btn-danger" onclick="deleteTool()">LÖSCHEN</button>
             </div>
+            <button class="modal-close" onclick="hideM('m-t')">✕</button>
         </div>
     </div>
 
     <div id="m-imp" class="overlay">
-        <div class="modal">
-            <label>Liste einfügen</label>
-            <textarea id="imp-area" rows="10" placeholder="T01 BOHRER 10&#10;T02 FRAESER 12 -0.1"></textarea>
-            <button class="btn btn-black" onclick="runMassImport()">IMPORTIEREN</button>
-            <button class="btn btn-gray" onclick="hideM('m-imp')">ABBRECHEN</button>
+        <div class="premium-modal">
+            <div class="modal-head">MASSEN-IMPORT</div>
+            <textarea id="imp-area" rows="10" placeholder="T01 BOHRER 10...&#10;T02 FRAESER 12..."></textarea>
+            <button class="btn-main" onclick="runMassImport()">IMPORTIEREN</button>
+            <button class="btn-flat" onclick="hideM('m-imp')">SCHLIESSEN</button>
         </div>
     </div>
 
     <div id="m-json" class="overlay">
-        <div class="modal">
-            <label>JSON Code hier einfügen</label>
-            <textarea id="json-area" rows="10"></textarea>
-            <button class="btn btn-black" onclick="importJSON()">DATEN IMPORTIEREN</button>
-            <button class="btn btn-gray" onclick="hideM('m-json')">ABBRECHEN</button>
+        <div class="premium-modal">
+            <div class="modal-head">JSON IMPORT</div>
+            <textarea id="json-area" rows="10" placeholder="Code hier einfügen..."></textarea>
+            <button class="btn-main" onclick="importJSON()">DATEN LADEN</button>
+            <button class="btn-flat" onclick="hideM('m-json')">ABBRECHEN</button>
         </div>
     </div>
 
