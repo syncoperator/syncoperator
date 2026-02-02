@@ -1,11 +1,8 @@
-/**
- * UI CONTROLLER
- * Управление экранами и генерация PDF с расширенными полями
- */
-
 let currentProjectIdx = null;
 
-// Навигация
+function showM(id) { document.getElementById(id).style.display = 'flex'; }
+function hideM(id) { document.getElementById(id).style.display = 'none'; }
+
 function goHome() {
     currentProjectIdx = null;
     document.getElementById('v-det').classList.remove('active');
@@ -13,183 +10,134 @@ function goHome() {
     renderProjects();
 }
 
-function showM(id) { document.getElementById(id).style.display = 'flex'; }
-function hideM(id) { document.getElementById(id).style.display = 'none'; }
-
 function renderProjects() {
-    const container = document.getElementById('list-projects');
-    container.innerHTML = "";
-    db.forEach((project, index) => {
-        const div = document.createElement('div');
-        div.className = 'project-card';
-        div.onclick = () => openProject(index);
-        div.innerHTML = `
-            <div style="flex:1">
-                <b>${project.num}</b>
-                <small style="color:#8E8E93">${project.name}</small>
-            </div>
-            <button class="btn-danger" style="padding:0; width:80px; height:30px;" onclick="event.stopPropagation(); deleteProject(${index})">LÖSCHEN</button>
-        `;
-        container.appendChild(div);
+    const cont = document.getElementById('list-projects');
+    cont.innerHTML = "";
+    db.forEach((p, i) => {
+        const d = document.createElement('div');
+        d.className = 'project-card';
+        d.onclick = () => openProject(i);
+        d.innerHTML = `<div style="flex:1"><b>${p.num}</b><br><small>${p.name}</small></div>
+        <button class="btn-danger" style="width:auto" onclick="event.stopPropagation();deleteProject(${i})">LÖSCHEN</button>`;
+        cont.appendChild(d);
     });
 }
 
-function openProject(index) {
-    currentProjectIdx = index;
+function openProject(i) {
+    currentProjectIdx = i;
     document.getElementById('v-home').classList.remove('active');
     document.getElementById('v-det').classList.add('active');
-    document.getElementById('h-num').innerText = db[index].num;
-    document.getElementById('h-nam').innerText = db[index].name;
+    document.getElementById('h-num').innerText = db[i].num;
+    document.getElementById('h-nam').innerText = db[i].name;
     renderTools();
 }
 
 function renderTools() {
-    const container = document.getElementById('list-tools');
-    container.innerHTML = "";
-    db[currentProjectIdx].tools.forEach((tool, index) => {
-        const div = document.createElement('div');
-        div.className = 'tool-card';
-        div.dataset.id = index;
-        div.innerHTML = `
-            <div class="drag-handle">☰</div>
-            <div class="tool-main" onclick="modalTool(${index})">
-                <div class="tool-id">${tool.id}</div>
-                <div class="tool-name">${tool.nm}</div>
-            </div>
-            <div class="tool-dia">${tool.dia || ''}</div>
-        `;
-        container.appendChild(div);
+    const cont = document.getElementById('list-tools');
+    cont.innerHTML = "";
+    db[currentProjectIdx].tools.forEach((t, i) => {
+        const d = document.createElement('div');
+        d.className = 'tool-card';
+        d.dataset.id = i;
+        d.innerHTML = `<div class="drag-handle">☰</div>
+        <div class="tool-main" onclick="modalTool(${i})"><b>${t.id}</b><br><small>${t.nm}</small></div>
+        <div class="tool-dia">${t.dia || ''}</div>`;
+        cont.appendChild(d);
     });
-
-    new Sortable(container, {
-        handle: '.drag-handle',
-        animation: 200,
-        onEnd: function() {
-            let newOrder = [];
-            container.querySelectorAll('.tool-card').forEach(el => {
-                newOrder.push(db[currentProjectIdx].tools[el.dataset.id]);
-            });
-            db[currentProjectIdx].tools = newOrder;
-            saveDB();
-            renderTools();
-        }
-    });
+    new Sortable(cont, { handle: '.drag-handle', animation: 150, onEnd: () => {
+        let n = [];
+        cont.querySelectorAll('.tool-card').forEach(el => n.push(db[currentProjectIdx].tools[el.dataset.id]));
+        db[currentProjectIdx].tools = n; saveDB();
+    }});
 }
 
-/**
- * PDF ENGINE 2.0: ЖЕСТКАЯ ВЕРСТКА 1 В 1
- */
-function makePDF() {
-    const p = db[currentProjectIdx];
-    const printZone = document.getElementById('pdf-render');
-    
-    // Строки с черными жирными линиями
-    const rows = p.tools.map(t => `
-        <tr>
-            <td style="width:70px; border-bottom:1.5pt solid black; padding:10px 5px; font-weight:900;">${t.id}</td>
-            <td style="border-bottom:1.5pt solid black; padding:10px 30px; text-align:left; font-weight:700;">${t.nm}</td>
-            <td style="width:110px; border-bottom:1.5pt solid black; padding:10px 5px; text-align:right; font-weight:900;">${t.dia || ''}</td>
-        </tr>
-    `).join('');
-
-    printZone.innerHTML = `
-        <div style="width:210mm; min-height:297mm; padding:12mm; background:white; font-family:sans-serif; color:black;">
-            <div style="border:1.8pt solid black; padding:30px; min-height:270mm; display:flex; flex-direction:column;">
-                
-                <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:5px;">
-                    <div>
-                        <div style="font-size:10pt; color:#666; font-weight:bold; text-transform:uppercase;">${p.name}</div>
-                        <div style="font-size:48pt; font-weight:900; line-height:0.9;">${p.num}</div>
-                    </div>
-                    
-                    <div style="font-size:9pt; font-weight:800; text-align:right; line-height:1.6;">
-                        <div>ABSTAND: ___________</div>
-                        <div>GREIFBACKEN: ___________</div>
-                        <div>LAUFZEIT: ___________</div>
-                        <div>STÜCK A: ___________ | STÜCK B: ___________</div>
-                    </div>
-                </div>
-
-                <div style="height:3.5pt; background:black; margin:15px 0;"></div>
-                
-                <table style="width:100%; border-collapse:collapse; table-layout:fixed;">
-                    <thead>
-                        <tr>
-                            <th style="width:70px; text-align:left; font-size:8pt; padding:8px 5px; border-bottom:2.5pt solid black;">T-NR</th>
-                            <th style="text-align:left; font-size:8pt; padding:8px 5px 8px 30px; border-bottom:2.5pt solid black;">WERKZEUGNAME / KOMMENTAR</th>
-                            <th style="width:110px; text-align:right; font-size:8pt; padding:8px 5px; border-bottom:2.5pt solid black;">Ø / TOLERANZ</th>
-                        </tr>
-                    </thead>
-                    <tbody style="font-size:10.5pt; text-transform:uppercase;">
-                        ${rows}
-                    </tbody>
-                </table>
-
-            </div>
-        </div>
-    `;
-
-    window.print();
-}
-
-// Модалки и сохранение
 function modalProject(edit = false) {
+    const p = edit ? db[currentProjectIdx] : {num:'',name:'',abs:'',grf:'',lzf:'',sta:'',stb:''};
     document.getElementById('p-idx').value = edit ? currentProjectIdx : "";
-    document.getElementById('p-num').value = edit ? db[currentProjectIdx].num : "";
-    document.getElementById('p-nam').value = edit ? db[currentProjectIdx].name : "";
+    document.getElementById('p-num').value = p.num;
+    document.getElementById('p-nam').value = p.name;
+    document.getElementById('p-abs').value = p.abs || '';
+    document.getElementById('p-grf').value = p.grf || '';
+    document.getElementById('p-lzf').value = p.lzf || '';
+    document.getElementById('p-sta').value = p.sta || '';
+    document.getElementById('p-stb').value = p.stb || '';
     showM('m-p');
 }
 
 function saveProject() {
-    const idx = document.getElementById('p-idx').value;
-    const num = document.getElementById('p-num').value.trim();
-    const nam = document.getElementById('p-nam').value.trim().toUpperCase();
-    if (!num) return;
-    if (idx === "") db.push({ num, name: nam, tools: [] });
-    else { db[idx].num = num; db[idx].name = nam; }
-    saveDB(); renderProjects(); hideM('m-p');
-    if(currentProjectIdx !== null) openProject(currentProjectIdx);
+    const i = document.getElementById('p-idx').value;
+    const data = {
+        num: document.getElementById('p-num').value,
+        name: document.getElementById('p-nam').value.toUpperCase(),
+        abs: document.getElementById('p-abs').value,
+        grf: document.getElementById('p-grf').value,
+        lzf: document.getElementById('p-lzf').value,
+        sta: document.getElementById('p-sta').value,
+        stb: document.getElementById('p-stb').value,
+        tools: i === "" ? [] : db[i].tools
+    };
+    if(i==="") db.push(data); else db[i] = data;
+    saveDB(); hideM('m-p'); goHome();
 }
 
-function modalTool(index = null) {
-    const edit = index !== null;
-    document.getElementById('t-idx').value = edit ? index : "";
-    document.getElementById('t-smart').value = "";
-    document.getElementById('t-id').value = edit ? db[currentProjectIdx].tools[index].id : "";
-    document.getElementById('t-nm').value = edit ? db[currentProjectIdx].tools[index].nm : "";
-    document.getElementById('t-dia').value = edit ? db[currentProjectIdx].tools[index].dia : "";
-    document.getElementById('btn-del-t').style.display = edit ? 'block' : 'none';
+function modalTool(i=null) {
+    const edit = i !== null;
+    document.getElementById('t-idx').value = edit ? i : "";
+    document.getElementById('t-id').value = edit ? db[currentProjectIdx].tools[i].id : "";
+    document.getElementById('t-nm').value = edit ? db[currentProjectIdx].tools[i].nm : "";
+    document.getElementById('t-dia').value = edit ? db[currentProjectIdx].tools[i].dia : "";
     showM('m-t');
 }
 
 function saveTool() {
-    const idx = document.getElementById('t-idx').value;
-    const tool = {
-        id: document.getElementById('t-id').value.trim().toUpperCase(),
-        nm: document.getElementById('t-nm').value.trim().toUpperCase(),
-        dia: document.getElementById('t-dia').value.trim()
-    };
-    if (!tool.id) return;
-    if (idx === "") db[currentProjectIdx].tools.push(tool);
-    else db[currentProjectIdx].tools[idx] = tool;
-    cleanProjectSlots(currentProjectIdx);
-    renderTools(); hideM('m-t');
+    const i = document.getElementById('t-idx').value;
+    const t = { id: document.getElementById('t-id').value.toUpperCase(), nm: document.getElementById('t-nm').value.toUpperCase(), dia: document.getElementById('t-dia').value };
+    if(i==="") db[currentProjectIdx].tools.push(t); else db[currentProjectIdx].tools[i] = t;
+    saveDB(); hideM('m-t'); renderTools();
 }
 
-function runMassImport() {
-    logicMassImport(currentProjectIdx, document.getElementById('imp-area').value);
-    document.getElementById('imp-area').value = "";
-    renderTools(); hideM('m-imp');
-}
+function deleteProject(i) { db.splice(i,1); saveDB(); renderProjects(); }
+function deleteTool() { db[currentProjectIdx].tools.splice(document.getElementById('t-idx').value, 1); saveDB(); hideM('m-t'); renderTools(); }
+function runMassImport() { logicMassImport(currentProjectIdx, document.getElementById('imp-area').value); hideM('m-imp'); renderTools(); }
 
-function deleteTool() {
-    db[currentProjectIdx].tools.splice(document.getElementById('t-idx').value, 1);
-    saveDB(); renderTools(); hideM('m-t');
-}
+function makePDF() {
+    const p = db[currentProjectIdx];
+    const rows = p.tools.map(t => `
+        <tr style="border-bottom:1.5pt solid black;">
+            <td style="padding:12px 5px; font-weight:900; width:60px;">${t.id}</td>
+            <td style="padding:12px 30px; font-weight:700;">${t.nm}</td>
+            <td style="padding:12px 5px; font-weight:900; text-align:right; width:100px;">${t.dia||''}</td>
+        </tr>`).join('');
 
-function deleteProject(index) {
-    db.splice(index, 1);
-    saveDB(); renderProjects();
+    document.getElementById('pdf-render').innerHTML = `
+    <div style="width:210mm; height:297mm; padding:12mm; background:white; color:black; font-family:sans-serif; box-sizing:border-box;">
+        <div style="border:1.5pt solid black; height:100%; padding:30px; display:flex; flex-direction:column; box-sizing:border-box;">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                <div>
+                    <div style="font-size:10pt; font-weight:bold; color:#666;">${p.name}</div>
+                    <div style="font-size:50pt; font-weight:900; line-height:1;">${p.num}</div>
+                </div>
+                <div style="text-align:right; font-size:10pt; font-weight:800; line-height:1.8;">
+                    <div>ABSTAND: <span style="border-bottom:1pt solid black; min-width:80px; display:inline-block">${p.abs||''}</span></div>
+                    <div>GREIFBACKEN: <span style="border-bottom:1pt solid black; min-width:80px; display:inline-block">${p.grf||''}</span></div>
+                    <div>LAUFZEIT: <span style="border-bottom:1pt solid black; min-width:80px; display:inline-block">${p.lzf||''}</span></div>
+                    <div>STÜCK A: <span style="border-bottom:1pt solid black; min-width:40px; display:inline-block">${p.sta||''}</span> | B: <span style="border-bottom:1pt solid black; min-width:40px; display:inline-block">${p.stb||''}</span></div>
+                </div>
+            </div>
+            <div style="height:4pt; background:black; margin:20px 0;"></div>
+            <table style="width:100%; border-collapse:collapse; table-layout:fixed;">
+                <thead>
+                    <tr style="border-bottom:2.5pt solid black; font-size:8pt; font-weight:900;">
+                        <th align="left" style="width:60px; padding-bottom:5px;">T-NR</th>
+                        <th align="left" style="padding-bottom:5px; padding-left:30px;">WERKZEUGNAME / KOMMENTAR</th>
+                        <th align="right" style="width:100px; padding-bottom:5px;">Ø / TOLERANZ</th>
+                    </tr>
+                </thead>
+                <tbody>${rows}</tbody>
+            </table>
+        </div>
+    </div>`;
+    window.print();
 }
 
 renderProjects();
