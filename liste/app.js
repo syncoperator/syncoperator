@@ -1,19 +1,16 @@
-let db = JSON.parse(localStorage.getItem('qs_v27')) || [];
+let db = JSON.parse(localStorage.getItem('qs_v28')) || [];
 let cur = null;
+let dragSrcEl = null;
 
 const showM = id => document.getElementById(id).style.display = 'flex';
 const hideM = id => document.getElementById(id).style.display = 'none';
-const save = () => localStorage.setItem('qs_v27', JSON.stringify(db));
+const save = () => localStorage.setItem('qs_v28', JSON.stringify(db));
 
 // Демо-данные
 function loadDemo() {
     const demoTools = [];
     for(let i=1; i<=15; i++) {
-        demoTools.push({
-            id: `T01${String(i).padStart(2,'0')}`,
-            nm: `WERKZEUGNAME NR ${i} KOMMENTAR G54`,
-            dia: i === 1 ? "29\n-0.1" : ""
-        });
+        demoTools.push({ id: `T01${String(i).padStart(2,'0')}`, nm: `WERKZEUG NR ${i} G54`, dia: i === 1 ? "29\n-0.1" : "" });
     }
     db.push({num: "233562", name: "BUCHSE", tools: demoTools});
     save(); renderP();
@@ -38,47 +35,58 @@ function openP(i) {
     renderT();
 }
 
+// Функции Drag & Drop
+function handleDragStart(e) {
+    dragSrcEl = this;
+    this.classList.add('dragging');
+}
+function handleDragOver(e) { e.preventDefault(); return false; }
+function handleDrop(e) {
+    if (dragSrcEl !== this) {
+        const fromIdx = parseInt(dragSrcEl.dataset.idx);
+        const toIdx = parseInt(this.dataset.idx);
+        const item = db[cur].tools.splice(fromIdx, 1)[0];
+        db[cur].tools.splice(toIdx, 0, item);
+        save(); renderT();
+    }
+    return false;
+}
+function handleDragEnd() { this.classList.remove('dragging'); }
+
 function renderT() {
     const l = document.getElementById('list-t'); l.innerHTML = "";
     db[cur].tools.forEach((t, i) => {
-        l.innerHTML += `<div class="card" onclick="editT(${i})">
-            <div class="c-id">${t.id}</div>
-            <div class="c-name">${t.nm}</div>
-            <div class="c-diam">${t.dia || ''}</div>
-        </div>`;
+        const div = document.createElement('div');
+        div.className = 'card';
+        div.draggable = true;
+        div.dataset.idx = i;
+        div.onclick = () => editT(i);
+        div.innerHTML = `<div class="c-id">${t.id}</div><div class="c-name">${t.nm}</div><div class="c-diam">${t.dia || ''}</div>`;
+        div.addEventListener('dragstart', handleDragStart);
+        div.addEventListener('dragover', handleDragOver);
+        div.addEventListener('drop', handleDrop);
+        div.addEventListener('dragend', handleDragEnd);
+        l.appendChild(div);
     });
 }
 
-function printPDF() {
-    const p = db[cur];
-    const rows = p.tools.map(t => `
-        <tr>
-            <td class="td-num">${t.id}</td>
-            <td class="td-name">${t.nm}</td>
-            <td class="td-dia">${t.dia || ''}</td>
-        </tr>`).join('');
-
-    document.getElementById('print-area').innerHTML = `
-        <div class="print-frame">
-            <p class="p-label">${p.name}</p>
-            <h1 class="p-title">${p.num}</h1>
-            <div class="p-hr"></div>
-            <table>
-                <thead>
-                    <tr><th>T-NR</th><th>WERKZEUGNAME / KOMMENTAR</th><th align="right">Ø</th></tr>
-                </thead>
-                <tbody>${rows}</tbody>
-            </table>
-        </div>`;
-    window.print();
+function openNewTool() {
+    document.getElementById('t-idx').value = "";
+    document.getElementById('t-id').value = "";
+    document.getElementById('t-nm').value = "";
+    document.getElementById('t-dia').value = "";
+    document.getElementById('btn-del-t').style.display = 'none';
+    showM('m-t');
 }
 
-// Стандартные функции
-function addP() {
-    const num = document.getElementById('p-num').value;
-    const nam = document.getElementById('p-nam').value;
-    if(!num) return;
-    db.push({num, name:nam.toUpperCase(), tools:[]}); save(); renderP(); hideM('m-p');
+function editT(i) {
+    const t = db[cur].tools[i];
+    document.getElementById('t-idx').value = i;
+    document.getElementById('t-id').value = t.id;
+    document.getElementById('t-nm').value = t.nm;
+    document.getElementById('t-dia').value = t.dia;
+    document.getElementById('btn-del-t').style.display = 'block';
+    showM('m-t');
 }
 
 function addT() {
@@ -93,19 +101,29 @@ function addT() {
     save(); renderT(); hideM('m-t');
 }
 
-function editT(i) {
-    const t = db[cur].tools[i];
-    document.getElementById('t-idx').value = i;
-    document.getElementById('t-id').value = t.id;
-    document.getElementById('t-nm').value = t.nm;
-    document.getElementById('t-dia').value = t.dia;
-    showM('m-t');
+function delT() {
+    const idx = document.getElementById('t-idx').value;
+    if(confirm('Löschen?')) { db[cur].tools.splice(idx, 1); save(); renderT(); hideM('m-t'); }
 }
 
-function delP(i) { if(confirm('Löschen?')) {db.splice(i,1); save(); renderP(); }}
-function goHome() {
-    document.getElementById('v-det').classList.remove('active');
-    document.getElementById('v-home').classList.add('active');
-    renderP();
+function printPDF() {
+    const p = db[cur];
+    const rows = p.tools.map(t => `<tr><td class="td-num">${t.id}</td><td class="td-name">${t.nm}</td><td class="td-dia">${t.dia || ''}</td></tr>`).join('');
+    document.getElementById('print-area').innerHTML = `
+        <div class="print-frame">
+            <p class="p-label">${p.name}</p><h1 class="p-title">${p.num}</h1><div class="p-hr"></div>
+            <table><thead><tr><th>T-NR</th><th>WERKZEUGNAME / KOMMENTAR</th><th align="right">Ø</th></tr></thead><tbody>${rows}</tbody></table>
+        </div>`;
+    window.print();
 }
+
+function addP() {
+    const num = document.getElementById('p-num').value;
+    const nam = document.getElementById('p-nam').value;
+    if(!num) return;
+    db.push({num, name:nam.toUpperCase(), tools:[]}); save(); renderP(); hideM('m-p');
+}
+
+function delP(i) { if(confirm('Projekt löschen?')) {db.splice(i,1); save(); renderP(); }}
+function goHome() { document.getElementById('v-det').classList.remove('active'); document.getElementById('v-home').classList.add('active'); renderP(); }
 renderP();
