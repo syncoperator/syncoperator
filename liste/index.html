@@ -3,55 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>QS Tool 2026</title>
-    <style>
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { margin: 0; font-family: -apple-system, sans-serif; background: #F2F2F7; color: #000; overflow: hidden; }
-
-        /* Приложение */
-        .view { display: none; flex-direction: column; height: 100vh; }
-        .view.active { display: flex; }
-        .bar { background: #FFF; padding: 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #D1D1D6; z-index: 10; }
-        .content { flex-grow: 1; overflow-y: scroll; padding: 12px; -webkit-overflow-scrolling: touch; padding-bottom: 100px; }
-
-        .card { 
-            background: #FFF; border-radius: 12px; padding: 14px; margin-bottom: 8px; 
-            display: flex; align-items: center; box-shadow: 0 1px 3px rgba(0,0,0,0.1); 
-            user-select: none;
-        }
-        .sortable-ghost { opacity: 0.3; background: #C8E6C9; }
-
-        .c-id { width: 75px; font-weight: 800; color: #007AFF; pointer-events: none; }
-        .c-name { flex-grow: 1; font-weight: 600; font-size: 14px; text-transform: uppercase; pointer-events: none; }
-        .c-diam { width: 45px; text-align: right; color: #8E8E93; font-weight: 700; white-space: pre-line; pointer-events: none; }
-
-        .btn { width: 100%; padding: 16px; border-radius: 14px; border: none; font-size: 16px; font-weight: 700; margin-bottom: 10px; cursor: pointer; }
-        .btn-black { background: #000; color: #FFF; }
-        .btn-red { background: #FF3B30; color: #FFF; }
-        .btn-gray { background: #E5E5EA; color: #000; }
-        .fab { position: fixed; bottom: 25px; right: 20px; width: 64px; height: 64px; border-radius: 32px; background: #000; color: #FFF; border: none; font-size: 32px; z-index: 100; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
-
-        .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center; padding: 20px; }
-        .m-card { background: #FFF; width: 100%; max-width: 400px; border-radius: 20px; padding: 25px; }
-        input, textarea { width: 100%; padding: 14px; background: #F2F2F7; border: 1px solid #D1D1D6; border-radius: 10px; margin-bottom: 12px; font-size: 16px; font-family: inherit; resize: none; }
-        label { font-size: 11px; color: #8E8E93; font-weight: 700; text-transform: uppercase; margin-left: 5px; }
-
-        /* ПЕЧАТЬ */
-        @media print {
-            @page { size: A4; margin: 0; }
-            html, body { height: 100%; overflow: hidden; background: #FFF; }
-            .view, .overlay, .fab { display: none !important; }
-            #print-section { display: block !important; padding: 10mm; height: 100vh; }
-            .print-frame { border: 2pt solid #000; height: 100%; padding: 20pt 30pt; display: flex; flex-direction: column; }
-            .p-label { font-size: 14pt; color: #000; font-weight: 600; text-transform: uppercase; margin: 0; }
-            .p-title { font-size: 58pt; font-weight: 900; margin: -4pt 0 12pt 0; line-height: 1; }
-            .p-hr { border-top: 4pt solid #000; margin-bottom: 15pt; }
-            table { width: 100%; border-collapse: collapse; }
-            th { text-align: left; padding-bottom: 6pt; font-size: 9pt; border-bottom: 2pt solid #000; font-weight: 800; }
-            td { padding: 7pt 5pt; font-size: 11pt; font-weight: 800; border-bottom: 1pt solid #EEE; vertical-align: top; line-height: 1.2; }
-            .td-num { width: 18%; } .td-name { width: 72%; text-transform: uppercase; } .td-dia { width: 10%; text-align: right; white-space: pre-line; }
-        }
-    </style>
+    <title>QS Central System</title>
+    <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 </head>
 <body>
@@ -61,16 +14,19 @@
 <div id="v-home" class="view active">
     <div class="bar"><b>PROJEKTE</b></div>
     <div class="content">
-        <button class="btn btn-gray" onclick="loadDemo()">DEMO: 15 TOOLS LADEN</button>
+        <button class="btn btn-gray" onclick="loadDemo()">DEMO DATEN LADEN</button>
         <div id="list-p"></div>
     </div>
-    <button class="fab" onclick="showM('m-p')">+</button>
+    <button class="fab" onclick="openNewProject()">+</button>
 </div>
 
 <div id="v-det" class="view">
     <div class="bar">
-        <button onclick="goHome()" style="border:none;background:none;font-size:24px;">←</button>
-        <div style="text-align:right"><b id="d-num"></b><br><small id="d-nam"></small></div>
+        <button onclick="goHome()" class="btn-back">←</button>
+        <div class="bar-info" onclick="editCurrentProject()">
+            <b id="d-num"></b><br>
+            <small id="d-nam"></small>
+        </div>
     </div>
     <div class="content">
         <div id="list-t"></div>
@@ -80,168 +36,30 @@
 </div>
 
 <div id="m-p" class="overlay"><div class="m-card">
-    <input id="p-num" placeholder="Nummer (233562)"><input id="p-nam" placeholder="Name (BUCHSE)">
-    <button class="btn btn-black" onclick="addP()">OK</button>
-    <button class="btn btn-gray" onclick="hideM('m-p')">X</button>
+    <input type="hidden" id="p-idx">
+    <label>Zeichnungsnummer</label>
+    <input id="p-num" placeholder="233562">
+    <label>Bezeichnung</label>
+    <input id="p-nam" placeholder="BUCHSE">
+    <button class="btn btn-black" onclick="saveProject()">SPEICHERN</button>
+    <button class="btn btn-gray" onclick="hideM('m-p')">ABBRECHEN</button>
 </div></div>
 
 <div id="m-t" class="overlay"><div class="m-card">
     <input type="hidden" id="t-idx">
-    
     <label>Smart-Input (T... Name Ø)</label>
-    <input id="t-smart" placeholder="Напр: T05 FRAESER 12 -0.1" oninput="doSmart()">
-    
-    <div style="display: flex; gap: 10px;">
-        <div style="flex: 1;">
-            <label>T-NR</label>
-            <input id="t-id" placeholder="T0101">
-        </div>
-        <div style="flex: 1;">
-            <label>Ø / TOLERANZ</label>
-            <textarea id="t-dia" placeholder="Ø" rows="2"></textarea>
-        </div>
+    <input id="t-smart" placeholder="T01 FRAESER 12 -0.1" oninput="doSmart()">
+    <div class="grid-2">
+        <div><label>T-NR</label><input id="t-id" placeholder="T01"></div>
+        <div><label>Ø / TOLERANZ</label><textarea id="t-dia" rows="2"></textarea></div>
     </div>
-    
     <label>Bezeichnung</label>
-    <input id="t-nm" placeholder="WERKZEUGNAME">
-
-    <button class="btn btn-black" onclick="addT()">SPEICHERN</button>
-    <button id="btn-del-t" class="btn btn-red" onclick="delT()">LÖSCHEN</button>
+    <input id="t-nm" placeholder="NAME">
+    <button class="btn btn-black" onclick="saveTool()">SPEICHERN</button>
+    <button id="btn-del-t" class="btn btn-red" onclick="delTool()">LÖSCHEN</button>
     <button class="btn btn-gray" onclick="hideM('m-t')">ABBRECHEN</button>
 </div></div>
 
-<script>
-let db = JSON.parse(localStorage.getItem('qs_v30')) || [];
-let cur = null;
-
-const showM = id => document.getElementById(id).style.display = 'flex';
-const hideM = id => document.getElementById(id).style.display = 'none';
-const save = () => localStorage.setItem('qs_v30', JSON.stringify(db));
-
-// СМАРТ-РЕШАЛА: Разбирает строку на лету
-function doSmart() {
-    let input = document.getElementById('t-smart').value;
-    
-    // 1. Ищем T-номер
-    const tMatch = input.match(/T\d+/i);
-    if (tMatch) {
-        document.getElementById('t-id').value = tMatch[0].toUpperCase();
-        input = input.replace(tMatch[0], '').trim();
-    }
-
-    // 2. Ищем размер в конце (числа и знаки)
-    const diaMatch = input.match(/(\d+[\.,]?\d*\s*[\+\-]\s*\d+[\.,]?\d*|\d+[\.,]?\d*)$/);
-    if (diaMatch) {
-        document.getElementById('t-dia').value = diaMatch[0].replace(' ', '\n');
-        input = input.replace(diaMatch[0], '').trim();
-    }
-
-    // 3. Остаток — название
-    document.getElementById('t-nm').value = input.toUpperCase();
-}
-
-function renderP() {
-    const l = document.getElementById('list-p'); l.innerHTML = "";
-    db.forEach((p, i) => {
-        l.innerHTML += `<div class="card" onclick="openP(${i})">
-            <div style="flex-grow:1"><b>${p.num}</b><br><small style="color:#888">${p.name}</small></div>
-            <button onclick="event.stopPropagation();delP(${i})" style="border:none;background:none;color:red;font-size:18px">✕</button>
-        </div>`;
-    });
-}
-
-function openP(i) {
-    cur = i;
-    document.getElementById('v-home').classList.remove('active');
-    document.getElementById('v-det').classList.add('active');
-    document.getElementById('d-num').innerText = db[i].num;
-    document.getElementById('d-nam').innerText = db[i].name;
-    renderT();
-}
-
-function renderT() {
-    const l = document.getElementById('list-t');
-    l.innerHTML = "";
-    db[cur].tools.forEach((t, i) => {
-        const div = document.createElement('div');
-        div.className = 'card';
-        div.dataset.id = i;
-        div.onclick = () => editT(i);
-        div.innerHTML = `<div class="c-id">${t.id}</div><div class="c-name">${t.nm}</div><div class="c-diam">${t.dia || ''}</div>`;
-        l.appendChild(div);
-    });
-
-    new Sortable(l, {
-        animation: 150,
-        ghostClass: 'sortable-ghost',
-        onEnd: function() {
-            const newOrder = [];
-            l.querySelectorAll('.card').forEach(el => newOrder.push(db[cur].tools[el.dataset.id]));
-            db[cur].tools = newOrder;
-            save(); renderT();
-        }
-    });
-}
-
-function openNewTool() {
-    ['t-idx','t-smart','t-id','t-nm','t-dia'].forEach(id => document.getElementById(id).value = "");
-    document.getElementById('btn-del-t').style.display = 'none';
-    showM('m-t');
-}
-
-function editT(i) {
-    const t = db[cur].tools[i];
-    document.getElementById('t-idx').value = i;
-    document.getElementById('t-smart').value = ""; // Очищаем смарт-поле при редактировании
-    document.getElementById('t-id').value = t.id;
-    document.getElementById('t-nm').value = t.nm;
-    document.getElementById('t-dia').value = t.dia;
-    document.getElementById('btn-del-t').style.display = 'block';
-    showM('m-t');
-}
-
-function addT() {
-    const idx = document.getElementById('t-idx').value;
-    const t = { 
-        id: document.getElementById('t-id').value.toUpperCase(), 
-        nm: document.getElementById('t-nm').value.toUpperCase(), 
-        dia: document.getElementById('t-dia').value 
-    };
-    if(!t.id) return;
-    if(idx==="") db[cur].tools.push(t); else db[cur].tools[idx]=t;
-    save(); renderT(); hideM('m-t');
-}
-
-function delT() {
-    const idx = document.getElementById('t-idx').value;
-    if(confirm('Löschen?')) { db[cur].tools.splice(idx, 1); save(); renderT(); hideM('m-t'); }
-}
-
-function printPDF() {
-    const p = db[cur];
-    const rows = p.tools.map(t => `<tr><td class="td-num">${t.id}</td><td class="td-name">${t.nm}</td><td class="td-dia">${t.dia || ''}</td></tr>`).join('');
-    document.getElementById('print-area').innerHTML = `
-        <div class="print-frame">
-            <p class="p-label">${p.name}</p><h1 class="p-title">${p.num}</h1><div class="p-hr"></div>
-            <table><thead><tr><th>T-NR</th><th>WERKZEUGNAME / KOMMENTAR</th><th align="right">Ø</th></tr></thead><tbody>${rows}</tbody></table>
-        </div>`;
-    window.print();
-}
-
-function addP() {
-    const num = document.getElementById('p-num').value;
-    const nam = document.getElementById('p-nam').value;
-    if(!num) return;
-    db.push({num, name:nam.toUpperCase(), tools:[]}); save(); renderP(); hideM('m-p');
-}
-
-function delP(i) { if(confirm('Projekt löschen?')) {db.splice(i,1); save(); renderP(); }}
-function goHome() { document.getElementById('v-det').classList.remove('active'); document.getElementById('v-home').classList.add('active'); renderP(); }
-function loadDemo() {
-    const d = []; for(let i=1;i<=15;i++) d.push({id:`T${i}`,nm:`DEMO TOOL ${i}`,dia:i==1?"29\n-0.1":""});
-    db.push({num:"737372", name:"DEMO", tools:d}); save(); renderP();
-}
-renderP();
-</script>
+<script src="app.js"></script>
 </body>
 </html>
