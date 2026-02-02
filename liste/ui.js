@@ -1,6 +1,6 @@
 /**
  * UI CONTROLLER
- * Управление экранами и генерация PDF "1 в 1"
+ * Управление экранами и генерация PDF с расширенными полями
  */
 
 let currentProjectIdx = null;
@@ -28,7 +28,7 @@ function renderProjects() {
                 <b>${project.num}</b>
                 <small style="color:#8E8E93">${project.name}</small>
             </div>
-            <button class="btn-danger" style="padding:0" onclick="event.stopPropagation(); deleteProject(${index})">LÖSCHEN</button>
+            <button class="btn-danger" style="padding:0; width:80px; height:30px;" onclick="event.stopPropagation(); deleteProject(${index})">LÖSCHEN</button>
         `;
         container.appendChild(div);
     });
@@ -77,51 +77,54 @@ function renderTools() {
 }
 
 /**
- * ФУНКЦИЯ ПЕЧАТИ: СОЗДАЕТ ОТДЕЛЬНЫЙ СТИЛЬ ДЛЯ PDF
+ * PDF ENGINE 2.0: ЖЕСТКАЯ ВЕРСТКА 1 В 1
  */
 function makePDF() {
     const p = db[currentProjectIdx];
     const printZone = document.getElementById('pdf-render');
     
-    // Генерируем строки таблицы
+    // Строки с черными жирными линиями
     const rows = p.tools.map(t => `
         <tr>
-            <td style="width:15%; border-bottom:1.5pt solid black; padding:12px 5px;">${t.id}</td>
-            <td style="width:65%; border-bottom:1.5pt solid black; padding:12px 5px; text-align:left; padding-left:30px;">${t.nm}</td>
-            <td style="width:20%; border-bottom:1.5pt solid black; padding:12px 5px; text-align:right;">${t.dia || ''}</td>
+            <td style="width:70px; border-bottom:1.5pt solid black; padding:10px 5px; font-weight:900;">${t.id}</td>
+            <td style="border-bottom:1.5pt solid black; padding:10px 30px; text-align:left; font-weight:700;">${t.nm}</td>
+            <td style="width:110px; border-bottom:1.5pt solid black; padding:10px 5px; text-align:right; font-weight:900;">${t.dia || ''}</td>
         </tr>
     `).join('');
 
-    // Вставляем контент с инлайновыми стилями (игнорируя внешний CSS)
     printZone.innerHTML = `
-        <div style="
-            width: 210mm; height: 297mm; padding: 15mm; 
-            background: white; font-family: sans-serif; box-sizing: border-box;
-        ">
-            <div style="
-                border: 2pt solid black; padding: 40px; height: 100%; 
-                display: flex; flex-direction: column; box-sizing: border-box;
-            ">
-                <div style="font-size: 11pt; color: #777; text-transform: uppercase; font-weight: bold; margin-bottom: 5px;">
-                    ${p.name}
-                </div>
-                <div style="font-size: 50pt; font-weight: 900; margin: 0; line-height: 1;">
-                    ${p.num}
-                </div>
-                <div style="height: 4pt; background: black; margin: 20px 0;"></div>
+        <div style="width:210mm; min-height:297mm; padding:12mm; background:white; font-family:sans-serif; color:black;">
+            <div style="border:1.8pt solid black; padding:30px; min-height:270mm; display:flex; flex-direction:column;">
                 
-                <table style="width: 100%; border-collapse: collapse; table-layout: fixed;">
+                <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:5px;">
+                    <div>
+                        <div style="font-size:10pt; color:#666; font-weight:bold; text-transform:uppercase;">${p.name}</div>
+                        <div style="font-size:48pt; font-weight:900; line-height:0.9;">${p.num}</div>
+                    </div>
+                    
+                    <div style="font-size:9pt; font-weight:800; text-align:right; line-height:1.6;">
+                        <div>ABSTAND: ___________</div>
+                        <div>GREIFBACKEN: ___________</div>
+                        <div>LAUFZEIT: ___________</div>
+                        <div>STÜCK A: ___________ | STÜCK B: ___________</div>
+                    </div>
+                </div>
+
+                <div style="height:3.5pt; background:black; margin:15px 0;"></div>
+                
+                <table style="width:100%; border-collapse:collapse; table-layout:fixed;">
                     <thead>
                         <tr>
-                            <th style="text-align:left; font-size:8pt; padding:10px 5px; border-bottom:2.5pt solid black;">T-NR</th>
-                            <th style="text-align:left; font-size:8pt; padding:10px 5px 10px 30px; border-bottom:2.5pt solid black;">WERKZEUGNAME / KOMMENTAR</th>
-                            <th style="text-align:right; font-size:8pt; padding:10px 5px; border-bottom:2.5pt solid black;">Ø / TOLERANZ</th>
+                            <th style="width:70px; text-align:left; font-size:8pt; padding:8px 5px; border-bottom:2.5pt solid black;">T-NR</th>
+                            <th style="text-align:left; font-size:8pt; padding:8px 5px 8px 30px; border-bottom:2.5pt solid black;">WERKZEUGNAME / KOMMENTAR</th>
+                            <th style="width:110px; text-align:right; font-size:8pt; padding:8px 5px; border-bottom:2.5pt solid black;">Ø / TOLERANZ</th>
                         </tr>
                     </thead>
-                    <tbody style="font-size: 11pt; font-weight: 800;">
+                    <tbody style="font-size:10.5pt; text-transform:uppercase;">
                         ${rows}
                     </tbody>
                 </table>
+
             </div>
         </div>
     `;
@@ -129,7 +132,7 @@ function makePDF() {
     window.print();
 }
 
-// Утилиты модалок (Project/Tool)
+// Модалки и сохранение
 function modalProject(edit = false) {
     document.getElementById('p-idx').value = edit ? currentProjectIdx : "";
     document.getElementById('p-num').value = edit ? db[currentProjectIdx].num : "";
@@ -189,5 +192,4 @@ function deleteProject(index) {
     saveDB(); renderProjects();
 }
 
-// Запуск
 renderProjects();
