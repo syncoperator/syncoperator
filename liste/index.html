@@ -3,9 +3,66 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>QS Central System</title>
-    <link rel="stylesheet" href="style.css">
+    <title>QS TOOL FINAL</title>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+    <style>
+        :root { --accent: #007AFF; --bg: #F2F2F7; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { margin: 0; font-family: -apple-system, sans-serif; background: var(--bg); color: #000; overflow: hidden; }
+
+        /* ИНТЕРФЕЙС */
+        .view { display: none; flex-direction: column; height: 100vh; }
+        .view.active { display: flex; }
+        .bar { background: #FFF; padding: 15px; display: flex; align-items: center; border-bottom: 1px solid #D1D1D6; z-index: 100; }
+        .bar-info { flex: 1; text-align: right; cursor: pointer; padding: 5px; }
+        .bar-info b { font-size: 18px; }
+        .bar-info small { color: var(--accent); font-weight: 700; text-transform: uppercase; display: block; }
+        .btn-back { border: none; background: none; font-size: 28px; color: var(--accent); padding-right: 20px; }
+
+        .content { flex-grow: 1; overflow-y: scroll; padding: 12px; -webkit-overflow-scrolling: touch; padding-bottom: 120px; }
+        
+        /* КАРТОЧКИ */
+        .card { 
+            background: #FFF; border-radius: 12px; padding: 16px; margin-bottom: 8px; 
+            display: flex; align-items: center; box-shadow: 0 1px 3px rgba(0,0,0,0.1); 
+            touch-action: none; cursor: grab;
+        }
+        .sortable-ghost { opacity: 0.2; background: var(--accent); }
+        .c-id { width: 70px; font-weight: 800; color: var(--accent); }
+        .c-name { flex: 1; font-weight: 400; text-transform: uppercase; font-size: 14px; }
+        .c-diam { width: 70px; text-align: right; color: #8E8E93; font-weight: 600; }
+
+        /* КНОПКИ */
+        .btn { width: 100%; padding: 16px; border-radius: 14px; border: none; font-size: 16px; font-weight: 700; margin-bottom: 10px; }
+        .btn-black { background: #000; color: #FFF; }
+        .btn-red { background: #FF3B30; color: #FFF; }
+        .btn-gray { background: #E5E5EA; color: #000; }
+        .fab { position: fixed; bottom: 25px; right: 20px; width: 64px; height: 64px; border-radius: 32px; background: #000; color: #FFF; border: none; font-size: 32px; z-index: 100; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+
+        /* МОДАЛКИ */
+        .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(5px); }
+        .m-card { background: #FFF; width: 100%; max-width: 400px; border-radius: 20px; padding: 25px; }
+        input, textarea { width: 100%; padding: 14px; background: #F2F2F7; border: none; border-radius: 10px; margin-bottom: 12px; font-size: 16px; font-family: inherit; }
+        label { font-size: 11px; color: #8E8E93; font-weight: 700; text-transform: uppercase; margin-bottom: 4px; display: block; }
+
+        /* ПЕЧАТЬ */
+        @media print {
+            @page { size: A4; margin: 0; }
+            body { background: #FFF; }
+            .view, .overlay, .fab { display: none !important; }
+            #print-section { display: block !important; padding: 15mm; }
+            .print-frame { border: 2pt solid #000; padding: 25pt; min-height: 260mm; }
+            .p-label { font-size: 13pt; text-transform: uppercase; margin: 0; }
+            .p-title { font-size: 36pt; font-weight: 800; margin: 0 0 10pt 0; }
+            .p-hr { border-top: 3pt solid #000; margin-bottom: 15pt; }
+            table { width: 100%; border-collapse: collapse; }
+            th { text-align: left; padding-bottom: 8pt; border-bottom: 2pt solid #000; font-size: 10pt; }
+            td { padding: 8pt 5pt; border-bottom: 1pt solid #EEE; font-size: 11pt; font-weight: 400; text-transform: uppercase; }
+            .td-num { width: 15%; font-weight: 700; }
+            .td-name { width: 70%; }
+            .td-dia { width: 15%; text-align: right; font-weight: 700; }
+        }
+    </style>
 </head>
 <body>
 
@@ -17,57 +74,128 @@
         <button class="btn btn-gray" onclick="loadDemo()">DEMO: 15 TOOLS LADEN</button>
         <div id="list-p"></div>
     </div>
-    <button class="fab" onclick="openNewProject()">+</button>
+    <button class="fab" onclick="openNewP()">+</button>
 </div>
 
 <div id="v-det" class="view">
     <div class="bar">
-        <button onclick="goHome()" class="btn-back">←</button>
-        <div class="bar-info" onclick="editCurrentProject()">
-            <b id="d-num"></b><br>
-            <small id="d-nam"></small>
+        <button class="btn-back" onclick="goHome()">←</button>
+        <div class="bar-info" onclick="editCurrentP()">
+            <b id="d-num"></b><br><small id="d-nam"></small>
         </div>
     </div>
     <div class="content">
-        <button class="btn btn-blue" onclick="showM('m-imp')">MASSEN-IMPORT</button>
+        <button class="btn btn-black" onclick="showM('m-imp')">MASSEN-IMPORT</button>
         <div id="list-t"></div>
         <button class="btn btn-black" style="margin-top:20px" onclick="printPDF()">PDF GENERIEREN</button>
     </div>
-    <button class="fab" onclick="openNewTool()">+</button>
+    <button class="fab" onclick="openNewT()">+</button>
 </div>
 
 <div id="m-p" class="overlay"><div class="m-card">
     <input type="hidden" id="p-idx">
-    <label>Zeichnungsnummer</label>
-    <input id="p-num" placeholder="z.B. 233562">
-    <label>Bezeichnung</label>
-    <input id="p-nam" placeholder="BUCHSE">
-    <button class="btn btn-black" onclick="saveProject()">OK</button>
-    <button class="btn btn-gray" onclick="hideM('m-p')">ABBRECHEN</button>
+    <label>Nummer</label><input id="p-num">
+    <label>Name</label><input id="p-nam">
+    <button class="btn btn-black" onclick="saveP()">OK</button>
+    <button class="btn btn-gray" onclick="hideM('m-p')">X</button>
 </div></div>
 
 <div id="m-imp" class="overlay"><div class="m-card">
-    <label>Liste einfügen (T.. Name Ø)</label>
-    <textarea id="imp-area" rows="10" placeholder="T01 BOHRER 10.5&#10;T02 FRAESER 12 -0.02"></textarea>
-    <button class="btn btn-black" onclick="processMassImport()">IMPORTIEREN</button>
+    <label>Liste (T.. Name Ø)</label>
+    <textarea id="imp-area" rows="10"></textarea>
+    <button class="btn btn-black" onclick="doMassImp()">IMPORT</button>
     <button class="btn btn-gray" onclick="hideM('m-imp')">X</button>
 </div></div>
 
 <div id="m-t" class="overlay"><div class="m-card">
     <input type="hidden" id="t-idx">
-    <label>Smart-Input</label>
-    <input id="t-smart" placeholder="T01 FRAESER 12 -0.1" oninput="doSmart()">
-    <div class="grid-2">
-        <div><label>T-NR</label><input id="t-id"></div>
-        <div><label>Ø / TOLERANZ</label><textarea id="t-dia" rows="2"></textarea></div>
-    </div>
-    <label>Bezeichnung</label>
-    <input id="t-nm">
-    <button class="btn btn-black" onclick="saveTool()">SPEICHERN</button>
-    <button id="btn-del-t" class="btn btn-red" onclick="delTool()">LÖSCHEN</button>
-    <button class="btn btn-gray" onclick="hideM('m-t')">ABBRECHEN</button>
+    <label>Smart-Input</label><input id="t-smart" oninput="doSmart()">
+    <label>T-NR</label><input id="t-id">
+    <label>Ø / Tol.</label><input id="t-dia">
+    <label>Bezeichnung</label><input id="t-nm">
+    <button class="btn btn-black" onclick="saveT()">SPEICHERN</button>
+    <button id="btn-del-t" class="btn btn-red" onclick="delT()">LÖSCHEN</button>
+    <button class="btn btn-gray" onclick="hideM('m-t')">X</button>
 </div></div>
 
-<script src="app.js"></script>
+<script>
+let db = JSON.parse(localStorage.getItem('qs_v40')) || [];
+let cur = null;
+
+const showM = id => document.getElementById(id).style.display = 'flex';
+const hideM = id => document.getElementById(id).style.display = 'none';
+const save = () => localStorage.setItem('qs_v40', JSON.stringify(db));
+
+// ПРОЕКТЫ
+function openNewP() { document.getElementById('p-idx').value=""; document.getElementById('p-num').value=""; document.getElementById('p-nam').value=""; showM('m-p'); }
+function editCurrentP() { document.getElementById('p-idx').value=cur; document.getElementById('p-num').value=db[cur].num; document.getElementById('p-nam').value=db[cur].name; showM('m-p'); }
+function saveP() {
+    let i = document.getElementById('p-idx').value;
+    let n = document.getElementById('p-num').value;
+    let m = document.getElementById('p-nam').value.toUpperCase();
+    if(!n) return;
+    if(i==="") db.push({num:n, name:m, tools:[]}); else { db[i].num=n; db[i].name=m; }
+    save(); renderP(); hideM('m-p'); if(cur!==null) openP(cur);
+}
+function renderP() {
+    let l = document.getElementById('list-p'); l.innerHTML = "";
+    db.forEach((p, i) => {
+        l.innerHTML += `<div class="card" onclick="openP(${i})"><div style="flex:1"><b>${p.num}</b><br><small>${p.name}</small></div><button onclick="event.stopPropagation();delP(${i})" style="border:none;background:none;color:red;font-size:20px">✕</button></div>`;
+    });
+}
+function openP(i) { cur=i; document.getElementById('v-home').classList.remove('active'); document.getElementById('v-det').classList.add('active'); document.getElementById('d-num').innerText=db[i].num; document.getElementById('d-nam').innerText=db[i].name; renderT(); }
+function delP(i) { if(confirm('Löschen?')) {db.splice(i,1); save(); renderP(); }}
+function goHome() { cur=null; document.getElementById('v-det').classList.remove('active'); document.getElementById('v-home').classList.add('active'); renderP(); }
+
+// ИНСТРУМЕНТЫ
+function smart(v) {
+    let r = {id:"", nm:"", dia:""};
+    let t = v.match(/T\d+/i); if(t) { r.id=t[0].toUpperCase(); v=v.replace(t[0],'').trim(); }
+    let d = v.match(/(\d+[\.,]?\d*\s*[\+\-]?\s*\d*[\.,]?\d*)$/);
+    if(d) { r.dia=d[0].trim(); v=v.replace(d[0],'').trim(); }
+    r.nm = v.toUpperCase(); return r;
+}
+function doSmart() { let p=smart(document.getElementById('t-smart').value); document.getElementById('t-id').value=p.id; document.getElementById('t-dia').value=p.dia; document.getElementById('t-nm').value=p.nm; }
+function doMassImp() {
+    document.getElementById('imp-area').value.split('\n').forEach(line => {
+        if(line.trim()) { let p=smart(line); if(p.id) db[cur].tools.push({id:p.id, nm:p.nm, dia:p.dia}); }
+    });
+    save(); renderT(); hideM('m-imp'); document.getElementById('imp-area').value="";
+}
+function renderT() {
+    let l = document.getElementById('list-t'); l.innerHTML = "";
+    db[cur].tools.forEach((t, i) => {
+        let d = document.createElement('div'); d.className='card'; d.dataset.id=i; d.onclick=()=>editT(i);
+        d.innerHTML = `<div class="c-id">${t.id}</div><div class="c-name">${t.nm}</div><div class="c-diam">${t.dia||''}</div>`;
+        l.appendChild(d);
+    });
+    new Sortable(l, { animation:150, ghostClass:'sortable-ghost', onEnd:function(){
+        let up=[]; l.querySelectorAll('.card').forEach(el=>up.push(db[cur].tools[el.dataset.id]));
+        db[cur].tools=up; save(); renderT();
+    }});
+}
+function openNewT() { ['t-idx','t-smart','t-id','t-nm','t-dia'].forEach(id=>document.getElementById(id).value=""); document.getElementById('btn-del-t').style.display='none'; showM('m-t'); }
+function editT(i) { let t=db[cur].tools[i]; document.getElementById('t-idx').value=i; document.getElementById('t-id').value=t.id; document.getElementById('t-nm').value=t.nm; document.getElementById('t-dia').value=t.dia; document.getElementById('btn-del-t').style.display='block'; showM('m-t'); }
+function saveT() {
+    let i=document.getElementById('t-idx').value;
+    let t={id:document.getElementById('t-id').value.toUpperCase(), nm:document.getElementById('t-nm').value.toUpperCase(), dia:document.getElementById('t-dia').value};
+    if(!t.id) return;
+    if(i==="") db[cur].tools.push(t); else db[cur].tools[i]=t;
+    save(); renderT(); hideM('m-t');
+}
+function delT() { if(confirm('Löschen?')) { db[cur].tools.splice(document.getElementById('t-idx').value,1); save(); renderT(); hideM('m-t'); }}
+
+function printPDF() {
+    let p = db[cur];
+    let rows = p.tools.map(t => `<tr><td class="td-num">${t.id}</td><td class="td-name">${t.nm}</td><td class="td-dia">${t.dia||''}</td></tr>`).join('');
+    document.getElementById('print-area').innerHTML = `<div class="print-frame"><p class="p-label">${p.name}</p><h1 class="p-title">${p.num}</h1><div class="p-hr"></div><table><thead><tr><th>T-NR</th><th>WERKZEUGNAME</th><th align="right">Ø / TOL.</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+    window.print();
+}
+function loadDemo() {
+    let d=[]; for(let i=1;i<=15;i++) d.push({id:`T${i}`, nm:`WERKZEUG NR ${i}`, dia: i==1?"10 -0.2":""});
+    db.push({num:"233562", name:"BUCHSE", tools:d}); save(); renderP();
+}
+renderP();
+</script>
 </body>
 </html>
