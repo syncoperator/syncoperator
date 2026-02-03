@@ -1,72 +1,359 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>QS PRO CENTRAL</title>
-    <link rel="stylesheet" href="style.css">
+    <title>QS CENTRAL PREMIUM</title>
+    <style>
+        :root {
+            --bg: #000000;
+            --card: #1C1C1E;
+            --accent: #FFFFFF;
+            --text-secondary: #8E8E93;
+            --radius-main: 35px;
+            --radius-button: 18px;
+            --font: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        
+        body {
+            background-color: var(--bg);
+            color: var(--accent);
+            font-family: var(--font);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 500px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* HEADER */
+        header {
+            padding: 20px 10px;
+            text-align: left;
+        }
+
+        h1 {
+            font-size: 32px;
+            font-weight: 900;
+            margin: 0;
+            letter-spacing: -1px;
+        }
+
+        .project-id-display {
+            font-size: 58px;
+            font-weight: 900;
+            margin: 10px 0;
+            color: var(--accent);
+        }
+
+        /* CARDS */
+        .card {
+            background: var(--card);
+            border-radius: var(--radius-main);
+            padding: 24px;
+            border: 1px solid #2C2C2E;
+        }
+
+        .grid-inputs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        label {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-secondary);
+            text-transform: UPPERCASE;
+            padding-left: 5px;
+        }
+
+        input {
+            background: #2C2C2E;
+            border: none;
+            border-radius: 12px;
+            padding: 12px;
+            color: white;
+            font-size: 16px;
+            font-weight: 600;
+            outline: none;
+        }
+
+        /* BUTTON TILES */
+        .tile-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .btn-tile {
+            background: var(--card);
+            border: 1px solid #2C2C2E;
+            border-radius: var(--radius-main);
+            padding: 30px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+
+        .btn-tile:active { transform: scale(0.95); }
+
+        .btn-tile svg { width: 32px; height: 32px; stroke: white; }
+
+        .btn-tile span {
+            font-weight: 800;
+            font-size: 14px;
+            text-transform: UPPERCASE;
+        }
+
+        /* TOOL LIST */
+        .tool-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 0;
+            border-bottom: 1px solid #2C2C2E;
+        }
+
+        .tool-info { display: flex; flex-direction: column; }
+        .tool-name { font-weight: 700; text-transform: UPPERCASE; }
+        .tool-id { font-size: 12px; color: var(--text-secondary); }
+
+        /* MODAL */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .modal-content {
+            background: var(--card);
+            width: 100%;
+            max-width: 400px;
+            border-radius: var(--radius-main);
+            padding: 30px;
+            position: relative;
+        }
+
+        textarea {
+            width: 100%;
+            height: 200px;
+            background: #000;
+            color: white;
+            border-radius: 15px;
+            padding: 15px;
+            border: 1px solid #2C2C2E;
+            font-family: monospace;
+            resize: none;
+            margin-bottom: 15px;
+        }
+
+        .btn-full {
+            width: 100%;
+            padding: 18px;
+            border-radius: var(--radius-button);
+            border: none;
+            background: white;
+            color: black;
+            font-weight: 800;
+            text-transform: UPPERCASE;
+            cursor: pointer;
+        }
+
+        @media print {
+            body * { visibility: hidden; }
+            #pdf-area, #pdf-area * { visibility: visible; }
+            #pdf-area { position: absolute; left: 0; top: 0; width: 210mm; }
+        }
+    </style>
 </head>
 <body>
 
-    <div id="v-home" class="view">
-        <div class="app-bar"><div class="brand">QS CENTRAL</div><button onclick="modalP()" style="background:#0A84FF; color:#fff; border:none; padding:10px 20px; border-radius:12px; font-weight:800;">+ NEU</button></div>
-        <div id="list-p" class="scroll"></div>
+<div class="container">
+    <header>
+        <h1>QS CENTRAL</h1>
+        <div class="project-id-display" id="display-id">PRO-2026</div>
+    </header>
+
+    <section class="card">
+        <div class="grid-inputs">
+            <div class="input-group"><label>Laufzeit (lzf)</label><input type="text" id="lzf" oninput="saveData()"></div>
+            <div class="input-group"><label>Sägelänge (sag)</label><input type="text" id="sag" oninput="saveData()"></div>
+            <div class="input-group"><label>Stück T (stt)</label><input type="text" id="stt" oninput="saveData()"></div>
+            <div class="input-group"><label>Stück N (stn)</label><input type="text" id="stn" oninput="saveData()"></div>
+            <div class="input-group"><label>Abstand (abs)</label><input type="text" id="abs" oninput="saveData()"></div>
+            <div class="input-group"><label>Greifbacken (grf)</label><input type="text" id="grf" oninput="saveData()"></div>
+        </div>
+    </section>
+
+    <div class="tile-grid">
+        <div class="btn-tile" onclick="openModal('importModal')">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            <span>Import</span>
+        </div>
+        <div class="btn-tile" onclick="makePDF()">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+            <span>Print PDF</span>
+        </div>
     </div>
 
-    <div id="v-det" class="view" style="display:none">
-        <div class="app-bar">
-            <button onclick="goHome()" style="background:none; border:none; color:#0A84FF; font-size:26px;">←</button>
-            <div style="flex:1; text-align:center" onclick="modalP(true)"><small id="h-nam" style="color:#8e8e93; font-size:10px; text-transform:uppercase"></small><b id="h-num" style="display:block; font-size:20px"></b></div>
-            <button onclick="makePDF()" style="background:none; border:none; color:#0A84FF; font-weight:900;">PDF</button>
-        </div>
-        <div class="action-grid">
-            <div class="tile" onclick="modalT()"><div class="icon">⊕</div><b>Instrument</b></div>
-            <div class="tile" onclick="show('m-imp')"><div class="icon">⤓</div><b>Import</b></div>
-        </div>
-        <div id="list-t" class="scroll"></div>
-    </div>
-
-    <div id="m-p" class="overlay">
-        <div class="modal">
-            <h2>PROJEKT KONFIG</h2>
-            <input type="hidden" id="p-idx">
-            <label>NUMMER</label><input type="text" id="p-num">
-            <label>NAME</label><input type="text" id="p-nam">
-            <div class="row">
-                <div><label>LAUFZEIT</label><input type="text" id="p-lzf"></div>
-                <div><label>SÄGELÄNGE</label><input type="text" id="p-sag"></div>
+    <section class="card">
+        <label>Инструменты</label>
+        <div id="tool-list">
             </div>
-            <div class="row">
-                <div><label>STÜCK T</label><input type="text" id="p-stt"></div>
-                <div><label>STÜCK N</label><input type="text" id="p-stn"></div>
+    </section>
+</div>
+
+<div id="importModal" class="modal">
+    <div class="modal-content">
+        <label>Вставьте список инструментов (строка = инструмент)</label>
+        <textarea id="importInput" placeholder="TOOL NAME..."></textarea>
+        <button class="btn-full" onclick="processImport()">Импортировать</button>
+        <button class="btn-full" style="background: none; color: white; margin-top: 10px;" onclick="closeModal('importModal')">Отмена</button>
+    </div>
+</div>
+
+<script>
+    const STORAGE_KEY = 'QS_PRO_V5';
+    let projectData = {
+        lzf: '', sag: '', stt: '', stn: '', abs: '', grf: '',
+        tools: []
+    };
+
+    function init() {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+            projectData = JSON.parse(saved);
+            Object.keys(projectData).forEach(key => {
+                const el = document.getElementById(key);
+                if (el && key !== 'tools') el.value = projectData[key];
+            });
+            renderTools();
+        }
+    }
+
+    function saveData() {
+        projectData.lzf = document.getElementById('lzf').value;
+        projectData.sag = document.getElementById('sag').value;
+        projectData.stt = document.getElementById('stt').value;
+        projectData.stn = document.getElementById('stn').value;
+        projectData.abs = document.getElementById('abs').value;
+        projectData.grf = document.getElementById('grf').value;
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(projectData));
+    }
+
+    function openModal(id) { document.getElementById(id).style.display = 'flex'; }
+    function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+
+    function processImport() {
+        const input = document.getElementById('importInput').value;
+        const lines = input.split('\n').filter(l => l.trim() !== '');
+        
+        lines.forEach(line => {
+            projectData.tools.push({
+                id: `T?`,
+                nm: line.trim().toUpperCase(),
+                dia: '-'
+            });
+        });
+
+        saveData();
+        renderTools();
+        closeModal('importModal');
+        document.getElementById('importInput').value = '';
+    }
+
+    function renderTools() {
+        const container = document.getElementById('tool-list');
+        container.innerHTML = projectData.tools.map((tool, index) => `
+            <div class="tool-item">
+                <div class="tool-info">
+                    <span class="tool-name">${tool.nm}</span>
+                    <span class="tool-id">INDEX: ${index + 1} | ID: ${tool.id}</span>
+                </div>
+                <div style="font-weight: 900;">${tool.dia}</div>
             </div>
-            <div class="row">
-                <div><label>ABSTAND</label><input type="text" id="p-abs"></div>
-                <div><label>GREIFBACKEN</label><input type="text" id="p-grf"></div>
-            </div>
-            <button class="btn-prime" onclick="saveP()">SPEICHERN</button>
-            <button class="btn-sec" onclick="hide('m-p')">ABBRECHEN</button>
-        </div>
-    </div>
+        `).join('');
+    }
 
-    <div id="m-t" class="overlay">
-        <div class="modal">
-            <h2>INSTRUMENT</h2>
-            <input type="hidden" id="t-idx">
-            <label>T-NR</label><input type="text" id="t-id">
-            <label>NAME / KOMMENTAR</label><input type="text" id="t-nm">
-            <label>Ø / TOLERANZ</label><input type="text" id="t-dia">
-            <button class="btn-prime" onclick="saveT()">OK</button>
-            <button class="btn-sec" style="color:#ff453a" onclick="delT()">LÖSCHEN</button>
-            <button class="btn-sec" onclick="hide('m-t')">ZURÜCK</button>
-        </div>
-    </div>
+    function makePDF() {
+        const printWindow = window.open('', '_blank');
+        const toolRows = projectData.tools.map(t => `
+            <tr style="border-bottom: 1pt solid black;">
+                <td style="padding: 10pt; font-weight: bold; text-transform: uppercase;">${t.nm}</td>
+                <td style="padding: 10pt; text-align: center;">${t.id}</td>
+                <td style="padding: 10pt; text-align: right;">${t.dia}</td>
+            </tr>
+        `).join('');
 
-    <div id="m-imp" class="overlay">
-        <div class="modal"><h2>MASSENIMPORT</h2><textarea id="imp-area" rows="8" style="width:100%; background:#000; color:#fff; border:1px solid #2c2c2e; border-radius:15px; padding:15px;"></textarea><button class="btn-prime" onclick="runImp()" style="margin-top:15px">IMPORTIEREN</button><button class="btn-sec" onclick="hide('m-imp')">SCHLIESSEN</button></div>
-    </div>
+        const html = `
+            <html>
+            <body style="font-family: sans-serif; padding: 0; margin: 0;">
+                <div style="border: 2.5pt solid black; margin: 10mm; padding: 20pt; min-height: 270mm; position: relative;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                        <div style="font-size: 58pt; font-weight: 900; line-height: 1;">QS-PRO</div>
+                        <div style="width: 250pt;">
+                            ${['Laufzeit', 'Sägelänge', 'Stück T', 'Stück N', 'Abstand', 'Greifbacken'].map((label, i) => `
+                                <div style="display: flex; justify-content: space-between; border-bottom: 0.8pt solid black; padding: 4pt 0;">
+                                    <span style="font-size: 10pt; text-transform: uppercase; font-weight: bold;">${label}</span>
+                                    <span style="font-size: 11pt;">${Object.values(projectData)[i]}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                    
+                    <div style="height: 6pt; background: black; margin: 20pt 0;"></div>
 
-    <div id="pdf-box" style="display:none"></div>
-    <script src="ui.js"></script>
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="border-bottom: 2.5pt solid black; text-transform: uppercase; font-size: 10pt;">
+                                <th style="text-align: left; padding: 10pt;">Instrument</th>
+                                <th style="text-align: center; padding: 10pt;">ID</th>
+                                <th style="text-align: right; padding: 10pt;">Diam.</th>
+                            </tr>
+                        </thead>
+                        <tbody>${toolRows}</tbody>
+                    </table>
+
+                    <div style="position: absolute; bottom: 20pt; left: 20pt; font-size: 9pt; font-weight: bold;">
+                        QS CENTRAL PREMIUM V5 // PRODUCTION DOCUMENT
+                    </div>
+                </div>
+            </body>
+            </html>
+        `;
+        printWindow.document.write(html);
+        printWindow.document.close();
+        printWindow.print();
+    }
+
+    window.onload = init;
+</script>
+
 </body>
 </html>
