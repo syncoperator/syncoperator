@@ -1,70 +1,51 @@
-let currentProjectIdx = null;
+let db = JSON.parse(localStorage.getItem('QS_DB_V3')) || [];
+let curP = null;
 
-function showM(id) { document.getElementById(id).style.display = 'flex'; }
-function hideM(id) { document.getElementById(id).style.display = 'none'; }
+const showM = (id) => document.getElementById(id).style.display = 'flex';
+const hideM = (id) => document.getElementById(id).style.display = 'none';
 
-function goHome() {
-    currentProjectIdx = null;
+function goHome() { 
+    curP = null; 
     document.getElementById('v-det').classList.remove('active');
     document.getElementById('v-home').classList.add('active');
-    renderProjects();
+    renderHome();
 }
 
-function renderProjects() {
-    const cont = document.getElementById('list-projects');
-    cont.innerHTML = "";
-    db.forEach((p, i) => {
-        const d = document.createElement('div');
-        d.className = 'tool-card'; 
-        d.onclick = () => openProject(i);
-        d.innerHTML = `<div class="tool-main"><b>${p.num}</b><br><small>${p.name}</small></div>
-        <button class="btn-danger" style="width:auto" onclick="event.stopPropagation();deleteProject(${i})">LÖSCHEN</button>`;
-        cont.appendChild(d);
-    });
+function renderHome() {
+    const c = document.getElementById('list-p');
+    c.innerHTML = db.map((p, i) => `
+        <div class="item-card" onclick="openP(${i})">
+            <div class="item-main"><b>${p.num}</b><div>${p.name}</div></div>
+            <button class="btn-danger" style="width:auto" onclick="event.stopPropagation();delP(${i})">✕</button>
+        </div>`).join('');
 }
 
-function openProject(i) {
-    currentProjectIdx = i;
+function openP(i) {
+    curP = i;
     document.getElementById('v-home').classList.remove('active');
     document.getElementById('v-det').classList.add('active');
     document.getElementById('h-num').innerText = db[i].num;
     document.getElementById('h-nam').innerText = db[i].name;
-    renderTools();
+    renderT();
 }
 
-function renderTools() {
-    const cont = document.getElementById('list-tools');
-    cont.innerHTML = "";
-    db[currentProjectIdx].tools.forEach((t, i) => {
-        const d = document.createElement('div');
-        d.className = 'tool-card';
-        d.dataset.id = i;
-        d.innerHTML = `<div class="drag-handle">☰</div>
-        <div class="tool-main" onclick="modalTool(${i})"><div class="tool-id">${t.id}</div><div class="tool-name">${t.nm}</div></div>
-        <div class="tool-dia">${t.dia || ''}</div>`;
-        cont.appendChild(d);
-    });
-    new Sortable(cont, { handle: '.drag-handle', animation: 150, onEnd: () => {
-        let n = [];
-        cont.querySelectorAll('.tool-card').forEach(el => n.push(db[currentProjectIdx].tools[el.dataset.id]));
-        db[currentProjectIdx].tools = n; saveDB();
-    }});
+function renderT() {
+    const c = document.getElementById('list-t');
+    c.innerHTML = db[curP].tools.map((t, i) => `
+        <div class="item-card" data-idx="${i}">
+            <div class="item-main" onclick="modalT(${i})"><b>${t.id}</b><div>${t.nm}</div></div>
+            <div class="item-dia">${t.dia}</div>
+        </div>`).join('');
 }
 
-function modalProject(edit = false) {
-    const p = edit ? db[currentProjectIdx] : {num:'',name:'',abs:'',grf:'',lzf:'',sta:'',stb:''};
-    document.getElementById('p-idx').value = edit ? currentProjectIdx : "";
-    document.getElementById('p-num').value = p.num;
-    document.getElementById('p-nam').value = p.name;
-    document.getElementById('p-abs').value = p.abs || '';
-    document.getElementById('p-grf').value = p.grf || '';
-    document.getElementById('p-lzf').value = p.lzf || '';
-    document.getElementById('p-sta').value = p.sta || '';
-    document.getElementById('p-stb').value = p.stb || '';
+function modalP(edit = false) {
+    const p = edit ? db[curP] : {num:'',name:'',abs:'',grf:'',lzf:'',sag:'',sta:'',stb:''};
+    document.getElementById('p-idx').value = edit ? curP : "";
+    ['num','nam','abs','grf','lzf','sag','sta','stb'].forEach(k => document.getElementById('p-'+k).value = p[k] || p.name || "");
     showM('m-p');
 }
 
-function saveProject() {
+function saveP() {
     const i = document.getElementById('p-idx').value;
     const data = {
         num: document.getElementById('p-num').value,
@@ -72,75 +53,80 @@ function saveProject() {
         abs: document.getElementById('p-abs').value,
         grf: document.getElementById('p-grf').value,
         lzf: document.getElementById('p-lzf').value,
+        sag: document.getElementById('p-sag').value,
         sta: document.getElementById('p-sta').value,
         stb: document.getElementById('p-stb').value,
         tools: i === "" ? [] : db[i].tools
     };
-    if(i==="") db.push(data); else db[i] = data;
-    saveDB(); hideM('m-p'); goHome();
+    if(i === "") db.push(data); else db[i] = data;
+    localStorage.setItem('QS_DB_V3', JSON.stringify(db));
+    hideM('m-p'); goHome();
 }
 
-function modalTool(i=null) {
+function runImp() {
+    const lines = document.getElementById('imp-area').value.split('\n').filter(l => l.trim());
+    lines.forEach(l => db[curP].tools.push({ id:'T?', nm:l.trim().toUpperCase(), dia:'' }));
+    localStorage.setItem('QS_DB_V3', JSON.stringify(db));
+    renderT(); hideM('m-imp');
+}
+
+function modalT(i = null) {
     const edit = i !== null;
     document.getElementById('t-idx').value = edit ? i : "";
-    document.getElementById('t-id').value = edit ? db[currentProjectIdx].tools[i].id : "";
-    document.getElementById('t-nm').value = edit ? db[currentProjectIdx].tools[i].nm : "";
-    document.getElementById('t-dia').value = edit ? db[currentProjectIdx].tools[i].dia : "";
+    const t = edit ? db[curP].tools[i] : {id:'',nm:'',dia:''};
+    document.getElementById('t-id').value = t.id;
+    document.getElementById('t-nm').value = t.nm;
+    document.getElementById('t-dia').value = t.dia;
     document.getElementById('btn-del-t').style.display = edit ? 'block' : 'none';
     showM('m-t');
 }
 
-function saveTool() {
+function saveT() {
     const i = document.getElementById('t-idx').value;
-    const t = { 
-        id: document.getElementById('t-id').value.toUpperCase() || "T?", 
-        nm: document.getElementById('t-nm').value.toUpperCase(), 
-        dia: document.getElementById('t-dia').value 
-    };
-    if(i==="") db[currentProjectIdx].tools.push(t); else db[currentProjectIdx].tools[i] = t;
-    saveDB(); hideM('m-t'); renderTools();
+    const t = { id: document.getElementById('t-id').value.toUpperCase(), nm: document.getElementById('t-nm').value.toUpperCase(), dia: document.getElementById('t-dia').value };
+    if(i === "") db[curP].tools.push(t); else db[curP].tools[i] = t;
+    localStorage.setItem('QS_DB_V3', JSON.stringify(db));
+    renderT(); hideM('m-t');
 }
 
-function runMassImport() {
-    const lines = document.getElementById('imp-area').value.split('\n');
-    lines.forEach(l => { if(l.trim()) db[currentProjectIdx].tools.push({ id:'T?', nm:l.trim().toUpperCase(), dia:'' }); });
-    saveDB(); renderTools(); hideM('m-imp');
-}
-
-function deleteProject(i) { db.splice(i,1); saveDB(); renderProjects(); }
-function deleteTool() { db[currentProjectIdx].tools.splice(document.getElementById('t-idx').value, 1); saveDB(); hideM('m-t'); renderTools(); }
+function delP(i) { if(confirm('Löschen?')) { db.splice(i,1); localStorage.setItem('QS_DB_V3', JSON.stringify(db)); renderHome(); } }
+function delT() { db[curP].tools.splice(document.getElementById('t-idx').value, 1); localStorage.setItem('QS_DB_V3', JSON.stringify(db)); renderT(); hideM('m-t'); }
 
 function makePDF() {
-    const p = db[currentProjectIdx];
+    const p = db[curP];
     const rows = p.tools.map(t => `
-        <tr style="border-bottom: 0.5pt solid #AAA;">
-            <td style="width: 60px; padding: 10px 0; font-weight: 900; font-size: 10pt;">${t.id}</td>
-            <td style="padding: 10px 20px; font-weight: 500; font-size: 10pt;">${t.nm}</td>
-            <td style="width: 100px; padding: 10px 0; font-weight: 900; font-size: 10pt; text-align: right;">${t.dia}</td>
+        <tr style="border-bottom: 0.5pt solid black;">
+            <td style="padding: 12px 0; font-weight: 900; font-size: 10pt; width: 60px;">${t.id}</td>
+            <td style="padding: 12px 10px; font-weight: 500; font-size: 10pt; text-transform: uppercase;">${t.nm}</td>
+            <td style="padding: 12px 0; font-weight: 900; font-size: 11pt; text-align: right; width: 100px;">${t.dia}</td>
         </tr>`).join('');
 
     document.getElementById('pdf-render').innerHTML = `
-    <div style="width:210mm; height:297mm; padding:12mm; background:white; color:black; font-family:sans-serif; box-sizing:border-box;">
-        <div style="border:1.2pt solid black; height:100%; padding:35px; display:flex; flex-direction:column; box-sizing:border-box;">
-            <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+    <div style="width: 210mm; min-height: 297mm; padding: 12mm; background: white; color: black; box-sizing: border-box;">
+        <div style="border: 1.5pt solid black; height: 100%; min-height: 270mm; padding: 30px; display: flex; flex-direction: column; box-sizing: border-box;">
+            
+            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                 <div>
-                    <div style="font-size:10pt; font-weight:bold; color:#666;">${p.name}</div>
-                    <div style="font-size:52pt; font-weight:900; line-height:1; letter-spacing:-2px;">${p.num}</div>
+                    <div style="font-size: 10pt; font-weight: 700; color: #666;">${p.name}</div>
+                    <div style="font-size: 56pt; font-weight: 900; line-height: 0.8; letter-spacing: -3px; margin-top: 5px;">${p.num}</div>
                 </div>
-                <div style="text-align:right; font-size:9pt; font-weight:800; line-height:1.8;">
-                    <div style="border-bottom:0.5pt solid #EEE">ABSTAND: <span style="display:inline-block; min-width:60px">${p.abs||''}</span></div>
-                    <div style="border-bottom:0.5pt solid #EEE">GREIFBACKEN: <span style="display:inline-block; min-width:60px">${p.grf||''}</span></div>
-                    <div style="border-bottom:0.5pt solid #EEE">LAUFZEIT: <span style="display:inline-block; min-width:60px">${p.lzf||''}</span></div>
-                    <div style="border-bottom:0.5pt solid #EEE">STÜCK A: ${p.sta||''} | B: ${p.stb||''}</div>
+                <div style="text-align: right; font-size: 9pt; font-weight: 800; line-height: 1.6; min-width: 220px;">
+                    <div style="display: flex; justify-content: space-between; border-bottom: 0.5pt solid #ddd;"><span>ABSTAND:</span> <span>${p.abs}</span></div>
+                    <div style="display: flex; justify-content: space-between; border-bottom: 0.5pt solid #ddd;"><span>GREIFBACKEN:</span> <span>${p.grf}</span></div>
+                    <div style="display: flex; justify-content: space-between; border-bottom: 0.5pt solid #ddd;"><span>LAUFZEIT:</span> <span>${p.lzf}</span></div>
+                    <div style="display: flex; justify-content: space-between; border-bottom: 0.5pt solid #ddd;"><span>SÄGELÄNGE:</span> <span>${p.sag}</span></div>
+                    <div style="display: flex; justify-content: space-between;"><span>STÜCK A: ${p.sta}</span> <span>B: ${p.stb}</span></div>
                 </div>
             </div>
-            <div style="height:4pt; background:black; margin:20px 0;"></div>
-            <table style="width:100%; border-collapse:collapse; table-layout:fixed;">
+
+            <div style="height: 4pt; background: black; margin: 25px 0 10px 0;"></div>
+
+            <table style="width: 100%; border-collapse: collapse; table-layout: fixed;">
                 <thead>
-                    <tr style="border-bottom:2pt solid black; font-size:7.5pt; font-weight:900;">
-                        <th align="left" style="width:60px; padding-bottom:5px;">T-NR</th>
-                        <th align="left" style="padding-bottom:5px; padding-left:20px;">WERKZEUGNAME / KOMMENTAR</th>
-                        <th align="right" style="width:100px; padding-bottom:5px;">Ø / TOLERANZ</th>
+                    <tr style="border-bottom: 2pt solid black;">
+                        <th align="left" style="width: 60px; font-size: 7.5pt; font-weight: 900; padding-bottom: 5px;">T-NR</th>
+                        <th align="left" style="font-size: 7.5pt; font-weight: 900; padding-bottom: 5px; padding-left: 10px;">WERKZEUGNAME</th>
+                        <th align="right" style="width: 100px; font-size: 7.5pt; font-weight: 900; padding-bottom: 5px;">Ø / TOLERANZ</th>
                     </tr>
                 </thead>
                 <tbody>${rows}</tbody>
@@ -150,4 +136,4 @@ function makePDF() {
     window.print();
 }
 
-renderProjects();
+renderHome();
