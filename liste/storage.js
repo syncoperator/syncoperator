@@ -1,6 +1,15 @@
-const DB_KEY = 'QS_CENTRAL_FINAL_V1';
-let db = JSON.parse(localStorage.getItem(DB_KEY)) || [];
-
-function saveDB() {
-    localStorage.setItem(DB_KEY, JSON.stringify(db));
-}
+const Storage = {
+    KEY: 'QS_PRO_V5',
+    
+    save(data) {
+        localStorage.setItem(this.KEY, JSON.stringify(data));
+    },
+    
+    load() {
+        const data = localStorage.getItem(this.KEY);
+        return data ? JSON.parse(data) : {
+            fields: { lzf: '', sag: '', stt: '', stn: '', abs: '', grf: '' },
+            tools: []
+        };
+    }
+};
