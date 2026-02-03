@@ -1,68 +1,153 @@
+let currentProjectIdx = null;
+
+function showM(id) { document.getElementById(id).style.display = 'flex'; }
+function hideM(id) { document.getElementById(id).style.display = 'none'; }
+
+function goHome() {
+    currentProjectIdx = null;
+    document.getElementById('v-det').classList.remove('active');
+    document.getElementById('v-home').classList.add('active');
+    renderProjects();
+}
+
+function renderProjects() {
+    const cont = document.getElementById('list-projects');
+    cont.innerHTML = "";
+    db.forEach((p, i) => {
+        const d = document.createElement('div');
+        d.className = 'tool-card'; 
+        d.onclick = () => openProject(i);
+        d.innerHTML = `<div class="tool-main"><b>${p.num}</b><br><small>${p.name}</small></div>
+        <button class="btn-danger" style="width:auto" onclick="event.stopPropagation();deleteProject(${i})">LÖSCHEN</button>`;
+        cont.appendChild(d);
+    });
+}
+
+function openProject(i) {
+    currentProjectIdx = i;
+    document.getElementById('v-home').classList.remove('active');
+    document.getElementById('v-det').classList.add('active');
+    document.getElementById('h-num').innerText = db[i].num;
+    document.getElementById('h-nam').innerText = db[i].name;
+    renderTools();
+}
+
+function renderTools() {
+    const cont = document.getElementById('list-tools');
+    cont.innerHTML = "";
+    db[currentProjectIdx].tools.forEach((t, i) => {
+        const d = document.createElement('div');
+        d.className = 'tool-card';
+        d.dataset.id = i;
+        d.innerHTML = `<div class="drag-handle">☰</div>
+        <div class="tool-main" onclick="modalTool(${i})"><div class="tool-id">${t.id}</div><div class="tool-name">${t.nm}</div></div>
+        <div class="tool-dia">${t.dia || ''}</div>`;
+        cont.appendChild(d);
+    });
+    new Sortable(cont, { handle: '.drag-handle', animation: 150, onEnd: () => {
+        let n = [];
+        cont.querySelectorAll('.tool-card').forEach(el => n.push(db[currentProjectIdx].tools[el.dataset.id]));
+        db[currentProjectIdx].tools = n; saveDB();
+    }});
+}
+
+function modalProject(edit = false) {
+    const p = edit ? db[currentProjectIdx] : {num:'',name:'',abs:'',grf:'',lzf:'',sta:'',stb:''};
+    document.getElementById('p-idx').value = edit ? currentProjectIdx : "";
+    document.getElementById('p-num').value = p.num;
+    document.getElementById('p-nam').value = p.name;
+    document.getElementById('p-abs').value = p.abs || '';
+    document.getElementById('p-grf').value = p.grf || '';
+    document.getElementById('p-lzf').value = p.lzf || '';
+    document.getElementById('p-sta').value = p.sta || '';
+    document.getElementById('p-stb').value = p.stb || '';
+    showM('m-p');
+}
+
+function saveProject() {
+    const i = document.getElementById('p-idx').value;
+    const data = {
+        num: document.getElementById('p-num').value,
+        name: document.getElementById('p-nam').value.toUpperCase(),
+        abs: document.getElementById('p-abs').value,
+        grf: document.getElementById('p-grf').value,
+        lzf: document.getElementById('p-lzf').value,
+        sta: document.getElementById('p-sta').value,
+        stb: document.getElementById('p-stb').value,
+        tools: i === "" ? [] : db[i].tools
+    };
+    if(i==="") db.push(data); else db[i] = data;
+    saveDB(); hideM('m-p'); goHome();
+}
+
+function modalTool(i=null) {
+    const edit = i !== null;
+    document.getElementById('t-idx').value = edit ? i : "";
+    document.getElementById('t-id').value = edit ? db[currentProjectIdx].tools[i].id : "";
+    document.getElementById('t-nm').value = edit ? db[currentProjectIdx].tools[i].nm : "";
+    document.getElementById('t-dia').value = edit ? db[currentProjectIdx].tools[i].dia : "";
+    document.getElementById('btn-del-t').style.display = edit ? 'block' : 'none';
+    showM('m-t');
+}
+
+function saveTool() {
+    const i = document.getElementById('t-idx').value;
+    const t = { 
+        id: document.getElementById('t-id').value.toUpperCase() || "T?", 
+        nm: document.getElementById('t-nm').value.toUpperCase(), 
+        dia: document.getElementById('t-dia').value 
+    };
+    if(i==="") db[currentProjectIdx].tools.push(t); else db[currentProjectIdx].tools[i] = t;
+    saveDB(); hideM('m-t'); renderTools();
+}
+
+function runMassImport() {
+    const lines = document.getElementById('imp-area').value.split('\n');
+    lines.forEach(l => { if(l.trim()) db[currentProjectIdx].tools.push({ id:'T?', nm:l.trim().toUpperCase(), dia:'' }); });
+    saveDB(); renderTools(); hideM('m-imp');
+}
+
+function deleteProject(i) { db.splice(i,1); saveDB(); renderProjects(); }
+function deleteTool() { db[currentProjectIdx].tools.splice(document.getElementById('t-idx').value, 1); saveDB(); hideM('m-t'); renderTools(); }
+
 function makePDF() {
     const p = db[currentProjectIdx];
-    
-    // Тонкие линии для элегантного вида
     const rows = p.tools.map(t => `
-        <tr style="border-bottom: 0.5pt solid #333;">
-            <td style="width: 15%; padding: 12px 0; font-weight: 900; font-size: 10pt;">${t.id}</td>
-            <td style="width: 65%; padding: 12px 0; font-weight: 500; font-size: 10pt; text-transform: uppercase;">${t.nm}</td>
-            <td style="width: 20%; padding: 12px 0; font-weight: 900; font-size: 11pt; text-align: right;">${t.dia || ''}</td>
-        </tr>
-    `).join('');
+        <tr style="border-bottom: 0.5pt solid #AAA;">
+            <td style="width: 60px; padding: 10px 0; font-weight: 900; font-size: 10pt;">${t.id}</td>
+            <td style="padding: 10px 20px; font-weight: 500; font-size: 10pt;">${t.nm}</td>
+            <td style="width: 100px; padding: 10px 0; font-weight: 900; font-size: 10pt; text-align: right;">${t.dia}</td>
+        </tr>`).join('');
 
     document.getElementById('pdf-render').innerHTML = `
-    <div style="width: 210mm; height: 297mm; padding: 12mm; background: white; box-sizing: border-box; color: black; font-family: 'Helvetica', sans-serif;">
-        <div style="border: 1.2pt solid black; height: 100%; padding: 35px; display: flex; flex-direction: column; box-sizing: border-box; position: relative;">
-            
-            <div style="display: flex; justify-content: space-between;">
+    <div style="width:210mm; height:297mm; padding:12mm; background:white; color:black; font-family:sans-serif; box-sizing:border-box;">
+        <div style="border:1.2pt solid black; height:100%; padding:35px; display:flex; flex-direction:column; box-sizing:border-box;">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start;">
                 <div>
-                    <div style="font-size: 10pt; font-weight: 600; color: #888; text-transform: uppercase; margin-bottom: 2px;">${p.name}</div>
-                    <div style="font-size: 48pt; font-weight: 900; line-height: 0.8; letter-spacing: -2px;">${p.num}</div>
+                    <div style="font-size:10pt; font-weight:bold; color:#666;">${p.name}</div>
+                    <div style="font-size:52pt; font-weight:900; line-height:1; letter-spacing:-2px;">${p.num}</div>
                 </div>
-
-                <div style="text-align: right; font-size: 9pt; font-weight: 700; line-height: 1.8;">
-                    <div style="border-bottom: 0.5pt solid #DDD; margin-bottom: 4px;">ABSTAND: <span style="display:inline-block; min-width:60px; text-align:right">${p.abs||'—'}</span></div>
-                    <div style="border-bottom: 0.5pt solid #DDD; margin-bottom: 4px;">GREIFBACKEN: <span style="display:inline-block; min-width:60px; text-align:right">${p.grf||'—'}</span></div>
-                    <div style="border-bottom: 0.5pt solid #DDD; margin-bottom: 4px;">LAUFZEIT: <span style="display:inline-block; min-width:60px; text-align:right">${p.lzf||'—'}</span></div>
-                    <div style="border-bottom: 0.5pt solid #DDD;">STÜCK A: ${p.sta||'—'} | B: ${p.stb||'—'}</div>
+                <div style="text-align:right; font-size:9pt; font-weight:800; line-height:1.8;">
+                    <div style="border-bottom:0.5pt solid #EEE">ABSTAND: <span style="display:inline-block; min-width:60px">${p.abs||''}</span></div>
+                    <div style="border-bottom:0.5pt solid #EEE">GREIFBACKEN: <span style="display:inline-block; min-width:60px">${p.grf||''}</span></div>
+                    <div style="border-bottom:0.5pt solid #EEE">LAUFZEIT: <span style="display:inline-block; min-width:60px">${p.lzf||''}</span></div>
+                    <div style="border-bottom:0.5pt solid #EEE">STÜCK A: ${p.sta||''} | B: ${p.stb||''}</div>
                 </div>
             </div>
-
-            <div style="height: 3pt; background: black; margin: 25px 0 15px 0;"></div>
-
-            <table style="width: 100%; border-collapse: collapse; table-layout: fixed;">
+            <div style="height:4pt; background:black; margin:20px 0;"></div>
+            <table style="width:100%; border-collapse:collapse; table-layout:fixed;">
                 <thead>
-                    <tr style="border-bottom: 2pt solid black;">
-                        <th style="width: 15%; text-align: left; font-size: 7pt; font-weight: 900; padding-bottom: 8px;">T-NR</th>
-                        <th style="width: 65%; text-align: left; font-size: 7pt; font-weight: 900; padding-bottom: 8px;">WERKZEUGNAME / KOMMENTAR</th>
-                        <th style="width: 20%; text-align: right; font-size: 7pt; font-weight: 900; padding-bottom: 8px;">Ø / TOLERANZ</th>
+                    <tr style="border-bottom:2pt solid black; font-size:7.5pt; font-weight:900;">
+                        <th align="left" style="width:60px; padding-bottom:5px;">T-NR</th>
+                        <th align="left" style="padding-bottom:5px; padding-left:20px;">WERKZEUGNAME / KOMMENTAR</th>
+                        <th align="right" style="width:100px; padding-bottom:5px;">Ø / TOLERANZ</th>
                     </tr>
                 </thead>
-                <tbody>
-                    ${rows}
-                </tbody>
+                <tbody>${rows}</tbody>
             </table>
         </div>
     </div>`;
-
     window.print();
 }
 
-// ПРОСТОЙ ИМПОРТ БЕЗ "УМНЫХ" ГЛЮКОВ
-function runMassImport() {
-    const text = document.getElementById('imp-area').value;
-    if (!text.trim()) return;
-    
-    const lines = text.split('\n');
-    lines.forEach(line => {
-        if(line.trim() !== "") {
-            db[currentProjectIdx].tools.push({
-                id: "T??", // Ты сам впишешь номер
-                nm: line.trim().toUpperCase(),
-                dia: ""
-            });
-        }
-    });
-    saveDB(); renderTools(); hideM('m-imp');
-    document.getElementById('imp-area').value = "";
-}
+renderProjects();
