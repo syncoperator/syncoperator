@@ -62,7 +62,7 @@ function openProject(i) {
 
 function goHome() { currentIdx = null; el('v-home').classList.add('active'); el('v-det').classList.remove('active'); renderList(); }
 
-// --- ИНСТРУМЕНТЫ (УМНАЯ ЦЕНТРОВКА В APP) ---
+// --- ИНСТРУМЕНТЫ (ИНТЕРФЕЙС) ---
 function renderTools() {
     const list = el('list-t'); if(!list || currentIdx === null) return;
     const tools = db[currentIdx].tools || [];
@@ -76,7 +76,7 @@ function renderTools() {
         const isMulti = (t.dia || '').includes('\n');
         const align = isMulti ? 'center' : 'flex-start';
 
-        item.style.alignItems = align; // Применяем центровку к самой карточке
+        item.style.alignItems = align;
 
         item.innerHTML = `
             <div style="flex:1; padding-right:15px; display:flex; flex-direction:column; justify-content:center; min-width:0;" onclick="modalT(${i})">
@@ -91,7 +91,8 @@ function renderTools() {
         item.ondragover = (e) => e.preventDefault();
         item.ondrop = (e) => {
             e.preventDefault();
-            moveTool(parseInt(e.dataTransfer.getData('text/plain')), i);
+            const from = e.dataTransfer.getData('text/plain');
+            moveTool(parseInt(from), i);
         };
         list.appendChild(item);
     });
@@ -159,52 +160,52 @@ function runImp() {
 function deleteProject(i) { if(confirm('Löschen?')) { db.splice(i, 1); localStorage.setItem(DB_KEY, JSON.stringify(db)); renderList(); } }
 function delT() { const i = el('t-idx').value; db[currentIdx].tools.splice(i, 1); localStorage.setItem(DB_KEY, JSON.stringify(db)); renderTools(); hide('m-t'); }
 
-// --- PDF С УМНОЙ ЦЕНТРОВКОЙ И ЛИНИЯМИ ---
+// --- PDF (ФИКС ЛИНИЙ И УМНАЯ ЦЕНТРОВКА) ---
 function makePDF() {
     const p = db[currentIdx];
     const rows = (p.tools || []).map(t => {
         const isMulti = (t.dia || '').includes('\n');
         const valign = isMulti ? 'center' : 'flex-start';
-        // Если одна строка, добавляем небольшой отступ сверху для выравнивания с текстом толеранса
-        const ptop = isMulti ? '0' : '3px'; 
+        // Отступ сверху только для однострочных, чтобы выровнять с первой строкой толеранса
+        const ptop = isMulti ? '0' : '5px'; 
 
         return `
-        <div style="display:flex; align-items:${valign}; border-bottom:1px solid #000; padding:8px 0; min-height:38px; width:100%;">
-            <div style="width:75px; font-weight:800; font-size:14px; font-family:sans-serif; padding-top:${ptop};">${t.id}</div>
-            <div style="flex:1; font-weight:700; font-size:14px; text-transform:uppercase; font-family:sans-serif; padding-right:10px; white-space:pre-wrap; line-height:1.2; padding-top:${ptop};">${t.nm}</div>
-            <div style="width:115px; text-align:right; font-weight:800; font-size:14px; font-family:sans-serif; white-space:pre-line; line-height:1.2;">${t.dia}</div>
+        <div style="display:flex; align-items:${valign}; border-bottom:0.5px solid #000; padding:10px 0; width:100%; min-height:30px;">
+            <div style="width:75px; font-weight:800; font-size:13px; font-family:sans-serif; padding-top:${ptop};">${t.id}</div>
+            <div style="flex:1; font-weight:700; font-size:13px; text-transform:uppercase; font-family:sans-serif; padding-right:15px; white-space:pre-wrap; line-height:1.2; padding-top:${ptop};">${t.nm}</div>
+            <div style="width:120px; text-align:right; font-weight:800; font-size:13px; font-family:sans-serif; white-space:pre-line; line-height:1.2;">${t.dia}</div>
         </div>`;
     }).join('');
 
     const html = `
     <div style="width:210mm; padding:12mm; box-sizing:border-box; background:#fff; font-family:sans-serif; color:#000;">
-        <div style="border:2px solid #000; padding:25px; min-height:265mm; display:flex; flex-direction:column; box-sizing:border-box;">
+        <div style="border:1px solid #000; padding:20px; min-height:265mm; display:flex; flex-direction:column; box-sizing:border-box;">
             
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; min-height:90px;">
-                <div style="display:flex; flex-direction:column; justify-content:center;">
-                    <div style="font-size:13px; font-weight:900; text-transform:uppercase; color:#666; margin-bottom:2px; line-height:1;">${p.name || ''}</div>
-                    <div style="font-size:64px; font-weight:900; line-height:0.8; letter-spacing:-2px; margin:0;">${p.num || '---'}</div>
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:15px;">
+                <div style="display:flex; flex-direction:column;">
+                    <div style="font-size:11px; font-weight:900; text-transform:uppercase; color:#000; margin-bottom:0px;">${p.name || ''}</div>
+                    <div style="font-size:55px; font-weight:900; line-height:0.9; letter-spacing:-1px; margin:0;">${p.num || '---'}</div>
                 </div>
 
-                <div style="width:220px; font-size:11px; font-weight:800; line-height:1.5; display:flex; flex-direction:column; justify-content:center;">
-                    <div style="display:flex; justify-content:space-between; border-bottom:1px solid #eee;"><span>ABSTAND</span><span>${p.abs || ''}</span></div>
-                    <div style="display:flex; justify-content:space-between; border-bottom:1px solid #eee;"><span>GREIFBACKEN</span><span>${p.grf || ''}</span></div>
-                    <div style="display:flex; justify-content:space-between; border-bottom:1px solid #eee;"><span>LAUFZEIT</span><span>${p.lzf || ''}</span></div>
-                    <div style="display:flex; justify-content:space-between; border-bottom:1px solid #eee;"><span>SÄGELÄNGE</span><span>${p.sag || ''}</span></div>
-                    <div style="display:flex; justify-content:space-between; border-bottom:1px solid #eee;"><span>STÜCK T</span><span>${p.stt || ''}</span></div>
+                <div style="width:210px; font-size:10px; font-weight:800; line-height:1.4;">
+                    <div style="display:flex; justify-content:space-between; border-bottom:0.5px solid #eee;"><span>ABSTAND</span><span>${p.abs || ''}</span></div>
+                    <div style="display:flex; justify-content:space-between; border-bottom:0.5px solid #eee;"><span>GREIFBACKEN</span><span>${p.grf || ''}</span></div>
+                    <div style="display:flex; justify-content:space-between; border-bottom:0.5px solid #eee;"><span>LAUFZEIT</span><span>${p.lzf || ''}</span></div>
+                    <div style="display:flex; justify-content:space-between; border-bottom:0.5px solid #eee;"><span>SÄGELÄNGE</span><span>${p.sag || ''}</span></div>
+                    <div style="display:flex; justify-content:space-between; border-bottom:0.5px solid #eee;"><span>STÜCK T</span><span>${p.stt || ''}</span></div>
                     <div style="display:flex; justify-content:space-between;"><span>STÜCK N</span><span>${p.stn || ''}</span></div>
                 </div>
             </div>
 
-            <div style="border-bottom:5px solid #000; margin-bottom:15px;"></div>
+            <div style="border-bottom:4px solid #000; margin-bottom:10px;"></div>
 
-            <div style="display:flex; font-size:10px; font-weight:900; text-transform:uppercase; margin-bottom:6px; padding:0 2px;">
+            <div style="display:flex; font-size:9px; font-weight:900; text-transform:uppercase; margin-bottom:4px; padding:0 2px;">
                 <div style="width:75px;">T-NR</div>
                 <div style="flex:1;">WERKZEUGNAME / KOMMENTAR</div>
-                <div style="width:115px; text-align:right;">Ø / TOLERANZ</div>
+                <div style="width:120px; text-align:right;">Ø / TOLERANZ</div>
             </div>
 
-            <div style="border-bottom:3px solid #000; margin-bottom:0px;"></div>
+            <div style="border-bottom:2px solid #000; margin-bottom:0px;"></div>
             <div style="flex:1;">${rows}</div>
         </div>
     </div>`;
