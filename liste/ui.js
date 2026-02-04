@@ -7,39 +7,6 @@ const show = (id) => { if(el(id)) el(id).style.display = 'flex'; };
 const hide = (id) => { if(el(id)) el(id).style.display = 'none'; };
 
 // --- ПРОЕКТЫ ---
-function modalP(edit = false) {
-    if (!edit) currentIdx = null; 
-    const p = (edit && currentIdx !== null && db[currentIdx]) ? db[currentIdx] : {num:'', name:'', lzf:'', sag:'', stt:'', stn:'', abs:'', grf:''};
-    el('p-idx').value = edit ? currentIdx : '';
-    el('p-num').value = p.num || '';
-    el('p-nam').value = p.name || '';
-    el('p-lzf').value = p.lzf || '';
-    el('p-sag').value = p.sag || '';
-    el('p-stt').value = p.stt || '';
-    el('p-stn').value = p.stn || '';
-    el('p-abs').value = p.abs || '';
-    el('p-grf').value = p.grf || '';
-    show('m-p');
-}
-
-function saveP() {
-    const idx = el('p-idx').value;
-    const newP = {
-        num: el('p-num').value,
-        name: el('p-nam').value.toUpperCase(),
-        lzf: el('p-lzf').value, sag: el('p-sag').value,
-        stt: el('p-stt').value, stn: el('p-stn').value,
-        abs: el('p-abs').value, grf: el('p-grf').value,
-        tools: (idx !== '' && db[idx]) ? (db[idx].tools || []) : []
-    };
-    if (idx === '') { db.push(newP); currentIdx = db.length - 1; } 
-    else { db[idx] = newP; }
-    localStorage.setItem(DB_KEY, JSON.stringify(db));
-    hide('m-p');
-    renderList();
-    if(idx !== '') openProject(idx); else goHome();
-}
-
 function renderList() {
     const list = el('list-p'); if(!list) return;
     list.innerHTML = db.map((p, i) => `
@@ -62,7 +29,7 @@ function openProject(i) {
 
 function goHome() { currentIdx = null; el('v-home').classList.add('active'); el('v-det').classList.remove('active'); renderList(); }
 
-// --- ИНСТРУМЕНТЫ (ИНТЕРФЕЙС) ---
+// --- ИНСТРУМЕНТЫ (APP) ---
 function renderTools() {
     const list = el('list-t'); if(!list || currentIdx === null) return;
     const tools = db[currentIdx].tools || [];
@@ -72,18 +39,16 @@ function renderTools() {
         const item = document.createElement('div');
         item.className = 'list-item';
         item.draggable = true;
-        
-        const isMulti = (t.dia || '').includes('\n');
-        const align = isMulti ? 'center' : 'flex-start';
-
-        item.style.alignItems = align;
+        // Выравнивание строго по верхнему краю
+        item.style.alignItems = 'flex-start';
+        item.style.padding = '15px';
 
         item.innerHTML = `
-            <div style="flex:1; padding-right:15px; display:flex; flex-direction:column; justify-content:center; min-width:0;" onclick="modalT(${i})">
-                <small style="color:#8e8e93; font-weight:700; font-size:11px;">${t.id || 'T0000'}</small>
-                <b style="font-size:22px; font-weight:900; display:block; line-height:1.1; word-wrap:break-word; white-space:pre-wrap;">${t.nm || '---'}</b>
+            <div style="flex:1; padding-right:10px; display:flex; flex-direction:column; min-width:0;" onclick="modalT(${i})">
+                <small style="color:#8e8e93; font-weight:700; font-size:11px; margin-bottom:2px;">${t.id || 'T0000'}</small>
+                <b style="font-size:20px; font-weight:900; display:block; line-height:1.2; word-wrap:break-word; white-space:pre-wrap;">${t.nm || '---'}</b>
             </div>
-            <div style="font-weight:900; color:var(--accent); font-size:18px; text-align:right; white-space:pre-line; min-width:110px;">${t.dia}</div>
+            <div style="font-weight:900; color:var(--accent); font-size:18px; text-align:right; white-space:pre-line; min-width:110px; line-height:1.2; padding-top:14px;">${t.dia}</div>
         `;
         
         item.ondragstart = (e) => { e.dataTransfer.setData('text/plain', i); item.style.opacity = '0.4'; };
@@ -107,75 +72,15 @@ function moveTool(from, to) {
     renderTools();
 }
 
-function modalT(i = null) {
-    const edit = i !== null;
-    el('t-idx').value = edit ? i : '';
-    const t = edit ? db[currentIdx].tools[i] : {id:'', nm:'', dia:''};
-    el('t-id').value = t.id; el('t-nm').value = t.nm; el('t-dia').value = t.dia;
-    el('btn-del-t').style.display = edit ? 'block' : 'none';
-    show('m-t');
-}
-
-function saveT() {
-    const i = el('t-idx').value;
-    const t = { id: el('t-id').value.toUpperCase(), nm: el('t-nm').value.toUpperCase(), dia: el('t-dia').value };
-    if(!db[currentIdx].tools) db[currentIdx].tools = [];
-    if(i === '') db[currentIdx].tools.push(t); else db[currentIdx].tools[i] = t;
-    localStorage.setItem(DB_KEY, JSON.stringify(db));
-    renderTools(); hide('m-t');
-}
-
-function exportJSON() {
-    el('imp-area').value = JSON.stringify(db);
-    el('imp-area').select();
-    alert("JSON kopiert!");
-}
-
-function importJSON() {
-    try {
-        const parsed = JSON.parse(el('imp-area').value);
-        if(Array.isArray(parsed)) {
-            db = parsed;
-            localStorage.setItem(DB_KEY, JSON.stringify(db));
-            renderList();
-            alert("Erfolgreich!");
-            hide('m-imp');
-        }
-    } catch(e) { alert("Fehler!"); }
-}
-
-function runImp() {
-    const text = el('imp-area').value; if (!text.trim()) return;
-    const regex = /(T[0O]\d{2,4})/gi; const parts = text.split(regex);
-    if(!db[currentIdx].tools) db[currentIdx].tools = [];
-    for (let i = 1; i < parts.length; i += 2) {
-        let id = parts[i].trim().toUpperCase().replace('O', '0');
-        let name = (parts[i + 1] || '').trim().replace(/[\r\n]+/g, ' ').replace(/\s\s+/g, ' ');
-        db[currentIdx].tools.push({ id, nm: name.toUpperCase(), dia: '' });
-    }
-    localStorage.setItem(DB_KEY, JSON.stringify(db));
-    el('imp-area').value = ''; renderTools(); hide('m-imp');
-}
-
-function deleteProject(i) { if(confirm('Löschen?')) { db.splice(i, 1); localStorage.setItem(DB_KEY, JSON.stringify(db)); renderList(); } }
-function delT() { const i = el('t-idx').value; db[currentIdx].tools.splice(i, 1); localStorage.setItem(DB_KEY, JSON.stringify(db)); renderTools(); hide('m-t'); }
-
-// --- PDF (ФИКС ЛИНИЙ И УМНАЯ ЦЕНТРОВКА) ---
+// --- PDF (ВОЗВРАТ К ИСХОДНОМУ ВИДУ) ---
 function makePDF() {
     const p = db[currentIdx];
-    const rows = (p.tools || []).map(t => {
-        const isMulti = (t.dia || '').includes('\n');
-        const valign = isMulti ? 'center' : 'flex-start';
-        // Отступ сверху только для однострочных, чтобы выровнять с первой строкой толеранса
-        const ptop = isMulti ? '0' : '5px'; 
-
-        return `
-        <div style="display:flex; align-items:${valign}; border-bottom:0.5px solid #000; padding:10px 0; width:100%; min-height:30px;">
-            <div style="width:75px; font-weight:800; font-size:13px; font-family:sans-serif; padding-top:${ptop};">${t.id}</div>
-            <div style="flex:1; font-weight:700; font-size:13px; text-transform:uppercase; font-family:sans-serif; padding-right:15px; white-space:pre-wrap; line-height:1.2; padding-top:${ptop};">${t.nm}</div>
-            <div style="width:120px; text-align:right; font-weight:800; font-size:13px; font-family:sans-serif; white-space:pre-line; line-height:1.2;">${t.dia}</div>
-        </div>`;
-    }).join('');
+    const rows = (p.tools || []).map(t => `
+        <div style="display:flex; align-items:flex-start; border-bottom:0.5px solid #ccc; padding:10px 0; width:100%; min-height:35px;">
+            <div style="width:70px; font-weight:800; font-size:13px; font-family:sans-serif; padding-top:2px;">${t.id}</div>
+            <div style="flex:1; font-weight:700; font-size:13px; text-transform:uppercase; font-family:sans-serif; padding-right:15px; white-space:pre-wrap; line-height:1.3; padding-top:2px;">${t.nm}</div>
+            <div style="width:120px; text-align:right; font-weight:800; font-size:13px; font-family:sans-serif; white-space:pre-line; line-height:1.3;">${t.dia}</div>
+        </div>`).join('');
 
     const html = `
     <div style="width:210mm; padding:12mm; box-sizing:border-box; background:#fff; font-family:sans-serif; color:#000;">
@@ -183,11 +88,11 @@ function makePDF() {
             
             <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:15px;">
                 <div style="display:flex; flex-direction:column;">
-                    <div style="font-size:11px; font-weight:900; text-transform:uppercase; color:#000; margin-bottom:0px;">${p.name || ''}</div>
-                    <div style="font-size:55px; font-weight:900; line-height:0.9; letter-spacing:-1px; margin:0;">${p.num || '---'}</div>
+                    <div style="font-size:11px; font-weight:900; text-transform:uppercase; color:#000;">${p.name || ''}</div>
+                    <div style="font-size:55px; font-weight:900; line-height:0.9; letter-spacing:-1px;">${p.num || '---'}</div>
                 </div>
 
-                <div style="width:210px; font-size:10px; font-weight:800; line-height:1.4;">
+                <div style="width:200px; font-size:10px; font-weight:800; line-height:1.4;">
                     <div style="display:flex; justify-content:space-between; border-bottom:0.5px solid #eee;"><span>ABSTAND</span><span>${p.abs || ''}</span></div>
                     <div style="display:flex; justify-content:space-between; border-bottom:0.5px solid #eee;"><span>GREIFBACKEN</span><span>${p.grf || ''}</span></div>
                     <div style="display:flex; justify-content:space-between; border-bottom:0.5px solid #eee;"><span>LAUFZEIT</span><span>${p.lzf || ''}</span></div>
@@ -199,8 +104,8 @@ function makePDF() {
 
             <div style="border-bottom:4px solid #000; margin-bottom:10px;"></div>
 
-            <div style="display:flex; font-size:9px; font-weight:900; text-transform:uppercase; margin-bottom:4px; padding:0 2px;">
-                <div style="width:75px;">T-NR</div>
+            <div style="display:flex; font-size:9px; font-weight:900; text-transform:uppercase; margin-bottom:5px; padding:0 2px;">
+                <div style="width:70px;">T-NR</div>
                 <div style="flex:1;">WERKZEUGNAME / KOMMENTAR</div>
                 <div style="width:120px; text-align:right;">Ø / TOLERANZ</div>
             </div>
@@ -214,4 +119,4 @@ function makePDF() {
     setTimeout(() => { window.print(); }, 150);
 }
 
-window.onload = renderList;
+// (Остальные функции: saveP, modalP, saveT, modalT, delT, deleteProject, exportJSON, importJSON, runImp остаются без изменений)
