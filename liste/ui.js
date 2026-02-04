@@ -62,7 +62,7 @@ function openProject(i) {
 
 function goHome() { currentIdx = null; el('v-home').classList.add('active'); el('v-det').classList.remove('active'); renderList(); }
 
-// --- ИНСТРУМЕНТЫ (ВИД КАК НА ФОТО) ---
+// --- ИНСТРУМЕНТЫ (ФИКС СЖАТИЯ ТЕКСТА) ---
 function renderTools() {
     const list = el('list-t'); if(!list || currentIdx === null) return;
     const tools = db[currentIdx].tools || [];
@@ -73,13 +73,13 @@ function renderTools() {
         item.className = 'list-item';
         item.draggable = true;
         
-        // КАРТОЧКА: Номер мелко сверху, Описание жирно снизу
+        // Верстка карточки с учетом длинного текста (NM) и переносов толерансов (DIA)
         item.innerHTML = `
-            <div style="flex:1; padding-right:10px;" onclick="modalT(${i})">
+            <div style="flex:1; padding-right:15px; display:flex; flex-direction:column; justify-content:center; min-width:0;" onclick="modalT(${i})">
                 <small style="color:#8e8e93; font-weight:700; font-size:11px;">${t.id || 'T0000'}</small>
-                <b style="font-size:26px; font-weight:900; display:block; line-height:1.1;">${t.nm || 'KOPIEREN'}</b>
+                <b style="font-size:22px; font-weight:900; display:block; line-height:1.1; word-wrap:break-word; white-space:pre-wrap;">${t.nm || '---'}</b>
             </div>
-            <div style="font-weight:900; color:var(--accent); font-size:20px;">${t.dia}</div>
+            <div style="font-weight:900; color:var(--accent); font-size:18px; text-align:right; white-space:pre-line; align-self:center; min-width:110px;">${t.dia}</div>
         `;
         
         item.ondragstart = (e) => { e.dataTransfer.setData('text/plain', i); item.style.opacity = '0.4'; };
@@ -92,7 +92,7 @@ function renderTools() {
         };
         list.appendChild(item);
     });
-    list.innerHTML += '<div style="height:120px"></div>'; // Фикс скролла
+    list.innerHTML += '<div style="height:120px; pointer-events:none;"></div>';
 }
 
 function moveTool(from, to) {
@@ -138,7 +138,7 @@ function runImp() {
 function exportJSON() {
     el('imp-area').value = JSON.stringify(db);
     el('imp-area').select();
-    alert("JSON-Daten kopiert! Speichere diesen Text.");
+    alert("JSON-Daten kopiert!");
 }
 
 function importJSON() {
@@ -148,33 +148,35 @@ function importJSON() {
             db = parsed;
             localStorage.setItem(DB_KEY, JSON.stringify(db));
             renderList();
-            alert("Daten erfolgreich importiert!");
+            alert("Erfolgreich!");
             hide('m-imp');
         }
-    } catch(e) { alert("JSON-Fehler: Ungültiges Format"); }
+    } catch(e) { alert("Formatfehler!"); }
 }
 
 function deleteProject(i) { if(confirm('Löschen?')) { db.splice(i, 1); localStorage.setItem(DB_KEY, JSON.stringify(db)); renderList(); } }
 function delT() { const i = el('t-idx').value; db[currentIdx].tools.splice(i, 1); localStorage.setItem(DB_KEY, JSON.stringify(db)); renderTools(); hide('m-t'); }
 
-// --- PDF ---
+// --- ФИНАЛЬНЫЙ PDF (ЦЕНТРОВКА ПО ВЕРТИКАЛИ СТРОК) ---
 function makePDF() {
     const p = db[currentIdx];
     const rows = (p.tools || []).map(t => `
-        <div style="display:flex; align-items:baseline; border-bottom:1px solid #eee; padding:10px 0;">
-            <div style="width:75px; font-weight:800; font-size:15px; font-family:sans-serif;">${t.id}</div>
-            <div style="flex:1; font-weight:700; font-size:15px; text-transform:uppercase; font-family:sans-serif;">${t.nm}</div>
-            <div style="width:100px; text-align:right; font-weight:800; font-size:15px; font-family:sans-serif;">${t.dia}</div>
+        <div style="display:flex; align-items:center; border-bottom:1px solid #eee; padding:8px 0; min-height:45px;">
+            <div style="width:75px; font-weight:800; font-size:14px; font-family:sans-serif;">${t.id}</div>
+            <div style="flex:1; font-weight:700; font-size:14px; text-transform:uppercase; font-family:sans-serif; padding-right:10px; white-space:pre-wrap; line-height:1.2;">${t.nm}</div>
+            <div style="width:115px; text-align:right; font-weight:800; font-size:14px; font-family:sans-serif; white-space:pre-line; line-height:1.2;">${t.dia}</div>
         </div>`).join('');
 
     const html = `
     <div style="width:210mm; padding:12mm; box-sizing:border-box; background:#fff; font-family:sans-serif; color:#000;">
         <div style="border:2px solid #000; padding:25px; min-height:265mm; display:flex; flex-direction:column; box-sizing:border-box;">
+            
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; min-height:90px;">
                 <div style="display:flex; flex-direction:column; justify-content:center;">
                     <div style="font-size:13px; font-weight:900; text-transform:uppercase; color:#666; margin-bottom:2px; line-height:1;">${p.name || ''}</div>
                     <div style="font-size:64px; font-weight:900; line-height:0.8; letter-spacing:-2px; margin:0;">${p.num || '---'}</div>
                 </div>
+
                 <div style="width:220px; font-size:11px; font-weight:800; line-height:1.5; display:flex; flex-direction:column; justify-content:center;">
                     <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>ABSTAND</span><span>${p.abs || ''}</span></div>
                     <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>GREIFBACKEN</span><span>${p.grf || ''}</span></div>
@@ -184,16 +186,20 @@ function makePDF() {
                     <div style="display:flex; justify-content:space-between;"><span>STÜCK N</span><span>${p.stn || ''}</span></div>
                 </div>
             </div>
+
             <div style="border-bottom:5px solid #000; margin-bottom:15px;"></div>
+
             <div style="display:flex; font-size:10px; font-weight:900; text-transform:uppercase; margin-bottom:6px; padding:0 2px;">
                 <div style="width:75px;">T-NR</div>
                 <div style="flex:1;">WERKZEUGNAME / KOMMENTAR</div>
-                <div style="width:100px; text-align:right;">Ø / TOLERANZ</div>
+                <div style="width:115px; text-align:right;">Ø / TOLERANZ</div>
             </div>
+
             <div style="border-bottom:3px solid #000; margin-bottom:0px;"></div>
             <div style="flex:1;">${rows}</div>
         </div>
     </div>`;
+
     el('print-container').innerHTML = html;
     setTimeout(() => { window.print(); }, 150);
 }
