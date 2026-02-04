@@ -62,7 +62,7 @@ function openProject(i) {
 
 function goHome() { currentIdx = null; el('v-home').classList.add('active'); el('v-det').classList.remove('active'); renderList(); }
 
-// --- ИНСТРУМЕНТЫ (APP) ---
+// --- ИНСТРУМЕНТЫ (DRAG & DROP + ВЫРАВНИВАНИЕ ПО ВЕРХУ) ---
 function renderTools() {
     const list = el('list-t'); if(!list || currentIdx === null) return;
     const tools = db[currentIdx].tools || [];
@@ -72,15 +72,14 @@ function renderTools() {
         const item = document.createElement('div');
         item.className = 'list-item';
         item.draggable = true;
-        item.style.alignItems = 'flex-start';
-        item.style.padding = '15px';
+        item.style.alignItems = 'flex-start'; // Всегда по верхнему краю
 
         item.innerHTML = `
-            <div style="flex:1; padding-right:10px; display:flex; flex-direction:column; min-width:0;" onclick="modalT(${i})">
-                <small style="color:#8e8e93; font-weight:700; font-size:11px; margin-bottom:2px;">${t.id || 'T0000'}</small>
-                <b style="font-size:20px; font-weight:900; display:block; line-height:1.2; word-wrap:break-word; white-space:pre-wrap;">${t.nm || '---'}</b>
+            <div style="flex:1; padding-right:15px; display:flex; flex-direction:column; min-width:0;" onclick="modalT(${i})">
+                <small style="color:#8e8e93; font-weight:700; font-size:11px;">${t.id || 'T0000'}</small>
+                <b style="font-size:22px; font-weight:900; display:block; line-height:1.1; word-wrap:break-word; white-space:pre-wrap;">${t.nm || '---'}</b>
             </div>
-            <div style="font-weight:900; color:var(--accent); font-size:18px; text-align:right; white-space:pre-line; min-width:110px; line-height:1.2; padding-top:14px;">${t.dia}</div>
+            <div style="font-weight:900; color:var(--accent); font-size:18px; text-align:right; white-space:pre-line; min-width:110px; padding-top:14px;">${t.dia}</div>
         `;
         
         item.ondragstart = (e) => { e.dataTransfer.setData('text/plain', i); item.style.opacity = '0.4'; };
@@ -93,6 +92,7 @@ function renderTools() {
         };
         list.appendChild(item);
     });
+    // Padding внизу, чтобы не перекрывалось кнопками
     list.innerHTML += '<div style="height:120px; pointer-events:none;"></div>';
 }
 
@@ -122,7 +122,7 @@ function saveT() {
     renderTools(); hide('m-t');
 }
 
-// --- СЕРВИСНЫЕ ФУНКЦИИ ---
+// --- JSON & IMPORT ---
 function exportJSON() {
     el('imp-area').value = JSON.stringify(db);
     el('imp-area').select();
@@ -139,7 +139,7 @@ function importJSON() {
             alert("Erfolgreich!");
             hide('m-imp');
         }
-    } catch(e) { alert("Fehler!"); }
+    } catch(e) { alert("Formatfehler!"); }
 }
 
 function runImp() {
@@ -158,40 +158,40 @@ function runImp() {
 function deleteProject(i) { if(confirm('Löschen?')) { db.splice(i, 1); localStorage.setItem(DB_KEY, JSON.stringify(db)); renderList(); } }
 function delT() { const i = el('t-idx').value; db[currentIdx].tools.splice(i, 1); localStorage.setItem(DB_KEY, JSON.stringify(db)); renderTools(); hide('m-t'); }
 
-// --- PDF (КАК БЫЛО) ---
+// --- PDF (ПРЕМИУМ ДИЗАЙН) ---
 function makePDF() {
     const p = db[currentIdx];
     const rows = (p.tools || []).map(t => `
-        <div style="display:flex; align-items:flex-start; border-bottom:0.5px solid #000; padding:10px 0; width:100%;">
-            <div style="width:70px; font-weight:800; font-size:13px; font-family:sans-serif; padding-top:2px;">${t.id}</div>
-            <div style="flex:1; font-weight:700; font-size:13px; text-transform:uppercase; font-family:sans-serif; padding-right:15px; white-space:pre-wrap; line-height:1.3; padding-top:2px;">${t.nm}</div>
-            <div style="width:120px; text-align:right; font-weight:800; font-size:13px; font-family:sans-serif; white-space:pre-line; line-height:1.3;">${t.dia}</div>
+        <div style="display:flex; align-items:flex-start; border-bottom:1px solid #000; padding:8px 0; min-height:38px;">
+            <div style="width:75px; font-weight:800; font-size:14px; padding-top:3px;">${t.id}</div>
+            <div style="flex:1; font-weight:700; font-size:14px; text-transform:uppercase; padding-right:10px; white-space:pre-wrap; line-height:1.2; padding-top:3px;">${t.nm}</div>
+            <div style="width:115px; text-align:right; font-weight:800; font-size:14px; white-space:pre-line; line-height:1.2;">${t.dia}</div>
         </div>`).join('');
 
     const html = `
     <div style="width:210mm; padding:12mm; box-sizing:border-box; background:#fff; font-family:sans-serif; color:#000;">
-        <div style="border:1px solid #000; padding:20px; min-height:265mm; display:flex; flex-direction:column; box-sizing:border-box;">
-            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:15px;">
-                <div style="display:flex; flex-direction:column;">
-                    <div style="font-size:11px; font-weight:900; text-transform:uppercase;">${p.name || ''}</div>
-                    <div style="font-size:55px; font-weight:900; line-height:0.9;">${p.num || '---'}</div>
+        <div style="border:2px solid #000; padding:25px; min-height:265mm; display:flex; flex-direction:column; box-sizing:border-box;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; min-height:90px;">
+                <div style="display:flex; flex-direction:column; justify-content:center;">
+                    <div style="font-size:13px; font-weight:900; text-transform:uppercase; color:#666; margin-bottom:2px; line-height:1;">${p.name || ''}</div>
+                    <div style="font-size:64px; font-weight:900; line-height:0.8; letter-spacing:-2px; margin:0;">${p.num || '---'}</div>
                 </div>
-                <div style="width:200px; font-size:10px; font-weight:800; line-height:1.4;">
-                    <div style="display:flex; justify-content:space-between; border-bottom:0.5px solid #eee;"><span>ABSTAND</span><span>${p.abs || ''}</span></div>
-                    <div style="display:flex; justify-content:space-between; border-bottom:0.5px solid #eee;"><span>GREIFBACKEN</span><span>${p.grf || ''}</span></div>
-                    <div style="display:flex; justify-content:space-between; border-bottom:0.5px solid #eee;"><span>LAUFZEIT</span><span>${p.lzf || ''}</span></div>
-                    <div style="display:flex; justify-content:space-between; border-bottom:0.5px solid #eee;"><span>SÄGELÄNGE</span><span>${p.sag || ''}</span></div>
-                    <div style="display:flex; justify-content:space-between; border-bottom:0.5px solid #eee;"><span>STÜCK T</span><span>${p.stt || ''}</span></div>
+                <div style="width:220px; font-size:11px; font-weight:800; line-height:1.5;">
+                    <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>ABSTAND</span><span>${p.abs || ''}</span></div>
+                    <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>GREIFBACKEN</span><span>${p.grf || ''}</span></div>
+                    <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>LAUFZEIT</span><span>${p.lzf || ''}</span></div>
+                    <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>SÄGELÄNGE</span><span>${p.sag || ''}</span></div>
+                    <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>STÜCK T</span><span>${p.stt || ''}</span></div>
                     <div style="display:flex; justify-content:space-between;"><span>STÜCK N</span><span>${p.stn || ''}</span></div>
                 </div>
             </div>
-            <div style="border-bottom:4px solid #000; margin-bottom:10px;"></div>
-            <div style="display:flex; font-size:9px; font-weight:900; text-transform:uppercase; margin-bottom:5px;">
-                <div style="width:70px;">T-NR</div>
+            <div style="border-bottom:5px solid #000; margin-bottom:15px;"></div>
+            <div style="display:flex; font-size:10px; font-weight:900; text-transform:uppercase; margin-bottom:6px; padding:0 2px;">
+                <div style="width:75px;">T-NR</div>
                 <div style="flex:1;">WERKZEUGNAME / KOMMENTAR</div>
-                <div style="width:120px; text-align:right;">Ø / TOLERANZ</div>
+                <div style="width:115px; text-align:right;">Ø / TOLERANZ</div>
             </div>
-            <div style="border-bottom:2px solid #000; margin-bottom:0px;"></div>
+            <div style="border-bottom:3px solid #000; margin-bottom:0px;"></div>
             <div style="flex:1;">${rows}</div>
         </div>
     </div>`;
