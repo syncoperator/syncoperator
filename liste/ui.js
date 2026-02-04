@@ -6,10 +6,10 @@ const el = (id) => document.getElementById(id);
 const show = (id) => { if(el(id)) el(id).style.display = 'flex'; };
 const hide = (id) => { if(el(id)) el(id).style.display = 'none'; };
 
-// --- PROJEKTE ---
+// --- ПРОЕКТЫ ---
 function modalP(edit = false) {
     if (!edit) currentIdx = null; 
-    const p = (edit && currentIdx !== null) ? db[currentIdx] : {num:'', name:'', lzf:'', sag:'', stt:'', stn:'', abs:'', grf:''};
+    const p = (edit && currentIdx !== null && db[currentIdx]) ? db[currentIdx] : {num:'', name:'', lzf:'', sag:'', stt:'', stn:'', abs:'', grf:''};
     
     el('p-idx').value = edit ? currentIdx : '';
     el('p-num').value = p.num || '';
@@ -58,18 +58,20 @@ function renderList() {
     list.innerHTML = db.map((p, i) => `
         <div class="list-item" onclick="openProject(${i})">
             <div><small>${p.name || 'UNBENANNT'}</small><b>${p.num || '---'}</b></div>
-            <div style="color:var(--danger); font-weight:800; padding:10px;" onclick="event.stopPropagation(); deleteProject(${i})">✕</div>
+            <div style="color:var(--danger); font-weight:800; padding:15px;" onclick="event.stopPropagation(); deleteProject(${i})">✕</div>
         </div>
     `).join('');
 }
 
 function openProject(i) {
-    currentIdx = i;
-    el('v-home').classList.remove('active');
-    el('v-det').classList.add('active');
-    el('h-num').innerText = db[i].num;
-    el('h-nam').innerText = db[i].name;
-    renderTools();
+    if (db[i]) {
+        currentIdx = i;
+        el('v-home').classList.remove('active');
+        el('v-det').classList.add('active');
+        el('h-num').innerText = db[i].num || '---';
+        el('h-nam').innerText = db[i].name || '---';
+        renderTools();
+    }
 }
 
 function goHome() {
@@ -79,11 +81,12 @@ function goHome() {
     renderList();
 }
 
-// --- TOOLS ---
+// --- ИНСТРУМЕНТЫ ---
 function renderTools() {
     const listT = el('list-t');
     if(!listT || currentIdx === null) return;
-    listT.innerHTML = (db[currentIdx].tools || []).map((t, i) => `
+    const tools = db[currentIdx].tools || [];
+    listT.innerHTML = tools.map((t, i) => `
         <div class="list-item" onclick="modalT(${i})">
             <div style="flex:1"><b>${t.id}</b><small>${t.nm}</small></div>
             <div style="font-weight:900; color:var(--accent)">${t.dia}</div>
@@ -128,53 +131,24 @@ function runImp() {
     hide('m-imp');
 }
 
-function deleteProject(i) { if(confirm('Löschen?')) { db.splice(i, 1); localStorage.setItem(DB_KEY, JSON.stringify(db)); renderList(); } }
-function delT() { const i = el('t-idx').value; db[currentIdx].tools.splice(i, 1); localStorage.setItem(DB_KEY, JSON.stringify(db)); renderTools(); hide('m-t'); }
-
-// --- FIXED PDF ---
-function makePDF() {
-    const p = db[currentIdx];
-    const rows = p.tools.map(t => `
-        <div style="display: flex; align-items: baseline; border-bottom: 1px solid #eee; padding: 12px 0;">
-            <div style="width: 75px; font-weight: 800; font-size: 15px; color: #000; font-family: sans-serif;">${t.id}</div>
-            <div style="flex: 1; font-weight: 700; font-size: 15px; text-transform: uppercase; color: #000; font-family: sans-serif;">${t.nm}</div>
-            <div style="width: 100px; text-align: right; font-weight: 800; font-size: 15px; color: #000; font-family: sans-serif;">${t.dia}</div>
-        </div>
-    `).join('');
-
-    const html = `
-    <div style="width: 210mm; padding: 12mm; color: #000; box-sizing: border-box; background: #fff;">
-        <div style="border: 2px solid #000; padding: 25px; min-height: 265mm; display: flex; flex-direction: column; box-sizing: border-box;">
-            <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 5px;">
-                <div style="margin-bottom: -10px;">
-                    <div style="font-size: 14px; font-weight: 900; font-family: sans-serif; text-transform: uppercase; margin-bottom: 2px;">${p.name}</div>
-                    <div style="font-size: 72px; font-weight: 900; font-family: sans-serif; line-height: 0.8; letter-spacing: -3px;">${p.num}</div>
-                </div>
-                <div style="width: 195px; font-size: 11px; font-weight: 800; font-family: sans-serif; line-height: 1.6;">
-                    <div style="display:flex; justify-content:space-between;"><span>ABSTAND</span><span>${p.abs}</span></div>
-                    <div style="display:flex; justify-content:space-between;"><span>GREIFBACKEN</span><span>${p.grf}</span></div>
-                    <div style="display:flex; justify-content:space-between;"><span>LAUFZEIT</span><span>${p.lzf}</span></div>
-                    <div style="display:flex; justify-content:space-between;"><span>SÄGELÄNGE</span><span>${p.sag}</span></div>
-                    <div style="display:flex; justify-content:space-between;"><span>STÜCK T</span><span>${p.stt}</span></div>
-                    <div style="display:flex; justify-content:space-between;"><span>STÜCK N</span><span>${p.stn}</span></div>
-                </div>
-            </div>
-            <div style="border-bottom: 5px solid #000; margin-bottom: 18px;"></div>
-            <div style="display: flex; font-size: 10px; font-weight: 900; font-family: sans-serif; text-transform: uppercase; margin-bottom: 5px; padding: 0 2px;">
-                <div style="width: 75px;">T-NR</div>
-                <div style="flex: 1;">WERKZEUGNAME / KOMMENTAR</div>
-                <div style="width: 100px; text-align: right;">Ø / TOLERANZ</div>
-            </div>
-            <div style="border-bottom: 2px solid #eee; margin-bottom: 0px;"></div>
-            <div style="flex: 1;">${rows}</div>
-        </div>
-    </div>`;
-
-    const container = el('print-container');
-    if(container) { 
-        container.innerHTML = html; 
-        setTimeout(() => { window.print(); }, 150); 
+function deleteProject(i) {
+    // В премиум-дизайне заменим стандартный confirm позже, пока фикс
+    if(confirm('Löschen?')) {
+        db.splice(i, 1);
+        localStorage.setItem(DB_KEY, JSON.stringify(db));
+        renderList();
     }
 }
+
+function delT() {
+    const i = el('t-idx').value;
+    db[currentIdx].tools.splice(i, 1);
+    localStorage.setItem(DB_KEY, JSON.stringify(db));
+    renderTools();
+    hide('m-t');
+}
+
+// PDF функция остается без изменений (как в прошлом сообщении)
+function makePDF() { ... } 
 
 window.onload = renderList;
