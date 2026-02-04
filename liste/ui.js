@@ -1,22 +1,53 @@
-// БАЗА ДАННЫХ
-let db = JSON.parse(localStorage.getItem('QS_FINAL_V1')) || [];
-let cur = null; // Индекс текущего проекта
+const DB_KEY = 'QS_DATA_V8';
+let db = JSON.parse(localStorage.getItem(DB_KEY)) || [];
+let currentIdx = null;
 
-// ВСПОМОГАТЕЛЬНЫЕ
+// --- CORE FUNCTIONS ---
 const el = (id) => document.getElementById(id);
 const show = (id) => el(id).style.display = 'flex';
 const hide = (id) => el(id).style.display = 'none';
 
-// НАВИГАЦИЯ
-function goHome() {
-    cur = null;
-    el('v-det').classList.remove('active');
-    el('v-home').classList.add('active');
-    renderHome();
+function renderList() {
+    const list = el('list-p');
+    if(db.length === 0) {
+        list.innerHTML = '<div style="padding:40px; text-align:center; color:#555;">Keine Projekte</div>';
+        return;
+    }
+    list.innerHTML = db.map((p, i) => `
+        <div class="list-item" onclick="openProject(${i})">
+            <div>
+                <b>${p.num}</b>
+                <small>${p.name}</small>
+            </div>
+            <div style="color: #FF453A; padding: 10px;" onclick="event.stopPropagation(); deleteProject(${i})">✕</div>
+        </div>
+    `).join('');
 }
 
-function openP(i) {
-    cur = i;
+function renderTools() {
+    const tools = db[currentIdx].tools;
+    el('list-t').innerHTML = tools.map((t, i) => `
+        <div class="list-item" onclick="modalT(${i})">
+            <div>
+                <b>${t.id}</b>
+                <small>${t.nm}</small>
+            </div>
+            <div class="meta">${t.dia}</div>
+        </div>
+    `).join('');
+}
+
+// --- ACTIONS ---
+
+function goHome() {
+    currentIdx = null;
+    el('v-det').classList.remove('active');
+    el('v-home').classList.add('active');
+    renderList();
+}
+
+function openProject(i) {
+    currentIdx = i;
     el('v-home').classList.remove('active');
     el('v-det').classList.add('active');
     el('h-num').innerText = db[i].num;
@@ -24,40 +55,23 @@ function openP(i) {
     renderTools();
 }
 
-// РЕНДЕР СПИСКОВ
-function renderHome() {
-    el('list-p').innerHTML = db.map((p, i) => `
-        <div class="item" onclick="openP(${i})">
-            <div class="item-info"><b>${p.num}</b><div>${p.name}</div></div>
-            <div class="btn-del-mini" onclick="event.stopPropagation(); delP(${i})">✕</div>
-        </div>
-    `).join('');
-}
-
-function renderTools() {
-    el('list-t').innerHTML = db[cur].tools.map((t, i) => `
-        <div class="item" onclick="modalT(${i})">
-            <div class="item-info"><b>${t.id}</b><div>${t.nm}</div></div>
-            <div class="item-val">${t.dia}</div>
-        </div>
-    `).join('');
-}
-
-// МОДАЛКА ПРОЕКТА
 function modalP(edit = false) {
-    const p = edit ? db[cur] : {num:'',name:'',lzf:'',sag:'',stt:'',stn:'',abs:'',grf:''};
-    el('p-idx').value = edit ? cur : "";
-    
-    // Заполняем поля
-    ['num','nam','lzf','sag','stt','stn','abs','grf'].forEach(k => {
-        el('p-'+k).value = p[k] || "";
-    });
+    const p = edit ? db[currentIdx] : {num:'', name:'', lzf:'', sag:'', stt:'', stn:'', abs:'', grf:''};
+    el('p-idx').value = edit ? currentIdx : '';
+    el('p-num').value = p.num;
+    el('p-nam').value = p.name;
+    el('p-lzf').value = p.lzf;
+    el('p-sag').value = p.sag;
+    el('p-stt').value = p.stt;
+    el('p-stn').value = p.stn;
+    el('p-abs').value = p.abs;
+    el('p-grf').value = p.grf;
     show('m-p');
 }
 
 function saveP() {
     const idx = el('p-idx').value;
-    const data = {
+    const newP = {
         num: el('p-num').value,
         name: el('p-nam').value.toUpperCase(),
         lzf: el('p-lzf').value,
@@ -66,29 +80,35 @@ function saveP() {
         stn: el('p-stn').value,
         abs: el('p-abs').value,
         grf: el('p-grf').value,
-        tools: (idx !== "" && db[idx]) ? db[idx].tools : []
+        tools: (idx !== '' && db[idx]) ? db[idx].tools : []
     };
 
-    if(idx === "") db.push(data);
-    else db[idx] = data;
-
-    localStorage.setItem('QS_FINAL_V1', JSON.stringify(db));
-    hide('m-p');
+    if (idx === '') db.push(newP);
+    else db[idx] = newP;
     
-    if(idx === "") goHome();
-    else { openP(cur); } // Обновить заголовок если редактировали
+    localStorage.setItem(DB_KEY, JSON.stringify(db));
+    hide('m-p');
+    if(idx === '') goHome();
+    else openProject(currentIdx);
 }
 
-// МОДАЛКА ИНСТРУМЕНТА
+function deleteProject(i) {
+    if(confirm('Projekt löschen?')) {
+        db.splice(i, 1);
+        localStorage.setItem(DB_KEY, JSON.stringify(db));
+        renderList();
+    }
+}
+
+// --- TOOLS & IMPORT ---
+
 function modalT(i = null) {
     const edit = i !== null;
-    el('t-idx').value = edit ? i : "";
-    const t = edit ? db[cur].tools[i] : {id:'',nm:'',dia:''};
-    
+    el('t-idx').value = edit ? i : '';
+    const t = edit ? db[currentIdx].tools[i] : {id:'', nm:'', dia:''};
     el('t-id').value = t.id;
     el('t-nm').value = t.nm;
     el('t-dia').value = t.dia;
-    
     el('btn-del-t').style.display = edit ? 'block' : 'none';
     show('m-t');
 }
@@ -100,112 +120,106 @@ function saveT() {
         nm: el('t-nm').value.toUpperCase(),
         dia: el('t-dia').value
     };
-
-    if(i === "") db[cur].tools.push(t);
-    else db[cur].tools[i] = t;
-
-    localStorage.setItem('QS_FINAL_V1', JSON.stringify(db));
+    if(i === '') db[currentIdx].tools.push(t);
+    else db[currentIdx].tools[i] = t;
+    
+    localStorage.setItem(DB_KEY, JSON.stringify(db));
     renderTools();
     hide('m-t');
 }
 
-// УДАЛЕНИЕ
-function delP(i) {
-    if(confirm('Удалить проект?')) {
-        db.splice(i, 1);
-        localStorage.setItem('QS_FINAL_V1', JSON.stringify(db));
-        renderHome();
-    }
-}
 function delT() {
     const i = el('t-idx').value;
-    db[cur].tools.splice(i, 1);
-    localStorage.setItem('QS_FINAL_V1', JSON.stringify(db));
+    db[currentIdx].tools.splice(i, 1);
+    localStorage.setItem(DB_KEY, JSON.stringify(db));
     renderTools();
     hide('m-t');
 }
 
-// ИМПОРТ
 function runImp() {
-    const lines = el('imp-area').value.split('\n');
+    const text = el('imp-area').value;
+    const lines = text.split('\n');
     lines.forEach(line => {
-        if(line.trim()) {
-            db[cur].tools.push({ id:'T?', nm: line.trim().toUpperCase(), dia:'' });
+        const clean = line.trim();
+        if(clean) {
+            db[currentIdx].tools.push({ id:'T?', nm: clean.toUpperCase(), dia:'' });
         }
     });
-    localStorage.setItem('QS_FINAL_V1', JSON.stringify(db));
-    el('imp-area').value = "";
+    localStorage.setItem(DB_KEY, JSON.stringify(db));
+    el('imp-area').value = '';
     renderTools();
     hide('m-imp');
 }
 
-// PDF ГЕНЕРАЦИЯ (ЖЕСТКАЯ ВЕРСТКА)
+// --- PDF GENERATION (PIXEL PERFECT REPLICA) ---
 function makePDF() {
-    const p = db[cur];
+    const p = db[currentIdx];
     
-    // Генерация строк таблицы с жесткими линиями
+    // Генерируем строки таблицы
     const rows = p.tools.map(t => `
-        <tr style="border-bottom: 1px solid black;">
-            <td style="padding:10px 0; font-weight:900; font-size:11pt; width:60px;">${t.id}</td>
-            <td style="padding:10px 10px; font-weight:500; font-size:11pt; text-transform:uppercase;">${t.nm}</td>
-            <td style="padding:10px 0; font-weight:900; font-size:12pt; text-align:right;">${t.dia}</td>
-        </tr>
+        <div style="display: flex; align-items: flex-start; border-bottom: 1px solid #000; padding: 10px 0;">
+            <div style="width: 60px; font-weight: 700; font-size: 14px;">${t.id}</div>
+            <div style="flex: 1; font-weight: 500; font-size: 14px; text-transform: uppercase;">${t.nm}</div>
+            <div style="width: 80px; text-align: right; font-weight: 700; font-size: 14px;">${t.dia}</div>
+        </div>
     `).join('');
 
-    // HTML для печати
-    el('pdf-box').innerHTML = `
-        <div style="width:210mm; padding:10mm; background:white; font-family:sans-serif; color:black;">
-            <div style="border:3px solid black; padding:30px; min-height:270mm;">
+    // HTML структура точь-в-точь как на фото 19:54
+    const html = `
+    <div style="width: 210mm; min-height: 297mm; padding: 15mm; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; box-sizing: border-box; position: relative;">
+        
+        <div style="border: 2px solid #000; height: 100%; min-height: 250mm; padding: 25px; box-sizing: border-box; display: flex; flex-direction: column;">
+            
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px;">
                 
-                <div style="display:flex; justify-content:space-between; align-items:flex-start;">
-                    <div>
-                        <div style="font-size:10pt; font-weight:bold; color:#555;">${p.name}</div>
-                        <div style="font-size:60pt; font-weight:900; line-height:0.8; letter-spacing:-3px; margin-top:5px;">${p.num}</div>
-                    </div>
-                    
-                    <div style="width:260px; font-size:10pt; font-weight:800; line-height:2.0;">
-                        <div style="display:flex; justify-content:space-between; border-bottom:1px solid #000;">
-                            <span>LAUFZEIT:</span><span>${p.lzf}</span>
-                        </div>
-                        <div style="display:flex; justify-content:space-between; border-bottom:1px solid #000;">
-                            <span>SÄGELÄNGE:</span><span>${p.sag}</span>
-                        </div>
-                        <div style="display:flex; justify-content:space-between; border-bottom:1px solid #000;">
-                            <span>STÜCK T:</span><span>${p.stt}</span>
-                        </div>
-                        <div style="display:flex; justify-content:space-between; border-bottom:1px solid #000;">
-                            <span>STÜCK N:</span><span>${p.stn}</span>
-                        </div>
-                        <div style="display:flex; justify-content:space-between; border-bottom:1px solid #000;">
-                            <span>ABSTAND:</span><span>${p.abs}</span>
-                        </div>
-                        <div style="display:flex; justify-content:space-between; border-bottom:1px solid #000;">
-                            <span>GREIFBACKEN:</span><span>${p.grf}</span>
-                        </div>
-                    </div>
+                <div>
+                    <div style="font-size: 12px; font-weight: 700; color: #888; text-transform: uppercase; margin-bottom: 5px;">${p.name}</div>
+                    <div style="font-size: 64px; font-weight: 900; line-height: 0.8; letter-spacing: -2px;">${p.num}</div>
                 </div>
 
-                <div style="height:6px; background:black; margin:30px 0 10px 0;"></div>
-
-                <table style="width:100%; border-collapse:collapse;">
-                    <thead>
-                        <tr style="border-bottom:3px solid black;">
-                            <th align="left" style="font-size:8pt; padding-bottom:5px;">T-NR</th>
-                            <th align="left" style="font-size:8pt; padding-bottom:5px; padding-left:10px;">WERKZEUGNAME</th>
-                            <th align="right" style="font-size:8pt; padding-bottom:5px;">Ø / TOLERANZ</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${rows}
-                    </tbody>
-                </table>
-
+                <div style="width: 220px; font-size: 11px; font-weight: 700; line-height: 1.8;">
+                    <div style="display:flex; justify-content:space-between; border-bottom: 1px solid #ccc; padding-bottom: 2px; margin-bottom: 2px;">
+                        <span>ABSTAND:</span> <span>${p.abs}</span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; border-bottom: 1px solid #ccc; padding-bottom: 2px; margin-bottom: 2px;">
+                        <span>GREIFBACKEN:</span> <span>${p.grf}</span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; border-bottom: 1px solid #ccc; padding-bottom: 2px; margin-bottom: 2px;">
+                        <span>LAUFZEIT:</span> <span>${p.lzf}</span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; border-bottom: 1px solid #ccc; padding-bottom: 2px; margin-bottom: 2px;">
+                        <span>SÄGELÄNGE:</span> <span>${p.sag}</span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; border-bottom: 1px solid #ccc; padding-bottom: 2px; margin-bottom: 2px;">
+                        <span>STÜCK T:</span> <span>${p.stt}</span>
+                    </div>
+                     <div style="display:flex; justify-content:space-between; border-bottom: 1px solid #ccc; padding-bottom: 2px;">
+                        <span>STÜCK N:</span> <span>${p.stn}</span>
+                    </div>
+                </div>
             </div>
+
+            <div style="border-bottom: 4px solid #000; margin-bottom: 15px;"></div>
+
+            <div style="display: flex; font-size: 10px; font-weight: 700; color: #888; text-transform: uppercase; margin-bottom: 5px;">
+                <div style="width: 60px;">T-NR</div>
+                <div style="flex: 1;">WERKZEUGNAME / KOMMENTAR</div>
+                <div style="width: 80px; text-align: right;">Ø / TOLERANZ</div>
+            </div>
+
+             <div style="border-bottom: 2px solid #000; margin-bottom: 0px;"></div>
+
+            <div style="flex: 1;">
+                ${rows}
+            </div>
+
         </div>
+    </div>
     `;
-    
+
+    el('print-container').innerHTML = html;
     window.print();
 }
 
-// Запуск
-renderHome();
+// Init
+renderList();
