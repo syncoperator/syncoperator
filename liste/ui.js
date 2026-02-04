@@ -62,7 +62,7 @@ function openProject(i) {
 
 function goHome() { currentIdx = null; el('v-home').classList.add('active'); el('v-det').classList.remove('active'); renderList(); }
 
-// --- ИНСТРУМЕНТЫ (ИНВЕРСИЯ: ИМЯ СЛЕВА, НОМЕР СПРАВА) ---
+// --- ИНСТРУМЕНТЫ (ВИД КАК НА ФОТО) ---
 function renderTools() {
     const list = el('list-t'); if(!list || currentIdx === null) return;
     const tools = db[currentIdx].tools || [];
@@ -72,12 +72,12 @@ function renderTools() {
         const item = document.createElement('div');
         item.className = 'list-item';
         item.draggable = true;
-        item.dataset.index = i;
-        // ТУТ ИЗМЕНЕНО: nm сверху, id (T-NR) крупно снизу
+        
+        // КАРТОЧКА: Номер мелко сверху, Описание жирно снизу
         item.innerHTML = `
-            <div style="flex:1" onclick="modalT(${i})">
-                <small>${t.nm || 'BEZEICHNUNG'}</small>
-                <b style="font-size:24px;">${t.id}</b>
+            <div style="flex:1; padding-right:10px;" onclick="modalT(${i})">
+                <small style="color:#8e8e93; font-weight:700; font-size:11px;">${t.id || 'T0000'}</small>
+                <b style="font-size:26px; font-weight:900; display:block; line-height:1.1;">${t.nm || 'KOPIEREN'}</b>
             </div>
             <div style="font-weight:900; color:var(--accent); font-size:20px;">${t.dia}</div>
         `;
@@ -92,7 +92,7 @@ function renderTools() {
         };
         list.appendChild(item);
     });
-    list.innerHTML += '<div style="height:120px"></div>';
+    list.innerHTML += '<div style="height:120px"></div>'; // Фикс скролла
 }
 
 function moveTool(from, to) {
@@ -121,7 +121,7 @@ function saveT() {
     renderTools(); hide('m-t');
 }
 
-// --- ИМПОРТ / ЭКСПОРТ ---
+// --- JSON & IMPORT ---
 function runImp() {
     const text = el('imp-area').value; if (!text.trim()) return;
     const regex = /(T[0O]\d{2,4})/gi; const parts = text.split(regex);
@@ -138,20 +138,20 @@ function runImp() {
 function exportJSON() {
     el('imp-area').value = JSON.stringify(db);
     el('imp-area').select();
-    alert("JSON kopiert! Speichere den Text aus dem Feld.");
+    alert("JSON-Daten kopiert! Speichere diesen Text.");
 }
 
 function importJSON() {
     try {
-        const data = JSON.parse(el('imp-area').value);
-        if(Array.isArray(data)) {
-            db = data;
+        const parsed = JSON.parse(el('imp-area').value);
+        if(Array.isArray(parsed)) {
+            db = parsed;
             localStorage.setItem(DB_KEY, JSON.stringify(db));
             renderList();
-            alert("Erfolgreich importiert!");
+            alert("Daten erfolgreich importiert!");
             hide('m-imp');
         }
-    } catch(e) { alert("Fehler: Ungültiges JSON"); }
+    } catch(e) { alert("JSON-Fehler: Ungültiges Format"); }
 }
 
 function deleteProject(i) { if(confirm('Löschen?')) { db.splice(i, 1); localStorage.setItem(DB_KEY, JSON.stringify(db)); renderList(); } }
