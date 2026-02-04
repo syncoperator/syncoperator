@@ -46,7 +46,7 @@ function renderList() {
         <div class="list-item" onclick="openProject(${i})">
             <div><small>${p.name || '---'}</small><b>${p.num || '---'}</b></div>
             <div style="color:var(--danger); font-weight:900; padding:15px; z-index:20;" onclick="event.stopPropagation(); deleteProject(${i})">✕</div>
-        </div>`).join('') + '<div style="height:80px"></div>'; // Фикс скролла
+        </div>`).join('') + '<div style="height:100px"></div>';
 }
 
 function openProject(i) {
@@ -62,7 +62,7 @@ function openProject(i) {
 
 function goHome() { currentIdx = null; el('v-home').classList.add('active'); el('v-det').classList.remove('active'); renderList(); }
 
-// --- ИНСТРУМЕНТЫ (С DRAG & DROP) ---
+// --- ИНСТРУМЕНТЫ (ИНВЕРСИЯ: ИМЯ СЛЕВА, НОМЕР СПРАВА) ---
 function renderTools() {
     const list = el('list-t'); if(!list || currentIdx === null) return;
     const tools = db[currentIdx].tools || [];
@@ -73,29 +73,26 @@ function renderTools() {
         item.className = 'list-item';
         item.draggable = true;
         item.dataset.index = i;
+        // ТУТ ИЗМЕНЕНО: nm сверху, id (T-NR) крупно снизу
         item.innerHTML = `
-            <div style="flex:1" onclick="modalT(${i})"><small>${t.nm}</small><b>${t.id}</b></div>
-            <div style="font-weight:900; color:var(--accent); font-size:18px;">${t.dia}</div>
+            <div style="flex:1" onclick="modalT(${i})">
+                <small>${t.nm || 'BEZEICHNUNG'}</small>
+                <b style="font-size:24px;">${t.id}</b>
+            </div>
+            <div style="font-weight:900; color:var(--accent); font-size:20px;">${t.dia}</div>
         `;
         
-        // Drag Events
         item.ondragstart = (e) => { e.dataTransfer.setData('text/plain', i); item.style.opacity = '0.4'; };
         item.ondragend = () => { item.style.opacity = '1'; renderTools(); };
         item.ondragover = (e) => e.preventDefault();
         item.ondrop = (e) => {
             e.preventDefault();
             const from = e.dataTransfer.getData('text/plain');
-            const to = i;
-            moveTool(parseInt(from), to);
+            moveTool(parseInt(from), i);
         };
-        
         list.appendChild(item);
     });
-    
-    // Фикс скролла в конце списка инструментов
-    const spacer = document.createElement('div');
-    spacer.style.height = '100px';
-    list.appendChild(spacer);
+    list.innerHTML += '<div style="height:120px"></div>';
 }
 
 function moveTool(from, to) {
@@ -124,6 +121,7 @@ function saveT() {
     renderTools(); hide('m-t');
 }
 
+// --- ИМПОРТ / ЭКСПОРТ ---
 function runImp() {
     const text = el('imp-area').value; if (!text.trim()) return;
     const regex = /(T[0O]\d{2,4})/gi; const parts = text.split(regex);
@@ -137,10 +135,29 @@ function runImp() {
     el('imp-area').value = ''; renderTools(); hide('m-imp');
 }
 
-function deleteProject(i) { if(confirm('Projekt löschen?')) { db.splice(i, 1); localStorage.setItem(DB_KEY, JSON.stringify(db)); renderList(); } }
+function exportJSON() {
+    el('imp-area').value = JSON.stringify(db);
+    el('imp-area').select();
+    alert("JSON kopiert! Speichere den Text aus dem Feld.");
+}
+
+function importJSON() {
+    try {
+        const data = JSON.parse(el('imp-area').value);
+        if(Array.isArray(data)) {
+            db = data;
+            localStorage.setItem(DB_KEY, JSON.stringify(db));
+            renderList();
+            alert("Erfolgreich importiert!");
+            hide('m-imp');
+        }
+    } catch(e) { alert("Fehler: Ungültiges JSON"); }
+}
+
+function deleteProject(i) { if(confirm('Löschen?')) { db.splice(i, 1); localStorage.setItem(DB_KEY, JSON.stringify(db)); renderList(); } }
 function delT() { const i = el('t-idx').value; db[currentIdx].tools.splice(i, 1); localStorage.setItem(DB_KEY, JSON.stringify(db)); renderTools(); hide('m-t'); }
 
-// --- PDF (ЦЕНТРОВКА И ЛИНИИ) ---
+// --- PDF ---
 function makePDF() {
     const p = db[currentIdx];
     const rows = (p.tools || []).map(t => `
