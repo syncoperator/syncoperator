@@ -62,7 +62,7 @@ function openProject(i) {
 
 function goHome() { currentIdx = null; el('v-home').classList.add('active'); el('v-det').classList.remove('active'); renderList(); }
 
-// --- ИНСТРУМЕНТЫ (УМНОЕ ВЫРАВНИВАНИЕ) ---
+// --- ИНСТРУМЕНТЫ (БЕЗ ТОЛЕРАНСОВ В СПИСКЕ + МЕНЬШЕ ШРИФТ) ---
 function renderTools() {
     const list = el('list-t'); if(!list || currentIdx === null) return;
     const tools = db[currentIdx].tools || [];
@@ -72,17 +72,13 @@ function renderTools() {
         const item = document.createElement('div');
         item.className = 'list-item';
         item.draggable = true;
-        
-        // УМНЫЙ ПЕРЕКЛЮЧАТЕЛЬ
-        const isMulti = (t.dia || '').includes('\n');
-        item.style.alignItems = isMulti ? 'center' : 'flex-start';
+        item.style.padding = '12px 15px'; // Компактнее
 
         item.innerHTML = `
-            <div style="flex:1; padding-right:10px; min-width:0;" onclick="modalT(${i})">
+            <div style="flex:1; min-width:0;" onclick="modalT(${i})">
                 <small style="color:#8e8e93; font-weight:700; font-size:11px;">${t.id || 'T0000'}</small>
-                <b style="font-size:26px; font-weight:900; display:block; line-height:1.1; word-wrap:break-word; white-space:pre-wrap;">${t.nm || 'KOPIEREN'}</b>
+                <b style="font-size:20px; font-weight:900; display:block; line-height:1.2; word-wrap:break-word; white-space:pre-wrap;">${t.nm || '---'}</b>
             </div>
-            <div style="font-weight:900; color:var(--accent); font-size:20px; text-align:right; white-space:pre-line; min-width:110px; ${!isMulti ? 'padding-top:14px;' : ''}">${t.dia}</div>
         `;
         
         item.ondragstart = (e) => { e.dataTransfer.setData('text/plain', i); item.style.opacity = '0.4'; };
@@ -160,17 +156,22 @@ function importJSON() {
 function deleteProject(i) { if(confirm('Löschen?')) { db.splice(i, 1); localStorage.setItem(DB_KEY, JSON.stringify(db)); renderList(); } }
 function delT() { const i = el('t-idx').value; db[currentIdx].tools.splice(i, 1); localStorage.setItem(DB_KEY, JSON.stringify(db)); renderTools(); hide('m-t'); }
 
-// --- PDF (УМНОЕ ВЫРАВНИВАНИЕ) ---
+// --- PDF (УМНАЯ ЦЕНТРОВКА ПО ДЛИНЕ СТРОКИ) ---
 function makePDF() {
     const p = db[currentIdx];
     const rows = (p.tools || []).map(t => {
-        const isMulti = (t.dia || '').includes('\n');
-        const align = isMulti ? 'center' : 'baseline';
+        // Условие: если символов больше 15 — центрируем, иначе по базовой линии
+        const isLong = (t.dia || '').length > 15;
+        const align = isLong ? 'center' : 'baseline';
+        
+        // Для длинных строк в PDF заменим "/" на перенос строки для красоты
+        const displayDia = t.dia.includes('/') ? t.dia.split('/').join('<br>') : t.dia;
+
         return `
         <div style="display:flex; align-items:${align}; border-bottom:1px solid #eee; padding:10px 0; width:100%;">
             <div style="width:75px; font-weight:800; font-size:15px;">${t.id}</div>
             <div style="flex:1; font-weight:700; font-size:15px; text-transform:uppercase; padding-right:10px; white-space:pre-wrap;">${t.nm}</div>
-            <div style="width:110px; text-align:right; font-weight:800; font-size:15px; white-space:pre-line;">${t.dia}</div>
+            <div style="width:125px; text-align:right; font-weight:800; font-size:14px; line-height:1.2;">${displayDia}</div>
         </div>`;
     }).join('');
 
@@ -186,7 +187,7 @@ function makePDF() {
                     <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>ABSTAND</span><span>${p.abs || ''}</span></div>
                     <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>GREIFBACKEN</span><span>${p.grf || ''}</span></div>
                     <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>LAUFZEIT</span><span>${p.lzf || ''}</span></div>
-                    <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>SÄGELÄНGE</span><span>${p.sag || ''}</span></div>
+                    <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>SÄGELÄNGE</span><span>${p.sag || ''}</span></div>
                     <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>STÜCK T</span><span>${p.stt || ''}</span></div>
                     <div style="display:flex; justify-content:space-between;"><span>STÜCK N</span><span>${p.stn || ''}</span></div>
                 </div>
@@ -195,7 +196,7 @@ function makePDF() {
             <div style="display:flex; font-size:10px; font-weight:900; text-transform:uppercase; margin-bottom:6px; padding:0 2px;">
                 <div style="width:75px;">T-NR</div>
                 <div style="flex:1;">WERKZEUGNAME / KOMMENTAR</div>
-                <div style="width:110px; text-align:right;">Ø / TOLERANZ</div>
+                <div style="width:125px; text-align:right;">Ø / TOLERANZ</div>
             </div>
             <div style="border-bottom:3px solid #000; margin-bottom:0px;"></div>
             <div style="flex:1;">${rows}</div>
