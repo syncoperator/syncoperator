@@ -151,20 +151,22 @@ function runImp() {
     hide('m-imp');
 }
 
-// --- PDF GENERATION (PIXEL PERFECT REPLICA) ---
+// --- PDF GENERATION ---
 function makePDF() {
     const p = db[currentIdx];
     
-    // Генерируем строки таблицы
+    // ЦВЕТА:
+    // Текст теперь BLACK (#000)
+    // Линии теперь GREY (#888)
+    
     const rows = p.tools.map(t => `
-        <div style="display: flex; align-items: flex-start; border-bottom: 1px solid #000; padding: 10px 0;">
-            <div style="width: 60px; font-weight: 700; font-size: 14px;">${t.id}</div>
-            <div style="flex: 1; font-weight: 500; font-size: 14px; text-transform: uppercase;">${t.nm}</div>
-            <div style="width: 80px; text-align: right; font-weight: 700; font-size: 14px;">${t.dia}</div>
+        <div style="display: flex; align-items: flex-start; border-bottom: 1px solid #888; padding: 10px 0;">
+            <div style="width: 60px; font-weight: 700; font-size: 14px; color: #000;">${t.id}</div>
+            <div style="flex: 1; font-weight: 700; font-size: 14px; text-transform: uppercase; color: #000;">${t.nm}</div>
+            <div style="width: 80px; text-align: right; font-weight: 700; font-size: 14px; color: #000;">${t.dia}</div>
         </div>
     `).join('');
 
-    // HTML структура точь-в-точь как на фото 19:54
     const html = `
     <div style="width: 210mm; min-height: 297mm; padding: 15mm; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; box-sizing: border-box; position: relative;">
         
@@ -173,41 +175,41 @@ function makePDF() {
             <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px;">
                 
                 <div>
-                    <div style="font-size: 12px; font-weight: 700; color: #888; text-transform: uppercase; margin-bottom: 5px;">${p.name}</div>
-                    <div style="font-size: 64px; font-weight: 900; line-height: 0.8; letter-spacing: -2px;">${p.num}</div>
+                    <div style="font-size: 12px; font-weight: 900; color: #000; text-transform: uppercase; margin-bottom: 5px;">${p.name}</div>
+                    <div style="font-size: 64px; font-weight: 900; line-height: 0.8; letter-spacing: -2px; color: #000;">${p.num}</div>
                 </div>
 
-                <div style="width: 220px; font-size: 11px; font-weight: 700; line-height: 1.8;">
-                    <div style="display:flex; justify-content:space-between; border-bottom: 1px solid #ccc; padding-bottom: 2px; margin-bottom: 2px;">
-                        <span>ABSTAND:</span> <span>${p.abs}</span>
+                <div style="width: 220px; font-size: 11px; font-weight: 700; line-height: 1.8; color: #000;">
+                    <div style="display:flex; justify-content:space-between; border-bottom: 1px solid #888; padding-bottom: 2px; margin-bottom: 2px;">
+                        <span style="color:#000;">ABSTAND:</span> <span>${p.abs}</span>
                     </div>
-                    <div style="display:flex; justify-content:space-between; border-bottom: 1px solid #ccc; padding-bottom: 2px; margin-bottom: 2px;">
-                        <span>GREIFBACKEN:</span> <span>${p.grf}</span>
+                    <div style="display:flex; justify-content:space-between; border-bottom: 1px solid #888; padding-bottom: 2px; margin-bottom: 2px;">
+                        <span style="color:#000;">GREIFBACKEN:</span> <span>${p.grf}</span>
                     </div>
-                    <div style="display:flex; justify-content:space-between; border-bottom: 1px solid #ccc; padding-bottom: 2px; margin-bottom: 2px;">
-                        <span>LAUFZEIT:</span> <span>${p.lzf}</span>
+                    <div style="display:flex; justify-content:space-between; border-bottom: 1px solid #888; padding-bottom: 2px; margin-bottom: 2px;">
+                        <span style="color:#000;">LAUFZEIT:</span> <span>${p.lzf}</span>
                     </div>
-                    <div style="display:flex; justify-content:space-between; border-bottom: 1px solid #ccc; padding-bottom: 2px; margin-bottom: 2px;">
-                        <span>SÄGELÄNGE:</span> <span>${p.sag}</span>
+                    <div style="display:flex; justify-content:space-between; border-bottom: 1px solid #888; padding-bottom: 2px; margin-bottom: 2px;">
+                        <span style="color:#000;">SÄGELÄNGE:</span> <span>${p.sag}</span>
                     </div>
-                    <div style="display:flex; justify-content:space-between; border-bottom: 1px solid #ccc; padding-bottom: 2px; margin-bottom: 2px;">
-                        <span>STÜCK T:</span> <span>${p.stt}</span>
+                    <div style="display:flex; justify-content:space-between; border-bottom: 1px solid #888; padding-bottom: 2px; margin-bottom: 2px;">
+                        <span style="color:#000;">STÜCK T:</span> <span>${p.stt}</span>
                     </div>
-                     <div style="display:flex; justify-content:space-between; border-bottom: 1px solid #ccc; padding-bottom: 2px;">
-                        <span>STÜCK N:</span> <span>${p.stn}</span>
+                     <div style="display:flex; justify-content:space-between; border-bottom: 1px solid #888; padding-bottom: 2px;">
+                        <span style="color:#000;">STÜCK N:</span> <span>${p.stn}</span>
                     </div>
                 </div>
             </div>
 
             <div style="border-bottom: 4px solid #000; margin-bottom: 15px;"></div>
 
-            <div style="display: flex; font-size: 10px; font-weight: 700; color: #888; text-transform: uppercase; margin-bottom: 5px;">
+            <div style="display: flex; font-size: 10px; font-weight: 900; color: #000; text-transform: uppercase; margin-bottom: 5px;">
                 <div style="width: 60px;">T-NR</div>
                 <div style="flex: 1;">WERKZEUGNAME / KOMMENTAR</div>
                 <div style="width: 80px; text-align: right;">Ø / TOLERANZ</div>
             </div>
 
-             <div style="border-bottom: 2px solid #000; margin-bottom: 0px;"></div>
+             <div style="border-bottom: 2px solid #888; margin-bottom: 0px;"></div>
 
             <div style="flex: 1;">
                 ${rows}
