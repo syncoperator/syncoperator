@@ -10,7 +10,6 @@ const hide = (id) => { if(el(id)) el(id).style.display = 'none'; };
 function modalP(edit = false) {
     if (!edit) currentIdx = null; 
     const p = (edit && currentIdx !== null && db[currentIdx]) ? db[currentIdx] : {num:'', name:'', lzf:'', sag:'', stt:'', stn:'', abs:'', grf:''};
-    
     el('p-idx').value = edit ? currentIdx : '';
     el('p-num').value = p.num || '';
     el('p-nam').value = p.name || '';
@@ -20,7 +19,6 @@ function modalP(edit = false) {
     el('p-stn').value = p.stn || '';
     el('p-abs').value = p.abs || '';
     el('p-grf').value = p.grf || '';
-    
     show('m-p');
 }
 
@@ -29,38 +27,26 @@ function saveP() {
     const newP = {
         num: el('p-num').value,
         name: el('p-nam').value.toUpperCase(),
-        lzf: el('p-lzf').value,
-        sag: el('p-sag').value,
-        stt: el('p-stt').value,
-        stn: el('p-stn').value,
-        abs: el('p-abs').value,
-        grf: el('p-grf').value,
+        lzf: el('p-lzf').value, sag: el('p-sag').value,
+        stt: el('p-stt').value, stn: el('p-stn').value,
+        abs: el('p-abs').value, grf: el('p-grf').value,
         tools: (idx !== '' && db[idx]) ? (db[idx].tools || []) : []
     };
-
-    if (idx === '') {
-        db.push(newP);
-        currentIdx = db.length - 1;
-    } else {
-        db[idx] = newP;
-    }
-    
+    if (idx === '') { db.push(newP); currentIdx = db.length - 1; } 
+    else { db[idx] = newP; }
     localStorage.setItem(DB_KEY, JSON.stringify(db));
     hide('m-p');
     renderList();
-    if(idx !== '') openProject(idx);
-    else goHome();
+    if(idx !== '') openProject(idx); else goHome();
 }
 
 function renderList() {
-    const list = el('list-p');
-    if(!list) return;
+    const list = el('list-p'); if(!list) return;
     list.innerHTML = db.map((p, i) => `
         <div class="list-item" onclick="openProject(${i})">
             <div><small>${p.name || '---'}</small><b>${p.num || '---'}</b></div>
-            <div style="color:var(--danger); font-weight:900; padding:15px; position:relative; z-index:20;" onclick="event.stopPropagation(); deleteProject(${i})">✕</div>
-        </div>
-    `).join('');
+            <div style="color:var(--danger); font-weight:900; padding:15px; z-index:20;" onclick="event.stopPropagation(); deleteProject(${i})">✕</div>
+        </div>`).join('') + '<div style="height:80px"></div>'; // Фикс скролла
 }
 
 function openProject(i) {
@@ -74,33 +60,57 @@ function openProject(i) {
     }
 }
 
-function goHome() {
-    currentIdx = null;
-    el('v-home').classList.add('active');
-    el('v-det').classList.remove('active');
-    renderList();
+function goHome() { currentIdx = null; el('v-home').classList.add('active'); el('v-det').classList.remove('active'); renderList(); }
+
+// --- ИНСТРУМЕНТЫ (С DRAG & DROP) ---
+function renderTools() {
+    const list = el('list-t'); if(!list || currentIdx === null) return;
+    const tools = db[currentIdx].tools || [];
+    list.innerHTML = '';
+    
+    tools.forEach((t, i) => {
+        const item = document.createElement('div');
+        item.className = 'list-item';
+        item.draggable = true;
+        item.dataset.index = i;
+        item.innerHTML = `
+            <div style="flex:1" onclick="modalT(${i})"><small>${t.nm}</small><b>${t.id}</b></div>
+            <div style="font-weight:900; color:var(--accent); font-size:18px;">${t.dia}</div>
+        `;
+        
+        // Drag Events
+        item.ondragstart = (e) => { e.dataTransfer.setData('text/plain', i); item.style.opacity = '0.4'; };
+        item.ondragend = () => { item.style.opacity = '1'; renderTools(); };
+        item.ondragover = (e) => e.preventDefault();
+        item.ondrop = (e) => {
+            e.preventDefault();
+            const from = e.dataTransfer.getData('text/plain');
+            const to = i;
+            moveTool(parseInt(from), to);
+        };
+        
+        list.appendChild(item);
+    });
+    
+    // Фикс скролла в конце списка инструментов
+    const spacer = document.createElement('div');
+    spacer.style.height = '100px';
+    list.appendChild(spacer);
 }
 
-// --- ИНСТРУМЕНТЫ ---
-function renderTools() {
-    const listT = el('list-t');
-    if(!listT || currentIdx === null) return;
-    const tools = db[currentIdx].tools || [];
-    listT.innerHTML = tools.map((t, i) => `
-        <div class="list-item" onclick="modalT(${i})">
-            <div style="flex:1"><small>${t.nm}</small><b>${t.id}</b></div>
-            <div style="font-weight:900; color:var(--accent); font-size:18px;">${t.dia}</div>
-        </div>
-    `).join('');
+function moveTool(from, to) {
+    const tools = db[currentIdx].tools;
+    const item = tools.splice(from, 1)[0];
+    tools.splice(to, 0, item);
+    localStorage.setItem(DB_KEY, JSON.stringify(db));
+    renderTools();
 }
 
 function modalT(i = null) {
     const edit = i !== null;
     el('t-idx').value = edit ? i : '';
     const t = edit ? db[currentIdx].tools[i] : {id:'', nm:'', dia:''};
-    el('t-id').value = t.id;
-    el('t-nm').value = t.nm;
-    el('t-dia').value = t.dia;
+    el('t-id').value = t.id; el('t-nm').value = t.nm; el('t-dia').value = t.dia;
     el('btn-del-t').style.display = edit ? 'block' : 'none';
     show('m-t');
 }
@@ -108,22 +118,15 @@ function modalT(i = null) {
 function saveT() {
     const i = el('t-idx').value;
     const t = { id: el('t-id').value.toUpperCase(), nm: el('t-nm').value.toUpperCase(), dia: el('t-dia').value };
-    if(i === '') {
-        if(!db[currentIdx].tools) db[currentIdx].tools = [];
-        db[currentIdx].tools.push(t);
-    } else {
-        db[currentIdx].tools[i] = t;
-    }
+    if(!db[currentIdx].tools) db[currentIdx].tools = [];
+    if(i === '') db[currentIdx].tools.push(t); else db[currentIdx].tools[i] = t;
     localStorage.setItem(DB_KEY, JSON.stringify(db));
-    renderTools();
-    hide('m-t');
+    renderTools(); hide('m-t');
 }
 
 function runImp() {
-    const text = el('imp-area').value;
-    if (!text.trim()) return;
-    const regex = /(T[0O]\d{2,4})/gi;
-    const parts = text.split(regex);
+    const text = el('imp-area').value; if (!text.trim()) return;
+    const regex = /(T[0O]\d{2,4})/gi; const parts = text.split(regex);
     if(!db[currentIdx].tools) db[currentIdx].tools = [];
     for (let i = 1; i < parts.length; i += 2) {
         let id = parts[i].trim().toUpperCase().replace('O', '0');
@@ -131,28 +134,13 @@ function runImp() {
         db[currentIdx].tools.push({ id, nm: name.toUpperCase(), dia: '' });
     }
     localStorage.setItem(DB_KEY, JSON.stringify(db));
-    el('imp-area').value = '';
-    renderTools();
-    hide('m-imp');
+    el('imp-area').value = ''; renderTools(); hide('m-imp');
 }
 
-function deleteProject(i) {
-    if(confirm('Projekt löschen?')) {
-        db.splice(i, 1);
-        localStorage.setItem(DB_KEY, JSON.stringify(db));
-        renderList();
-    }
-}
+function deleteProject(i) { if(confirm('Projekt löschen?')) { db.splice(i, 1); localStorage.setItem(DB_KEY, JSON.stringify(db)); renderList(); } }
+function delT() { const i = el('t-idx').value; db[currentIdx].tools.splice(i, 1); localStorage.setItem(DB_KEY, JSON.stringify(db)); renderTools(); hide('m-t'); }
 
-function delT() {
-    const i = el('t-idx').value;
-    db[currentIdx].tools.splice(i, 1);
-    localStorage.setItem(DB_KEY, JSON.stringify(db));
-    renderTools();
-    hide('m-t');
-}
-
-// --- ФИНАЛЬНЫЙ PDF (Центровка и жирные линии) ---
+// --- PDF (ЦЕНТРОВКА И ЛИНИИ) ---
 function makePDF() {
     const p = db[currentIdx];
     const rows = (p.tools || []).map(t => `
@@ -165,14 +153,11 @@ function makePDF() {
     const html = `
     <div style="width:210mm; padding:12mm; box-sizing:border-box; background:#fff; font-family:sans-serif; color:#000;">
         <div style="border:2px solid #000; padding:25px; min-height:265mm; display:flex; flex-direction:column; box-sizing:border-box;">
-            
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; min-height:90px;">
-                
                 <div style="display:flex; flex-direction:column; justify-content:center;">
                     <div style="font-size:13px; font-weight:900; text-transform:uppercase; color:#666; margin-bottom:2px; line-height:1;">${p.name || ''}</div>
                     <div style="font-size:64px; font-weight:900; line-height:0.8; letter-spacing:-2px; margin:0;">${p.num || '---'}</div>
                 </div>
-
                 <div style="width:220px; font-size:11px; font-weight:800; line-height:1.5; display:flex; flex-direction:column; justify-content:center;">
                     <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>ABSTAND</span><span>${p.abs || ''}</span></div>
                     <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>GREIFBACKEN</span><span>${p.grf || ''}</span></div>
@@ -182,28 +167,18 @@ function makePDF() {
                     <div style="display:flex; justify-content:space-between;"><span>STÜCK N</span><span>${p.stn || ''}</span></div>
                 </div>
             </div>
-
             <div style="border-bottom:5px solid #000; margin-bottom:15px;"></div>
-
             <div style="display:flex; font-size:10px; font-weight:900; text-transform:uppercase; margin-bottom:6px; padding:0 2px;">
                 <div style="width:75px;">T-NR</div>
                 <div style="flex:1;">WERKZEUGNAME / KOMMENTAR</div>
                 <div style="width:100px; text-align:right;">Ø / TOLERANZ</div>
             </div>
-
             <div style="border-bottom:3px solid #000; margin-bottom:0px;"></div>
-
-            <div style="flex:1;">
-                ${rows}
-            </div>
+            <div style="flex:1;">${rows}</div>
         </div>
     </div>`;
-
-    const container = el('print-container');
-    if(container) {
-        container.innerHTML = html;
-        setTimeout(() => { window.print(); }, 150);
-    }
+    el('print-container').innerHTML = html;
+    setTimeout(() => { window.print(); }, 150);
 }
 
 window.onload = renderList;
