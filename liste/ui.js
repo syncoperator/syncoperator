@@ -62,7 +62,7 @@ function openProject(i) {
 
 function goHome() { currentIdx = null; el('v-home').classList.add('active'); el('v-det').classList.remove('active'); renderList(); }
 
-// --- ИНСТРУМЕНТЫ (DRAG & DROP + REV) ---
+// --- ИНСТРУМЕНТЫ ---
 function renderTools() {
     const list = el('list-t'); if(!list || currentIdx === null) return;
     const tools = db[currentIdx].tools || [];
@@ -72,7 +72,6 @@ function renderTools() {
         const item = document.createElement('div');
         item.className = 'list-item';
         item.draggable = true;
-        item.dataset.index = i; // Важно для Drag & Drop
         
         const revLabel = t.rev ? `<div style="background:#000; color:#fff; font-size:10px; padding:2px 6px; border-radius:4px; margin-bottom:5px; width:fit-content; font-weight:900;">REVOLVER UNTEN ↓</div>` : '';
 
@@ -84,22 +83,17 @@ function renderTools() {
             </div>
         `;
         
-        // Drag & Drop события
         item.ondragstart = (e) => { e.dataTransfer.setData('text/plain', i); item.style.opacity = '0.4'; };
         item.ondragend = () => { item.style.opacity = '1'; };
         item.ondragover = (e) => e.preventDefault();
         item.ondrop = (e) => {
             e.preventDefault();
             const from = e.dataTransfer.getData('text/plain');
-            const to = i;
-            moveTool(parseInt(from), to);
+            moveTool(parseInt(from), i);
         };
         list.appendChild(item);
     });
-    // Padding в конце списка, чтобы кнопки не перекрывали
-    const pad = document.createElement('div');
-    pad.style.height = '180px';
-    list.appendChild(pad);
+    list.innerHTML += '<div style="height:180px;"></div>'; 
 }
 
 function moveTool(from, to) {
@@ -113,20 +107,24 @@ function moveTool(from, to) {
 function modalT(i = null) {
     const edit = i !== null;
     el('t-idx').value = edit ? i : '';
-    const t = edit ? db[currentIdx].tools[i] : {id:'', nm:'', dia:'', rev:false};
     
-    el('t-id').value = t.id; 
-    el('t-nm').value = t.nm; 
-    el('t-dia').value = t.dia;
+    // Безопасное получение данных
+    const t = (edit && db[currentIdx].tools[i]) ? db[currentIdx].tools[i] : {id:'', nm:'', dia:'', rev:false};
     
-    // Чистим старую кнопку если была
-    const oldBtn = el('btn-rev-toggle');
-    if(oldBtn) oldBtn.remove();
-
-    // Создаем новую кнопку переключения револьвера
-    const btnRev = document.createElement('div');
-    btnRev.id = 'btn-rev-toggle';
-    btnRev.style.cssText = `margin: 10px 0; padding: 15px; border-radius: 12px; text-align: center; font-weight: 900; cursor: pointer; transition: 0.2s;`;
+    el('t-id').value = t.id || ''; 
+    el('t-nm').value = t.nm || ''; 
+    el('t-dia').value = t.dia || '';
+    
+    // Кнопка револьвера
+    let btnRev = el('btn-rev-toggle');
+    if(!btnRev) {
+        btnRev = document.createElement('div');
+        btnRev.id = 'btn-rev-toggle';
+        const content = el('m-t').querySelector('.modal-content');
+        content.insertBefore(btnRev, el('btn-save-t') || content.lastElementChild);
+    }
+    
+    btnRev.style.cssText = `margin: 10px 0; padding: 15px; border-radius: 12px; text-align: center; font-weight: 900; cursor: pointer;`;
     
     const updateBtn = (state) => {
         btnRev.dataset.state = state;
@@ -137,10 +135,6 @@ function modalT(i = null) {
 
     updateBtn(t.rev || false);
     btnRev.onclick = () => updateBtn(btnRev.dataset.state === 'false');
-
-    // Вставляем кнопку ПЕРЕД кнопкой "Speichern" (предполагаем, что в HTML есть блок кнопок)
-    const content = el('m-t').querySelector('.modal-content');
-    content.insertBefore(btnRev, el('btn-save-t') || content.lastElementChild);
 
     el('btn-del-t').style.display = edit ? 'block' : 'none';
     show('m-t');
@@ -160,14 +154,14 @@ function saveT() {
 
     if(!db[currentIdx].tools) db[currentIdx].tools = [];
     if(i === '') db[currentIdx].tools.push(t); 
-    else db[currentIdx].tools[i] = t;
+    else db[currentIdx].tools[parseInt(i)] = t;
 
     localStorage.setItem(DB_KEY, JSON.stringify(db));
     renderTools(); 
     hide('m-t');
 }
 
-// --- PDF С ДВУМЯ РЕВОЛЬВЕРАМИ ---
+// --- PDF ---
 function makePDF() {
     const p = db[currentIdx];
     let html = '';
@@ -198,9 +192,6 @@ function makePDF() {
         </div>`;
     };
 
-    const getSection = (title) => `<div style="background:#000; color:#fff; padding:5px 10px; font-weight:900; font-size:13px; margin-top:10px;">${title}</div>`;
-
-    // Делим инструменты
     let oben = [], unten = [], target = oben;
     (p.tools || []).forEach(t => {
         if(t.rev) target = unten;
@@ -211,18 +202,18 @@ function makePDF() {
     html += `<div style="width:210mm; padding:10mm; background:#fff; font-family:sans-serif;">
                 <div style="border:2px solid #000; padding:20px; min-height:270mm;">
                     ${getHeader()}
-                    ${getSection("REVOLVER OBEN")}
+                    <div style="background:#000; color:#fff; padding:5px 10px; font-weight:900; font-size:13px;">REVOLVER OBEN</div>
                     ${oben.map(t => getRow(t)).join('')}
-                    ${unten.length > 0 && (oben.length + unten.length < 22) ? getSection("REVOLVER UNTEN") + unten.map(t => getRow(t)).join('') : ''}
+                    ${unten.length > 0 && (oben.length + unten.length < 22) ? `<div style="background:#000; color:#fff; padding:5px 10px; font-weight:900; font-size:13px; margin-top:10px;">REVOLVER UNTEN</div>` + unten.map(t => getRow(t)).join('') : ''}
                 </div>
             </div>`;
 
-    // Страница 2 (если нужно)
+    // Страница 2
     if(unten.length > 0 && (oben.length + unten.length >= 22)) {
         html += `<div style="width:210mm; padding:10mm; background:#fff; font-family:sans-serif; page-break-before:always;">
                     <div style="border:2px solid #000; padding:20px; min-height:270mm;">
                         ${getHeader(true)}
-                        ${getSection("REVOLVER UNTEN")}
+                        <div style="background:#000; color:#fff; padding:5px 10px; font-weight:900; font-size:13px;">REVOLVER UNTEN</div>
                         ${unten.map(t => getRow(t)).join('')}
                     </div>
                 </div>`;
@@ -232,7 +223,20 @@ function makePDF() {
     setTimeout(() => { window.print(); }, 200);
 }
 
-// Стандартные функции импорта/удаления
+// --- СЕРВИС ---
+function runImp() {
+    const text = el('imp-area').value; if (!text.trim()) return;
+    const regex = /(T[0O]\d{2,4})/gi; const parts = text.split(regex);
+    if(!db[currentIdx].tools) db[currentIdx].tools = [];
+    for (let i = 1; i < parts.length; i += 2) {
+        let id = parts[i].trim().toUpperCase().replace('O', '0');
+        let name = (parts[i + 1] || '').trim().replace(/[\r\n]+/g, ' ').replace(/\s\s+/g, ' ');
+        db[currentIdx].tools.push({ id, nm: name.toUpperCase(), dia: '', rev: false });
+    }
+    localStorage.setItem(DB_KEY, JSON.stringify(db));
+    el('imp-area').value = ''; renderTools(); hide('m-imp');
+}
+
 function deleteProject(i) { if(confirm('Löschen?')) { db.splice(i, 1); localStorage.setItem(DB_KEY, JSON.stringify(db)); renderList(); } }
 function delT() { const i = el('t-idx').value; db[currentIdx].tools.splice(i, 1); localStorage.setItem(DB_KEY, JSON.stringify(db)); renderTools(); hide('m-t'); }
 function exportJSON() { el('imp-area').value = JSON.stringify(db); alert("JSON Kopiert!"); }
