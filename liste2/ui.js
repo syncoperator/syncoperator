@@ -6,6 +6,7 @@ const el = (id) => document.getElementById(id);
 const show = (id) => { if(el(id)) el(id).style.display = 'flex'; };
 const hide = (id) => { if(el(id)) el(id).style.display = 'none'; };
 
+// --- ПРОЕКТЫ ---
 function modalP(edit = false) {
     if (!edit) currentIdx = null; 
     const p = (edit && currentIdx !== null && db[currentIdx]) ? db[currentIdx] : {num:'', name:'', lzf:'', sag:'', stt:'', stn:'', abs:'', grf:''};
@@ -71,16 +72,14 @@ function renderTools() {
         item.className = 'list-item';
         item.draggable = true;
         item.style.padding = '12px 15px';
-        item.style.flexDirection = 'column';
-        item.style.alignItems = 'flex-start';
 
-        const revMark = t.rev ? `<div style="background:#000; color:#fff; font-size:10px; padding:4px 8px; border-radius:4px; margin-bottom:8px; font-weight:900; letter-spacing:1px;">REVOLVER UNTEN ↓</div>` : '';
+        const revBadge = t.rev ? `<div style="background:#000; color:#fff; font-size:9px; padding:2px 6px; border-radius:4px; margin-bottom:4px; width:fit-content; font-weight:900;">UNTEN START</div>` : '';
 
         item.innerHTML = `
-            ${revMark}
-            <div style="flex:1; width:100%;" onclick="modalT(${i})">
+            <div style="flex:1; min-width:0;" onclick="modalT(${i})">
+                ${revBadge}
                 <small style="color:#8e8e93; font-weight:700; font-size:11px;">${t.id || 'T0000'}</small>
-                <b style="font-size:20px; font-weight:900; display:block; line-height:1.2;">${t.nm || '---'}</b>
+                <b style="font-size:20px; font-weight:900; display:block; line-height:1.2; word-wrap:break-word; white-space:pre-wrap;">${t.nm || '---'}</b>
             </div>
         `;
         
@@ -90,15 +89,19 @@ function renderTools() {
         item.ondrop = (e) => {
             e.preventDefault();
             const from = e.dataTransfer.getData('text/plain');
-            const to = i;
-            const toolsArr = db[currentIdx].tools;
-            const movedItem = toolsArr.splice(from, 1)[0];
-            toolsArr.splice(to, 0, movedItem);
-            localStorage.setItem(DB_KEY, JSON.stringify(db));
-            renderTools();
+            moveTool(parseInt(from), i);
         };
         list.appendChild(item);
     });
+    list.innerHTML += '<div style="height:150px; pointer-events:none;"></div>'; 
+}
+
+function moveTool(from, to) {
+    const tools = db[currentIdx].tools;
+    const item = tools.splice(from, 1)[0];
+    tools.splice(to, 0, item);
+    localStorage.setItem(DB_KEY, JSON.stringify(db));
+    renderTools();
 }
 
 function modalT(i = null) {
@@ -107,9 +110,12 @@ function modalT(i = null) {
     const t = edit ? db[currentIdx].tools[i] : {id:'', nm:'', dia:'', rev:false};
     el('t-id').value = t.id; el('t-nm').value = t.nm; el('t-dia').value = t.dia;
     
+    // Переключатель револьвера в модалке
     const btn = el('btn-rev-toggle');
-    if(t.rev) btn.classList.add('on'); else btn.classList.remove('on');
-    btn.onclick = () => btn.classList.toggle('on');
+    if(btn) {
+        if(t.rev) btn.classList.add('on'); else btn.classList.remove('on');
+        btn.onclick = () => btn.classList.toggle('on');
+    }
 
     el('btn-del-t').style.display = edit ? 'block' : 'none';
     show('m-t');
@@ -129,65 +135,6 @@ function saveT() {
     renderTools(); hide('m-t');
 }
 
-function makePDF() {
-    const p = db[currentIdx];
-    const getRow = (t) => {
-        const isLong = (t.dia || '').length > 15;
-        const align = isLong ? 'center' : 'baseline';
-        const displayDia = t.dia.includes('/') ? t.dia.split('/').join('<br>') : t.dia;
-        return `
-        <div style="display:flex; align-items:${align}; border-bottom:1.5px solid #000; padding:10px 0; width:100%;">
-            <div style="width:75px; font-weight:800; font-size:16px;">${t.id}</div>
-            <div style="flex:1; font-weight:700; font-size:16px; text-transform:uppercase; padding-right:10px; white-space:pre-wrap;">${t.nm}</div>
-            <div style="width:135px; text-align:right; font-weight:900; font-size:16px; line-height:1.2;">${displayDia}</div>
-        </div>`;
-    };
-
-    let oben = [], unten = [], target = oben;
-    (p.tools || []).forEach(t => {
-        if(t.rev) target = unten;
-        target.push(t);
-    });
-
-    const html = `
-    <div style="width:210mm; padding:12mm; box-sizing:border-box; background:#fff; font-family:sans-serif; color:#000;">
-        <div style="border:3.5px solid #000; padding:25px; min-height:265mm; display:flex; flex-direction:column; box-sizing:border-box;">
-            
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-                <div>
-                    <div style="font-size:14px; font-weight:900; text-transform:uppercase; color:#000;">${p.name || ''}</div>
-                    <div style="font-size:68px; font-weight:900; line-height:0.8; letter-spacing:-2px;">${p.num || '---'}</div>
-                </div>
-                <div style="width:230px; font-size:12px; font-weight:900; line-height:1.6;">
-                    <div style="display:flex; justify-content:space-between; border-bottom:2px solid #000;"><span>ABSTAND</span><span>${p.abs || ''}</span></div>
-                    <div style="display:flex; justify-content:space-between; border-bottom:2px solid #000;"><span>GREIFBACKEN</span><span>${p.grf || ''}</span></div>
-                    <div style="display:flex; justify-content:space-between; border-bottom:2px solid #000;"><span>LAUFZEIT</span><span>${p.lzf || ''}</span></div>
-                    <div style="display:flex; justify-content:space-between; border-bottom:2px solid #000;"><span>SÄGELÄNGE</span><span>${p.sag || ''}</span></div>
-                    <div style="display:flex; justify-content:space-between; border-bottom:2px solid #000;"><span>STÜCK T</span><span>${p.stt || ''}</span></div>
-                    <div style="display:flex; justify-content:space-between; border-bottom:2px solid #000;"><span>STÜCK N</span><span>${p.stn || ''}</span></div>
-                </div>
-            </div>
-            
-            <div style="border-bottom:10px solid #000; margin-bottom:25px;"></div>
-            
-            <div style="flex:1;">
-                <div style="background:#000; color:#fff; padding:10px 20px; font-weight:900; font-size:20px; width:fit-content; letter-spacing:1px; margin-bottom:5px;">REVOLVER OBEN</div>
-                <div style="border-bottom:5px solid #000; margin-bottom:10px;"></div>
-                ${oben.map(getRow).join('')}
-                
-                ${unten.length > 0 ? `
-                    <div style="background:#000; color:#fff; padding:10px 20px; font-weight:900; font-size:20px; width:fit-content; letter-spacing:1px; margin-top:40px; margin-bottom:5px;">REVOLVER UNTEN</div>
-                    <div style="border-bottom:5px solid #000; margin-bottom:10px;"></div>
-                    ${unten.map(getRow).join('')}
-                ` : ''}
-            </div>
-        </div>
-    </div>`;
-
-    el('print-container').innerHTML = html;
-    setTimeout(() => { window.print(); }, 150);
-}
-
 function runImp() {
     const text = el('imp-area').value; if (!text.trim()) return;
     const regex = /(T[0O]\d{2,4})/gi; const parts = text.split(regex);
@@ -200,9 +147,90 @@ function runImp() {
     localStorage.setItem(DB_KEY, JSON.stringify(db));
     el('imp-area').value = ''; renderTools(); hide('m-imp');
 }
-function exportJSON() { el('imp-area').value = JSON.stringify(db); el('imp-area').select(); alert("JSON OK"); }
-function importJSON() { try { const parsed = JSON.parse(el('imp-area').value); if(Array.isArray(parsed)) { db = parsed; localStorage.setItem(DB_KEY, JSON.stringify(db)); renderList(); hide('m-imp'); } } catch(e) { alert("JSON-Fehler"); } }
+
+function exportJSON() {
+    el('imp-area').value = JSON.stringify(db);
+    el('imp-area').select();
+    alert("JSON-Daten kopiert!");
+}
+
+function importJSON() {
+    try {
+        const parsed = JSON.parse(el('imp-area').value);
+        if(Array.isArray(parsed)) {
+            db = parsed;
+            localStorage.setItem(DB_KEY, JSON.stringify(db));
+            renderList();
+            hide('m-imp');
+        }
+    } catch(e) { alert("JSON-Fehler"); }
+}
+
 function deleteProject(i) { if(confirm('Löschen?')) { db.splice(i, 1); localStorage.setItem(DB_KEY, JSON.stringify(db)); renderList(); } }
 function delT() { const i = el('t-idx').value; db[currentIdx].tools.splice(i, 1); localStorage.setItem(DB_KEY, JSON.stringify(db)); renderTools(); hide('m-t'); }
+
+// --- PDF С ПРЕМИУМ ДИЗАЙНОМ ---
+function makePDF() {
+    const p = db[currentIdx];
+    
+    const getRow = (t) => {
+        const isLong = (t.dia || '').length > 15;
+        const align = isLong ? 'center' : 'baseline';
+        const displayDia = t.dia.includes('/') ? t.dia.split('/').join('<br>') : t.dia;
+
+        return `
+        <div style="display:flex; align-items:${align}; border-bottom:1.5px solid #000; padding:10px 0; width:100%;">
+            <div style="width:75px; font-weight:900; font-size:16px; letter-spacing:-0.5px;">${t.id}</div>
+            <div style="flex:1; font-weight:700; font-size:16px; text-transform:uppercase; padding-right:10px; white-space:pre-wrap; line-height:1.1;">${t.nm}</div>
+            <div style="width:130px; text-align:right; font-weight:900; font-size:15px; line-height:1.2;">${displayDia}</div>
+        </div>`;
+    };
+
+    let oben = [], unten = [], target = oben;
+    (p.tools || []).forEach(t => {
+        if(t.rev) target = unten;
+        target.push(t);
+    });
+
+    const html = `
+    <div style="width:210mm; padding:12mm; box-sizing:border-box; background:#fff; font-family:sans-serif; color:#000;">
+        <div style="border:4px solid #000; padding:25px; min-height:265mm; display:flex; flex-direction:column; box-sizing:border-box; position:relative;">
+            
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                <div style="display:flex; flex-direction:column;">
+                    <div style="font-size:14px; font-weight:900; text-transform:uppercase; letter-spacing:1px; margin-bottom:4px;">${p.name || ''}</div>
+                    <div style="font-size:72px; font-weight:900; line-height:0.8; letter-spacing:-3px;">${p.num || '---'}</div>
+                </div>
+                <div style="width:230px; font-size:12px; font-weight:900; line-height:1.6;">
+                    <div style="display:flex; justify-content:space-between; border-bottom:2px solid #000;"><span>ABSTAND</span><span>${p.abs || ''}</span></div>
+                    <div style="display:flex; justify-content:space-between; border-bottom:2px solid #000;"><span>GREIFBACKEN</span><span>${p.grf || ''}</span></div>
+                    <div style="display:flex; justify-content:space-between; border-bottom:2px solid #000;"><span>LAUFZEIT</span><span>${p.lzf || ''}</span></div>
+                    <div style="display:flex; justify-content:space-between; border-bottom:2px solid #000;"><span>SÄGELÄНGE</span><span>${p.sag || ''}</span></div>
+                    <div style="display:flex; justify-content:space-between; border-bottom:2px solid #000;"><span>STÜCK T</span><span>${p.stt || ''}</span></div>
+                    <div style="display:flex; justify-content:space-between; border-bottom:2px solid #000;"><span>STÜCK N</span><span>${p.stn || ''}</span></div>
+                </div>
+            </div>
+
+            <div style="border-bottom:12px solid #000; margin-bottom:25px;"></div>
+
+            <div style="flex:1;">
+                <div style="margin-bottom:8px; font-size:24px; font-weight:900; letter-spacing:1px; text-transform:uppercase;">REVOLVER OBEN</div>
+                <div style="border-bottom:6px solid #000; margin-bottom:10px;"></div>
+                ${oben.map(getRow).join('')}
+
+                ${unten.length > 0 ? `
+                    <div style="margin-top:45px; margin-bottom:8px; font-size:24px; font-weight:900; letter-spacing:1px; text-transform:uppercase;">REVOLVER UNTEN</div>
+                    <div style="border-bottom:6px solid #000; margin-bottom:10px;"></div>
+                    ${unten.map(getRow).join('')}
+                ` : ''}
+            </div>
+
+            <div style="margin-top:20px; border-top:2px solid #000; padding-top:10px; font-size:10px; font-weight:900; text-align:center; letter-spacing:2px;">QS CENTRAL PREMIUM REPORT</div>
+        </div>
+    </div>`;
+
+    el('print-container').innerHTML = html;
+    setTimeout(() => { window.print(); }, 150);
+}
 
 window.onload = renderList;
