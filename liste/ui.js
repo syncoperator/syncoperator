@@ -109,9 +109,8 @@ function modalT(i = null) {
     const edit = i !== null;
     el('t-idx').value = edit ? i : '';
     
-    // БЕЗОПАСНОЕ ПОЛУЧЕНИЕ ОБЪЕКТА
     let t = {id:'', nm:'', dia:'', rev:false};
-    if (edit && db[currentIdx] && db[currentIdx].tools && db[currentIdx].tools[i]) {
+    if (edit && db[currentIdx].tools[i]) {
         t = db[currentIdx].tools[i];
     }
     
@@ -119,30 +118,19 @@ function modalT(i = null) {
     el('t-nm').value = t.nm || ''; 
     el('t-dia').value = t.dia || '';
     
-    // ПРОВЕРЯЕМ И ОБНОВЛЯЕМ КНОПКУ РЕВОЛЬВЕРА
+    // Прячем или показываем разделитель в зависимости от того, есть ли кнопка в HTML
     let btnRev = el('btn-rev-toggle');
-    if(!btnRev) {
-        btnRev = document.createElement('div');
-        btnRev.id = 'btn-rev-toggle';
-        // Вставляем в конец контента модалки, это самое безопасное место
-        el('m-t').querySelector('.modal-content').appendChild(btnRev);
+    if (btnRev) {
+        btnRev.style.display = 'block';
+        const updateBtn = (state) => {
+            btnRev.dataset.state = state;
+            btnRev.innerText = state ? "✓ UNTEN (START)" : "SET AS UNTEN START";
+            btnRev.style.background = state ? "#000" : "#f0f0f0";
+            btnRev.style.color = state ? "#fff" : "#000";
+        };
+        updateBtn(t.rev === true);
+        btnRev.onclick = () => updateBtn(!(btnRev.dataset.state === 'true'));
     }
-    
-    btnRev.style.cssText = `margin: 15px 0; padding: 15px; border-radius: 12px; text-align: center; font-weight: 900; cursor: pointer; order: 10;`;
-    
-    const updateBtn = (state) => {
-        btnRev.dataset.state = state;
-        btnRev.innerText = (state === 'true' || state === true) ? "✓ UNTEN (START)" : "SET AS UNTEN START";
-        btnRev.style.background = (state === 'true' || state === true) ? "#000" : "#f0f0f0";
-        btnRev.style.color = (state === 'true' || state === true) ? "#fff" : "#000";
-    };
-
-    updateBtn(t.rev === true);
-    
-    btnRev.onclick = function() {
-        const newState = !(this.dataset.state === 'true');
-        updateBtn(newState);
-    };
 
     el('btn-del-t').style.display = edit ? 'block' : 'none';
     show('m-t');
@@ -161,12 +149,8 @@ function saveT() {
     };
 
     if(!db[currentIdx].tools) db[currentIdx].tools = [];
-    
-    if(i === '') {
-        db[currentIdx].tools.push(t);
-    } else {
-        db[currentIdx].tools[parseInt(i)] = t;
-    }
+    if(i === '') db[currentIdx].tools.push(t); 
+    else db[currentIdx].tools[parseInt(i)] = t;
     
     localStorage.setItem(DB_KEY, JSON.stringify(db));
     renderTools(); 
@@ -176,94 +160,49 @@ function saveT() {
 // --- PDF ---
 function makePDF() {
     const p = db[currentIdx];
-    
-    const getHeader = (page2 = false) => `
+    const getHeader = (p2) => `
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; min-height:90px;">
-            <div style="display:flex; flex-direction:column; justify-content:center;">
-                <div style="font-size:13px; font-weight:900; text-transform:uppercase; color:#666; margin-bottom:2px; line-height:1;">${p.name || ''} ${page2 ? '(SEITE 2)' : ''}</div>
-                <div style="font-size:64px; font-weight:900; line-height:0.8; letter-spacing:-2px; margin:0;">${p.num || '---'}</div>
+            <div>
+                <div style="font-size:13px; font-weight:900; text-transform:uppercase; color:#666;">${p.name || ''} ${p2 ? '(SEITE 2)' : ''}</div>
+                <div style="font-size:64px; font-weight:900; line-height:0.8;">${p.num || '---'}</div>
             </div>
-            ${!page2 ? `
+            ${!p2 ? `
             <div style="width:220px; font-size:11px; font-weight:800; line-height:1.5;">
                 <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>ABSTAND</span><span>${p.abs || ''}</span></div>
                 <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>GREIFBACKEN</span><span>${p.grf || ''}</span></div>
                 <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>LAUFZEIT</span><span>${p.lzf || ''}</span></div>
-                <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>SÄGELÄNGE</span><span>${p.sag || ''}</span></div>
-                <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>STÜCK T</span><span>${p.stt || ''}</span></div>
-                <div style="display:flex; justify-content:space-between;"><span>STÜCK N</span><span>${p.stn || ''}</span></div>
+                <div style="display:flex; justify-content:space-between;"><span>STÜCK T</span><span>${p.stt || ''}</span></div>
             </div>` : ''}
         </div>
-        <div style="border-bottom:5px solid #000; margin-bottom:15px;"></div>
-    `;
+        <div style="border-bottom:5px solid #000; margin-bottom:15px;"></div>`;
 
-    const getRow = (t) => {
-        const isLong = (t.dia || '').length > 15;
-        const align = isLong ? 'center' : 'baseline';
-        const displayDia = t.dia.includes('/') ? t.dia.split('/').join('<br>') : t.dia;
-        return `
-        <div style="display:flex; align-items:${align}; border-bottom:1px solid #eee; padding:10px 0; width:100%;">
+    const getRow = (t) => `
+        <div style="display:flex; align-items:baseline; border-bottom:1px solid #eee; padding:10px 0;">
             <div style="width:75px; font-weight:800; font-size:15px;">${t.id}</div>
-            <div style="flex:1; font-weight:700; font-size:15px; text-transform:uppercase; padding-right:10px; white-space:pre-wrap;">${t.nm}</div>
-            <div style="width:125px; text-align:right; font-weight:800; font-size:14px; line-height:1.2;">${displayDia}</div>
+            <div style="flex:1; font-weight:700; font-size:15px; text-transform:uppercase; white-space:pre-wrap;">${t.nm}</div>
+            <div style="width:125px; text-align:right; font-weight:800; font-size:14px;">${t.dia}</div>
         </div>`;
-    };
-
-    const getSection = (title) => `<div style="background:#000; color:#fff; padding:5px 10px; font-weight:900; font-size:13px; margin:10px 0 5px 0;">${title}</div>`;
 
     let oben = [], unten = [], target = oben;
-    (p.tools || []).forEach(t => {
-        if(t.rev) target = unten;
-        target.push(t);
-    });
+    (p.tools || []).forEach(t => { if(t.rev) target = unten; target.push(t); });
 
-    const isMultiPage = (p.tools || []).length > 22 && unten.length > 0;
-
-    let html = `<div style="width:210mm; padding:12mm; box-sizing:border-box; background:#fff; font-family:sans-serif; color:#000;">
-        <div style="border:2px solid #000; padding:25px; min-height:265mm; display:flex; flex-direction:column; box-sizing:border-box;">
-            ${getHeader()}
-            <div style="display:flex; font-size:10px; font-weight:900; text-transform:uppercase; margin-bottom:6px; padding:0 2px;">
-                <div style="width:75px;">T-NR</div>
-                <div style="flex:1;">WERKZEUGNAME / KOMMENTAR</div>
-                <div style="width:125px; text-align:right;">Ø / TOLERANZ</div>
-            </div>
-            <div style="border-bottom:3px solid #000;"></div>
-            ${getSection("REVOLVER OBEN")}
+    let html = `<div style="width:210mm; padding:12mm; background:#fff; font-family:sans-serif;">
+        <div style="border:2px solid #000; padding:25px; min-height:265mm;">
+            ${getHeader(false)}
+            <div style="background:#000; color:#fff; padding:5px; font-weight:900; margin-bottom:5px;">REVOLVER OBEN</div>
             ${oben.map(t => getRow(t)).join('')}
-            ${!isMultiPage && unten.length > 0 ? getSection("REVOLVER UNTEN") + unten.map(t => getRow(t)).join('') : ''}
+            ${unten.length > 0 && total < 22 ? `<div style="background:#000; color:#fff; padding:5px; font-weight:900; margin-top:10px;">REVOLVER UNTEN</div>` + unten.map(t => getRow(t)).join('') : ''}
         </div>
     </div>`;
-
-    if(isMultiPage) {
-        html += `<div style="width:210mm; padding:12mm; box-sizing:border-box; background:#fff; font-family:sans-serif; color:#000; page-break-before:always;">
-            <div style="border:2px solid #000; padding:25px; min-height:265mm; display:flex; flex-direction:column; box-sizing:border-box;">
-                ${getHeader(true)}
-                ${getSection("REVOLVER UNTEN")}
-                ${unten.map(t => getRow(t)).join('')}
-            </div>
-        </div>`;
-    }
-
+    
     el('print-container').innerHTML = html;
-    setTimeout(() => { window.print(); }, 200);
+    setTimeout(() => window.print(), 200);
 }
 
-// --- СЕРВИС ---
-function runImp() {
-    const text = el('imp-area').value; if (!text.trim()) return;
-    const regex = /(T[0O]\d{2,4})/gi; const parts = text.split(regex);
-    if(!db[currentIdx].tools) db[currentIdx].tools = [];
-    for (let i = 1; i < parts.length; i += 2) {
-        let id = parts[i].trim().toUpperCase().replace('O', '0');
-        let name = (parts[i + 1] || '').trim().replace(/[\r\n]+/g, ' ').replace(/\s\s+/g, ' ');
-        db[currentIdx].tools.push({ id, nm: name.toUpperCase(), dia: '', rev: false });
-    }
-    localStorage.setItem(DB_KEY, JSON.stringify(db));
-    el('imp-area').value = ''; renderTools(); hide('m-imp');
-}
-
+// --- СТАНДАРТ ---
 function deleteProject(i) { if(confirm('Löschen?')) { db.splice(i, 1); localStorage.setItem(DB_KEY, JSON.stringify(db)); renderList(); } }
 function delT() { const i = el('t-idx').value; db[currentIdx].tools.splice(i, 1); localStorage.setItem(DB_KEY, JSON.stringify(db)); renderTools(); hide('m-t'); }
-function exportJSON() { el('imp-area').value = JSON.stringify(db); alert("JSON Kopiert!"); }
+function exportJSON() { el('imp-area').value = JSON.stringify(db); alert("JSON OK"); }
 function importJSON() { try { const p = JSON.parse(el('imp-area').value); if(Array.isArray(p)) { db = p; localStorage.setItem(DB_KEY, JSON.stringify(db)); renderList(); hide('m-imp'); } } catch(e){alert("Error");} }
 
 window.onload = renderList;
