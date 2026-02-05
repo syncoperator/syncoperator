@@ -74,8 +74,7 @@ function renderTools() {
         item.style.flexDirection = 'column';
         item.style.alignItems = 'flex-start';
 
-        // Метка револьвера в приложении
-        const revMark = t.rev ? `<div style="background:#000; color:#fff; font-size:10px; padding:2px 6px; border-radius:4px; margin-bottom:5px; font-weight:900;">REVOLVER UNTEN ↓</div>` : '';
+        const revMark = t.rev ? `<div style="background:#000; color:#fff; font-size:10px; padding:4px 8px; border-radius:4px; margin-bottom:8px; font-weight:900; letter-spacing:1px;">REVOLVER UNTEN ↓</div>` : '';
 
         item.innerHTML = `
             ${revMark}
@@ -91,18 +90,15 @@ function renderTools() {
         item.ondrop = (e) => {
             e.preventDefault();
             const from = e.dataTransfer.getData('text/plain');
-            moveTool(parseInt(from), i);
+            const to = i;
+            const toolsArr = db[currentIdx].tools;
+            const movedItem = toolsArr.splice(from, 1)[0];
+            toolsArr.splice(to, 0, movedItem);
+            localStorage.setItem(DB_KEY, JSON.stringify(db));
+            renderTools();
         };
         list.appendChild(item);
     });
-}
-
-function moveTool(from, to) {
-    const tools = db[currentIdx].tools;
-    const item = tools.splice(from, 1)[0];
-    tools.splice(to, 0, item);
-    localStorage.setItem(DB_KEY, JSON.stringify(db));
-    renderTools();
 }
 
 function modalT(i = null) {
@@ -111,7 +107,6 @@ function modalT(i = null) {
     const t = edit ? db[currentIdx].tools[i] : {id:'', nm:'', dia:'', rev:false};
     el('t-id').value = t.id; el('t-nm').value = t.nm; el('t-dia').value = t.dia;
     
-    // Состояние кнопки револьвера
     const btn = el('btn-rev-toggle');
     if(t.rev) btn.classList.add('on'); else btn.classList.remove('on');
     btn.onclick = () => btn.classList.toggle('on');
@@ -136,21 +131,18 @@ function saveT() {
 
 function makePDF() {
     const p = db[currentIdx];
-    
-    // Генератор строки
     const getRow = (t) => {
         const isLong = (t.dia || '').length > 15;
         const align = isLong ? 'center' : 'baseline';
         const displayDia = t.dia.includes('/') ? t.dia.split('/').join('<br>') : t.dia;
         return `
-        <div style="display:flex; align-items:${align}; border-bottom:1px solid #eee; padding:10px 0; width:100%;">
-            <div style="width:75px; font-weight:800; font-size:15px;">${t.id}</div>
-            <div style="flex:1; font-weight:700; font-size:15px; text-transform:uppercase; padding-right:10px; white-space:pre-wrap;">${t.nm}</div>
-            <div style="width:125px; text-align:right; font-weight:800; font-size:14px; line-height:1.2;">${displayDia}</div>
+        <div style="display:flex; align-items:${align}; border-bottom:1.5px solid #000; padding:10px 0; width:100%;">
+            <div style="width:75px; font-weight:800; font-size:16px;">${t.id}</div>
+            <div style="flex:1; font-weight:700; font-size:16px; text-transform:uppercase; padding-right:10px; white-space:pre-wrap;">${t.nm}</div>
+            <div style="width:135px; text-align:right; font-weight:900; font-size:16px; line-height:1.2;">${displayDia}</div>
         </div>`;
     };
 
-    // Разделение на Oben и Unten
     let oben = [], unten = [], target = oben;
     (p.tools || []).forEach(t => {
         if(t.rev) target = unten;
@@ -159,40 +151,43 @@ function makePDF() {
 
     const html = `
     <div style="width:210mm; padding:12mm; box-sizing:border-box; background:#fff; font-family:sans-serif; color:#000;">
-        <div style="border:2.5px solid #000; padding:25px; min-height:265mm; display:flex; flex-direction:column; box-sizing:border-box;">
+        <div style="border:3.5px solid #000; padding:25px; min-height:265mm; display:flex; flex-direction:column; box-sizing:border-box;">
+            
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
                 <div>
-                    <div style="font-size:13px; font-weight:900; text-transform:uppercase; color:#666;">${p.name || ''}</div>
-                    <div style="font-size:64px; font-weight:900; line-height:0.8; letter-spacing:-2px;">${p.num || '---'}</div>
+                    <div style="font-size:14px; font-weight:900; text-transform:uppercase; color:#000;">${p.name || ''}</div>
+                    <div style="font-size:68px; font-weight:900; line-height:0.8; letter-spacing:-2px;">${p.num || '---'}</div>
                 </div>
-                <div style="width:220px; font-size:11px; font-weight:800; line-height:1.5;">
-                    <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>ABSTAND</span><span>${p.abs || ''}</span></div>
-                    <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>GREIFBACKEN</span><span>${p.grf || ''}</span></div>
-                    <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>LAUFZEIT</span><span>${p.lzf || ''}</span></div>
-                    <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>SÄGELÄNGE</span><span>${p.sag || ''}</span></div>
-                    <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>STÜCK T</span><span>${p.stt || ''}</span></div>
-                    <div style="display:flex; justify-content:space-between;"><span>STÜCK N</span><span>${p.stn || ''}</span></div>
+                <div style="width:230px; font-size:12px; font-weight:900; line-height:1.6;">
+                    <div style="display:flex; justify-content:space-between; border-bottom:2px solid #000;"><span>ABSTAND</span><span>${p.abs || ''}</span></div>
+                    <div style="display:flex; justify-content:space-between; border-bottom:2px solid #000;"><span>GREIFBACKEN</span><span>${p.grf || ''}</span></div>
+                    <div style="display:flex; justify-content:space-between; border-bottom:2px solid #000;"><span>LAUFZEIT</span><span>${p.lzf || ''}</span></div>
+                    <div style="display:flex; justify-content:space-between; border-bottom:2px solid #000;"><span>SÄGELÄNGE</span><span>${p.sag || ''}</span></div>
+                    <div style="display:flex; justify-content:space-between; border-bottom:2px solid #000;"><span>STÜCK T</span><span>${p.stt || ''}</span></div>
+                    <div style="display:flex; justify-content:space-between; border-bottom:2px solid #000;"><span>STÜCK N</span><span>${p.stn || ''}</span></div>
                 </div>
             </div>
             
-            <div style="border-bottom:6px solid #000; margin-bottom:15px;"></div>
+            <div style="border-bottom:10px solid #000; margin-bottom:25px;"></div>
             
-            <div style="background:#000; color:#fff; padding:6px 12px; font-weight:900; font-size:14px; width:fit-content; margin-bottom:10px;">REVOLVER OBEN</div>
             <div style="flex:1;">
+                <div style="background:#000; color:#fff; padding:10px 20px; font-weight:900; font-size:20px; width:fit-content; letter-spacing:1px; margin-bottom:5px;">REVOLVER OBEN</div>
+                <div style="border-bottom:5px solid #000; margin-bottom:10px;"></div>
                 ${oben.map(getRow).join('')}
                 
                 ${unten.length > 0 ? `
-                    <div style="background:#000; color:#fff; padding:6px 12px; font-weight:900; font-size:14px; width:fit-content; margin-top:30px; margin-bottom:10px;">REVOLVER UNTEN</div>
+                    <div style="background:#000; color:#fff; padding:10px 20px; font-weight:900; font-size:20px; width:fit-content; letter-spacing:1px; margin-top:40px; margin-bottom:5px;">REVOLVER UNTEN</div>
+                    <div style="border-bottom:5px solid #000; margin-bottom:10px;"></div>
                     ${unten.map(getRow).join('')}
                 ` : ''}
             </div>
         </div>
     </div>`;
+
     el('print-container').innerHTML = html;
     setTimeout(() => { window.print(); }, 150);
 }
 
-// Функции импорта и экспорта остались без изменений
 function runImp() {
     const text = el('imp-area').value; if (!text.trim()) return;
     const regex = /(T[0O]\d{2,4})/gi; const parts = text.split(regex);
