@@ -72,17 +72,16 @@ function renderTools() {
         const item = document.createElement('div');
         item.className = 'list-item';
         item.draggable = true;
+        item.style.padding = '12px 15px';
         item.style.flexDirection = 'column';
         item.style.alignItems = 'flex-start';
-        item.style.padding = '12px 15px';
 
-        // Проверка на true или строку 'true'
-        const isUnten = (t.rev === true || t.rev === 'true');
-        const revMark = isUnten ? `<div style="background:#000; color:#fff; font-size:10px; padding:2px 8px; border-radius:4px; margin-bottom:8px; font-weight:900; letter-spacing:0.5px;">REVOLVER UNTEN ↓</div>` : '';
+        // Метка револьвера
+        const revMark = t.rev ? `<div style="background:#000; color:#fff; font-size:10px; padding:2px 6px; border-radius:4px; margin-bottom:5px; font-weight:900;">REVOLVER UNTEN ↓</div>` : '';
 
         item.innerHTML = `
             ${revMark}
-            <div style="width:100%;" onclick="modalT(${i})">
+            <div style="flex:1; width:100%;" onclick="modalT(${i})">
                 <small style="color:#8e8e93; font-weight:700; font-size:11px;">${t.id || 'T0000'}</small>
                 <b style="font-size:20px; font-weight:900; display:block; line-height:1.2; word-wrap:break-word; white-space:pre-wrap;">${t.nm || '---'}</b>
             </div>
@@ -98,7 +97,7 @@ function renderTools() {
         };
         list.appendChild(item);
     });
-    list.innerHTML += '<div style="height:180px; pointer-events:none;"></div>'; 
+    list.innerHTML += '<div style="height:150px; pointer-events:none;"></div>'; 
 }
 
 function moveTool(from, to) {
@@ -112,40 +111,26 @@ function moveTool(from, to) {
 function modalT(i = null) {
     const edit = i !== null;
     el('t-idx').value = edit ? i : '';
-    
-    let t = {id:'', nm:'', dia:'', rev:false};
-    if (edit && db[currentIdx].tools[i]) {
-        t = db[currentIdx].tools[i];
-    }
-    
+    const t = edit ? db[currentIdx].tools[i] : {id:'', nm:'', dia:'', rev:false};
     el('t-id').value = t.id || ''; 
     el('t-nm').value = t.nm || ''; 
     el('t-dia').value = t.dia || '';
     
-    let btnRev = el('btn-rev-toggle');
-    if (!btnRev) {
-        btnRev = document.createElement('div');
-        btnRev.id = 'btn-rev-toggle';
-        const modalContent = el('m-t').querySelector('.modal-content');
-        modalContent.insertBefore(btnRev, el('btn-save-t') || modalContent.lastElementChild);
+    // Пытаемся найти кнопку, если ее нет - не ломаем код
+    const btn = el('btn-rev-toggle');
+    if(btn) {
+        btn.dataset.state = t.rev || false;
+        btn.innerText = t.rev ? "✓ UNTEN (START)" : "SET AS UNTEN START";
+        btn.style.background = t.rev ? "#000" : "#f0f0f0";
+        btn.style.color = t.rev ? "#fff" : "#000";
+        btn.onclick = function() {
+            const s = !(this.dataset.state === 'true');
+            this.dataset.state = s;
+            this.innerText = s ? "✓ UNTEN (START)" : "SET AS UNTEN START";
+            this.style.background = s ? "#000" : "#f0f0f0";
+            this.style.color = s ? "#fff" : "#000";
+        };
     }
-    
-    btnRev.style.cssText = `margin: 10px 0 20px 0; padding: 15px; border-radius: 12px; text-align: center; font-weight: 900; cursor: pointer; display: block; transition: 0.2s;`;
-    
-    const updateBtn = (state) => {
-        const isTrue = (state === true || state === 'true');
-        btnRev.dataset.state = isTrue;
-        btnRev.innerText = isTrue ? "✓ UNTEN (START)" : "SET AS UNTEN START";
-        btnRev.style.background = isTrue ? "#000" : "#f0f0f0";
-        btnRev.style.color = isTrue ? "#fff" : "#000";
-    };
-
-    updateBtn(t.rev);
-    
-    btnRev.onclick = () => {
-        const cur = btnRev.dataset.state === 'true';
-        updateBtn(!cur);
-    };
 
     el('btn-del-t').style.display = edit ? 'block' : 'none';
     show('m-t');
@@ -154,7 +139,6 @@ function modalT(i = null) {
 function saveT() {
     const i = el('t-idx').value;
     const btn = el('btn-rev-toggle');
-    // Принудительно сохраняем булево значение
     const isUnten = btn ? (btn.dataset.state === 'true') : false;
 
     const t = { 
@@ -163,64 +147,62 @@ function saveT() {
         dia: el('t-dia').value,
         rev: isUnten 
     };
-
     if(!db[currentIdx].tools) db[currentIdx].tools = [];
-    if(i === '') db[currentIdx].tools.push(t); 
-    else db[currentIdx].tools[parseInt(i)] = t;
-    
+    if(i === '') db[currentIdx].tools.push(t); else db[currentIdx].tools[parseInt(i)] = t;
     localStorage.setItem(DB_KEY, JSON.stringify(db));
-    renderTools(); 
-    hide('m-t');
+    renderTools(); hide('m-t');
 }
 
 // --- PDF ---
 function makePDF() {
     const p = db[currentIdx];
-    const getHeader = (p2) => `
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; min-height:90px;">
-            <div>
-                <div style="font-size:13px; font-weight:900; text-transform:uppercase; color:#666;">${p.name || ''} ${p2 ? '(SEITE 2)' : ''}</div>
-                <div style="font-size:64px; font-weight:900; line-height:0.8;">${p.num || '---'}</div>
-            </div>
-            ${!p2 ? `<div style="width:220px; font-size:11px; font-weight:800; line-height:1.5;">
-                <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>ABSTAND</span><span>${p.abs || ''}</span></div>
-                <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>LAUFZEIT</span><span>${p.lzf || ''}</span></div>
-                <div style="display:flex; justify-content:space-between;"><span>STÜCK T</span><span>${p.stt || ''}</span></div>
-            </div>` : ''}
-        </div>
-        <div style="border-bottom:5px solid #000; margin-bottom:15px;"></div>`;
-
     const getRow = (t) => {
         const isLong = (t.dia || '').length > 15;
+        const align = isLong ? 'center' : 'baseline';
         const displayDia = t.dia.includes('/') ? t.dia.split('/').join('<br>') : t.dia;
         return `
-        <div style="display:flex; align-items:${isLong ? 'center' : 'baseline'}; border-bottom:1px solid #eee; padding:10px 0;">
+        <div style="display:flex; align-items:${align}; border-bottom:1px solid #eee; padding:10px 0; width:100%;">
             <div style="width:75px; font-weight:800; font-size:15px;">${t.id}</div>
-            <div style="flex:1; font-weight:700; font-size:15px; text-transform:uppercase; white-space:pre-wrap; padding-right:10px;">${t.nm}</div>
+            <div style="flex:1; font-weight:700; font-size:15px; text-transform:uppercase; white-space:pre-wrap;">${t.nm}</div>
             <div style="width:125px; text-align:right; font-weight:800; font-size:14px; line-height:1.2;">${displayDia}</div>
         </div>`;
     };
 
     let oben = [], unten = [], target = oben;
-    (p.tools || []).forEach(t => { 
-        if(t.rev === true || t.rev === 'true') target = unten; 
-        target.push(t); 
-    });
+    (p.tools || []).forEach(t => { if(t.rev) target = unten; target.push(t); });
 
-    let html = `<div style="width:210mm; padding:12mm; background:#fff; font-family:sans-serif;">
+    const html = `
+    <div style="width:210mm; padding:12mm; background:#fff; font-family:sans-serif; color:#000;">
         <div style="border:2px solid #000; padding:25px; min-height:265mm;">
-            ${getHeader(false)}
-            <div style="background:#000; color:#fff; padding:6px 10px; font-weight:900; font-size:13px; margin-bottom:5px;">REVOLVER OBEN</div>
+            <div style="display:flex; justify-content:space-between; margin-bottom:15px;">
+                <div>
+                    <div style="font-size:13px; font-weight:900; color:#666;">${p.name || ''}</div>
+                    <div style="font-size:64px; font-weight:900; line-height:0.8;">${p.num || '---'}</div>
+                </div>
+            </div>
+            <div style="border-bottom:5px solid #000; margin-bottom:15px;"></div>
+            <div style="background:#000; color:#fff; padding:5px 10px; font-weight:900; font-size:13px;">REVOLVER OBEN</div>
             ${oben.map(t => getRow(t)).join('')}
-            ${unten.length > 0 ? `<div style="background:#000; color:#fff; padding:6px 10px; font-weight:900; font-size:13px; margin-top:15px; margin-bottom:5px;">REVOLVER UNTEN</div>` + unten.map(t => getRow(t)).join('') : ''}
+            ${unten.length > 0 ? `<div style="background:#000; color:#fff; padding:5px 10px; font-weight:900; font-size:13px; margin-top:15px;">REVOLVER UNTEN</div>` + unten.map(t => getRow(t)).join('') : ''}
         </div>
     </div>`;
-    
     el('print-container').innerHTML = html;
-    setTimeout(() => window.print(), 200);
+    setTimeout(() => { window.print(); }, 150);
 }
 
-// --- СТАНДАРТ ---
+// --- СЕРВИС ---
+function runImp() {
+    const text = el('imp-area').value; if (!text.trim()) return;
+    const regex = /(T[0O]\d{2,4})/gi; const parts = text.split(regex);
+    if(!db[currentIdx].tools) db[currentIdx].tools = [];
+    for (let i = 1; i < parts.length; i += 2) {
+        let id = parts[i].trim().toUpperCase().replace('O', '0');
+        let name = (parts[i + 1] || '').trim().replace(/[\r\n]+/g, ' ').replace(/\s\s+/g, ' ');
+        db[currentIdx].tools.push({ id, nm: name.toUpperCase(), dia: '', rev: false });
+    }
+    localStorage.setItem(DB_KEY, JSON.stringify(db));
+    el('imp-area').value = ''; renderTools(); hide('m-imp');
+}
 function deleteProject(i) { if(confirm('Löschen?')) { db.splice(i, 1); localStorage.setItem(DB_KEY, JSON.stringify(db)); renderList(); } }
 function delT() { const i = el('t-idx').value; db[currentIdx].tools.splice(i, 1); localStorage.setItem(DB_KEY, JSON.stringify(db)); renderTools(); hide('m-t'); }
 function exportJSON() { el('imp-area').value = JSON.stringify(db); alert("JSON OK"); }
