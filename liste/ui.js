@@ -45,7 +45,7 @@ function renderList() {
     list.innerHTML = db.map((p, i) => `
         <div class="list-item" onclick="openProject(${i})">
             <div><small>${p.name || '---'}</small><b>${p.num || '---'}</b></div>
-            <div style="color:var(--danger); font-weight:900; padding:15px; z-index:20;" onclick="event.stopPropagation(); deleteProject(${i})">✕</div>
+            <div style="color:var(--danger); font-weight:900; padding:15px;" onclick="event.stopPropagation(); deleteProject(${i})">✕</div>
         </div>`).join('') + '<div style="height:100px"></div>';
 }
 
@@ -106,22 +106,25 @@ function moveTool(from, to) {
 
 function modalT(i = null) {
     const edit = i !== null;
-    el('t-idx').value = edit ? i : '';
+    el('t-idx').value = (i === null) ? '' : i;
     
-    // Безопасное получение данных
-    const t = (edit && db[currentIdx].tools[i]) ? db[currentIdx].tools[i] : {id:'', nm:'', dia:'', rev:false};
+    // Создаем дефолтный объект, если i === null
+    let t = {id:'', nm:'', dia:'', rev:false};
+    if (edit && db[currentIdx].tools[i]) {
+        t = db[currentIdx].tools[i];
+    }
     
     el('t-id').value = t.id || ''; 
     el('t-nm').value = t.nm || ''; 
     el('t-dia').value = t.dia || '';
     
-    // Кнопка револьвера
+    // Работа с кнопкой револьвера (без лишних пересозданий)
     let btnRev = el('btn-rev-toggle');
     if(!btnRev) {
         btnRev = document.createElement('div');
         btnRev.id = 'btn-rev-toggle';
         const content = el('m-t').querySelector('.modal-content');
-        content.insertBefore(btnRev, el('btn-save-t') || content.lastElementChild);
+        content.insertBefore(btnRev, el('btn-save-t'));
     }
     
     btnRev.style.cssText = `margin: 10px 0; padding: 15px; border-radius: 12px; text-align: center; font-weight: 900; cursor: pointer;`;
@@ -133,7 +136,7 @@ function modalT(i = null) {
         btnRev.style.color = state ? "#fff" : "#000";
     };
 
-    updateBtn(t.rev || false);
+    updateBtn(t.rev === true);
     btnRev.onclick = () => updateBtn(btnRev.dataset.state === 'false');
 
     el('btn-del-t').style.display = edit ? 'block' : 'none';
@@ -153,8 +156,12 @@ function saveT() {
     };
 
     if(!db[currentIdx].tools) db[currentIdx].tools = [];
-    if(i === '') db[currentIdx].tools.push(t); 
-    else db[currentIdx].tools[parseInt(i)] = t;
+    
+    if(i === '') { 
+        db[currentIdx].tools.push(t); 
+    } else { 
+        db[currentIdx].tools[parseInt(i)] = t; 
+    }
 
     localStorage.setItem(DB_KEY, JSON.stringify(db));
     renderTools(); 
@@ -198,7 +205,6 @@ function makePDF() {
         target.push(t);
     });
 
-    // Страница 1
     html += `<div style="width:210mm; padding:10mm; background:#fff; font-family:sans-serif;">
                 <div style="border:2px solid #000; padding:20px; min-height:270mm;">
                     ${getHeader()}
@@ -208,7 +214,6 @@ function makePDF() {
                 </div>
             </div>`;
 
-    // Страница 2
     if(unten.length > 0 && (oben.length + unten.length >= 22)) {
         html += `<div style="width:210mm; padding:10mm; background:#fff; font-family:sans-serif; page-break-before:always;">
                     <div style="border:2px solid #000; padding:20px; min-height:270mm;">
