@@ -62,7 +62,7 @@ function openProject(i) {
 
 function goHome() { currentIdx = null; el('v-home').classList.add('active'); el('v-det').classList.remove('active'); renderList(); }
 
-// --- ИНСТРУМЕНТЫ (С МАРКЕРОМ РЕВОЛЬВЕРА) ---
+// --- ИНСТРУМЕНТЫ (DRAG & DROP + REV) ---
 function renderTools() {
     const list = el('list-t'); if(!list || currentIdx === null) return;
     const tools = db[currentIdx].tools || [];
@@ -72,10 +72,9 @@ function renderTools() {
         const item = document.createElement('div');
         item.className = 'list-item';
         item.draggable = true;
-        item.style.padding = '12px 15px';
+        item.dataset.index = i; // Важно для Drag & Drop
         
-        // Визуальная метка начала нижнего револьвера в приложении
-        const revLabel = t.rev ? `<div style="background:#000; color:#fff; font-size:10px; padding:2px 6px; border-radius:4px; margin-bottom:5px; width:fit-content;">UNTEN</div>` : '';
+        const revLabel = t.rev ? `<div style="background:#000; color:#fff; font-size:10px; padding:2px 6px; border-radius:4px; margin-bottom:5px; width:fit-content; font-weight:900;">REVOLVER UNTEN ↓</div>` : '';
 
         item.innerHTML = `
             <div style="flex:1; min-width:0;" onclick="modalT(${i})">
@@ -85,17 +84,22 @@ function renderTools() {
             </div>
         `;
         
+        // Drag & Drop события
         item.ondragstart = (e) => { e.dataTransfer.setData('text/plain', i); item.style.opacity = '0.4'; };
-        item.ondragend = () => { item.style.opacity = '1'; renderTools(); };
+        item.ondragend = () => { item.style.opacity = '1'; };
         item.ondragover = (e) => e.preventDefault();
         item.ondrop = (e) => {
             e.preventDefault();
             const from = e.dataTransfer.getData('text/plain');
-            moveTool(parseInt(from), i);
+            const to = i;
+            moveTool(parseInt(from), to);
         };
         list.appendChild(item);
     });
-    list.innerHTML += '<div style="height:150px; pointer-events:none;"></div>'; 
+    // Padding в конце списка, чтобы кнопки не перекрывали
+    const pad = document.createElement('div');
+    pad.style.height = '180px';
+    list.appendChild(pad);
 }
 
 function moveTool(from, to) {
@@ -110,128 +114,128 @@ function modalT(i = null) {
     const edit = i !== null;
     el('t-idx').value = edit ? i : '';
     const t = edit ? db[currentIdx].tools[i] : {id:'', nm:'', dia:'', rev:false};
+    
     el('t-id').value = t.id; 
     el('t-nm').value = t.nm; 
     el('t-dia').value = t.dia;
-    // Добавь в HTML модалки <input type="checkbox" id="t-rev"> если хочешь, 
-    // либо мы будем использовать поле t-idx для скрытой логики. 
-    // Для простоты я добавлю проверку в saveT
+    
+    // Чистим старую кнопку если была
+    const oldBtn = el('btn-rev-toggle');
+    if(oldBtn) oldBtn.remove();
+
+    // Создаем новую кнопку переключения револьвера
+    const btnRev = document.createElement('div');
+    btnRev.id = 'btn-rev-toggle';
+    btnRev.style.cssText = `margin: 10px 0; padding: 15px; border-radius: 12px; text-align: center; font-weight: 900; cursor: pointer; transition: 0.2s;`;
+    
+    const updateBtn = (state) => {
+        btnRev.dataset.state = state;
+        btnRev.innerText = state ? "✓ UNTEN (START)" : "SET AS UNTEN START";
+        btnRev.style.background = state ? "#000" : "#f0f0f0";
+        btnRev.style.color = state ? "#fff" : "#000";
+    };
+
+    updateBtn(t.rev || false);
+    btnRev.onclick = () => updateBtn(btnRev.dataset.state === 'false');
+
+    // Вставляем кнопку ПЕРЕД кнопкой "Speichern" (предполагаем, что в HTML есть блок кнопок)
+    const content = el('m-t').querySelector('.modal-content');
+    content.insertBefore(btnRev, el('btn-save-t') || content.lastElementChild);
+
     el('btn-del-t').style.display = edit ? 'block' : 'none';
     show('m-t');
-    
-    // Временная кнопка переключения револьвера прямо в модалке (если нет чекбокса)
-    if(edit) {
-        const btnRev = document.createElement('button');
-        btnRev.id = 'temp-rev-btn';
-        btnRev.innerText = t.rev ? "✓ UNTEN" : "SET UNTEN";
-        btnRev.className = t.rev ? "btn-sec" : "btn-main";
-        btnRev.style.marginTop = "10px";
-        btnRev.onclick = () => { t.rev = !t.rev; btnRev.innerText = t.rev ? "✓ UNTEN" : "SET UNTEN"; };
-        el('m-t').querySelector('.modal-content').appendChild(btnRev);
-    }
-}
-
-// При закрытии модалки удаляем временную кнопку
-function hideMT() { 
-    hide('m-t'); 
-    const b = el('temp-rev-btn'); 
-    if(b) b.remove(); 
 }
 
 function saveT() {
     const i = el('t-idx').value;
-    const isUnten = el('temp-rev-btn') ? el('temp-rev-btn').innerText.includes('✓') : false;
+    const btn = el('btn-rev-toggle');
+    const isUnten = btn ? btn.dataset.state === 'true' : false;
+
     const t = { 
         id: el('t-id').value.toUpperCase(), 
         nm: el('t-nm').value.toUpperCase(), 
         dia: el('t-dia').value,
         rev: isUnten 
     };
+
     if(!db[currentIdx].tools) db[currentIdx].tools = [];
-    if(i === '') db[currentIdx].tools.push(t); else db[currentIdx].tools[i] = t;
+    if(i === '') db[currentIdx].tools.push(t); 
+    else db[currentIdx].tools[i] = t;
+
     localStorage.setItem(DB_KEY, JSON.stringify(db));
-    renderTools(); hideMT();
+    renderTools(); 
+    hide('m-t');
 }
 
-// --- СЛУЖЕБНЫЕ ---
-function deleteProject(i) { if(confirm('Löschen?')) { db.splice(i, 1); localStorage.setItem(DB_KEY, JSON.stringify(db)); renderList(); } }
-function delT() { const i = el('t-idx').value; db[currentIdx].tools.splice(i, 1); localStorage.setItem(DB_KEY, JSON.stringify(db)); renderTools(); hideMT(); }
-function exportJSON() { el('imp-area').value = JSON.stringify(db); el('imp-area').select(); alert("Kopiert!"); }
-function importJSON() { try { const p = JSON.parse(el('imp-area').value); if(Array.isArray(p)) { db = p; localStorage.setItem(DB_KEY, JSON.stringify(db)); renderList(); hide('m-imp'); } } catch(e) { alert("Error"); } }
-
-// --- PDF С РАЗДЕЛЕНИЕМ РЕВОЛЬВЕРОВ ---
+// --- PDF С ДВУМЯ РЕВОЛЬВЕРАМИ ---
 function makePDF() {
     const p = db[currentIdx];
     let html = '';
     
-    const header = (isNewPage = false) => `
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; min-height:90px;">
-            <div style="display:flex; flex-direction:column;">
-                <div style="font-size:13px; font-weight:900; text-transform:uppercase; color:#666;">${p.name || ''} ${isNewPage ? '(SEITE 2)' : ''}</div>
-                <div style="font-size:64px; font-weight:900; line-height:0.8; letter-spacing:-2px;">${p.num || '---'}</div>
+    const getHeader = (isPage2 = false) => `
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+            <div>
+                <div style="font-size:12px; font-weight:900; color:#666; text-transform:uppercase;">${p.name || ''} ${isPage2 ? '(SEITE 2)' : ''}</div>
+                <div style="font-size:50px; font-weight:900; line-height:0.8;">${p.num || '---'}</div>
             </div>
-            ${!isNewPage ? `
-            <div style="width:220px; font-size:11px; font-weight:800; line-height:1.5;">
-                <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>ABSTAND</span><span>${p.abs || ''}</span></div>
-                <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>GREIFBACKEN</span><span>${p.grf || ''}</span></div>
-                <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>LAUFZEIT</span><span>${p.lzf || ''}</span></div>
-                <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>SÄGELÄNGE</span><span>${p.sag || ''}</span></div>
-                <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>STÜCK T</span><span>${p.stt || ''}</span></div>
-                <div style="display:flex; justify-content:space-between;"><span>STÜCK N</span><span>${p.stn || ''}</span></div>
+            ${!isPage2 ? `
+            <div style="width:200px; font-size:10px; font-weight:800; line-height:1.4;">
+                <div style="display:flex; justify-content:space-between; border-bottom:1px solid #eee;"><span>ABSTAND</span><span>${p.abs || ''}</span></div>
+                <div style="display:flex; justify-content:space-between; border-bottom:1px solid #eee;"><span>LAUFZEIT</span><span>${p.lzf || ''}</span></div>
+                <div style="display:flex; justify-content:space-between;"><span>STÜCK T</span><span>${p.stt || ''}</span></div>
             </div>` : ''}
         </div>
-        <div style="border-bottom:5px solid #000; margin-bottom:10px;"></div>`;
+        <div style="border-bottom:4px solid #000; margin-bottom:10px;"></div>`;
 
-    const row = (t) => {
+    const getRow = (t) => {
         const isLong = (t.dia || '').length > 15;
-        const align = isLong ? 'center' : 'baseline';
         const displayDia = t.dia.includes('/') ? t.dia.split('/').join('<br>') : t.dia;
         return `
-        <div style="display:flex; align-items:${align}; border-bottom:1px solid #eee; padding:8px 0;">
-            <div style="width:75px; font-weight:800; font-size:15px;">${t.id}</div>
-            <div style="flex:1; font-weight:700; font-size:15px; text-transform:uppercase; padding-right:10px; white-space:pre-wrap;">${t.nm}</div>
-            <div style="width:125px; text-align:right; font-weight:800; font-size:14px; line-height:1.2;">${displayDia}</div>
+        <div style="display:flex; align-items:${isLong ? 'center' : 'baseline'}; border-bottom:1px solid #eee; padding:8px 0;">
+            <div style="width:70px; font-weight:800; font-size:14px;">${t.id}</div>
+            <div style="flex:1; font-weight:700; font-size:14px; text-transform:uppercase; white-space:pre-wrap;">${t.nm}</div>
+            <div style="width:120px; text-align:right; font-weight:800; font-size:13px; line-height:1.1;">${displayDia}</div>
         </div>`;
     };
 
-    const sectionTitle = (title) => `
-        <div style="background:#000; color:#fff; padding:4px 10px; font-weight:900; font-size:14px; margin:15px 0 5px 0; display:flex; justify-content:space-between;">
-            <span>${title}</span>
-        </div>`;
+    const getSection = (title) => `<div style="background:#000; color:#fff; padding:5px 10px; font-weight:900; font-size:13px; margin-top:10px;">${title}</div>`;
 
-    // Собираем контент
-    let oben = [];
-    let unten = [];
-    let foundUnten = false;
-
+    // Делим инструменты
+    let oben = [], unten = [], target = oben;
     (p.tools || []).forEach(t => {
-        if(t.rev) foundUnten = true;
-        if(foundUnten) unten.push(t); else oben.push(t);
+        if(t.rev) target = unten;
+        target.push(t);
     });
 
-    const pageStart = `<div style="width:210mm; padding:12mm; box-sizing:border-box; background:#fff; font-family:sans-serif; color:#000; page-break-after:always;">
-        <div style="border:2px solid #000; padding:25px; min-height:265mm; display:flex; flex-direction:column; box-sizing:border-box;">`;
-    const pageEnd = `</div></div>`;
+    // Страница 1
+    html += `<div style="width:210mm; padding:10mm; background:#fff; font-family:sans-serif;">
+                <div style="border:2px solid #000; padding:20px; min-height:270mm;">
+                    ${getHeader()}
+                    ${getSection("REVOLVER OBEN")}
+                    ${oben.map(t => getRow(t)).join('')}
+                    ${unten.length > 0 && (oben.length + unten.length < 22) ? getSection("REVOLVER UNTEN") + unten.map(t => getRow(t)).join('') : ''}
+                </div>
+            </div>`;
 
-    // Первая страница
-    html += pageStart + header() + sectionTitle("REVOLVER OBEN") + oben.map(t => row(t)).join('');
-    
-    if (unten.length > 0) {
-        // Если места мало (больше 22 инструментов всего), кидаем на вторую страницу
-        const totalTools = (p.tools || []).length;
-        const forceBreak = totalTools > 20; 
-
-        if (forceBreak) {
-            html += pageEnd + pageStart + header(true) + sectionTitle("REVOLVER UNTEN") + unten.map(t => row(t)).join('') + pageEnd;
-        } else {
-            html += sectionTitle("REVOLVER UNTEN") + unten.map(t => row(t)).join('') + pageEnd;
-        }
-    } else {
-        html += pageEnd;
+    // Страница 2 (если нужно)
+    if(unten.length > 0 && (oben.length + unten.length >= 22)) {
+        html += `<div style="width:210mm; padding:10mm; background:#fff; font-family:sans-serif; page-break-before:always;">
+                    <div style="border:2px solid #000; padding:20px; min-height:270mm;">
+                        ${getHeader(true)}
+                        ${getSection("REVOLVER UNTEN")}
+                        ${unten.map(t => getRow(t)).join('')}
+                    </div>
+                </div>`;
     }
 
     el('print-container').innerHTML = html;
-    setTimeout(() => { window.print(); }, 150);
+    setTimeout(() => { window.print(); }, 200);
 }
+
+// Стандартные функции импорта/удаления
+function deleteProject(i) { if(confirm('Löschen?')) { db.splice(i, 1); localStorage.setItem(DB_KEY, JSON.stringify(db)); renderList(); } }
+function delT() { const i = el('t-idx').value; db[currentIdx].tools.splice(i, 1); localStorage.setItem(DB_KEY, JSON.stringify(db)); renderTools(); hide('m-t'); }
+function exportJSON() { el('imp-area').value = JSON.stringify(db); alert("JSON Kopiert!"); }
+function importJSON() { try { const p = JSON.parse(el('imp-area').value); if(Array.isArray(p)) { db = p; localStorage.setItem(DB_KEY, JSON.stringify(db)); renderList(); hide('m-imp'); } } catch(e){alert("Error");} }
 
 window.onload = renderList;
