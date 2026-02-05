@@ -62,7 +62,7 @@ function openProject(i) {
 
 function goHome() { currentIdx = null; el('v-home').classList.add('active'); el('v-det').classList.remove('active'); renderList(); }
 
-// --- ИНСТРУМЕНТЫ (DRAG & DROP + REVOLVER) ---
+// --- ИНСТРУМЕНТЫ ---
 function renderTools() {
     const list = el('list-t'); if(!list || currentIdx === null) return;
     const tools = db[currentIdx].tools || [];
@@ -72,16 +72,16 @@ function renderTools() {
         const item = document.createElement('div');
         item.className = 'list-item';
         item.draggable = true;
-        item.style.padding = '12px 15px';
         item.style.flexDirection = 'column';
         item.style.alignItems = 'flex-start';
 
+        // Метка револьвера в списке
         const revMark = t.rev ? `<div style="background:#000; color:#fff; font-size:10px; padding:2px 6px; border-radius:4px; margin-bottom:5px; font-weight:900;">REVOLVER UNTEN ↓</div>` : '';
 
         item.innerHTML = `
             ${revMark}
             <div style="flex:1; width:100%;" onclick="modalT(${i})">
-                <small style="color:#8e8e93; font-weight:700; font-size:11px;">${t.id || 'T0000'}</small>
+                <small style="color:var(--gray); font-weight:700; font-size:11px;">${t.id || 'T0000'}</small>
                 <b style="font-size:20px; font-weight:900; display:block; line-height:1.2;">${t.nm || '---'}</b>
             </div>
         `;
@@ -92,35 +92,34 @@ function renderTools() {
         item.ondrop = (e) => {
             e.preventDefault();
             const from = e.dataTransfer.getData('text/plain');
-            const toolsArr = db[currentIdx].tools;
-            const movedItem = toolsArr.splice(parseInt(from), 1)[0];
-            toolsArr.splice(i, 0, movedItem);
-            localStorage.setItem(DB_KEY, JSON.stringify(db));
-            renderTools();
+            moveTool(parseInt(from), i);
         };
         list.appendChild(item);
     });
     list.innerHTML += '<div style="height:150px; pointer-events:none;"></div>'; 
 }
 
+function moveTool(from, to) {
+    const tools = db[currentIdx].tools;
+    const item = tools.splice(from, 1)[0];
+    tools.splice(to, 0, item);
+    localStorage.setItem(DB_KEY, JSON.stringify(db));
+    renderTools();
+}
+
 function modalT(i = null) {
     const edit = i !== null;
     el('t-idx').value = edit ? i : '';
-    const t = (edit && db[currentIdx].tools[i]) ? db[currentIdx].tools[i] : {id:'', nm:'', dia:'', rev:false};
+    const t = (edit && db[currentIdx].tools[i]) ? db[currentIdx].tools[i] : {id:'', nm:'', dia:'', rev: false};
     
     el('t-id').value = t.id; 
     el('t-nm').value = t.nm; 
     el('t-dia').value = t.dia;
 
-    const btn = el('btn-rev-toggle');
-    const updateBtn = (state) => {
-        btn.dataset.state = state;
-        btn.innerText = state ? "✓ UNTEN (START)" : "SET AS UNTEN START";
-        btn.style.background = state ? "#000" : "#f0f0f0";
-        btn.style.color = state ? "#fff" : "#000";
-    };
-    updateBtn(t.rev === true);
-    btn.onclick = () => updateBtn(!(btn.dataset.state === 'true'));
+    // Логика кнопки-переключателя
+    const btnRev = el('btn-rev-toggle');
+    if (t.rev) btnRev.classList.add('on'); else btnRev.classList.remove('on');
+    btnRev.onclick = () => btnRev.classList.toggle('on');
 
     el('btn-del-t').style.display = edit ? 'block' : 'none';
     show('m-t');
@@ -128,77 +127,110 @@ function modalT(i = null) {
 
 function saveT() {
     const i = el('t-idx').value;
-    const isUnten = el('btn-rev-toggle').dataset.state === 'true';
+    const isUnten = el('btn-rev-toggle').classList.contains('on');
+    
     const t = { 
         id: el('t-id').value.toUpperCase(), 
         nm: el('t-nm').value.toUpperCase(), 
         dia: el('t-dia').value,
         rev: isUnten
     };
+    
     if(!db[currentIdx].tools) db[currentIdx].tools = [];
-    if(i === '') db[currentIdx].tools.push(t); 
-    else db[currentIdx].tools[parseInt(i)] = t;
+    if(i === '') db[currentIdx].tools.push(t); else db[currentIdx].tools[i] = t;
+    
     localStorage.setItem(DB_KEY, JSON.stringify(db));
     renderTools(); hide('m-t');
 }
 
-// --- PDF ---
+// --- PDF С РАЗДЕЛЕНИЕМ ---
 function makePDF() {
     const p = db[currentIdx];
-    const getRow = (t) => {
+    
+    const getRowHtml = (t) => {
         const isLong = (t.dia || '').length > 15;
+        const align = isLong ? 'center' : 'baseline';
         const displayDia = t.dia.includes('/') ? t.dia.split('/').join('<br>') : t.dia;
         return `
-        <div style="display:flex; align-items:${isLong ? 'center' : 'baseline'}; border-bottom:1px solid #eee; padding:10px 0; width:100%;">
+        <div style="display:flex; align-items:${align}; border-bottom:1px solid #eee; padding:10px 0; width:100%;">
             <div style="width:75px; font-weight:800; font-size:15px;">${t.id}</div>
-            <div style="flex:1; font-weight:700; font-size:15px; text-transform:uppercase; padding-right:10px;">${t.nm}</div>
+            <div style="flex:1; font-weight:700; font-size:15px; text-transform:uppercase; padding-right:10px; white-space:pre-wrap;">${t.nm}</div>
             <div style="width:125px; text-align:right; font-weight:800; font-size:14px; line-height:1.2;">${displayDia}</div>
         </div>`;
     };
 
     let oben = [], unten = [], target = oben;
     (p.tools || []).forEach(t => {
-        if(t.rev) target = unten;
+        if(t.rev) target = unten; // Как только встретили метку, всё остальное идет вниз
         target.push(t);
     });
 
     const html = `
-    <div style="width:210mm; padding:12mm; background:#fff; font-family:sans-serif; color:#000;">
-        <div style="border:2px solid #000; padding:25px; min-height:265mm; display:flex; flex-direction:column;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-                <div>
-                    <div style="font-size:13px; font-weight:900; color:#666;">${p.name || ''}</div>
-                    <div style="font-size:64px; font-weight:900; line-height:0.8;">${p.num || '---'}</div>
+    <div style="width:210mm; padding:12mm; box-sizing:border-box; background:#fff; font-family:sans-serif; color:#000;">
+        <div style="border:2px solid #000; padding:25px; min-height:265mm; display:flex; flex-direction:column; box-sizing:border-box;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; min-height:90px;">
+                <div style="display:flex; flex-direction:column; justify-content:center;">
+                    <div style="font-size:13px; font-weight:900; text-transform:uppercase; color:#666; margin-bottom:2px; line-height:1;">${p.name || ''}</div>
+                    <div style="font-size:64px; font-weight:900; line-height:0.8; letter-spacing:-2px; margin:0;">${p.num || '---'}</div>
                 </div>
                 <div style="width:220px; font-size:11px; font-weight:800; line-height:1.5;">
-                    <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>ABSTAND</span><span>${p.abs}</span></div>
-                    <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>LAUFZEIT</span><span>${p.lzf}</span></div>
-                    <div style="display:flex; justify-content:space-between;"><span>STÜCK T</span><span>${p.stt}</span></div>
+                    <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>ABSTAND</span><span>${p.abs || ''}</span></div>
+                    <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>GREIFBACKEN</span><span>${p.grf || ''}</span></div>
+                    <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>LAUFZEIT</span><span>${p.lzf || ''}</span></div>
+                    <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>SÄGELÄNGE</span><span>${p.sag || ''}</span></div>
+                    <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>STÜCK T</span><span>${p.stt || ''}</span></div>
+                    <div style="display:flex; justify-content:space-between;"><span>STÜCK N</span><span>${p.stn || ''}</span></div>
                 </div>
             </div>
             <div style="border-bottom:5px solid #000; margin-bottom:15px;"></div>
-            <div style="background:#000; color:#fff; padding:5px 10px; font-weight:900; font-size:13px;">REVOLVER OBEN</div>
-            ${oben.map(getRow).join('')}
-            ${unten.length > 0 ? `<div style="background:#000; color:#fff; padding:5px 10px; font-weight:900; font-size:13px; margin-top:20px;">REVOLVER UNTEN</div>` + unten.map(getRow).join('') : ''}
+            
+            <div style="background:#000; color:#fff; padding:4px 8px; font-weight:900; font-size:12px; margin-bottom:5px; width:fit-content;">REVOLVER OBEN</div>
+            ${oben.map(getRowHtml).join('')}
+
+            ${unten.length > 0 ? `
+                <div style="background:#000; color:#fff; padding:4px 8px; font-weight:900; font-size:12px; margin-top:20px; margin-bottom:5px; width:fit-content;">REVOLVER UNTEN</div>
+                ${unten.map(getRowHtml).join('')}
+            ` : ''}
+
         </div>
     </div>`;
     el('print-container').innerHTML = html;
     setTimeout(() => { window.print(); }, 150);
 }
 
-// --- СЕРВИС ---
+// --- JSON & IMPORT ---
 function runImp() {
     const text = el('imp-area').value; if (!text.trim()) return;
-    const parts = text.split(/(T[0O]\d{2,4})/gi);
+    const regex = /(T[0O]\d{2,4})/gi; const parts = text.split(regex);
     if(!db[currentIdx].tools) db[currentIdx].tools = [];
     for (let i = 1; i < parts.length; i += 2) {
-        db[currentIdx].tools.push({ id: parts[i].toUpperCase().replace('O', '0'), nm: (parts[i+1]||'').trim().toUpperCase(), dia: '', rev: false });
+        let id = parts[i].trim().toUpperCase().replace('O', '0');
+        let name = (parts[i + 1] || '').trim().replace(/[\r\n]+/g, ' ').replace(/\s\s+/g, ' ');
+        db[currentIdx].tools.push({ id, nm: name.toUpperCase(), dia: '', rev: false });
     }
-    localStorage.setItem(DB_KEY, JSON.stringify(db)); renderTools(); hide('m-imp');
+    localStorage.setItem(DB_KEY, JSON.stringify(db));
+    el('imp-area').value = ''; renderTools(); hide('m-imp');
 }
-function exportJSON() { el('imp-area').value = JSON.stringify(db); alert("JSON OK"); }
-function importJSON() { try { db = JSON.parse(el('imp-area').value); localStorage.setItem(DB_KEY, JSON.stringify(db)); renderList(); hide('m-imp'); } catch(e){alert("Error");} }
+
+function exportJSON() {
+    el('imp-area').value = JSON.stringify(db);
+    el('imp-area').select();
+    alert("Copied!");
+}
+
+function importJSON() {
+    try {
+        const parsed = JSON.parse(el('imp-area').value);
+        if(Array.isArray(parsed)) {
+            db = parsed;
+            localStorage.setItem(DB_KEY, JSON.stringify(db));
+            renderList();
+            hide('m-imp');
+        }
+    } catch(e) { alert("JSON-Fehler"); }
+}
+
 function deleteProject(i) { if(confirm('Löschen?')) { db.splice(i, 1); localStorage.setItem(DB_KEY, JSON.stringify(db)); renderList(); } }
-function delT() { db[currentIdx].tools.splice(el('t-idx').value, 1); localStorage.setItem(DB_KEY, JSON.stringify(db)); renderTools(); hide('m-t'); }
+function delT() { const i = el('t-idx').value; db[currentIdx].tools.splice(i, 1); localStorage.setItem(DB_KEY, JSON.stringify(db)); renderTools(); hide('m-t'); }
 
 window.onload = renderList;
