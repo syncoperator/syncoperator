@@ -62,7 +62,7 @@ function openProject(i) {
 
 function goHome() { currentIdx = null; el('v-home').classList.add('active'); el('v-det').classList.remove('active'); renderList(); }
 
-// --- ИНСТРУМЕНТЫ С DRAG HANDLE ---
+// --- ИНСТРУМЕНТЫ (С ИСПРАВЛЕННЫМ DRAG & DROP) ---
 function renderTools() {
     const list = el('list-t'); if(!list || currentIdx === null) return;
     const tools = db[currentIdx].tools || [];
@@ -80,7 +80,7 @@ function renderTools() {
         const revMark = t.rev ? `<div style="background:#000; color:#fff; font-size:9px; padding:2px 6px; border-radius:4px; margin-bottom:5px; font-weight:900; width:fit-content;">UNTEN START ↓</div>` : '';
 
         item.innerHTML = `
-            <div class="drag-handle" style="cursor: grab; color: #ccc; font-size: 20px; user-select: none;">☰</div>
+            <div style="cursor:grab; color:#ccc; font-size:20px; padding-right:5px; user-select:none;">☰</div>
             <div style="flex:1; min-width:0;" onclick="modalT(${i})">
                 ${revMark}
                 <small style="color:#8e8e93; font-weight:700; font-size:11px;">${t.id || 'T0000'}</small>
@@ -88,24 +88,15 @@ function renderTools() {
             </div>
         `;
         
-        // Drag events
         item.ondragstart = (e) => { 
             e.dataTransfer.setData('text/plain', i); 
             item.style.opacity = '0.4'; 
-            item.classList.add('dragging');
         };
         item.ondragend = () => { 
             item.style.opacity = '1'; 
-            item.classList.remove('dragging');
             renderTools(); 
         };
-        item.ondragover = (e) => {
-            e.preventDefault();
-            item.style.borderTop = '2px solid #000';
-        };
-        item.ondragleave = () => {
-            item.style.borderTop = 'none';
-        };
+        item.ondragover = (e) => e.preventDefault();
         item.ondrop = (e) => {
             e.preventDefault();
             const from = e.dataTransfer.getData('text/plain');
@@ -113,6 +104,7 @@ function renderTools() {
         };
         list.appendChild(item);
     });
+    // Добавляем padding-bottom в конце списка, чтобы кнопки не перекрывали инструменты
     list.innerHTML += '<div style="height:180px; pointer-events:none;"></div>'; 
 }
 
@@ -189,7 +181,7 @@ function importJSON() {
 function deleteProject(i) { if(confirm('Löschen?')) { db.splice(i, 1); localStorage.setItem(DB_KEY, JSON.stringify(db)); renderList(); } }
 function delT() { const i = el('t-idx').value; db[currentIdx].tools.splice(i, 1); localStorage.setItem(DB_KEY, JSON.stringify(db)); renderTools(); hide('m-t'); }
 
-// --- PDF FINAL ---
+// --- PDF (КАК В ТВОЕМ ОРИГИНАЛЕ) ---
 function makePDF() {
     const p = db[currentIdx];
     
@@ -199,7 +191,7 @@ function makePDF() {
         const displayDia = t.dia.includes('/') ? t.dia.split('/').join('<br>') : t.dia;
 
         return `
-        <div style="display:flex; align-items:${align}; border-bottom:1.5px solid #000; padding:10px 0; width:100%;">
+        <div style="display:flex; align-items:${align}; border-bottom:1px solid #eee; padding:10px 0; width:100%;">
             <div style="width:75px; font-weight:800; font-size:15px;">${t.id}</div>
             <div style="flex:1; font-weight:700; font-size:15px; text-transform:uppercase; padding-right:10px; white-space:pre-wrap;">${t.nm}</div>
             <div style="width:125px; text-align:right; font-weight:800; font-size:14px; line-height:1.2;">${displayDia}</div>
@@ -234,7 +226,8 @@ function makePDF() {
             <div style="border-bottom:5px solid #000; margin-bottom:15px;"></div>
 
             <div style="flex:1;">
-                <div style="margin-bottom:5px; font-size:18px; font-weight:900; letter-spacing:0.5px; text-transform:uppercase;">REVOLVER OBEN</div>
+                
+                <div style="margin-bottom:5px; font-size:18px; font-weight:900; letter-spacing:0.5px;">REVOLVER OBEN</div>
                 <div style="display:flex; font-size:10px; font-weight:900; text-transform:uppercase; margin-bottom:6px; padding:0 2px;">
                     <div style="width:75px;">T-NR</div>
                     <div style="flex:1;">WERKZEUGNAME / KOMMENTAR</div>
@@ -244,13 +237,14 @@ function makePDF() {
                 ${oben.map(getRow).join('')}
 
                 ${unten.length > 0 ? `
-                    <div style="margin-top:35px; margin-bottom:5px; font-size:18px; font-weight:900; letter-spacing:0.5px; text-transform:uppercase;">REVOLVER UNTEN</div>
+                    <div style="margin-top:30px; margin-bottom:5px; font-size:18px; font-weight:900; letter-spacing:0.5px;">REVOLVER UNTEN</div>
                     <div style="border-bottom:4px solid #000; margin-bottom:0px;"></div>
                     ${unten.map(getRow).join('')}
                 ` : ''}
+
             </div>
 
-            <div style="border-top:1px solid #000; padding-top:5px; font-size:9px; font-weight:800; text-align:center; color:#666; margin-top:20px;">
+            <div style="border-top:1px solid #000; padding-top:5px; font-size:9px; font-weight:800; text-align:center; color:#666;">
                 QS CENTRAL PREMIUM REPORT
             </div>
         </div>
