@@ -62,7 +62,7 @@ function openProject(i) {
 
 function goHome() { currentIdx = null; el('v-home').classList.add('active'); el('v-det').classList.remove('active'); renderList(); }
 
-// --- ИНСТРУМЕНТЫ ---
+// --- ИНСТРУМЕНТЫ (СТАБИЛЬНЫЙ DRAG & DROP) ---
 function renderTools() {
     const list = el('list-t'); if(!list || currentIdx === null) return;
     const tools = db[currentIdx].tools || [];
@@ -72,12 +72,10 @@ function renderTools() {
         const item = document.createElement('div');
         item.className = 'list-item';
         item.draggable = true;
-        
-        const revLabel = t.rev ? `<div style="background:#000; color:#fff; font-size:10px; padding:2px 6px; border-radius:4px; margin-bottom:5px; width:fit-content; font-weight:900;">REVOLVER UNTEN ↓</div>` : '';
+        item.style.padding = '12px 15px';
 
         item.innerHTML = `
             <div style="flex:1; min-width:0;" onclick="modalT(${i})">
-                ${revLabel}
                 <small style="color:#8e8e93; font-weight:700; font-size:11px;">${t.id || 'T0000'}</small>
                 <b style="font-size:20px; font-weight:900; display:block; line-height:1.2;">${t.nm || '---'}</b>
             </div>
@@ -106,126 +104,69 @@ function moveTool(from, to) {
 
 function modalT(i = null) {
     const edit = i !== null;
-    el('t-idx').value = (i === null) ? '' : i;
-    
-    // Создаем дефолтный объект, если i === null
-    let t = {id:'', nm:'', dia:'', rev:false};
-    if (edit && db[currentIdx].tools[i]) {
-        t = db[currentIdx].tools[i];
-    }
-    
+    el('t-idx').value = edit ? i : '';
+    const t = edit ? db[currentIdx].tools[i] : {id:'', nm:'', dia:''};
     el('t-id').value = t.id || ''; 
     el('t-nm').value = t.nm || ''; 
     el('t-dia').value = t.dia || '';
-    
-    // Работа с кнопкой револьвера (без лишних пересозданий)
-    let btnRev = el('btn-rev-toggle');
-    if(!btnRev) {
-        btnRev = document.createElement('div');
-        btnRev.id = 'btn-rev-toggle';
-        const content = el('m-t').querySelector('.modal-content');
-        content.insertBefore(btnRev, el('btn-save-t'));
-    }
-    
-    btnRev.style.cssText = `margin: 10px 0; padding: 15px; border-radius: 12px; text-align: center; font-weight: 900; cursor: pointer;`;
-    
-    const updateBtn = (state) => {
-        btnRev.dataset.state = state;
-        btnRev.innerText = state ? "✓ UNTEN (START)" : "SET AS UNTEN START";
-        btnRev.style.background = state ? "#000" : "#f0f0f0";
-        btnRev.style.color = state ? "#fff" : "#000";
-    };
-
-    updateBtn(t.rev === true);
-    btnRev.onclick = () => updateBtn(btnRev.dataset.state === 'false');
-
     el('btn-del-t').style.display = edit ? 'block' : 'none';
     show('m-t');
 }
 
 function saveT() {
     const i = el('t-idx').value;
-    const btn = el('btn-rev-toggle');
-    const isUnten = btn ? btn.dataset.state === 'true' : false;
-
-    const t = { 
-        id: el('t-id').value.toUpperCase(), 
-        nm: el('t-nm').value.toUpperCase(), 
-        dia: el('t-dia').value,
-        rev: isUnten 
-    };
-
+    const t = { id: el('t-id').value.toUpperCase(), nm: el('t-nm').value.toUpperCase(), dia: el('t-dia').value };
     if(!db[currentIdx].tools) db[currentIdx].tools = [];
-    
-    if(i === '') { 
-        db[currentIdx].tools.push(t); 
-    } else { 
-        db[currentIdx].tools[parseInt(i)] = t; 
-    }
-
+    if(i === '') db[currentIdx].tools.push(t); else db[currentIdx].tools[parseInt(i)] = t;
     localStorage.setItem(DB_KEY, JSON.stringify(db));
-    renderTools(); 
-    hide('m-t');
+    renderTools(); hide('m-t');
 }
 
-// --- PDF ---
+// --- PDF (ВОЗВРАТ К СТАНДАРТУ) ---
 function makePDF() {
     const p = db[currentIdx];
-    let html = '';
-    
-    const getHeader = (isPage2 = false) => `
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-            <div>
-                <div style="font-size:12px; font-weight:900; color:#666; text-transform:uppercase;">${p.name || ''} ${isPage2 ? '(SEITE 2)' : ''}</div>
-                <div style="font-size:50px; font-weight:900; line-height:0.8;">${p.num || '---'}</div>
-            </div>
-            ${!isPage2 ? `
-            <div style="width:200px; font-size:10px; font-weight:800; line-height:1.4;">
-                <div style="display:flex; justify-content:space-between; border-bottom:1px solid #eee;"><span>ABSTAND</span><span>${p.abs || ''}</span></div>
-                <div style="display:flex; justify-content:space-between; border-bottom:1px solid #eee;"><span>LAUFZEIT</span><span>${p.lzf || ''}</span></div>
-                <div style="display:flex; justify-content:space-between;"><span>STÜCK T</span><span>${p.stt || ''}</span></div>
-            </div>` : ''}
-        </div>
-        <div style="border-bottom:4px solid #000; margin-bottom:10px;"></div>`;
-
-    const getRow = (t) => {
+    const rows = (p.tools || []).map(t => {
         const isLong = (t.dia || '').length > 15;
+        const align = isLong ? 'center' : 'baseline';
         const displayDia = t.dia.includes('/') ? t.dia.split('/').join('<br>') : t.dia;
+
         return `
-        <div style="display:flex; align-items:${isLong ? 'center' : 'baseline'}; border-bottom:1px solid #eee; padding:8px 0;">
-            <div style="width:70px; font-weight:800; font-size:14px;">${t.id}</div>
-            <div style="flex:1; font-weight:700; font-size:14px; text-transform:uppercase; white-space:pre-wrap;">${t.nm}</div>
-            <div style="width:120px; text-align:right; font-weight:800; font-size:13px; line-height:1.1;">${displayDia}</div>
+        <div style="display:flex; align-items:${align}; border-bottom:1px solid #eee; padding:10px 0; width:100%;">
+            <div style="width:75px; font-weight:800; font-size:15px;">${t.id}</div>
+            <div style="flex:1; font-weight:700; font-size:15px; text-transform:uppercase; padding-right:10px; white-space:pre-wrap;">${t.nm}</div>
+            <div style="width:125px; text-align:right; font-weight:800; font-size:14px; line-height:1.2;">${displayDia}</div>
         </div>`;
-    };
+    }).join('');
 
-    let oben = [], unten = [], target = oben;
-    (p.tools || []).forEach(t => {
-        if(t.rev) target = unten;
-        target.push(t);
-    });
-
-    html += `<div style="width:210mm; padding:10mm; background:#fff; font-family:sans-serif;">
-                <div style="border:2px solid #000; padding:20px; min-height:270mm;">
-                    ${getHeader()}
-                    <div style="background:#000; color:#fff; padding:5px 10px; font-weight:900; font-size:13px;">REVOLVER OBEN</div>
-                    ${oben.map(t => getRow(t)).join('')}
-                    ${unten.length > 0 && (oben.length + unten.length < 22) ? `<div style="background:#000; color:#fff; padding:5px 10px; font-weight:900; font-size:13px; margin-top:10px;">REVOLVER UNTEN</div>` + unten.map(t => getRow(t)).join('') : ''}
+    const html = `
+    <div style="width:210mm; padding:12mm; box-sizing:border-box; background:#fff; font-family:sans-serif; color:#000;">
+        <div style="border:2px solid #000; padding:25px; min-height:265mm; display:flex; flex-direction:column; box-sizing:border-box;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; min-height:90px;">
+                <div style="display:flex; flex-direction:column; justify-content:center;">
+                    <div style="font-size:13px; font-weight:900; text-transform:uppercase; color:#666; margin-bottom:2px; line-height:1;">${p.name || ''}</div>
+                    <div style="font-size:64px; font-weight:900; line-height:0.8; letter-spacing:-2px; margin:0;">${p.num || '---'}</div>
                 </div>
-            </div>`;
-
-    if(unten.length > 0 && (oben.length + unten.length >= 22)) {
-        html += `<div style="width:210mm; padding:10mm; background:#fff; font-family:sans-serif; page-break-before:always;">
-                    <div style="border:2px solid #000; padding:20px; min-height:270mm;">
-                        ${getHeader(true)}
-                        <div style="background:#000; color:#fff; padding:5px 10px; font-weight:900; font-size:13px;">REVOLVER UNTEN</div>
-                        ${unten.map(t => getRow(t)).join('')}
-                    </div>
-                </div>`;
-    }
-
+                <div style="width:220px; font-size:11px; font-weight:800; line-height:1.5;">
+                    <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>ABSTAND</span><span>${p.abs || ''}</span></div>
+                    <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>GREIFBACKEN</span><span>${p.grf || ''}</span></div>
+                    <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>LAUFZEIT</span><span>${p.lzf || ''}</span></div>
+                    <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>SÄGELÄNGE</span><span>${p.sag || ''}</span></div>
+                    <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>STÜCK T</span><span>${p.stt || ''}</span></div>
+                    <div style="display:flex; justify-content:space-between;"><span>STÜCK N</span><span>${p.stn || ''}</span></div>
+                </div>
+            </div>
+            <div style="border-bottom:5px solid #000; margin-bottom:15px;"></div>
+            <div style="display:flex; font-size:10px; font-weight:900; text-transform:uppercase; margin-bottom:6px; padding:0 2px;">
+                <div style="width:75px;">T-NR</div>
+                <div style="flex:1;">WERKZEUGNAME / KOMMENTAR</div>
+                <div style="width:125px; text-align:right;">Ø / TOLERANZ</div>
+            </div>
+            <div style="border-bottom:3px solid #000; margin-bottom:0px;"></div>
+            <div style="flex:1;">${rows}</div>
+        </div>
+    </div>`;
     el('print-container').innerHTML = html;
-    setTimeout(() => { window.print(); }, 200);
+    setTimeout(() => { window.print(); }, 150);
 }
 
 // --- СЕРВИС ---
@@ -236,7 +177,7 @@ function runImp() {
     for (let i = 1; i < parts.length; i += 2) {
         let id = parts[i].trim().toUpperCase().replace('O', '0');
         let name = (parts[i + 1] || '').trim().replace(/[\r\n]+/g, ' ').replace(/\s\s+/g, ' ');
-        db[currentIdx].tools.push({ id, nm: name.toUpperCase(), dia: '', rev: false });
+        db[currentIdx].tools.push({ id, nm: name.toUpperCase(), dia: '' });
     }
     localStorage.setItem(DB_KEY, JSON.stringify(db));
     el('imp-area').value = ''; renderTools(); hide('m-imp');
