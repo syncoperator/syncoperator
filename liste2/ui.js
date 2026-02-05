@@ -62,7 +62,9 @@ function openProject(i) {
 
 function goHome() { currentIdx = null; el('v-home').classList.add('active'); el('v-det').classList.remove('active'); renderList(); }
 
-// --- ИНСТРУМЕНТЫ (ФИКС DRAG & DROP) ---
+// --- ИНСТРУМЕНТЫ (ФИНАЛЬНЫЙ ФИКС ПЕРЕТАСКИВАНИЯ) ---
+let draggedIdx = null;
+
 function renderTools() {
     const list = el('list-t'); if(!list || currentIdx === null) return;
     const tools = db[currentIdx].tools || [];
@@ -71,8 +73,7 @@ function renderTools() {
     tools.forEach((t, i) => {
         const item = document.createElement('div');
         item.className = 'list-item';
-        // Перетаскивание выключено по умолчанию, включается только при нажатии на ☰
-        item.draggable = false; 
+        item.draggable = true; // Должно быть true для работы на десктопе
         item.style.padding = '12px 15px';
         item.style.display = 'flex';
         item.style.alignItems = 'center';
@@ -81,12 +82,7 @@ function renderTools() {
         const revMark = t.rev ? `<div style="background:#000; color:#fff; font-size:9px; padding:2px 6px; border-radius:4px; margin-bottom:5px; font-weight:900; width:fit-content;">UNTEN START ↓</div>` : '';
 
         item.innerHTML = `
-            <div class="handle" 
-                 onmousedown="this.parentElement.draggable=true" 
-                 onmouseup="this.parentElement.draggable=false"
-                 ontouchstart="this.parentElement.draggable=true"
-                 ontouchend="this.parentElement.draggable=false"
-                 style="cursor:grab; color:#ccc; font-size:20px; padding:10px 5px; user-select:none;">☰</div>
+            <div class="handle" style="cursor:grab; color:#ccc; font-size:24px; padding:10px; user-select:none; touch-action:none;">☰</div>
             <div style="flex:1; min-width:0;" onclick="modalT(${i})">
                 ${revMark}
                 <small style="color:#8e8e93; font-weight:700; font-size:11px;">${t.id || 'T0000'}</small>
@@ -94,24 +90,24 @@ function renderTools() {
             </div>
         `;
         
+        // События для мышки
         item.ondragstart = (e) => { 
-            e.dataTransfer.setData('text/plain', i); 
-            item.style.opacity = '0.4'; 
+            draggedIdx = i;
+            e.dataTransfer.effectAllowed = 'move';
+            item.style.opacity = '0.3'; 
         };
-        item.ondragend = () => { 
-            item.draggable = false;
-            item.style.opacity = '1'; 
-            renderTools(); 
-        };
-        item.ondragover = (e) => e.preventDefault();
+        item.ondragover = (e) => { e.preventDefault(); item.style.borderTop = "2px solid #000"; };
+        item.ondragleave = () => { item.style.borderTop = "none"; };
+        item.ondragend = () => { item.style.opacity = '1'; renderTools(); };
         item.ondrop = (e) => {
             e.preventDefault();
-            const from = e.dataTransfer.getData('text/plain');
-            moveTool(parseInt(from), i);
+            if (draggedIdx !== null && draggedIdx !== i) moveTool(draggedIdx, i);
         };
+
         list.appendChild(item);
     });
-    list.innerHTML += '<div style="height:180px; pointer-events:none;"></div>'; 
+    // Padding в конце, чтобы кнопки не перекрывали список
+    list.innerHTML += '<div style="height:200px; pointer-events:none;"></div>'; 
 }
 
 function moveTool(from, to) {
