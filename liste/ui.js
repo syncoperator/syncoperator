@@ -118,19 +118,30 @@ function modalT(i = null) {
     el('t-nm').value = t.nm || ''; 
     el('t-dia').value = t.dia || '';
     
-    // Прячем или показываем разделитель в зависимости от того, есть ли кнопка в HTML
+    // САМОСТОЯТЕЛЬНОЕ СОЗДАНИЕ КНОПКИ ПЕРЕКЛЮЧЕНИЯ
     let btnRev = el('btn-rev-toggle');
-    if (btnRev) {
-        btnRev.style.display = 'block';
-        const updateBtn = (state) => {
-            btnRev.dataset.state = state;
-            btnRev.innerText = state ? "✓ UNTEN (START)" : "SET AS UNTEN START";
-            btnRev.style.background = state ? "#000" : "#f0f0f0";
-            btnRev.style.color = state ? "#fff" : "#000";
-        };
-        updateBtn(t.rev === true);
-        btnRev.onclick = () => updateBtn(!(btnRev.dataset.state === 'true'));
+    if (!btnRev) {
+        btnRev = document.createElement('div');
+        btnRev.id = 'btn-rev-toggle';
+        const modalContent = el('m-t').querySelector('.modal-content');
+        // Вставляем перед кнопками Сохранить/Удалить
+        modalContent.insertBefore(btnRev, el('btn-save-t') || modalContent.lastElementChild);
     }
+    
+    btnRev.style.cssText = `margin: 15px 0; padding: 15px; border-radius: 12px; text-align: center; font-weight: 900; cursor: pointer; display: block;`;
+    
+    const updateBtn = (state) => {
+        btnRev.dataset.state = state;
+        btnRev.innerText = state ? "✓ UNTEN (START)" : "SET AS UNTEN START";
+        btnRev.style.background = state ? "#000" : "#f0f0f0";
+        btnRev.style.color = state ? "#fff" : "#000";
+    };
+
+    updateBtn(t.rev === true);
+    btnRev.onclick = () => {
+        const cur = btnRev.dataset.state === 'true';
+        updateBtn(!cur);
+    };
 
     el('btn-del-t').style.display = edit ? 'block' : 'none';
     show('m-t');
@@ -157,7 +168,7 @@ function saveT() {
     hide('m-t');
 }
 
-// --- PDF ---
+// --- PDF (СТАБИЛЬНЫЙ) ---
 function makePDF() {
     const p = db[currentIdx];
     const getHeader = (p2) => `
@@ -166,22 +177,24 @@ function makePDF() {
                 <div style="font-size:13px; font-weight:900; text-transform:uppercase; color:#666;">${p.name || ''} ${p2 ? '(SEITE 2)' : ''}</div>
                 <div style="font-size:64px; font-weight:900; line-height:0.8;">${p.num || '---'}</div>
             </div>
-            ${!p2 ? `
-            <div style="width:220px; font-size:11px; font-weight:800; line-height:1.5;">
+            ${!p2 ? `<div style="width:220px; font-size:11px; font-weight:800; line-height:1.5;">
                 <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>ABSTAND</span><span>${p.abs || ''}</span></div>
-                <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>GREIFBACKEN</span><span>${p.grf || ''}</span></div>
                 <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>LAUFZEIT</span><span>${p.lzf || ''}</span></div>
                 <div style="display:flex; justify-content:space-between;"><span>STÜCK T</span><span>${p.stt || ''}</span></div>
             </div>` : ''}
         </div>
         <div style="border-bottom:5px solid #000; margin-bottom:15px;"></div>`;
 
-    const getRow = (t) => `
-        <div style="display:flex; align-items:baseline; border-bottom:1px solid #eee; padding:10px 0;">
+    const getRow = (t) => {
+        const isLong = (t.dia || '').length > 15;
+        const displayDia = t.dia.includes('/') ? t.dia.split('/').join('<br>') : t.dia;
+        return `
+        <div style="display:flex; align-items:${isLong ? 'center' : 'baseline'}; border-bottom:1px solid #eee; padding:10px 0;">
             <div style="width:75px; font-weight:800; font-size:15px;">${t.id}</div>
             <div style="flex:1; font-weight:700; font-size:15px; text-transform:uppercase; white-space:pre-wrap;">${t.nm}</div>
-            <div style="width:125px; text-align:right; font-weight:800; font-size:14px;">${t.dia}</div>
+            <div style="width:125px; text-align:right; font-weight:800; font-size:14px; line-height:1.2;">${displayDia}</div>
         </div>`;
+    };
 
     let oben = [], unten = [], target = oben;
     (p.tools || []).forEach(t => { if(t.rev) target = unten; target.push(t); });
@@ -191,7 +204,7 @@ function makePDF() {
             ${getHeader(false)}
             <div style="background:#000; color:#fff; padding:5px; font-weight:900; margin-bottom:5px;">REVOLVER OBEN</div>
             ${oben.map(t => getRow(t)).join('')}
-            ${unten.length > 0 && total < 22 ? `<div style="background:#000; color:#fff; padding:5px; font-weight:900; margin-top:10px;">REVOLVER UNTEN</div>` + unten.map(t => getRow(t)).join('') : ''}
+            ${unten.length > 0 ? `<div style="background:#000; color:#fff; padding:5px; font-weight:900; margin-top:10px;">REVOLVER UNTEN</div>` + unten.map(t => getRow(t)).join('') : ''}
         </div>
     </div>`;
     
