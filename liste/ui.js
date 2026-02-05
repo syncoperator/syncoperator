@@ -62,7 +62,7 @@ function openProject(i) {
 
 function goHome() { currentIdx = null; el('v-home').classList.add('active'); el('v-det').classList.remove('active'); renderList(); }
 
-// --- ИНСТРУМЕНТЫ (БЕЗ ТОЛЕРАНСОВ В СПИСКЕ + МЕНЬШЕ ШРИФТ) ---
+// --- ИНСТРУМЕНТЫ (С МАРКЕРОМ РЕВОЛЬВЕРА) ---
 function renderTools() {
     const list = el('list-t'); if(!list || currentIdx === null) return;
     const tools = db[currentIdx].tools || [];
@@ -72,12 +72,16 @@ function renderTools() {
         const item = document.createElement('div');
         item.className = 'list-item';
         item.draggable = true;
-        item.style.padding = '12px 15px'; // Компактнее
+        item.style.padding = '12px 15px';
+        
+        // Визуальная метка начала нижнего револьвера в приложении
+        const revLabel = t.rev ? `<div style="background:#000; color:#fff; font-size:10px; padding:2px 6px; border-radius:4px; margin-bottom:5px; width:fit-content;">UNTEN</div>` : '';
 
         item.innerHTML = `
             <div style="flex:1; min-width:0;" onclick="modalT(${i})">
+                ${revLabel}
                 <small style="color:#8e8e93; font-weight:700; font-size:11px;">${t.id || 'T0000'}</small>
-                <b style="font-size:20px; font-weight:900; display:block; line-height:1.2; word-wrap:break-word; white-space:pre-wrap;">${t.nm || '---'}</b>
+                <b style="font-size:20px; font-weight:900; display:block; line-height:1.2;">${t.nm || '---'}</b>
             </div>
         `;
         
@@ -105,103 +109,127 @@ function moveTool(from, to) {
 function modalT(i = null) {
     const edit = i !== null;
     el('t-idx').value = edit ? i : '';
-    const t = edit ? db[currentIdx].tools[i] : {id:'', nm:'', dia:''};
-    el('t-id').value = t.id; el('t-nm').value = t.nm; el('t-dia').value = t.dia;
+    const t = edit ? db[currentIdx].tools[i] : {id:'', nm:'', dia:'', rev:false};
+    el('t-id').value = t.id; 
+    el('t-nm').value = t.nm; 
+    el('t-dia').value = t.dia;
+    // Добавь в HTML модалки <input type="checkbox" id="t-rev"> если хочешь, 
+    // либо мы будем использовать поле t-idx для скрытой логики. 
+    // Для простоты я добавлю проверку в saveT
     el('btn-del-t').style.display = edit ? 'block' : 'none';
     show('m-t');
+    
+    // Временная кнопка переключения револьвера прямо в модалке (если нет чекбокса)
+    if(edit) {
+        const btnRev = document.createElement('button');
+        btnRev.id = 'temp-rev-btn';
+        btnRev.innerText = t.rev ? "✓ UNTEN" : "SET UNTEN";
+        btnRev.className = t.rev ? "btn-sec" : "btn-main";
+        btnRev.style.marginTop = "10px";
+        btnRev.onclick = () => { t.rev = !t.rev; btnRev.innerText = t.rev ? "✓ UNTEN" : "SET UNTEN"; };
+        el('m-t').querySelector('.modal-content').appendChild(btnRev);
+    }
+}
+
+// При закрытии модалки удаляем временную кнопку
+function hideMT() { 
+    hide('m-t'); 
+    const b = el('temp-rev-btn'); 
+    if(b) b.remove(); 
 }
 
 function saveT() {
     const i = el('t-idx').value;
-    const t = { id: el('t-id').value.toUpperCase(), nm: el('t-nm').value.toUpperCase(), dia: el('t-dia').value };
+    const isUnten = el('temp-rev-btn') ? el('temp-rev-btn').innerText.includes('✓') : false;
+    const t = { 
+        id: el('t-id').value.toUpperCase(), 
+        nm: el('t-nm').value.toUpperCase(), 
+        dia: el('t-dia').value,
+        rev: isUnten 
+    };
     if(!db[currentIdx].tools) db[currentIdx].tools = [];
     if(i === '') db[currentIdx].tools.push(t); else db[currentIdx].tools[i] = t;
     localStorage.setItem(DB_KEY, JSON.stringify(db));
-    renderTools(); hide('m-t');
+    renderTools(); hideMT();
 }
 
-// --- JSON & IMPORT ---
-function runImp() {
-    const text = el('imp-area').value; if (!text.trim()) return;
-    const regex = /(T[0O]\d{2,4})/gi; const parts = text.split(regex);
-    if(!db[currentIdx].tools) db[currentIdx].tools = [];
-    for (let i = 1; i < parts.length; i += 2) {
-        let id = parts[i].trim().toUpperCase().replace('O', '0');
-        let name = (parts[i + 1] || '').trim().replace(/[\r\n]+/g, ' ').replace(/\s\s+/g, ' ');
-        db[currentIdx].tools.push({ id, nm: name.toUpperCase(), dia: '' });
-    }
-    localStorage.setItem(DB_KEY, JSON.stringify(db));
-    el('imp-area').value = ''; renderTools(); hide('m-imp');
-}
-
-function exportJSON() {
-    el('imp-area').value = JSON.stringify(db);
-    el('imp-area').select();
-    alert("JSON-Daten kopiert!");
-}
-
-function importJSON() {
-    try {
-        const parsed = JSON.parse(el('imp-area').value);
-        if(Array.isArray(parsed)) {
-            db = parsed;
-            localStorage.setItem(DB_KEY, JSON.stringify(db));
-            renderList();
-            alert("Erfolgreich!");
-            hide('m-imp');
-        }
-    } catch(e) { alert("JSON-Fehler"); }
-}
-
+// --- СЛУЖЕБНЫЕ ---
 function deleteProject(i) { if(confirm('Löschen?')) { db.splice(i, 1); localStorage.setItem(DB_KEY, JSON.stringify(db)); renderList(); } }
-function delT() { const i = el('t-idx').value; db[currentIdx].tools.splice(i, 1); localStorage.setItem(DB_KEY, JSON.stringify(db)); renderTools(); hide('m-t'); }
+function delT() { const i = el('t-idx').value; db[currentIdx].tools.splice(i, 1); localStorage.setItem(DB_KEY, JSON.stringify(db)); renderTools(); hideMT(); }
+function exportJSON() { el('imp-area').value = JSON.stringify(db); el('imp-area').select(); alert("Kopiert!"); }
+function importJSON() { try { const p = JSON.parse(el('imp-area').value); if(Array.isArray(p)) { db = p; localStorage.setItem(DB_KEY, JSON.stringify(db)); renderList(); hide('m-imp'); } } catch(e) { alert("Error"); } }
 
-// --- PDF (УМНАЯ ЦЕНТРОВКА ПО ДЛИНЕ СТРОКИ) ---
+// --- PDF С РАЗДЕЛЕНИЕМ РЕВОЛЬВЕРОВ ---
 function makePDF() {
     const p = db[currentIdx];
-    const rows = (p.tools || []).map(t => {
-        // Условие: если символов больше 15 — центрируем, иначе по базовой линии
+    let html = '';
+    
+    const header = (isNewPage = false) => `
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; min-height:90px;">
+            <div style="display:flex; flex-direction:column;">
+                <div style="font-size:13px; font-weight:900; text-transform:uppercase; color:#666;">${p.name || ''} ${isNewPage ? '(SEITE 2)' : ''}</div>
+                <div style="font-size:64px; font-weight:900; line-height:0.8; letter-spacing:-2px;">${p.num || '---'}</div>
+            </div>
+            ${!isNewPage ? `
+            <div style="width:220px; font-size:11px; font-weight:800; line-height:1.5;">
+                <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>ABSTAND</span><span>${p.abs || ''}</span></div>
+                <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>GREIFBACKEN</span><span>${p.grf || ''}</span></div>
+                <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>LAUFZEIT</span><span>${p.lzf || ''}</span></div>
+                <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>SÄGELÄNGE</span><span>${p.sag || ''}</span></div>
+                <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>STÜCK T</span><span>${p.stt || ''}</span></div>
+                <div style="display:flex; justify-content:space-between;"><span>STÜCK N</span><span>${p.stn || ''}</span></div>
+            </div>` : ''}
+        </div>
+        <div style="border-bottom:5px solid #000; margin-bottom:10px;"></div>`;
+
+    const row = (t) => {
         const isLong = (t.dia || '').length > 15;
         const align = isLong ? 'center' : 'baseline';
-        
-        // Для длинных строк в PDF заменим "/" на перенос строки для красоты
         const displayDia = t.dia.includes('/') ? t.dia.split('/').join('<br>') : t.dia;
-
         return `
-        <div style="display:flex; align-items:${align}; border-bottom:1px solid #eee; padding:10px 0; width:100%;">
+        <div style="display:flex; align-items:${align}; border-bottom:1px solid #eee; padding:8px 0;">
             <div style="width:75px; font-weight:800; font-size:15px;">${t.id}</div>
             <div style="flex:1; font-weight:700; font-size:15px; text-transform:uppercase; padding-right:10px; white-space:pre-wrap;">${t.nm}</div>
             <div style="width:125px; text-align:right; font-weight:800; font-size:14px; line-height:1.2;">${displayDia}</div>
         </div>`;
-    }).join('');
+    };
 
-    const html = `
-    <div style="width:210mm; padding:12mm; box-sizing:border-box; background:#fff; font-family:sans-serif; color:#000;">
-        <div style="border:2px solid #000; padding:25px; min-height:265mm; display:flex; flex-direction:column; box-sizing:border-box;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; min-height:90px;">
-                <div style="display:flex; flex-direction:column; justify-content:center;">
-                    <div style="font-size:13px; font-weight:900; text-transform:uppercase; color:#666; margin-bottom:2px; line-height:1;">${p.name || ''}</div>
-                    <div style="font-size:64px; font-weight:900; line-height:0.8; letter-spacing:-2px; margin:0;">${p.num || '---'}</div>
-                </div>
-                <div style="width:220px; font-size:11px; font-weight:800; line-height:1.5;">
-                    <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>ABSTAND</span><span>${p.abs || ''}</span></div>
-                    <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>GREIFBACKEN</span><span>${p.grf || ''}</span></div>
-                    <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>LAUFZEIT</span><span>${p.lzf || ''}</span></div>
-                    <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>SÄGELÄNGE</span><span>${p.sag || ''}</span></div>
-                    <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>STÜCK T</span><span>${p.stt || ''}</span></div>
-                    <div style="display:flex; justify-content:space-between;"><span>STÜCK N</span><span>${p.stn || ''}</span></div>
-                </div>
-            </div>
-            <div style="border-bottom:5px solid #000; margin-bottom:15px;"></div>
-            <div style="display:flex; font-size:10px; font-weight:900; text-transform:uppercase; margin-bottom:6px; padding:0 2px;">
-                <div style="width:75px;">T-NR</div>
-                <div style="flex:1;">WERKZEUGNAME / KOMMENTAR</div>
-                <div style="width:125px; text-align:right;">Ø / TOLERANZ</div>
-            </div>
-            <div style="border-bottom:3px solid #000; margin-bottom:0px;"></div>
-            <div style="flex:1;">${rows}</div>
-        </div>
-    </div>`;
+    const sectionTitle = (title) => `
+        <div style="background:#000; color:#fff; padding:4px 10px; font-weight:900; font-size:14px; margin:15px 0 5px 0; display:flex; justify-content:space-between;">
+            <span>${title}</span>
+        </div>`;
+
+    // Собираем контент
+    let oben = [];
+    let unten = [];
+    let foundUnten = false;
+
+    (p.tools || []).forEach(t => {
+        if(t.rev) foundUnten = true;
+        if(foundUnten) unten.push(t); else oben.push(t);
+    });
+
+    const pageStart = `<div style="width:210mm; padding:12mm; box-sizing:border-box; background:#fff; font-family:sans-serif; color:#000; page-break-after:always;">
+        <div style="border:2px solid #000; padding:25px; min-height:265mm; display:flex; flex-direction:column; box-sizing:border-box;">`;
+    const pageEnd = `</div></div>`;
+
+    // Первая страница
+    html += pageStart + header() + sectionTitle("REVOLVER OBEN") + oben.map(t => row(t)).join('');
+    
+    if (unten.length > 0) {
+        // Если места мало (больше 22 инструментов всего), кидаем на вторую страницу
+        const totalTools = (p.tools || []).length;
+        const forceBreak = totalTools > 20; 
+
+        if (forceBreak) {
+            html += pageEnd + pageStart + header(true) + sectionTitle("REVOLVER UNTEN") + unten.map(t => row(t)).join('') + pageEnd;
+        } else {
+            html += sectionTitle("REVOLVER UNTEN") + unten.map(t => row(t)).join('') + pageEnd;
+        }
+    } else {
+        html += pageEnd;
+    }
+
     el('print-container').innerHTML = html;
     setTimeout(() => { window.print(); }, 150);
 }
