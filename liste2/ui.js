@@ -62,7 +62,7 @@ function openProject(i) {
 
 function goHome() { currentIdx = null; el('v-home').classList.add('active'); el('v-det').classList.remove('active'); renderList(); }
 
-// --- ИНСТРУМЕНТЫ (С ИСПРАВЛЕННЫМ DRAG & DROP) ---
+// --- ИНСТРУМЕНТЫ (ФИКС DRAG & DROP) ---
 function renderTools() {
     const list = el('list-t'); if(!list || currentIdx === null) return;
     const tools = db[currentIdx].tools || [];
@@ -71,7 +71,8 @@ function renderTools() {
     tools.forEach((t, i) => {
         const item = document.createElement('div');
         item.className = 'list-item';
-        item.draggable = true;
+        // Перетаскивание выключено по умолчанию, включается только при нажатии на ☰
+        item.draggable = false; 
         item.style.padding = '12px 15px';
         item.style.display = 'flex';
         item.style.alignItems = 'center';
@@ -80,7 +81,12 @@ function renderTools() {
         const revMark = t.rev ? `<div style="background:#000; color:#fff; font-size:9px; padding:2px 6px; border-radius:4px; margin-bottom:5px; font-weight:900; width:fit-content;">UNTEN START ↓</div>` : '';
 
         item.innerHTML = `
-            <div style="cursor:grab; color:#ccc; font-size:20px; padding-right:5px; user-select:none;">☰</div>
+            <div class="handle" 
+                 onmousedown="this.parentElement.draggable=true" 
+                 onmouseup="this.parentElement.draggable=false"
+                 ontouchstart="this.parentElement.draggable=true"
+                 ontouchend="this.parentElement.draggable=false"
+                 style="cursor:grab; color:#ccc; font-size:20px; padding:10px 5px; user-select:none;">☰</div>
             <div style="flex:1; min-width:0;" onclick="modalT(${i})">
                 ${revMark}
                 <small style="color:#8e8e93; font-weight:700; font-size:11px;">${t.id || 'T0000'}</small>
@@ -93,6 +99,7 @@ function renderTools() {
             item.style.opacity = '0.4'; 
         };
         item.ondragend = () => { 
+            item.draggable = false;
             item.style.opacity = '1'; 
             renderTools(); 
         };
@@ -104,7 +111,6 @@ function renderTools() {
         };
         list.appendChild(item);
     });
-    // Добавляем padding-bottom в конце списка, чтобы кнопки не перекрывали инструменты
     list.innerHTML += '<div style="height:180px; pointer-events:none;"></div>'; 
 }
 
@@ -181,7 +187,7 @@ function importJSON() {
 function deleteProject(i) { if(confirm('Löschen?')) { db.splice(i, 1); localStorage.setItem(DB_KEY, JSON.stringify(db)); renderList(); } }
 function delT() { const i = el('t-idx').value; db[currentIdx].tools.splice(i, 1); localStorage.setItem(DB_KEY, JSON.stringify(db)); renderTools(); hide('m-t'); }
 
-// --- PDF (КАК В ТВОЕМ ОРИГИНАЛЕ) ---
+// --- PDF (ТВОЙ ОРИГИНАЛ) ---
 function makePDF() {
     const p = db[currentIdx];
     
@@ -226,7 +232,6 @@ function makePDF() {
             <div style="border-bottom:5px solid #000; margin-bottom:15px;"></div>
 
             <div style="flex:1;">
-                
                 <div style="margin-bottom:5px; font-size:18px; font-weight:900; letter-spacing:0.5px;">REVOLVER OBEN</div>
                 <div style="display:flex; font-size:10px; font-weight:900; text-transform:uppercase; margin-bottom:6px; padding:0 2px;">
                     <div style="width:75px;">T-NR</div>
@@ -241,7 +246,6 @@ function makePDF() {
                     <div style="border-bottom:4px solid #000; margin-bottom:0px;"></div>
                     ${unten.map(getRow).join('')}
                 ` : ''}
-
             </div>
 
             <div style="border-top:1px solid #000; padding-top:5px; font-size:9px; font-weight:800; text-align:center; color:#666;">
