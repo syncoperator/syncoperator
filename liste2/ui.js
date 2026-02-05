@@ -245,7 +245,7 @@ function makePDF() {
             </div>
 
             <div style="border-top:1px solid #000; padding-top:5px; font-size:9px; font-weight:800; text-align:center; color:#666;">
-                QS CENTRAL PREMIUM REPORT
+                
             </div>
         </div>
     </div>`;
