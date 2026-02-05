@@ -72,13 +72,17 @@ function renderTools() {
         const item = document.createElement('div');
         item.className = 'list-item';
         item.draggable = true;
+        item.style.flexDirection = 'column';
+        item.style.alignItems = 'flex-start';
         item.style.padding = '12px 15px';
 
-        const revMark = t.rev ? `<div style="background:#000; color:#fff; font-size:10px; padding:2px 6px; border-radius:4px; margin-bottom:5px; width:fit-content; font-weight:900;">REVOLVER UNTEN ↓</div>` : '';
+        // Проверка на true или строку 'true'
+        const isUnten = (t.rev === true || t.rev === 'true');
+        const revMark = isUnten ? `<div style="background:#000; color:#fff; font-size:10px; padding:2px 8px; border-radius:4px; margin-bottom:8px; font-weight:900; letter-spacing:0.5px;">REVOLVER UNTEN ↓</div>` : '';
 
         item.innerHTML = `
-            <div style="flex:1; min-width:0;" onclick="modalT(${i})">
-                ${revMark}
+            ${revMark}
+            <div style="width:100%;" onclick="modalT(${i})">
                 <small style="color:#8e8e93; font-weight:700; font-size:11px;">${t.id || 'T0000'}</small>
                 <b style="font-size:20px; font-weight:900; display:block; line-height:1.2; word-wrap:break-word; white-space:pre-wrap;">${t.nm || '---'}</b>
             </div>
@@ -118,26 +122,26 @@ function modalT(i = null) {
     el('t-nm').value = t.nm || ''; 
     el('t-dia').value = t.dia || '';
     
-    // САМОСТОЯТЕЛЬНОЕ СОЗДАНИЕ КНОПКИ ПЕРЕКЛЮЧЕНИЯ
     let btnRev = el('btn-rev-toggle');
     if (!btnRev) {
         btnRev = document.createElement('div');
         btnRev.id = 'btn-rev-toggle';
         const modalContent = el('m-t').querySelector('.modal-content');
-        // Вставляем перед кнопками Сохранить/Удалить
         modalContent.insertBefore(btnRev, el('btn-save-t') || modalContent.lastElementChild);
     }
     
-    btnRev.style.cssText = `margin: 15px 0; padding: 15px; border-radius: 12px; text-align: center; font-weight: 900; cursor: pointer; display: block;`;
+    btnRev.style.cssText = `margin: 10px 0 20px 0; padding: 15px; border-radius: 12px; text-align: center; font-weight: 900; cursor: pointer; display: block; transition: 0.2s;`;
     
     const updateBtn = (state) => {
-        btnRev.dataset.state = state;
-        btnRev.innerText = state ? "✓ UNTEN (START)" : "SET AS UNTEN START";
-        btnRev.style.background = state ? "#000" : "#f0f0f0";
-        btnRev.style.color = state ? "#fff" : "#000";
+        const isTrue = (state === true || state === 'true');
+        btnRev.dataset.state = isTrue;
+        btnRev.innerText = isTrue ? "✓ UNTEN (START)" : "SET AS UNTEN START";
+        btnRev.style.background = isTrue ? "#000" : "#f0f0f0";
+        btnRev.style.color = isTrue ? "#fff" : "#000";
     };
 
-    updateBtn(t.rev === true);
+    updateBtn(t.rev);
+    
     btnRev.onclick = () => {
         const cur = btnRev.dataset.state === 'true';
         updateBtn(!cur);
@@ -150,6 +154,7 @@ function modalT(i = null) {
 function saveT() {
     const i = el('t-idx').value;
     const btn = el('btn-rev-toggle');
+    // Принудительно сохраняем булево значение
     const isUnten = btn ? (btn.dataset.state === 'true') : false;
 
     const t = { 
@@ -168,7 +173,7 @@ function saveT() {
     hide('m-t');
 }
 
-// --- PDF (СТАБИЛЬНЫЙ) ---
+// --- PDF ---
 function makePDF() {
     const p = db[currentIdx];
     const getHeader = (p2) => `
@@ -191,20 +196,23 @@ function makePDF() {
         return `
         <div style="display:flex; align-items:${isLong ? 'center' : 'baseline'}; border-bottom:1px solid #eee; padding:10px 0;">
             <div style="width:75px; font-weight:800; font-size:15px;">${t.id}</div>
-            <div style="flex:1; font-weight:700; font-size:15px; text-transform:uppercase; white-space:pre-wrap;">${t.nm}</div>
+            <div style="flex:1; font-weight:700; font-size:15px; text-transform:uppercase; white-space:pre-wrap; padding-right:10px;">${t.nm}</div>
             <div style="width:125px; text-align:right; font-weight:800; font-size:14px; line-height:1.2;">${displayDia}</div>
         </div>`;
     };
 
     let oben = [], unten = [], target = oben;
-    (p.tools || []).forEach(t => { if(t.rev) target = unten; target.push(t); });
+    (p.tools || []).forEach(t => { 
+        if(t.rev === true || t.rev === 'true') target = unten; 
+        target.push(t); 
+    });
 
     let html = `<div style="width:210mm; padding:12mm; background:#fff; font-family:sans-serif;">
         <div style="border:2px solid #000; padding:25px; min-height:265mm;">
             ${getHeader(false)}
-            <div style="background:#000; color:#fff; padding:5px; font-weight:900; margin-bottom:5px;">REVOLVER OBEN</div>
+            <div style="background:#000; color:#fff; padding:6px 10px; font-weight:900; font-size:13px; margin-bottom:5px;">REVOLVER OBEN</div>
             ${oben.map(t => getRow(t)).join('')}
-            ${unten.length > 0 ? `<div style="background:#000; color:#fff; padding:5px; font-weight:900; margin-top:10px;">REVOLVER UNTEN</div>` + unten.map(t => getRow(t)).join('') : ''}
+            ${unten.length > 0 ? `<div style="background:#000; color:#fff; padding:6px 10px; font-weight:900; font-size:13px; margin-top:15px; margin-bottom:5px;">REVOLVER UNTEN</div>` + unten.map(t => getRow(t)).join('') : ''}
         </div>
     </div>`;
     
