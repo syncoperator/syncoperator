@@ -108,32 +108,41 @@ function moveTool(from, to) {
 function modalT(i = null) {
     const edit = i !== null;
     el('t-idx').value = edit ? i : '';
-    const t = (edit && db[currentIdx].tools[i]) ? db[currentIdx].tools[i] : {id:'', nm:'', dia:'', rev:false};
+    
+    // БЕЗОПАСНОЕ ПОЛУЧЕНИЕ ОБЪЕКТА
+    let t = {id:'', nm:'', dia:'', rev:false};
+    if (edit && db[currentIdx] && db[currentIdx].tools && db[currentIdx].tools[i]) {
+        t = db[currentIdx].tools[i];
+    }
     
     el('t-id').value = t.id || ''; 
     el('t-nm').value = t.nm || ''; 
     el('t-dia').value = t.dia || '';
     
-    // Кнопка револьвера
+    // ПРОВЕРЯЕМ И ОБНОВЛЯЕМ КНОПКУ РЕВОЛЬВЕРА
     let btnRev = el('btn-rev-toggle');
     if(!btnRev) {
         btnRev = document.createElement('div');
         btnRev.id = 'btn-rev-toggle';
-        const content = el('m-t').querySelector('.modal-content');
-        content.insertBefore(btnRev, el('btn-save-t'));
+        // Вставляем в конец контента модалки, это самое безопасное место
+        el('m-t').querySelector('.modal-content').appendChild(btnRev);
     }
     
-    btnRev.style.cssText = `margin: 10px 0; padding: 15px; border-radius: 12px; text-align: center; font-weight: 900; cursor: pointer;`;
+    btnRev.style.cssText = `margin: 15px 0; padding: 15px; border-radius: 12px; text-align: center; font-weight: 900; cursor: pointer; order: 10;`;
     
     const updateBtn = (state) => {
         btnRev.dataset.state = state;
-        btnRev.innerText = state ? "✓ UNTEN (START)" : "SET AS UNTEN START";
-        btnRev.style.background = state ? "#000" : "#f0f0f0";
-        btnRev.style.color = state ? "#fff" : "#000";
+        btnRev.innerText = (state === 'true' || state === true) ? "✓ UNTEN (START)" : "SET AS UNTEN START";
+        btnRev.style.background = (state === 'true' || state === true) ? "#000" : "#f0f0f0";
+        btnRev.style.color = (state === 'true' || state === true) ? "#fff" : "#000";
     };
 
     updateBtn(t.rev === true);
-    btnRev.onclick = () => updateBtn(btnRev.dataset.state === 'false');
+    
+    btnRev.onclick = function() {
+        const newState = !(this.dataset.state === 'true');
+        updateBtn(newState);
+    };
 
     el('btn-del-t').style.display = edit ? 'block' : 'none';
     show('m-t');
@@ -142,7 +151,7 @@ function modalT(i = null) {
 function saveT() {
     const i = el('t-idx').value;
     const btn = el('btn-rev-toggle');
-    const isUnten = btn ? btn.dataset.state === 'true' : false;
+    const isUnten = btn ? (btn.dataset.state === 'true') : false;
 
     const t = { 
         id: el('t-id').value.toUpperCase(), 
@@ -152,10 +161,16 @@ function saveT() {
     };
 
     if(!db[currentIdx].tools) db[currentIdx].tools = [];
-    if(i === '') db[currentIdx].tools.push(t); else db[currentIdx].tools[parseInt(i)] = t;
+    
+    if(i === '') {
+        db[currentIdx].tools.push(t);
+    } else {
+        db[currentIdx].tools[parseInt(i)] = t;
+    }
     
     localStorage.setItem(DB_KEY, JSON.stringify(db));
-    renderTools(); hide('m-t');
+    renderTools(); 
+    hide('m-t');
 }
 
 // --- PDF ---
@@ -195,15 +210,13 @@ function makePDF() {
 
     const getSection = (title) => `<div style="background:#000; color:#fff; padding:5px 10px; font-weight:900; font-size:13px; margin:10px 0 5px 0;">${title}</div>`;
 
-    // Распределяем инструменты
     let oben = [], unten = [], target = oben;
     (p.tools || []).forEach(t => {
         if(t.rev) target = unten;
         target.push(t);
     });
 
-    const total = (p.tools || []).length;
-    const isMultiPage = total > 22 && unten.length > 0;
+    const isMultiPage = (p.tools || []).length > 22 && unten.length > 0;
 
     let html = `<div style="width:210mm; padding:12mm; box-sizing:border-box; background:#fff; font-family:sans-serif; color:#000;">
         <div style="border:2px solid #000; padding:25px; min-height:265mm; display:flex; flex-direction:column; box-sizing:border-box;">
@@ -214,10 +227,8 @@ function makePDF() {
                 <div style="width:125px; text-align:right;">Ø / TOLERANZ</div>
             </div>
             <div style="border-bottom:3px solid #000;"></div>
-            
             ${getSection("REVOLVER OBEN")}
             ${oben.map(t => getRow(t)).join('')}
-            
             ${!isMultiPage && unten.length > 0 ? getSection("REVOLVER UNTEN") + unten.map(t => getRow(t)).join('') : ''}
         </div>
     </div>`;
