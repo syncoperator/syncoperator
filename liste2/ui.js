@@ -6,10 +6,11 @@ const el = (id) => document.getElementById(id);
 const show = (id) => { if(el(id)) el(id).style.display = 'flex'; };
 const hide = (id) => { if(el(id)) el(id).style.display = 'none'; };
 
-// --- ПРОЕКТЫ ---
+// --- ПРОЕКТЫ (С ПОЛЕМ MATERIAL) ---
 function modalP(edit = false) {
     if (!edit) currentIdx = null; 
-    const p = (edit && currentIdx !== null && db[currentIdx]) ? db[currentIdx] : {num:'', name:'', lzf:'', sag:'', stt:'', stn:'', abs:'', grf:''};
+    const p = (edit && currentIdx !== null && db[currentIdx]) ? db[currentIdx] : {num:'', name:'', lzf:'', sag:'', stt:'', stn:'', abs:'', grf:'', mat:''};
+    
     el('p-idx').value = edit ? currentIdx : '';
     el('p-num').value = p.num || '';
     el('p-nam').value = p.name || '';
@@ -19,6 +20,10 @@ function modalP(edit = false) {
     el('p-stn').value = p.stn || '';
     el('p-abs').value = p.abs || '';
     el('p-grf').value = p.grf || '';
+    
+    // Добавляем поддержку поля материала, если у тебя есть input с id 'p-mat'
+    if(el('p-mat')) el('p-mat').value = p.mat || ''; 
+    
     show('m-p');
 }
 
@@ -27,9 +32,13 @@ function saveP() {
     const newP = {
         num: el('p-num').value,
         name: el('p-nam').value.toUpperCase(),
-        lzf: el('p-lzf').value, sag: el('p-sag').value,
-        stt: el('p-stt').value, stn: el('p-stn').value,
-        abs: el('p-abs').value, grf: el('p-grf').value,
+        lzf: el('p-lzf').value, 
+        sag: el('p-sag').value,
+        stt: el('p-stt').value, 
+        stn: el('p-stn').value,
+        abs: el('p-abs').value, 
+        grf: el('p-grf').value,
+        mat: el('p-mat') ? el('p-mat').value.toUpperCase() : '', // Сохраняем материал
         tools: (idx !== '' && db[idx]) ? (db[idx].tools || []) : []
     };
     if (idx === '') { db.push(newP); currentIdx = db.length - 1; } 
@@ -62,7 +71,7 @@ function openProject(i) {
 
 function goHome() { currentIdx = null; el('v-home').classList.add('active'); el('v-det').classList.remove('active'); renderList(); }
 
-// --- ИНСТРУМЕНТЫ (DRAG & DROP TOUCH FIX) ---
+// --- ИНСТРУМЕНТЫ (DRAG & DROP) ---
 let startIdx = null;
 
 function renderTools() {
@@ -91,7 +100,6 @@ function renderTools() {
         `;
         
         const handle = item.querySelector('.handle');
-        
         handle.ontouchstart = (e) => { startIdx = i; item.style.background = "#f9f9f9"; };
         handle.ontouchmove = (e) => {
             e.preventDefault();
@@ -127,7 +135,7 @@ function moveTool(from, to) {
     renderTools();
 }
 
-// --- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ---
+// --- СТАНДАРТНЫЕ ФУНКЦИИ ---
 function modalT(i = null) {
     const edit = i !== null;
     el('t-idx').value = edit ? i : '';
@@ -152,32 +160,27 @@ function saveT() {
     renderTools(); hide('m-t');
 }
 
-function runImp() {
-    const text = el('imp-area').value; if (!text.trim()) return;
-    const regex = /(T[0O]\d{2,4})/gi; const parts = text.split(regex);
-    if(!db[currentIdx].tools) db[currentIdx].tools = [];
-    for (let i = 1; i < parts.length; i += 2) {
-        let id = parts[i].trim().toUpperCase().replace('O', '0');
-        let name = (parts[i + 1] || '').trim().replace(/[\r\n]+/g, ' ').replace(/\s\s+/g, ' ');
-        db[currentIdx].tools.push({ id, nm: name.toUpperCase(), dia: '', rev: false });
-    }
-    localStorage.setItem(DB_KEY, JSON.stringify(db));
-    el('imp-area').value = ''; renderTools(); hide('m-imp');
-}
-
 function exportJSON() { el('imp-area').value = JSON.stringify(db); el('imp-area').select(); alert("JSON kopiert!"); }
 function importJSON() { try { const parsed = JSON.parse(el('imp-area').value); if(Array.isArray(parsed)) { db = parsed; localStorage.setItem(DB_KEY, JSON.stringify(db)); renderList(); hide('m-imp'); } } catch(e) { alert("JSON-Fehler"); } }
 function deleteProject(i) { if(confirm('Löschen?')) { db.splice(i, 1); localStorage.setItem(DB_KEY, JSON.stringify(db)); renderList(); } }
 function delT() { const i = el('t-idx').value; db[currentIdx].tools.splice(i, 1); localStorage.setItem(DB_KEY, JSON.stringify(db)); renderTools(); hide('m-t'); }
 
-// --- PDF (ОБНОВЛЕННЫЙ ПОРЯДОК) ---
+// --- PDF (ОБНОВЛЕННЫЙ С ОБЕИМИ ШАПКАМИ) ---
 function makePDF() {
     const p = db[currentIdx];
+    const headerRow = `
+        <div style="display:flex; font-size:10px; font-weight:900; text-transform:uppercase; margin-bottom:6px; padding:0 2px;">
+            <div style="width:75px;">T-NR</div>
+            <div style="flex:1;">WERKZEUGNAME / KOMMENTAR</div>
+            <div style="width:125px; text-align:right;">Ø / TOLERANZ</div>
+        </div>
+        <div style="border-bottom:4px solid #000; margin-bottom:0px;"></div>
+    `;
+
     const getRow = (t) => {
-        const isLong = (t.dia || '').length > 15;
-        const align = isLong ? 'center' : 'baseline';
         const displayDia = t.dia.includes('/') ? t.dia.split('/').join('<br>') : t.dia;
-        return `<div style="display:flex; align-items:${align}; border-bottom:1.5px solid #000; padding:10px 0; width:100%;">
+        return `
+        <div style="display:flex; align-items:baseline; border-bottom:1.5px solid #000; padding:10px 0; width:100%;">
             <div style="width:75px; font-weight:800; font-size:15px;">${t.id}</div>
             <div style="flex:1; font-weight:700; font-size:15px; text-transform:uppercase; padding-right:10px; white-space:pre-wrap;">${t.nm}</div>
             <div style="width:125px; text-align:right; font-weight:800; font-size:14px; line-height:1.2;">${displayDia}</div>
@@ -198,7 +201,7 @@ function makePDF() {
                 </div>
                 <div style="width:220px; font-size:11px; font-weight:800; line-height:1.5;">
                     <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>LAUFZEIT</span><span>${p.lzf || ''}</span></div>
-                    <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>MATERIAL</span><span>${p.nam || ''}</span></div>
+                    <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>MATERIAL</span><span>${p.mat || p.nam || ''}</span></div>
                     <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>SÄGELÄNGE</span><span>${p.sag || ''}</span></div>
                     <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>ABSTAND</span><span>${p.abs || ''}</span></div>
                     <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>GREIFBACKEN</span><span>${p.grf || ''}</span></div>
@@ -210,14 +213,14 @@ function makePDF() {
 
             <div style="flex:1;">
                 <div style="margin-bottom:5px; font-size:18px; font-weight:900; letter-spacing:0.5px; text-transform:uppercase;">REVOLVER OBEN</div>
-                <div style="display:flex; font-size:10px; font-weight:900; text-transform:uppercase; margin-bottom:6px; padding:0 2px;">
-                    <div style="width:75px;">T-NR</div><div style="flex:1;">WERKZEUGNAME / KOMMENTAR</div><div style="width:125px; text-align:right;">Ø / TOLERANZ</div>
-                </div>
-                <div style="border-bottom:4px solid #000; margin-bottom:0px;"></div>
+                ${headerRow}
                 ${oben.map(getRow).join('')}
-                ${unten.length > 0 ? `<div style="margin-top:35px; margin-bottom:5px; font-size:18px; font-weight:900; letter-spacing:0.5px; text-transform:uppercase;">REVOLVER UNTEN</div>
-                <div style="border-bottom:4px solid #000; margin-bottom:0px;"></div>
-                ${unten.map(getRow).join('')}` : ''}
+
+                ${unten.length > 0 ? `
+                    <div style="margin-top:35px; margin-bottom:5px; font-size:18px; font-weight:900; letter-spacing:0.5px; text-transform:uppercase;">REVOLVER UNTEN</div>
+                    ${headerRow}
+                    ${unten.map(getRow).join('')}
+                ` : ''}
             </div>
 
             <div style="border-top:1px solid #000; padding-top:5px; font-size:9px; font-weight:800; text-align:center; color:#666; margin-top:20px;">
