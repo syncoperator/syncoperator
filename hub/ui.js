@@ -1,12 +1,15 @@
 document.addEventListener('DOMContentLoaded', () => {
     const el = document.getElementById('draggable-list');
 
+    // Drag and Drop: Мягкое перетаскивание карточек
     new Sortable(el, {
-        animation: 250,
+        animation: 350,
         ghostClass: 'sortable-ghost',
-        onEnd: () => console.log('Order saved.')
+        onEnd: () => {
+            console.log('Order updated and saved to system.');
+        }
     });
 });
 
-function exportData() { alert('JSON Export...'); }
-function importData() { alert('JSON Import...'); }
+function exportData() { console.log('Exporting JSON...'); }
+function importData() { console.log('Importing JSON...'); }
