@@ -1,1 +1,246 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SyncOperator Premium</title>
+    <style>
+        :root {
+            --bg: #f4f7fa;
+            --card-bg: #ffffff;
+            --primary: #3b82f6;
+            --danger: #ff3b30;
+            --text: #1a1a1b;
+            --text-light: #8e8e93;
+            --shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+            --radius: 24px;
+        }
+
+        body {
+            background-color: var(--bg);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            color: var(--text);
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* Header Style from Screenshot */
+        .app-header {
+            text-align: center;
+            padding: 40px 20px 20px;
+        }
+
+        .app-title {
+            font-size: 36px;
+            font-weight: 900;
+            letter-spacing: -1.5px;
+            margin: 0;
+        }
+
+        .system-badge {
+            display: inline-block;
+            background: #fff;
+            padding: 6px 16px;
+            border-radius: 30px;
+            font-size: 11px;
+            font-weight: 800;
+            color: var(--text-light);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.03);
+            margin-top: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Main Menu Grid */
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            padding: 20px;
+        }
+
+        .big-card {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            padding: 40px 20px;
+            text-align: center;
+            box-shadow: var(--shadow);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            transition: transform 0.2s;
+        }
+
+        .big-card:active { transform: scale(0.96); }
+
+        .big-card .icon { font-size: 44px; margin-bottom: 5px; }
+        .big-card span { font-weight: 700; font-size: 15px; color: #444; }
+
+        /* Views */
+        .view { display: none; flex-direction: column; min-height: 100vh; }
+        .view.active { display: flex; }
+
+        /* List Items from Screenshot */
+        .list-item {
+            background: var(--card-bg);
+            margin: 0 20px 15px;
+            padding: 20px;
+            border-radius: 20px;
+            box-shadow: var(--shadow);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            position: relative;
+        }
+
+        .item-icon {
+            width: 48px; height: 48px;
+            background: #eef4ff;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+
+        .item-content b { font-size: 20px; font-weight: 900; display: block; }
+        .item-content small { color: var(--text-light); font-weight: 700; font-size: 12px; text-transform: uppercase; }
+
+        /* Buttons & Forms */
+        .action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; padding: 20px; }
+        .btn-main {
+            padding: 16px; border-radius: 16px; border: none; font-weight: 700; font-size: 16px; cursor: pointer;
+        }
+        .primary { background: var(--primary); color: white; }
+        .secondary { background: #e5e7eb; color: var(--text); }
+
+        .overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.4); 
+            display: none; align-items: flex-end; z-index: 1000;
+        }
+        .sheet {
+            background: white; width: 100%; border-radius: 30px 30px 0 0; 
+            padding: 20px 20px 40px; box-sizing: border-box;
+        }
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 20px; }
+        .field { display: flex; flex-direction: column; gap: 5px; }
+        .field.full { grid-column: span 2; }
+        .field label { font-size: 11px; font-weight: 800; color: var(--text-light); text-transform: uppercase; padding-left: 5px; }
+        .field input {
+            padding: 14px; border-radius: 12px; border: 1.5px solid #eee; font-size: 16px; font-weight: 600;
+        }
+
+        /* PDF Preview Area */
+        #print-container { display: none; }
+        @media print {
+            body * { visibility: hidden; }
+            #print-container, #print-container * { visibility: visible; }
+            #print-container { display: block; position: absolute; left: 0; top: 0; width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+<div id="v-home" class="view active">
+    <div class="app-header">
+        <h1 class="app-title">SyncOperator</h1>
+        <div class="system-badge">System Live</div>
+    </div>
+
+    <div class="main-grid">
+        <div class="big-card" onclick="modalP()">
+            <div class="icon">📈</div>
+            <span>Neues Projekt</span>
+        </div>
+        <div class="big-card" onclick="show('m-imp')">
+            <div class="icon">📑</div>
+            <span>Daten Import</span>
+        </div>
+    </div>
+
+    <div id="list-p"></div>
+</div>
+
+<div id="v-det" class="view">
+    <div style="padding: 20px; display: flex; align-items: center; justify-content: space-between;">
+        <button onclick="goHome()" style="background:none; border:none; font-size: 24px;">←</button>
+        <div style="text-align: center;">
+            <small id="h-nam" style="display:block; color:var(--text-light); font-weight:800;"></small>
+            <b id="h-num" style="font-size:20px;"></b>
+        </div>
+        <button onclick="makePDF()" style="color:var(--primary); background:none; border:none; font-weight:800; font-size:16px;">PDF</button>
+    </div>
+
+    <div class="action-grid">
+        <button class="btn-main primary" onclick="modalT()">+ Werkzeug</button>
+        <button class="btn-main secondary" onclick="show('m-imp')">Import</button>
+    </div>
+
+    <div id="list-t"></div>
+</div>
+
+<div id="m-p" class="overlay" onclick="if(event.target==this)hide('m-p')">
+    <div class="sheet">
+        <h2 style="margin:0 0 15px; font-weight:900;">Projekt</h2>
+        <input type="hidden" id="p-idx">
+        <div class="form-grid">
+            <div class="field full"><label>Zeichnungsnummer</label><input type="text" id="p-num"></div>
+            <div class="field full"><label>Kunde / Name</label><input type="text" id="p-nam"></div>
+            <div class="field full"><label>Material</label><input type="text" id="p-mat"></div>
+            <div class="field"><label>Laufzeit</label><input type="text" id="p-lzf"></div>
+            <div class="field"><label>Sägelänge</label><input type="text" id="p-sag"></div>
+            <div class="field"><label>Stück T</label><input type="text" id="p-stt"></div>
+            <div class="field"><label>Stück N</label><input type="text" id="p-stn"></div>
+            <div class="field"><label>Abstand</label><input type="text" id="p-abs"></div>
+            <div class="field"><label>Greifbacken</label><input type="text" id="p-grf"></div>
+        </div>
+        <div style="margin-top:25px; display:flex; gap:10px;">
+            <button class="btn-main primary" style="flex:2;" onclick="saveP()">Speichern</button>
+            <button class="btn-main secondary" style="flex:1;" onclick="hide('m-p')">Abbrechen</button>
+        </div>
+    </div>
+</div>
+
+<div id="m-t" class="overlay" onclick="if(event.target==this)hide('m-t')">
+    <div class="sheet">
+        <h2 style="margin:0 0 15px; font-weight:900;">Werkzeug</h2>
+        <input type="hidden" id="t-idx">
+        <div class="form-grid">
+            <div class="field full"><label>T-Nr</label><input type="text" id="t-id"></div>
+            <div class="field full"><label>Beschreibung</label><input type="text" id="t-nm"></div>
+            <div class="field full"><label>Ø / Toleranz</label><input type="text" id="t-dia"></div>
+        </div>
+        <div style="margin-top:20px; display:flex; align-items:center; justify-content:space-between; background:#f4f7fa; padding:15px; border-radius:15px;">
+            <span style="font-weight:700;">Revolver Unten?</span>
+            <div id="btn-rev-toggle" style="width:50px; height:28px; background:#ddd; border-radius:15px; position:relative; cursor:pointer;">
+                <div style="width:24px; height:24px; background:white; border-radius:50%; position:absolute; top:2px; left:2px; transition:0.2s;"></div>
+            </div>
+        </div>
+        <div style="margin-top:25px; display:flex; gap:10px;">
+            <button class="btn-main primary" style="flex:2;" onclick="saveT()">Speichern</button>
+            <button id="btn-del-t" class="btn-main secondary" style="color:red;" onclick="delT()">Löschen</button>
+        </div>
+    </div>
+</div>
+
+<div id="m-imp" class="overlay" onclick="if(event.target==this)hide('m-imp')">
+    <div class="sheet">
+        <h2 style="margin:0 0 15px; font-weight:900;">Daten</h2>
+        <textarea id="imp-area" style="width:100%; height:150px; border-radius:12px; border:1px solid #eee; padding:10px; font-family:monospace;"></textarea>
+        <div class="form-grid">
+            <button class="btn-main primary" onclick="runImp()">Import Werkzeuge</button>
+            <button class="btn-main secondary" onclick="exportJSON()">Export JSON</button>
+            <button class="btn-main secondary" onclick="importJSON()">Import JSON</button>
+        </div>
+        <button class="btn-main secondary" style="width:100%; margin-top:10px;" onclick="hide('m-imp')">Schließen</button>
+    </div>
+</div>
+
+<div id="print-container"></div>
+
+<script src="ui.js"></script>
+</body>
+</html>
 
