@@ -1,19 +1,21 @@
-// Инициализация Drag and Drop для реордеринга
-const el = document.getElementById('draggable-zone');
-const sortable = Sortable.create(el, {
-    animation: 250,
-    forceFallback: true, // для плавности на мобилках
-    onEnd: function() {
-        console.log('Order saved to memory');
-    }
+document.addEventListener('DOMContentLoaded', () => {
+    const grid = document.getElementById('drag-zone');
+
+    // Drag and Drop инициализация
+    new Sortable(grid, {
+        animation: 300,
+        ghostClass: "sortable-ghost",
+        easing: "cubic-bezier(1, 0, 0, 1)",
+        onEnd: () => {
+            console.log("Configuration Updated");
+        }
+    });
 });
 
 function exportData() {
-    console.log("Exporting JSON...");
-    // Логика экспорта
+    alert("Экспорт конфигурации JSON...");
 }
 
 function importData() {
-    console.log("Importing JSON...");
-    // Логика импорта
+    alert("Импорт конфигурации JSON...");
 }
