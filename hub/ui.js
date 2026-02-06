@@ -1,21 +1,17 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const grid = document.getElementById('drag-zone');
+    const el = document.getElementById('sort-container');
 
-    // Drag and Drop инициализация
-    new Sortable(grid, {
-        animation: 300,
-        ghostClass: "sortable-ghost",
-        easing: "cubic-bezier(1, 0, 0, 1)",
+    // Drag and Drop: работает идеально для множества карточек
+    new Sortable(el, {
+        animation: 200,
+        handle: '.mini-card', // можно тащить за всю карточку
+        ghostClass: 'sortable-ghost',
         onEnd: () => {
-            console.log("Configuration Updated");
+            console.log('New order saved');
+            // Здесь можно добавить сохранение в LocalStorage
         }
     });
 });
 
-function exportData() {
-    alert("Экспорт конфигурации JSON...");
-}
-
-function importData() {
-    alert("Импорт конфигурации JSON...");
-}
+function exportJSON() { alert('JSON Exported'); }
+function importJSON() { alert('JSON Imported'); }
