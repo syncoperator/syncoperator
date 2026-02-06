@@ -1,11 +1,12 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const list = document.getElementById('sort-list');
+    const grid = document.getElementById('drag-zone');
 
-    new Sortable(list, {
-        animation: 300,
+    new Sortable(grid, {
+        animation: 400,
         ghostClass: 'sortable-ghost',
+        dragClass: 'dragging-card',
         onEnd: () => {
-            console.log("Configuration saved.");
+            console.log("System layout updated.");
         }
     });
 });
