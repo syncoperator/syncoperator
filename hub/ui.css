@@ -1,37 +1,32 @@
-// Инициализация Drag and Drop
-const el = document.getElementById('tools-container');
-const sortable = Sortable.create(el, {
-    animation: 150,
-    ghostClass: 'sortable-ghost',
-    onEnd: function() {
-        console.log('Порядок изменен и сохранен');
-        saveOrder();
-    }
+document.addEventListener('DOMContentLoaded', () => {
+    const grid = document.getElementById('draggable-zone');
+
+    // Клик по карточкам
+    grid.addEventListener('click', (e) => {
+        const tile = e.target.closest('.tool-tile');
+        if (tile && tile.dataset.url) {
+            window.location.href = tile.dataset.url;
+        }
+    });
+
+    // Drag and Drop логика
+    new Sortable(grid, {
+        animation: 350,
+        easing: "cubic-bezier(1, 0, 0, 1)",
+        ghostClass: "sortable-ghost",
+        onEnd: () => {
+            const order = Array.from(document.querySelectorAll('.tool-tile'))
+                               .map(t => t.querySelector('.t-name').innerText);
+            localStorage.setItem('sync_order', JSON.stringify(order));
+            console.log("Order saved:", order);
+        }
+    });
 });
 
-// Функции экспорта/импорта JSON
-function exportJSON() {
-    const tools = Array.from(document.querySelectorAll('.tool-card')).map(card => ({
-        id: card.dataset.id,
-        name: card.querySelector('.t-name').innerText,
-        nr: card.querySelector('.t-nr').innerText
-    }));
-    
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(tools));
-    const downloadAnchorNode = document.createElement('a');
-    downloadAnchorNode.setAttribute("href", dataStr);
-    downloadAnchorNode.setAttribute("download", "tools_config.json");
-    document.body.appendChild(downloadAnchorNode);
-    downloadAnchorNode.click();
-    downloadAnchorNode.remove();
+function exportData() {
+    alert("Экспорт конфигурации JSON...");
 }
 
-function importJSON() {
-    // Логика импорта файла (через скрытый input)
-    alert('Выберите JSON файл для загрузки конфигурации');
-}
-
-function saveOrder() {
-    const order = Array.from(document.querySelectorAll('.tool-card')).map(c => c.dataset.id);
-    localStorage.setItem('toolsOrder', JSON.stringify(order));
+function importData() {
+    alert("Загрузка JSON...");
 }
