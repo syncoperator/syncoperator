@@ -6,7 +6,7 @@ const el = (id) => document.getElementById(id);
 const show = (id) => { if(el(id)) el(id).style.display = 'flex'; };
 const hide = (id) => { if(el(id)) el(id).style.display = 'none'; };
 
-// --- PROJECTS ---
+// --- ПРОЕКТЫ ---
 function modalP(edit = false) {
     if (!edit) currentIdx = null; 
     const p = (edit && currentIdx !== null && db[currentIdx]) ? db[currentIdx] : {num:'', name:'', lzf:'', sag:'', stt:'', stn:'', abs:'', grf:'', mat:''};
@@ -20,7 +20,7 @@ function modalP(edit = false) {
     el('p-stn').value = p.stn || '';
     el('p-abs').value = p.abs || '';
     el('p-grf').value = p.grf || '';
-    if(el('p-mat')) el('p-mat').value = p.mat || ''; 
+    el('p-mat').value = p.mat || '';
     
     show('m-p');
 }
@@ -36,7 +36,7 @@ function saveP() {
         stn: el('p-stn').value,
         abs: el('p-abs').value, 
         grf: el('p-grf').value,
-        mat: el('p-mat') ? el('p-mat').value.toUpperCase() : '',
+        mat: el('p-mat').value.toUpperCase(),
         tools: (idx !== '' && db[idx]) ? (db[idx].tools || []) : []
     };
     if (idx === '') { db.push(newP); currentIdx = db.length - 1; } 
@@ -51,9 +51,13 @@ function renderList() {
     const list = el('list-p'); if(!list) return;
     list.innerHTML = db.map((p, i) => `
         <div class="list-item" onclick="openProject(${i})">
-            <div><small>${p.name || 'OHNE NAME'}</small><b>${p.num || '---'}</b></div>
-            <div style="color:var(--danger); font-weight:900; padding:15px; z-index:20;" onclick="event.stopPropagation(); deleteProject(${i})">✕</div>
-        </div>`).join('') + '<div style="height:120px"></div>';
+            <div class="item-icon">📂</div>
+            <div style="flex:1">
+                <small>${p.name || 'OHNE NAME'}</small>
+                <b>${p.num || '---'}</b>
+            </div>
+            <div style="color:var(--danger); font-size:18px; padding:10px;" onclick="event.stopPropagation(); deleteProject(${i})">✕</div>
+        </div>`).join('') + '<div style="height:100px"></div>';
 }
 
 function openProject(i) {
@@ -62,14 +66,14 @@ function openProject(i) {
         el('v-home').classList.remove('active');
         el('v-det').classList.add('active');
         el('h-num').innerText = db[i].num || '---';
-        el('h-nam').innerText = db[i].name || 'PROJEKT';
+        el('h-nam').innerText = db[i].name || '---';
         renderTools();
     }
 }
 
 function goHome() { currentIdx = null; el('v-home').classList.add('active'); el('v-det').classList.remove('active'); renderList(); }
 
-// --- TOOLS (DRAG & DROP) ---
+// --- ИНСТРУМЕНТЫ (DRAG & DROP) ---
 let startIdx = null;
 
 function renderTools() {
@@ -81,24 +85,21 @@ function renderTools() {
         const item = document.createElement('div');
         item.className = 'list-item';
         item.setAttribute('data-idx', i);
-        item.style.padding = '15px';
-        item.style.display = 'flex';
-        item.style.alignItems = 'center';
-        item.style.gap = '10px';
-
-        const revMark = t.rev ? `<div style="background:#1c1c1e; color:#fff; font-size:9px; padding:2px 6px; border-radius:4px; margin-bottom:5px; font-weight:900; width:fit-content;">UNTEN START ↓</div>` : '';
+        
+        const revMark = t.rev ? `<div style="background:#000; color:#fff; font-size:9px; padding:2px 6px; border-radius:4px; margin-bottom:6px; font-weight:900; width:fit-content;">UNTEN START ↓</div>` : '';
 
         item.innerHTML = `
-            <div class="handle">☰</div>
+            <div class="handle" style="cursor:grab; color:#ccc; font-size:20px; margin-right:15px; user-select:none; touch-action:none;">☰</div>
             <div style="flex:1; min-width:0;" onclick="modalT(${i})">
+                <small>${t.id || 'T-NR'}</small>
+                <b>${t.nm || 'BESCHREIBUNG'}</b>
                 ${revMark}
-                <small>T-NR: ${t.id || 'T0000'}</small>
-                <b style="font-size:18px; line-height:1.2;">${t.nm || 'Keine Beschreibung'}</b>
             </div>
         `;
         
+        // Touch Drag & Drop logic
         const handle = item.querySelector('.handle');
-        handle.ontouchstart = (e) => { startIdx = i; item.style.background = "#F9F9F9"; };
+        handle.ontouchstart = () => { startIdx = i; item.style.background = "#f2f2f7"; };
         handle.ontouchmove = (e) => {
             e.preventDefault();
             const touch = e.touches[0];
@@ -114,6 +115,7 @@ function renderTools() {
         };
         handle.ontouchend = () => { item.style.background = ""; renderTools(); };
 
+        // Mouse Drag & Drop
         item.draggable = true;
         item.ondragstart = () => { startIdx = i; item.style.opacity = '0.4'; };
         item.ondragover = (e) => e.preventDefault();
@@ -133,62 +135,104 @@ function moveTool(from, to) {
     renderTools();
 }
 
-// --- TOOL MODAL ---
+// --- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ---
 function modalT(i = null) {
     const edit = i !== null;
     el('t-idx').value = edit ? i : '';
     const t = edit ? db[currentIdx].tools[i] : {id:'', nm:'', dia:'', rev:false};
     el('t-id').value = t.id; el('t-nm').value = t.nm; el('t-dia').value = t.dia;
     const btn = el('btn-rev-toggle');
-    if(btn) {
-        if(t.rev) btn.classList.add('on'); else btn.classList.remove('on');
-        btn.onclick = () => btn.classList.toggle('on');
-    }
+    if(t.rev) btn.classList.add('on'); else btn.classList.remove('on');
+    btn.onclick = () => btn.classList.toggle('on');
     el('btn-del-t').style.display = edit ? 'block' : 'none';
     show('m-t');
 }
 
 function saveT() {
     const i = el('t-idx').value;
-    const btn = el('btn-rev-toggle');
-    const t = { id: el('t-id').value.toUpperCase(), nm: el('t-nm').value.toUpperCase(), dia: el('t-dia').value, rev: btn ? btn.classList.contains('on') : false };
+    const t = { 
+        id: el('t-id').value.toUpperCase(), 
+        nm: el('t-nm').value.toUpperCase(), 
+        dia: el('t-dia').value, 
+        rev: el('btn-rev-toggle').classList.contains('on') 
+    };
     if(!db[currentIdx].tools) db[currentIdx].tools = [];
     if(i === '') db[currentIdx].tools.push(t); else db[currentIdx].tools[i] = t;
     localStorage.setItem(DB_KEY, JSON.stringify(db));
     renderTools(); hide('m-t');
 }
 
-// --- DATA ---
-function exportJSON() { el('imp-area').value = JSON.stringify(db); el('imp-area').select(); document.execCommand('copy'); alert("JSON kopiert!"); }
-function importJSON() { try { const parsed = JSON.parse(el('imp-area').value); if(Array.isArray(parsed)) { db = parsed; localStorage.setItem(DB_KEY, JSON.stringify(db)); renderList(); hide('m-imp'); } } catch(e) { alert("JSON-Fehler"); } }
+function runImp() {
+    const raw = el('imp-area').value.trim();
+    if(!raw) return;
+    const lines = raw.split('\n');
+    lines.forEach(line => {
+        const parts = line.split('\t');
+        if(parts.length >= 2) {
+            db[currentIdx].tools.push({ id: parts[0].trim(), nm: parts[1].trim(), dia: parts[2] || '', rev: false });
+        }
+    });
+    localStorage.setItem(DB_KEY, JSON.stringify(db));
+    renderTools(); hide('m-imp');
+}
+
+function exportJSON() { el('imp-area').value = JSON.stringify(db); el('imp-area').select(); }
+function importJSON() { try { const parsed = JSON.parse(el('imp-area').value); if(Array.isArray(parsed)) { db = parsed; localStorage.setItem(DB_KEY, JSON.stringify(db)); renderList(); hide('m-imp'); } } catch(e) { alert("Error"); } }
 function deleteProject(i) { if(confirm('Löschen?')) { db.splice(i, 1); localStorage.setItem(DB_KEY, JSON.stringify(db)); renderList(); } }
 function delT() { const i = el('t-idx').value; db[currentIdx].tools.splice(i, 1); localStorage.setItem(DB_KEY, JSON.stringify(db)); renderTools(); hide('m-t'); }
 
-function runImp() {
-    const text = el('imp-area').value.trim(); if(!text) return;
-    const lines = text.split('\n');
-    const newTools = lines.map(l => {
-        const p = l.split('\t');
-        return { id: (p[0]||'').trim(), nm: (p[1]||'').trim(), dia: '', rev: false };
-    }).filter(t => t.id || t.nm);
-    if(newTools.length > 0) {
-        db[currentIdx].tools = [...(db[currentIdx].tools || []), ...newTools];
-        localStorage.setItem(DB_KEY, JSON.stringify(db));
-        renderTools(); hide('m-imp'); el('imp-area').value = '';
-    }
-}
-
-// --- PDF (UNTOUCHED LOGIC) ---
+// --- PDF (БЕЗ ИЗМЕНЕНИЙ) ---
 function makePDF() {
     const p = db[currentIdx];
-    const headerRow = `<div style="display:flex; font-size:10px; font-weight:900; text-transform:uppercase; margin-bottom:6px; padding:0 2px;"><div style="width:75px;">T-NR</div><div style="flex:1;">WERKZEUGNAME / KOMMENTAR</div><div style="width:125px; text-align:right;">Ø / TOLERANZ</div></div><div style="border-bottom:4px solid #000; margin-bottom:0px;"></div>`;
+    const headerRow = `
+        <div style="display:flex; font-size:10px; font-weight:900; text-transform:uppercase; margin-bottom:6px; padding:0 2px;">
+            <div style="width:75px;">T-NR</div>
+            <div style="flex:1;">WERKZEUGNAME / KOMMENTAR</div>
+            <div style="width:125px; text-align:right;">Ø / TOLERANZ</div>
+        </div>
+        <div style="border-bottom:4px solid #000; margin-bottom:0px;"></div>
+    `;
+
     const getRow = (t) => {
         const displayDia = t.dia.includes('/') ? t.dia.split('/').join('<br>') : t.dia;
-        return `<div style="display:flex; align-items:baseline; border-bottom:1.5px solid #000; padding:10px 0; width:100%;"><div style="width:75px; font-weight:800; font-size:15px;">${t.id}</div><div style="flex:1; font-weight:700; font-size:15px; text-transform:uppercase; padding-right:10px; white-space:pre-wrap;">${t.nm}</div><div style="width:125px; text-align:right; font-weight:800; font-size:14px; line-height:1.2;">${displayDia}</div></div>`;
+        return `
+        <div style="display:flex; align-items:baseline; border-bottom:1.5px solid #000; padding:10px 0; width:100%;">
+            <div style="width:75px; font-weight:800; font-size:15px;">${t.id}</div>
+            <div style="flex:1; font-weight:700; font-size:15px; text-transform:uppercase; padding-right:10px; white-space:pre-wrap;">${t.nm}</div>
+            <div style="width:125px; text-align:right; font-weight:800; font-size:14px; line-height:1.2;">${displayDia}</div>
+        </div>`;
     };
+
     let oben = [], unten = [], target = oben;
     (p.tools || []).forEach(t => { if(t.rev) target = unten; target.push(t); });
-    const html = `<div style="width:210mm; padding:12mm; box-sizing:border-box; background:#fff; font-family:sans-serif; color:#000;"><div style="border:2px solid #000; padding:25px; min-height:265mm; display:flex; flex-direction:column; box-sizing:border-box;"><div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; min-height:90px;"><div style="display:flex; flex-direction:column; justify-content:center;"><div style="font-size:13px; font-weight:900; text-transform:uppercase; color:#666; margin-bottom:2px; line-height:1;">${p.name || ''}</div><div style="font-size:64px; font-weight:900; line-height:0.8; letter-spacing:-2px; margin:0;">${p.num || '---'}</div></div><div style="width:220px; font-size:11px; font-weight:800; line-height:1.5;"><div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>LAUFZEIT</span><span>${p.lzf || ''}</span></div><div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>MATERIAL</span><span>${p.mat || p.nam || ''}</span></div><div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>SÄGELÄNGE</span><span>${p.sag || ''}</span></div><div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>ABSTAND</span><span>${p.abs || ''}</span></div><div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>GREIFBACKEN</span><span>${p.grf || ''}</span></div><div style="display:flex; justify-content:space-between;"><span>STÜCKZAHL</span><span>${p.stt || ''} / ${p.stn || ''}</span></div></div></div><div style="border-bottom:5px solid #000; margin-bottom:15px;"></div><div style="flex:1;"><div style="margin-bottom:5px; font-size:18px; font-weight:900; letter-spacing:0.5px; text-transform:uppercase;">REVOLVER OBEN</div>${headerRow}${oben.map(getRow).join('')}${unten.length > 0 ? `<div style="margin-top:35px; margin-bottom:5px; font-size:18px; font-weight:900; letter-spacing:0.5px; text-transform:uppercase;">REVOLVER UNTEN</div>${headerRow}${unten.map(getRow).join('')}` : ''}</div></div></div>`;
+
+    const html = `
+    <div style="width:210mm; padding:12mm; box-sizing:border-box; background:#fff; font-family:sans-serif; color:#000;">
+        <div style="border:2px solid #000; padding:25px; min-height:265mm; display:flex; flex-direction:column; box-sizing:border-box;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                <div style="display:flex; flex-direction:column;">
+                    <div style="font-size:13px; font-weight:900; text-transform:uppercase; color:#666;">${p.name || ''}</div>
+                    <div style="font-size:64px; font-weight:900; line-height:0.8; letter-spacing:-2px;">${p.num || '---'}</div>
+                </div>
+                <div style="width:220px; font-size:11px; font-weight:800; line-height:1.5;">
+                    <div style="display:flex; justify-content:space-between; border-bottom:1px solid #eee;"><span>LAUFZEIT</span><span>${p.lzf || ''}</span></div>
+                    <div style="display:flex; justify-content:space-between; border-bottom:1px solid #eee;"><span>MATERIAL</span><span>${p.mat || ''}</span></div>
+                    <div style="display:flex; justify-content:space-between; border-bottom:1px solid #eee;"><span>SÄGELÄNGE</span><span>${p.sag || ''}</span></div>
+                    <div style="display:flex; justify-content:space-between; border-bottom:1px solid #eee;"><span>ABSTAND</span><span>${p.abs || ''}</span></div>
+                    <div style="display:flex; justify-content:space-between; border-bottom:1px solid #eee;"><span>GREIFBACKEN</span><span>${p.grf || ''}</span></div>
+                    <div style="display:flex; justify-content:space-between;"><span>STÜCKZAHL</span><span>${p.stt || ''} / ${p.stn || ''}</span></div>
+                </div>
+            </div>
+            <div style="border-bottom:5px solid #000; margin-bottom:15px;"></div>
+            <div style="flex:1;">
+                <div style="margin-bottom:5px; font-size:18px; font-weight:900; text-transform:uppercase;">REVOLVER OBEN</div>
+                ${headerRow}
+                ${oben.map(getRow).join('')}
+                ${unten.length > 0 ? `<div style="margin-top:35px; margin-bottom:5px; font-size:18px; font-weight:900; text-transform:uppercase;">REVOLVER UNTEN</div>${headerRow}${unten.map(getRow).join('')}` : ''}
+            </div>
+        </div>
+    </div>`;
+
     el('print-container').innerHTML = html;
     setTimeout(() => { window.print(); }, 150);
 }
