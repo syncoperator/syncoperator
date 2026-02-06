@@ -1,12 +1,11 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const el = document.getElementById('drag-zone');
+    const list = document.getElementById('sort-list');
 
-    // Drag and Drop реордеринг
-    new Sortable(el, {
-        animation: 250,
+    new Sortable(list, {
+        animation: 300,
         ghostClass: 'sortable-ghost',
         onEnd: () => {
-            console.log('Order Updated');
+            console.log("Configuration saved.");
         }
     });
 });
