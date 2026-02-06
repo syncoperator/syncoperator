@@ -1,17 +1,12 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const el = document.getElementById('sort-container');
+    const el = document.getElementById('draggable-list');
 
-    // Drag and Drop: работает идеально для множества карточек
     new Sortable(el, {
-        animation: 200,
-        handle: '.mini-card', // можно тащить за всю карточку
+        animation: 250,
         ghostClass: 'sortable-ghost',
-        onEnd: () => {
-            console.log('New order saved');
-            // Здесь можно добавить сохранение в LocalStorage
-        }
+        onEnd: () => console.log('Order saved.')
     });
 });
 
-function exportJSON() { alert('JSON Exported'); }
-function importJSON() { alert('JSON Imported'); }
+function exportData() { alert('JSON Export...'); }
+function importData() { alert('JSON Import...'); }
