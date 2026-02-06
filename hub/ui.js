@@ -1,15 +1,14 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const el = document.getElementById('draggable-list');
+    const grid = document.getElementById('sortable-grid');
 
-    // Drag and Drop: Мягкое перетаскивание карточек
-    new Sortable(el, {
-        animation: 350,
+    new Sortable(grid, {
+        animation: 300,
         ghostClass: 'sortable-ghost',
         onEnd: () => {
-            console.log('Order updated and saved to system.');
+            console.log("Configuration saved");
         }
     });
 });
 
-function exportData() { console.log('Exporting JSON...'); }
-function importData() { console.log('Importing JSON...'); }
+function exportData() { alert('Exporting...'); }
+function importData() { alert('Importing...'); }
