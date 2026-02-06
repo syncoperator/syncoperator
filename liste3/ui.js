@@ -6,11 +6,10 @@ const el = (id) => document.getElementById(id);
 const show = (id) => { if(el(id)) el(id).style.display = 'flex'; };
 const hide = (id) => { if(el(id)) el(id).style.display = 'none'; };
 
-// --- ПРОЕКТЫ ---
+// --- PROJEKTE ---
 function modalP(edit = false) {
     if (!edit) currentIdx = null; 
     const p = (edit && currentIdx !== null && db[currentIdx]) ? db[currentIdx] : {num:'', name:'', lzf:'', sag:'', stt:'', stn:'', abs:'', grf:'', mat:''};
-    
     el('p-idx').value = edit ? currentIdx : '';
     el('p-num').value = p.num || '';
     el('p-nam').value = p.name || '';
@@ -20,8 +19,7 @@ function modalP(edit = false) {
     el('p-stn').value = p.stn || '';
     el('p-abs').value = p.abs || '';
     el('p-grf').value = p.grf || '';
-    el('p-mat').value = p.mat || '';
-    
+    if(el('p-mat')) el('p-mat').value = p.mat || ''; 
     show('m-p');
 }
 
@@ -36,7 +34,7 @@ function saveP() {
         stn: el('p-stn').value,
         abs: el('p-abs').value, 
         grf: el('p-grf').value,
-        mat: el('p-mat').value.toUpperCase(),
+        mat: el('p-mat') ? el('p-mat').value.toUpperCase() : '',
         tools: (idx !== '' && db[idx]) ? (db[idx].tools || []) : []
     };
     if (idx === '') { db.push(newP); currentIdx = db.length - 1; } 
@@ -51,12 +49,11 @@ function renderList() {
     const list = el('list-p'); if(!list) return;
     list.innerHTML = db.map((p, i) => `
         <div class="list-item" onclick="openProject(${i})">
-            <div class="item-icon">📂</div>
             <div style="flex:1">
-                <small>${p.name || 'OHNE NAME'}</small>
+                <small>${p.name || 'UNBEKANNT'}</small>
                 <b>${p.num || '---'}</b>
             </div>
-            <div style="color:var(--danger); font-size:18px; padding:10px;" onclick="event.stopPropagation(); deleteProject(${i})">✕</div>
+            <div style="color:var(--danger); font-weight:900; padding:10px;" onclick="event.stopPropagation(); deleteProject(${i})">✕</div>
         </div>`).join('') + '<div style="height:100px"></div>';
 }
 
@@ -73,7 +70,7 @@ function openProject(i) {
 
 function goHome() { currentIdx = null; el('v-home').classList.add('active'); el('v-det').classList.remove('active'); renderList(); }
 
-// --- ИНСТРУМЕНТЫ (DRAG & DROP) ---
+// --- WERKZEUGE (DRAG & DROP) ---
 let startIdx = null;
 
 function renderTools() {
@@ -85,21 +82,22 @@ function renderTools() {
         const item = document.createElement('div');
         item.className = 'list-item';
         item.setAttribute('data-idx', i);
-        
-        const revMark = t.rev ? `<div style="background:#000; color:#fff; font-size:9px; padding:2px 6px; border-radius:4px; margin-bottom:6px; font-weight:900; width:fit-content;">UNTEN START ↓</div>` : '';
+
+        const revMark = t.rev ? `<div style="background:#000; color:#fff; font-size:9px; padding:2px 6px; border-radius:4px; margin-bottom:4px; font-weight:900; width:fit-content;">UNTEN START ↓</div>` : '';
 
         item.innerHTML = `
-            <div class="handle" style="cursor:grab; color:#ccc; font-size:20px; margin-right:15px; user-select:none; touch-action:none;">☰</div>
+            <div class="handle">☰</div>
             <div style="flex:1; min-width:0;" onclick="modalT(${i})">
-                <small>${t.id || 'T-NR'}</small>
-                <b>${t.nm || 'BESCHREIBUNG'}</b>
+                <small>${t.id || 'T00'}</small>
+                <b>${t.nm || '---'}</b>
                 ${revMark}
             </div>
         `;
         
-        // Touch Drag & Drop logic
         const handle = item.querySelector('.handle');
-        handle.ontouchstart = () => { startIdx = i; item.style.background = "#f2f2f7"; };
+        
+        // Touch Drag
+        handle.ontouchstart = (e) => { startIdx = i; item.style.opacity = "0.5"; };
         handle.ontouchmove = (e) => {
             e.preventDefault();
             const touch = e.touches[0];
@@ -113,9 +111,9 @@ function renderTools() {
                 }
             }
         };
-        handle.ontouchend = () => { item.style.background = ""; renderTools(); };
+        handle.ontouchend = () => { item.style.opacity = "1"; renderTools(); };
 
-        // Mouse Drag & Drop
+        // Mouse Drag
         item.draggable = true;
         item.ondragstart = () => { startIdx = i; item.style.opacity = '0.4'; };
         item.ondragover = (e) => e.preventDefault();
@@ -135,7 +133,7 @@ function moveTool(from, to) {
     renderTools();
 }
 
-// --- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ---
+// --- STANDARD ---
 function modalT(i = null) {
     const edit = i !== null;
     el('t-idx').value = edit ? i : '';
@@ -173,7 +171,7 @@ function runImp() {
         }
     });
     localStorage.setItem(DB_KEY, JSON.stringify(db));
-    renderTools(); hide('m-imp');
+    renderTools(); hide('m-imp'); el('imp-area').value = '';
 }
 
 function exportJSON() { el('imp-area').value = JSON.stringify(db); el('imp-area').select(); }
@@ -181,7 +179,7 @@ function importJSON() { try { const parsed = JSON.parse(el('imp-area').value); i
 function deleteProject(i) { if(confirm('Löschen?')) { db.splice(i, 1); localStorage.setItem(DB_KEY, JSON.stringify(db)); renderList(); } }
 function delT() { const i = el('t-idx').value; db[currentIdx].tools.splice(i, 1); localStorage.setItem(DB_KEY, JSON.stringify(db)); renderTools(); hide('m-t'); }
 
-// --- PDF (БЕЗ ИЗМЕНЕНИЙ) ---
+// --- PDF ---
 function makePDF() {
     const p = db[currentIdx];
     const headerRow = `
