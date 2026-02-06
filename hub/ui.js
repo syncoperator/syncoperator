@@ -1,14 +1,12 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const grid = document.getElementById('sortable-grid');
+    const el = document.getElementById('drag-zone');
 
-    new Sortable(grid, {
-        animation: 300,
+    // Drag and Drop реордеринг
+    new Sortable(el, {
+        animation: 250,
         ghostClass: 'sortable-ghost',
         onEnd: () => {
-            console.log("Configuration saved");
+            console.log('Order Updated');
         }
     });
 });
-
-function exportData() { alert('Exporting...'); }
-function importData() { alert('Importing...'); }
