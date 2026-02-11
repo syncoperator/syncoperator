@@ -51,7 +51,7 @@ function renderList() {
         <div class="list-item" onclick="openProject(${i})">
             <div><small>${p.name || '---'}</small><b>${p.num || '---'}</b></div>
             <div style="color:var(--danger); font-weight:900; padding:15px; z-index:20;" onclick="event.stopPropagation(); deleteProject(${i})">✕</div>
-        </div>`).join('') + '<div style="height:100px"></div>';
+        </div>`).join('') + '<div style="height:120px"></div>';
 }
 
 function openProject(i) {
@@ -67,7 +67,7 @@ function openProject(i) {
 
 function goHome() { currentIdx = null; el('v-home').classList.add('active'); el('v-det').classList.remove('active'); renderList(); }
 
-// --- ИНСТРУМЕНТЫ (Твой рабочий Drag & Drop) ---
+// --- ИНСТРУМЕНТЫ (Drag & Drop) ---
 let startIdx = null;
 function renderTools() {
     const list = el('list-t'); if(!list || currentIdx === null) return;
@@ -150,82 +150,76 @@ function delT() { const i = el('t-idx').value; db[currentIdx].tools.splice(i, 1)
 function exportJSON() { el('imp-area').value = JSON.stringify(db); el('imp-area').select(); alert("JSON kopiert!"); }
 function importJSON() { try { const parsed = JSON.parse(el('imp-area').value); if(Array.isArray(parsed)) { db = parsed; localStorage.setItem(DB_KEY, JSON.stringify(db)); renderList(); hide('m-imp'); } } catch(e) { alert("JSON-Fehler"); } }
 
-// --- PDF (ОБНОВЛЕННЫЙ С УМНЫМ ПЕРЕНОСОМ) ---
+// --- ИСПРАВЛЕННЫЙ PDF (ЖИРНЫЕ ЛИНИИ И ЦЕНТРИРОВАНИЕ) ---
 function makePDF() {
     const p = db[currentIdx];
     
-    // Шаблон шапки
     const getPageHead = () => `
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; min-height:90px;">
-            <div style="display:flex; flex-direction:column; justify-content:center;">
-                <div style="font-size:13px; font-weight:900; text-transform:uppercase; color:#666; margin-bottom:2px; line-height:1;">${p.name || ''}</div>
-                <div style="font-size:64px; font-weight:900; line-height:0.8; letter-spacing:-2px; margin:0;">${p.num || '---'}</div>
+        <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:10px; min-height:100px;">
+            <div style="flex:1;">
+                <div style="font-size:14px; font-weight:900; text-transform:uppercase; color:#000; margin-bottom:5px;">${p.name || ''}</div>
+                <div style="font-size:72px; font-weight:900; line-height:0.8; letter-spacing:-3px;">${p.num || '---'}</div>
             </div>
-            <div style="width:220px; font-size:11px; font-weight:800; line-height:1.5;">
-                <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>LAUFZEIT</span><span>${p.lzf || ''}</span></div>
-                <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>MATERIAL</span><span>${p.mat || p.nam || ''}</span></div>
-                <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>SÄGELÄNGE</span><span>${p.sag || ''}</span></div>
-                <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>ABSTAND</span><span>${p.abs || ''}</span></div>
-                <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>GREIFBACKEN</span><span>${p.grf || ''}</span></div>
+            <div style="width:240px; font-size:12px; font-weight:900; line-height:1.6;">
+                <div style="display:flex; justify-content:space-between; border-bottom:2px solid #000;"><span>LAUFZEIT</span><span>${p.lzf || ''}</span></div>
+                <div style="display:flex; justify-content:space-between; border-bottom:2px solid #000;"><span>MATERIAL</span><span>${p.mat || ''}</span></div>
+                <div style="display:flex; justify-content:space-between; border-bottom:2px solid #000;"><span>SÄGELÄNGE</span><span>${p.sag || ''}</span></div>
+                <div style="display:flex; justify-content:space-between; border-bottom:2px solid #000;"><span>ABSTAND</span><span>${p.abs || ''}</span></div>
+                <div style="display:flex; justify-content:space-between; border-bottom:2px solid #000;"><span>GREIFBACKEN</span><span>${p.grf || ''}</span></div>
                 <div style="display:flex; justify-content:space-between;"><span>STÜCKZAHL</span><span>${p.stt || ''} / ${p.stn || ''}</span></div>
             </div>
         </div>
-        <div style="border-bottom:5px solid #000; margin-bottom:15px;"></div>`;
-
-    const tableHead = `
-        <div style="display:flex; font-size:10px; font-weight:900; text-transform:uppercase; margin-bottom:6px; padding:0 2px;">
-            <div style="width:75px;">T-NR</div>
-            <div style="flex:1;">WERKZEUGNAME / KOMMENTAR</div>
-            <div style="width:125px; text-align:right;">Ø / TOLERANZ</div>
-        </div>
-        <div style="border-bottom:4px solid #000; margin-bottom:0px;"></div>`;
+        <div style="border-bottom:8px solid #000; margin-bottom:20px;"></div>`;
 
     const getRow = (t) => {
-        const displayDia = t.dia.includes('/') ? t.dia.split('/').join('<br>') : t.dia;
+        const diaVal = t.dia.includes('/') ? t.dia.split('/').join('<br>') : t.dia;
         return `
-        <div style="display:flex; align-items:baseline; border-bottom:1.5px solid #000; padding:10px 0; width:100%;">
-            <div style="width:75px; font-weight:800; font-size:15px;">${t.id}</div>
-            <div style="flex:1; font-weight:700; font-size:15px; text-transform:uppercase; padding-right:10px; white-space:pre-wrap;">${t.nm}</div>
-            <div style="width:125px; text-align:right; font-weight:800; font-size:14px; line-height:1.2;">${displayDia}</div>
+        <div style="display:flex; align-items:center; border-bottom:2px solid #000; padding:12px 0; width:100%;">
+            <div style="width:80px; font-weight:900; font-size:18px;">${t.id}</div>
+            <div style="flex:1; font-weight:800; font-size:18px; text-transform:uppercase; padding:0 10px;">${t.nm}</div>
+            <div style="width:130px; text-align:right; font-weight:900; font-size:18px; line-height:1.1;">${diaVal}</div>
         </div>`;
     };
-
-    const footerLine = `<div style="border-top:1px solid #000; padding-top:5px; font-size:9px; font-weight:800; text-align:center; color:#666; margin-top:20px;"></div>`;
 
     let oben = [], unten = [], target = oben;
     (p.tools || []).forEach(t => { if(t.rev) target = unten; target.push(t); });
 
-    // СБОРКА СТРАНИЦЫ 1
     let html = `
-    <div style="width:210mm; padding:12mm; box-sizing:border-box; background:#fff; font-family:sans-serif; color:#000;">
-        <div style="border:2px solid #000; padding:25px; min-height:265mm; display:flex; flex-direction:column; box-sizing:border-box; page-break-after: always;">
+    <div style="width:210mm; background:#fff; font-family:sans-serif; color:#000; padding:10mm;">
+        <div style="border:4px solid #000; padding:20px; min-height:270mm; display:flex; flex-direction:column; box-sizing:border-box; page-break-after:always;">
             ${getPageHead()}
             <div style="flex:1;">
-                <div style="margin-bottom:5px; font-size:18px; font-weight:900; letter-spacing:0.5px; text-transform:uppercase;">REVOLVER OBEN</div>
-                ${tableHead}
+                <div style="font-size:22px; font-weight:900; border-bottom:4px solid #000; padding-bottom:5px; margin-bottom:10px;">REVOLVER OBEN</div>
+                <div style="display:flex; font-size:11px; font-weight:900; margin-bottom:5px;">
+                    <div style="width:80px;">T-NR</div>
+                    <div style="flex:1;">WERKZEUGNAME</div>
+                    <div style="width:130px; text-align:right;">Ø / TOLERANZ</div>
+                </div>
                 ${oben.map(getRow).join('')}
-                ${unten.length === 0 ? '' : ``}
             </div>
-            ${footerLine}
+            <div style="border-top:2px solid #000; text-align:center; font-size:10px; font-weight:900; padding-top:5px;">QS CENTRAL ELITE REPORT</div>
         </div>`;
 
-    // СБОРКА СТРАНИЦЫ 2 (только если есть Unten)
     if (unten.length > 0) {
         html += `
-        <div style="border:2px solid #000; padding:25px; min-height:265mm; display:flex; flex-direction:column; box-sizing:border-box; margin-top: 20px;">
+        <div style="border:4px solid #000; padding:20px; min-height:270mm; display:flex; flex-direction:column; box-sizing:border-box; margin-top:20px;">
             ${getPageHead()}
             <div style="flex:1;">
-                <div style="margin-bottom:5px; font-size:18px; font-weight:900; letter-spacing:0.5px; text-transform:uppercase;">REVOLVER UNTEN</div>
-                ${tableHead}
+                <div style="font-size:22px; font-weight:900; border-bottom:4px solid #000; padding-bottom:5px; margin-bottom:10px;">REVOLVER UNTEN</div>
+                <div style="display:flex; font-size:11px; font-weight:900; margin-bottom:5px;">
+                    <div style="width:80px;">T-NR</div>
+                    <div style="flex:1;">WERKZEUGNAME</div>
+                    <div style="width:130px; text-align:right;">Ø / TOLERANZ</div>
+                </div>
                 ${unten.map(getRow).join('')}
             </div>
-            ${footerLine}
+            <div style="border-top:2px solid #000; text-align:center; font-size:10px; font-weight:900; padding-top:5px;">QS CENTRAL ELITE REPORT</div>
         </div>`;
     }
 
     html += `</div>`;
     el('print-container').innerHTML = html;
-    setTimeout(() => { window.print(); }, 150);
+    setTimeout(() => { window.print(); }, 200);
 }
 
 window.onload = renderList;
