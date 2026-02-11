@@ -190,7 +190,7 @@ function makePDF() {
         </div>`;
     };
 
-    const footerLine = `<div style="border-top:1px solid #000; padding-top:5px; font-size:9px; font-weight:800; text-align:center; color:#666; margin-top:20px;">QS CENTRAL PREMIUM REPORT</div>`;
+    const footerLine = `<div style="border-top:1px solid #000; padding-top:5px; font-size:9px; font-weight:800; text-align:center; color:#666; margin-top:20px;"></div>`;
 
     let oben = [], unten = [], target = oben;
     (p.tools || []).forEach(t => { if(t.rev) target = unten; target.push(t); });
