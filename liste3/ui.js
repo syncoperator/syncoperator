@@ -6,7 +6,7 @@ const el = (id) => document.getElementById(id);
 const show = (id) => { if(el(id)) el(id).style.display = 'flex'; };
 const hide = (id) => { if(el(id)) el(id).style.display = 'none'; };
 
-// --- PROJEKTE ---
+// --- ПРОЕКТЫ ---
 function modalP(edit = false) {
     if (!edit) currentIdx = null; 
     const p = (edit && currentIdx !== null) ? db[currentIdx] : {num:'', name:'', lzf:'', sag:'', stt:'', stn:'', abs:'', grf:'', mat:''};
@@ -65,7 +65,7 @@ function openProject(i) {
 
 function goHome() { currentIdx = null; el('v-home').classList.add('active'); el('v-det').classList.remove('active'); renderList(); }
 
-// --- WERKZEUGE (Drag & Drop) ---
+// --- ИНСТРУМЕНТЫ (Drag & Drop) ---
 let dragSrcIdx = null;
 function renderTools() {
     const list = el('list-t'); if(!list || currentIdx === null) return;
@@ -74,7 +74,7 @@ function renderTools() {
         <div class="list-item" draggable="true" ondragstart="handleDragStart(${i})" ondragover="event.preventDefault()" ondrop="handleDrop(${i})">
             <div class="handle">☰</div>
             <div style="flex:1" onclick="modalT(${i})">
-                ${t.rev ? '<div style="background:#000; color:#fff; font-size:9px; padding:2px 6px; border-radius:4px; margin-bottom:4px; width:fit-content;">UNTEN START ↓</div>' : ''}
+                ${t.rev ? '<div style="background:#000; color:#fff; font-size:9px; padding:2px 6px; border-radius:4px; margin-bottom:4px; width:fit-content;">REVOLVER UNTEN ↓</div>' : ''}
                 <small style="font-size:11px; color:#8e8e93; font-weight:800;">${t.id || 'T00'}</small>
                 <b style="font-size:20px; display:block;">${t.nm || '---'}</b>
             </div>
@@ -116,56 +116,93 @@ function saveT() {
     renderTools(); hide('m-t');
 }
 
-// --- SYSTEM ---
+// --- СИСТЕМА ---
 function deleteProject(i) { if(confirm('Löschen?')) { db.splice(i, 1); localStorage.setItem(DB_KEY, JSON.stringify(db)); renderList(); } }
 function delT() { const i = el('t-idx').value; db[currentIdx].tools.splice(i, 1); localStorage.setItem(DB_KEY, JSON.stringify(db)); renderTools(); hide('m-t'); }
 function exportJSON() { el('imp-area').value = JSON.stringify(db); el('imp-area').select(); document.execCommand('copy'); alert("JSON Kopiert!"); }
 function importJSON() { try { const parsed = JSON.parse(el('imp-area').value); if(Array.isArray(parsed)) { db = parsed; localStorage.setItem(DB_KEY, JSON.stringify(db)); renderList(); hide('m-imp'); } } catch(e) { alert("Fehler!"); } }
 
-// --- PDF ENGINE (Premium Black Line Design) ---
+// --- НОВЫЙ PDF (ТОЧНО КАК В ОБРАЗЦЕ 230947.pdf) ---
 function makePDF() {
     const p = db[currentIdx];
-    const header = `
-        <div style="display:flex; justify-content:space-between; align-items:flex-end; border-bottom:8px solid #000; padding-bottom:15px; margin-bottom:20px;">
-            <div style="flex:1;">
-                <div style="font-size:16px; font-weight:900; text-transform:uppercase;">${p.name || ''}</div>
-                <div style="font-size:72px; font-weight:900; line-height:0.8; letter-spacing:-3px;">${p.num || '---'}</div>
+    
+    // Стили для печати: жирные линии, фиксированные колонки
+    const styles = `
+        <style>
+            @media print { body { background: #fff; } .no-print { display: none; } }
+            .pdf-page { width: 210mm; font-family: Arial, sans-serif; color: #000; padding: 10mm; box-sizing: border-box; }
+            .pdf-header { margin-bottom: 20px; }
+            .title-name { font-size: 18px; font-weight: bold; text-transform: uppercase; margin-bottom: 5px; }
+            .title-num { font-size: 40px; font-weight: 900; margin-bottom: 20px; }
+            
+            .info-grid { display: grid; grid-template-columns: 140px 1fr; border-top: 3px solid #000; margin-bottom: 30px; }
+            .info-label { font-size: 14px; font-weight: bold; border-bottom: 1px solid #000; padding: 4px 0; }
+            .info-value { font-size: 14px; border-bottom: 1px solid #000; padding: 4px 0; }
+            
+            .rev-title { font-size: 20px; font-weight: bold; margin: 20px 0 10px 0; text-transform: uppercase; }
+            
+            .tool-table { width: 100%; border-collapse: collapse; }
+            .tool-table th { text-align: left; font-size: 12px; border-bottom: 3px solid #000; padding: 8px 0; }
+            .tool-table td { font-size: 16px; font-weight: bold; border-bottom: 1px solid #000; padding: 10px 0; vertical-align: middle; }
+            .col-id { width: 80px; }
+            .col-dia { width: 150px; text-align: right; }
+        </style>
+    `;
+
+    const getHeaderHTML = (pageTitle) => `
+        <div class="pdf-header">
+            <div class="title-name">${p.name || ''}</div>
+            <div class="title-num">${p.num || '---'}</div>
+            <div class="info-grid">
+                <div class="info-label">LAUFZEIT</div><div class="info-value">${p.lzf || ''}</div>
+                <div class="info-label">MATERIAL</div><div class="info-value">${p.mat || ''}</div>
+                <div class="info-label">SÄGELÄNGE</div><div class="info-value">${p.sag || ''}</div>
+                <div class="info-label">ABSTAND</div><div class="info-value">${p.abs || ''}</div>
+                <div class="info-label">GREIFBACKEN</div><div class="info-value">${p.grf || ''}</div>
+                <div class="info-label">STÜCKZAHL</div><div class="info-value">${p.stt || ''} / ${p.stn || ''}</div>
             </div>
-            <div style="width:240px; font-size:13px; font-weight:900; line-height:1.6;">
-                <div style="display:flex; justify-content:space-between; border-bottom:2px solid #000;"><span>LAUFZEIT</span><span>${p.lzf || ''}</span></div>
-                <div style="display:flex; justify-content:space-between; border-bottom:2px solid #000;"><span>MATERIAL</span><span>${p.mat || ''}</span></div>
-                <div style="display:flex; justify-content:space-between; border-bottom:2px solid #000;"><span>SÄGELÄNGE</span><span>${p.sag || ''}</span></div>
-                <div style="display:flex; justify-content:space-between;"><span>STÜCKZAHL</span><span>${p.stt || ''} / ${p.stn || ''}</span></div>
-            </div>
-        </div>`;
+            <div class="rev-title">${pageTitle}</div>
+        </div>
+    `;
 
-    const getRow = (t) => `
-        <div style="display:flex; align-items:center; border-bottom:2px solid #000; padding:15px 0;">
-            <div style="width:100px; font-size:22px; font-weight:900;">${t.id}</div>
-            <div style="flex:1; font-size:22px; font-weight:800; text-transform:uppercase;">${t.nm}</div>
-            <div style="width:140px; text-align:right; font-size:22px; font-weight:900; white-space:pre-wrap;">${t.dia.split('/').join('\n')}</div>
-        </div>`;
+    const getTableHTML = (tools) => `
+        <table class="tool-table">
+            <thead>
+                <tr>
+                    <th class="col-id">T-NR</th>
+                    <th>WERKZEUGNAME / KOMMENTAR</th>
+                    <th class="col-dia">Ø / TOLERANZ</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${tools.map(t => `
+                    <tr>
+                        <td class="col-id">${t.id}</td>
+                        <td>${t.nm}</td>
+                        <td class="col-dia">${t.dia.split('/').join('<br>')}</td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        </table>
+    `;
 
-    let oben = [], unten = [], isUnten = false;
-    (p.tools || []).forEach(t => { if(t.rev) isUnten = true; if(isUnten) unten.push(t); else oben.push(t); });
+    let oben = [], unten = [], target = oben;
+    (p.tools || []).forEach(t => { if(t.rev) target = unten; target.push(t); });
 
-    let html = `<div style="padding:10mm; font-family:Helvetica, Arial, sans-serif; color:#000;">
-        <div style="border:4px solid #000; padding:20px; min-height:270mm; position:relative; page-break-after:always;">
-            ${header}
-            <div style="font-size:26px; font-weight:900; border-bottom:4px solid #000; margin-bottom:10px;">REVOLVER OBEN</div>
-            ${oben.map(getRow).join('')}
-            <div style="position:absolute; bottom:20px; width:calc(100% - 40px); border-top:2px solid #000; text-align:center; font-size:10px; font-weight:900; padding-top:10px;">QS CENTRAL ELITE REPORT</div>
-        </div>`;
-
-    if(unten.length > 0) {
-        html += `<div style="border:4px solid #000; padding:20px; min-height:270mm; position:relative; margin-top:20px;">
-            ${header}
-            <div style="font-size:26px; font-weight:900; border-bottom:4px solid #000; margin-bottom:10px;">REVOLVER UNTEN</div>
-            ${unten.map(getRow).join('')}
-            <div style="position:absolute; bottom:20px; width:calc(100% - 40px); border-top:2px solid #000; text-align:center; font-size:10px; font-weight:900; padding-top:10px;">QS CENTRAL ELITE REPORT</div>
-        </div>`;
+    let html = styles + '<div class="pdf-page">';
+    
+    // Page 1: OBEN
+    html += getHeaderHTML('REVOLVER OBEN');
+    html += getTableHTML(oben);
+    
+    // Page 2: UNTEN (если есть)
+    if (unten.length > 0) {
+        html += '<div style="page-break-before: always;"></div>';
+        html += getHeaderHTML('REVOLVER UNTEN');
+        html += getTableHTML(unten);
     }
-    html += `</div>`;
+
+    html += '</div>';
 
     el('print-container').innerHTML = html;
     setTimeout(() => { window.print(); }, 300);
