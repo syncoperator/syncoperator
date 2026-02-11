@@ -1,65 +1,4 @@
-const DB_KEY = 'QS_DATA_V8';
-let db = JSON.parse(localStorage.getItem(DB_KEY)) || [];
-let currentIdx = null;
-
-const el = (id) => document.getElementById(id);
-const show = (id) => { if(el(id)) el(id).style.display = 'flex'; };
-const hide = (id) => { if(el(id)) el(id).style.display = 'none'; };
-
-// --- ПРОЕКТЫ ---
-function modalP(edit = false) {
-    if (!edit) currentIdx = null; 
-    const p = (edit && currentIdx !== null && db[currentIdx]) ? db[currentIdx] : {num:'', name:'', lzf:'', sag:'', stt:'', stn:'', abs:'', grf:'', mat:''};
-    el('p-idx').value = edit ? currentIdx : '';
-    el('p-num').value = p.num || '';
-    el('p-nam').value = p.name || '';
-    el('p-lzf').value = p.lzf || '';
-    el('p-sag').value = p.sag || '';
-    el('p-stt').value = p.stt || '';
-    el('p-stn').value = p.stn || '';
-    el('p-abs').value = p.abs || '';
-    el('p-grf').value = p.grf || '';
-    if(el('p-mat')) el('p-mat').value = p.mat || ''; 
-    show('m-p');
-}
-
-function saveP() {
-    const idx = el('p-idx').value;
-    const newP = {
-        num: el('p-num').value,
-        name: el('p-nam').value.toUpperCase(),
-        lzf: el('p-lzf').value, sag: el('p-sag').value,
-        stt: el('p-stt').value, stn: el('p-stn').value,
-        abs: el('p-abs').value, grf: el('p-grf').value,
-        mat: el('p-mat') ? el('p-mat').value.toUpperCase() : '',
-        tools: (idx !== '' && db[idx]) ? (db[idx].tools || []) : []
-    };
-    if (idx === '') { db.push(newP); currentIdx = db.length - 1; } 
-    else { db[idx] = newP; }
-    localStorage.setItem(DB_KEY, JSON.stringify(db));
-    hide('m-p'); renderList();
-    if(idx !== '') openProject(idx); else goHome();
-}
-
-function renderList() {
-    const list = el('list-p'); if(!list) return;
-    list.innerHTML = db.map((p, i) => `
-        <div class="list-item" onclick="openProject(${i})">
-            <div><small>${p.name || '---'}</small><b>${p.num || '---'}</b></div>
-            <div style="color:var(--danger); font-weight:900; padding:15px;" onclick="event.stopPropagation(); deleteProject(${i})">✕</div>
-        </div>`).join('') + '<div style="height:100px"></div>';
-}
-
-function openProject(i) {
-    if (db[i]) { currentIdx = i; el('v-home').classList.remove('active'); el('v-det').classList.add('active');
-        el('h-num').innerText = db[i].num || '---'; el('h-nam').innerText = db[i].name || '---';
-        renderTools();
-    }
-}
-
-function goHome() { currentIdx = null; el('v-home').classList.add('active'); el('v-det').classList.remove('active'); renderList(); }
-
-// --- РЕАЛЬНЫЙ DRAG & DROP ---
+// --- РЕАЛЬНЫЙ DRAG & DROP (ФИКСИРОВАННЫЙ) ---
 let dragEl = null;
 
 function renderTools() {
@@ -86,23 +25,23 @@ function renderTools() {
         
         const handle = item.querySelector('.handle');
 
-        // Логика перемещения
         handle.addEventListener('touchstart', (e) => {
             dragEl = item;
             item.style.opacity = '0.5';
             item.style.background = '#f0f0f0';
-        });
+        }, {passive: false});
 
         handle.addEventListener('touchmove', (e) => {
             e.preventDefault();
             const touch = e.touches[0];
+            const target = document.elementFromPoint(touch.clientX, touch.clientY);
             const afterElement = getDragAfterElement(list, touch.clientY);
             if (afterElement == null) {
                 list.appendChild(item);
             } else {
                 list.insertBefore(item, afterElement);
             }
-        });
+        }, {passive: false});
 
         handle.addEventListener('touchend', () => {
             item.style.opacity = '1';
@@ -113,7 +52,8 @@ function renderTools() {
 
         list.appendChild(item);
     });
-    list.innerHTML += '<div style="height:180px;"></div>'; 
+    // Тот самый отступ в конце списка инструментов
+    list.innerHTML += '<div style="height:180px; pointer-events:none;"></div>'; 
 }
 
 function getDragAfterElement(container, y) {
@@ -138,13 +78,13 @@ function saveOrder() {
     });
     db[currentIdx].tools = newTools;
     localStorage.setItem(DB_KEY, JSON.stringify(db));
-    // Перерисовываем с новыми индексами
     renderTools();
 }
 
-// --- PDF С ПОЛОСОЙ ВНИЗУ ---
+// --- PDF С ПОЛОСКОЙ НА КАЖДОЙ СТРАНИЦЕ ---
 function makePDF() {
     const p = db[currentIdx];
+    
     const getHeader = () => `
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; min-height:90px;">
             <div>
@@ -176,7 +116,7 @@ function makePDF() {
 
     const getFooter = () => `
         <div style="margin-top: auto; padding-top: 20px;">
-            <div style="border-top: 1px solid #000; width: 100%; margin-bottom: 5px;"></div>
+            <div style="border-top: 1.5px solid #000; width: 100%; margin-bottom: 5px;"></div>
             <div style="text-align: center; font-size: 9px; font-weight: 800; color: #000; text-transform: uppercase; letter-spacing: 1px;">
                 QS CENTRAL PREMIUM REPORT
             </div>
@@ -185,10 +125,11 @@ function makePDF() {
     let oben = [], unten = [], target = oben;
     (p.tools || []).forEach(t => { if(t.rev) target = unten; target.push(t); });
 
-    const forceSplit = oben.length > 12 || (oben.length + unten.length > 16);
+    // Условие разделения (если инструментов больше 14 в сумме или Oben длинный)
+    const forceSplit = oben.length > 12 || (oben.length + unten.length > 15);
 
     let html = `<div style="width:210mm; background:#fff; font-family:sans-serif; color:#000;">
-        <div style="border:2px solid #000; padding:25px; min-height:285mm; display:flex; flex-direction:column; box-sizing:border-box;">
+        <div style="border:2px solid #000; padding:25px; min-height:282mm; display:flex; flex-direction:column; box-sizing:border-box; page-break-after: always;">
             ${getHeader()}
             <div style="font-size:18px; font-weight:900; margin-bottom:5px;">REVOLVER OBEN</div>
             ${subHeader}
@@ -196,11 +137,13 @@ function makePDF() {
             ${(!forceSplit && unten.length > 0) ? `
                 <div style="margin-top:30px; font-size:18px; font-weight:900;">REVOLVER UNTEN</div>
                 ${subHeader}${unten.map(getRow).join('')}` : ''}
-            ${!forceSplit ? getFooter() : ''}
+            ${getFooter()}
         </div>`;
 
+    // СТРАНИЦА 2 (если нужно)
     if (forceSplit && unten.length > 0) {
-        html += `<div class="page-break" style="border:2px solid #000; padding:25px; min-height:285mm; display:flex; flex-direction:column; margin-top:10px; box-sizing:border-box;">
+        html += `
+        <div style="border:2px solid #000; padding:25px; min-height:282mm; display:flex; flex-direction:column; margin-top:10px; box-sizing:border-box;">
             ${getHeader()}
             <div style="font-size:18px; font-weight:900; margin-bottom:5px;">REVOLVER UNTEN</div>
             ${subHeader}
@@ -213,43 +156,3 @@ function makePDF() {
     el('print-container').innerHTML = html;
     setTimeout(() => { window.print(); }, 250);
 }
-
-// Вспомогательные функции (модалки, импорт) остаются прежними
-function modalT(i = null) {
-    const edit = i !== null;
-    el('t-idx').value = edit ? i : '';
-    const t = edit ? db[currentIdx].tools[i] : {id:'', nm:'', dia:'', rev:false};
-    el('t-id').value = t.id; el('t-nm').value = t.nm; el('t-dia').value = t.dia;
-    const btn = el('btn-rev-toggle');
-    if(t.rev) btn.classList.add('on'); else btn.classList.remove('on');
-    btn.onclick = () => btn.classList.toggle('on');
-    el('btn-del-t').style.display = edit ? 'block' : 'none';
-    show('m-t');
-}
-
-function saveT() {
-    const i = el('t-idx').value;
-    const btn = el('btn-rev-toggle');
-    const t = { id: el('t-id').value.toUpperCase(), nm: el('t-nm').value.toUpperCase(), dia: el('t-dia').value, rev: btn.classList.contains('on') };
-    if(!db[currentIdx].tools) db[currentIdx].tools = [];
-    if(i === '') db[currentIdx].tools.push(t); else db[currentIdx].tools[i] = t;
-    localStorage.setItem(DB_KEY, JSON.stringify(db));
-    renderTools(); hide('m-t');
-}
-
-function exportJSON() { el('imp-area').value = JSON.stringify(db); }
-function importJSON() { try { db = JSON.parse(el('imp-area').value); localStorage.setItem(DB_KEY, JSON.stringify(db)); renderList(); hide('m-imp'); } catch(e){alert("Error");} }
-function deleteProject(i) { if(confirm('Löschen?')) { db.splice(i, 1); localStorage.setItem(DB_KEY, JSON.stringify(db)); renderList(); } }
-function delT() { db[currentIdx].tools.splice(el('t-idx').value, 1); localStorage.setItem(DB_KEY, JSON.stringify(db)); renderTools(); hide('m-t'); }
-function runImp() {
-    const text = el('imp-area').value;
-    const regex = /(T[0O]\d{2,4})/gi; 
-    const parts = text.split(regex);
-    for (let i = 1; i < parts.length; i += 2) {
-        db[currentIdx].tools.push({ id: parts[i].trim().toUpperCase().replace('O', '0'), nm: parts[i+1].trim().toUpperCase(), dia: '', rev: false });
-    }
-    localStorage.setItem(DB_KEY, JSON.stringify(db));
-    renderTools(); hide('m-imp');
-}
-
-window.onload = renderList;
