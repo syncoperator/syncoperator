@@ -1,4 +1,4 @@
-const DB_KEY = 'QS_DATA_V11';
+const DB_KEY = 'QS_DATA_V12';
 let db = JSON.parse(localStorage.getItem(DB_KEY)) || [];
 let currentIdx = null;
 
@@ -43,9 +43,10 @@ function renderTools() {
             <div class="handle" style="cursor:grab; color:#d1d1d6; font-size:20px; padding-right:15px; touch-action:none;">☰</div>
             <div class="indicator" style="background:${t.rev ? '#000' : '#3b82f6'}"></div>
             <div class="item-info" style="flex:1;" onclick="modalT(${i})">
-                <small>${t.id || 'T0000'}</small>
+                <small class="t-nr-small">${t.id || 'T0000'}</small>
                 <b>${t.nm || '---'}</b>
             </div>
+            <div style="font-weight:800; color:var(--primary);">${t.dia || ''}</div>
         `;
         const h = item.querySelector('.handle');
         h.ontouchstart = () => { startIdx = i; item.style.opacity = '0.5'; };
@@ -101,27 +102,46 @@ function saveP() {
 }
 
 function modalT(i = null) {
-    const edit = i !== null; el('t-idx').value = edit ? i : '';
+    const edit = i !== null; 
+    el('t-idx').value = edit ? i : '';
     const t = edit ? db[currentIdx].tools[i] : {id:'', nm:'', dia:'', rev:false};
-    el('t-id').value = t.id; el('t-nm').value = t.nm; el('t-dia').value = t.dia;
+    
+    // Прямое обращение к ID полей
+    el('t-id').value = t.id; 
+    el('t-nm').value = t.nm; 
+    el('t-dia').value = t.dia;
+    
     const toggle = el('t-rev-toggle');
     if(t.rev) toggle.classList.add('on'); else toggle.classList.remove('on');
     toggle.style.background = t.rev ? '#3b82f6' : '#e5e5ea';
     toggle.firstChild.style.left = t.rev ? '25px' : '3px';
+    
     el('btn-del-t').style.display = edit ? 'block' : 'none';
     show('m-t');
 }
 
 function saveT() {
     const i = el('t-idx').value;
-    const t = { id: el('t-id').value.toUpperCase(), nm: el('t-nm').value.toUpperCase(), dia: el('t-dia').value, rev: el('t-rev-toggle').classList.contains('on') };
-    if(!db[currentIdx].tools) db[currentIdx].tools = [];
-    if(i === '') db[currentIdx].tools.push(t); else db[currentIdx].tools[i] = t;
+    const tId = el('t-id').value.toUpperCase();
+    const tNm = el('t-nm').value.toUpperCase();
+    const tDia = el('t-dia').value;
+    const isRev = el('t-rev-toggle').classList.contains('on');
+
+    if (!db[currentIdx].tools) db[currentIdx].tools = [];
+    
+    const toolObj = { id: tId, nm: tNm, dia: tDia, rev: isRev };
+
+    if (i === '') {
+        db[currentIdx].tools.push(toolObj);
+    } else {
+        db[currentIdx].tools[i] = toolObj;
+    }
+
     localStorage.setItem(DB_KEY, JSON.stringify(db));
-    renderTools(); hide('m-t');
+    renderTools(); 
+    hide('m-t');
 }
 
-// PDF LOGIC WITH PAGE BREAK FOR REVOLVER UNTEN
 function makePDF() {
     const p = db[currentIdx];
     const headerRow = `<div style="display:flex; font-size:10px; font-weight:900; text-transform:uppercase; margin-bottom:6px; padding:0 2px;">
@@ -140,7 +160,7 @@ function makePDF() {
             <div style="width:220px; font-size:11px; font-weight:800; line-height:1.5;">
                 <div style="display:flex; justify-content:space-between; border-bottom:1px solid #eee;"><span>LAUFZEIT</span><span>${p.lzf}</span></div>
                 <div style="display:flex; justify-content:space-between; border-bottom:1px solid #eee;"><span>MATERIAL</span><span>${p.mat}</span></div>
-                <div style="display:flex; justify-content:space-between; border-bottom:1px solid #eee;"><span>SÄGELÄНGE</span><span>${p.sag}</span></div>
+                <div style="display:flex; justify-content:space-between; border-bottom:1px solid #eee;"><span>SÄGELÄNGE</span><span>${p.sag}</span></div>
                 <div style="display:flex; justify-content:space-between; border-bottom:1px solid #eee;"><span>ABSTAND</span><span>${p.abs}</span></div>
                 <div style="display:flex; justify-content:space-between; border-bottom:1px solid #eee;"><span>GREIFBACKEN</span><span>${p.grf}</span></div>
                 <div style="display:flex; justify-content:space-between;"><span>STÜCKZAHL</span><span>${p.stt}/${p.stn}</span></div>
@@ -151,7 +171,6 @@ function makePDF() {
     let o = [], u = [];
     (p.tools || []).forEach(t => t.rev ? u.push(t) : o.push(t));
 
-    // Logic: If Oben tools > 12 or Total > 15, we force Unten to Page 2
     const forceBreak = o.length > 12 || (o.length + u.length) > 15;
 
     let html = `
@@ -161,16 +180,9 @@ function makePDF() {
             <div style="font-size:18px; font-weight:900; margin-top:10px;">REVOLVER OBEN</div>
             ${headerRow}
             ${o.map(getRow).join('')}
-            
-            ${(!forceBreak && u.length > 0) ? `
-                <div style="margin-top:30px; font-size:18px; font-weight:900;">REVOLVER UNTEN</div>
-                ${headerRow}
-                ${u.map(getRow).join('')}
-            ` : ''}
-            
+            ${(!forceBreak && u.length > 0) ? `<div style="margin-top:30px; font-size:18px; font-weight:900;">REVOLVER UNTEN</div>${headerRow}${u.map(getRow).join('')}` : ''}
             <div style="position:absolute; bottom:20px; left:0; width:100%; text-align:center; font-size:9px; color:#aaa;">QS CENTRAL PREMIUM REPORT</div>
         </div>
-
         ${(forceBreak && u.length > 0) ? `
         <div class="page-break" style="border:2px solid #000; padding:25px; min-height:265mm; display:flex; flex-direction:column; position:relative; margin-top:20px;">
             ${getFullHeader()}
