@@ -67,7 +67,7 @@ function openProject(i) {
 
 function goHome() { currentIdx = null; el('v-home').classList.add('active'); el('v-det').classList.remove('active'); renderList(); }
 
-// --- ИНСТРУМЕНТЫ (Drag & Drop) ---
+// --- ИНСТРУМЕНТЫ (Рабочий Drag & Drop с тач-событиями) ---
 let startIdx = null;
 function renderTools() {
     const list = el('list-t'); if(!list || currentIdx === null) return;
@@ -150,7 +150,7 @@ function delT() { const i = el('t-idx').value; db[currentIdx].tools.splice(i, 1)
 function exportJSON() { el('imp-area').value = JSON.stringify(db); el('imp-area').select(); alert("JSON kopiert!"); }
 function importJSON() { try { const parsed = JSON.parse(el('imp-area').value); if(Array.isArray(parsed)) { db = parsed; localStorage.setItem(DB_KEY, JSON.stringify(db)); renderList(); hide('m-imp'); } } catch(e) { alert("JSON-Fehler"); } }
 
-// --- PDF (ИСПРАВЛЕННЫЙ: ТИХАЯ ПЕЧАТЬ БЕЗ СЛОМА ИНТЕРФЕЙСА) ---
+// --- PDF (РАБОЧАЯ ВЕРСИЯ ЧЕРЕЗ IFRAME) ---
 function makePDF() {
     const p = db[currentIdx];
     
@@ -190,20 +190,24 @@ function makePDF() {
     (p.tools || []).forEach(t => { if(t.rev) target = unten; target.push(t); });
 
     let pdfContent = `
-    <style>
-        body { margin: 0; padding: 10mm; background: #fff; font-family: sans-serif; }
-        .page { border: 2px solid #000; padding: 25px; min-height: 270mm; display: flex; flex-direction: column; box-sizing: border-box; page-break-after: always; margin-bottom: 20px; }
-        .footer { border-top: 1px solid #000; padding-top: 5px; font-size: 9px; font-weight: 800; text-align: center; color: #666; margin-top: auto; }
-    </style>
-    <div class="page">
-        ${getPageHead()}
-        <div style="flex:1;">
-            <div style="margin-bottom:5px; font-size:18px; font-weight:900; text-transform:uppercase;">REVOLVER OBEN</div>
-            ${tableHead}
-            ${oben.map(getRow).join('')}
-        </div>
-        <div class="footer"></div>
-    </div>`;
+    <html>
+    <head>
+        <style>
+            body { margin: 0; padding: 10mm; background: #fff; font-family: sans-serif; }
+            .page { border: 2px solid #000; padding: 25px; min-height: 275mm; display: flex; flex-direction: column; box-sizing: border-box; page-break-after: always; margin-bottom: 20px; }
+            .footer { border-top: 1px solid #000; padding-top: 5px; font-size: 9px; font-weight: 800; text-align: center; color: #666; margin-top: auto; }
+        </style>
+    </head>
+    <body>
+        <div class="page">
+            ${getPageHead()}
+            <div style="flex:1;">
+                <div style="margin-bottom:5px; font-size:18px; font-weight:900; text-transform:uppercase;">REVOLVER OBEN</div>
+                ${tableHead}
+                ${oben.map(getRow).join('')}
+            </div>
+            <div class="footer">QS CENTRAL ELITE REPORT</div>
+        </div>`;
 
     if (unten.length > 0) {
         pdfContent += `
@@ -214,11 +218,13 @@ function makePDF() {
                 ${tableHead}
                 ${unten.map(getRow).join('')}
             </div>
-            <div class="footer"></div>
+            <div class="footer">QS CENTRAL ELITE REPORT</div>
         </div>`;
     }
 
-    // Создаем невидимый iframe для печати, чтобы не ломать основной экран
+    pdfContent += `</body></html>`;
+
+    // Создаем невидимый iframe для качественной печати
     let printFrame = document.createElement('iframe');
     printFrame.style.position = 'fixed';
     printFrame.style.right = '0';
