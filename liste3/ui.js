@@ -1,6 +1,66 @@
+// --- КОНФИГУРАЦИЯ И СТИЛИ (АВТО-ИНЪЕКЦИЯ ДЛЯ ОБНОВЛЕНИЯ ДИЗАЙНА) ---
 const DB_KEY = 'QS_DATA_V8';
 let db = JSON.parse(localStorage.getItem(DB_KEY)) || [];
 let currentIdx = null;
+
+// Внедряем новый дизайн CitiTool прямо через JS, чтобы точно всё изменилось
+const injectStyles = () => {
+    const style = document.createElement('style');
+    style.innerHTML = `
+        :root {
+            --bg: #f2f2f7;
+            --card: #ffffff;
+            --accent: #007aff;
+            --text: #1c1c1e;
+            --sub: #8e8e93;
+        }
+        body { 
+            background-color: var(--bg) !important; 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+            color: var(--text);
+            margin: 0;
+        }
+        /* Шапка CitiTool */
+        header, .header-title { 
+            font-weight: 900 !important; 
+            letter-spacing: -1px !important; 
+            color: var(--text) !important;
+            text-transform: none !important;
+        }
+        /* Красивые карточки */
+        .list-item {
+            background: var(--card) !important;
+            border: 1px solid rgba(0,0,0,0.05) !important;
+            border-radius: 16px !important;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05) !important;
+            margin-bottom: 12px !important;
+            transition: transform 0.2s ease;
+        }
+        .list-item:active { transform: scale(0.98); }
+        
+        /* Кнопки */
+        button, .btn-main {
+            border-radius: 12px !important;
+            font-weight: 700 !important;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        /* Поля ввода */
+        input, textarea {
+            border-radius: 10px !important;
+            border: 1px solid #d1d1d6 !important;
+            padding: 12px !important;
+            background: #fff !important;
+        }
+    `;
+    document.head.appendChild(style);
+};
+
+// Функция принудительного переименования заголовка
+const renameBranding = () => {
+    const title = document.querySelector('.header-title') || document.querySelector('h1');
+    if(title) title.innerText = 'CitiTool';
+};
 
 const el = (id) => document.getElementById(id);
 const show = (id) => { if(el(id)) el(id).style.display = 'flex'; };
@@ -46,15 +106,15 @@ function saveP() {
 }
 
 function renderList() {
+    renameBranding();
     const list = el('list-p'); if(!list) return;
-    // Обновленный дизайн заголовка в HTML должен быть CitiTool
     list.innerHTML = db.map((p, i) => `
-        <div class="list-item" onclick="openProject(${i})" style="margin-bottom:12px; border-radius:16px; background: rgba(255,255,255,0.8); box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid rgba(255,255,255,0.3); backdrop-filter: blur(10px);">
-            <div style="padding: 15px;">
-                <small style="color: #8e8e93; font-weight: 600; font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px;">${p.name || 'OHNE NAME'}</small>
-                <b style="display: block; font-size: 22px; color: #1c1c1e; letter-spacing: -0.5px; margin-top: 2px;">${p.num || '---'}</b>
+        <div class="list-item" onclick="openProject(${i})" style="display:flex; justify-content:space-between; align-items:center; padding:5px 15px;">
+            <div style="padding: 12px 0;">
+                <small style="color:var(--sub); font-weight:700; font-size:10px; text-transform:uppercase;">${p.name || 'PROJEKT'}</small>
+                <b style="display:block; font-size:24px; letter-spacing:-0.5px; margin-top:2px;">${p.num || '---'}</b>
             </div>
-            <div style="color:#ff3b30; font-weight:900; padding:20px; font-size:18px;" onclick="event.stopPropagation(); deleteProject(${i})">✕</div>
+            <div style="color:#ff3b30; font-weight:900; padding:15px; font-size:20px;" onclick="event.stopPropagation(); deleteProject(${i})">✕</div>
         </div>`).join('') + '<div style="height:120px"></div>';
 }
 
@@ -71,7 +131,7 @@ function openProject(i) {
 
 function goHome() { currentIdx = null; el('v-home').classList.add('active'); el('v-det').classList.remove('active'); renderList(); }
 
-// --- ИНСТРУМЕНТЫ (Дизайн по твоим правилам T-NR + BOLD) ---
+// --- ИНСТРУМЕНТЫ (Дизайн: T-NR сверху, BOLD название снизу) ---
 let startIdx = null;
 function renderTools() {
     const list = el('list-t'); if(!list || currentIdx === null) return;
@@ -81,31 +141,21 @@ function renderTools() {
         const item = document.createElement('div');
         item.className = 'list-item';
         item.setAttribute('data-idx', i);
-        item.style.cssText = `
-            margin-bottom: 12px;
-            background: #fff;
-            border-radius: 18px;
-            padding: 16px;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.04);
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            border: 1px solid #f2f2f7;
-        `;
+        item.style.cssText = `padding: 16px; display: flex; align-items: center; gap: 15px;`;
         
-        const revMark = t.rev ? `<div style="background:#1c1c1e; color:#fff; font-size:8px; padding:3px 8px; border-radius:100px; margin-bottom:6px; font-weight:800; width:fit-content; letter-spacing:0.5px;">REVOLVER UNTEN ↓</div>` : '';
+        const revMark = t.rev ? `<div style="background:#000; color:#fff; font-size:8px; padding:2px 8px; border-radius:4px; margin-bottom:6px; font-weight:800; width:fit-content;">REVOLVER UNTEN ↓</div>` : '';
         
         item.innerHTML = `
-            <div class="handle" style="cursor:grab; color:#d1d1d6; font-size:20px; padding:5px;">☰</div>
+            <div class="handle" style="cursor:grab; color:#d1d1d6; font-size:24px; padding:5px; user-select:none; touch-action:none;">☰</div>
             <div style="flex:1; min-width:0;" onclick="modalT(${i})">
                 ${revMark}
-                <div style="color:#8e8e93; font-weight:700; font-size:11px; margin-bottom:2px;">${t.id || 'T0000'}</div>
-                <div style="font-size:20px; font-weight:900; color:#000; line-height:1.1; letter-spacing:-0.4px;">${t.nm || '---'}</div>
-                <div style="margin-top:6px; font-size:13px; font-weight:600; color:#007aff;">${t.dia || ''}</div>
+                <div style="color:var(--sub); font-weight:700; font-size:11px; margin-bottom:2px;">${t.id || 'T0000'}</div>
+                <div style="font-size:20px; font-weight:900; color:#000; line-height:1.1; letter-spacing:-0.4px; word-wrap:break-word;">${t.nm || '---'}</div>
+                <div style="margin-top:8px; font-size:14px; font-weight:800; color:var(--accent);">${t.dia || ''}</div>
             </div>`;
 
         const handle = item.querySelector('.handle');
-        handle.ontouchstart = (e) => { startIdx = i; item.style.transform = "scale(0.98)"; item.style.background = "#f2f2f7"; };
+        handle.ontouchstart = (e) => { startIdx = i; item.style.background = "#f2f2f7"; };
         handle.ontouchmove = (e) => {
             e.preventDefault();
             const touch = e.touches[0];
@@ -116,7 +166,7 @@ function renderTools() {
                 if (overIdx !== startIdx) { moveTool(startIdx, overIdx); startIdx = overIdx; }
             }
         };
-        handle.ontouchend = () => { item.style.transform = ""; item.style.background = "#fff"; renderTools(); };
+        handle.ontouchend = () => { item.style.background = "#fff"; renderTools(); };
         
         item.draggable = true;
         item.ondragstart = () => { startIdx = i; item.style.opacity = '0.4'; };
@@ -126,7 +176,7 @@ function renderTools() {
         list.appendChild(item);
     });
     // Padding-bottom для предотвращения перекрытия кнопками
-    list.innerHTML += '<div style="height:200px; pointer-events:none;"></div>'; 
+    list.innerHTML += '<div style="height:180px; pointer-events:none;"></div>'; 
 }
 
 function moveTool(from, to) {
@@ -137,7 +187,7 @@ function moveTool(from, to) {
     renderTools();
 }
 
-// --- СТАНДАРТНЫЕ ФУНКЦИИ ---
+// --- УПРАВЛЕНИЕ ИНСТРУМЕНТАМИ ---
 function modalT(i = null) {
     const edit = i !== null;
     el('t-idx').value = edit ? i : '';
@@ -145,12 +195,8 @@ function modalT(i = null) {
     el('t-id').value = t.id; el('t-nm').value = t.nm; el('t-dia').value = t.dia;
     const btn = el('btn-rev-toggle');
     if(btn) {
-        if(t.rev) { btn.classList.add('on'); btn.innerText = 'ON'; } 
-        else { btn.classList.remove('on'); btn.innerText = 'OFF'; }
-        btn.onclick = () => {
-            const isOn = btn.classList.toggle('on');
-            btn.innerText = isOn ? 'ON' : 'OFF';
-        };
+        if(t.rev) btn.classList.add('on'); else btn.classList.remove('on');
+        btn.onclick = () => btn.classList.toggle('on');
     }
     el('btn-del-t').style.display = edit ? 'block' : 'none';
     show('m-t');
@@ -171,7 +217,7 @@ function delT() { const i = el('t-idx').value; db[currentIdx].tools.splice(i, 1)
 function exportJSON() { el('imp-area').value = JSON.stringify(db); el('imp-area').select(); alert("JSON kopiert!"); }
 function importJSON() { try { const parsed = JSON.parse(el('imp-area').value); if(Array.isArray(parsed)) { db = parsed; localStorage.setItem(DB_KEY, JSON.stringify(db)); renderList(); hide('m-imp'); } } catch(e) { alert("JSON-Fehler"); } }
 
-// --- PDF REPORT (БЕЗ ИЗМЕНЕНИЙ ЛОГИКИ) ---
+// --- PDF REPORT (БЕЗ ИЗМЕНЕНИЙ) ---
 function makePDF() {
     const p = db[currentIdx];
     const getPageHead = () => `
@@ -210,14 +256,13 @@ function makePDF() {
     (p.tools || []).forEach(t => { if(t.rev) target = unten; target.push(t); });
 
     let pdfHtml = `
-    <!DOCTYPE html>
     <html>
     <head>
         <style>
             @page { size: A4; margin: 0; }
-            html, body { margin: 0; padding: 0; background: #fff; font-family: sans-serif; -webkit-print-color-adjust: exact; }
+            body { margin: 0; padding: 10mm; background: #fff; font-family: sans-serif; -webkit-print-color-adjust: exact; }
             .page { width: 210mm; height: 297mm; padding: 15mm; box-sizing: border-box; page-break-after: always; display: flex; flex-direction: column; }
-            .content-border { border: 2.2px solid #000; padding: 20px; flex: 1; display: flex; flex-direction: column; box-sizing: border-box; overflow: hidden; }
+            .content-border { border: 2.2px solid #000; padding: 20px; flex: 1; display: flex; flex-direction: column; box-sizing: border-box; }
             .footer { border-top: 1.2px solid #000; padding-top: 5px; font-size: 9px; font-weight: 800; text-align: center; color: #666; margin-top: auto; }
         </style>
     </head>
@@ -231,4 +276,9 @@ function makePDF() {
     if (win) { win.document.write(pdfHtml); win.document.close(); }
 }
 
-window.onload = renderList;
+// Запуск при загрузке
+window.onload = () => {
+    injectStyles();
+    renameBranding();
+    renderList();
+};
