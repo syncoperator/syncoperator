@@ -67,7 +67,7 @@ function openProject(i) {
 
 function goHome() { currentIdx = null; el('v-home').classList.add('active'); el('v-det').classList.remove('active'); renderList(); }
 
-// --- ИНСТРУМЕНТЫ (Рабочий Drag & Drop с тач-событиями) ---
+// --- ИНСТРУМЕНТЫ (Твой рабочий Drag & Drop) ---
 let startIdx = null;
 function renderTools() {
     const list = el('list-t'); if(!list || currentIdx === null) return;
@@ -150,10 +150,11 @@ function delT() { const i = el('t-idx').value; db[currentIdx].tools.splice(i, 1)
 function exportJSON() { el('imp-area').value = JSON.stringify(db); el('imp-area').select(); alert("JSON kopiert!"); }
 function importJSON() { try { const parsed = JSON.parse(el('imp-area').value); if(Array.isArray(parsed)) { db = parsed; localStorage.setItem(DB_KEY, JSON.stringify(db)); renderList(); hide('m-imp'); } } catch(e) { alert("JSON-Fehler"); } }
 
-// --- PDF (РАБОЧАЯ ВЕРСИЯ ЧЕРЕЗ IFRAME) ---
+// --- PDF (ОБНОВЛЕННЫЙ С УМНЫМ ПЕРЕНОСОМ) ---
 function makePDF() {
     const p = db[currentIdx];
     
+    // Шаблон шапки
     const getPageHead = () => `
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; min-height:90px;">
             <div style="display:flex; flex-direction:column; justify-content:center;">
@@ -162,7 +163,7 @@ function makePDF() {
             </div>
             <div style="width:220px; font-size:11px; font-weight:800; line-height:1.5;">
                 <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>LAUFZEIT</span><span>${p.lzf || ''}</span></div>
-                <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>MATERIAL</span><span>${p.mat || ''}</span></div>
+                <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>MATERIAL</span><span>${p.mat || p.nam || ''}</span></div>
                 <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>SÄGELÄNGE</span><span>${p.sag || ''}</span></div>
                 <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>ABSTAND</span><span>${p.abs || ''}</span></div>
                 <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>GREIFBACKEN</span><span>${p.grf || ''}</span></div>
@@ -179,70 +180,52 @@ function makePDF() {
         </div>
         <div style="border-bottom:4px solid #000; margin-bottom:0px;"></div>`;
 
-    const getRow = (t) => `
+    const getRow = (t) => {
+        const displayDia = t.dia.includes('/') ? t.dia.split('/').join('<br>') : t.dia;
+        return `
         <div style="display:flex; align-items:baseline; border-bottom:1.5px solid #000; padding:10px 0; width:100%;">
             <div style="width:75px; font-weight:800; font-size:15px;">${t.id}</div>
             <div style="flex:1; font-weight:700; font-size:15px; text-transform:uppercase; padding-right:10px; white-space:pre-wrap;">${t.nm}</div>
-            <div style="width:125px; text-align:right; font-weight:800; font-size:14px; line-height:1.2;">${t.dia.replace(/\//g, '<br>')}</div>
+            <div style="width:125px; text-align:right; font-weight:800; font-size:14px; line-height:1.2;">${displayDia}</div>
         </div>`;
+    };
+
+    const footerLine = `<div style="border-top:1px solid #000; padding-top:5px; font-size:9px; font-weight:800; text-align:center; color:#666; margin-top:20px;"></div>`;
 
     let oben = [], unten = [], target = oben;
     (p.tools || []).forEach(t => { if(t.rev) target = unten; target.push(t); });
 
-    let pdfContent = `
-    <html>
-    <head>
-        <style>
-            body { margin: 0; padding: 10mm; background: #fff; font-family: sans-serif; }
-            .page { border: 2px solid #000; padding: 25px; min-height: 275mm; display: flex; flex-direction: column; box-sizing: border-box; page-break-after: always; margin-bottom: 20px; }
-            .footer { border-top: 1px solid #000; padding-top: 5px; font-size: 9px; font-weight: 800; text-align: center; color: #666; margin-top: auto; }
-        </style>
-    </head>
-    <body>
-        <div class="page">
+    // СБОРКА СТРАНИЦЫ 1
+    let html = `
+    <div style="width:210mm; padding:12mm; box-sizing:border-box; background:#fff; font-family:sans-serif; color:#000;">
+        <div style="border:2px solid #000; padding:25px; min-height:265mm; display:flex; flex-direction:column; box-sizing:border-box; page-break-after: always;">
             ${getPageHead()}
             <div style="flex:1;">
-                <div style="margin-bottom:5px; font-size:18px; font-weight:900; text-transform:uppercase;">REVOLVER OBEN</div>
+                <div style="margin-bottom:5px; font-size:18px; font-weight:900; letter-spacing:0.5px; text-transform:uppercase;">REVOLVER OBEN</div>
                 ${tableHead}
                 ${oben.map(getRow).join('')}
+                ${unten.length === 0 ? '' : ``}
             </div>
-            <div class="footer">QS CENTRAL ELITE REPORT</div>
+            ${footerLine}
         </div>`;
 
+    // СБОРКА СТРАНИЦЫ 2 (только если есть Unten)
     if (unten.length > 0) {
-        pdfContent += `
-        <div class="page">
+        html += `
+        <div style="border:2px solid #000; padding:25px; min-height:265mm; display:flex; flex-direction:column; box-sizing:border-box; margin-top: 20px;">
             ${getPageHead()}
             <div style="flex:1;">
-                <div style="margin-bottom:5px; font-size:18px; font-weight:900; text-transform:uppercase;">REVOLVER UNTEN</div>
+                <div style="margin-bottom:5px; font-size:18px; font-weight:900; letter-spacing:0.5px; text-transform:uppercase;">REVOLVER UNTEN</div>
                 ${tableHead}
                 ${unten.map(getRow).join('')}
             </div>
-            <div class="footer">QS CENTRAL ELITE REPORT</div>
+            ${footerLine}
         </div>`;
     }
 
-    pdfContent += `</body></html>`;
-
-    // Создаем невидимый iframe для качественной печати
-    let printFrame = document.createElement('iframe');
-    printFrame.style.position = 'fixed';
-    printFrame.style.right = '0';
-    printFrame.style.bottom = '0';
-    printFrame.style.width = '0';
-    printFrame.style.height = '0';
-    printFrame.style.border = '0';
-    document.body.appendChild(printFrame);
-
-    let doc = printFrame.contentWindow.document;
-    doc.write(pdfContent);
-    doc.close();
-
-    printFrame.contentWindow.focus();
-    setTimeout(() => {
-        printFrame.contentWindow.print();
-        document.body.removeChild(printFrame);
-    }, 500);
+    html += `</div>`;
+    el('print-container').innerHTML = html;
+    setTimeout(() => { window.print(); }, 150);
 }
 
 window.onload = renderList;
