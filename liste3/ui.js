@@ -67,7 +67,7 @@ function openProject(i) {
 
 function goHome() { currentIdx = null; el('v-home').classList.add('active'); el('v-det').classList.remove('active'); renderList(); }
 
-// --- ИНСТРУМЕНТЫ (Твой рабочий Drag & Drop) ---
+// --- ИНСТРУМЕНТЫ (Drag & Drop с Touch-поддержкой) ---
 let startIdx = null;
 function renderTools() {
     const list = el('list-t'); if(!list || currentIdx === null) return;
@@ -120,7 +120,7 @@ function moveTool(from, to) {
     renderTools();
 }
 
-// --- СТАНДАРТНЫЕ ФУНКЦИИ ---
+// --- УПРАВЛЕНИЕ ИНСТРУМЕНТАМИ ---
 function modalT(i = null) {
     const edit = i !== null;
     el('t-idx').value = edit ? i : '';
@@ -150,10 +150,9 @@ function delT() { const i = el('t-idx').value; db[currentIdx].tools.splice(i, 1)
 function exportJSON() { el('imp-area').value = JSON.stringify(db); el('imp-area').select(); alert("JSON kopiert!"); }
 function importJSON() { try { const parsed = JSON.parse(el('imp-area').value); if(Array.isArray(parsed)) { db = parsed; localStorage.setItem(DB_KEY, JSON.stringify(db)); renderList(); hide('m-imp'); } } catch(e) { alert("JSON-Fehler"); } }
 
-// --- PDF (ИСПРАВЛЕННЫЙ: БОЛЬШЕ НЕ БЕЛЫЙ ЛИСТ) ---
+// --- PDF (РЕШЕНИЕ ПРОБЛЕМЫ БЕЛОГО ЛИСТА ЧЕРЕЗ НОВОЕ ОКНО) ---
 function makePDF() {
     const p = db[currentIdx];
-    
     const getPageHead = () => `
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; min-height:90px;">
             <div style="display:flex; flex-direction:column; justify-content:center;">
@@ -193,9 +192,10 @@ function makePDF() {
     <html>
     <head>
         <style>
-            body { margin: 0; padding: 10mm; background: #fff; font-family: sans-serif; }
-            .page { border: 2px solid #000; padding: 25px; min-height: 275mm; display: flex; flex-direction: column; box-sizing: border-box; page-break-after: always; margin-bottom: 20px; }
-            .footer { border-top: 1px solid #000; padding-top: 5px; font-size: 9px; font-weight: 800; text-align: center; color: #666; margin-top: auto; }
+            @media print { @page { margin: 10mm; } }
+            body { margin: 0; padding: 10mm; background: #fff; font-family: sans-serif; -webkit-print-color-adjust: exact; }
+            .page { border: 2.2px solid #000; padding: 25px; min-height: 275mm; display: flex; flex-direction: column; box-sizing: border-box; page-break-after: always; margin-bottom: 20px; }
+            .footer { border-top: 1.2px solid #000; padding-top: 5px; font-size: 9px; font-weight: 800; text-align: center; color: #666; margin-top: auto; }
         </style>
     </head>
     <body>
@@ -206,7 +206,7 @@ function makePDF() {
                 ${tableHead}
                 ${oben.map(getRow).join('')}
             </div>
-            <div class="footer">QS CENTRAL REPORT</div>
+            <div class="footer">QS CENTRAL ELITE REPORT</div>
         </div>`;
 
     if (unten.length > 0) {
@@ -218,38 +218,20 @@ function makePDF() {
                 ${tableHead}
                 ${unten.map(getRow).join('')}
             </div>
-            <div class="footer">QS CENTRAL REPORT</div>
+            <div class="footer">QS CENTRAL ELITE REPORT</div>
         </div>`;
     }
-    pdfHtml += `</body></html>`;
+    pdfHtml += `
+        <script>
+            window.onload = function() {
+                setTimeout(() => { window.print(); }, 300);
+            };
+        </script>
+    </body></html>`;
 
-    // Создаем iframe
-    let frame = document.createElement('iframe');
-    frame.style.display = 'none';
-    document.body.appendChild(frame);
-    
-    let doc = frame.contentWindow.document;
-    doc.open();
-    doc.write(pdfHtml);
-    doc.close();
-
-    // Ждем полной загрузки фрейма и стилей
-    frame.onload = function() {
-        setTimeout(() => {
-            frame.contentWindow.focus();
-            frame.contentWindow.print();
-            setTimeout(() => { document.body.removeChild(frame); }, 1000);
-        }, 500);
-    };
-    
-    // Фолбэк на случай если onload не сработает (некоторые браузеры на doc.write не триггерят onload)
-    setTimeout(() => {
-        if(document.body.contains(frame)) {
-            frame.contentWindow.focus();
-            frame.contentWindow.print();
-            setTimeout(() => { if(document.body.contains(frame)) document.body.removeChild(frame); }, 1000);
-        }
-    }, 1000);
+    const win = window.open('', '_blank');
+    win.document.write(pdfHtml);
+    win.document.close();
 }
 
 window.onload = renderList;
