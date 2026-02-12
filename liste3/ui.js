@@ -150,7 +150,7 @@ function delT() { const i = el('t-idx').value; db[currentIdx].tools.splice(i, 1)
 function exportJSON() { el('imp-area').value = JSON.stringify(db); el('imp-area').select(); alert("JSON kopiert!"); }
 function importJSON() { try { const parsed = JSON.parse(el('imp-area').value); if(Array.isArray(parsed)) { db = parsed; localStorage.setItem(DB_KEY, JSON.stringify(db)); renderList(); hide('m-imp'); } } catch(e) { alert("JSON-Fehler"); } }
 
-// --- PDF (РЕШЕНИЕ ПРОБЛЕМЫ БЕЛОГО ЛИСТА ЧЕРЕЗ НОВОЕ ОКНО) ---
+// --- PDF (БЕЗ РАЗРЫВОВ СТРАНИЦ) ---
 function makePDF() {
     const p = db[currentIdx];
     const getPageHead = () => `
@@ -179,7 +179,7 @@ function makePDF() {
         <div style="border-bottom:4px solid #000; margin-bottom:0px;"></div>`;
 
     const getRow = (t) => `
-        <div style="display:flex; align-items:baseline; border-bottom:1.5px solid #000; padding:10px 0; width:100%;">
+        <div style="display:flex; align-items:baseline; border-bottom:1.5px solid #000; padding:10px 0; width:100%; page-break-inside: avoid;">
             <div style="width:75px; font-weight:800; font-size:15px;">${t.id}</div>
             <div style="flex:1; font-weight:700; font-size:15px; text-transform:uppercase; padding-right:10px; white-space:pre-wrap;">${t.nm}</div>
             <div style="width:125px; text-align:right; font-weight:800; font-size:14px; line-height:1.2;">${t.dia.replace(/\//g, '<br>')}</div>
@@ -189,49 +189,73 @@ function makePDF() {
     (p.tools || []).forEach(t => { if(t.rev) target = unten; target.push(t); });
 
     let pdfHtml = `
+    <!DOCTYPE html>
     <html>
     <head>
         <style>
-            @media print { @page { margin: 10mm; } }
-            body { margin: 0; padding: 10mm; background: #fff; font-family: sans-serif; -webkit-print-color-adjust: exact; }
-            .page { border: 2.2px solid #000; padding: 25px; min-height: 275mm; display: flex; flex-direction: column; box-sizing: border-box; page-break-after: always; margin-bottom: 20px; }
+            @page { size: A4; margin: 0; }
+            html, body { margin: 0; padding: 0; background: #fff; font-family: sans-serif; -webkit-print-color-adjust: exact; }
+            .page { 
+                width: 210mm; 
+                height: 296mm; 
+                padding: 15mm; 
+                box-sizing: border-box; 
+                page-break-after: always; 
+                overflow: hidden;
+                display: flex;
+                flex-direction: column;
+            }
+            .content-border {
+                border: 2.2px solid #000;
+                padding: 20px;
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                box-sizing: border-box;
+            }
             .footer { border-top: 1.2px solid #000; padding-top: 5px; font-size: 9px; font-weight: 800; text-align: center; color: #666; margin-top: auto; }
         </style>
     </head>
     <body>
         <div class="page">
-            ${getPageHead()}
-            <div style="flex:1;">
-                <div style="margin-bottom:5px; font-size:18px; font-weight:900; text-transform:uppercase;">REVOLVER OBEN</div>
-                ${tableHead}
-                ${oben.map(getRow).join('')}
+            <div class="content-border">
+                ${getPageHead()}
+                <div style="flex:1;">
+                    <div style="margin-bottom:5px; font-size:18px; font-weight:900; text-transform:uppercase;">REVOLVER OBEN</div>
+                    ${tableHead}
+                    ${oben.map(getRow).join('')}
+                </div>
+                <div class="footer">QS CENTRAL ELITE REPORT</div>
             </div>
-            <div class="footer">QS CENTRAL ELITE REPORT</div>
         </div>`;
 
     if (unten.length > 0) {
         pdfHtml += `
         <div class="page">
-            ${getPageHead()}
-            <div style="flex:1;">
-                <div style="margin-bottom:5px; font-size:18px; font-weight:900; text-transform:uppercase;">REVOLVER UNTEN</div>
-                ${tableHead}
-                ${unten.map(getRow).join('')}
+            <div class="content-border">
+                ${getPageHead()}
+                <div style="flex:1;">
+                    <div style="margin-bottom:5px; font-size:18px; font-weight:900; text-transform:uppercase;">REVOLVER UNTEN</div>
+                    ${tableHead}
+                    ${unten.map(getRow).join('')}
+                </div>
+                <div class="footer">QS CENTRAL ELITE REPORT</div>
             </div>
-            <div class="footer">QS CENTRAL ELITE REPORT</div>
         </div>`;
     }
     pdfHtml += `
         <script>
             window.onload = function() {
-                setTimeout(() => { window.print(); }, 300);
+                setTimeout(() => { window.print(); }, 400);
             };
         </script>
     </body></html>`;
 
     const win = window.open('', '_blank');
-    win.document.write(pdfHtml);
-    win.document.close();
+    if (win) {
+        win.document.write(pdfHtml);
+        win.document.close();
+    }
 }
 
 window.onload = renderList;
