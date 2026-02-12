@@ -47,11 +47,15 @@ function saveP() {
 
 function renderList() {
     const list = el('list-p'); if(!list) return;
+    // Обновленный дизайн заголовка в HTML должен быть CitiTool
     list.innerHTML = db.map((p, i) => `
-        <div class="list-item" onclick="openProject(${i})">
-            <div><small>${p.name || '---'}</small><b>${p.num || '---'}</b></div>
-            <div style="color:var(--danger); font-weight:900; padding:15px; z-index:20;" onclick="event.stopPropagation(); deleteProject(${i})">✕</div>
-        </div>`).join('') + '<div style="height:100px"></div>';
+        <div class="list-item" onclick="openProject(${i})" style="margin-bottom:12px; border-radius:16px; background: rgba(255,255,255,0.8); box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid rgba(255,255,255,0.3); backdrop-filter: blur(10px);">
+            <div style="padding: 15px;">
+                <small style="color: #8e8e93; font-weight: 600; font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px;">${p.name || 'OHNE NAME'}</small>
+                <b style="display: block; font-size: 22px; color: #1c1c1e; letter-spacing: -0.5px; margin-top: 2px;">${p.num || '---'}</b>
+            </div>
+            <div style="color:#ff3b30; font-weight:900; padding:20px; font-size:18px;" onclick="event.stopPropagation(); deleteProject(${i})">✕</div>
+        </div>`).join('') + '<div style="height:120px"></div>';
 }
 
 function openProject(i) {
@@ -67,7 +71,7 @@ function openProject(i) {
 
 function goHome() { currentIdx = null; el('v-home').classList.add('active'); el('v-det').classList.remove('active'); renderList(); }
 
-// --- ИНСТРУМЕНТЫ (Drag & Drop с Touch-поддержкой) ---
+// --- ИНСТРУМЕНТЫ (Дизайн по твоим правилам T-NR + BOLD) ---
 let startIdx = null;
 function renderTools() {
     const list = el('list-t'); if(!list || currentIdx === null) return;
@@ -77,20 +81,31 @@ function renderTools() {
         const item = document.createElement('div');
         item.className = 'list-item';
         item.setAttribute('data-idx', i);
-        item.style.padding = '12px 15px';
-        item.style.display = 'flex';
-        item.style.alignItems = 'center';
-        item.style.gap = '15px';
-        const revMark = t.rev ? `<div style="background:#000; color:#fff; font-size:9px; padding:2px 6px; border-radius:4px; margin-bottom:5px; font-weight:900; width:fit-content;">UNTEN START ↓</div>` : '';
+        item.style.cssText = `
+            margin-bottom: 12px;
+            background: #fff;
+            border-radius: 18px;
+            padding: 16px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.04);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border: 1px solid #f2f2f7;
+        `;
+        
+        const revMark = t.rev ? `<div style="background:#1c1c1e; color:#fff; font-size:8px; padding:3px 8px; border-radius:100px; margin-bottom:6px; font-weight:800; width:fit-content; letter-spacing:0.5px;">REVOLVER UNTEN ↓</div>` : '';
+        
         item.innerHTML = `
-            <div class="handle" style="cursor:grab; color:#ccc; font-size:24px; padding:10px; user-select:none; touch-action:none;">☰</div>
+            <div class="handle" style="cursor:grab; color:#d1d1d6; font-size:20px; padding:5px;">☰</div>
             <div style="flex:1; min-width:0;" onclick="modalT(${i})">
                 ${revMark}
-                <small style="color:#8e8e93; font-weight:700; font-size:11px;">${t.id || 'T0000'}</small>
-                <b style="font-size:20px; font-weight:900; display:block; line-height:1.2; word-wrap:break-word; white-space:pre-wrap;">${t.nm || '---'}</b>
+                <div style="color:#8e8e93; font-weight:700; font-size:11px; margin-bottom:2px;">${t.id || 'T0000'}</div>
+                <div style="font-size:20px; font-weight:900; color:#000; line-height:1.1; letter-spacing:-0.4px;">${t.nm || '---'}</div>
+                <div style="margin-top:6px; font-size:13px; font-weight:600; color:#007aff;">${t.dia || ''}</div>
             </div>`;
+
         const handle = item.querySelector('.handle');
-        handle.ontouchstart = (e) => { startIdx = i; item.style.background = "#f9f9f9"; };
+        handle.ontouchstart = (e) => { startIdx = i; item.style.transform = "scale(0.98)"; item.style.background = "#f2f2f7"; };
         handle.ontouchmove = (e) => {
             e.preventDefault();
             const touch = e.touches[0];
@@ -101,7 +116,8 @@ function renderTools() {
                 if (overIdx !== startIdx) { moveTool(startIdx, overIdx); startIdx = overIdx; }
             }
         };
-        handle.ontouchend = () => { item.style.background = ""; renderTools(); };
+        handle.ontouchend = () => { item.style.transform = ""; item.style.background = "#fff"; renderTools(); };
+        
         item.draggable = true;
         item.ondragstart = () => { startIdx = i; item.style.opacity = '0.4'; };
         item.ondragover = (e) => e.preventDefault();
@@ -109,7 +125,8 @@ function renderTools() {
         item.ondragend = () => { item.style.opacity = '1'; renderTools(); };
         list.appendChild(item);
     });
-    list.innerHTML += '<div style="height:180px; pointer-events:none;"></div>'; 
+    // Padding-bottom для предотвращения перекрытия кнопками
+    list.innerHTML += '<div style="height:200px; pointer-events:none;"></div>'; 
 }
 
 function moveTool(from, to) {
@@ -120,7 +137,7 @@ function moveTool(from, to) {
     renderTools();
 }
 
-// --- УПРАВЛЕНИЕ ИНСТРУМЕНТАМИ ---
+// --- СТАНДАРТНЫЕ ФУНКЦИИ ---
 function modalT(i = null) {
     const edit = i !== null;
     el('t-idx').value = edit ? i : '';
@@ -128,8 +145,12 @@ function modalT(i = null) {
     el('t-id').value = t.id; el('t-nm').value = t.nm; el('t-dia').value = t.dia;
     const btn = el('btn-rev-toggle');
     if(btn) {
-        if(t.rev) btn.classList.add('on'); else btn.classList.remove('on');
-        btn.onclick = () => btn.classList.toggle('on');
+        if(t.rev) { btn.classList.add('on'); btn.innerText = 'ON'; } 
+        else { btn.classList.remove('on'); btn.innerText = 'OFF'; }
+        btn.onclick = () => {
+            const isOn = btn.classList.toggle('on');
+            btn.innerText = isOn ? 'ON' : 'OFF';
+        };
     }
     el('btn-del-t').style.display = edit ? 'block' : 'none';
     show('m-t');
@@ -150,7 +171,7 @@ function delT() { const i = el('t-idx').value; db[currentIdx].tools.splice(i, 1)
 function exportJSON() { el('imp-area').value = JSON.stringify(db); el('imp-area').select(); alert("JSON kopiert!"); }
 function importJSON() { try { const parsed = JSON.parse(el('imp-area').value); if(Array.isArray(parsed)) { db = parsed; localStorage.setItem(DB_KEY, JSON.stringify(db)); renderList(); hide('m-imp'); } } catch(e) { alert("JSON-Fehler"); } }
 
-// --- PDF (БЕЗ РАЗРЫВОВ СТРАНИЦ) ---
+// --- PDF REPORT (БЕЗ ИЗМЕНЕНИЙ ЛОГИКИ) ---
 function makePDF() {
     const p = db[currentIdx];
     const getPageHead = () => `
@@ -195,67 +216,19 @@ function makePDF() {
         <style>
             @page { size: A4; margin: 0; }
             html, body { margin: 0; padding: 0; background: #fff; font-family: sans-serif; -webkit-print-color-adjust: exact; }
-            .page { 
-                width: 210mm; 
-                height: 296mm; 
-                padding: 15mm; 
-                box-sizing: border-box; 
-                page-break-after: always; 
-                overflow: hidden;
-                display: flex;
-                flex-direction: column;
-            }
-            .content-border {
-                border: 2.2px solid #000;
-                padding: 20px;
-                flex: 1;
-                display: flex;
-                flex-direction: column;
-                box-sizing: border-box;
-            }
+            .page { width: 210mm; height: 297mm; padding: 15mm; box-sizing: border-box; page-break-after: always; display: flex; flex-direction: column; }
+            .content-border { border: 2.2px solid #000; padding: 20px; flex: 1; display: flex; flex-direction: column; box-sizing: border-box; overflow: hidden; }
             .footer { border-top: 1.2px solid #000; padding-top: 5px; font-size: 9px; font-weight: 800; text-align: center; color: #666; margin-top: auto; }
         </style>
     </head>
     <body>
-        <div class="page">
-            <div class="content-border">
-                ${getPageHead()}
-                <div style="flex:1;">
-                    <div style="margin-bottom:5px; font-size:18px; font-weight:900; text-transform:uppercase;">REVOLVER OBEN</div>
-                    ${tableHead}
-                    ${oben.map(getRow).join('')}
-                </div>
-                <div class="footer">QS CENTRAL ELITE REPORT</div>
-            </div>
-        </div>`;
-
-    if (unten.length > 0) {
-        pdfHtml += `
-        <div class="page">
-            <div class="content-border">
-                ${getPageHead()}
-                <div style="flex:1;">
-                    <div style="margin-bottom:5px; font-size:18px; font-weight:900; text-transform:uppercase;">REVOLVER UNTEN</div>
-                    ${tableHead}
-                    ${unten.map(getRow).join('')}
-                </div>
-                <div class="footer">QS CENTRAL ELITE REPORT</div>
-            </div>
-        </div>`;
-    }
-    pdfHtml += `
-        <script>
-            window.onload = function() {
-                setTimeout(() => { window.print(); }, 400);
-            };
-        </script>
+        <div class="page"><div class="content-border">${getPageHead()}<div style="flex:1;"><div style="margin-bottom:5px; font-size:18px; font-weight:900; text-transform:uppercase;">REVOLVER OBEN</div>${tableHead}${oben.map(getRow).join('')}</div><div class="footer">CITITOOL REPORT</div></div></div>
+        ${unten.length > 0 ? `<div class="page"><div class="content-border">${getPageHead()}<div style="flex:1;"><div style="margin-bottom:5px; font-size:18px; font-weight:900; text-transform:uppercase;">REVOLVER UNTEN</div>${tableHead}${unten.map(getRow).join('')}</div><div class="footer">CITITOOL REPORT</div></div></div>` : ''}
+        <script>window.onload = function() { setTimeout(() => { window.print(); }, 400); };</script>
     </body></html>`;
 
     const win = window.open('', '_blank');
-    if (win) {
-        win.document.write(pdfHtml);
-        win.document.close();
-    }
+    if (win) { win.document.write(pdfHtml); win.document.close(); }
 }
 
 window.onload = renderList;
