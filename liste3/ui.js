@@ -1,6 +1,6 @@
 const DB_KEY = 'QS_DATA_V8';
 // Вставь сюда прямую ссылку на свой логотип с GitHub (Raw link)
-const LOGO_URL = 'https://raw.githubusercontent.com/USER/REPO/main/logo.png'; 
+const LOGO_URL = 'https://raw.githubusercontent.com/syncoperator/syncoperator/refs/heads/main/IMG_2807.png'; 
 
 let db = JSON.parse(localStorage.getItem(DB_KEY)) || [];
 let currentIdx = null;
