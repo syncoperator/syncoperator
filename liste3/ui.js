@@ -6,70 +6,69 @@ const injectStyles = () => {
     const style = document.createElement('style');
     style.innerHTML = `
         :root { 
-            --bg: #f4f7fa; 
+            --bg: #f5f7fa; 
             --neu-light: #ffffff;
-            --neu-shadow: #cfd9e6;
+            --neu-shadow: #d1d9e6;
             --accent: #007aff;
-            --text: #1c1c1e;
+            --text: #1a1a1a;
         }
         body { 
             background: var(--bg) !important; 
-            font-family: -apple-system, system-ui, sans-serif !important; 
-            margin: 0; padding-bottom: 100px; color: var(--text);
+            font-family: -apple-system, sans-serif !important; 
+            margin: 0; padding-bottom: 80px; color: var(--text);
         }
 
-        /* Логотип и Зеркальный заголовок */
-        .brand-section {
-            padding: 60px 0 40px 0;
+        /* Премиальный логотип и заголовок */
+        .brand-header {
+            padding: 50px 0 30px 0;
             display: flex; flex-direction: column; align-items: center;
         }
-        .logo-icon {
-            width: 50px; height: 50px; margin-bottom: 10px;
-            filter: drop-shadow(4px 4px 8px var(--neu-shadow));
+        .logo-svg {
+            width: 70px; height: 70px; margin-bottom: 10px;
+            filter: drop-shadow(4px 4px 10px var(--neu-shadow));
         }
-        .mirror-wrapper { position: relative; text-align: center; line-height: 1; }
-        .text-main {
-            font-size: 56px; font-weight: 900; letter-spacing: -3px;
+        .mirror-title { position: relative; text-align: center; }
+        .text-top {
+            font-size: 54px; font-weight: 900; letter-spacing: -2.5px;
             color: var(--text); position: relative; z-index: 2;
         }
-        .text-reflect {
-            font-size: 56px; font-weight: 900; letter-spacing: -3px;
+        .text-bottom {
+            font-size: 54px; font-weight: 900; letter-spacing: -2.5px;
             margin-top: -24px; transform: scaleY(-1);
-            background: linear-gradient(to bottom, rgba(0,0,0,0.2) 0%, rgba(244,247,250,1) 90%);
+            background: linear-gradient(to bottom, rgba(0,0,0,0.2) 0%, rgba(245,247,250,1) 85%);
             -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-            opacity: 0.3; user-select: none;
+            opacity: 0.35; user-select: none;
         }
 
-        /* Контролы */
-        .nav-bar { display: flex; justify-content: flex-end; padding: 0 25px; margin-bottom: 20px; }
+        /* Управление */
+        .nav-actions { display: flex; justify-content: flex-end; padding: 0 25px; margin-bottom: 15px; }
         .btn-neu {
-            background: var(--bg); border: none; border-radius: 16px;
-            padding: 12px 24px; font-size: 14px; font-weight: 800; color: var(--accent);
-            box-shadow: 6px 6px 12px var(--neu-shadow), -6px -6px 12px var(--neu-light);
+            background: var(--bg); border: none; border-radius: 14px;
+            padding: 10px 20px; font-size: 14px; font-weight: 800; color: var(--accent);
+            box-shadow: 5px 5px 12px var(--neu-shadow), -5px -5px 12px var(--neu-light);
         }
         .btn-neu:active { box-shadow: inset 3px 3px 6px var(--neu-shadow), inset -3px -3px 6px var(--neu-light); }
 
         /* Карточки */
-        .card {
-            background: var(--bg); border-radius: 30px; padding: 25px;
-            margin: 20px; box-shadow: 12px 12px 24px var(--neu-shadow), -12px -12px 24px var(--neu-light);
+        .neu-card {
+            background: var(--bg); border-radius: 28px; padding: 25px;
+            margin: 15px 20px; box-shadow: 10px 10px 20px var(--neu-shadow), -10px -10px 20px var(--neu-light);
             display: flex; align-items: center; justify-content: space-between;
-            border: 1px solid rgba(255,255,255,0.5);
         }
-        .label { font-size: 11px; font-weight: 800; color: #a1a1a6; text-transform: uppercase; letter-spacing: 1px; }
-        .title { font-size: 26px; font-weight: 900; color: #000; margin-top: 4px; }
+        .p-label { font-size: 10px; font-weight: 800; color: #99a1ad; text-transform: uppercase; letter-spacing: 1px; }
+        .p-title { font-size: 24px; font-weight: 900; color: #000; }
 
         /* Стрелки */
-        .arrows { display: flex; flex-direction: column; gap: 8px; }
+        .arrow-box { display: flex; flex-direction: column; gap: 8px; }
         .btn-arrow {
-            width: 40px; height: 34px; background: var(--bg); border: none; border-radius: 10px;
+            width: 38px; height: 32px; background: var(--bg); border: none; border-radius: 9px;
             box-shadow: 4px 4px 8px var(--neu-shadow), -4px -4px 8px var(--neu-light);
             color: var(--accent); font-weight: 900; display: flex; align-items: center; justify-content: center;
         }
         .btn-arrow:active { box-shadow: inset 2px 2px 4px var(--neu-shadow), inset -2px -2px 4px var(--neu-light); }
         .btn-arrow.disabled { opacity: 0; pointer-events: none; }
 
-        .btn-close { color: #ff3b30; font-size: 20px; font-weight: 900; padding: 10px; }
+        .btn-del { color: #ff3b30; font-size: 19px; font-weight: 900; padding: 10px; }
     `;
     document.head.appendChild(style);
 };
@@ -79,38 +78,39 @@ const show = (id) => { if(el(id)) el(id).style.display = 'block'; };
 const hide = (id) => { if(el(id)) el(id).style.display = 'none'; };
 const save = () => localStorage.setItem(DB_KEY, JSON.stringify(db));
 
-const LOGO_SVG = `
-<svg class="logo-icon" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M30 20H70L90 50L70 80H30L10 50L30 20Z" fill="white"/>
-    <path d="M35 30H65L78 50L65 70H35L22 50L35 30Z" fill="#007aff"/>
-    <path d="M45 40H55V60H45V40Z" fill="white"/>
+// SVG Логотип (Шестиугольник с вырезом 'C')
+const SVG_LOGO = `
+<svg class="logo-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <path d="M50 5 L90 27.5 V72.5 L50 95 L10 72.5 V27.5 L50 5Z" fill="white" stroke="#000" stroke-width="2"/>
+    <path d="M50 15 L80 32.5 V67.5 L50 85 L20 67.5 V32.5 L50 15Z" fill="#1a1a1a"/>
+    <path d="M65 35 H45 V65 H65 V55 H55 V45 H65 V35Z" fill="white"/>
 </svg>`;
 
 function renderList() {
     const main = el('v-home'); if(!main) return;
     main.innerHTML = `
-        <div class="brand-section">
-            ${LOGO_SVG}
-            <div class="mirror-wrapper">
-                <div class="text-main">CitiTool</div>
-                <div class="text-reflect">CitiTool</div>
+        <div class="brand-header">
+            ${SVG_LOGO}
+            <div class="mirror-title">
+                <div class="text-top">CitiTool</div>
+                <div class="text-bottom">CitiTool</div>
             </div>
         </div>
-        <div class="nav-bar">
+        <div class="nav-actions">
             <button class="btn-neu" onclick="modalP()">+ NEU</button>
         </div>
         <div id="list-p"></div>
     `;
     const list = el('list-p');
     list.innerHTML = db.map((p, i) => `
-        <div class="card" onclick="openProject(${i})">
+        <div class="neu-card" onclick="openProject(${i})">
             <div>
-                <div class="label">PROJEKT</div>
-                <div class="title">${p.num || '---'}</div>
-                <div style="font-size:13px; color:#666; margin-top:5px; font-weight:600;">${p.name || ''}</div>
+                <div class="p-label">PROJEKT</div>
+                <div class="p-title">${p.num || '---'}</div>
+                <div style="font-size:12px; color:#666; font-weight:700; margin-top:4px;">${p.name || ''}</div>
             </div>
-            <div class="btn-close" onclick="event.stopPropagation(); deleteProject(${i})">✕</div>
-        </div>`).join('') + '<div style="height:100px"></div>';
+            <div class="btn-del" onclick="event.stopPropagation(); deleteProject(${i})">✕</div>
+        </div>`).join('') + '<div style="height:120px"></div>';
 }
 
 function renderTools() {
@@ -119,16 +119,16 @@ function renderTools() {
     list.innerHTML = '';
     tools.forEach((t, i) => {
         const item = document.createElement('div');
-        item.className = 'card';
-        const rev = t.rev ? `<div style="font-size:10px; font-weight:900; color:#ff9500; margin-bottom:6px;">REVOLVER UNTEN</div>` : '';
+        item.className = 'neu-card';
+        const rev = t.rev ? `<div style="font-size:10px; font-weight:900; color:#ff9500; margin-bottom:5px;">REVOLVER UNTEN</div>` : '';
         item.innerHTML = `
             <div style="flex:1" onclick="modalT(${i})">
                 ${rev}
-                <div class="label">${t.id || 'T0000'}</div>
-                <div class="title" style="font-size:22px;">${t.nm || '---'}</div>
-                <div style="margin-top:6px; font-weight:800; color:var(--accent);">${t.dia || ''}</div>
+                <div class="p-label">${t.id || 'T0000'}</div>
+                <div class="p-title" style="font-size:21px;">${t.nm || '---'}</div>
+                <div style="margin-top:5px; font-weight:800; color:var(--accent);">${t.dia || ''}</div>
             </div>
-            <div class="arrows">
+            <div class="arrow-box">
                 <button class="btn-arrow ${i === 0 ? 'disabled' : ''}" onclick="event.stopPropagation(); moveItem(${i}, -1)">↑</button>
                 <button class="btn-arrow ${i === tools.length - 1 ? 'disabled' : ''}" onclick="event.stopPropagation(); moveItem(${i}, 1)">↓</button>
             </div>`;
