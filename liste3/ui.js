@@ -14,77 +14,82 @@ const injectStyles = () => {
         }
         body { 
             background: var(--bg) !important; 
-            font-family: -apple-system, sans-serif !important; 
-            margin: 0; padding-bottom: 80px; color: var(--text);
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif !important; 
+            margin: 0; padding-bottom: 120px; color: var(--text);
         }
 
-        /* Премиальный логотип и заголовок */
+        /* Тот самый правильный логотип */
         .brand-header {
-            padding: 50px 0 30px 0;
+            padding: 50px 0 20px 0;
             display: flex; flex-direction: column; align-items: center;
         }
         .logo-svg {
-            width: 70px; height: 70px; margin-bottom: 10px;
-            filter: drop-shadow(4px 4px 10px var(--neu-shadow));
+            width: 85px; height: 85px; margin-bottom: 10px;
+            filter: drop-shadow(4px 6px 10px rgba(0,0,0,0.15));
         }
+        
+        /* Дорогое зеркальное отражение */
         .mirror-title { position: relative; text-align: center; }
         .text-top {
-            font-size: 54px; font-weight: 900; letter-spacing: -2.5px;
+            font-size: 58px; font-weight: 900; letter-spacing: -3px;
             color: var(--text); position: relative; z-index: 2;
         }
         .text-bottom {
-            font-size: 54px; font-weight: 900; letter-spacing: -2.5px;
-            margin-top: -24px; transform: scaleY(-1);
+            font-size: 58px; font-weight: 900; letter-spacing: -3px;
+            margin-top: -26px; transform: scaleY(-1);
             background: linear-gradient(to bottom, rgba(0,0,0,0.2) 0%, rgba(245,247,250,1) 85%);
             -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-            opacity: 0.35; user-select: none;
+            opacity: 0.3; user-select: none;
         }
 
-        /* Управление */
-        .nav-actions { display: flex; justify-content: flex-end; padding: 0 25px; margin-bottom: 15px; }
+        /* Кнопка + NEU справа */
+        .nav-actions { display: flex; justify-content: flex-end; padding: 0 25px; margin: 10px 0 20px 0; }
         .btn-neu {
             background: var(--bg); border: none; border-radius: 14px;
-            padding: 10px 20px; font-size: 14px; font-weight: 800; color: var(--accent);
-            box-shadow: 5px 5px 12px var(--neu-shadow), -5px -5px 12px var(--neu-light);
+            padding: 10px 22px; font-size: 14px; font-weight: 800; color: var(--accent);
+            box-shadow: 6px 6px 12px var(--neu-shadow), -6px -6px 12px var(--neu-light);
+            cursor: pointer;
         }
         .btn-neu:active { box-shadow: inset 3px 3px 6px var(--neu-shadow), inset -3px -3px 6px var(--neu-light); }
 
-        /* Карточки */
+        /* Карточки Neumorphism */
         .neu-card {
-            background: var(--bg); border-radius: 28px; padding: 25px;
+            background: var(--bg); border-radius: 30px; padding: 25px;
             margin: 15px 20px; box-shadow: 10px 10px 20px var(--neu-shadow), -10px -10px 20px var(--neu-light);
             display: flex; align-items: center; justify-content: space-between;
+            border: 1px solid rgba(255,255,255,0.6);
         }
         .p-label { font-size: 10px; font-weight: 800; color: #99a1ad; text-transform: uppercase; letter-spacing: 1px; }
-        .p-title { font-size: 24px; font-weight: 900; color: #000; }
+        .p-title { font-size: 26px; font-weight: 900; color: #000; }
 
-        /* Стрелки */
+        /* Компактные стрелки */
         .arrow-box { display: flex; flex-direction: column; gap: 8px; }
         .btn-arrow {
-            width: 38px; height: 32px; background: var(--bg); border: none; border-radius: 9px;
+            width: 40px; height: 34px; background: var(--bg); border: none; border-radius: 10px;
             box-shadow: 4px 4px 8px var(--neu-shadow), -4px -4px 8px var(--neu-light);
             color: var(--accent); font-weight: 900; display: flex; align-items: center; justify-content: center;
         }
-        .btn-arrow:active { box-shadow: inset 2px 2px 4px var(--neu-shadow), inset -2px -2px 4px var(--neu-light); }
         .btn-arrow.disabled { opacity: 0; pointer-events: none; }
 
-        .btn-del { color: #ff3b30; font-size: 19px; font-weight: 900; padding: 10px; }
+        .btn-del { color: #ff3b30; font-size: 20px; font-weight: 900; padding: 10px; cursor: pointer; }
     `;
     document.head.appendChild(style);
 };
+
+// SVG Логотип по твоему референсу (разорванный шестиугольник)
+const SVG_LOGO = `
+<svg class="logo-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <path d="M48 10 L25 23 L25 77 L48 90 L15 71 L15 29 L48 10Z" fill="#1a1a1a"/>
+    <path d="M25 23 L50 9 L55 12 L30 26 Z" fill="#1a1a1a"/>
+    <path d="M25 77 L50 91 L55 88 L30 74 Z" fill="#1a1a1a"/>
+    <path d="M60 15 L90 32 L90 45 L60 28 Z" fill="#1a1a1a"/>
+    <path d="M60 85 L90 68 L90 55 L60 72 Z" fill="#1a1a1a"/>
+</svg>`;
 
 const el = (id) => document.getElementById(id);
 const show = (id) => { if(el(id)) el(id).style.display = 'block'; };
 const hide = (id) => { if(el(id)) el(id).style.display = 'none'; };
 const save = () => localStorage.setItem(DB_KEY, JSON.stringify(db));
-
-// SVG Логотип (Шестиугольник с вырезом 'C')
-const SVG_LOGO = `
-<svg class="logo-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-    <path d="M50 5 L90 27.5 V72.5 L50 95 L10 72.5 V27.5 L50 5Z" fill="white" stroke="#000" stroke-width="2"/>
-    <path d="M50 15 L80 32.5 V67.5 L50 85 L20 67.5 V32.5 L50 15Z" fill="#1a1a1a"/>
-    <path d="M65 35 H45 V65 H65 V55 H55 V45 H65 V35Z" fill="white"/>
-</svg>`;
 
 function renderList() {
     const main = el('v-home'); if(!main) return;
@@ -107,7 +112,7 @@ function renderList() {
             <div>
                 <div class="p-label">PROJEKT</div>
                 <div class="p-title">${p.num || '---'}</div>
-                <div style="font-size:12px; color:#666; font-weight:700; margin-top:4px;">${p.name || ''}</div>
+                <div style="font-size:13px; color:#666; font-weight:700; margin-top:5px;">${p.name || ''}</div>
             </div>
             <div class="btn-del" onclick="event.stopPropagation(); deleteProject(${i})">✕</div>
         </div>`).join('') + '<div style="height:120px"></div>';
@@ -125,8 +130,8 @@ function renderTools() {
             <div style="flex:1" onclick="modalT(${i})">
                 ${rev}
                 <div class="p-label">${t.id || 'T0000'}</div>
-                <div class="p-title" style="font-size:21px;">${t.nm || '---'}</div>
-                <div style="margin-top:5px; font-weight:800; color:var(--accent);">${t.dia || ''}</div>
+                <div class="p-title" style="font-size:22px;">${t.nm || '---'}</div>
+                <div style="margin-top:6px; font-weight:800; color:var(--accent);">${t.dia || ''}</div>
             </div>
             <div class="arrow-box">
                 <button class="btn-arrow ${i === 0 ? 'disabled' : ''}" onclick="event.stopPropagation(); moveItem(${i}, -1)">↑</button>
