@@ -6,69 +6,77 @@ const injectStyles = () => {
     const style = document.createElement('style');
     style.innerHTML = `
         :root { 
-            --bg: #f8f9fb; 
-            --accent: #007aff; 
-            --text-main: #1c1c1e;
-            --text-sub: #8e8e93; 
-            --card-bg: #ffffff;
+            --bg: #f0f2f5; 
+            --neu-light: #ffffff;
+            --neu-shadow: #d1d9e6;
+            --accent: #007aff;
+            --text: #333;
         }
         body { 
             background: var(--bg) !important; 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important; 
-            margin: 0; color: var(--text-main);
+            font-family: -apple-system, sans-serif !important; 
+            margin: 0; color: var(--text);
         }
         
-        header {
-            background: rgba(255,255,255,0.85) !important;
-            backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
-            padding: 20px; position: sticky; top: 0; z-index: 100;
-            border-bottom: 0.5px solid rgba(0,0,0,0.05);
-        }
-        .header-title { font-weight: 800; font-size: 24px; letter-spacing: -0.8px; }
-
-        /* Карточки проектов на главной */
-        .project-card {
-            background: var(--card-bg);
-            border-radius: 24px;
-            margin: 0 20px 16px 20px;
+        /* Эффект Neumorphism для карточек */
+        .neu-card {
+            background: var(--bg);
+            border-radius: 20px;
             padding: 20px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+            margin: 15px 20px;
+            box-shadow: 9px 9px 16px var(--neu-shadow), -9px -9px 16px var(--neu-light);
             display: flex; align-items: center; justify-content: space-between;
-            border: 1px solid rgba(255,255,255,0.5);
-            transition: all 0.2s ease;
+            border: none;
         }
-        .project-card:active { transform: scale(0.98); background: #f2f2f7; }
-        
-        .p-info { display: flex; flex-direction: column; }
-        .p-label { font-size: 11px; font-weight: 700; color: var(--text-sub); text-transform: uppercase; margin-bottom: 4px; letter-spacing: 0.5px; }
-        .p-title { font-size: 24px; font-weight: 900; color: #000; letter-spacing: -0.5px; }
 
-        /* Список инструментов */
-        .tool-card {
-            background: #fff; border-radius: 18px;
-            padding: 14px 18px; margin: 0 16px 10px 16px;
-            display: flex; align-items: center; justify-content: space-between;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+        /* Вдавленный эффект для кнопок и инпутов */
+        .neu-inset {
+            background: var(--bg);
+            box-shadow: inset 3px 3px 6px var(--neu-shadow), inset -3px -3px 6px var(--neu-light);
+            border-radius: 12px;
+            border: none;
         }
-        .t-id-label { font-size: 10px; font-weight: 700; color: var(--text-sub); text-transform: uppercase; margin-bottom: 2px; }
-        .t-name-label { font-size: 18px; font-weight: 800; color: #000; line-height: 1.1; }
 
-        /* Компактные стрелки */
-        .order-controls { display: flex; flex-direction: column; gap: 4px; margin-left: 12px; }
+        .header-title { 
+            font-weight: 900; font-size: 28px; 
+            text-align: center; padding: 20px 0;
+            color: #1a1a1a; letter-spacing: -1px;
+        }
+
+        .p-label { font-size: 10px; font-weight: 800; color: #888; text-transform: uppercase; margin-bottom: 4px; }
+        .p-title { font-size: 22px; font-weight: 900; color: #000; }
+
+        /* Компактные стрелки управления */
+        .order-controls { display: flex; gap: 8px; }
         .btn-order {
-            background: #f2f2f7; border: none; border-radius: 6px;
-            width: 32px; height: 28px; display: flex; align-items: center; justify-content: center;
+            width: 32px; height: 32px;
+            display: flex; align-items: center; justify-content: center;
             font-size: 14px; font-weight: 900; color: var(--accent);
+            background: var(--bg);
+            border-radius: 8px;
+            box-shadow: 4px 4px 8px var(--neu-shadow), -4px -4px 8px var(--neu-light);
+            border: none;
         }
-        .btn-order:active { background: #e5e5ea; }
+        .btn-order:active {
+            box-shadow: inset 2px 2px 5px var(--neu-shadow), inset -2px -2px 5px var(--neu-light);
+        }
         .btn-order.disabled { opacity: 0; pointer-events: none; }
 
-        .btn-delete { color: #ff3b30; font-weight: 800; padding: 10px; font-size: 18px; }
-        .fab {
-            position: fixed; bottom: 30px; right: 20px;
-            background: var(--accent); color: #fff; width: 60px; height: 60px;
-            border-radius: 30px; display: flex; align-items: center; justify-content: center;
-            font-size: 30px; box-shadow: 0 8px 25px rgba(0,122,255,0.3); z-index: 1000;
+        .btn-add {
+            position: fixed; bottom: 30px; right: 25px;
+            width: 65px; height: 65px; border-radius: 50%;
+            background: var(--bg);
+            box-shadow: 6px 6px 12px var(--neu-shadow), -6px -6px 12px var(--neu-light);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 30px; color: var(--accent); font-weight: bold;
+            z-index: 1000; border: none;
+        }
+
+        /* Стили для модальных окон */
+        .modal-content {
+            background: var(--bg) !important;
+            border-radius: 30px !important;
+            box-shadow: 20px 20px 60px var(--neu-shadow), -20px -20px 60px var(--neu-light) !important;
         }
     `;
     document.head.appendChild(style);
@@ -79,23 +87,23 @@ const show = (id) => { const x = el(id); if(x) x.style.display = 'flex'; };
 const hide = (id) => { const x = el(id); if(x) x.style.display = 'none'; };
 const save = () => localStorage.setItem(DB_KEY, JSON.stringify(db));
 
-// --- ГЛАВНАЯ СТРАНИЦА ---
+// --- РЕНДЕР ГЛАВНОЙ ---
 function renderList() {
-    const header = document.querySelector('.header-title') || document.querySelector('h1');
-    if(header) header.innerText = 'CitiTool';
+    const h = document.querySelector('.header-title') || document.querySelector('h1');
+    if(h) h.innerText = 'ProCalc Elite'; // В стиле твоего скриншота
     
     const list = el('list-p'); if(!list) return;
     list.innerHTML = db.map((p, i) => `
-        <div class="project-card" onclick="openProject(${i})">
-            <div class="p-info">
-                <div class="p-label">${p.name || 'UNBENANNT'}</div>
+        <div class="neu-card" onclick="openProject(${i})">
+            <div>
+                <div class="p-label">${p.name || 'PROJEKT'}</div>
                 <div class="p-title">${p.num || '---'}</div>
             </div>
-            <div class="btn-delete" onclick="event.stopPropagation(); deleteProject(${i})">✕</div>
+            <div style="color:#ff3b30; font-weight:900; font-size:20px; padding:10px;" onclick="event.stopPropagation(); deleteProject(${i})">✕</div>
         </div>`).join('') + '<div style="height:120px"></div>';
 }
 
-// --- ИНСТРУМЕНТЫ ---
+// --- РЕНДЕР ИНСТРУМЕНТОВ ---
 function renderTools() {
     const list = el('list-t'); if(!list || currentIdx === null) return;
     const tools = db[currentIdx].tools || [];
@@ -103,15 +111,15 @@ function renderTools() {
     
     tools.forEach((t, i) => {
         const item = document.createElement('div');
-        item.className = 'tool-card';
-        const revMark = t.rev ? `<div style="background:#000; color:#fff; font-size:8px; padding:2px 7px; border-radius:4px; margin-bottom:5px; font-weight:900; width:fit-content;">REVOLVER UNTEN</div>` : '';
+        item.className = 'neu-card';
+        const revMark = t.rev ? `<div style="font-size:9px; font-weight:900; color:#555; margin-bottom:5px;">▼ REVOLVER UNTEN</div>` : '';
         
         item.innerHTML = `
-            <div style="flex:1; min-width:0;" onclick="modalT(${i})">
+            <div style="flex:1" onclick="modalT(${i})">
                 ${revMark}
-                <div class="t-id-label">${t.id || 'T0000'}</div>
-                <div class="t-name-label">${t.nm || '---'}</div>
-                <div style="margin-top:4px; font-weight:700; color:var(--accent); font-size:13px;">${t.dia || ''}</div>
+                <div class="p-label">${t.id || 'T0000'}</div>
+                <div class="p-title" style="font-size:19px;">${t.nm || '---'}</div>
+                <div style="margin-top:6px; font-weight:800; color:var(--accent);">${t.dia || ''}</div>
             </div>
             <div class="order-controls">
                 <button class="btn-order ${i === 0 ? 'disabled' : ''}" onclick="event.stopPropagation(); moveItem(${i}, -1)">↑</button>
@@ -119,7 +127,7 @@ function renderTools() {
             </div>`;
         list.appendChild(item);
     });
-    list.innerHTML += '<div style="height:180px"></div>';
+    list.innerHTML += '<div style="height:200px"></div>';
 }
 
 function moveItem(i, direction) {
@@ -131,21 +139,13 @@ function moveItem(i, direction) {
     }
 }
 
-// --- УПРАВЛЕНИЕ ---
-function openProject(i) { 
-    currentIdx = i; 
-    el('v-home').classList.remove('active'); 
-    el('v-det').classList.add('active'); 
-    el('h-num').innerText = db[i].num; 
-    el('h-nam').innerText = db[i].name; 
-    renderTools(); 
-}
-
+// --- СИСТЕМНЫЕ ФУНКЦИИ ---
+function openProject(i) { currentIdx = i; el('v-home').classList.remove('active'); el('v-det').classList.add('active'); el('h-num').innerText = db[i].num; el('h-nam').innerText = db[i].name; renderTools(); }
 function goHome() { currentIdx = null; el('v-home').classList.add('active'); el('v-det').classList.remove('active'); renderList(); }
 
 function modalP(edit = false) {
     if (!edit) currentIdx = null;
-    const p = (edit && currentIdx !== null && db[currentIdx]) ? db[currentIdx] : {num:'', name:'', lzf:'', sag:'', stt:'', stn:'', abs:'', grf:'', mat:''};
+    const p = (edit && db[currentIdx]) ? db[currentIdx] : {num:'', name:'', lzf:'', sag:'', stt:'', stn:'', abs:'', grf:'', mat:''};
     el('p-idx').value = edit ? currentIdx : '';
     el('p-num').value = p.num; el('p-nam').value = p.name;
     el('p-lzf').value = p.lzf; el('p-sag').value = p.sag;
@@ -157,7 +157,7 @@ function modalP(edit = false) {
 
 function saveP() {
     const idx = el('p-idx').value;
-    const data = {
+    const d = {
         num: el('p-num').value, name: el('p-nam').value.toUpperCase(),
         lzf: el('p-lzf').value, sag: el('p-sag').value,
         stt: el('p-stt').value, stn: el('p-stn').value,
@@ -165,7 +165,7 @@ function saveP() {
         mat: el('p-mat') ? el('p-mat').value.toUpperCase() : '',
         tools: (idx !== '' && db[idx]) ? (db[idx].tools || []) : []
     };
-    if (idx === '') db.push(data); else db[idx] = data;
+    if (idx === '') db.push(d); else db[idx] = d;
     save(); hide('m-p'); renderList();
 }
 
