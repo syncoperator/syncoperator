@@ -2,147 +2,91 @@ const DB_KEY = 'QS_DATA_V8';
 let db = JSON.parse(localStorage.getItem(DB_KEY)) || [];
 let currentIdx = null;
 
-// --- СИСТЕМА ДИЗАЙНА "CITITOOL PREMIUM STABLE" ---
 const injectStyles = () => {
     const style = document.createElement('style');
     style.innerHTML = `
-        :root {
-            --bg: #f2f2f7;
-            --surface: #ffffff;
-            --accent: #007aff;
-            --text-main: #1c1c1e;
-            --text-sub: #8e8e93;
-            --border: rgba(0,0,0,0.06);
-        }
+        :root { --bg: #f2f2f7; --accent: #007aff; --text-sub: #8e8e93; }
         body { 
             background: var(--bg) !important; 
-            font-family: -apple-system, BlinkMacSystemFont, sans-serif !important;
-            margin: 0; color: var(--text-main);
-            overflow-x: hidden;
-            -webkit-user-select: none; user-select: none; /* Блокируем выделение везде */
+            font-family: -apple-system, sans-serif !important;
+            margin: 0;
+            /* Полная блокировка системных выделений */
+            -webkit-user-select: none; user-select: none;
+            -webkit-touch-callout: none;
         }
-        input, textarea { -webkit-user-select: text; user-select: text; } /* Разрешаем только в полях */
-
-        header {
-            background: rgba(255,255,255,0.8) !important;
-            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-            border-bottom: 0.5px solid rgba(0,0,0,0.1);
-            padding: 16px 20px; position: sticky; top: 0; z-index: 1000;
-        }
-        .header-title { font-weight: 800; font-size: 22px; letter-spacing: -0.5px; }
+        input, textarea { -webkit-user-select: text; user-select: text; }
 
         .list-item {
-            background: var(--surface) !important;
-            border-radius: 20px !important;
-            padding: 18px !important;
-            margin: 0 16px 12px 16px !important;
+            background: #fff !important; border-radius: 20px !important;
+            padding: 18px !important; margin: 0 16px 12px 16px !important;
             box-shadow: 0 4px 12px rgba(0,0,0,0.03) !important;
             display: flex; align-items: center;
-            position: relative;
-            touch-action: none; /* Отключаем стандартные жесты браузера */
+            touch-action: none; position: relative;
         }
         
+        /* Состояние при активном перетаскивании */
         .list-item.dragging {
-            z-index: 9999;
-            transform: scale(1.03);
-            box-shadow: 0 15px 35px rgba(0,0,0,0.1) !important;
-            background: #fafafa !important;
-            opacity: 0.9;
+            background: #f0f7ff !important;
+            border: 1px solid var(--accent) !important;
+            z-index: 1000; scale: 1.02;
         }
 
         .handle {
-            padding: 15px 10px; margin-right: 5px;
-            color: #c7c7cc; font-size: 22px;
-            cursor: grab;
+            padding: 20px 15px 20px 10px; margin-right: 5px;
+            color: #c7c7cc; font-size: 24px;
+            cursor: move;
         }
 
-        .t-id-label { font-size: 11px; font-weight: 700; color: var(--text-sub); text-transform: uppercase; margin-bottom: 2px; }
-        .t-name-label { font-size: 19px; font-weight: 800; color: #000; line-height: 1.2; }
-        .t-dia-label { margin-top: 8px; font-weight: 700; color: var(--accent); font-size: 15px; }
-
-        .btn-main {
-            background: var(--accent); color: white; border: none;
-            border-radius: 14px; padding: 12px 24px; font-weight: 700;
-        }
+        .t-id-label { font-size: 11px; font-weight: 700; color: var(--text-sub); text-transform: uppercase; }
+        .t-name-label { font-size: 20px; font-weight: 800; color: #000; line-height: 1.2; }
     `;
     document.head.appendChild(style);
 };
 
-// --- УЛУЧШЕННЫЙ DRAG & DROP ДЛЯ МОБИЛОК ---
-let dragIdx = null;
+let dragActiveIdx = null;
 
-function initDrag(item, index) {
+function setupSorting(item, index) {
     const handle = item.querySelector('.handle');
     
-    const onTouchStart = (e) => {
-        dragIdx = index;
+    handle.addEventListener('touchstart', (e) => {
+        // Останавливаем выделение текста и прокрутку
+        dragActiveIdx = index;
         item.classList.add('dragging');
-        // Вибрация для отклика (если поддерживается)
-        if (window.navigator.vibrate) window.navigator.vibrate(10);
-    };
+        if (navigator.vibrate) navigator.vibrate(15);
+    }, { passive: false });
 
-    const onTouchMove = (e) => {
-        if (dragIdx === null) return;
-        e.preventDefault(); // Критично: отключаем скролл страницы
-        
+    handle.addEventListener('touchmove', (e) => {
+        if (dragActiveIdx === null) return;
+        e.preventDefault(); // Запрещаем скролл страницы во время движения
+
         const touch = e.touches[0];
         const target = document.elementFromPoint(touch.clientX, touch.clientY);
         const overItem = target?.closest('.list-item');
         
         if (overItem) {
             const overIdx = parseInt(overItem.getAttribute('data-idx'));
-            if (overIdx !== dragIdx) {
+            if (overIdx !== dragActiveIdx) {
                 const tools = db[currentIdx].tools;
-                const temp = tools[dragIdx];
-                tools[dragIdx] = tools[overIdx];
+                // Меняем местами в массиве
+                const temp = tools[dragActiveIdx];
+                tools[dragActiveIdx] = tools[overIdx];
                 tools[overIdx] = temp;
                 
-                dragIdx = overIdx; // Меняем текущий индекс
+                dragActiveIdx = overIdx; 
                 save();
-                renderTools(); // Мгновенно перерисовываем
+                renderTools(); // Перерисовываем список
             }
         }
-    };
+    }, { passive: false });
 
-    const onTouchEnd = () => {
-        dragIdx = null;
+    handle.addEventListener('touchend', () => {
+        dragActiveIdx = null;
         item.classList.remove('dragging');
         renderTools();
-    };
-
-    handle.addEventListener('touchstart', onTouchStart, { passive: false });
-    handle.addEventListener('touchmove', onTouchMove, { passive: false });
-    handle.addEventListener('touchend', onTouchEnd);
+    });
 }
 
-// --- ОСНОВНАЯ ЛОГИКА ПРИЛОЖЕНИЯ ---
 const save = () => localStorage.setItem(DB_KEY, JSON.stringify(db));
-
-function renderList() {
-    const t = document.querySelector('.header-title') || document.querySelector('h1');
-    if(t) t.innerText = 'CitiTool';
-    
-    const list = el('list-p'); if(!list) return;
-    list.innerHTML = db.map((p, i) => `
-        <div class="list-item" onclick="openProject(${i})">
-            <div style="flex:1">
-                <div class="t-id-label">${p.name || 'PROJEKT'}</div>
-                <div class="t-name-label" style="font-size:22px;">${p.num || '---'}</div>
-            </div>
-            <div style="color:#ff3b30; font-weight:900; padding:15px;" onclick="event.stopPropagation(); deleteProject(${i})">✕</div>
-        </div>`).join('') + '<div style="height:100px"></div>';
-}
-
-function openProject(i) {
-    if (db[i]) {
-        currentIdx = i;
-        el('v-home').classList.remove('active');
-        el('v-det').classList.add('active');
-        el('h-num').innerText = db[i].num;
-        el('h-nam').innerText = db[i].name;
-        renderTools();
-    }
-}
 
 function renderTools() {
     const list = el('list-t'); if(!list || currentIdx === null) return;
@@ -154,7 +98,7 @@ function renderTools() {
         item.className = 'list-item';
         item.setAttribute('data-idx', i);
         
-        const revMark = t.rev ? `<div style="background:#000; color:#fff; font-size:9px; padding:2px 8px; border-radius:6px; margin-bottom:6px; font-weight:800; width:fit-content;">REVOLVER UNTEN ↓</div>` : '';
+        const revMark = t.rev ? `<div style="background:#000; color:#fff; font-size:9px; padding:2px 8px; border-radius:6px; margin-bottom:6px; font-weight:800; width:fit-content;">REVOLVER UNTEN</div>` : '';
         
         item.innerHTML = `
             <div class="handle">☰</div>
@@ -162,16 +106,28 @@ function renderTools() {
                 ${revMark}
                 <div class="t-id-label">${t.id || 'T0000'}</div>
                 <div class="t-name-label">${t.nm || '---'}</div>
-                <div class="t-dia-label">${t.dia || ''}</div>
+                <div style="margin-top:5px; font-weight:700; color:var(--accent);">${t.dia || ''}</div>
             </div>`;
         
-        initDrag(item, i);
+        setupSorting(item, i);
         list.appendChild(item);
     });
-    list.innerHTML += '<div style="height:200px"></div>';
+    list.innerHTML += '<div style="height:150px"></div>';
 }
 
-// --- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ---
+// --- ОСТАЛЬНЫЕ ФУНКЦИИ (ГЛАВНАЯ, МОДАЛКИ, PDF) ---
+function renderList() {
+    const t = document.querySelector('.header-title') || document.querySelector('h1');
+    if(t) t.innerText = 'CitiTool';
+    const list = el('list-p'); if(!list) return;
+    list.innerHTML = db.map((p, i) => `
+        <div class="list-item" onclick="openProject(${i})">
+            <div style="flex:1"><div class="t-id-label">${p.name || 'PROJEKT'}</div><div class="t-name-label" style="font-size:22px;">${p.num || '---'}</div></div>
+            <div style="color:#ff3b30; font-weight:900; padding:10px;" onclick="event.stopPropagation(); deleteProject(${i})">✕</div>
+        </div>`).join('') + '<div style="height:100px"></div>';
+}
+
+function openProject(i) { currentIdx = i; el('v-home').classList.remove('active'); el('v-det').classList.add('active'); el('h-num').innerText = db[i].num; el('h-nam').innerText = db[i].name; renderTools(); }
 function goHome() { currentIdx = null; el('v-home').classList.add('active'); el('v-det').classList.remove('active'); renderList(); }
 const el = (id) => document.getElementById(id);
 const show = (id) => { if(el(id)) el(id).style.display = 'flex'; };
@@ -210,10 +166,7 @@ function modalT(i = null) {
     const t = edit ? db[currentIdx].tools[i] : {id:'', nm:'', dia:'', rev:false};
     el('t-id').value = t.id; el('t-nm').value = t.nm; el('t-dia').value = t.dia;
     const btn = el('btn-rev-toggle');
-    if(btn) {
-        t.rev ? btn.classList.add('on') : btn.classList.remove('on');
-        btn.onclick = () => btn.classList.toggle('on');
-    }
+    if(btn) { t.rev ? btn.classList.add('on') : btn.classList.remove('on'); btn.onclick = () => btn.classList.toggle('on'); }
     el('btn-del-t').style.display = edit ? 'block' : 'none';
     show('m-t');
 }
@@ -232,7 +185,6 @@ function delT() { const i = el('t-idx').value; db[currentIdx].tools.splice(i, 1)
 function exportJSON() { el('imp-area').value = JSON.stringify(db); el('imp-area').select(); alert("JSON kopiert!"); }
 function importJSON() { try { const parsed = JSON.parse(el('imp-area').value); if(Array.isArray(parsed)) { db = parsed; save(); renderList(); hide('m-imp'); } } catch(e) { alert("JSON-Fehler"); } }
 
-// --- PDF REPORT (НЕ ТРОГАЕМ) ---
 function makePDF() {
     const p = db[currentIdx];
     const getPageHead = () => `<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; min-height:90px;"><div style="display:flex; flex-direction:column; justify-content:center;"><div style="font-size:13px; font-weight:900; text-transform:uppercase; color:#666; margin-bottom:2px; line-height:1;">${p.name || ''}</div><div style="font-size:64px; font-weight:900; line-height:0.8; letter-spacing:-2px; margin:0;">${p.num || '---'}</div></div><div style="width:220px; font-size:11px; font-weight:800; line-height:1.5;"><div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>LAUFZEIT</span><span>${p.lzf || ''}</span></div><div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>MATERIAL</span><span>${p.mat || ''}</span></div><div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>SÄGELÄNGE</span><span>${p.sag || ''}</span></div><div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>ABSTAND</span><span>${p.abs || ''}</span></div><div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>GREIFBACKEN</span><span>${p.grf || ''}</span></div><div style="display:flex; justify-content:space-between;"><span>STÜCKZAHL</span><span>${p.stt || ''} / ${p.stn || ''}</span></div></div></div><div style="border-bottom:5px solid #000; margin-bottom:15px;"></div>`;
@@ -241,8 +193,7 @@ function makePDF() {
     let oben = [], unten = [], target = oben;
     (p.tools || []).forEach(t => { if(t.rev) target = unten; target.push(t); });
     let pdfHtml = `<!DOCTYPE html><html><head><style>@page { size: A4; margin: 0; } body { margin: 0; padding: 10mm; background: #fff; font-family: sans-serif; -webkit-print-color-adjust: exact; } .page { width: 210mm; height: 297mm; padding: 15mm; box-sizing: border-box; page-break-after: always; display: flex; flex-direction: column; } .content-border { border: 2.2px solid #000; padding: 20px; flex: 1; display: flex; flex-direction: column; box-sizing: border-box; } .footer { border-top: 1.2px solid #000; padding-top: 5px; font-size: 9px; font-weight: 800; text-align: center; color: #666; margin-top: auto; }</style></head><body><div class="page"><div class="content-border">${getPageHead()}<div style="flex:1;"><div style="margin-bottom:5px; font-size:18px; font-weight:900; text-transform:uppercase;">REVOLVER OBEN</div>${tableHead}${oben.map(getRow).join('')}</div><div class="footer">CITITOOL REPORT</div></div></div>${unten.length > 0 ? `<div class="page"><div class="content-border">${getPageHead()}<div style="flex:1;"><div style="margin-bottom:5px; font-size:18px; font-weight:900; text-transform:uppercase;">REVOLVER UNTEN</div>${tableHead}${unten.map(getRow).join('')}</div><div class="footer">CITITOOL REPORT</div></div></div>` : ''}<script>window.onload = function() { setTimeout(() => { window.print(); }, 400); };</script></body></html>`;
-    const win = window.open('', '_blank');
-    if (win) { win.document.write(pdfHtml); win.document.close(); }
+    const win = window.open('', '_blank'); if (win) { win.document.write(pdfHtml); win.document.close(); }
 }
 
 window.onload = () => { injectStyles(); renderList(); };
