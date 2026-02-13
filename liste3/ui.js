@@ -6,11 +6,7 @@ const injectStyles = () => {
     const style = document.createElement('style');
     style.innerHTML = `
         :root { --bg: #f2f2f7; --accent: #007aff; --text-sub: #8e8e93; }
-        body { 
-            background: var(--bg) !important; 
-            font-family: -apple-system, sans-serif !important;
-            margin: 0;
-        }
+        body { background: var(--bg) !important; font-family: -apple-system, sans-serif !important; margin: 0; }
         .list-item {
             background: #fff !important; border-radius: 20px !important;
             padding: 16px !important; margin: 0 16px 12px 16px !important;
@@ -19,13 +15,11 @@ const injectStyles = () => {
         }
         .t-id-label { font-size: 10px; font-weight: 700; color: var(--text-sub); text-transform: uppercase; }
         .t-name-label { font-size: 19px; font-weight: 800; color: #000; line-height: 1.2; }
-        
         .order-controls { display: flex; flex-direction: column; gap: 8px; margin-left: 15px; }
         .btn-order {
             background: #f2f2f7; border: none; border-radius: 8px;
-            width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
+            width: 38px; height: 38px; display: flex; align-items: center; justify-content: center;
             font-size: 18px; font-weight: bold; color: var(--accent);
-            -webkit-tap-highlight-color: transparent;
         }
         .btn-order:active { background: #e5e5ea; }
         .btn-order.disabled { opacity: 0; pointer-events: none; }
@@ -33,49 +27,12 @@ const injectStyles = () => {
     document.head.appendChild(style);
 };
 
+const el = (id) => document.getElementById(id);
+const show = (id) => { const x = el(id); if(x) x.style.display = 'flex'; };
+const hide = (id) => { const x = el(id); if(x) x.style.display = 'none'; };
 const save = () => localStorage.setItem(DB_KEY, JSON.stringify(db));
 
-function moveItem(i, direction) {
-    const tools = db[currentIdx].tools;
-    const target = i + direction;
-    if (target >= 0 && target < tools.length) {
-        const temp = tools[i];
-        tools[i] = tools[target];
-        tools[target] = temp;
-        save();
-        renderTools();
-    }
-}
-
-function renderTools() {
-    const list = el('list-t'); if(!list || currentIdx === null) return;
-    const tools = db[currentIdx].tools || [];
-    list.innerHTML = '';
-    
-    tools.forEach((t, i) => {
-        const item = document.createElement('div');
-        item.className = 'list-item';
-        
-        const revMark = t.rev ? `<div style="background:#000; color:#fff; font-size:8px; padding:2px 8px; border-radius:4px; margin-bottom:4px; font-weight:800; width:fit-content;">REVOLVER UNTEN</div>` : '';
-        
-        item.innerHTML = `
-            <div style="flex:1; min-width:0;" onclick="modalT(${i})">
-                ${revMark}
-                <div class="t-id-label">${t.id || 'T0000'}</div>
-                <div class="t-name-label">${t.nm || '---'}</div>
-                <div style="margin-top:4px; font-weight:700; color:var(--accent); font-size:14px;">${t.dia || ''}</div>
-            </div>
-            <div class="order-controls">
-                <button class="btn-order ${i === 0 ? 'disabled' : ''}" onclick="event.stopPropagation(); moveItem(${i}, -1)">↑</button>
-                <button class="btn-order ${i === tools.length - 1 ? 'disabled' : ''}" onclick="event.stopPropagation(); moveItem(${i}, 1)">↓</button>
-            </div>`;
-        
-        list.appendChild(item);
-    });
-    list.innerHTML += '<div style="height:150px"></div>';
-}
-
-// --- СТАНДАРТНЫЕ ФУНКЦИИ (БЕЗ ИЗМЕНЕНИЙ) ---
+// --- ПРОЕКТЫ ---
 function renderList() {
     const t = document.querySelector('.header-title') || document.querySelector('h1');
     if(t) t.innerText = 'CitiTool';
@@ -87,15 +44,9 @@ function renderList() {
         </div>`).join('') + '<div style="height:100px"></div>';
 }
 
-function openProject(i) { currentIdx = i; el('v-home').classList.remove('active'); el('v-det').classList.add('active'); el('h-num').innerText = db[i].num; el('h-nam').innerText = db[i].name; renderTools(); }
-function goHome() { currentIdx = null; el('v-home').classList.add('active'); el('v-det').classList.remove('active'); renderList(); }
-const el = (id) => document.getElementById(id);
-const show = (id) => { if(el(id)) el(id).style.display = 'flex'; };
-const hide = (id) => { if(el(id)) el(id).style.none = 'none'; };
-
 function modalP(edit = false) {
     if (!edit) currentIdx = null;
-    const p = (edit && db[currentIdx]) ? db[currentIdx] : {num:'', name:'', lzf:'', sag:'', stt:'', stn:'', abs:'', grf:'', mat:''};
+    const p = (edit && currentIdx !== null && db[currentIdx]) ? db[currentIdx] : {num:'', name:'', lzf:'', sag:'', stt:'', stn:'', abs:'', grf:'', mat:''};
     el('p-idx').value = edit ? currentIdx : '';
     el('p-num').value = p.num; el('p-nam').value = p.name;
     el('p-lzf').value = p.lzf; el('p-sag').value = p.sag;
@@ -115,9 +66,42 @@ function saveP() {
         mat: el('p-mat') ? el('p-mat').value.toUpperCase() : '',
         tools: (idx !== '' && db[idx]) ? (db[idx].tools || []) : []
     };
-    if (idx === '') { db.push(newP); currentIdx = db.length - 1; } else { db[idx] = newP; }
+    if (idx === '') { db.push(newP); } else { db[idx] = newP; }
     save(); hide('m-p'); renderList();
-    if(idx !== '') openProject(idx); else goHome();
+}
+
+// --- ИНСТРУМЕНТЫ ---
+function renderTools() {
+    const list = el('list-t'); if(!list || currentIdx === null) return;
+    const tools = db[currentIdx].tools || [];
+    list.innerHTML = '';
+    tools.forEach((t, i) => {
+        const item = document.createElement('div');
+        item.className = 'list-item';
+        const revMark = t.rev ? `<div style="background:#000; color:#fff; font-size:8px; padding:2px 8px; border-radius:4px; margin-bottom:4px; font-weight:800; width:fit-content;">REVOLVER UNTEN</div>` : '';
+        item.innerHTML = `
+            <div style="flex:1; min-width:0;" onclick="modalT(${i})">
+                ${revMark}
+                <div class="t-id-label">${t.id || 'T0000'}</div>
+                <div class="t-name-label">${t.nm || '---'}</div>
+                <div style="margin-top:4px; font-weight:700; color:var(--accent); font-size:14px;">${t.dia || ''}</div>
+            </div>
+            <div class="order-controls">
+                <button class="btn-order ${i === 0 ? 'disabled' : ''}" onclick="event.stopPropagation(); moveItem(${i}, -1)">↑</button>
+                <button class="btn-order ${i === tools.length - 1 ? 'disabled' : ''}" onclick="event.stopPropagation(); moveItem(${i}, 1)">↓</button>
+            </div>`;
+        list.appendChild(item);
+    });
+    list.innerHTML += '<div style="height:150px"></div>';
+}
+
+function moveItem(i, direction) {
+    const tools = db[currentIdx].tools;
+    const target = i + direction;
+    if (target >= 0 && target < tools.length) {
+        [tools[i], tools[target]] = [tools[target], tools[i]];
+        save(); renderTools();
+    }
 }
 
 function modalT(i = null) {
@@ -140,6 +124,9 @@ function saveT() {
     save(); renderTools(); hide('m-t');
 }
 
+// --- НАВИГАЦИЯ И СИСТЕМА ---
+function openProject(i) { currentIdx = i; el('v-home').classList.remove('active'); el('v-det').classList.add('active'); el('h-num').innerText = db[i].num; el('h-nam').innerText = db[i].name; renderTools(); }
+function goHome() { currentIdx = null; el('v-home').classList.add('active'); el('v-det').classList.remove('active'); renderList(); }
 function deleteProject(i) { if(confirm('Löschen?')) { db.splice(i, 1); save(); renderList(); } }
 function delT() { const i = el('t-idx').value; db[currentIdx].tools.splice(i, 1); save(); renderTools(); hide('m-t'); }
 function exportJSON() { el('imp-area').value = JSON.stringify(db); el('imp-area').select(); alert("JSON kopiert!"); }
