@@ -6,110 +6,70 @@ const injectStyles = () => {
     const style = document.createElement('style');
     style.innerHTML = `
         :root { 
-            --bg: #f2f4f7; 
+            --bg: #f4f7fa; 
             --neu-light: #ffffff;
-            --neu-shadow: #d1d9e6;
+            --neu-shadow: #cfd9e6;
             --accent: #007aff;
-            --text-main: #1a1a1a;
+            --text: #1c1c1e;
         }
         body { 
             background: var(--bg) !important; 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important; 
-            margin: 0; padding-bottom: 80px; color: var(--text-main);
+            font-family: -apple-system, system-ui, sans-serif !important; 
+            margin: 0; padding-bottom: 100px; color: var(--text);
         }
 
-        /* Дорогой зеркальный заголовок */
-        .header-container {
-            padding: 50px 0 30px 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
+        /* Логотип и Зеркальный заголовок */
+        .brand-section {
+            padding: 60px 0 40px 0;
+            display: flex; flex-direction: column; align-items: center;
         }
-        .mirror-box {
-            position: relative;
-            line-height: 1;
-            text-align: center;
+        .logo-icon {
+            width: 50px; height: 50px; margin-bottom: 10px;
+            filter: drop-shadow(4px 4px 8px var(--neu-shadow));
         }
-        .mirror-main {
-            font-size: 52px;
-            font-weight: 900;
-            letter-spacing: -2px;
-            color: var(--text-main);
-            position: relative;
-            z-index: 2;
+        .mirror-wrapper { position: relative; text-align: center; line-height: 1; }
+        .text-main {
+            font-size: 56px; font-weight: 900; letter-spacing: -3px;
+            color: var(--text); position: relative; z-index: 2;
         }
-        .mirror-reflect {
-            font-size: 52px;
-            font-weight: 900;
-            letter-spacing: -2px;
-            margin-top: -22px;
-            transform: scaleY(-1);
-            background: linear-gradient(to bottom, rgba(0,0,0,0.25) 0%, rgba(242,244,247,1) 85%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            opacity: 0.4;
-            user-select: none;
+        .text-reflect {
+            font-size: 56px; font-weight: 900; letter-spacing: -3px;
+            margin-top: -24px; transform: scaleY(-1);
+            background: linear-gradient(to bottom, rgba(0,0,0,0.2) 0%, rgba(244,247,250,1) 90%);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            opacity: 0.3; user-select: none;
         }
 
-        /* Кнопка + NEU справа */
-        .top-controls {
-            display: flex;
-            justify-content: flex-end;
-            padding: 0 25px;
-            margin-bottom: 10px;
-        }
+        /* Контролы */
+        .nav-bar { display: flex; justify-content: flex-end; padding: 0 25px; margin-bottom: 20px; }
         .btn-neu {
-            background: var(--bg);
-            border: none;
-            border-radius: 14px;
-            padding: 10px 18px;
-            font-size: 13px;
-            font-weight: 800;
-            color: var(--accent);
-            box-shadow: 5px 5px 10px var(--neu-shadow), -5px -5px 10px var(--neu-light);
-            transition: all 0.2s ease;
+            background: var(--bg); border: none; border-radius: 16px;
+            padding: 12px 24px; font-size: 14px; font-weight: 800; color: var(--accent);
+            box-shadow: 6px 6px 12px var(--neu-shadow), -6px -6px 12px var(--neu-light);
         }
-        .btn-neu:active {
-            box-shadow: inset 2px 2px 5px var(--neu-shadow), inset -2px -2px 5px var(--neu-light);
-            transform: scale(0.98);
+        .btn-neu:active { box-shadow: inset 3px 3px 6px var(--neu-shadow), inset -3px -3px 6px var(--neu-light); }
+
+        /* Карточки */
+        .card {
+            background: var(--bg); border-radius: 30px; padding: 25px;
+            margin: 20px; box-shadow: 12px 12px 24px var(--neu-shadow), -12px -12px 24px var(--neu-light);
+            display: flex; align-items: center; justify-content: space-between;
+            border: 1px solid rgba(255,255,255,0.5);
         }
+        .label { font-size: 11px; font-weight: 800; color: #a1a1a6; text-transform: uppercase; letter-spacing: 1px; }
+        .title { font-size: 26px; font-weight: 900; color: #000; margin-top: 4px; }
 
-        /* Карточки проектов и инструментов */
-        .neu-card {
-            background: var(--bg);
-            border-radius: 28px;
-            padding: 24px;
-            margin: 15px 20px;
-            box-shadow: 10px 10px 20px var(--neu-shadow), -10px -10px 20px var(--neu-light);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            border: 1px solid rgba(255,255,255,0.4);
+        /* Стрелки */
+        .arrows { display: flex; flex-direction: column; gap: 8px; }
+        .btn-arrow {
+            width: 40px; height: 34px; background: var(--bg); border: none; border-radius: 10px;
+            box-shadow: 4px 4px 8px var(--neu-shadow), -4px -4px 8px var(--neu-light);
+            color: var(--accent); font-weight: 900; display: flex; align-items: center; justify-content: center;
         }
+        .btn-arrow:active { box-shadow: inset 2px 2px 4px var(--neu-shadow), inset -2px -2px 4px var(--neu-light); }
+        .btn-arrow.disabled { opacity: 0; pointer-events: none; }
 
-        .p-label { font-size: 10px; font-weight: 800; color: #99a1ad; text-transform: uppercase; letter-spacing: 0.5px; }
-        .p-title { font-size: 24px; font-weight: 900; color: #000; margin-top: 2px; }
-
-        /* Компактные кнопки перемещения */
-        .order-wrap { display: flex; flex-direction: column; gap: 6px; }
-        .btn-move {
-            width: 36px; height: 32px;
-            background: var(--bg);
-            border-radius: 10px;
-            border: none;
-            box-shadow: 3px 3px 6px var(--neu-shadow), -3px -3px 6px var(--neu-light);
-            color: var(--accent);
-            font-size: 14px; font-weight: 900;
-            display: flex; align-items: center; justify-content: center;
-        }
-        .btn-move:active { box-shadow: inset 2px 2px 4px var(--neu-shadow), inset -2px -2px 4px var(--neu-light); }
-        .btn-move.disabled { opacity: 0; pointer-events: none; }
-
-        .btn-del { color: #ff3b30; font-size: 18px; font-weight: 900; padding: 10px; }
-        
-        /* Фикс отступа снизу для скролла */
-        .spacer { height: 120px; width: 100%; }
+        .btn-close { color: #ff3b30; font-size: 20px; font-weight: 900; padding: 10px; }
     `;
     document.head.appendChild(style);
 };
@@ -119,61 +79,62 @@ const show = (id) => { if(el(id)) el(id).style.display = 'block'; };
 const hide = (id) => { if(el(id)) el(id).style.display = 'none'; };
 const save = () => localStorage.setItem(DB_KEY, JSON.stringify(db));
 
-// --- ГЛАВНЫЙ ЭКРАН ---
+const LOGO_SVG = `
+<svg class="logo-icon" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M30 20H70L90 50L70 80H30L10 50L30 20Z" fill="white"/>
+    <path d="M35 30H65L78 50L65 70H35L22 50L35 30Z" fill="#007aff"/>
+    <path d="M45 40H55V60H45V40Z" fill="white"/>
+</svg>`;
+
 function renderList() {
-    const main = el('v-home');
-    if(!main) return;
-    
+    const main = el('v-home'); if(!main) return;
     main.innerHTML = `
-        <div class="header-container">
-            <div class="mirror-box">
-                <div class="mirror-main">CitiTool</div>
-                <div class="mirror-reflect">CitiTool</div>
+        <div class="brand-section">
+            ${LOGO_SVG}
+            <div class="mirror-wrapper">
+                <div class="text-main">CitiTool</div>
+                <div class="text-reflect">CitiTool</div>
             </div>
         </div>
-        <div class="top-controls">
+        <div class="nav-bar">
             <button class="btn-neu" onclick="modalP()">+ NEU</button>
         </div>
         <div id="list-p"></div>
     `;
-    
     const list = el('list-p');
     list.innerHTML = db.map((p, i) => `
-        <div class="neu-card" onclick="openProject(${i})">
+        <div class="card" onclick="openProject(${i})">
             <div>
-                <div class="p-label">PROJEKT</div>
-                <div class="p-title">${p.num || '---'}</div>
-                <div style="font-size:12px; color:#666; font-weight:600; margin-top:4px;">${p.name || ''}</div>
+                <div class="label">PROJEKT</div>
+                <div class="title">${p.num || '---'}</div>
+                <div style="font-size:13px; color:#666; margin-top:5px; font-weight:600;">${p.name || ''}</div>
             </div>
-            <div class="btn-del" onclick="event.stopPropagation(); deleteProject(${i})">✕</div>
-        </div>`).join('') + '<div class="spacer"></div>';
+            <div class="btn-close" onclick="event.stopPropagation(); deleteProject(${i})">✕</div>
+        </div>`).join('') + '<div style="height:100px"></div>';
 }
 
-// --- СПИСОК ИНСТРУМЕНТОВ ---
 function renderTools() {
     const list = el('list-t'); if(!list || currentIdx === null) return;
     const tools = db[currentIdx].tools || [];
     list.innerHTML = '';
-    
     tools.forEach((t, i) => {
         const item = document.createElement('div');
-        item.className = 'neu-card';
-        const revMark = t.rev ? `<div style="font-size:9px; font-weight:900; color:#ff9500; margin-bottom:4px;">REVOLVER UNTEN</div>` : '';
-        
+        item.className = 'card';
+        const rev = t.rev ? `<div style="font-size:10px; font-weight:900; color:#ff9500; margin-bottom:6px;">REVOLVER UNTEN</div>` : '';
         item.innerHTML = `
             <div style="flex:1" onclick="modalT(${i})">
-                ${revMark}
-                <div class="p-label">${t.id || 'T0000'}</div>
-                <div class="p-title" style="font-size:20px;">${t.nm || '---'}</div>
-                <div style="margin-top:5px; font-weight:800; color:var(--accent); font-size:14px;">${t.dia || ''}</div>
+                ${rev}
+                <div class="label">${t.id || 'T0000'}</div>
+                <div class="title" style="font-size:22px;">${t.nm || '---'}</div>
+                <div style="margin-top:6px; font-weight:800; color:var(--accent);">${t.dia || ''}</div>
             </div>
-            <div class="order-wrap">
-                <button class="btn-move ${i === 0 ? 'disabled' : ''}" onclick="event.stopPropagation(); moveItem(${i}, -1)">↑</button>
-                <button class="btn-move ${i === tools.length - 1 ? 'disabled' : ''}" onclick="event.stopPropagation(); moveItem(${i}, 1)">↓</button>
+            <div class="arrows">
+                <button class="btn-arrow ${i === 0 ? 'disabled' : ''}" onclick="event.stopPropagation(); moveItem(${i}, -1)">↑</button>
+                <button class="btn-arrow ${i === tools.length - 1 ? 'disabled' : ''}" onclick="event.stopPropagation(); moveItem(${i}, 1)">↓</button>
             </div>`;
         list.appendChild(item);
     });
-    list.innerHTML += '<div class="spacer"></div>';
+    list.innerHTML += '<div style="height:150px"></div>';
 }
 
 function moveItem(i, direction) {
@@ -185,24 +146,9 @@ function moveItem(i, direction) {
     }
 }
 
-// --- НАВИГАЦИЯ ---
-function openProject(i) { 
-    currentIdx = i; 
-    el('v-home').style.display='none'; 
-    el('v-det').style.display='block'; 
-    el('h-num').innerText = db[i].num; 
-    el('h-nam').innerText = db[i].name; 
-    renderTools(); 
-}
+function openProject(i) { currentIdx = i; el('v-home').style.display='none'; el('v-det').style.display='block'; el('h-num').innerText = db[i].num; el('h-nam').innerText = db[i].name; renderTools(); }
+function goHome() { currentIdx = null; el('v-home').style.display='block'; el('v-det').style.display='none'; renderList(); }
 
-function goHome() { 
-    currentIdx = null; 
-    el('v-home').style.display='block'; 
-    el('v-det').style.display='none'; 
-    renderList(); 
-}
-
-// --- МОДАЛЬНЫЕ ОКНА ---
 function modalP(edit = false) {
     if (!edit) currentIdx = null;
     const p = (edit && db[currentIdx]) ? db[currentIdx] : {num:'', name:'', lzf:'', sag:'', stt:'', stn:'', abs:'', grf:'', mat:''};
@@ -235,10 +181,7 @@ function modalT(i = null) {
     const t = edit ? db[currentIdx].tools[i] : {id:'', nm:'', dia:'', rev:false};
     el('t-id').value = t.id; el('t-nm').value = t.nm; el('t-dia').value = t.dia;
     const btn = el('btn-rev-toggle');
-    if(btn) { 
-        t.rev ? btn.classList.add('on') : btn.classList.remove('on'); 
-        btn.onclick = () => btn.classList.toggle('on'); 
-    }
+    if(btn) { t.rev ? btn.classList.add('on') : btn.classList.remove('on'); btn.onclick = () => btn.classList.toggle('on'); }
     el('btn-del-t').style.display = edit ? 'block' : 'none';
     show('m-t');
 }
@@ -246,12 +189,7 @@ function modalT(i = null) {
 function saveT() {
     const i = el('t-idx').value;
     const btn = el('btn-rev-toggle');
-    const t = { 
-        id: el('t-id').value.toUpperCase(), 
-        nm: el('t-nm').value.toUpperCase(), 
-        dia: el('t-dia').value, 
-        rev: btn ? btn.classList.contains('on') : false 
-    };
+    const t = { id: el('t-id').value.toUpperCase(), nm: el('t-nm').value.toUpperCase(), dia: el('t-dia').value, rev: btn ? btn.classList.contains('on') : false };
     if(!db[currentIdx].tools) db[currentIdx].tools = [];
     if(i === '') db[currentIdx].tools.push(t); else db[currentIdx].tools[i] = t;
     save(); renderTools(); hide('m-t');
@@ -260,7 +198,6 @@ function saveT() {
 function deleteProject(i) { if(confirm('Löschen?')) { db.splice(i, 1); save(); renderList(); } }
 function delT() { const i = el('t-idx').value; db[currentIdx].tools.splice(i, 1); save(); renderTools(); hide('m-t'); }
 
-// --- PDF REPORT ---
 function makePDF() {
     const p = db[currentIdx];
     const getPageHead = () => `<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; min-height:90px;"><div style="display:flex; flex-direction:column; justify-content:center;"><div style="font-size:13px; font-weight:900; text-transform:uppercase; color:#666; margin-bottom:2px; line-height:1;">${p.name || ''}</div><div style="font-size:64px; font-weight:900; line-height:0.8; letter-spacing:-2px; margin:0;">${p.num || '---'}</div></div><div style="width:220px; font-size:11px; font-weight:800; line-height:1.5;"><div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>LAUFZEIT</span><span>${p.lzf || ''}</span></div><div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>MATERIAL</span><span>${p.mat || ''}</span></div><div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>SÄGELÄNGE</span><span>${p.sag || ''}</span></div><div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>ABSTAND</span><span>${p.abs || ''}</span></div><div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>GREIFBACKEN</span><span>${p.grf || ''}</span></div><div style="display:flex; justify-content:space-between;"><span>STÜCKZAHL</span><span>${p.stt || ''} / ${p.stn || ''}</span></div></div></div><div style="border-bottom:5px solid #000; margin-bottom:15px;"></div>`;
