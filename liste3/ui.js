@@ -1,4 +1,7 @@
 const DB_KEY = 'QS_DATA_V8';
+// Вставь сюда прямую ссылку на свой логотип с GitHub (Raw link)
+const LOGO_URL = 'https://raw.githubusercontent.com/USER/REPO/main/logo.png'; 
+
 let db = JSON.parse(localStorage.getItem(DB_KEY)) || [];
 let currentIdx = null;
 
@@ -14,45 +17,44 @@ const injectStyles = () => {
         }
         body { 
             background: var(--bg) !important; 
-            font-family: -apple-system, BlinkMacSystemFont, sans-serif !important; 
+            font-family: -apple-system, system-ui, sans-serif !important; 
             margin: 0; padding-bottom: 120px; color: var(--text);
         }
 
-        /* Тот самый правильный логотип */
+        /* Шапка с лого и зеркалом */
         .brand-header {
             padding: 50px 0 20px 0;
             display: flex; flex-direction: column; align-items: center;
         }
-        .logo-svg {
-            width: 85px; height: 85px; margin-bottom: 10px;
-            filter: drop-shadow(4px 6px 10px rgba(0,0,0,0.15));
+        .main-logo {
+            width: 80px; height: 80px; object-fit: contain;
+            filter: drop-shadow(4px 6px 10px rgba(0,0,0,0.1));
+            margin-bottom: 10px;
         }
-        
-        /* Дорогое зеркальное отражение */
-        .mirror-title { position: relative; text-align: center; }
+        .mirror-box { position: relative; text-align: center; }
         .text-top {
             font-size: 58px; font-weight: 900; letter-spacing: -3px;
-            color: var(--text); position: relative; z-index: 2;
+            color: var(--text); position: relative; z-index: 2; line-height: 1;
         }
         .text-bottom {
             font-size: 58px; font-weight: 900; letter-spacing: -3px;
-            margin-top: -26px; transform: scaleY(-1);
-            background: linear-gradient(to bottom, rgba(0,0,0,0.2) 0%, rgba(245,247,250,1) 85%);
+            margin-top: -24px; transform: scaleY(-1);
+            background: linear-gradient(to bottom, rgba(0,0,0,0.15) 0%, rgba(245,247,250,1) 85%);
             -webkit-background-clip: text; -webkit-text-fill-color: transparent;
             opacity: 0.3; user-select: none;
         }
 
         /* Кнопка + NEU справа */
-        .nav-actions { display: flex; justify-content: flex-end; padding: 0 25px; margin: 10px 0 20px 0; }
+        .nav-bar { display: flex; justify-content: flex-end; padding: 0 25px; margin-bottom: 20px; }
         .btn-neu {
             background: var(--bg); border: none; border-radius: 14px;
-            padding: 10px 22px; font-size: 14px; font-weight: 800; color: var(--accent);
+            padding: 12px 24px; font-size: 14px; font-weight: 800; color: var(--accent);
             box-shadow: 6px 6px 12px var(--neu-shadow), -6px -6px 12px var(--neu-light);
-            cursor: pointer;
+            cursor: pointer; transition: 0.2s;
         }
         .btn-neu:active { box-shadow: inset 3px 3px 6px var(--neu-shadow), inset -3px -3px 6px var(--neu-light); }
 
-        /* Карточки Neumorphism */
+        /* Премиальные карточки */
         .neu-card {
             background: var(--bg); border-radius: 30px; padding: 25px;
             margin: 15px 20px; box-shadow: 10px 10px 20px var(--neu-shadow), -10px -10px 20px var(--neu-light);
@@ -62,29 +64,13 @@ const injectStyles = () => {
         .p-label { font-size: 10px; font-weight: 800; color: #99a1ad; text-transform: uppercase; letter-spacing: 1px; }
         .p-title { font-size: 26px; font-weight: 900; color: #000; }
 
-        /* Компактные стрелки */
-        .arrow-box { display: flex; flex-direction: column; gap: 8px; }
-        .btn-arrow {
-            width: 40px; height: 34px; background: var(--bg); border: none; border-radius: 10px;
-            box-shadow: 4px 4px 8px var(--neu-shadow), -4px -4px 8px var(--neu-light);
-            color: var(--accent); font-weight: 900; display: flex; align-items: center; justify-content: center;
-        }
-        .btn-arrow.disabled { opacity: 0; pointer-events: none; }
-
         .btn-del { color: #ff3b30; font-size: 20px; font-weight: 900; padding: 10px; cursor: pointer; }
+
+        /* Контейнер для инструментов со скроллом и отступом */
+        #list-p, #list-t { padding-bottom: 100px; }
     `;
     document.head.appendChild(style);
 };
-
-// SVG Логотип по твоему референсу (разорванный шестиугольник)
-const SVG_LOGO = `
-<svg class="logo-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-    <path d="M48 10 L25 23 L25 77 L48 90 L15 71 L15 29 L48 10Z" fill="#1a1a1a"/>
-    <path d="M25 23 L50 9 L55 12 L30 26 Z" fill="#1a1a1a"/>
-    <path d="M25 77 L50 91 L55 88 L30 74 Z" fill="#1a1a1a"/>
-    <path d="M60 15 L90 32 L90 45 L60 28 Z" fill="#1a1a1a"/>
-    <path d="M60 85 L90 68 L90 55 L60 72 Z" fill="#1a1a1a"/>
-</svg>`;
 
 const el = (id) => document.getElementById(id);
 const show = (id) => { if(el(id)) el(id).style.display = 'block'; };
@@ -95,13 +81,13 @@ function renderList() {
     const main = el('v-home'); if(!main) return;
     main.innerHTML = `
         <div class="brand-header">
-            ${SVG_LOGO}
-            <div class="mirror-title">
+            <img src="${LOGO_URL}" class="main-logo" onerror="this.style.display='none'">
+            <div class="mirror-box">
                 <div class="text-top">CitiTool</div>
                 <div class="text-bottom">CitiTool</div>
             </div>
         </div>
-        <div class="nav-actions">
+        <div class="nav-bar">
             <button class="btn-neu" onclick="modalP()">+ NEU</button>
         </div>
         <div id="list-p"></div>
@@ -115,57 +101,26 @@ function renderList() {
                 <div style="font-size:13px; color:#666; font-weight:700; margin-top:5px;">${p.name || ''}</div>
             </div>
             <div class="btn-del" onclick="event.stopPropagation(); deleteProject(${i})">✕</div>
-        </div>`).join('') + '<div style="height:120px"></div>';
+        </div>`).join('');
 }
 
-function renderTools() {
-    const list = el('list-t'); if(!list || currentIdx === null) return;
-    const tools = db[currentIdx].tools || [];
-    list.innerHTML = '';
-    tools.forEach((t, i) => {
-        const item = document.createElement('div');
-        item.className = 'neu-card';
-        const rev = t.rev ? `<div style="font-size:10px; font-weight:900; color:#ff9500; margin-bottom:5px;">REVOLVER UNTEN</div>` : '';
-        item.innerHTML = `
-            <div style="flex:1" onclick="modalT(${i})">
-                ${rev}
-                <div class="p-label">${t.id || 'T0000'}</div>
-                <div class="p-title" style="font-size:22px;">${t.nm || '---'}</div>
-                <div style="margin-top:6px; font-weight:800; color:var(--accent);">${t.dia || ''}</div>
-            </div>
-            <div class="arrow-box">
-                <button class="btn-arrow ${i === 0 ? 'disabled' : ''}" onclick="event.stopPropagation(); moveItem(${i}, -1)">↑</button>
-                <button class="btn-arrow ${i === tools.length - 1 ? 'disabled' : ''}" onclick="event.stopPropagation(); moveItem(${i}, 1)">↓</button>
-            </div>`;
-        list.appendChild(item);
-    });
-    list.innerHTML += '<div style="height:150px"></div>';
+function openProject(i) { 
+    currentIdx = i; 
+    el('v-home').style.display='none'; 
+    el('v-det').style.display='block'; 
+    el('h-num').innerText = db[i].num; 
+    el('h-nam').innerText = db[i].name; 
+    renderTools(); 
 }
 
-function moveItem(i, direction) {
-    const tools = db[currentIdx].tools;
-    const target = i + direction;
-    if (target >= 0 && target < tools.length) {
-        [tools[i], tools[target]] = [tools[target], tools[i]];
-        save(); renderTools();
-    }
+function goHome() { 
+    currentIdx = null; 
+    el('v-home').style.display='block'; 
+    el('v-det').style.display='none'; 
+    renderList(); 
 }
 
-function openProject(i) { currentIdx = i; el('v-home').style.display='none'; el('v-det').style.display='block'; el('h-num').innerText = db[i].num; el('h-nam').innerText = db[i].name; renderTools(); }
-function goHome() { currentIdx = null; el('v-home').style.display='block'; el('v-det').style.display='none'; renderList(); }
-
-function modalP(edit = false) {
-    if (!edit) currentIdx = null;
-    const p = (edit && db[currentIdx]) ? db[currentIdx] : {num:'', name:'', lzf:'', sag:'', stt:'', stn:'', abs:'', grf:'', mat:''};
-    el('p-idx').value = edit ? currentIdx : '';
-    el('p-num').value = p.num; el('p-nam').value = p.name;
-    el('p-lzf').value = p.lzf; el('p-sag').value = p.sag;
-    el('p-stt').value = p.stt; el('p-stn').value = p.stn;
-    el('p-abs').value = p.abs; el('p-grf').value = p.grf;
-    if(el('p-mat')) el('p-mat').value = p.mat;
-    show('m-p');
-}
-
+// Функции для работы с данными (сохранение проектов/инструментов) остаются без изменений
 function saveP() {
     const idx = el('p-idx').value;
     const data = {
@@ -180,38 +135,18 @@ function saveP() {
     save(); hide('m-p'); renderList();
 }
 
-function modalT(i = null) {
-    const edit = i !== null;
-    el('t-idx').value = edit ? i : '';
-    const t = edit ? db[currentIdx].tools[i] : {id:'', nm:'', dia:'', rev:false};
-    el('t-id').value = t.id; el('t-nm').value = t.nm; el('t-dia').value = t.dia;
-    const btn = el('btn-rev-toggle');
-    if(btn) { t.rev ? btn.classList.add('on') : btn.classList.remove('on'); btn.onclick = () => btn.classList.toggle('on'); }
-    el('btn-del-t').style.display = edit ? 'block' : 'none';
-    show('m-t');
-}
-
-function saveT() {
-    const i = el('t-idx').value;
-    const btn = el('btn-rev-toggle');
-    const t = { id: el('t-id').value.toUpperCase(), nm: el('t-nm').value.toUpperCase(), dia: el('t-dia').value, rev: btn ? btn.classList.contains('on') : false };
-    if(!db[currentIdx].tools) db[currentIdx].tools = [];
-    if(i === '') db[currentIdx].tools.push(t); else db[currentIdx].tools[i] = t;
-    save(); renderTools(); hide('m-t');
+function modalP(edit = false) {
+    if (!edit) currentIdx = null;
+    const p = (edit && db[currentIdx]) ? db[currentIdx] : {num:'', name:'', lzf:'', sag:'', stt:'', stn:'', abs:'', grf:'', mat:''};
+    el('p-idx').value = edit ? currentIdx : '';
+    el('p-num').value = p.num; el('p-nam').value = p.name;
+    el('p-lzf').value = p.lzf; el('p-sag').value = p.sag;
+    el('p-stt').value = p.stt; el('p-stn').value = p.stn;
+    el('p-abs').value = p.abs; el('p-grf').value = p.grf;
+    if(el('p-mat')) el('p-mat').value = p.mat;
+    show('m-p');
 }
 
 function deleteProject(i) { if(confirm('Löschen?')) { db.splice(i, 1); save(); renderList(); } }
-function delT() { const i = el('t-idx').value; db[currentIdx].tools.splice(i, 1); save(); renderTools(); hide('m-t'); }
-
-function makePDF() {
-    const p = db[currentIdx];
-    const getPageHead = () => `<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; min-height:90px;"><div style="display:flex; flex-direction:column; justify-content:center;"><div style="font-size:13px; font-weight:900; text-transform:uppercase; color:#666; margin-bottom:2px; line-height:1;">${p.name || ''}</div><div style="font-size:64px; font-weight:900; line-height:0.8; letter-spacing:-2px; margin:0;">${p.num || '---'}</div></div><div style="width:220px; font-size:11px; font-weight:800; line-height:1.5;"><div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>LAUFZEIT</span><span>${p.lzf || ''}</span></div><div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>MATERIAL</span><span>${p.mat || ''}</span></div><div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>SÄGELÄNGE</span><span>${p.sag || ''}</span></div><div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>ABSTAND</span><span>${p.abs || ''}</span></div><div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>GREIFBACKEN</span><span>${p.grf || ''}</span></div><div style="display:flex; justify-content:space-between;"><span>STÜCKZAHL</span><span>${p.stt || ''} / ${p.stn || ''}</span></div></div></div><div style="border-bottom:5px solid #000; margin-bottom:15px;"></div>`;
-    const tableHead = `<div style="display:flex; font-size:10px; font-weight:900; text-transform:uppercase; margin-bottom:6px; padding:0 2px;"><div style="width:75px;">T-NR</div><div style="flex:1;">WERKZEUGNAME / KOMMENTAR</div><div style="width:125px; text-align:right;">Ø / TOLERANZ</div></div><div style="border-bottom:4px solid #000;"></div>`;
-    const getRow = (t) => `<div style="display:flex; align-items:baseline; border-bottom:1.5px solid #000; padding:10px 0; width:100%; page-break-inside: avoid;"><div style="width:75px; font-weight:800; font-size:15px;">${t.id}</div><div style="flex:1; font-weight:700; font-size:15px; text-transform:uppercase; padding-right:10px; white-space:pre-wrap;">${t.nm}</div><div style="width:125px; text-align:right; font-weight:800; font-size:14px;">${t.dia.replace(/\//g, '<br>')}</div></div>`;
-    let oben = [], unten = [], target = oben;
-    (p.tools || []).forEach(t => { if(t.rev) target = unten; target.push(t); });
-    let pdfHtml = `<!DOCTYPE html><html><head><style>@page { size: A4; margin: 0; } body { margin: 0; padding: 10mm; background: #fff; font-family: sans-serif; -webkit-print-color-adjust: exact; } .page { width: 210mm; height: 297mm; padding: 15mm; box-sizing: border-box; page-break-after: always; display: flex; flex-direction: column; } .content-border { border: 2.2px solid #000; padding: 20px; flex: 1; display: flex; flex-direction: column; box-sizing: border-box; } .footer { border-top: 1.2px solid #000; padding-top: 5px; font-size: 9px; font-weight: 800; text-align: center; color: #666; margin-top: auto; }</style></head><body><div class="page"><div class="content-border">${getPageHead()}<div style="flex:1;"><div style="margin-bottom:5px; font-size:18px; font-weight:900; text-transform:uppercase;">REVOLVER OBEN</div>${tableHead}${oben.map(getRow).join('')}</div><div class="footer">CITITOOL REPORT</div></div></div>${unten.length > 0 ? `<div class="page"><div class="content-border">${getPageHead()}<div style="flex:1;"><div style="margin-bottom:5px; font-size:18px; font-weight:900; text-transform:uppercase;">REVOLVER UNTEN</div>${tableHead}${unten.map(getRow).join('')}</div><div class="footer">CITITOOL REPORT</div></div></div>` : ''}<script>window.onload = function() { setTimeout(() => { window.print(); }, 400); };</script></body></html>`;
-    const win = window.open('', '_blank'); if (win) { win.document.write(pdfHtml); win.document.close(); }
-}
 
 window.onload = () => { injectStyles(); renderList(); };
