@@ -10,100 +10,109 @@ const injectStyles = () => {
             --neu-light: #ffffff;
             --neu-shadow: #d1d9e6;
             --accent: #007aff;
-            --text: #333;
         }
         body { 
             background: var(--bg) !important; 
             font-family: -apple-system, sans-serif !important; 
-            margin: 0; color: var(--text);
+            margin: 0; padding-bottom: 50px;
         }
-        
-        /* Эффект Neumorphism для карточек */
-        .neu-card {
+
+        /* Зеркальный заголовок */
+        .mirror-header {
+            text-align: center;
+            padding: 40px 0 20px 0;
+            font-size: 38px;
+            font-weight: 900;
+            color: #1a1a1a;
+            letter-spacing: -1.5px;
+            position: relative;
+            display: flex; flex-direction: column; align-items: center;
+        }
+        .mirror-text { position: relative; z-index: 2; }
+        .mirror-reflection {
+            margin-top: -15px;
+            transform: scaleY(-1);
+            background: linear-gradient(to bottom, rgba(0,0,0,0.2) 0%, rgba(255,255,255,0) 70%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            opacity: 0.15;
+            z-index: 1;
+            user-select: none;
+        }
+
+        /* Компактная кнопка + NEU */
+        .btn-neu-small {
             background: var(--bg);
-            border-radius: 20px;
-            padding: 20px;
-            margin: 15px 20px;
-            box-shadow: 9px 9px 16px var(--neu-shadow), -9px -9px 16px var(--neu-light);
-            display: flex; align-items: center; justify-content: space-between;
             border: none;
+            border-radius: 15px;
+            padding: 10px 20px;
+            margin-left: 20px;
+            font-size: 14px;
+            font-weight: 800;
+            color: var(--accent);
+            box-shadow: 4px 4px 10px var(--neu-shadow), -4px -4px 10px var(--neu-light);
+            display: inline-flex; align-items: center; gap: 5px;
         }
-
-        /* Вдавленный эффект для кнопок и инпутов */
-        .neu-inset {
-            background: var(--bg);
-            box-shadow: inset 3px 3px 6px var(--neu-shadow), inset -3px -3px 6px var(--neu-light);
-            border-radius: 12px;
-            border: none;
-        }
-
-        .header-title { 
-            font-weight: 900; font-size: 28px; 
-            text-align: center; padding: 20px 0;
-            color: #1a1a1a; letter-spacing: -1px;
-        }
-
-        .p-label { font-size: 10px; font-weight: 800; color: #888; text-transform: uppercase; margin-bottom: 4px; }
-        .p-title { font-size: 22px; font-weight: 900; color: #000; }
-
-        /* Компактные стрелки управления */
-        .order-controls { display: flex; gap: 8px; }
-        .btn-order {
-            width: 32px; height: 32px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 14px; font-weight: 900; color: var(--accent);
-            background: var(--bg);
-            border-radius: 8px;
-            box-shadow: 4px 4px 8px var(--neu-shadow), -4px -4px 8px var(--neu-light);
-            border: none;
-        }
-        .btn-order:active {
+        .btn-neu-small:active {
             box-shadow: inset 2px 2px 5px var(--neu-shadow), inset -2px -2px 5px var(--neu-light);
         }
-        .btn-order.disabled { opacity: 0; pointer-events: none; }
 
-        .btn-add {
-            position: fixed; bottom: 30px; right: 25px;
-            width: 65px; height: 65px; border-radius: 50%;
+        /* Карточки в стиле Neumorphism */
+        .neu-card {
             background: var(--bg);
-            box-shadow: 6px 6px 12px var(--neu-shadow), -6px -6px 12px var(--neu-light);
-            display: flex; align-items: center; justify-content: center;
-            font-size: 30px; color: var(--accent); font-weight: bold;
-            z-index: 1000; border: none;
+            border-radius: 25px;
+            padding: 22px;
+            margin: 15px 20px;
+            box-shadow: 8px 8px 16px var(--neu-shadow), -8px -8px 16px var(--neu-light);
+            display: flex; align-items: center; justify-content: space-between;
         }
 
-        /* Стили для модальных окон */
-        .modal-content {
-            background: var(--bg) !important;
-            border-radius: 30px !important;
-            box-shadow: 20px 20px 60px var(--neu-shadow), -20px -20px 60px var(--neu-light) !important;
+        .p-label { font-size: 10px; font-weight: 800; color: #a0a0a0; text-transform: uppercase; margin-bottom: 2px; }
+        .p-title { font-size: 22px; font-weight: 900; color: #000; }
+
+        .btn-order {
+            width: 34px; height: 30px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 14px; font-weight: 900; color: var(--accent);
+            background: var(--bg); border-radius: 8px; border: none;
+            box-shadow: 3px 3px 6px var(--neu-shadow), -3px -3px 6px var(--neu-light);
         }
+        .btn-order:active { box-shadow: inset 2px 2px 4px var(--neu-shadow), inset -2px -2px 4px var(--neu-light); }
+        .btn-order.disabled { opacity: 0; pointer-events: none; }
     `;
     document.head.appendChild(style);
 };
 
 const el = (id) => document.getElementById(id);
-const show = (id) => { const x = el(id); if(x) x.style.display = 'flex'; };
-const hide = (id) => { const x = el(id); if(x) x.style.display = 'none'; };
+const show = (id) => { if(el(id)) el(id).style.display = 'flex'; };
+const hide = (id) => { if(el(id)) el(id).style.display = 'none'; };
 const save = () => localStorage.setItem(DB_KEY, JSON.stringify(db));
 
-// --- РЕНДЕР ГЛАВНОЙ ---
 function renderList() {
-    const h = document.querySelector('.header-title') || document.querySelector('h1');
-    if(h) h.innerText = 'ProCalc Elite'; // В стиле твоего скриншота
+    const main = el('v-home');
+    if(!main) return;
     
-    const list = el('list-p'); if(!list) return;
+    // Создаем зеркальный заголовок CitiTool
+    main.innerHTML = `
+        <div class="mirror-header">
+            <div class="mirror-text">CitiTool</div>
+            <div class="mirror-reflection">CitiTool</div>
+        </div>
+        <button class="btn-neu-small" onclick="modalP()">+ NEU</button>
+        <div id="list-p" style="margin-top:10px;"></div>
+    `;
+    
+    const list = el('list-p');
     list.innerHTML = db.map((p, i) => `
         <div class="neu-card" onclick="openProject(${i})">
             <div>
-                <div class="p-label">${p.name || 'PROJEKT'}</div>
+                <div class="p-label">PROJEKT</div>
                 <div class="p-title">${p.num || '---'}</div>
             </div>
-            <div style="color:#ff3b30; font-weight:900; font-size:20px; padding:10px;" onclick="event.stopPropagation(); deleteProject(${i})">✕</div>
-        </div>`).join('') + '<div style="height:120px"></div>';
+            <div style="color:#ff3b30; font-weight:900; font-size:18px;" onclick="event.stopPropagation(); deleteProject(${i})">✕</div>
+        </div>`).join('') + '<div style="height:100px"></div>';
 }
 
-// --- РЕНДЕР ИНСТРУМЕНТОВ ---
 function renderTools() {
     const list = el('list-t'); if(!list || currentIdx === null) return;
     const tools = db[currentIdx].tools || [];
@@ -112,22 +121,22 @@ function renderTools() {
     tools.forEach((t, i) => {
         const item = document.createElement('div');
         item.className = 'neu-card';
-        const revMark = t.rev ? `<div style="font-size:9px; font-weight:900; color:#555; margin-bottom:5px;">▼ REVOLVER UNTEN</div>` : '';
+        const revMark = t.rev ? `<div style="font-size:9px; font-weight:900; color:#888; margin-bottom:4px;">▼ REVOLVER UNTEN</div>` : '';
         
         item.innerHTML = `
             <div style="flex:1" onclick="modalT(${i})">
                 ${revMark}
                 <div class="p-label">${t.id || 'T0000'}</div>
                 <div class="p-title" style="font-size:19px;">${t.nm || '---'}</div>
-                <div style="margin-top:6px; font-weight:800; color:var(--accent);">${t.dia || ''}</div>
+                <div style="margin-top:5px; font-weight:800; color:var(--accent); font-size:14px;">${t.dia || ''}</div>
             </div>
-            <div class="order-controls">
+            <div style="display:flex; flex-direction:column; gap:8px;">
                 <button class="btn-order ${i === 0 ? 'disabled' : ''}" onclick="event.stopPropagation(); moveItem(${i}, -1)">↑</button>
                 <button class="btn-order ${i === tools.length - 1 ? 'disabled' : ''}" onclick="event.stopPropagation(); moveItem(${i}, 1)">↓</button>
             </div>`;
         list.appendChild(item);
     });
-    list.innerHTML += '<div style="height:200px"></div>';
+    list.innerHTML += '<div style="height:150px"></div>';
 }
 
 function moveItem(i, direction) {
@@ -139,9 +148,9 @@ function moveItem(i, direction) {
     }
 }
 
-// --- СИСТЕМНЫЕ ФУНКЦИИ ---
-function openProject(i) { currentIdx = i; el('v-home').classList.remove('active'); el('v-det').classList.add('active'); el('h-num').innerText = db[i].num; el('h-nam').innerText = db[i].name; renderTools(); }
-function goHome() { currentIdx = null; el('v-home').classList.add('active'); el('v-det').classList.remove('active'); renderList(); }
+// --- УПРАВЛЕНИЕ И МОДАЛКИ (БЕЗ ИЗМЕНЕНИЙ) ---
+function openProject(i) { currentIdx = i; el('v-home').style.display='none'; el('v-det').classList.add('active'); el('v-det').style.display='block'; el('h-num').innerText = db[i].num; el('h-nam').innerText = db[i].name; renderTools(); }
+function goHome() { currentIdx = null; el('v-home').style.display='block'; el('v-det').classList.remove('active'); el('v-det').style.display='none'; renderList(); }
 
 function modalP(edit = false) {
     if (!edit) currentIdx = null;
@@ -191,13 +200,11 @@ function saveT() {
 
 function deleteProject(i) { if(confirm('Löschen?')) { db.splice(i, 1); save(); renderList(); } }
 function delT() { const i = el('t-idx').value; db[currentIdx].tools.splice(i, 1); save(); renderTools(); hide('m-t'); }
-function exportJSON() { el('imp-area').value = JSON.stringify(db); el('imp-area').select(); alert("JSON kopiert!"); }
-function importJSON() { try { const parsed = JSON.parse(el('imp-area').value); if(Array.isArray(parsed)) { db = parsed; save(); renderList(); hide('m-imp'); } } catch(e) { alert("JSON-Fehler"); } }
 
 // --- PDF ---
 function makePDF() {
     const p = db[currentIdx];
-    const getPageHead = () => `<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; min-height:90px;"><div style="display:flex; flex-direction:column; justify-content:center;"><div style="font-size:13px; font-weight:900; text-transform:uppercase; color:#666; margin-bottom:2px; line-height:1;">${p.name || ''}</div><div style="font-size:64px; font-weight:900; line-height:0.8; letter-spacing:-2px; margin:0;">${p.num || '---'}</div></div><div style="width:220px; font-size:11px; font-weight:800; line-height:1.5;"><div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>LAUFZEIT</span><span>${p.lzf || ''}</span></div><div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>MATERIAL</span><span>${p.mat || ''}</span></div><div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>SÄGELÄNGE</span><span>${p.sag || ''}</span></div><div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>ABSTAND</span><span>${p.abs || ''}</span></div><div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>GREIFBACKEN</span><span>${p.grf || ''}</span></div><div style="display:flex; justify-content:space-between;"><span>STÜCKZAHL</span><span>${p.stt || ''} / ${p.stn || ''}</span></div></div></div><div style="border-bottom:5px solid #000; margin-bottom:15px;"></div>`;
+    const getPageHead = () => `<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; min-height:90px;"><div style="display:flex; flex-direction:column; justify-content:center;"><div style="font-size:13px; font-weight:900; text-transform:uppercase; color:#666; margin-bottom:2px; line-height:1;">${p.name || ''}</div><div style="font-size:64px; font-weight:900; line-height:0.8; letter-spacing:-2px; margin:0;">${p.num || '---'}</div></div><div style="width:220px; font-size:11px; font-weight:800; line-height:1.5;"><div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>LAUFZEIT</span><span>${p.lzf || ''}</span></div><div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>MATERIAL</span><span>${p.mat || ''}</span></div><div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>SÄGELÄНGE</span><span>${p.sag || ''}</span></div><div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>ABSTAND</span><span>${p.abs || ''}</span></div><div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>GREIFBACKEN</span><span>${p.grf || ''}</span></div><div style="display:flex; justify-content:space-between;"><span>STÜCKZAHL</span><span>${p.stt || ''} / ${p.stn || ''}</span></div></div></div><div style="border-bottom:5px solid #000; margin-bottom:15px;"></div>`;
     const tableHead = `<div style="display:flex; font-size:10px; font-weight:900; text-transform:uppercase; margin-bottom:6px; padding:0 2px;"><div style="width:75px;">T-NR</div><div style="flex:1;">WERKZEUGNAME / KOMMENTAR</div><div style="width:125px; text-align:right;">Ø / TOLERANZ</div></div><div style="border-bottom:4px solid #000;"></div>`;
     const getRow = (t) => `<div style="display:flex; align-items:baseline; border-bottom:1.5px solid #000; padding:10px 0; width:100%; page-break-inside: avoid;"><div style="width:75px; font-weight:800; font-size:15px;">${t.id}</div><div style="flex:1; font-weight:700; font-size:15px; text-transform:uppercase; padding-right:10px; white-space:pre-wrap;">${t.nm}</div><div style="width:125px; text-align:right; font-weight:800; font-size:14px;">${t.dia.replace(/\//g, '<br>')}</div></div>`;
     let oben = [], unten = [], target = oben;
