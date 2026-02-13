@@ -10,83 +10,42 @@ const injectStyles = () => {
             background: var(--bg) !important; 
             font-family: -apple-system, sans-serif !important;
             margin: 0;
-            /* Полная блокировка системных выделений */
-            -webkit-user-select: none; user-select: none;
-            -webkit-touch-callout: none;
         }
-        input, textarea { -webkit-user-select: text; user-select: text; }
-
         .list-item {
             background: #fff !important; border-radius: 20px !important;
-            padding: 18px !important; margin: 0 16px 12px 16px !important;
+            padding: 16px !important; margin: 0 16px 12px 16px !important;
             box-shadow: 0 4px 12px rgba(0,0,0,0.03) !important;
-            display: flex; align-items: center;
-            touch-action: none; position: relative;
+            display: flex; align-items: center; justify-content: space-between;
         }
+        .t-id-label { font-size: 10px; font-weight: 700; color: var(--text-sub); text-transform: uppercase; }
+        .t-name-label { font-size: 19px; font-weight: 800; color: #000; line-height: 1.2; }
         
-        /* Состояние при активном перетаскивании */
-        .list-item.dragging {
-            background: #f0f7ff !important;
-            border: 1px solid var(--accent) !important;
-            z-index: 1000; scale: 1.02;
+        .order-controls { display: flex; flex-direction: column; gap: 8px; margin-left: 15px; }
+        .btn-order {
+            background: #f2f2f7; border: none; border-radius: 8px;
+            width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
+            font-size: 18px; font-weight: bold; color: var(--accent);
+            -webkit-tap-highlight-color: transparent;
         }
-
-        .handle {
-            padding: 20px 15px 20px 10px; margin-right: 5px;
-            color: #c7c7cc; font-size: 24px;
-            cursor: move;
-        }
-
-        .t-id-label { font-size: 11px; font-weight: 700; color: var(--text-sub); text-transform: uppercase; }
-        .t-name-label { font-size: 20px; font-weight: 800; color: #000; line-height: 1.2; }
+        .btn-order:active { background: #e5e5ea; }
+        .btn-order.disabled { opacity: 0; pointer-events: none; }
     `;
     document.head.appendChild(style);
 };
 
-let dragActiveIdx = null;
-
-function setupSorting(item, index) {
-    const handle = item.querySelector('.handle');
-    
-    handle.addEventListener('touchstart', (e) => {
-        // Останавливаем выделение текста и прокрутку
-        dragActiveIdx = index;
-        item.classList.add('dragging');
-        if (navigator.vibrate) navigator.vibrate(15);
-    }, { passive: false });
-
-    handle.addEventListener('touchmove', (e) => {
-        if (dragActiveIdx === null) return;
-        e.preventDefault(); // Запрещаем скролл страницы во время движения
-
-        const touch = e.touches[0];
-        const target = document.elementFromPoint(touch.clientX, touch.clientY);
-        const overItem = target?.closest('.list-item');
-        
-        if (overItem) {
-            const overIdx = parseInt(overItem.getAttribute('data-idx'));
-            if (overIdx !== dragActiveIdx) {
-                const tools = db[currentIdx].tools;
-                // Меняем местами в массиве
-                const temp = tools[dragActiveIdx];
-                tools[dragActiveIdx] = tools[overIdx];
-                tools[overIdx] = temp;
-                
-                dragActiveIdx = overIdx; 
-                save();
-                renderTools(); // Перерисовываем список
-            }
-        }
-    }, { passive: false });
-
-    handle.addEventListener('touchend', () => {
-        dragActiveIdx = null;
-        item.classList.remove('dragging');
-        renderTools();
-    });
-}
-
 const save = () => localStorage.setItem(DB_KEY, JSON.stringify(db));
+
+function moveItem(i, direction) {
+    const tools = db[currentIdx].tools;
+    const target = i + direction;
+    if (target >= 0 && target < tools.length) {
+        const temp = tools[i];
+        tools[i] = tools[target];
+        tools[target] = temp;
+        save();
+        renderTools();
+    }
+}
 
 function renderTools() {
     const list = el('list-t'); if(!list || currentIdx === null) return;
@@ -96,26 +55,27 @@ function renderTools() {
     tools.forEach((t, i) => {
         const item = document.createElement('div');
         item.className = 'list-item';
-        item.setAttribute('data-idx', i);
         
-        const revMark = t.rev ? `<div style="background:#000; color:#fff; font-size:9px; padding:2px 8px; border-radius:6px; margin-bottom:6px; font-weight:800; width:fit-content;">REVOLVER UNTEN</div>` : '';
+        const revMark = t.rev ? `<div style="background:#000; color:#fff; font-size:8px; padding:2px 8px; border-radius:4px; margin-bottom:4px; font-weight:800; width:fit-content;">REVOLVER UNTEN</div>` : '';
         
         item.innerHTML = `
-            <div class="handle">☰</div>
             <div style="flex:1; min-width:0;" onclick="modalT(${i})">
                 ${revMark}
                 <div class="t-id-label">${t.id || 'T0000'}</div>
                 <div class="t-name-label">${t.nm || '---'}</div>
-                <div style="margin-top:5px; font-weight:700; color:var(--accent);">${t.dia || ''}</div>
+                <div style="margin-top:4px; font-weight:700; color:var(--accent); font-size:14px;">${t.dia || ''}</div>
+            </div>
+            <div class="order-controls">
+                <button class="btn-order ${i === 0 ? 'disabled' : ''}" onclick="event.stopPropagation(); moveItem(${i}, -1)">↑</button>
+                <button class="btn-order ${i === tools.length - 1 ? 'disabled' : ''}" onclick="event.stopPropagation(); moveItem(${i}, 1)">↓</button>
             </div>`;
         
-        setupSorting(item, i);
         list.appendChild(item);
     });
     list.innerHTML += '<div style="height:150px"></div>';
 }
 
-// --- ОСТАЛЬНЫЕ ФУНКЦИИ (ГЛАВНАЯ, МОДАЛКИ, PDF) ---
+// --- СТАНДАРТНЫЕ ФУНКЦИИ (БЕЗ ИЗМЕНЕНИЙ) ---
 function renderList() {
     const t = document.querySelector('.header-title') || document.querySelector('h1');
     if(t) t.innerText = 'CitiTool';
@@ -131,7 +91,7 @@ function openProject(i) { currentIdx = i; el('v-home').classList.remove('active'
 function goHome() { currentIdx = null; el('v-home').classList.add('active'); el('v-det').classList.remove('active'); renderList(); }
 const el = (id) => document.getElementById(id);
 const show = (id) => { if(el(id)) el(id).style.display = 'flex'; };
-const hide = (id) => { if(el(id)) el(id).style.display = 'none'; };
+const hide = (id) => { if(el(id)) el(id).style.none = 'none'; };
 
 function modalP(edit = false) {
     if (!edit) currentIdx = null;
