@@ -2,7 +2,7 @@ const DB_KEY = 'QS_DATA_V8';
 let db = JSON.parse(localStorage.getItem(DB_KEY)) || [];
 let currentIdx = null;
 
-// --- СИСТЕМА ДИЗАЙНА "CITITOOL PREMIUM V2" ---
+// --- СИСТЕМА ДИЗАЙНА "CITITOOL PREMIUM STABLE" ---
 const injectStyles = () => {
     const style = document.createElement('style');
     style.innerHTML = `
@@ -12,132 +12,125 @@ const injectStyles = () => {
             --accent: #007aff;
             --text-main: #1c1c1e;
             --text-sub: #8e8e93;
-            --border: rgba(0,0,0,0.08);
+            --border: rgba(0,0,0,0.06);
         }
         body { 
             background: var(--bg) !important; 
-            font-family: -apple-system, system-ui, sans-serif !important;
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif !important;
             margin: 0; color: var(--text-main);
-            -webkit-tap-highlight-color: transparent;
+            overflow-x: hidden;
+            -webkit-user-select: none; user-select: none; /* Блокируем выделение везде */
         }
+        input, textarea { -webkit-user-select: text; user-select: text; } /* Разрешаем только в полях */
+
         header {
             background: rgba(255,255,255,0.8) !important;
             backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-            border-bottom: 0.5px solid var(--border);
-            padding: 18px 20px; position: sticky; top: 0; z-index: 1000;
+            border-bottom: 0.5px solid rgba(0,0,0,0.1);
+            padding: 16px 20px; position: sticky; top: 0; z-index: 1000;
         }
         .header-title { font-weight: 800; font-size: 22px; letter-spacing: -0.5px; }
 
         .list-item {
             background: var(--surface) !important;
             border-radius: 20px !important;
-            padding: 20px !important;
+            padding: 18px !important;
             margin: 0 16px 12px 16px !important;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05) !important;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.03) !important;
             display: flex; align-items: center;
-            transition: transform 0.2s, box-shadow 0.2s;
-            touch-action: none; /* Важно для корректного Touch Drag */
-        }
-        .list-item.dragging {
-            opacity: 0.5;
-            transform: scale(1.02);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1) !important;
-            background: #fdfdfd !important;
+            position: relative;
+            touch-action: none; /* Отключаем стандартные жесты браузера */
         }
         
-        .handle {
-            padding: 10px; margin-right: 10px;
-            color: #d1d1d6; font-size: 20px;
-            cursor: grab; user-select: none;
+        .list-item.dragging {
+            z-index: 9999;
+            transform: scale(1.03);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1) !important;
+            background: #fafafa !important;
+            opacity: 0.9;
         }
 
-        .t-id-label { font-size: 11px; font-weight: 700; color: var(--text-sub); text-transform: uppercase; margin-bottom: 3px; }
-        .t-name-label { font-size: 20px; font-weight: 900; color: #000; line-height: 1.1; letter-spacing: -0.3px; }
+        .handle {
+            padding: 15px 10px; margin-right: 5px;
+            color: #c7c7cc; font-size: 22px;
+            cursor: grab;
+        }
+
+        .t-id-label { font-size: 11px; font-weight: 700; color: var(--text-sub); text-transform: uppercase; margin-bottom: 2px; }
+        .t-name-label { font-size: 19px; font-weight: 800; color: #000; line-height: 1.2; }
         .t-dia-label { margin-top: 8px; font-weight: 700; color: var(--accent); font-size: 15px; }
 
-        /* Кнопки управления */
         .btn-main {
-            background: var(--accent); color: #fff; border: none;
+            background: var(--accent); color: white; border: none;
             border-radius: 14px; padding: 12px 24px; font-weight: 700;
-            box-shadow: 0 4px 10px rgba(0,122,255,0.2);
         }
     `;
     document.head.appendChild(style);
 };
 
-const el = (id) => document.getElementById(id);
-const show = (id) => { if(el(id)) el(id).style.display = 'flex'; };
-const hide = (id) => { if(el(id)) el(id).style.display = 'none'; };
+// --- УЛУЧШЕННЫЙ DRAG & DROP ДЛЯ МОБИЛОК ---
+let dragIdx = null;
 
-const renameBranding = () => {
-    const t = document.querySelector('.header-title') || document.querySelector('h1');
-    if(t) t.innerText = 'CitiTool';
-};
-
-// --- ЛОГИКА ПЕРЕТАСКИВАНИЯ (TOUCH + DESKTOP) ---
-let dragSrcIdx = null;
-
-function initDragEvents(item, index) {
-    // Desktop Drag
-    item.draggable = true;
-    item.ondragstart = (e) => { dragSrcIdx = index; item.classList.add('dragging'); };
-    item.ondragover = (e) => e.preventDefault();
-    item.ondrop = (e) => { e.preventDefault(); handleDrop(index); };
-    item.ondragend = () => item.classList.remove('dragging');
-
-    // Mobile Touch Drag
+function initDrag(item, index) {
     const handle = item.querySelector('.handle');
-    handle.ontouchstart = (e) => {
-        dragSrcIdx = index;
+    
+    const onTouchStart = (e) => {
+        dragIdx = index;
         item.classList.add('dragging');
+        // Вибрация для отклика (если поддерживается)
+        if (window.navigator.vibrate) window.navigator.vibrate(10);
     };
 
-    handle.ontouchmove = (e) => {
-        e.preventDefault();
+    const onTouchMove = (e) => {
+        if (dragIdx === null) return;
+        e.preventDefault(); // Критично: отключаем скролл страницы
+        
         const touch = e.touches[0];
-        const targetEl = document.elementFromPoint(touch.clientX, touch.clientY);
-        const overItem = targetEl?.closest('.list-item');
+        const target = document.elementFromPoint(touch.clientX, touch.clientY);
+        const overItem = target?.closest('.list-item');
+        
         if (overItem) {
             const overIdx = parseInt(overItem.getAttribute('data-idx'));
-            if (overIdx !== dragSrcIdx) {
-                moveTool(dragSrcIdx, overIdx);
-                dragSrcIdx = overIdx; // Обновляем индекс в процессе
+            if (overIdx !== dragIdx) {
+                const tools = db[currentIdx].tools;
+                const temp = tools[dragIdx];
+                tools[dragIdx] = tools[overIdx];
+                tools[overIdx] = temp;
+                
+                dragIdx = overIdx; // Меняем текущий индекс
+                save();
+                renderTools(); // Мгновенно перерисовываем
             }
         }
     };
 
-    handle.ontouchend = () => {
+    const onTouchEnd = () => {
+        dragIdx = null;
         item.classList.remove('dragging');
-        renderTools(); // Финальная перерисовка
+        renderTools();
     };
+
+    handle.addEventListener('touchstart', onTouchStart, { passive: false });
+    handle.addEventListener('touchmove', onTouchMove, { passive: false });
+    handle.addEventListener('touchend', onTouchEnd);
 }
 
-function handleDrop(targetIdx) {
-    if (dragSrcIdx !== null && dragSrcIdx !== targetIdx) {
-        moveTool(dragSrcIdx, targetIdx);
-    }
-}
+// --- ОСНОВНАЯ ЛОГИКА ПРИЛОЖЕНИЯ ---
+const save = () => localStorage.setItem(DB_KEY, JSON.stringify(db));
 
-function moveTool(from, to) {
-    const tools = db[currentIdx].tools;
-    const [movedItem] = tools.splice(from, 1);
-    tools.splice(to, 0, movedItem);
-    save();
-    renderTools();
-}
-
-// --- ОСНОВНЫЕ ФУНКЦИИ ---
 function renderList() {
-    renameBranding();
+    const t = document.querySelector('.header-title') || document.querySelector('h1');
+    if(t) t.innerText = 'CitiTool';
+    
     const list = el('list-p'); if(!list) return;
     list.innerHTML = db.map((p, i) => `
         <div class="list-item" onclick="openProject(${i})">
             <div style="flex:1">
                 <div class="t-id-label">${p.name || 'PROJEKT'}</div>
-                <div class="t-name-label" style="font-size:24px;">${p.num || '---'}</div>
+                <div class="t-name-label" style="font-size:22px;">${p.num || '---'}</div>
             </div>
             <div style="color:#ff3b30; font-weight:900; padding:15px;" onclick="event.stopPropagation(); deleteProject(${i})">✕</div>
-        </div>`).join('') + '<div style="height:120px"></div>';
+        </div>`).join('') + '<div style="height:100px"></div>';
 }
 
 function openProject(i) {
@@ -145,8 +138,8 @@ function openProject(i) {
         currentIdx = i;
         el('v-home').classList.remove('active');
         el('v-det').classList.add('active');
-        el('h-num').innerText = db[i].num || '---';
-        el('h-nam').innerText = db[i].name || '---';
+        el('h-num').innerText = db[i].num;
+        el('h-nam').innerText = db[i].name;
         renderTools();
     }
 }
@@ -161,7 +154,7 @@ function renderTools() {
         item.className = 'list-item';
         item.setAttribute('data-idx', i);
         
-        const revMark = t.rev ? `<div style="background:#000; color:#fff; font-size:9px; padding:2px 10px; border-radius:6px; margin-bottom:8px; font-weight:800; width:fit-content;">REVOLVER UNTEN ↓</div>` : '';
+        const revMark = t.rev ? `<div style="background:#000; color:#fff; font-size:9px; padding:2px 8px; border-radius:6px; margin-bottom:6px; font-weight:800; width:fit-content;">REVOLVER UNTEN ↓</div>` : '';
         
         item.innerHTML = `
             <div class="handle">☰</div>
@@ -172,20 +165,21 @@ function renderTools() {
                 <div class="t-dia-label">${t.dia || ''}</div>
             </div>`;
         
-        initDragEvents(item, i);
+        initDrag(item, i);
         list.appendChild(item);
     });
-    
-    list.innerHTML += '<div style="height:180px"></div>'; // Padding-bottom
+    list.innerHTML += '<div style="height:200px"></div>';
 }
 
-// --- СТАНДАРТНАЯ ЛОГИКА (БЕЗ ИЗМЕНЕНИЙ СТРУКТУРЫ) ---
-function save() { localStorage.setItem(DB_KEY, JSON.stringify(db)); }
+// --- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ---
 function goHome() { currentIdx = null; el('v-home').classList.add('active'); el('v-det').classList.remove('active'); renderList(); }
+const el = (id) => document.getElementById(id);
+const show = (id) => { if(el(id)) el(id).style.display = 'flex'; };
+const hide = (id) => { if(el(id)) el(id).style.display = 'none'; };
 
 function modalP(edit = false) {
     if (!edit) currentIdx = null;
-    const p = (edit && currentIdx !== null) ? db[currentIdx] : {num:'', name:'', lzf:'', sag:'', stt:'', stn:'', abs:'', grf:'', mat:''};
+    const p = (edit && db[currentIdx]) ? db[currentIdx] : {num:'', name:'', lzf:'', sag:'', stt:'', stn:'', abs:'', grf:'', mat:''};
     el('p-idx').value = edit ? currentIdx : '';
     el('p-num').value = p.num; el('p-nam').value = p.name;
     el('p-lzf').value = p.lzf; el('p-sag').value = p.sag;
@@ -205,8 +199,7 @@ function saveP() {
         mat: el('p-mat') ? el('p-mat').value.toUpperCase() : '',
         tools: (idx !== '' && db[idx]) ? (db[idx].tools || []) : []
     };
-    if (idx === '') { db.push(newP); currentIdx = db.length - 1; } 
-    else { db[idx] = newP; }
+    if (idx === '') { db.push(newP); currentIdx = db.length - 1; } else { db[idx] = newP; }
     save(); hide('m-p'); renderList();
     if(idx !== '') openProject(idx); else goHome();
 }
@@ -239,7 +232,7 @@ function delT() { const i = el('t-idx').value; db[currentIdx].tools.splice(i, 1)
 function exportJSON() { el('imp-area').value = JSON.stringify(db); el('imp-area').select(); alert("JSON kopiert!"); }
 function importJSON() { try { const parsed = JSON.parse(el('imp-area').value); if(Array.isArray(parsed)) { db = parsed; save(); renderList(); hide('m-imp'); } } catch(e) { alert("JSON-Fehler"); } }
 
-// --- PDF REPORT (БЕЗ ИЗМЕНЕНИЙ) ---
+// --- PDF REPORT (НЕ ТРОГАЕМ) ---
 function makePDF() {
     const p = db[currentIdx];
     const getPageHead = () => `<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; min-height:90px;"><div style="display:flex; flex-direction:column; justify-content:center;"><div style="font-size:13px; font-weight:900; text-transform:uppercase; color:#666; margin-bottom:2px; line-height:1;">${p.name || ''}</div><div style="font-size:64px; font-weight:900; line-height:0.8; letter-spacing:-2px; margin:0;">${p.num || '---'}</div></div><div style="width:220px; font-size:11px; font-weight:800; line-height:1.5;"><div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>LAUFZEIT</span><span>${p.lzf || ''}</span></div><div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>MATERIAL</span><span>${p.mat || ''}</span></div><div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>SÄGELÄNGE</span><span>${p.sag || ''}</span></div><div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>ABSTAND</span><span>${p.abs || ''}</span></div><div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>GREIFBACKEN</span><span>${p.grf || ''}</span></div><div style="display:flex; justify-content:space-between;"><span>STÜCKZAHL</span><span>${p.stt || ''} / ${p.stn || ''}</span></div></div></div><div style="border-bottom:5px solid #000; margin-bottom:15px;"></div>`;
@@ -252,4 +245,4 @@ function makePDF() {
     if (win) { win.document.write(pdfHtml); win.document.close(); }
 }
 
-window.onload = () => { injectStyles(); renameBranding(); renderList(); };
+window.onload = () => { injectStyles(); renderList(); };
