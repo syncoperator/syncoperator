@@ -7,55 +7,45 @@ let currentIdx = null;
 const injectStyles = () => {
     const style = document.createElement('style');
     style.innerHTML = `
-        :root { 
-            --bg: #f4f6f9; 
-            --accent: #007aff; 
-            --card: #ffffff;
-            --text: #000000;
-        }
-        body { background: var(--bg); font-family: -apple-system, sans-serif; margin: 0; padding-bottom: 120px; }
+        :root { --bg: #f4f6f9; --accent: #007aff; --card: #fff; --text: #000; }
+        body { background: var(--bg); font-family: -apple-system, sans-serif; margin: 0; padding-bottom: 150px; }
 
-        /* Брендинг: Огромное лого и текст вплотную */
-        .brand-section { display: flex; flex-direction: column; align-items: center; padding: 40px 0 10px; }
-        .logo-main { width: 220px; height: auto; margin-bottom: -25px; filter: contrast(1.1); }
-        .logo-title { font-size: 60px; font-weight: 900; letter-spacing: -4px; margin: 0; line-height: 1; color: #000; }
-        .logo-mirror { font-size: 60px; font-weight: 900; letter-spacing: -4px; margin-top: -26px; transform: scaleY(-1); opacity: 0.05; }
+        /* Брендинг: Огромное лого, текст вплотную */
+        .brand-section { display: flex; flex-direction: column; align-items: center; padding: 45px 0 10px; }
+        .logo-main { width: 240px; height: auto; margin-bottom: -32px; filter: contrast(1.1); }
+        .logo-title { font-size: 64px; font-weight: 900; letter-spacing: -4px; margin: 0; line-height: 1; color: #000; }
+        .logo-mirror { font-size: 64px; font-weight: 900; letter-spacing: -4px; margin-top: -30px; transform: scaleY(-1); opacity: 0.05; }
 
         /* Навигация */
         .nav-bar { display: flex; justify-content: center; gap: 12px; padding: 15px; position: sticky; top: 0; background: rgba(244,246,249,0.9); backdrop-filter: blur(15px); z-index: 100; }
-        .btn-ui {
-            background: #fff; border: none; border-radius: 14px; padding: 12px 20px;
-            font-size: 11px; font-weight: 800; text-transform: uppercase;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.05); cursor: pointer;
-        }
+        .btn-ui { background: #fff; border: none; border-radius: 14px; padding: 12px 20px; font-size: 11px; font-weight: 800; text-transform: uppercase; box-shadow: 0 4px 10px rgba(0,0,0,0.05); cursor: pointer; }
         .btn-ui.blue { background: var(--accent); color: #fff; }
 
         /* Карточки */
-        .card {
-            background: var(--card); border-radius: 24px; margin: 0 16px 15px; padding: 22px;
-            display: flex; align-items: center; justify-content: space-between;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.04);
-        }
+        .card { background: var(--card); border-radius: 24px; margin: 0 16px 15px; padding: 22px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 10px 30px rgba(0,0,0,0.04); }
         .p-label { font-size: 10px; font-weight: 800; color: #8e8e93; text-transform: uppercase; }
         .p-num { font-size: 30px; font-weight: 900; letter-spacing: -1px; }
 
         /* Модалки */
         .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: none; align-items: center; justify-content: center; z-index: 2000; backdrop-filter: blur(10px); }
         .modal.active { display: flex; }
-        .m-box { background: #fff; width: 90%; max-width: 400px; padding: 30px; border-radius: 35px; }
+        .m-box { background: #fff; width: 90%; max-width: 400px; padding: 30px; border-radius: 35px; box-sizing: border-box; }
 
-        /* РАБОЧАЯ КНОПКА РЕВОЛЬВЕРА */
-        .rev-btn {
-            width: 100%; padding: 18px; border-radius: 15px; margin: 15px 0;
-            border: 2px solid #eee; font-weight: 900; font-size: 14px;
-            text-align: center; cursor: pointer; transition: 0.3s;
-            background: #f9f9f9;
+        /* ПРАВИЛЬНЫЙ ПЕРЕКЛЮЧАТЕЛЬ РЕВОЛЬВЕРА */
+        .rev-row { display: flex; align-items: center; justify-content: space-between; margin: 20px 0; padding: 10px 0; border-top: 1px solid #eee; }
+        .rev-label { font-weight: 900; font-size: 14px; text-transform: uppercase; }
+        .rev-toggle-btn {
+            background: #f0f0f0; border: 2px solid #eee; border-radius: 12px;
+            padding: 12px 20px; font-weight: 900; font-size: 12px; cursor: pointer;
+            transition: 0.3s; color: #888;
         }
-        .rev-btn.active-rev { background: #000; color: #fff; border-color: #000; }
+        .rev-toggle-btn.is-unten { background: #000; color: #fff; border-color: #000; }
 
         .fab { position: fixed; bottom: 30px; right: 25px; background: var(--accent); color: #fff; width: 65px; height: 65px; border-radius: 35px; border: none; font-size: 35px; box-shadow: 0 10px 25px rgba(0,122,255,0.4); }
         
-        input { width: 100%; padding: 14px; border-radius: 12px; border: 1.5px solid #eee; margin-top: 5px; box-sizing: border-box; font-size: 16px; font-weight: 600; }
+        input { width: 100%; padding: 14px; border-radius: 12px; border: 1.5px solid #eee; margin-top: 5px; box-sizing: border-box; font-size: 16px; font-weight: 600; margin-bottom: 10px; }
+        .m-btns { display: flex; gap: 10px; margin-top: 20px; }
+        .m-btns button { flex: 1; }
     `;
     document.head.appendChild(style);
 };
@@ -142,11 +132,11 @@ function moveItem(i, dir) {
     }
 }
 
-// ПЕРЕКЛЮЧАТЕЛЬ РЕВОЛЬВЕРА
+// ФУНКЦИЯ ПЕРЕКЛЮЧЕНИЯ
 function toggleRev() {
     const btn = el('btn-rev-toggle');
-    btn.classList.toggle('active-rev');
-    btn.innerText = btn.classList.contains('active-rev') ? 'REVOLVER UNTEN: START' : 'REVOLVER OBEN';
+    const isUnten = btn.classList.toggle('is-unten');
+    btn.innerText = isUnten ? 'REVOLVER UNTEN' : 'REVOLVER OBEN';
 }
 
 function modalT(i = null) {
@@ -158,10 +148,10 @@ function modalT(i = null) {
     
     const btn = el('btn-rev-toggle');
     if(t.rev) {
-        btn.classList.add('active-rev');
-        btn.innerText = 'REVOLVER UNTEN: START';
+        btn.classList.add('is-unten');
+        btn.innerText = 'REVOLVER UNTEN';
     } else {
-        btn.classList.remove('active-rev');
+        btn.classList.remove('is-unten');
         btn.innerText = 'REVOLVER OBEN';
     }
     show('m-t');
@@ -169,11 +159,12 @@ function modalT(i = null) {
 
 function saveT() {
     const i = el('t-idx').value;
+    const isUnten = el('btn-rev-toggle').classList.contains('is-unten');
     const t = {
         id: el('t-id').value.toUpperCase(),
         nm: el('t-nm').value.toUpperCase(),
         dia: el('t-dia').value,
-        rev: el('btn-rev-toggle').classList.contains('active-rev')
+        rev: isUnten
     };
     if(!db[currentIdx].tools) db[currentIdx].tools = [];
     if(i === '') db[currentIdx].tools.push(t); else db[currentIdx].tools[i] = t;
@@ -193,13 +184,8 @@ function saveP() {
     db.push(data); save(); hide('m-p'); renderList();
 }
 
-// PDF И ЭКСПОРТ
 function exportJSON() { el('imp-area').value = JSON.stringify(db); el('imp-area').select(); document.execCommand('copy'); alert("JSON Copied!"); }
 function importJSON() { try { db = JSON.parse(el('imp-area').value); save(); renderList(); hide('m-imp'); } catch(e){ alert("Error"); } }
-
-function makePDF() {
-    // Вызывает системное окно печати текущего вида
-    window.print();
-}
+function makePDF() { window.print(); }
 
 window.onload = () => { injectStyles(); renderList(); };
