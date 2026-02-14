@@ -7,78 +7,80 @@ const injectStyles = () => {
     const style = document.createElement('style');
     style.innerHTML = `
         :root { 
-            --bg: #f4f7f9; 
+            --bg: #f5f7fa; 
             --neu-light: #ffffff;
             --neu-shadow: #d1d9e6;
             --accent: #007aff;
+            --text: #1d1d1f;
         }
         body { 
             background: var(--bg) !important; 
             font-family: -apple-system, system-ui, sans-serif !important; 
-            margin: 0; padding-bottom: 150px; 
+            margin: 0; padding-top: 80px; padding-bottom: 120px;
+            color: var(--text);
         }
 
-        /* Верхняя панель управления */
-        .top-nav-bar {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 15px 25px; background: rgba(255,255,255,0.4);
-            backdrop-filter: blur(10px); position: sticky; top: 0; z-index: 10000;
-            border-bottom: 1px solid rgba(0,0,0,0.05);
+        /* Фиксированная верхняя панель (как на скриншотах) */
+        .header-fixed {
+            position: fixed; top: 0; left: 0; right: 0; height: 70px;
+            background: rgba(255,255,255,0.7); backdrop-filter: blur(20px);
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 25px; z-index: 10000; border-bottom: 1px solid rgba(0,0,0,0.05);
         }
-        .nav-left { font-size: 14px; font-weight: 800; color: var(--accent); cursor: pointer; }
-        .nav-right { display: flex; gap: 10px; }
+        .nav-title { font-size: 14px; font-weight: 800; color: var(--accent); }
+        .nav-btns { display: flex; gap: 12px; }
 
-        .btn-ui {
-            background: var(--bg); border: none; border-radius: 10px;
-            padding: 8px 15px; font-size: 11px; font-weight: 800; color: #666;
+        /* Кнопки в стиле Premium */
+        .btn-premium {
+            background: var(--bg); border: none; border-radius: 12px;
+            padding: 10px 18px; font-size: 11px; font-weight: 800; color: #666;
             box-shadow: 4px 4px 8px var(--neu-shadow), -4px -4px 8px var(--neu-light);
-            cursor: pointer; text-transform: uppercase;
+            cursor: pointer; text-transform: uppercase; transition: 0.2s;
         }
-        .btn-ui.blue { background: var(--accent); color: white; box-shadow: 0 4px 10px rgba(0,122,255,0.3); }
-        .btn-ui:active { transform: scale(0.95); box-shadow: inset 2px 2px 5px var(--neu-shadow); }
+        .btn-premium.blue { background: var(--accent); color: white; box-shadow: 0 4px 12px rgba(0,122,255,0.3); }
+        .btn-premium:active { transform: scale(0.95); box-shadow: inset 2px 2px 5px var(--neu-shadow); }
 
-        /* Центральный брендинг */
-        .brand-section {
+        /* Центр: Лого и Зеркало */
+        .hero-block {
             display: flex; flex-direction: column; align-items: center;
-            padding: 40px 0;
+            padding: 40px 0; margin-bottom: 20px;
         }
-        .logo-main {
-            width: 200px; height: 200px; object-fit: contain; /* ЛОГО ЕЩЕ БОЛЬШЕ */
-            margin-bottom: 20px; filter: drop-shadow(0 15px 35px rgba(0,0,0,0.1));
+        .logo-img {
+            width: 200px; height: 200px; object-fit: contain;
+            margin-bottom: 25px; filter: drop-shadow(0 20px 40px rgba(0,0,0,0.1));
         }
-        .title-box { text-align: center; margin-bottom: 30px; }
-        .t-high { font-size: 72px; font-weight: 900; letter-spacing: -4px; color: #1d1d1f; line-height: 0.8; }
-        .t-refl {
+        .mirror-wrap { text-align: center; margin-bottom: 40px; }
+        .t-main { font-size: 72px; font-weight: 900; letter-spacing: -4px; line-height: 1; }
+        .t-reflect {
             font-size: 72px; font-weight: 900; letter-spacing: -4px;
-            margin-top: -32px; transform: scaleY(-1);
+            margin-top: -30px; transform: scaleY(-1);
             background: linear-gradient(to bottom, rgba(0,0,0,0.2), transparent 80%);
             -webkit-background-clip: text; -webkit-text-fill-color: transparent;
             opacity: 0.2; user-select: none;
         }
 
         /* Горизонтальное меню */
-        .menu-bar {
-            display: flex; gap: 8px; background: rgba(0,0,0,0.05); 
-            padding: 5px; border-radius: 16px; margin-bottom: 40px;
+        .nav-tabs {
+            display: flex; background: rgba(0,0,0,0.05); 
+            padding: 5px; border-radius: 16px;
         }
-        .menu-item {
+        .tab-item {
             font-size: 11px; font-weight: 800; text-transform: uppercase;
-            padding: 10px 20px; border-radius: 12px; color: #888; cursor: pointer;
+            padding: 12px 22px; border-radius: 13px; color: #888; cursor: pointer;
         }
-        .menu-item.active { background: white; color: var(--accent); box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
-        .menu-item.disabled { opacity: 0.3; pointer-events: none; }
+        .tab-item.active { background: white; color: var(--accent); box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
+        .tab-item.disabled { opacity: 0.3; pointer-events: none; }
 
-        /* Карточки */
-        .list-p { padding: 0 20px; max-width: 900px; margin: 0 auto; }
-        .p-card {
+        /* Список проектов */
+        .container { padding: 0 20px; max-width: 800px; margin: 0 auto; }
+        .card-p {
             background: var(--bg); border-radius: 35px; padding: 30px;
             margin-bottom: 25px; box-shadow: 12px 12px 25px var(--neu-shadow), -12px -12px 25px var(--neu-light);
             display: flex; align-items: center; justify-content: space-between;
             border: 1px solid rgba(255,255,255,0.7); cursor: pointer;
         }
-        .p-card:active { transform: scale(0.98); }
         .p-num { font-size: 36px; font-weight: 900; color: #000; letter-spacing: -1.5px; }
-        .p-name { font-size: 16px; font-weight: 700; color: #666; }
+        .p-name { font-size: 16px; font-weight: 700; color: #666; margin-top: 4px; }
         .p-label { font-size: 10px; font-weight: 800; color: #adb5bd; text-transform: uppercase; letter-spacing: 2px; }
 
         .btn-del { color: #ff3b30; font-size: 26px; font-weight: 900; padding: 10px; opacity: 0.5; }
@@ -89,13 +91,13 @@ const injectStyles = () => {
 const el = (id) => document.getElementById(id);
 const save = () => localStorage.setItem(DB_KEY, JSON.stringify(db));
 
-// Глобальные функции
+// Глобальные методы
 window.exportJSON = () => {
-    const blob = new Blob([JSON.stringify(db, null, 2)], {type: "application/json"});
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = "cititool_v8.json";
-    a.click();
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db));
+    const dlAnchorElem = document.createElement('a');
+    dlAnchorElem.setAttribute("href", dataStr);
+    dlAnchorElem.setAttribute("download", "cititool_v8.json");
+    dlAnchorElem.click();
 };
 
 window.importJSON = () => {
@@ -116,36 +118,36 @@ window.renderList = () => {
     const main = el('v-home'); if(!main) return;
     
     main.innerHTML = `
-        <div class="top-nav-bar">
-            <div class="nav-left" onclick="window.renderList()">← v-home</div>
-            <div class="nav-right">
-                <button class="btn-ui" onclick="window.exportJSON()">Export</button>
-                <button class="btn-ui" onclick="window.importJSON()">Import</button>
-                <button class="btn-ui blue" onclick="window.modalP()">+ NEU</button>
+        <div class="header-fixed">
+            <div class="nav-title" onclick="window.renderList()">CitiTool Home</div>
+            <div class="nav-btns">
+                <button class="btn-premium" onclick="window.exportJSON()">Export</button>
+                <button class="btn-premium" onclick="window.importJSON()">Import</button>
+                <button class="btn-premium blue" onclick="window.modalP()">+ NEU</button>
             </div>
         </div>
 
-        <div class="brand-section">
-            <img src="${LOGO_URL}" class="logo-main" alt="Logo">
-            <div class="title-box">
-                <div class="t-high">CitiTool</div>
-                <div class="t-refl">CitiTool</div>
+        <div class="hero-block">
+            <img src="${LOGO_URL}" class="logo-img" alt="Logo">
+            <div class="mirror-wrap">
+                <div class="t-main">CitiTool</div>
+                <div class="t-reflect">CitiTool</div>
             </div>
             
-            <div class="menu-bar">
-                <div class="menu-item active">Home</div>
-                <div class="menu-item disabled">SyncOP</div>
-                <div class="menu-item disabled">WKZListe</div>
-                <div class="menu-item disabled">Stange</div>
+            <div class="nav-tabs">
+                <div class="tab-item active">Home</div>
+                <div class="tab-item disabled">SyncOP</div>
+                <div class="tab-item disabled">WKZListe</div>
+                <div class="tab-item disabled">Stange</div>
             </div>
         </div>
         
-        <div class="list-p" id="list-items"></div>
+        <div class="container" id="list-target"></div>
     `;
     
-    const list = el('list-items');
+    const list = el('list-target');
     list.innerHTML = db.map((p, i) => `
-        <div class="p-card" onclick="openProject(${i})">
+        <div class="card-p" onclick="openProject(${i})">
             <div>
                 <div class="p-label">PROJEKT</div>
                 <div class="p-num">${p.num || '---'}</div>
@@ -159,6 +161,7 @@ function deleteProject(i) {
     if(confirm('Löschen?')) { db.splice(i, 1); save(); window.renderList(); }
 }
 
+// Старт
 window.onload = () => {
     injectStyles();
     window.renderList();
