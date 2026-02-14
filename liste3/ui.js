@@ -11,11 +11,11 @@ const injectStyles = () => {
         }
         body { 
             background: var(--bg) !important; 
-            font-family: -apple-system, sans-serif !important; 
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif !important; 
             margin: 0; padding-bottom: 150px;
         }
 
-        /* БРЕНДИНГ: ЛОГО 250px И ТЕКСТ ВПЛОТНУЮ */
+        /* БРЕНДИНГ: Огромное лого и CitiTool вплотную */
         .brand-block { display: flex; flex-direction: column; align-items: center; padding: 40px 0 10px; }
         .logo-img { width: 250px !important; height: auto; margin-bottom: -45px !important; z-index: 1; }
         .header-title { font-weight: 900; font-size: 64px !important; letter-spacing: -4px; margin: 0; z-index: 2; position: relative; color: #000; }
@@ -26,9 +26,9 @@ const injectStyles = () => {
             border-bottom: 0.5px solid rgba(0,0,0,0.05);
         }
 
-        /* КНОПКА REVOLVER */
+        /* Тумблер Revolver в модалке */
         .rev-row { display: flex; align-items: center; justify-content: space-between; background: #f2f2f7; padding: 15px; border-radius: 18px; margin: 15px 0; }
-        .btn-rev { background: #fff; border: 2px solid #ddd; border-radius: 12px; padding: 10px 20px; font-weight: 900; font-size: 12px; cursor: pointer; }
+        .btn-rev { background: #fff; border: 2px solid #ddd; border-radius: 12px; padding: 10px 20px; font-weight: 900; font-size: 11px; cursor: pointer; transition: 0.2s; }
         .btn-rev.on { background: #000 !important; color: #fff !important; border-color: #000 !important; }
 
         .project-card {
@@ -36,12 +36,12 @@ const injectStyles = () => {
             padding: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.04);
             display: flex; align-items: center; justify-content: space-between;
         }
-        .tool-card { background: #fff; border-radius: 18px; padding: 14px 18px; margin: 0 16px 10px 16px; display: flex; align-items: center; justify-content: space-between; }
+        .tool-card { background: #fff; border-radius: 18px; padding: 14px 18px; margin: 0 16px 10px 16px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 8px rgba(0,0,0,0.02); }
         .btn-order { background: #f2f2f7; border: none; border-radius: 6px; width: 32px; height: 28px; color: var(--accent); font-weight: 900; }
-        .fab { position: fixed; bottom: 30px; right: 20px; background: var(--accent); color: #fff; width: 60px; height: 60px; border-radius: 30px; display: flex; align-items: center; justify-content: center; font-size: 30px; z-index: 1000; border:none; }
+        .fab { position: fixed; bottom: 30px; right: 20px; background: var(--accent); color: #fff; width: 60px; height: 60px; border-radius: 30px; display: flex; align-items: center; justify-content: center; font-size: 30px; z-index: 1000; border:none; box-shadow: 0 8px 25px rgba(0,122,255,0.3); }
         
-        /* Исправление инпутов */
         input { width: 100%; padding: 14px; border-radius: 12px; border: 1.5px solid #eee; margin-top: 5px; box-sizing: border-box; font-size: 16px; margin-bottom: 10px; }
+        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: none; align-items: center; justify-content: center; z-index: 2000; backdrop-filter: blur(10px); }
     `;
     document.head.appendChild(style);
 };
@@ -65,10 +65,10 @@ function renderList() {
     ` + db.map((p, i) => `
         <div class="project-card" onclick="openProject(${i})">
             <div style="display:flex; flex-direction:column;">
-                <div style="font-size:11px; font-weight:700; color:var(--text-sub); text-transform:uppercase;">${p.name || 'PROJEKT'}</div>
-                <div style="font-size:24px; font-weight:900; color:#000;">${p.num || '---'}</div>
+                <div style="font-size:10px; font-weight:700; color:var(--text-sub); text-transform:uppercase;">${p.name || 'PROJEKT'}</div>
+                <div style="font-size:24px; font-weight:900; color:#000; letter-spacing:-0.5px;">${p.num || '---'}</div>
             </div>
-            <div style="color:#ff3b30; font-weight:800; padding:10px; font-size:18px;" onclick="event.stopPropagation(); deleteProject(${i})">✕</div>
+            <div style="color:#ff3b30; font-weight:800; padding:10px; font-size:18px; opacity:0.3;" onclick="event.stopPropagation(); deleteProject(${i})">✕</div>
         </div>`).join('') + '<div style="height:120px"></div>';
 }
 
@@ -86,8 +86,8 @@ function renderTools() {
         item.innerHTML = `
             <div style="flex:1; min-width:0;" onclick="modalT(${i})">
                 ${revMark}
-                <div style="font-size:10px; font-weight:700; color:var(--text-sub);">${t.id || 'T0000'}</div>
-                <div style="font-size:18px; font-weight:800;">${t.nm || '---'}</div>
+                <div style="font-size:10px; font-weight:700; color:var(--text-sub); text-transform:uppercase;">${t.id || 'T-NR'}</div>
+                <div style="font-size:18px; font-weight:800; color:#000;">${t.nm || '---'}</div>
                 <div style="margin-top:4px; font-weight:700; color:var(--accent); font-size:13px;">${t.dia || ''}</div>
             </div>
             <div style="display:flex; flex-direction:column; gap:4px; margin-left:12px;">
@@ -99,7 +99,7 @@ function renderTools() {
     list.innerHTML += '<div style="height:180px"></div>';
 }
 
-// --- ЛОГИКА ПРОЕКТОВ ---
+// --- ЛОГИКА ПРОЕКТОВ (ИСПРАВЛЕНО) ---
 function openProject(i) { currentIdx = i; el('v-home').style.display='none'; el('v-det').style.display='block'; el('h-num').innerText = db[i].num; el('h-nam').innerText = db[i].name; renderTools(); }
 function goHome() { currentIdx = null; renderList(); }
 
@@ -158,15 +158,27 @@ function moveItem(i, dir) {
     if (target >= 0 && target < tools.length) { [tools[i], tools[target]] = [tools[target], tools[i]]; save(); renderTools(); }
 }
 
-// --- ТВОЙ PDF ---
+// --- PDF ГЕНЕРАЦИЯ (С РАЗДЕЛЕНИЕМ СТРАНИЦ) ---
 function makePDF() {
     const p = db[currentIdx];
-    const getPageHead = () => `<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; min-height:90px;"><div style="display:flex; flex-direction:column; justify-content:center;"><div style="font-size:13px; font-weight:900; text-transform:uppercase; color:#666; margin-bottom:2px; line-height:1;">${p.name || ''}</div><div style="font-size:64px; font-weight:900; line-height:0.8; letter-spacing:-2px; margin:0;">${p.num || '---'}</div></div><div style="width:220px; font-size:11px; font-weight:800; line-height:1.5;"><div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>LAUFZEIT</span><span>${p.lzf || ''}</span></div><div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>MATERIAL</span><span>${p.mat || ''}</span></div><div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>SÄGELÄNGE</span><span>${p.sag || ''}</span></div><div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>ABSTAND</span><span>${p.abs || ''}</span></div><div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>GREIFBACKEN</span><span>${p.grf || ''}</span></div><div style="display:flex; justify-content:space-between;"><span>STÜCKZAHL</span><span>${p.stt || ''} / ${p.stn || ''}</span></div></div></div><div style="border-bottom:5px solid #000; margin-bottom:15px;"></div>`;
-    const tableHead = `<div style="display:flex; font-size:10px; font-weight:900; text-transform:uppercase; margin-bottom:6px; padding:0 2px;"><div style="width:75px;">T-NR</div><div style="flex:1;">WERKZEUGNAME / KOMMENTAR</div><div style="width:125px; text-align:right;">Ø / TOLERANZ</div></div><div style="border-bottom:4px solid #000;"></div>`;
-    const getRow = (t) => `<div style="display:flex; align-items:baseline; border-bottom:1.5px solid #000; padding:10px 0; width:100%; page-break-inside: avoid;"><div style="width:75px; font-weight:800; font-size:15px;">${t.id}</div><div style="flex:1; font-weight:700; font-size:15px; text-transform:uppercase; padding-right:10px; white-space:pre-wrap;">${t.nm}</div><div style="width:125px; text-align:right; font-weight:800; font-size:14px;">${t.dia.replace(/\//g, '<br>')}</div></div>`;
+    const getPageHead = () => `<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; min-height:90px;"><div style="display:flex; flex-direction:column;"><div style="font-size:13px; font-weight:900; text-transform:uppercase; color:#666;">${p.name || ''}</div><div style="font-size:64px; font-weight:900; line-height:0.8; letter-spacing:-2px; margin:0;">${p.num || '---'}</div></div><div style="width:220px; font-size:11px; font-weight:800; line-height:1.5;"><div style="display:flex; justify-content:space-between; border-bottom:1px solid #eee;"><span>LAUFZEIT</span><span>${p.lzf || ''}</span></div><div style="display:flex; justify-content:space-between; border-bottom:1px solid #eee;"><span>MATERIAL</span><span>${p.mat || ''}</span></div><div style="display:flex; justify-content:space-between; border-bottom:1px solid #eee;"><span>SÄGELÄNGE</span><span>${p.sag || ''}</span></div><div style="display:flex; justify-content:space-between; border-bottom:1px solid #eee;"><span>ABSTAND</span><span>${p.abs || ''}</span></div><div style="display:flex; justify-content:space-between; border-bottom:1px solid #eee;"><span>GREIFBACKEN</span><span>${p.grf || ''}</span></div><div style="display:flex; justify-content:space-between;"><span>STÜCKZAHL</span><span>${p.stt || ''} / ${p.stn || ''}</span></div></div></div><div style="border-bottom:5px solid #000; margin-bottom:15px;"></div>`;
+    const tableHead = `<div style="display:flex; font-size:10px; font-weight:900; text-transform:uppercase; margin-bottom:6px;"><div style="width:75px;">T-NR</div><div style="flex:1;">WERKZEUGNAME</div><div style="width:125px; text-align:right;">Ø / TOLERANZ</div></div><div style="border-bottom:4px solid #000;"></div>`;
+    const getRow = (t) => `<div style="display:flex; align-items:baseline; border-bottom:1.5px solid #000; padding:10px 0; page-break-inside: avoid;"><div style="width:75px; font-weight:800; font-size:15px;">${t.id}</div><div style="flex:1; font-weight:700; font-size:15px; text-transform:uppercase;">${t.nm}</div><div style="width:125px; text-align:right; font-weight:800; font-size:14px;">${t.dia.replace(/\//g, '<br>')}</div></div>`;
+    
     let oben = [], unten = [], target = oben;
     (p.tools || []).forEach(t => { if(t.rev) target = unten; target.push(t); });
-    let pdfHtml = `<!DOCTYPE html><html><head><style>@page { size: A4; margin: 0; } body { margin: 0; padding: 10mm; background: #fff; font-family: sans-serif; } .page { width: 210mm; height: 297mm; padding: 15mm; box-sizing: border-box; page-break-after: always; display: flex; flex-direction: column; } .content-border { border: 2.2px solid #000; padding: 20px; flex: 1; display: flex; flex-direction: column; box-sizing: border-box; } .footer { border-top: 1.2px solid #000; padding-top: 5px; font-size: 9px; font-weight: 800; text-align: center; color: #666; margin-top: auto; }</style></head><body><div class="page"><div class="content-border">${getPageHead()}<div style="flex:1;"><div style="margin-bottom:5px; font-size:18px; font-weight:900; text-transform:uppercase;">REVOLVER OBEN</div>${tableHead}${oben.map(getRow).join('')}</div><div class="footer">CITITOOL REPORT</div></div></div>${unten.length > 0 ? `<div class="page"><div class="content-border">${getPageHead()}<div style="flex:1;"><div style="margin-bottom:5px; font-size:18px; font-weight:900; text-transform:uppercase;">REVOLVER UNTEN</div>${tableHead}${unten.map(getRow).join('')}</div><div class="footer">CITITOOL REPORT</div></div></div>` : ''}<script>window.onload = function() { setTimeout(() => { window.print(); }, 400); };</script></body></html>`;
+
+    let pdfHtml = `<!DOCTYPE html><html><head><style>@page { size: A4; margin: 0; } body { margin: 0; padding: 10mm; font-family: sans-serif; } .page { width: 210mm; height: 297mm; padding: 15mm; box-sizing: border-box; page-break-after: always; display: flex; flex-direction: column; } .content-border { border: 2.2px solid #000; padding: 20px; flex: 1; display: flex; flex-direction: column; } .footer { border-top: 1.2px solid #000; padding-top: 5px; font-size: 9px; font-weight: 800; text-align: center; margin-top: auto; }</style></head><body>`;
+    
+    // Страница 1: Oben
+    pdfHtml += `<div class="page"><div class="content-border">${getPageHead()}<div style="flex:1;"><div style="margin-bottom:5px; font-size:18px; font-weight:900; text-transform:uppercase;">REVOLVER OBEN</div>${tableHead}${oben.map(getRow).join('')}</div><div class="footer">CITITOOL REPORT</div></div></div>`;
+    
+    // Страница 2: Unten (только если есть инструменты)
+    if(unten.length > 0) {
+        pdfHtml += `<div class="page"><div class="content-border">${getPageHead()}<div style="flex:1;"><div style="margin-bottom:5px; font-size:18px; font-weight:900; text-transform:uppercase;">REVOLVER UNTEN</div>${tableHead}${unten.map(getRow).join('')}</div><div class="footer">CITITOOL REPORT</div></div></div>`;
+    }
+    
+    pdfHtml += `<script>window.onload = function() { setTimeout(() => { window.print(); }, 400); };</script></body></html>`;
     const win = window.open('', '_blank'); if (win) { win.document.write(pdfHtml); win.document.close(); }
 }
 
