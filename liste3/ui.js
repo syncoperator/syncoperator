@@ -4,7 +4,6 @@ const LOGO_URL = 'https://raw.githubusercontent.com/syncoperator/syncoperator/re
 let db = JSON.parse(localStorage.getItem(DB_KEY)) || [];
 let currentIdx = null;
 
-// --- СТИЛИ (Premium Light) ---
 const injectStyles = () => {
     const style = document.createElement('style');
     style.innerHTML = `
@@ -14,151 +13,166 @@ const injectStyles = () => {
             --text-main: #1c1c1e;
             --text-sub: #8e8e93; 
             --card-bg: #ffffff;
-            --neu-shadow: #cfd8e3;
+            --shadow: 0 4px 15px rgba(0,0,0,0.05);
         }
         body { 
             background: var(--bg) !important; 
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important; 
-            margin: 0; color: var(--text-main);
-            padding-bottom: 120px;
+            margin: 0; padding: 0; color: var(--text-main);
         }
 
-        /* Шапка и Лого */
-        .brand-hero { display: flex; flex-direction: column; align-items: center; padding: 30px 0 10px; }
-        .logo-main { width: 180px; height: auto; object-fit: contain; }
-        .mirror-wrap { text-align: center; margin-top: 5px; }
-        .t-main { font-size: 56px; font-weight: 900; letter-spacing: -3px; color: #000; line-height: 0.8; }
-        .t-mirror { 
-            font-size: 56px; font-weight: 900; letter-spacing: -3px; margin-top: -24px; 
-            transform: scaleY(-1); opacity: 0.1;
+        /* Центрированный контейнер приложения */
+        .app-wrap { max-width: 500px; margin: 0 auto; padding-bottom: 120px; }
+
+        /* Блок Брендинга: Логотип + Текст вплотную */
+        .brand-header {
+            display: flex; flex-direction: column; align-items: center;
+            padding: 30px 20px 10px;
+        }
+        .logo-img { width: 120px; height: auto; margin-bottom: -5px; } /* Сблизили с текстом */
+        .logo-text-wrap { text-align: center; }
+        .logo-title { font-size: 50px; font-weight: 900; letter-spacing: -2.5px; line-height: 1; }
+        .logo-mirror { 
+            font-size: 50px; font-weight: 900; letter-spacing: -2.5px; 
+            margin-top: -18px; transform: scaleY(-1); opacity: 0.1;
             background: linear-gradient(to bottom, #000, transparent);
             -webkit-background-clip: text; -webkit-text-fill-color: transparent;
         }
 
-        /* Кнопки управления */
-        .nav-bar { display: flex; justify-content: center; gap: 10px; padding: 20px; position: sticky; top: 0; background: rgba(248,249,251,0.9); backdrop-filter: blur(10px); z-index: 100; }
-        .btn-ui {
+        /* Панель кнопок: Ровный ряд */
+        .action-bar {
+            display: flex; justify-content: center; gap: 10px;
+            padding: 15px 20px 25px;
+        }
+        .btn-p {
             background: #fff; border: none; border-radius: 12px;
-            padding: 10px 16px; font-size: 11px; font-weight: 800; color: #555;
-            box-shadow: 4px 4px 10px var(--neu-shadow), -4px -4px 10px #fff;
+            padding: 12px 0; width: 100px; font-size: 11px; font-weight: 800;
+            color: #666; box-shadow: var(--shadow);
             text-transform: uppercase; cursor: pointer; transition: 0.2s;
         }
-        .btn-ui.blue { background: var(--accent); color: white; box-shadow: 0 4px 12px rgba(0,122,255,0.3); }
-        .btn-ui:active { transform: scale(0.95); }
+        .btn-p.blue { background: var(--accent); color: white; }
+        .btn-p:active { transform: scale(0.95); }
 
-        /* Карточки */
-        .project-card {
-            background: var(--card-bg); border-radius: 24px;
-            margin: 0 20px 15px; padding: 20px;
+        /* Карточки проектов */
+        .card {
+            background: var(--card-bg); border-radius: 20px;
+            margin: 0 20px 12px; padding: 18px 22px;
             display: flex; align-items: center; justify-content: space-between;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.04); border: 1px solid #fff;
+            box-shadow: var(--shadow); border: 1px solid rgba(255,255,255,0.8);
         }
-        .p-label { font-size: 10px; font-weight: 700; color: var(--text-sub); text-transform: uppercase; margin-bottom: 2px; }
-        .p-title { font-size: 24px; font-weight: 900; color: #000; }
+        .c-label { font-size: 10px; font-weight: 700; color: var(--text-sub); text-transform: uppercase; }
+        .c-num { font-size: 24px; font-weight: 900; color: #000; letter-spacing: -0.5px; }
+        .c-del { color: #ff3b30; font-size: 20px; padding: 5px; background: none; border: none; opacity: 0.3; }
 
-        .tool-card {
-            background: #fff; border-radius: 20px;
-            padding: 15px 20px; margin: 0 16px 10px;
-            display: flex; align-items: center; justify-content: space-between;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.02);
-        }
-        .rev-tag { background: #000; color: #fff; font-size: 8px; padding: 3px 7px; border-radius: 5px; font-weight: 900; margin-bottom: 5px; width: fit-content; }
-
-        .btn-del { color: #ff3b30; font-weight: 800; padding: 10px; font-size: 18px; border: none; background: none; opacity: 0.4; }
-        
+        /* Плавающая кнопка */
         .fab {
-            position: fixed; bottom: 30px; right: 20px;
+            position: fixed; bottom: 30px; right: 25px;
             background: var(--accent); color: #fff; width: 60px; height: 60px;
             border-radius: 30px; display: flex; align-items: center; justify-content: center;
-            font-size: 30px; box-shadow: 0 8px 25px rgba(0,122,255,0.3); z-index: 1000; border: none;
+            font-size: 30px; box-shadow: 0 8px 25px rgba(0,122,255,0.3); border: none; z-index: 100;
         }
 
-        /* Модалки (Базовые слои) */
-        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 2000; display: none; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
-        .active { display: flex !important; }
+        /* Инструменты */
+        .t-card {
+            background: #fff; border-radius: 16px; margin: 0 16px 10px;
+            padding: 15px 18px; display: flex; align-items: center; gap: 12px;
+            box-shadow: var(--shadow);
+        }
+        .t-tag { background: #000; color: #fff; font-size: 8px; padding: 3px 6px; border-radius: 4px; font-weight: 900; margin-bottom: 4px; display: inline-block; }
     `;
     document.head.appendChild(style);
 };
 
-// --- ВСПОМОГАТЕЛЬНЫЕ ---
 const el = (id) => document.getElementById(id);
-const show = (id) => { const x = el(id); if(x) x.classList.add('active'); };
-const hide = (id) => { const x = el(id); if(x) x.classList.remove('active'); };
 const save = () => localStorage.setItem(DB_KEY, JSON.stringify(db));
 
-// --- ГЛАВНАЯ ---
+// --- РЕНДЕР ГЛАВНОЙ ---
 function renderList() {
-    el('v-home').style.display = 'block';
-    el('v-det').style.display = 'none';
+    const home = el('v-home');
+    const det = el('v-det');
+    home.style.display = 'block';
+    det.style.display = 'none';
 
-    el('v-home').innerHTML = `
-        <div class="nav-bar">
-            <button class="btn-ui" onclick="exportJSON()">Export</button>
-            <button class="btn-ui" onclick="show('m-imp')">Import</button>
-            <button class="btn-ui blue" onclick="modalP()">+ NEU</button>
-        </div>
-        <div class="brand-hero">
-            <img src="${LOGO_URL}" class="logo-main">
-            <div class="mirror-wrap">
-                <div class="t-main">CitiTool</div>
-                <div class="t-mirror">CitiTool</div>
+    home.innerHTML = `
+        <div class="app-wrap">
+            <div class="brand-header">
+                <img src="${LOGO_URL}" class="logo-img">
+                <div class="logo-text-wrap">
+                    <div class="logo-title">CitiTool</div>
+                    <div class="logo-mirror">CitiTool</div>
+                </div>
             </div>
+            
+            <div class="action-bar">
+                <button class="btn-p" onclick="exportJSON()">Export</button>
+                <button class="btn-p" onclick="el('m-imp').classList.add('active')">Import</button>
+                <button class="btn-p blue" onclick="modalP()">+ Neu</button>
+            </div>
+
+            <div id="projects-container"></div>
         </div>
-        <div id="list-p"></div>
     `;
 
-    const list = el('list-p');
-    list.innerHTML = db.map((p, i) => `
-        <div class="project-card" onclick="openProject(${i})">
-            <div class="p-info">
-                <div class="p-label">${p.name || 'UNBENANNT'}</div>
-                <div class="p-title">${p.num || '---'}</div>
+    const container = el('projects-container');
+    container.innerHTML = db.map((p, i) => `
+        <div class="card" onclick="openProject(${i})">
+            <div>
+                <div class="c-label">${p.name || 'UNBENANNT'}</div>
+                <div class="c-num">${p.num || '---'}</div>
             </div>
-            <button class="btn-del" onclick="event.stopPropagation(); deleteProject(${i})">✕</button>
-        </div>`).join('') + '<div style="height:100px"></div>';
+            <button class="c-del" onclick="event.stopPropagation(); deleteProject(${i})">✕</button>
+        </div>
+    `).join('');
 }
 
-// --- ИНСТРУМЕНТЫ ---
+// --- РЕНДЕР ИНСТРУМЕНТОВ ---
 function renderTools() {
     const p = db[currentIdx];
     el('v-home').style.display = 'none';
     el('v-det').style.display = 'block';
 
     el('v-det').innerHTML = `
-        <div class="nav-bar">
-            <button class="btn-ui" onclick="goHome()">← Home</button>
-            <button class="btn-ui blue" onclick="makePDF()">PDF REPORT</button>
-        </div>
-        <div class="brand-hero">
-            <div class="mirror-wrap">
-                <div class="t-main">${p.num}</div>
-                <div class="p-label" style="margin-top:5px">${p.name}</div>
+        <div class="app-wrap">
+            <div class="action-bar">
+                <button class="btn-p" onclick="goHome()">← Home</button>
+                <div style="flex:1"></div>
+                <button class="btn-p blue" onclick="makePDF()">PDF Report</button>
             </div>
+
+            <div class="brand-header">
+                <div class="logo-text-wrap">
+                    <div class="logo-title">${p.num}</div>
+                    <div class="c-label" style="margin-top:5px">${p.name}</div>
+                </div>
+            </div>
+
+            <div id="tools-container"></div>
+            <button class="fab" onclick="modalT()">+</button>
         </div>
-        <div id="list-t"></div>
-        <button class="fab" onclick="modalT()">+</button>
     `;
 
-    const list = el('list-t');
+    const container = el('tools-container');
     const tools = p.tools || [];
-    list.innerHTML = tools.map((t, i) => `
-        <div class="tool-card" onclick="modalT(${i})">
+    container.innerHTML = tools.map((t, i) => `
+        <div class="t-card" onclick="modalT(${i})">
             <div style="flex:1">
-                ${t.rev ? `<div class="rev-tag">REVOLVER UNTEN</div>` : ''}
-                <div class="p-label">${t.id || 'T0000'}</div>
-                <div style="font-size:18px; font-weight:800; color:#000;">${t.nm || '---'}</div>
-                <div style="margin-top:4px; font-weight:700; color:var(--accent); font-size:13px;">${t.dia || ''}</div>
+                ${t.rev ? `<span class="t-tag">REVOLVER UNTEN</span>` : ''}
+                <div class="c-label">${t.id || 'T0000'}</div>
+                <div style="font-size:17px; font-weight:800;">${t.nm || '---'}</div>
+                <div style="color:var(--accent); font-weight:700; font-size:13px; margin-top:2px;">${t.dia || ''}</div>
             </div>
             <div style="display:flex; flex-direction:column; gap:4px">
-                <button class="btn-ui" style="padding:5px; width:30px;" onclick="event.stopPropagation(); moveItem(${i}, -1)">↑</button>
-                <button class="btn-ui" style="padding:5px; width:30px;" onclick="event.stopPropagation(); moveItem(${i}, 1)">↓</button>
+                <button class="btn-p" style="width:34px; padding:5px 0;" onclick="event.stopPropagation(); moveItem(${i}, -1)">↑</button>
+                <button class="btn-p" style="width:34px; padding:5px 0;" onclick="event.stopPropagation(); moveItem(${i}, 1)">↓</button>
             </div>
-        </div>`).join('') + '<div style="height:150px"></div>';
+        </div>
+    `).join('');
 }
 
-// --- ЛОГИКА (Твой рабочий движок) ---
+// --- ЛОГИКА (Функции открытия/сохранения остаются прежними) ---
 function openProject(i) { currentIdx = i; renderTools(); }
 function goHome() { currentIdx = null; renderList(); }
+function deleteProject(i) { if(confirm('Löschen?')) { db.splice(i, 1); save(); renderList(); } }
 
 function moveItem(i, direction) {
     const tools = db[currentIdx].tools;
@@ -169,70 +183,10 @@ function moveItem(i, direction) {
     }
 }
 
-function modalP(edit = false) {
-    const p = (edit && currentIdx !== null) ? db[currentIdx] : {num:'', name:'', lzf:'', sag:'', stt:'', stn:'', abs:'', grf:'', mat:''};
-    el('p-idx').value = edit ? currentIdx : '';
-    el('p-num').value = p.num; el('p-nam').value = p.name;
-    el('p-lzf').value = p.lzf; el('p-sag').value = p.sag;
-    el('p-stt').value = p.stt; el('p-stn').value = p.stn;
-    el('p-abs').value = p.abs; el('p-grf').value = p.grf;
-    if(el('p-mat')) el('p-mat').value = p.mat;
-    show('m-p');
-}
+// Функции modalP, saveP, modalT, saveT, exportJSON, importJSON, makePDF 
+// должны быть в твоем коде ниже этого блока.
 
-function saveP() {
-    const idx = el('p-idx').value;
-    const data = {
-        num: el('p-num').value, name: el('p-nam').value.toUpperCase(),
-        lzf: el('p-lzf').value, sag: el('p-sag').value,
-        stt: el('p-stt').value, stn: el('p-stn').value,
-        abs: el('p-abs').value, grf: el('p-grf').value,
-        mat: el('p-mat') ? el('p-mat').value.toUpperCase() : '',
-        tools: (idx !== '' && db[idx]) ? (db[idx].tools || []) : []
-    };
-    if (idx === '') db.push(data); else db[idx] = data;
-    save(); hide('m-p'); renderList();
-}
-
-function modalT(i = null) {
-    const edit = i !== null;
-    el('t-idx').value = edit ? i : '';
-    const t = edit ? db[currentIdx].tools[i] : {id:'', nm:'', dia:'', rev:false};
-    el('t-id').value = t.id; el('t-nm').value = t.nm; el('t-dia').value = t.dia;
-    const btn = el('btn-rev-toggle');
-    if(btn) { t.rev ? btn.classList.add('on') : btn.classList.remove('on'); }
-    el('btn-del-t').style.display = edit ? 'block' : 'none';
-    show('m-t');
-}
-
-function saveT() {
-    const i = el('t-idx').value;
-    const btn = el('btn-rev-toggle');
-    const t = { 
-        id: el('t-id').value.toUpperCase(), 
-        nm: el('t-nm').value.toUpperCase(), 
-        dia: el('t-dia').value, 
-        rev: btn ? btn.classList.contains('on') : false 
-    };
-    if(!db[currentIdx].tools) db[currentIdx].tools = [];
-    if(i === '') db[currentIdx].tools.push(t); else db[currentIdx].tools[i] = t;
-    save(); renderTools(); hide('m-t');
-}
-
-function deleteProject(i) { if(confirm('Löschen?')) { db.splice(i, 1); save(); renderList(); } }
-function delT() { const i = el('t-idx').value; db[currentIdx].tools.splice(i, 1); save(); renderTools(); hide('m-t'); }
-function exportJSON() { el('imp-area').value = JSON.stringify(db); el('imp-area').select(); document.execCommand('copy'); alert("JSON kopiert!"); }
-function importJSON() { try { const parsed = JSON.parse(el('imp-area').value); if(Array.isArray(parsed)) { db = parsed; save(); renderList(); hide('m-imp'); } } catch(e) { alert("JSON-Fehler"); } }
-
-function makePDF() {
-    const p = db[currentIdx];
-    const getPageHead = () => `<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; min-height:90px;"><div style="display:flex; flex-direction:column; justify-content:center;"><div style="font-size:13px; font-weight:900; text-transform:uppercase; color:#666; margin-bottom:2px; line-height:1;">${p.name || ''}</div><div style="font-size:64px; font-weight:900; line-height:0.8; letter-spacing:-2px; margin:0;">${p.num || '---'}</div></div><div style="width:220px; font-size:11px; font-weight:800; line-height:1.5;"><div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>LAUFZEIT</span><span>${p.lzf || ''}</span></div><div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>MATERIAL</span><span>${p.mat || ''}</span></div><div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>SÄGELÄNGE</span><span>${p.sag || ''}</span></div><div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>ABSTAND</span><span>${p.abs || ''}</span></div><div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>GREIFBACKEN</span><span>${p.grf || ''}</span></div><div style="display:flex; justify-content:space-between;"><span>STÜCKZAHL</span><span>${p.stt || ''} / ${p.stn || ''}</span></div></div></div><div style="border-bottom:5px solid #000; margin-bottom:15px;"></div>`;
-    const tableHead = `<div style="display:flex; font-size:10px; font-weight:900; text-transform:uppercase; margin-bottom:6px; padding:0 2px;"><div style="width:75px;">T-NR</div><div style="flex:1;">WERKZEUGNAME / KOMMENTAR</div><div style="width:125px; text-align:right;">Ø / TOLERANZ</div></div><div style="border-bottom:4px solid #000;"></div>`;
-    const getRow = (t) => `<div style="display:flex; align-items:baseline; border-bottom:1.5px solid #000; padding:10px 0; width:100%; page-break-inside: avoid;"><div style="width:75px; font-weight:800; font-size:15px;">${t.id}</div><div style="flex:1; font-weight:700; font-size:15px; text-transform:uppercase; padding-right:10px; white-space:pre-wrap;">${t.nm}</div><div style="width:125px; text-align:right; font-weight:800; font-size:14px;">${t.dia.replace(/\//g, '<br>')}</div></div>`;
-    let oben = [], unten = [], target = oben;
-    (p.tools || []).forEach(t => { if(t.rev) target = unten; target.push(t); });
-    let pdfHtml = `<!DOCTYPE html><html><head><style>@page { size: A4; margin: 0; } body { margin: 0; padding: 10mm; background: #fff; font-family: sans-serif; -webkit-print-color-adjust: exact; } .page { width: 210mm; height: 297mm; padding: 15mm; box-sizing: border-box; page-break-after: always; display: flex; flex-direction: column; } .content-border { border: 2.2px solid #000; padding: 20px; flex: 1; display: flex; flex-direction: column; box-sizing: border-box; } .footer { border-top: 1.2px solid #000; padding-top: 5px; font-size: 9px; font-weight: 800; text-align: center; color: #666; margin-top: auto; }</style></head><body><div class="page"><div class="content-border">${getPageHead()}<div style="flex:1;"><div style="margin-bottom:5px; font-size:18px; font-weight:900; text-transform:uppercase;">REVOLVER OBEN</div>${tableHead}${oben.map(getRow).join('')}</div><div class="footer">CITITOOL REPORT</div></div></div>${unten.length > 0 ? `<div class="page"><div class="content-border">${getPageHead()}<div style="flex:1;"><div style="margin-bottom:5px; font-size:18px; font-weight:900; text-transform:uppercase;">REVOLVER UNTEN</div>${tableHead}${unten.map(getRow).join('')}</div><div class="footer">CITITOOL REPORT</div></div></div>` : ''}<script>window.onload = function() { setTimeout(() => { window.print(); }, 400); };</script></body></html>`;
-    const win = window.open('', '_blank'); if (win) { win.document.write(pdfHtml); win.document.close(); }
-}
-
-window.onload = () => { injectStyles(); renderList(); };
+window.onload = () => {
+    injectStyles();
+    renderList();
+};
