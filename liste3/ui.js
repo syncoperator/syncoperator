@@ -1,4 +1,6 @@
 const DB_KEY = 'QS_DATA_V8';
+const LOGO_URL = 'https://raw.githubusercontent.com/syncoperator/syncoperator/refs/heads/main/IMG_2810.png'; 
+
 let db = JSON.parse(localStorage.getItem(DB_KEY)) || [];
 let currentIdx = null;
 
@@ -16,53 +18,56 @@ const injectStyles = () => {
             background: var(--bg) !important; 
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important; 
             margin: 0; color: var(--text-main);
+            padding-bottom: 100px; /* Чтобы кнопки не перекрывали контент */
         }
         
-        header {
-            background: rgba(255,255,255,0.85) !important;
-            backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
-            padding: 20px; position: sticky; top: 0; z-index: 100;
+        /* НОВАЯ ВЕРХНЯЯ ПАНЕЛЬ */
+        .premium-nav {
+            position: sticky; top: 0; z-index: 100;
+            background: rgba(248, 249, 251, 0.85); backdrop-filter: blur(15px);
+            display: flex; justify-content: flex-end; padding: 15px 20px; gap: 10px;
             border-bottom: 0.5px solid rgba(0,0,0,0.05);
         }
-        .header-title { font-weight: 800; font-size: 24px; letter-spacing: -0.8px; }
+        .btn-top {
+            background: #fff; border: none; border-radius: 10px;
+            padding: 8px 14px; font-size: 11px; font-weight: 800; color: #666;
+            box-shadow: 4px 4px 8px #cfd8e3, -4px -4px 8px #fff;
+            text-transform: uppercase; cursor: pointer;
+        }
+        .btn-top.blue { background: var(--accent); color: white; }
 
-        /* Карточки проектов на главной */
+        /* БЛОК С ЛОГОТИПОМ */
+        .hero { display: flex; flex-direction: column; align-items: center; padding: 20px 0 30px; }
+        .logo-huge { width: 200px; height: 200px; object-fit: contain; }
+        
+        .mirror-wrap { text-align: center; margin-top: 10px; }
+        .t-top { font-size: 72px; font-weight: 900; letter-spacing: -4px; color: #1d1d1f; line-height: 0.8; }
+        .t-reflect { 
+            font-size: 72px; font-weight: 900; letter-spacing: -4px; margin-top: -32px; 
+            transform: scaleY(-1); opacity: 0.15;
+            background: linear-gradient(to bottom, #000, transparent);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+
+        /* Твои оригинальные стили карточек */
         .project-card {
-            background: var(--card-bg);
-            border-radius: 24px;
-            margin: 0 20px 16px 20px;
-            padding: 20px;
+            background: var(--card-bg); border-radius: 24px;
+            margin: 0 20px 16px 20px; padding: 20px;
             box-shadow: 0 4px 20px rgba(0,0,0,0.04);
             display: flex; align-items: center; justify-content: space-between;
             border: 1px solid rgba(255,255,255,0.5);
             transition: all 0.2s ease;
         }
-        .project-card:active { transform: scale(0.98); background: #f2f2f7; }
-        
         .p-info { display: flex; flex-direction: column; }
-        .p-label { font-size: 11px; font-weight: 700; color: var(--text-sub); text-transform: uppercase; margin-bottom: 4px; letter-spacing: 0.5px; }
+        .p-label { font-size: 11px; font-weight: 700; color: var(--text-sub); text-transform: uppercase; margin-bottom: 4px; }
         .p-title { font-size: 24px; font-weight: 900; color: #000; letter-spacing: -0.5px; }
 
-        /* Список инструментов */
         .tool-card {
             background: #fff; border-radius: 18px;
             padding: 14px 18px; margin: 0 16px 10px 16px;
             display: flex; align-items: center; justify-content: space-between;
             box-shadow: 0 2px 8px rgba(0,0,0,0.02);
         }
-        .t-id-label { font-size: 10px; font-weight: 700; color: var(--text-sub); text-transform: uppercase; margin-bottom: 2px; }
-        .t-name-label { font-size: 18px; font-weight: 800; color: #000; line-height: 1.1; }
-
-        /* Компактные стрелки */
-        .order-controls { display: flex; flex-direction: column; gap: 4px; margin-left: 12px; }
-        .btn-order {
-            background: #f2f2f7; border: none; border-radius: 6px;
-            width: 32px; height: 28px; display: flex; align-items: center; justify-content: center;
-            font-size: 14px; font-weight: 900; color: var(--accent);
-        }
-        .btn-order:active { background: #e5e5ea; }
-        .btn-order.disabled { opacity: 0; pointer-events: none; }
-
         .btn-delete { color: #ff3b30; font-weight: 800; padding: 10px; font-size: 18px; }
         .fab {
             position: fixed; bottom: 30px; right: 20px;
@@ -70,6 +75,8 @@ const injectStyles = () => {
             border-radius: 30px; display: flex; align-items: center; justify-content: center;
             font-size: 30px; box-shadow: 0 8px 25px rgba(0,122,255,0.3); z-index: 1000;
         }
+        .order-controls { display: flex; flex-direction: column; gap: 4px; margin-left: 12px; }
+        .btn-order { background: #f2f2f7; border: none; border-radius: 6px; width: 32px; height: 28px; font-weight: 900; color: var(--accent); }
     `;
     document.head.appendChild(style);
 };
@@ -79,13 +86,28 @@ const show = (id) => { const x = el(id); if(x) x.style.display = 'flex'; };
 const hide = (id) => { const x = el(id); if(x) x.style.display = 'none'; };
 const save = () => localStorage.setItem(DB_KEY, JSON.stringify(db));
 
-// --- ГЛАВНАЯ СТРАНИЦА ---
+// --- ГЛАВНАЯ СТРАНИЦА (С ЛОГОТИПОМ) ---
 function renderList() {
-    const header = document.querySelector('.header-title') || document.querySelector('h1');
-    if(header) header.innerText = 'CitiTool';
-    
     const list = el('list-p'); if(!list) return;
-    list.innerHTML = db.map((p, i) => `
+    
+    // Вставляем шапку и логотип прямо в контейнер перед списком
+    list.innerHTML = `
+        <div class="premium-nav">
+            <button class="btn-top" onclick="exportJSON()">Export</button>
+            <button class="btn-top" onclick="show('m-imp')">Import</button>
+            <button class="btn-top blue" onclick="modalP()">+ NEU</button>
+        </div>
+        <div class="hero">
+            <img src="${LOGO_URL}" class="logo-huge">
+            <div class="mirror-wrap">
+                <div class="t-top">CitiTool</div>
+                <div class="t-reflect">CitiTool</div>
+            </div>
+        </div>
+        <div id="project-items"></div>
+    `;
+
+    el('project-items').innerHTML = db.map((p, i) => `
         <div class="project-card" onclick="openProject(${i})">
             <div class="p-info">
                 <div class="p-label">${p.name || 'UNBENANNT'}</div>
@@ -95,32 +117,50 @@ function renderList() {
         </div>`).join('') + '<div style="height:120px"></div>';
 }
 
-// --- ИНСТРУМЕНТЫ ---
+// --- ИНСТРУМЕНТЫ (С ЛОГОТИПОМ НОМЕРА) ---
 function renderTools() {
     const list = el('list-t'); if(!list || currentIdx === null) return;
-    const tools = db[currentIdx].tools || [];
-    list.innerHTML = '';
+    const p = db[currentIdx];
+    const tools = p.tools || [];
     
+    // Вставляем навигацию и заголовок проекта
+    list.innerHTML = `
+        <div class="premium-nav">
+            <button class="btn-top" onclick="goHome()">← Home</button>
+            <button class="btn-top blue" onclick="makePDF()">PDF Report</button>
+        </div>
+        <div class="hero">
+            <div class="mirror-wrap">
+                <div class="t-top">${p.num}</div>
+                <div style="font-weight:800; color:#8e8e93; margin-top:5px;">${p.name}</div>
+            </div>
+        </div>
+        <div id="tool-items"></div>
+    `;
+    
+    const itemsCont = el('tool-items');
     tools.forEach((t, i) => {
         const item = document.createElement('div');
         item.className = 'tool-card';
         const revMark = t.rev ? `<div style="background:#000; color:#fff; font-size:8px; padding:2px 7px; border-radius:4px; margin-bottom:5px; font-weight:900; width:fit-content;">REVOLVER UNTEN</div>` : '';
-        
         item.innerHTML = `
             <div style="flex:1; min-width:0;" onclick="modalT(${i})">
                 ${revMark}
-                <div class="t-id-label">${t.id || 'T0000'}</div>
-                <div class="t-name-label">${t.nm || '---'}</div>
+                <div style="font-size:10px; font-weight:700; color:var(--text-sub); text-transform:uppercase;">${t.id || 'T0000'}</div>
+                <div style="font-size:18px; font-weight:800; color:#000;">${t.nm || '---'}</div>
                 <div style="margin-top:4px; font-weight:700; color:var(--accent); font-size:13px;">${t.dia || ''}</div>
             </div>
             <div class="order-controls">
-                <button class="btn-order ${i === 0 ? 'disabled' : ''}" onclick="event.stopPropagation(); moveItem(${i}, -1)">↑</button>
-                <button class="btn-order ${i === tools.length - 1 ? 'disabled' : ''}" onclick="event.stopPropagation(); moveItem(${i}, 1)">↓</button>
+                <button class="btn-order" onclick="event.stopPropagation(); moveItem(${i}, -1)">↑</button>
+                <button class="btn-order" onclick="event.stopPropagation(); moveItem(${i}, 1)">↓</button>
             </div>`;
-        list.appendChild(item);
+        itemsCont.appendChild(item);
     });
-    list.innerHTML += '<div style="height:180px"></div>';
+    itemsCont.innerHTML += '<div style="height:180px"></div>';
 }
+
+// Остальные функции (moveItem, openProject, goHome, modalP, saveP, modalT, saveT, deleteProject, delT, exportJSON, importJSON, makePDF)
+// остаются БЕЗ ИЗМЕНЕНИЙ, как в твоем рабочем коде.
 
 function moveItem(i, direction) {
     const tools = db[currentIdx].tools;
@@ -131,7 +171,6 @@ function moveItem(i, direction) {
     }
 }
 
-// --- УПРАВЛЕНИЕ ---
 function openProject(i) { 
     currentIdx = i; 
     el('v-home').classList.remove('active'); 
@@ -194,7 +233,6 @@ function delT() { const i = el('t-idx').value; db[currentIdx].tools.splice(i, 1)
 function exportJSON() { el('imp-area').value = JSON.stringify(db); el('imp-area').select(); alert("JSON kopiert!"); }
 function importJSON() { try { const parsed = JSON.parse(el('imp-area').value); if(Array.isArray(parsed)) { db = parsed; save(); renderList(); hide('m-imp'); } } catch(e) { alert("JSON-Fehler"); } }
 
-// --- PDF ---
 function makePDF() {
     const p = db[currentIdx];
     const getPageHead = () => `<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; min-height:90px;"><div style="display:flex; flex-direction:column; justify-content:center;"><div style="font-size:13px; font-weight:900; text-transform:uppercase; color:#666; margin-bottom:2px; line-height:1;">${p.name || ''}</div><div style="font-size:64px; font-weight:900; line-height:0.8; letter-spacing:-2px; margin:0;">${p.num || '---'}</div></div><div style="width:220px; font-size:11px; font-weight:800; line-height:1.5;"><div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>LAUFZEIT</span><span>${p.lzf || ''}</span></div><div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>MATERIAL</span><span>${p.mat || ''}</span></div><div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>SÄGELÄNGE</span><span>${p.sag || ''}</span></div><div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>ABSTAND</span><span>${p.abs || ''}</span></div><div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>GREIFBACKEN</span><span>${p.grf || ''}</span></div><div style="display:flex; justify-content:space-between;"><span>STÜCKZAHL</span><span>${p.stt || ''} / ${p.stn || ''}</span></div></div></div><div style="border-bottom:5px solid #000; margin-bottom:15px;"></div>`;
@@ -207,5 +245,3 @@ function makePDF() {
 }
 
 window.onload = () => { injectStyles(); renderList(); };
-
-
