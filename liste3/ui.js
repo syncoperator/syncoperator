@@ -16,72 +16,72 @@ const injectStyles = () => {
             background: var(--bg) !important; 
             font-family: -apple-system, system-ui, sans-serif !important; 
             margin: 0; padding-bottom: 150px; 
-            -webkit-tap-highlight-color: transparent;
         }
 
-        /* Кнопки управления - ГАРАНТИРОВАННЫЙ КЛИК */
-        .top-nav-actions {
-            position: fixed; top: 20px; right: 20px;
-            display: flex; gap: 12px; z-index: 10000; /* Самый высокий слой */
-            pointer-events: auto !important;
+        /* Верхняя панель управления */
+        .top-nav-bar {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 15px 25px; background: rgba(255,255,255,0.4);
+            backdrop-filter: blur(10px); position: sticky; top: 0; z-index: 10000;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
         }
-        .btn-premium {
-            background: var(--bg); border: none; border-radius: 12px;
-            padding: 10px 18px; font-size: 11px; font-weight: 800; color: #666;
-            box-shadow: 5px 5px 10px var(--neu-shadow), -5px -5px 10px var(--neu-light);
-            cursor: pointer; text-transform: uppercase; transition: 0.2s;
-        }
-        .btn-premium.main { color: var(--accent); font-weight: 900; }
-        .btn-premium:active { transform: scale(0.92); box-shadow: inset 2px 2px 5px var(--neu-shadow); }
+        .nav-left { font-size: 14px; font-weight: 800; color: var(--accent); cursor: pointer; }
+        .nav-right { display: flex; gap: 10px; }
 
-        /* Шапка */
-        .hero {
+        .btn-ui {
+            background: var(--bg); border: none; border-radius: 10px;
+            padding: 8px 15px; font-size: 11px; font-weight: 800; color: #666;
+            box-shadow: 4px 4px 8px var(--neu-shadow), -4px -4px 8px var(--neu-light);
+            cursor: pointer; text-transform: uppercase;
+        }
+        .btn-ui.blue { background: var(--accent); color: white; box-shadow: 0 4px 10px rgba(0,122,255,0.3); }
+        .btn-ui:active { transform: scale(0.95); box-shadow: inset 2px 2px 5px var(--neu-shadow); }
+
+        /* Центральный брендинг */
+        .brand-section {
             display: flex; flex-direction: column; align-items: center;
-            padding: 90px 0 40px 0; pointer-events: none; /* Пропускаем клики сквозь фон */
+            padding: 40px 0;
         }
-        .logo-big {
-            width: 180px; height: 180px; object-fit: contain;
-            margin-bottom: 25px; filter: drop-shadow(0 15px 30px rgba(0,0,0,0.08));
-            pointer-events: auto;
+        .logo-main {
+            width: 200px; height: 200px; object-fit: contain; /* ЛОГО ЕЩЕ БОЛЬШЕ */
+            margin-bottom: 20px; filter: drop-shadow(0 15px 35px rgba(0,0,0,0.1));
         }
-        .brand-mirror { text-align: center; margin-bottom: 35px; pointer-events: auto; }
-        .t1 { font-size: 68px; font-weight: 900; letter-spacing: -3.5px; line-height: 0.85; color: #1d1d1f; }
-        .t2 {
-            font-size: 68px; font-weight: 900; letter-spacing: -3.5px;
-            margin-top: -30px; transform: scaleY(-1);
-            background: linear-gradient(to bottom, rgba(0,0,0,0.2), transparent 75%);
+        .title-box { text-align: center; margin-bottom: 30px; }
+        .t-high { font-size: 72px; font-weight: 900; letter-spacing: -4px; color: #1d1d1f; line-height: 0.8; }
+        .t-refl {
+            font-size: 72px; font-weight: 900; letter-spacing: -4px;
+            margin-top: -32px; transform: scaleY(-1);
+            background: linear-gradient(to bottom, rgba(0,0,0,0.2), transparent 80%);
             -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-            opacity: 0.25;
+            opacity: 0.2; user-select: none;
         }
 
-        /* Меню навигации */
-        .nav-pills {
-            display: flex; background: rgba(0,0,0,0.05); 
-            padding: 5px; border-radius: 18px; pointer-events: auto;
+        /* Горизонтальное меню */
+        .menu-bar {
+            display: flex; gap: 8px; background: rgba(0,0,0,0.05); 
+            padding: 5px; border-radius: 16px; margin-bottom: 40px;
         }
-        .pill {
+        .menu-item {
             font-size: 11px; font-weight: 800; text-transform: uppercase;
-            padding: 12px 22px; border-radius: 14px; color: #888;
-            cursor: pointer; transition: 0.3s;
+            padding: 10px 20px; border-radius: 12px; color: #888; cursor: pointer;
         }
-        .pill.active { background: white; color: var(--accent); box-shadow: 0 4px 15px rgba(0,0,0,0.06); }
-        .pill.disabled { opacity: 0.3; cursor: default; }
+        .menu-item.active { background: white; color: var(--accent); box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
+        .menu-item.disabled { opacity: 0.3; pointer-events: none; }
 
-        /* Список карточек */
-        .list-container { padding: 0 20px; max-width: 800px; margin: 0 auto; pointer-events: auto; }
-        .card {
+        /* Карточки */
+        .list-p { padding: 0 20px; max-width: 900px; margin: 0 auto; }
+        .p-card {
             background: var(--bg); border-radius: 35px; padding: 30px;
             margin-bottom: 25px; box-shadow: 12px 12px 25px var(--neu-shadow), -12px -12px 25px var(--neu-light);
             display: flex; align-items: center; justify-content: space-between;
-            border: 1px solid rgba(255,255,255,0.7);
-            cursor: pointer;
+            border: 1px solid rgba(255,255,255,0.7); cursor: pointer;
         }
-        .card-num { font-size: 34px; font-weight: 900; color: #000; letter-spacing: -1.5px; }
-        .card-name { font-size: 16px; font-weight: 700; color: #666; margin-top: 5px; }
-        .card-label { font-size: 10px; font-weight: 800; color: #adb5bd; text-transform: uppercase; letter-spacing: 1.5px; }
+        .p-card:active { transform: scale(0.98); }
+        .p-num { font-size: 36px; font-weight: 900; color: #000; letter-spacing: -1.5px; }
+        .p-name { font-size: 16px; font-weight: 700; color: #666; }
+        .p-label { font-size: 10px; font-weight: 800; color: #adb5bd; text-transform: uppercase; letter-spacing: 2px; }
 
         .btn-del { color: #ff3b30; font-size: 26px; font-weight: 900; padding: 10px; opacity: 0.5; }
-        .btn-del:hover { opacity: 1; }
     `;
     document.head.appendChild(style);
 };
@@ -89,18 +89,16 @@ const injectStyles = () => {
 const el = (id) => document.getElementById(id);
 const save = () => localStorage.setItem(DB_KEY, JSON.stringify(db));
 
-// Глобальные обработчики для гарантии работы
-window.exportJSON = function() {
-    console.log("Export triggered");
+// Глобальные функции
+window.exportJSON = () => {
     const blob = new Blob([JSON.stringify(db, null, 2)], {type: "application/json"});
-    const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url; a.download = `cititool_v8_backup.json`;
+    a.href = URL.createObjectURL(blob);
+    a.download = "cititool_v8.json";
     a.click();
 };
 
-window.importJSON = function() {
-    console.log("Import triggered");
+window.importJSON = () => {
     const input = document.createElement('input');
     input.type = 'file';
     input.onchange = e => {
@@ -114,57 +112,53 @@ window.importJSON = function() {
     input.click();
 };
 
-window.goHome = function() { 
-    if(el('v-home')) el('v-home').style.display='block'; 
-    if(el('v-det')) el('v-det').style.display='none'; 
-    window.renderList(); 
-};
-
-window.renderList = function() {
+window.renderList = () => {
     const main = el('v-home'); if(!main) return;
     
     main.innerHTML = `
-        <div class="top-nav-actions">
-            <button class="btn-premium" onclick="window.exportJSON()">Export</button>
-            <button class="btn-premium" onclick="window.importJSON()">Import</button>
-            <button class="btn-premium main" onclick="window.modalP()">+ NEU</button>
+        <div class="top-nav-bar">
+            <div class="nav-left" onclick="window.renderList()">← v-home</div>
+            <div class="nav-right">
+                <button class="btn-ui" onclick="window.exportJSON()">Export</button>
+                <button class="btn-ui" onclick="window.importJSON()">Import</button>
+                <button class="btn-ui blue" onclick="window.modalP()">+ NEU</button>
+            </div>
         </div>
 
-        <div class="hero">
-            <img src="${LOGO_URL}" class="logo-big" alt="Logo">
-            <div class="brand-mirror">
-                <div class="t1">CitiTool</div>
-                <div class="t2">CitiTool</div>
+        <div class="brand-section">
+            <img src="${LOGO_URL}" class="logo-main" alt="Logo">
+            <div class="title-box">
+                <div class="t-high">CitiTool</div>
+                <div class="t-refl">CitiTool</div>
             </div>
             
-            <div class="nav-pills">
-                <div class="pill active" onclick="window.goHome()">Home</div>
-                <div class="pill disabled">SyncOP</div>
-                <div class="pill disabled">WKZListe</div>
-                <div class="pill disabled">Stange</div>
+            <div class="menu-bar">
+                <div class="menu-item active">Home</div>
+                <div class="menu-item disabled">SyncOP</div>
+                <div class="menu-item disabled">WKZListe</div>
+                <div class="menu-item disabled">Stange</div>
             </div>
         </div>
         
-        <div class="list-container" id="list-p"></div>
+        <div class="list-p" id="list-items"></div>
     `;
     
-    const list = el('list-p');
+    const list = el('list-items');
     list.innerHTML = db.map((p, i) => `
-        <div class="card" onclick="openProject(${i})">
+        <div class="p-card" onclick="openProject(${i})">
             <div>
-                <div class="card-label">PROJEKT</div>
-                <div class="card-num">${p.num || '---'}</div>
-                <div class="card-name">${p.name || ''}</div>
+                <div class="p-label">PROJEKT</div>
+                <div class="p-num">${p.num || '---'}</div>
+                <div class="p-name">${p.name || ''}</div>
             </div>
             <div class="btn-del" onclick="event.stopPropagation(); deleteProject(${i})">✕</div>
-        </div>`).join('') + '<div style="height:80px"></div>';
+        </div>`).join('') + '<div style="height:100px;"></div>';
 };
 
 function deleteProject(i) {
     if(confirm('Löschen?')) { db.splice(i, 1); save(); window.renderList(); }
 }
 
-// Запуск приложения
 window.onload = () => {
     injectStyles();
     window.renderList();
