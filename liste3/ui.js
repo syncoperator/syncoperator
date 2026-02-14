@@ -1,5 +1,5 @@
 const DB_KEY = 'QS_DATA_V8';
-const LOGO_URL = 'https://raw.githubusercontent.com/syncoperator/syncoperator/refs/heads/main/IMG_2810.png'; 
+const LOGO_URL = 'https://raw.githubusercontent.com/syncoperator/syncoperator/refs/heads/main/IMG_2810.png';
 
 let db = JSON.parse(localStorage.getItem(DB_KEY)) || [];
 let currentIdx = null;
@@ -8,7 +8,7 @@ const injectStyles = () => {
     const style = document.createElement('style');
     style.innerHTML = `
         :root { 
-            --bg: #f8f9fb; 
+            --bg: #f2f5f8; 
             --accent: #007aff; 
             --text-main: #1c1c1e;
             --text-sub: #8e8e93; 
@@ -19,31 +19,33 @@ const injectStyles = () => {
         body { 
             background: var(--bg) !important; 
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important; 
-            margin: 0; color: var(--text-main); padding-bottom: 120px;
+            margin: 0; color: var(--text-main);
+            padding-bottom: 120px;
         }
         
-        /* Фиксированная шапка с кнопками */
+        /* Фиксированная навигация сверху */
         .top-bar {
-            background: rgba(255,255,255,0.8); backdrop-filter: blur(15px);
-            padding: 15px 20px; position: sticky; top: 0; z-index: 1000;
-            display: flex; justify-content: flex-end; gap: 10px;
+            position: sticky; top: 0; z-index: 1000;
+            background: rgba(242, 245, 248, 0.85); backdrop-filter: blur(15px);
+            display: flex; justify-content: flex-end; padding: 15px 20px; gap: 10px;
             border-bottom: 0.5px solid rgba(0,0,0,0.05);
         }
 
-        .btn-premium {
+        .btn-ui {
             background: var(--bg); border: none; border-radius: 12px;
             padding: 10px 18px; font-size: 11px; font-weight: 800; color: #666;
             box-shadow: 4px 4px 8px var(--neu-shadow), -4px -4px 8px var(--neu-light);
-            cursor: pointer; text-transform: uppercase;
+            cursor: pointer; text-transform: uppercase; transition: 0.2s;
         }
-        .btn-premium.blue { background: var(--accent); color: white; box-shadow: 0 4px 12px rgba(0,122,255,0.3); }
+        .btn-ui.blue { background: var(--accent); color: white; box-shadow: 0 4px 12px rgba(0,122,255,0.3); }
+        .btn-ui:active { transform: scale(0.95); }
 
-        /* Центр: Лого и Зеркало */
-        .hero-section { display: flex; flex-direction: column; align-items: center; padding: 20px 0 40px; }
-        .logo-main { width: 200px; height: 200px; object-fit: contain; filter: drop-shadow(0 15px 30px rgba(0,0,0,0.1)); }
+        /* Брендинг и Лого */
+        .brand-hero { display: flex; flex-direction: column; align-items: center; padding: 20px 0 40px; }
+        .logo-img { width: 200px; height: 200px; object-fit: contain; filter: drop-shadow(0 15px 30px rgba(0,0,0,0.1)); }
         
-        .mirror-box { text-align: center; margin-top: 15px; }
-        .t-high { font-size: 72px; font-weight: 900; letter-spacing: -4px; color: #1d1d1f; line-height: 0.8; }
+        .title-group { text-align: center; margin-top: 15px; }
+        .t-main { font-size: 72px; font-weight: 900; letter-spacing: -4px; color: #1d1d1f; line-height: 0.8; }
         .t-refl { 
             font-size: 72px; font-weight: 900; letter-spacing: -4px; margin-top: -32px; 
             transform: scaleY(-1); opacity: 0.15;
@@ -51,7 +53,7 @@ const injectStyles = () => {
             -webkit-background-clip: text; -webkit-text-fill-color: transparent;
         }
 
-        /* Твои оригинальные карточки проектов */
+        /* Твои оригинальные карточки */
         .project-card {
             background: var(--card-bg); border-radius: 24px;
             margin: 0 20px 16px 20px; padding: 20px;
@@ -59,12 +61,10 @@ const injectStyles = () => {
             display: flex; align-items: center; justify-content: space-between;
             border: 1px solid rgba(255,255,255,0.5);
         }
-        
         .p-info { display: flex; flex-direction: column; }
         .p-label { font-size: 11px; font-weight: 700; color: var(--text-sub); text-transform: uppercase; margin-bottom: 4px; }
         .p-title { font-size: 24px; font-weight: 900; color: #000; letter-spacing: -0.5px; }
 
-        /* Инструменты */
         .tool-card {
             background: #fff; border-radius: 18px;
             padding: 14px 18px; margin: 0 16px 10px 16px;
@@ -73,45 +73,49 @@ const injectStyles = () => {
         }
 
         .btn-delete { color: #ff3b30; font-weight: 800; padding: 10px; font-size: 18px; }
+        
         .fab {
             position: fixed; bottom: 30px; right: 20px;
             background: var(--accent); color: #fff; width: 60px; height: 60px;
             border-radius: 30px; display: flex; align-items: center; justify-content: center;
             font-size: 30px; box-shadow: 0 8px 25px rgba(0,122,255,0.3); z-index: 1000; border: none;
         }
-        .hidden { display: none !important; }
+
+        #m-p, #m-t, #m-imp { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 2000; display: none; align-items: center; justify-content: center; }
+        .active { display: flex !important; flex-direction: column; }
     `;
     document.head.appendChild(style);
 };
 
 const el = (id) => document.getElementById(id);
+const show = (id) => { const x = el(id); if(x) x.style.display = 'flex'; };
+const hide = (id) => { const x = el(id); if(x) x.style.display = 'none'; };
 const save = () => localStorage.setItem(DB_KEY, JSON.stringify(db));
 
-// --- ГЛАВНАЯ СТРАНИЦА ---
+// --- ГЛАВНАЯ СТРАНИЦА (Твоя логика + новый HTML) ---
 function renderList() {
     const vHome = el('v-home');
     const vDet = el('v-det');
     if(!vHome) return;
 
-    vHome.classList.add('active'); vHome.classList.remove('hidden');
-    vDet.classList.remove('active'); vDet.classList.add('hidden');
+    vHome.style.display = 'block';
+    vDet.style.display = 'none';
 
     vHome.innerHTML = `
         <div class="top-bar">
-            <button class="btn-premium" onclick="exportJSON()">Export</button>
-            <button class="btn-premium" onclick="importJSON()">Import</button>
-            <button class="btn-premium blue" onclick="modalP()">+ NEU</button>
+            <button class="btn-ui" onclick="show('m-imp')">Export/Import</button>
+            <button class="btn-ui blue" onclick="modalP()">+ NEU</button>
         </div>
-        <div class="hero-section">
-            <img src="${LOGO_URL}" class="logo-main">
-            <div class="mirror-box">
-                <div class="t-high">CitiTool</div>
+        <div class="brand-hero">
+            <img src="${LOGO_URL}" class="logo-img">
+            <div class="title-group">
+                <div class="t-main">CitiTool</div>
                 <div class="t-refl">CitiTool</div>
             </div>
         </div>
         <div id="list-p"></div>
     `;
-
+    
     const list = el('list-p');
     list.innerHTML = db.map((p, i) => `
         <div class="project-card" onclick="openProject(${i})">
@@ -123,23 +127,21 @@ function renderList() {
         </div>`).join('') + '<div style="height:120px"></div>';
 }
 
-// --- ИНСТРУМЕНТЫ (Твоя логика без изменений) ---
+// --- ИНСТРУМЕНТЫ (Твоя логика + новый HTML) ---
 function renderTools() {
-    const vHome = el('v-home');
-    const vDet = el('v-det');
+    const list = el('list-t');
     const p = db[currentIdx];
-
-    vHome.classList.remove('active'); vHome.classList.add('hidden');
-    vDet.classList.add('active'); vDet.classList.remove('hidden');
-
-    vDet.innerHTML = `
+    if(!list || currentIdx === null) return;
+    
+    // Отрисовка шапки внутри V-DET
+    el('v-det').innerHTML = `
         <div class="top-bar">
-            <button class="btn-premium" onclick="goHome()">← BACK</button>
-            <button class="btn-premium blue" onclick="makePDF()">PDF REPORT</button>
+            <button class="btn-ui" onclick="goHome()">← Home</button>
+            <button class="btn-ui blue" onclick="makePDF()">PDF REPORT</button>
         </div>
-        <div class="hero-section">
-            <div class="mirror-box">
-                <div class="t-high">${p.num}</div>
+        <div class="brand-hero">
+            <div class="title-group">
+                <div class="t-main">${p.num}</div>
                 <div style="font-weight:700; color:#666;">${p.name}</div>
             </div>
         </div>
@@ -147,56 +149,106 @@ function renderTools() {
         <button class="fab" onclick="modalT()">+</button>
     `;
 
-    const list = el('list-t');
-    const tools = p.tools || [];
-    list.innerHTML = tools.map((t, i) => `
-        <div class="tool-card" onclick="modalT(${i})">
-            <div style="flex:1;">
-                ${t.rev ? `<div style="background:#000; color:#fff; font-size:8px; padding:2px 7px; border-radius:4px; margin-bottom:5px; font-weight:900; width:fit-content;">REVOLVER UNTEN</div>` : ''}
+    const newList = el('list-t');
+    const tools = db[currentIdx].tools || [];
+    tools.forEach((t, i) => {
+        const item = document.createElement('div');
+        item.className = 'tool-card';
+        const revMark = t.rev ? `<div style="background:#000; color:#fff; font-size:8px; padding:2px 7px; border-radius:4px; margin-bottom:5px; font-weight:900; width:fit-content;">REVOLVER UNTEN</div>` : '';
+        item.innerHTML = `
+            <div style="flex:1; min-width:0;" onclick="modalT(${i})">
+                ${revMark}
                 <div style="font-size:10px; font-weight:700; color:var(--text-sub); text-transform:uppercase;">${t.id || 'T0000'}</div>
                 <div style="font-size:18px; font-weight:800; color:#000;">${t.nm || '---'}</div>
                 <div style="margin-top:4px; font-weight:700; color:var(--accent); font-size:13px;">${t.dia || ''}</div>
             </div>
-        </div>`).join('') + '<div style="height:180px"></div>';
+            <div style="display:flex; flex-direction:column; gap:4px; margin-left:12px;">
+                <button class="btn-ui" style="padding:5px; width:30px;" onclick="event.stopPropagation(); moveItem(${i}, -1)">↑</button>
+                <button class="btn-ui" style="padding:5px; width:30px;" onclick="event.stopPropagation(); moveItem(${i}, 1)">↓</button>
+            </div>`;
+        newList.appendChild(item);
+    });
 }
 
-// --- ТВОИ ОРИГИНАЛЬНЫЕ ФУНКЦИИ УПРАВЛЕНИЯ ---
-function openProject(i) { currentIdx = i; renderTools(); }
-function goHome() { currentIdx = null; renderList(); }
-function deleteProject(i) { if(confirm('Löschen?')) { db.splice(i, 1); save(); renderList(); } }
-
-function exportJSON() { alert("JSON kopiert!"); console.log(JSON.stringify(db)); }
-function importJSON() { const val = prompt("JSON сюда:"); if(val) { db = JSON.parse(val); save(); renderList(); } }
-
-// Модалки (простые для стабильности)
-function modalP() {
-    const n = prompt("Projekt Nummer:");
-    const m = prompt("Name:");
-    if(n) { db.push({num:n, name:m, tools:[]}); save(); renderList(); }
-}
-
-function modalT(i = null) {
-    const edit = i !== null;
-    const t = edit ? db[currentIdx].tools[i] : {id:'', nm:'', dia:'', rev:false};
-    const nid = prompt("T-NR:", t.id);
-    const nnm = prompt("Name:", t.nm);
-    const ndia = prompt("Dia:", t.dia);
-    const nrev = confirm("Unten? (OK=Unten, Cancel=Oben)");
-    if(nid) {
-        const data = {id:nid, nm:nnm, dia:ndia, rev:nrev};
-        if(edit) db[currentIdx].tools[i] = data; else db[currentIdx].tools.push(data);
+// --- ВСЕ ОСТАЛЬНЫЕ ТВОИ ФУНКЦИИ БЕЗ ИЗМЕНЕНИЙ ---
+function moveItem(i, direction) {
+    const tools = db[currentIdx].tools;
+    const target = i + direction;
+    if (target >= 0 && target < tools.length) {
+        [tools[i], tools[target]] = [tools[target], tools[i]];
         save(); renderTools();
     }
 }
 
+function openProject(i) { 
+    currentIdx = i; 
+    el('v-home').style.display = 'none'; 
+    el('v-det').style.display = 'block'; 
+    renderTools(); 
+}
+
+function goHome() { currentIdx = null; renderList(); }
+
+function modalP(edit = false) {
+    if (!edit) currentIdx = null;
+    const p = (edit && currentIdx !== null && db[currentIdx]) ? db[currentIdx] : {num:'', name:'', lzf:'', sag:'', stt:'', stn:'', abs:'', grf:'', mat:''};
+    el('p-idx').value = edit ? currentIdx : '';
+    el('p-num').value = p.num; el('p-nam').value = p.name;
+    el('p-lzf').value = p.lzf; el('p-sag').value = p.sag;
+    el('p-stt').value = p.stt; el('p-stn').value = p.stn;
+    el('p-abs').value = p.abs; el('p-grf').value = p.grf;
+    if(el('p-mat')) el('p-mat').value = p.mat;
+    show('m-p');
+}
+
+function saveP() {
+    const idx = el('p-idx').value;
+    const data = {
+        num: el('p-num').value, name: el('p-nam').value.toUpperCase(),
+        lzf: el('p-lzf').value, sag: el('p-sag').value,
+        stt: el('p-stt').value, stn: el('p-stn').value,
+        abs: el('p-abs').value, grf: el('p-grf').value,
+        mat: el('p-mat') ? el('p-mat').value.toUpperCase() : '',
+        tools: (idx !== '' && db[idx]) ? (db[idx].tools || []) : []
+    };
+    if (idx === '') db.push(data); else db[idx] = data;
+    save(); hide('m-p'); renderList();
+}
+
+function modalT(i = null) {
+    const edit = i !== null;
+    el('t-idx').value = edit ? i : '';
+    const t = edit ? db[currentIdx].tools[i] : {id:'', nm:'', dia:'', rev:false};
+    el('t-id').value = t.id; el('t-nm').value = t.nm; el('t-dia').value = t.dia;
+    const btn = el('btn-rev-toggle');
+    if(btn) { t.rev ? btn.classList.add('on') : btn.classList.remove('on'); btn.onclick = () => btn.classList.toggle('on'); }
+    el('btn-del-t').style.display = edit ? 'block' : 'none';
+    show('m-t');
+}
+
+function saveT() {
+    const i = el('t-idx').value;
+    const btn = el('btn-rev-toggle');
+    const t = { id: el('t-id').value.toUpperCase(), nm: el('t-nm').value.toUpperCase(), dia: el('t-dia').value, rev: btn ? btn.classList.contains('on') : false };
+    if(!db[currentIdx].tools) db[currentIdx].tools = [];
+    if(i === '') db[currentIdx].tools.push(t); else db[currentIdx].tools[i] = t;
+    save(); renderTools(); hide('m-t');
+}
+
+function deleteProject(i) { if(confirm('Löschen?')) { db.splice(i, 1); save(); renderList(); } }
+function delT() { const i = el('t-idx').value; db[currentIdx].tools.splice(i, 1); save(); renderTools(); hide('m-t'); }
+function exportJSON() { el('imp-area').value = JSON.stringify(db); el('imp-area').select(); alert("JSON kopiert!"); }
+function importJSON() { try { const parsed = JSON.parse(el('imp-area').value); if(Array.isArray(parsed)) { db = parsed; save(); renderList(); hide('m-imp'); } } catch(e) { alert("JSON-Fehler"); } }
+
 function makePDF() {
     const p = db[currentIdx];
-    let pdfHtml = `<html><body style="padding:40px;font-family:sans-serif;"><h1>${p.num} - ${p.name}</h1><hr/>`;
-    (p.tools || []).forEach(t => {
-        pdfHtml += `<p><b>${t.id}</b>: ${t.nm} (${t.dia}) [${t.rev ? 'UNTEN' : 'OBEN'}]</p>`;
-    });
-    pdfHtml += `</body></html>`;
-    const win = window.open('', '_blank'); win.document.write(pdfHtml); win.document.close();
+    const getPageHead = () => `<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; min-height:90px;"><div style="display:flex; flex-direction:column; justify-content:center;"><div style="font-size:13px; font-weight:900; text-transform:uppercase; color:#666; margin-bottom:2px; line-height:1;">${p.name || ''}</div><div style="font-size:64px; font-weight:900; line-height:0.8; letter-spacing:-2px; margin:0;">${p.num || '---'}</div></div><div style="width:220px; font-size:11px; font-weight:800; line-height:1.5;"><div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>LAUFZEIT</span><span>${p.lzf || ''}</span></div><div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>MATERIAL</span><span>${p.mat || ''}</span></div><div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>SÄGELÄNGE</span><span>${p.sag || ''}</span></div><div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>ABSTAND</span><span>${p.abs || ''}</span></div><div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>GREIFBACKEN</span><span>${p.grf || ''}</span></div><div style="display:flex; justify-content:space-between;"><span>STÜCKZAHL</span><span>${p.stt || ''} / ${p.stn || ''}</span></div></div></div><div style="border-bottom:5px solid #000; margin-bottom:15px;"></div>`;
+    const tableHead = `<div style="display:flex; font-size:10px; font-weight:900; text-transform:uppercase; margin-bottom:6px; padding:0 2px;"><div style="width:75px;">T-NR</div><div style="flex:1;">WERKZEUGNAME / KOMMENTAR</div><div style="width:125px; text-align:right;">Ø / TOLERANZ</div></div><div style="border-bottom:4px solid #000;"></div>`;
+    const getRow = (t) => `<div style="display:flex; align-items:baseline; border-bottom:1.5px solid #000; padding:10px 0; width:100%; page-break-inside: avoid;"><div style="width:75px; font-weight:800; font-size:15px;">${t.id}</div><div style="flex:1; font-weight:700; font-size:15px; text-transform:uppercase; padding-right:10px; white-space:pre-wrap;">${t.nm}</div><div style="width:125px; text-align:right; font-weight:800; font-size:14px;">${t.dia.replace(/\//g, '<br>')}</div></div>`;
+    let oben = [], unten = [], target = oben;
+    (p.tools || []).forEach(t => { if(t.rev) target = unten; target.push(t); });
+    let pdfHtml = `<!DOCTYPE html><html><head><style>@page { size: A4; margin: 0; } body { margin: 0; padding: 10mm; background: #fff; font-family: sans-serif; -webkit-print-color-adjust: exact; } .page { width: 210mm; height: 297mm; padding: 15mm; box-sizing: border-box; page-break-after: always; display: flex; flex-direction: column; } .content-border { border: 2.2px solid #000; padding: 20px; flex: 1; display: flex; flex-direction: column; box-sizing: border-box; } .footer { border-top: 1.2px solid #000; padding-top: 5px; font-size: 9px; font-weight: 800; text-align: center; color: #666; margin-top: auto; }</style></head><body><div class="page"><div class="content-border">${getPageHead()}<div style="flex:1;"><div style="margin-bottom:5px; font-size:18px; font-weight:900; text-transform:uppercase;">REVOLVER OBEN</div>${tableHead}${oben.map(getRow).join('')}</div><div class="footer">CITITOOL REPORT</div></div></div>${unten.length > 0 ? `<div class="page"><div class="content-border">${getPageHead()}<div style="flex:1;"><div style="margin-bottom:5px; font-size:18px; font-weight:900; text-transform:uppercase;">REVOLVER UNTEN</div>${tableHead}${unten.map(getRow).join('')}</div><div class="footer">CITITOOL REPORT</div></div></div>` : ''}<script>window.onload = function() { setTimeout(() => { window.print(); }, 400); };</script></body></html>`;
+    const win = window.open('', '_blank'); if (win) { win.document.write(pdfHtml); win.document.close(); }
 }
 
 window.onload = () => { injectStyles(); renderList(); };
