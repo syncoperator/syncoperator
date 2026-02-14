@@ -27,7 +27,7 @@ const injectStyles = () => {
             display: flex; flex-direction: column; align-items: center;
         }
         .main-logo {
-            width: 80px; height: 80px; object-fit: contain;
+            width: 300px; height: 300px; object-fit: contain;
             filter: drop-shadow(4px 6px 10px rgba(0,0,0,0.1));
             margin-bottom: 10px;
         }
