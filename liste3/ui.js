@@ -8,25 +8,23 @@ const injectStyles = () => {
         :root { --bg: #f8f9fb; --accent: #007aff; --card-bg: #ffffff; }
         body { background: var(--bg) !important; font-family: -apple-system, sans-serif !important; margin: 0; padding-bottom: 150px; }
         
-        /* БРЕНДИНГ И ЦЕНТРОВКА */
-        .brand-block { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 0 20px; text-align: center; }
+        .brand-block { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 0 20px; }
         .logo-img { width: 250px !important; height: auto; margin-bottom: -40px !important; z-index: 1; }
         .header-title-main { font-weight: 900; font-size: 64px !important; letter-spacing: -4px; margin: 0; z-index: 2; position: relative; color: #000; }
 
         .project-card { background: var(--card-bg); border-radius: 24px; margin: 0 20px 16px 20px; padding: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.04); display: flex; align-items: center; justify-content: space-between; }
         .tool-card { background: #fff; border-radius: 18px; padding: 14px 18px; margin: 0 16px 10px 16px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 8px rgba(0,0,0,0.02); }
 
-        /* КНОПКА-ПЕРЕКЛЮЧАТЕЛЬ */
-        .btn-rev-toggle {
-            background: #f2f2f7; border: none; padding: 16px; border-radius: 14px;
-            font-weight: 800; width: 100%; margin: 12px 0; cursor: pointer;
-            text-align: center; transition: 0.2s; font-size: 14px;
-        }
+        .btn-rev-toggle { background: #f2f2f7; border: none; padding: 16px; border-radius: 14px; font-weight: 800; width: 100%; margin: 12px 0; cursor: pointer; text-align: center; }
         .btn-rev-toggle.on { background: #000 !important; color: #fff !important; }
 
         .btn-order { background: #f2f2f7; border: none; border-radius: 6px; width: 32px; height: 28px; font-weight: 900; color: var(--accent); }
         .btn-order.disabled { opacity: 0; pointer-events: none; }
+        
         .fab { position: fixed; bottom: 30px; right: 20px; background: var(--accent); color: #fff; width: 60px; height: 60px; border-radius: 30px; display: flex; align-items: center; justify-content: center; font-size: 30px; z-index: 1000; border:none; box-shadow: 0 8px 25px rgba(0,122,255,0.3); }
+        
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2000; justify-content: center; align-items: flex-end; }
+        .modal-content { background: #fff; width: 100%; max-height: 90%; border-radius: 30px 30px 0 0; padding: 25px; overflow-y: auto; box-sizing: border-box; }
         
         input { width: 100%; padding: 14px; border-radius: 12px; border: 1.5px solid #eee; margin-top: 5px; box-sizing: border-box; font-size: 16px; margin-bottom: 12px; }
     `;
@@ -36,8 +34,12 @@ const injectStyles = () => {
 const el = (id) => document.getElementById(id);
 const save = () => localStorage.setItem(DB_KEY, JSON.stringify(db));
 
+// --- ПРОЕКТЫ ---
 function renderList() {
     const list = el('list-p'); if(!list) return;
+    el('v-home').style.display = 'block';
+    el('v-det').style.display = 'none';
+    
     list.innerHTML = `
         <div class="brand-block">
             <img src="https://raw.githubusercontent.com/syncoperator/syncoperator/refs/heads/main/IMG_2810.png" class="logo-img">
@@ -48,6 +50,42 @@ function renderList() {
             <div><div style="font-size:11px; font-weight:700; color:#8e8e93;">${p.name || 'PROJEKT'}</div><div style="font-size:24px; font-weight:900;">${p.num || '---'}</div></div>
             <div style="color:#ff3b30; font-weight:800; padding:10px; font-size:18px;" onclick="event.stopPropagation(); deleteProject(${i})">✕</div>
         </div>`).join('') + '<div style="height:120px"></div>';
+}
+
+function modalP(edit = false) {
+    const p = (edit && currentIdx !== null) ? db[currentIdx] : {num:'', name:'', lzf:'', sag:'', stt:'', stn:'', abs:'', grf:'', mat:''};
+    el('p-idx').value = edit ? currentIdx : '';
+    el('p-num').value = p.num; el('p-nam').value = p.name;
+    el('p-lzf').value = p.lzf; el('p-sag').value = p.sag;
+    el('p-stt').value = p.stt; el('p-stn').value = p.stn;
+    el('p-abs').value = p.abs; el('p-grf').value = p.grf;
+    if(el('p-mat')) el('p-mat').value = p.mat;
+    el('m-p').style.display = 'flex';
+}
+
+function saveP() {
+    const idx = el('p-idx').value;
+    const data = {
+        num: el('p-num').value, 
+        name: el('p-nam').value.toUpperCase(),
+        lzf: el('p-lzf').value, sag: el('p-sag').value, 
+        stt: el('p-stt').value, stn: el('p-stn').value,
+        abs: el('p-abs').value, grf: el('p-grf').value, 
+        mat: el('p-mat') ? el('p-mat').value.toUpperCase() : '',
+        tools: (idx !== '' && db[idx]) ? (db[idx].tools || []) : []
+    };
+    if (idx === '') db.push(data); else db[idx] = data;
+    save(); el('m-p').style.display = 'none'; renderList();
+}
+
+// --- ИНСТРУМЕНТЫ ---
+function openProject(i) { 
+    currentIdx = i; 
+    el('v-home').style.display = 'none'; 
+    el('v-det').style.display = 'block'; 
+    el('h-num').innerText = db[i].num; 
+    el('h-nam').innerText = db[i].name; 
+    renderTools(); 
 }
 
 function renderTools() {
@@ -73,17 +111,13 @@ function modalT(i = null) {
     el('t-idx').value = edit ? i : '';
     const t = edit ? db[currentIdx].tools[i] : {id:'', nm:'', dia:'', rev:false};
     el('t-id').value = t.id; el('t-nm').value = t.nm; el('t-dia').value = t.dia;
-    
     const btn = el('btn-rev-toggle');
-    // Сброс и установка состояния
     btn.classList.toggle('on', !!t.rev);
     btn.innerText = t.rev ? "REVOLVER UNTEN" : "REVOLVER OBEN";
-    
     btn.onclick = function() {
         const active = this.classList.toggle('on');
         this.innerText = active ? "REVOLVER UNTEN" : "REVOLVER OBEN";
     };
-    
     el('m-t').style.display = 'flex';
 }
 
@@ -96,36 +130,9 @@ function saveT() {
     save(); renderTools(); el('m-t').style.display = 'none';
 }
 
-function openProject(i) { 
-    currentIdx = i; 
-    el('v-home').style.display = 'none'; 
-    el('v-det').style.display = 'block'; 
-    el('h-num').innerText = db[i].num; 
-    el('h-nam').innerText = db[i].name; 
-    renderTools(); 
-}
-
-function goHome() { 
-    currentIdx = null; 
-    el('v-home').style.display = 'block'; 
-    el('v-det').style.display = 'none'; 
-    renderList(); 
-}
-
-function saveP() {
-    const idx = el('p-idx').value;
-    const data = {
-        num: el('p-num').value, name: el('p-nam').value.toUpperCase(),
-        lzf: el('p-lzf').value, sag: el('p-sag').value, stt: el('p-stt').value, stn: el('p-stn').value,
-        abs: el('p-abs').value, grf: el('p-grf').value, mat: el('p-mat') ? el('p-mat').value.toUpperCase() : '',
-        tools: (idx !== '' && db[idx]) ? (db[idx].tools || []) : []
-    };
-    if (idx === '') db.push(data); else db[idx] = data;
-    save(); el('m-p').style.display = 'none'; renderList();
-}
-
-function moveItem(i, dir) { const t = db[currentIdx].tools; if(i+dir>=0 && i+dir<t.length) { [t[i],t[i+dir]]=[t[i+dir],t[i]]; save(); renderTools(); } }
+function goHome() { currentIdx = null; renderList(); }
 function deleteProject(i) { if(confirm('Löschen?')) { db.splice(i, 1); save(); renderList(); } }
+function moveItem(i, dir) { const t = db[currentIdx].tools; if(i+dir>=0 && i+dir<t.length) { [t[i],t[i+dir]]=[t[i+dir],t[i]]; save(); renderTools(); } }
 
 function makePDF() {
     const p = db[currentIdx];
