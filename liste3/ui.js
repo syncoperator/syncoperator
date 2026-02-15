@@ -6,49 +6,47 @@ const injectStyles = () => {
     const style = document.createElement('style');
     style.innerHTML = `
         :root { --bg: #f8f9fb; --accent: #007aff; --card-bg: #ffffff; }
-        body { background: var(--bg) !important; font-family: -apple-system, sans-serif !important; margin: 0; padding-bottom: 120px; }
+        body { background: var(--bg) !important; font-family: -apple-system, sans-serif !important; margin: 0; padding-bottom: 150px; }
         
-        /* ЛОГО 250px И СБЛИЖЕННЫЙ ТЕКСТ */
-        .brand-block { display: flex; flex-direction: column; align-items: center; padding: 40px 0 10px; }
-        .logo-img { width: 250px !important; height: auto; margin-bottom: -45px !important; z-index: 1; }
+        /* БРЕНДИНГ И ЦЕНТРОВКА */
+        .brand-block { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 0 20px; text-align: center; }
+        .logo-img { width: 250px !important; height: auto; margin-bottom: -40px !important; z-index: 1; }
         .header-title-main { font-weight: 900; font-size: 64px !important; letter-spacing: -4px; margin: 0; z-index: 2; position: relative; color: #000; }
 
-        header { background: rgba(255,255,255,0.85); backdrop-filter: blur(15px); padding: 20px; position: sticky; top: 0; z-index: 100; border-bottom: 0.5px solid rgba(0,0,0,0.05); }
-        
         .project-card { background: var(--card-bg); border-radius: 24px; margin: 0 20px 16px 20px; padding: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.04); display: flex; align-items: center; justify-content: space-between; }
         .tool-card { background: #fff; border-radius: 18px; padding: 14px 18px; margin: 0 16px 10px 16px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 8px rgba(0,0,0,0.02); }
 
-        .order-controls { display: flex; flex-direction: column; gap: 4px; }
+        /* КНОПКА-ПЕРЕКЛЮЧАТЕЛЬ */
+        .btn-rev-toggle {
+            background: #f2f2f7; border: none; padding: 16px; border-radius: 14px;
+            font-weight: 800; width: 100%; margin: 12px 0; cursor: pointer;
+            text-align: center; transition: 0.2s; font-size: 14px;
+        }
+        .btn-rev-toggle.on { background: #000 !important; color: #fff !important; }
+
         .btn-order { background: #f2f2f7; border: none; border-radius: 6px; width: 32px; height: 28px; font-weight: 900; color: var(--accent); }
         .btn-order.disabled { opacity: 0; pointer-events: none; }
-
-        /* КНОПКА REVOLVER (ТУМБЛЕР) */
-        #btn-rev-toggle {
-            background: #f2f2f7; border: 2px solid transparent; padding: 14px;
-            border-radius: 14px; font-weight: 800; width: 100%; margin: 10px 0;
-            cursor: pointer; transition: 0.2s; text-align: center;
-        }
-        #btn-rev-toggle.on { background: #000 !important; color: #fff !important; }
-
-        .fab { position: fixed; bottom: 30px; right: 20px; background: var(--accent); color: #fff; width: 60px; height: 60px; border-radius: 30px; display: flex; align-items: center; justify-content: center; font-size: 30px; z-index: 1000; border:none; }
-        input { width: 100%; padding: 14px; border-radius: 12px; border: 1.5px solid #eee; margin-top: 5px; box-sizing: border-box; font-size: 16px; margin-bottom: 10px; }
+        .fab { position: fixed; bottom: 30px; right: 20px; background: var(--accent); color: #fff; width: 60px; height: 60px; border-radius: 30px; display: flex; align-items: center; justify-content: center; font-size: 30px; z-index: 1000; border:none; box-shadow: 0 8px 25px rgba(0,122,255,0.3); }
+        
+        input { width: 100%; padding: 14px; border-radius: 12px; border: 1.5px solid #eee; margin-top: 5px; box-sizing: border-box; font-size: 16px; margin-bottom: 12px; }
     `;
     document.head.appendChild(style);
 };
 
 const el = (id) => document.getElementById(id);
-const show = (id) => { const x = el(id); if(x) x.style.display = 'flex'; };
-const hide = (id) => { const x = el(id); if(x) x.style.display = 'none'; };
 const save = () => localStorage.setItem(DB_KEY, JSON.stringify(db));
 
-// --- ГЛАВНАЯ ---
 function renderList() {
     const list = el('list-p'); if(!list) return;
-    list.innerHTML = `<div class="brand-block"><img src="https://raw.githubusercontent.com/syncoperator/syncoperator/refs/heads/main/IMG_2810.png" class="logo-img"><div class="header-title-main">CitiTool</div></div>` + 
-    db.map((p, i) => `
+    list.innerHTML = `
+        <div class="brand-block">
+            <img src="https://raw.githubusercontent.com/syncoperator/syncoperator/refs/heads/main/IMG_2810.png" class="logo-img">
+            <div class="header-title-main">CitiTool</div>
+        </div>
+    ` + db.map((p, i) => `
         <div class="project-card" onclick="openProject(${i})">
-            <div><div style="font-size:11px; font-weight:700; color:var(--text-sub);">${p.name || 'PROJEKT'}</div><div style="font-size:24px; font-weight:900;">${p.num || '---'}</div></div>
-            <div style="color:#ff3b30; font-weight:800; padding:10px;" onclick="event.stopPropagation(); deleteProject(${i})">✕</div>
+            <div><div style="font-size:11px; font-weight:700; color:#8e8e93;">${p.name || 'PROJEKT'}</div><div style="font-size:24px; font-weight:900;">${p.num || '---'}</div></div>
+            <div style="color:#ff3b30; font-weight:800; padding:10px; font-size:18px;" onclick="event.stopPropagation(); deleteProject(${i})">✕</div>
         </div>`).join('') + '<div style="height:120px"></div>';
 }
 
@@ -63,16 +61,56 @@ function renderTools() {
                 <div style="font-size:18px; font-weight:800;">${t.nm || '---'}</div>
                 <div style="color:var(--accent); font-weight:700; font-size:13px;">${t.dia || ''}</div>
             </div>
-            <div class="order-controls">
+            <div style="display:flex; flex-direction:column; gap:4px;">
                 <button class="btn-order ${i === 0 ? 'disabled' : ''}" onclick="event.stopPropagation(); moveItem(${i}, -1)">↑</button>
                 <button class="btn-order ${i === tools.length - 1 ? 'disabled' : ''}" onclick="event.stopPropagation(); moveItem(${i}, 1)">↓</button>
             </div>
-        </div>`).join('') + '<div style="height:180px"></div>';
+        </div>`).join('') + '<div style="padding-bottom:100px;"></div>';
 }
 
-// --- УПРАВЛЕНИЕ ---
-function openProject(i) { currentIdx = i; el('v-home').classList.remove('active'); el('v-det').classList.add('active'); el('h-num').innerText = db[i].num; el('h-nam').innerText = db[i].name; renderTools(); }
-function goHome() { currentIdx = null; el('v-home').classList.add('active'); el('v-det').classList.remove('active'); renderList(); }
+function modalT(i = null) {
+    const edit = i !== null;
+    el('t-idx').value = edit ? i : '';
+    const t = edit ? db[currentIdx].tools[i] : {id:'', nm:'', dia:'', rev:false};
+    el('t-id').value = t.id; el('t-nm').value = t.nm; el('t-dia').value = t.dia;
+    
+    const btn = el('btn-rev-toggle');
+    // Сброс и установка состояния
+    btn.classList.toggle('on', !!t.rev);
+    btn.innerText = t.rev ? "REVOLVER UNTEN" : "REVOLVER OBEN";
+    
+    btn.onclick = function() {
+        const active = this.classList.toggle('on');
+        this.innerText = active ? "REVOLVER UNTEN" : "REVOLVER OBEN";
+    };
+    
+    el('m-t').style.display = 'flex';
+}
+
+function saveT() {
+    const i = el('t-idx').value;
+    const isUnten = el('btn-rev-toggle').classList.contains('on');
+    const t = { id: el('t-id').value.toUpperCase(), nm: el('t-nm').value.toUpperCase(), dia: el('t-dia').value, rev: isUnten };
+    if(!db[currentIdx].tools) db[currentIdx].tools = [];
+    if(i === '') db[currentIdx].tools.push(t); else db[currentIdx].tools[i] = t;
+    save(); renderTools(); el('m-t').style.display = 'none';
+}
+
+function openProject(i) { 
+    currentIdx = i; 
+    el('v-home').style.display = 'none'; 
+    el('v-det').style.display = 'block'; 
+    el('h-num').innerText = db[i].num; 
+    el('h-nam').innerText = db[i].name; 
+    renderTools(); 
+}
+
+function goHome() { 
+    currentIdx = null; 
+    el('v-home').style.display = 'block'; 
+    el('v-det').style.display = 'none'; 
+    renderList(); 
+}
 
 function saveP() {
     const idx = el('p-idx').value;
@@ -83,48 +121,12 @@ function saveP() {
         tools: (idx !== '' && db[idx]) ? (db[idx].tools || []) : []
     };
     if (idx === '') db.push(data); else db[idx] = data;
-    save(); hide('m-p'); renderList();
-}
-
-// --- ИСПРАВЛЕННЫЙ ПЕРЕКЛЮЧАТЕЛЬ ---
-function modalT(i = null) {
-    const edit = i !== null;
-    el('t-idx').value = edit ? i : '';
-    const t = edit ? db[currentIdx].tools[i] : {id:'', nm:'', dia:'', rev:false};
-    el('t-id').value = t.id; el('t-nm').value = t.nm; el('t-dia').value = t.dia;
-    
-    const btn = el('btn-rev-toggle');
-    if(btn) {
-        // Устанавливаем начальное состояние
-        btn.classList.toggle('on', t.rev);
-        btn.innerText = t.rev ? "REVOLVER UNTEN" : "REVOLVER OBEN";
-        
-        btn.onclick = () => {
-            const isNowOn = btn.classList.toggle('on');
-            btn.innerText = isNowOn ? "REVOLVER UNTEN" : "REVOLVER OBEN";
-        };
-    }
-    show('m-t');
-}
-
-function saveT() {
-    const i = el('t-idx').value;
-    const isUnten = el('btn-rev-toggle').classList.contains('on');
-    const t = { 
-        id: el('t-id').value.toUpperCase(), 
-        nm: el('t-nm').value.toUpperCase(), 
-        dia: el('t-dia').value, 
-        rev: isUnten 
-    };
-    if(!db[currentIdx].tools) db[currentIdx].tools = [];
-    if(i === '') db[currentIdx].tools.push(t); else db[currentIdx].tools[i] = t;
-    save(); renderTools(); hide('m-t');
+    save(); el('m-p').style.display = 'none'; renderList();
 }
 
 function moveItem(i, dir) { const t = db[currentIdx].tools; if(i+dir>=0 && i+dir<t.length) { [t[i],t[i+dir]]=[t[i+dir],t[i]]; save(); renderTools(); } }
 function deleteProject(i) { if(confirm('Löschen?')) { db.splice(i, 1); save(); renderList(); } }
 
-// --- PDF С УМНЫМ РАЗРЫВОМ ---
 function makePDF() {
     const p = db[currentIdx];
     const getHead = () => `<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; min-height:90px;"><div><div style="font-size:13px; font-weight:900; color:#666;">${p.name || ''}</div><div style="font-size:64px; font-weight:900; line-height:0.8; letter-spacing:-2px; margin:0;">${p.num || '---'}</div></div><div style="width:220px; font-size:11px; font-weight:800; line-height:1.5;"><div style="display:flex; justify-content:space-between; border-bottom:1px solid #eee;"><span>LAUFZEIT</span><span>${p.lzf || ''}</span></div><div style="display:flex; justify-content:space-between; border-bottom:1px solid #eee;"><span>MATERIAL</span><span>${p.mat || ''}</span></div><div style="display:flex; justify-content:space-between; border-bottom:1px solid #eee;"><span>SÄGELÄNGE</span><span>${p.sag || ''}</span></div><div style="display:flex; justify-content:space-between; border-bottom:1px solid #eee;"><span>ABSTAND</span><span>${p.abs || ''}</span></div><div style="display:flex; justify-content:space-between; border-bottom:1px solid #eee;"><span>GREIFBACKEN</span><span>${p.grf || ''}</span></div><div style="display:flex; justify-content:space-between;"><span>STÜCKZAHL</span><span>${p.stt || ''} / ${p.stn || ''}</span></div></div></div><div style="border-bottom:5px solid #000; margin-bottom:15px;"></div>`;
