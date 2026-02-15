@@ -6,27 +6,36 @@ const injectStyles = () => {
     const style = document.createElement('style');
     style.innerHTML = `
         :root { --bg: #f8f9fb; --accent: #007aff; --card-bg: #ffffff; }
-        body { background: var(--bg) !important; font-family: -apple-system, sans-serif !important; margin: 0; padding-bottom: 150px; }
+        body { background: var(--bg) !important; font-family: -apple-system, sans-serif !important; margin: 0; padding-bottom: 160px; color: #1c1c1e; }
         
-        .brand-block { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 0 20px; }
-        .logo-img { width: 250px !important; height: auto; margin-bottom: -40px !important; z-index: 1; }
+        /* ЦЕНТРОВКА ЛОГО */
+        .brand-block { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 30px 0 10px; }
+        .logo-img { width: 250px !important; height: auto; margin-bottom: -45px !important; z-index: 1; }
         .header-title-main { font-weight: 900; font-size: 64px !important; letter-spacing: -4px; margin: 0; z-index: 2; position: relative; color: #000; }
 
-        .project-card { background: var(--card-bg); border-radius: 24px; margin: 0 20px 16px 20px; padding: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.04); display: flex; align-items: center; justify-content: space-between; }
+        /* КАРТОЧКИ */
+        .project-card { background: var(--card-bg); border-radius: 24px; margin: 0 20px 16px 20px; padding: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.04); display: flex; align-items: center; justify-content: space-between; border: 1px solid rgba(255,255,255,0.5); }
         .tool-card { background: #fff; border-radius: 18px; padding: 14px 18px; margin: 0 16px 10px 16px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 8px rgba(0,0,0,0.02); }
 
-        .btn-rev-toggle { background: #f2f2f7; border: none; padding: 16px; border-radius: 14px; font-weight: 800; width: 100%; margin: 12px 0; cursor: pointer; text-align: center; }
+        /* КНОПКА REVOLVER */
+        .btn-rev-toggle {
+            background: #f2f2f7; border: none; padding: 16px; border-radius: 14px;
+            font-weight: 800; width: 100%; margin: 12px 0; cursor: pointer;
+            text-align: center; font-size: 14px; transition: 0.2s;
+        }
         .btn-rev-toggle.on { background: #000 !important; color: #fff !important; }
 
-        .btn-order { background: #f2f2f7; border: none; border-radius: 6px; width: 32px; height: 28px; font-weight: 900; color: var(--accent); }
+        /* УПРАВЛЕНИЕ */
+        .btn-order { background: #f2f2f7; border: none; border-radius: 6px; width: 34px; height: 30px; font-weight: 900; color: var(--accent); cursor: pointer; }
         .btn-order.disabled { opacity: 0; pointer-events: none; }
+        .fab { position: fixed; bottom: 30px; right: 20px; background: var(--accent); color: #fff; width: 60px; height: 60px; border-radius: 30px; display: flex; align-items: center; justify-content: center; font-size: 30px; z-index: 1000; border:none; box-shadow: 0 8px 25px rgba(0,122,255,0.3); cursor: pointer; }
         
-        .fab { position: fixed; bottom: 30px; right: 20px; background: var(--accent); color: #fff; width: 60px; height: 60px; border-radius: 30px; display: flex; align-items: center; justify-content: center; font-size: 30px; z-index: 1000; border:none; box-shadow: 0 8px 25px rgba(0,122,255,0.3); }
+        /* ПОЛЯ ВВОДА */
+        input { width: 100%; padding: 15px; border-radius: 12px; border: 1.5px solid #eee; margin-top: 5px; box-sizing: border-box; font-size: 16px; margin-bottom: 12px; -webkit-appearance: none; }
         
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2000; justify-content: center; align-items: flex-end; }
-        .modal-content { background: #fff; width: 100%; max-height: 90%; border-radius: 30px 30px 0 0; padding: 25px; overflow-y: auto; box-sizing: border-box; }
-        
-        input { width: 100%; padding: 14px; border-radius: 12px; border: 1.5px solid #eee; margin-top: 5px; box-sizing: border-box; font-size: 16px; margin-bottom: 12px; }
+        /* МОДАЛКИ */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 2000; justify-content: center; align-items: flex-end; }
+        .modal-content { background: #fff; width: 100%; max-height: 92%; border-radius: 30px 30px 0 0; padding: 25px; overflow-y: auto; box-sizing: border-box; box-shadow: 0 -10px 30px rgba(0,0,0,0.1); }
     `;
     document.head.appendChild(style);
 };
@@ -34,7 +43,7 @@ const injectStyles = () => {
 const el = (id) => document.getElementById(id);
 const save = () => localStorage.setItem(DB_KEY, JSON.stringify(db));
 
-// --- ПРОЕКТЫ ---
+// --- РЕНДЕР ГЛАВНОЙ ---
 function renderList() {
     const list = el('list-p'); if(!list) return;
     el('v-home').style.display = 'block';
@@ -47,38 +56,44 @@ function renderList() {
         </div>
     ` + db.map((p, i) => `
         <div class="project-card" onclick="openProject(${i})">
-            <div><div style="font-size:11px; font-weight:700; color:#8e8e93;">${p.name || 'PROJEKT'}</div><div style="font-size:24px; font-weight:900;">${p.num || '---'}</div></div>
-            <div style="color:#ff3b30; font-weight:800; padding:10px; font-size:18px;" onclick="event.stopPropagation(); deleteProject(${i})">✕</div>
+            <div>
+                <div style="font-size:11px; font-weight:700; color:#8e8e93; text-transform:uppercase;">${p.name || 'PROJEKT'}</div>
+                <div style="font-size:26px; font-weight:900; color:#000; letter-spacing:-0.5px;">${p.num || '---'}</div>
+            </div>
+            <div style="color:#ff3b30; font-weight:800; padding:12px; font-size:20px;" onclick="event.stopPropagation(); deleteProject(${i})">✕</div>
         </div>`).join('') + '<div style="height:120px"></div>';
 }
 
+// --- УПРАВЛЕНИЕ ПРОЕКТАМИ ---
 function modalP(edit = false) {
-    const p = (edit && currentIdx !== null) ? db[currentIdx] : {num:'', name:'', lzf:'', sag:'', stt:'', stn:'', abs:'', grf:'', mat:''};
-    el('p-idx').value = edit ? currentIdx : '';
-    el('p-num').value = p.num; el('p-nam').value = p.name;
-    el('p-lzf').value = p.lzf; el('p-sag').value = p.sag;
-    el('p-stt').value = p.stt; el('p-stn').value = p.stn;
-    el('p-abs').value = p.abs; el('p-grf').value = p.grf;
-    if(el('p-mat')) el('p-mat').value = p.mat;
+    if (!edit) {
+        currentIdx = null;
+        el('p-idx').value = '';
+        ['p-num','p-nam','p-lzf','p-sag','p-stt','p-stn','p-abs','p-grf','p-mat'].forEach(id => { if(el(id)) el(id).value = ''; });
+    } else {
+        const p = db[currentIdx];
+        el('p-idx').value = currentIdx;
+        el('p-num').value = p.num; el('p-nam').value = p.name;
+        el('p-lzf').value = p.lzf; el('p-sag').value = p.sag;
+        el('p-stt').value = p.stt; el('p-stn').value = p.stn;
+        el('p-abs').value = p.abs; el('p-grf').value = p.grf;
+        if(el('p-mat')) el('p-mat').value = p.mat;
+    }
     el('m-p').style.display = 'flex';
 }
 
 function saveP() {
     const idx = el('p-idx').value;
     const data = {
-        num: el('p-num').value, 
-        name: el('p-nam').value.toUpperCase(),
-        lzf: el('p-lzf').value, sag: el('p-sag').value, 
-        stt: el('p-stt').value, stn: el('p-stn').value,
-        abs: el('p-abs').value, grf: el('p-grf').value, 
-        mat: el('p-mat') ? el('p-mat').value.toUpperCase() : '',
+        num: el('p-num').value, name: el('p-nam').value.toUpperCase(),
+        lzf: el('p-lzf').value, sag: el('p-sag').value, stt: el('p-stt').value, stn: el('p-stn').value,
+        abs: el('p-abs').value, grf: el('p-grf').value, mat: el('p-mat') ? el('p-mat').value.toUpperCase() : '',
         tools: (idx !== '' && db[idx]) ? (db[idx].tools || []) : []
     };
     if (idx === '') db.push(data); else db[idx] = data;
     save(); el('m-p').style.display = 'none'; renderList();
 }
 
-// --- ИНСТРУМЕНТЫ ---
 function openProject(i) { 
     currentIdx = i; 
     el('v-home').style.display = 'none'; 
@@ -88,22 +103,23 @@ function openProject(i) {
     renderTools(); 
 }
 
+// --- УПРАВЛЕНИЕ ИНСТРУМЕНТАМИ ---
 function renderTools() {
     const list = el('list-t'); if(!list || currentIdx === null) return;
     const tools = db[currentIdx].tools || [];
     list.innerHTML = tools.map((t, i) => `
         <div class="tool-card">
             <div style="flex:1;" onclick="modalT(${i})">
-                ${t.rev ? `<div style="background:#000; color:#fff; font-size:8px; padding:2px 7px; border-radius:4px; margin-bottom:5px; font-weight:900; width:fit-content;">REVOLVER UNTEN</div>` : ''}
+                ${t.rev ? `<div style="background:#000; color:#fff; font-size:8px; padding:3px 8px; border-radius:5px; margin-bottom:6px; font-weight:900; width:fit-content;">REVOLVER UNTEN</div>` : ''}
                 <div style="font-size:10px; font-weight:700; color:#8e8e93;">${t.id || 'T0000'}</div>
-                <div style="font-size:18px; font-weight:800;">${t.nm || '---'}</div>
-                <div style="color:var(--accent); font-weight:700; font-size:13px;">${t.dia || ''}</div>
+                <div style="font-size:19px; font-weight:800; line-height:1.1;">${t.nm || '---'}</div>
+                <div style="color:var(--accent); font-weight:700; font-size:14px; margin-top:4px;">${t.dia || ''}</div>
             </div>
-            <div style="display:flex; flex-direction:column; gap:4px;">
+            <div style="display:flex; flex-direction:column; gap:6px; margin-left:10px;">
                 <button class="btn-order ${i === 0 ? 'disabled' : ''}" onclick="event.stopPropagation(); moveItem(${i}, -1)">↑</button>
                 <button class="btn-order ${i === tools.length - 1 ? 'disabled' : ''}" onclick="event.stopPropagation(); moveItem(${i}, 1)">↓</button>
             </div>
-        </div>`).join('') + '<div style="padding-bottom:100px;"></div>';
+        </div>`).join('') + '<div style="padding-bottom:120px;"></div>';
 }
 
 function modalT(i = null) {
@@ -111,12 +127,14 @@ function modalT(i = null) {
     el('t-idx').value = edit ? i : '';
     const t = edit ? db[currentIdx].tools[i] : {id:'', nm:'', dia:'', rev:false};
     el('t-id').value = t.id; el('t-nm').value = t.nm; el('t-dia').value = t.dia;
+    
     const btn = el('btn-rev-toggle');
     btn.classList.toggle('on', !!t.rev);
     btn.innerText = t.rev ? "REVOLVER UNTEN" : "REVOLVER OBEN";
+    
     btn.onclick = function() {
-        const active = this.classList.toggle('on');
-        this.innerText = active ? "REVOLVER UNTEN" : "REVOLVER OBEN";
+        const isUnten = this.classList.toggle('on');
+        this.innerText = isUnten ? "REVOLVER UNTEN" : "REVOLVER OBEN";
     };
     el('m-t').style.display = 'flex';
 }
@@ -130,6 +148,7 @@ function saveT() {
     save(); renderTools(); el('m-t').style.display = 'none';
 }
 
+// --- ОБЩЕЕ ---
 function goHome() { currentIdx = null; renderList(); }
 function deleteProject(i) { if(confirm('Löschen?')) { db.splice(i, 1); save(); renderList(); } }
 function moveItem(i, dir) { const t = db[currentIdx].tools; if(i+dir>=0 && i+dir<t.length) { [t[i],t[i+dir]]=[t[i+dir],t[i]]; save(); renderTools(); } }
