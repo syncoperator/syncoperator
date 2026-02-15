@@ -6,36 +6,37 @@ const injectStyles = () => {
     const style = document.createElement('style');
     style.innerHTML = `
         :root { --bg: #f8f9fb; --accent: #007aff; --card-bg: #ffffff; }
-        body { background: var(--bg) !important; font-family: -apple-system, sans-serif !important; margin: 0; padding-top: 70px; padding-bottom: 120px; color: #1c1c1e; }
+        body { background: var(--bg) !important; font-family: -apple-system, sans-serif !important; margin: 0; padding-top: 80px; padding-bottom: 140px; }
         
-        /* НЕВИДИМАЯ ПОЛОСКА СВЕРХУ */
-        .glass-header { 
+        /* ЧИСТЫЙ ХЕДЕР */
+        .top-bar { 
             position: fixed; top: 0; left: 0; width: 100%; height: 60px; 
-            background: rgba(248, 249, 251, 0.7); backdrop-filter: blur(10px); 
-            z-index: 1500; display: flex; align-items: center; justify-content: space-between; padding: 0 15px; box-sizing: border-box;
+            background: rgba(248, 249, 251, 0.8); backdrop-filter: blur(15px); 
+            z-index: 1000; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; box-sizing: border-box;
         }
-        .header-btn { background: #fff; border: 1px solid #ddd; padding: 8px 15px; border-radius: 10px; font-weight: 700; font-size: 13px; color: var(--accent); cursor: pointer; }
-        .header-btn.danger { color: #ff3b30; }
+        .btn-head { background: #fff; border: 1px solid #e5e5ea; padding: 8px 14px; border-radius: 10px; font-weight: 700; font-size: 12px; color: var(--accent); box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
 
-        /* ЦЕНТРОВКА ЛОГО */
-        .brand-block { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px 0 10px; }
-        .logo-img { width: 250px !important; height: auto; margin-bottom: -45px !important; z-index: 1; }
-        .header-title-main { font-weight: 900; font-size: 64px !important; letter-spacing: -4px; margin: 0; z-index: 2; position: relative; color: #000; }
+        /* ЛОГО */
+        .brand-block { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 10px 0; }
+        .logo-img { width: 220px !important; height: auto; margin-bottom: -40px !important; z-index: 1; }
+        .header-title-main { font-weight: 900; font-size: 60px !important; letter-spacing: -3px; margin: 0; z-index: 2; position: relative; color: #000; }
 
-        .project-card { background: var(--card-bg); border-radius: 24px; margin: 0 20px 16px 20px; padding: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.04); display: flex; align-items: center; justify-content: space-between; }
+        /* КАРТОЧКИ */
+        .project-card { background: var(--card-bg); border-radius: 24px; margin: 0 20px 12px 20px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); display: flex; align-items: center; justify-content: space-between; border: 1px solid #fff; }
         .tool-card { background: #fff; border-radius: 18px; padding: 14px 18px; margin: 0 16px 10px 16px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 8px rgba(0,0,0,0.02); }
 
-        .btn-rev-toggle { background: #f2f2f7; border: none; padding: 16px; border-radius: 14px; font-weight: 800; width: 100%; margin: 12px 0; text-align: center; }
+        /* REVOLVER */
+        .btn-rev-toggle { background: #f2f2f7; border: none; padding: 16px; border-radius: 14px; font-weight: 800; width: 100%; margin: 10px 0; font-size: 14px; }
         .btn-rev-toggle.on { background: #000 !important; color: #fff !important; }
 
-        .btn-order { background: #f2f2f7; border: none; border-radius: 6px; width: 34px; height: 30px; font-weight: 900; color: var(--accent); }
+        .btn-order { background: #f2f2f7; border: none; border-radius: 6px; width: 34px; height: 32px; font-weight: 900; color: var(--accent); }
         .btn-order.disabled { opacity: 0; pointer-events: none; }
         
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); z-index: 2000; justify-content: center; align-items: flex-end; }
-        .modal-content { background: #fff; width: 100%; max-height: 92%; border-radius: 30px 30px 0 0; padding: 25px; overflow-y: auto; box-sizing: border-box; }
+        .modal-content { background: #fff; width: 100%; max-height: 90%; border-radius: 30px 30px 0 0; padding: 25px; overflow-y: auto; box-sizing: border-box; }
         
-        input, textarea { width: 100%; padding: 15px; border-radius: 12px; border: 1.5px solid #eee; margin-top: 5px; box-sizing: border-box; font-size: 16px; margin-bottom: 12px; }
-        .fab { position: fixed; bottom: 30px; right: 20px; background: var(--accent); color: #fff; width: 65px; height: 65px; border-radius: 35px; display: flex; align-items: center; justify-content: center; font-size: 30px; z-index: 1000; border:none; box-shadow: 0 8px 25px rgba(0,122,255,0.4); }
+        input, textarea { width: 100%; padding: 14px; border-radius: 12px; border: 1.5px solid #efefef; margin-top: 4px; box-sizing: border-box; font-size: 16px; margin-bottom: 10px; background: #f9f9f9; }
+        .fab { position: fixed; bottom: 30px; right: 20px; background: var(--accent); color: #fff; width: 60px; height: 60px; border-radius: 30px; display: flex; align-items: center; justify-content: center; font-size: 28px; z-index: 900; border:none; box-shadow: 0 8px 20px rgba(0,122,255,0.3); }
     `;
     document.head.appendChild(style);
 };
@@ -49,11 +50,14 @@ function renderList() {
     el('v-home').style.display = 'block';
     el('v-det').style.display = 'none';
     
-    // Хедер для главной
+    // Удаляем старые бары если были
+    const oldBar = document.querySelector('.top-bar'); if(oldBar) oldBar.remove();
+
+    // Новый чистый бар
     document.body.insertAdjacentHTML('afterbegin', `
-        <div class="glass-header" id="main-h">
-            <button class="header-btn" onclick="show('m-imp')">IMPORT/EXPORT</button>
-            <button class="header-btn" onclick="modalP(false)">+ NEU</button>
+        <div class="top-bar">
+            <button class="btn-head" onclick="openImp()">JSON</button>
+            <button class="btn-head" onclick="modalP(false)">+ NEU</button>
         </div>
     `);
 
@@ -65,28 +69,28 @@ function renderList() {
     ` + db.map((p, i) => `
         <div class="project-card" onclick="openProject(${i})">
             <div>
-                <div style="font-size:11px; font-weight:700; color:#8e8e93;">${p.name || 'PROJEKT'}</div>
-                <div style="font-size:26px; font-weight:900;">${p.num || '---'}</div>
+                <div style="font-size:10px; font-weight:700; color:#8e8e93; text-transform:uppercase; margin-bottom:2px;">${p.name || 'PROJEKT'}</div>
+                <div style="font-size:26px; font-weight:900; letter-spacing:-0.5px;">${p.num || '---'}</div>
             </div>
-            <div style="color:#ff3b30; font-weight:800; padding:12px;" onclick="event.stopPropagation(); deleteProject(${i})">✕</div>
+            <div style="color:#ff3b30; font-weight:800; padding:10px; font-size:18px;" onclick="event.stopPropagation(); deleteProject(${i})">✕</div>
         </div>`).join('') + '<div style="height:120px"></div>';
 }
 
-// --- УПРАВЛЕНИЕ ---
-function openProject(i) { 
-    currentIdx = i; 
-    const h = el('main-h'); if(h) h.remove();
-    el('v-home').style.display = 'none'; 
-    el('v-det').style.display = 'block'; 
-    el('h-num').innerText = db[i].num; 
-    el('h-nam').innerText = db[i].name; 
-    renderTools(); 
-}
-
-function goHome() { 
-    currentIdx = null; 
-    const h = el('main-h'); if(h) h.remove();
-    renderList(); 
+// --- ПРОЕКТЫ ---
+function modalP(edit = false) {
+    if(!edit) {
+        currentIdx = null; el('p-idx').value = '';
+        ['p-num','p-nam','p-lzf','p-sag','p-stt','p-stn','p-abs','p-grf','p-mat'].forEach(id => { if(el(id)) el(id).value = ''; });
+    } else {
+        const p = db[currentIdx];
+        el('p-idx').value = currentIdx;
+        el('p-num').value = p.num; el('p-nam').value = p.name;
+        el('p-lzf').value = p.lzf; el('p-sag').value = p.sag;
+        el('p-stt').value = p.stt; el('p-stn').value = p.stn;
+        el('p-abs').value = p.abs; el('p-grf').value = p.grf;
+        if(el('p-mat')) el('p-mat').value = p.mat;
+    }
+    el('m-p').style.display = 'flex';
 }
 
 function saveP() {
@@ -101,16 +105,29 @@ function saveP() {
     save(); el('m-p').style.display = 'none'; renderList();
 }
 
+function openProject(i) { 
+    currentIdx = i; 
+    const bar = document.querySelector('.top-bar'); if(bar) bar.remove();
+    el('v-home').style.display = 'none'; 
+    el('v-det').style.display = 'block'; 
+    el('h-num').innerText = db[i].num; 
+    el('h-nam').innerText = db[i].name; 
+    renderTools(); 
+}
+
+function goHome() { currentIdx = null; renderList(); }
+
+// --- ИНСТРУМЕНТЫ ---
 function renderTools() {
     const list = el('list-t'); if(!list || currentIdx === null) return;
     const tools = db[currentIdx].tools || [];
     list.innerHTML = tools.map((t, i) => `
         <div class="tool-card">
             <div style="flex:1;" onclick="modalT(${i})">
-                ${t.rev ? `<div style="background:#000; color:#fff; font-size:8px; padding:3px 8px; border-radius:5px; margin-bottom:6px; font-weight:900; width:fit-content;">REVOLVER UNTEN</div>` : ''}
+                ${t.rev ? `<div style="background:#000; color:#fff; font-size:8px; padding:3px 8px; border-radius:5px; margin-bottom:5px; font-weight:900; width:fit-content;">REVOLVER UNTEN</div>` : ''}
                 <div style="font-size:10px; font-weight:700; color:#8e8e93;">${t.id || 'T0000'}</div>
                 <div style="font-size:19px; font-weight:800;">${t.nm || '---'}</div>
-                <div style="color:var(--accent); font-weight:700; font-size:14px;">${t.dia || ''}</div>
+                <div style="color:var(--accent); font-weight:700; font-size:14px; margin-top:2px;">${t.dia || ''}</div>
             </div>
             <div style="display:flex; flex-direction:column; gap:6px;">
                 <button class="btn-order ${i === 0 ? 'disabled' : ''}" onclick="event.stopPropagation(); moveItem(${i}, -1)">↑</button>
@@ -128,8 +145,8 @@ function modalT(i = null) {
     btn.classList.toggle('on', !!t.rev);
     btn.innerText = t.rev ? "REVOLVER UNTEN" : "REVOLVER OBEN";
     btn.onclick = function() {
-        const isU = this.classList.toggle('on');
-        this.innerText = isU ? "REVOLVER UNTEN" : "REVOLVER OBEN";
+        const active = this.classList.toggle('on');
+        this.innerText = active ? "REVOLVER UNTEN" : "REVOLVER OBEN";
     };
     el('m-t').style.display = 'flex';
 }
@@ -143,28 +160,22 @@ function saveT() {
     save(); renderTools(); el('m-t').style.display = 'none';
 }
 
-// --- IMPORT / EXPORT ---
+// --- JSON ---
+function openImp() { el('imp-area').value = ''; el('m-imp').style.display = 'flex'; }
 function exportJSON() {
-    el('imp-area').value = JSON.stringify(db, null, 2);
+    el('imp-area').value = JSON.stringify(db);
     el('imp-area').select();
     document.execCommand('copy');
-    alert("JSON kopiert!");
+    alert("Kopiert!");
 }
-
 function importJSON() {
     try {
         const data = JSON.parse(el('imp-area').value);
-        if (Array.isArray(data)) {
-            db = data; save(); renderList(); el('m-imp').style.display = 'none';
-        }
-    } catch(e) { alert("Fehler im JSON Format"); }
+        if(Array.isArray(data)) { db = data; save(); renderList(); el('m-imp').style.display = 'none'; }
+    } catch(e) { alert("Error!"); }
 }
 
-function show(id) { el(id).style.display = 'flex'; }
-function moveItem(i, dir) { const t = db[currentIdx].tools; if(i+dir>=0 && i+dir<t.length) { [t[i],t[i+dir]]=[t[i+dir],t[i]]; save(); renderTools(); } }
-function deleteProject(i) { if(confirm('Löschen?')) { db.splice(i, 1); save(); renderList(); } }
-
-// --- PDF БЕЗ РАЗРЫВОВ СТРОК ---
+// --- PDF ---
 function makePDF() {
     const p = db[currentIdx];
     const getHead = () => `<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; min-height:90px;"><div><div style="font-size:13px; font-weight:900; color:#666;">${p.name || ''}</div><div style="font-size:64px; font-weight:900; line-height:0.8; letter-spacing:-2px; margin:0;">${p.num || '---'}</div></div><div style="width:220px; font-size:11px; font-weight:800; line-height:1.5;"><div style="display:flex; justify-content:space-between; border-bottom:1px solid #eee;"><span>LAUFZEIT</span><span>${p.lzf || ''}</span></div><div style="display:flex; justify-content:space-between; border-bottom:1px solid #eee;"><span>MATERIAL</span><span>${p.mat || ''}</span></div><div style="display:flex; justify-content:space-between; border-bottom:1px solid #eee;"><span>SÄGELÄNGE</span><span>${p.sag || ''}</span></div><div style="display:flex; justify-content:space-between; border-bottom:1px solid #eee;"><span>ABSTAND</span><span>${p.abs || ''}</span></div><div style="display:flex; justify-content:space-between; border-bottom:1px solid #eee;"><span>GREIFBACKEN</span><span>${p.grf || ''}</span></div><div style="display:flex; justify-content:space-between;"><span>STÜCKZAHL</span><span>${p.stt || ''} / ${p.stn || ''}</span></div></div></div><div style="border-bottom:5px solid #000; margin-bottom:15px;"></div>`;
@@ -176,16 +187,15 @@ function makePDF() {
     const shouldBreak = (p.tools || []).length > 10;
 
     let html = `<!DOCTYPE html><html><head><style>@page { size: A4; margin: 0; } body { margin: 0; padding: 10mm; font-family: sans-serif; } .page { padding: 15mm; min-height: 297mm; box-sizing: border-box; display: flex; flex-direction: column; border: 2.2px solid #000; page-break-after: always; } .footer { border-top: 1.2px solid #000; padding-top: 5px; font-size: 9px; font-weight: 800; text-align: center; margin-top: auto; }</style></head><body><div class="page">${getHead()}${tHead('REVOLVER OBEN')}${oben.map(getRow).join('')}`;
-    
     if (unten.length > 0) {
-        if (shouldBreak) {
-            html += `<div class="footer">CITITOOL</div></div><div class="page">${getHead()}${tHead('REVOLVER UNTEN')}${unten.map(getRow).join('')}`;
-        } else {
-            html += `${tHead('REVOLVER UNTEN')}${unten.map(getRow).join('')}`;
-        }
+        if (shouldBreak) html += `<div class="footer">CITITOOL</div></div><div class="page">${getHead()}${tHead('REVOLVER UNTEN')}${unten.map(getRow).join('')}`;
+        else html += `${tHead('REVOLVER UNTEN')}${unten.map(getRow).join('')}`;
     }
     html += `<div class="footer">CITITOOL</div></div><script>window.onload=()=>setTimeout(()=>window.print(),400)</script></body></html>`;
     const win = window.open('','_blank'); win.document.write(html); win.document.close();
 }
+
+function deleteProject(i) { if(confirm('Löschen?')) { db.splice(i, 1); save(); renderList(); } }
+function moveItem(i, dir) { const t = db[currentIdx].tools; if(i+dir>=0 && i+dir<t.length) { [t[i],t[i+dir]]=[t[i+dir],t[i]]; save(); renderTools(); } }
 
 window.onload = () => { injectStyles(); renderList(); };
