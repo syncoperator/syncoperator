@@ -16,7 +16,7 @@ function renderList() {
                 <div style="font-size:11px; font-weight:700; color:#86868b;">${p.name || ''}</div>
             </div>
             <div style="font-size:18px; padding:10px; color:#86868b;" onclick="event.stopPropagation(); deleteProject(${i})">✕</div>
-        </div>`).join('') + '<div style="height:100px"></div>';
+        </div>`).join('') + '<div style="height:120px"></div>';
 }
 
 function openProject(i) {
@@ -109,7 +109,7 @@ function saveT() {
     renderTools(); hide('m-t');
 }
 
-// Режим только создания проекта
+// Редактирование и создание проекта
 function modalP() { 
     el('p-idx').value = ''; 
     el('p-num').value = ''; el('p-nam').value = '';
@@ -118,21 +118,75 @@ function modalP() {
     el('m-p').style.display = 'flex'; 
 }
 
+function editCurrentProject() {
+    const p = db[currentIdx];
+    el('p-idx').value = currentIdx;
+    el('p-num').value = p.num;
+    el('p-nam').value = p.name;
+    el('p-lzf').value = p.lzf || '';
+    el('p-mat').value = p.mat || '';
+    el('p-grf').value = p.grf || '';
+    el('m-p').style.display = 'flex';
+}
+
 function saveP() {
-    const p = { 
+    const i = el('p-idx').value;
+    const pData = { 
         num: el('p-num').value, 
         name: el('p-nam').value.toUpperCase(),
         lzf: el('p-lzf').value, mat: el('p-mat').value,
         grf: el('p-grf').value,
-        tools: [] 
+        tools: (i !== '' ? db[i].tools : [])
     };
-    db.push(p); 
+    if(i === '') db.push(pData); else db[i] = pData;
     localStorage.setItem(DB_KEY, JSON.stringify(db));
+    if(i !== '') {
+        el('h-num').innerText = pData.num;
+        el('h-nam').innerText = pData.name;
+    }
     renderList(); hide('m-p');
 }
 
 function deleteProject(i) { if(confirm('Löschen?')) { db.splice(i,1); localStorage.setItem(DB_KEY, JSON.stringify(db)); renderList(); } }
 function delT() { db[currentIdx].tools.splice(el('t-idx').value, 1); localStorage.setItem(DB_KEY, JSON.stringify(db)); renderTools(); hide('m-t'); }
+
+// --- УМНЫЙ ИМПОРТ ---
+function importAnyJSON() {
+    try {
+        const raw = JSON.parse(el('imp-area').value);
+        let importedProject = null;
+
+        // Если это массив (весь список SmartBox)
+        if (Array.isArray(raw)) {
+            db = raw;
+        } 
+        // Если это объект одного проекта (например из Werkzeugliste)
+        else if (raw.num || raw.name) {
+            importedProject = {
+                num: raw.num || '---',
+                name: (raw.name || 'NEW IMPORT').toUpperCase(),
+                lzf: raw.lzf || '', mat: raw.mat || '', grf: raw.grf || '',
+                tools: (raw.tools || []).map(t => ({
+                    nm: (t.name || t.nm || '').toUpperCase(),
+                    id: (t.id || '').toUpperCase(),
+                    isStandart: false,
+                    loc: ''
+                }))
+            };
+            db.push(importedProject);
+        }
+
+        localStorage.setItem(DB_KEY, JSON.stringify(db));
+        renderList();
+        hide('m-imp');
+        alert('Done! Project added/synced.');
+    } catch(e) {
+        alert('Invalid JSON Format');
+    }
+}
+
+function openImport() { el('imp-area').value = ''; el('m-imp').style.display = 'flex'; }
+function exportJSON() { el('imp-area').value = JSON.stringify(db); }
 
 // --- PDF ГЕНЕРАТОР ---
 function makePDF() {
@@ -159,8 +213,9 @@ function makePDF() {
             .container { border: 2.5px solid #000; padding: 25px; box-sizing: border-box; page-break-inside: avoid; }
             .section-header { 
                 background: #000; color: #fff; 
-                padding: 8px 12px; margin-top: 25px; 
+                padding: 10px 12px; margin-top: 25px; 
                 font-weight: 900; font-size: 14px; 
+                text-transform: uppercase;
             }
             .info-grid { display: flex; justify-content: space-between; font-size: 11px; font-weight: 800; margin-top: 10px;}
         </style>
@@ -178,25 +233,21 @@ function makePDF() {
             <div style="margin-top:20px; border-top:5px solid #000;"></div>
             
             ${sonder.length > 0 ? `
-                <div class="section-header">IN BLAUKISTE (SONDER)</div>
+                <div class="section-header" style="background:#000 !important; -webkit-print-color-adjust: exact;">IN BLAUKISTE (SONDER)</div>
                 ${sonder.map(getRow).join('')}
             ` : ''}
             
             ${standart.length > 0 ? `
-                <div class="section-header">IN SCHUBLADEN (STANDART)</div>
+                <div class="section-header" style="background:#000 !important; -webkit-print-color-adjust: exact;">IN SCHUBLADEN (STANDART)</div>
                 ${standart.map(getRow).join('')}
             ` : ''}
         </div>
-        <script>window.onload = () => { setTimeout(() => { window.print(); window.close(); }, 300); };<\/script>
+        <script>window.onload = () => { setTimeout(() => { window.print(); window.close(); }, 400); };<\/script>
     </body></html>`;
     
     const win = window.open('', '_blank');
     win.document.write(html);
     win.document.close();
 }
-
-function openImport() { el('m-imp').style.display = 'flex'; }
-function exportJSON() { el('imp-area').value = JSON.stringify(db); }
-function importJSON() { try { db = JSON.parse(el('imp-area').value); localStorage.setItem(DB_KEY, JSON.stringify(db)); renderList(); hide('m-imp'); } catch(e){alert('Fehler!');} }
 
 window.onload = () => renderList();
