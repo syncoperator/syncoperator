@@ -1,19 +1,19 @@
-const DB_KEY = 'SMARTBOX_PRO_V1';
+const DB_KEY = 'SMARTBOX_PRO_V2';
 let db = JSON.parse(localStorage.getItem(DB_KEY)) || [];
 let currentIdx = null;
 
 const el = (id) => document.getElementById(id);
-const hide = (id) => el(id).style.display = 'none';
+const hide = (id) => { if(el(id)) el(id).style.display = 'none'; };
 
-// --- PROJECTS ---
 function renderList() {
     const list = el('list-p');
     if(!list) return;
     list.innerHTML = db.map((p, i) => `
         <div class="list-item" onclick="openProject(${i})">
             <div style="flex:1">
-                <div class="t-id-label">${p.name || 'PROJEKT'}</div>
+                <div class="t-id-label">PROJEKT</div>
                 <div class="t-name-label">${p.num || '---'}</div>
+                <div style="font-size:11px; font-weight:700; color:#86868b;">${p.name || ''}</div>
             </div>
             <div style="font-size:18px; padding:10px; color:#86868b;" onclick="event.stopPropagation(); deleteProject(${i})">✕</div>
         </div>`).join('') + '<div style="height:100px"></div>';
@@ -35,7 +35,6 @@ function goHome() {
     renderList();
 }
 
-// --- TOOLS ---
 function renderTools() {
     const list = el('list-t');
     if(!list || currentIdx === null) return;
@@ -48,18 +47,16 @@ function renderTools() {
         item.setAttribute('data-idx', i);
         
         const locClass = t.isStandart ? 'standart' : 'sonder';
-        const locText = t.isStandart ? `STANDART | ${t.loc || 'FACH'}` : 'SONDER | BLAUKISTE';
+        const locText = t.isStandart ? `STANDART | ${t.loc || ''}` : 'SONDER | BLAUKISTE';
 
         item.innerHTML = `
             <div class="handle">☰</div>
             <div style="flex:1" onclick="modalT(${i})">
-                <div class="t-id-label">${t.id}</div>
                 <div class="t-name-label">${t.nm}</div>
                 <div class="loc-tag ${locClass}">${locText}</div>
-                ${t.dia ? `<br><div class="t-dia-badge">${t.dia}</div>` : ''}
+                <div style="font-size:11px; margin-top:5px; font-weight:700; color:#86868b;">${t.id || ''}</div>
             </div>`;
         
-        // Drag & Drop Logic
         const handle = item.querySelector('.handle');
         handle.ontouchstart = () => { startIdx = i; };
         handle.ontouchmove = (e) => {
@@ -85,10 +82,9 @@ function renderTools() {
 function modalT(i = null) {
     const edit = i !== null;
     el('t-idx').value = edit ? i : '';
-    const t = edit ? db[currentIdx].tools[i] : {id:'', nm:'', dia:'', isStandart:false, loc:''};
+    const t = edit ? db[currentIdx].tools[i] : {id:'', nm:'', isStandart:false, loc:''};
     el('t-id').value = t.id; 
     el('t-nm').value = t.nm; 
-    el('t-dia').value = t.dia;
     el('t-loc').value = t.loc || '';
     
     const btn = el('btn-storage-toggle');
@@ -104,104 +100,82 @@ function saveT() {
     const t = { 
         id: el('t-id').value.toUpperCase(), 
         nm: el('t-nm').value.toUpperCase(), 
-        dia: el('t-dia').value, 
         isStandart: el('btn-storage-toggle').classList.contains('on'),
         loc: el('t-loc').value.toUpperCase()
     };
     if(!db[currentIdx].tools) db[currentIdx].tools = [];
     if(i === '') db[currentIdx].tools.push(t); else db[currentIdx].tools[i] = t;
     localStorage.setItem(DB_KEY, JSON.stringify(db));
-    renderTools(); 
-    hide('m-t');
+    renderTools(); hide('m-t');
 }
 
+// Режим только создания проекта
 function modalP() { 
     el('p-idx').value = ''; 
-    el('p-num').value = '';
-    el('p-nam').value = '';
+    el('p-num').value = ''; el('p-nam').value = '';
+    el('p-lzf').value = ''; el('p-mat').value = '';
+    el('p-grf').value = '';
     el('m-p').style.display = 'flex'; 
 }
 
 function saveP() {
     const p = { 
         num: el('p-num').value, 
-        name: el('p-nam').value.toUpperCase(), 
+        name: el('p-nam').value.toUpperCase(),
+        lzf: el('p-lzf').value, mat: el('p-mat').value,
+        grf: el('p-grf').value,
         tools: [] 
     };
     db.push(p); 
     localStorage.setItem(DB_KEY, JSON.stringify(db));
-    renderList(); 
-    hide('m-p');
+    renderList(); hide('m-p');
 }
 
-function deleteProject(i) { 
-    if(confirm('Löschen?')) { 
-        db.splice(i,1); 
-        localStorage.setItem(DB_KEY, JSON.stringify(db)); 
-        renderList(); 
-    } 
-}
+function deleteProject(i) { if(confirm('Löschen?')) { db.splice(i,1); localStorage.setItem(DB_KEY, JSON.stringify(db)); renderList(); } }
+function delT() { db[currentIdx].tools.splice(el('t-idx').value, 1); localStorage.setItem(DB_KEY, JSON.stringify(db)); renderTools(); hide('m-t'); }
 
-function delT() { 
-    db[currentIdx].tools.splice(el('t-idx').value, 1); 
-    localStorage.setItem(DB_KEY, JSON.stringify(db)); 
-    renderTools(); 
-    hide('m-t'); 
-}
-
-// --- PDF ГЕНЕРАТОР (БЕЗ РАЗРЫВОВ) ---
+// --- PDF ГЕНЕРАТОР ---
 function makePDF() {
     const p = db[currentIdx];
     const sonder = (p.tools || []).filter(t => !t.isStandart);
     const standart = (p.tools || []).filter(t => t.isStandart);
 
     const getRow = (t) => `
-        <div style="display:flex; border-bottom:1.5px solid #000; padding:8px 0; align-items:center; page-break-inside:avoid;">
-            <div style="width:75px; font-weight:800; font-size:15px;">${t.id}</div>
+        <div style="display:flex; border-bottom:1.5px solid #000; padding:10px 0; align-items:center; page-break-inside:avoid;">
             <div style="flex:1;">
-                <div style="font-weight:700; font-size:15px; text-transform:uppercase;">${t.nm}</div>
-                <div style="font-size:10px; font-weight:800; color:#666;">
-                    ${t.isStandart ? 'PLATZ: ' + (t.loc || '---') : 'IN BLAUKISTE'}
+                <div style="font-weight:700; font-size:16px; text-transform:uppercase;">${t.nm}</div>
+                <div style="font-size:11px; font-weight:800; color:#555;">
+                    ${t.isStandart ? (t.loc || '') : 'IN BLAUKISTE'}
                 </div>
             </div>
-            <div style="width:100px; text-align:right; font-weight:800; font-size:14px;">${t.dia}</div>
+            <div style="width:120px; text-align:right; font-weight:800; font-size:13px;">${t.id || ''}</div>
         </div>`;
 
     const html = `<html>
     <head>
         <style>
             @page { size: A4; margin: 10mm; }
-            body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #fff; }
-            .container { 
-                border: 2.5px solid #000; 
-                padding: 25px; 
-                width: 100%; 
-                box-sizing: border-box; 
-                page-break-inside: avoid;
-                display: block;
-            }
+            body { margin: 0; padding: 0; font-family: sans-serif; background: #fff; }
+            .container { border: 2.5px solid #000; padding: 25px; box-sizing: border-box; page-break-inside: avoid; }
             .section-header { 
                 background: #000; color: #fff; 
-                padding: 6px 12px; margin-top: 25px; 
-                font-weight: 900; font-size: 13px; 
+                padding: 8px 12px; margin-top: 25px; 
+                font-weight: 900; font-size: 14px; 
             }
-            .footer { 
-                margin-top: 30px; text-align: center; 
-                font-size: 9px; font-weight: 800; 
-                border-top: 1px solid #000; padding-top: 10px; 
-            }
+            .info-grid { display: flex; justify-content: space-between; font-size: 11px; font-weight: 800; margin-top: 10px;}
         </style>
     </head>
     <body>
         <div class="container">
-            <div style="display:flex; justify-content:space-between; align-items:flex-start;">
-                <div>
-                    <div style="font-size:14px; font-weight:900; color:#666; text-transform:uppercase;">${p.name || ''}</div>
-                    <div style="font-size:60px; font-weight:900; line-height:0.8; letter-spacing:-1.5px;">${p.num || '---'}</div>
-                </div>
-            </div>
+            <div style="font-size:14px; font-weight:900; color:#666;">${p.name || ''}</div>
+            <div style="font-size:64px; font-weight:900; line-height:0.8; letter-spacing:-2px;">${p.num || '---'}</div>
             
-            <div style="margin-top:25px; border-top:5px solid #000;"></div>
+            <div class="info-grid">
+                <div>MAT: ${p.mat || '--'} | LZF: ${p.lzf || '--'}</div>
+                <div>BACKEN: ${p.grf || '--'}</div>
+            </div>
+
+            <div style="margin-top:20px; border-top:5px solid #000;"></div>
             
             ${sonder.length > 0 ? `
                 <div class="section-header">IN BLAUKISTE (SONDER)</div>
@@ -212,25 +186,17 @@ function makePDF() {
                 <div class="section-header">IN SCHUBLADEN (STANDART)</div>
                 ${standart.map(getRow).join('')}
             ` : ''}
-            
-            <div class="footer">CITITOOL SMARTBOX LOGISTIC</div>
         </div>
-        <script>
-            window.onload = () => {
-                setTimeout(() => { 
-                    window.print(); 
-                    window.close(); 
-                }, 300);
-            };
-        <\/script>
-    </body>
-    </html>`;
+        <script>window.onload = () => { setTimeout(() => { window.print(); window.close(); }, 300); };<\/script>
+    </body></html>`;
     
     const win = window.open('', '_blank');
-    if (win) {
-        win.document.write(html);
-        win.document.close();
-    }
+    win.document.write(html);
+    win.document.close();
 }
+
+function openImport() { el('m-imp').style.display = 'flex'; }
+function exportJSON() { el('imp-area').value = JSON.stringify(db); }
+function importJSON() { try { db = JSON.parse(el('imp-area').value); localStorage.setItem(DB_KEY, JSON.stringify(db)); renderList(); hide('m-imp'); } catch(e){alert('Fehler!');} }
 
 window.onload = () => renderList();
