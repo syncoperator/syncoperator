@@ -112,6 +112,7 @@ function saveP() {
 function deleteProject(i) { if(confirm('Löschen?')) { db.splice(i,1); localStorage.setItem(DB_KEY, JSON.stringify(db)); renderList(); } }
 function delT() { db[currentIdx].tools.splice(el('t-idx').value, 1); localStorage.setItem(DB_KEY, JSON.stringify(db)); renderTools(); hide('m-t'); }
 
+// --- УМНЫЙ ИМПОРТ ---
 function importAnyJSON() {
     try {
         const raw = JSON.parse(el('imp-area').value);
@@ -137,22 +138,20 @@ function importAnyJSON() {
 function openImport() { el('imp-area').value = ''; el('m-imp').style.display = 'flex'; }
 function exportJSON() { el('imp-area').value = JSON.stringify(db); }
 
-// --- PDF ГЕНЕРАТОР (ФИКС РАЗРЫВА И ПОВТОР ШАПКИ) ---
+// --- PDF ГЕНЕРАТОР (МАКСИМАЛЬНАЯ СТАБИЛЬНОСТЬ) ---
 function makePDF() {
     const p = db[currentIdx];
     const sonder = (p.tools || []).filter(t => !t.isStandart);
     const standart = (p.tools || []).filter(t => t.isStandart);
 
     const getRow = (t) => `
-        <tr>
-            <td colspan="2">
-                <div class="tool-row">
-                    <div style="flex:1;">
-                        <div class="tool-name">${t.nm}</div>
-                        <div class="tool-loc">${t.isStandart ? (t.loc || '') : 'IN BLAUKISTE'}</div>
-                    </div>
-                    <div class="tool-bem">${t.id || ''}</div>
-                </div>
+        <tr style="page-break-inside: avoid;">
+            <td style="border-bottom: 1.5px solid #000; padding: 8px 10px;">
+                <div style="font-weight: 700; font-size: 15px; text-transform: uppercase;">${t.nm}</div>
+                <div style="font-size: 10px; font-weight: 800; color: #555;">${t.isStandart ? (t.loc || '') : 'IN BLAUKISTE'}</div>
+            </td>
+            <td style="border-bottom: 1.5px solid #000; padding: 8px 10px; text-align: right; font-weight: 800; font-size: 13px;">
+                ${t.id || ''}
             </td>
         </tr>`;
 
@@ -160,49 +159,56 @@ function makePDF() {
     <head>
         <style>
             @page { size: A4; margin: 10mm; }
-            body { margin: 0; padding: 0; font-family: sans-serif; }
-            table { width: 100%; border-collapse: collapse; border: 2.5px solid #000; }
+            body { margin: 0; padding: 0; font-family: Helvetica, Arial, sans-serif; background: #fff; }
+            
+            table { width: 100%; border-collapse: collapse; border: 2.5px solid #000; table-layout: fixed; }
+            
+            /* Фикс для повтора шапки в iOS и Chrome */
             thead { display: table-header-group; }
-            .header-cell { padding: 20px; border-bottom: 5px solid #000; text-align: left; }
-            .info-grid { display: flex; justify-content: space-between; font-size: 11px; font-weight: 800; margin-top: 10px; }
+            tfoot { display: table-footer-group; }
+
+            .header-box { padding: 15px; text-align: left; }
+            .info-grid { display: flex; justify-content: space-between; font-size: 10px; font-weight: 800; margin-top: 10px; border-top: 1px solid #eee; padding-top: 5px; }
+            
             .section-title { 
                 background: #000 !important; color: #fff !important; 
-                padding: 10px; font-weight: 900; font-size: 14px; 
+                padding: 10px; font-weight: 900; font-size: 13px; 
                 text-transform: uppercase; -webkit-print-color-adjust: exact;
             }
-            .tool-row { display: flex; padding: 8px 10px; align-items: center; border-bottom: 1.5px solid #000; }
-            .tool-name { font-weight: 700; font-size: 15px; text-transform: uppercase; }
-            .tool-loc { font-size: 10px; font-weight: 800; color: #555; }
-            .tool-bem { width: 130px; text-align: right; font-weight: 800; font-size: 13px; }
-            td { padding: 0; }
+
+            td, th { overflow: hidden; word-wrap: break-word; }
         </style>
     </head>
     <body>
         <table>
             <thead>
                 <tr>
-                    <th class="header-cell">
-                        <div style="font-size:14px; font-weight:900; color:#666;">${p.name || ''}</div>
-                        <div style="font-size:64px; font-weight:900; line-height:0.8; letter-spacing:-2px;">${p.num || '---'}</div>
+                    <th colspan="2" class="header-box">
+                        <div style="font-size:12px; font-weight:900; color:#666;">${p.name || ''}</div>
+                        <div style="font-size:54px; font-weight:900; line-height:0.9; letter-spacing:-2px;">${p.num || '---'}</div>
                         <div class="info-grid">
-                            <div>MAT: ${p.mat || '--'} | LZF: ${p.lzf || '--'}</div>
-                            <div>BACKEN: ${p.grf || '--'}</div>
+                            <span>MAT: ${p.mat || '--'} | LZF: ${p.lzf || '--'}</span>
+                            <span>BACKEN: ${p.grf || '--'}</span>
                         </div>
                     </th>
                 </tr>
             </thead>
             <tbody>
                 ${sonder.length > 0 ? `
-                    <tr><td><div class="section-title">IN BLAUKISTE (SONDER)</div></td></tr>
+                    <tr><td colspan="2" class="section-title">IN BLAUKISTE (SONDER)</td></tr>
                     ${sonder.map(getRow).join('')}
                 ` : ''}
                 ${standart.length > 0 ? `
-                    <tr><td><div class="section-title">IN SCHUBLADEN (STANDART)</div></td></tr>
+                    <tr><td colspan="2" class="section-title">IN SCHUBLADEN (STANDART)</td></tr>
                     ${standart.map(getRow).join('')}
                 ` : ''}
             </tbody>
         </table>
-        <script>window.onload = () => { setTimeout(() => { window.print(); window.close(); }, 500); };<\/script>
+        <script>
+            window.onload = () => { 
+                setTimeout(() => { window.print(); window.close(); }, 600); 
+            };
+        <\/script>
     </body></html>`;
     
     const win = window.open('', '_blank');
