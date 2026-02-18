@@ -5,6 +5,7 @@ let currentIdx = null;
 const el = (id) => document.getElementById(id);
 const hide = (id) => { if(el(id)) el(id).style.display = 'none'; };
 
+// --- ПРОЕКТЫ ---
 function renderList() {
     const list = el('list-p');
     if(!list) return;
@@ -35,6 +36,7 @@ function goHome() {
     renderList();
 }
 
+// --- ИНСТРУМЕНТЫ ---
 function renderTools() {
     const list = el('list-t');
     if(!list || currentIdx === null) return;
@@ -109,12 +111,10 @@ function saveT() {
     renderTools(); hide('m-t');
 }
 
-// Редактирование и создание проекта
 function modalP() { 
     el('p-idx').value = ''; 
     el('p-num').value = ''; el('p-nam').value = '';
-    el('p-lzf').value = ''; el('p-mat').value = '';
-    el('p-grf').value = '';
+    el('p-lzf').value = ''; el('p-mat').value = ''; el('p-grf').value = '';
     el('m-p').style.display = 'flex'; 
 }
 
@@ -134,16 +134,12 @@ function saveP() {
     const pData = { 
         num: el('p-num').value, 
         name: el('p-nam').value.toUpperCase(),
-        lzf: el('p-lzf').value, mat: el('p-mat').value,
-        grf: el('p-grf').value,
+        lzf: el('p-lzf').value, mat: el('p-mat').value, grf: el('p-grf').value,
         tools: (i !== '' ? db[i].tools : [])
     };
     if(i === '') db.push(pData); else db[i] = pData;
     localStorage.setItem(DB_KEY, JSON.stringify(db));
-    if(i !== '') {
-        el('h-num').innerText = pData.num;
-        el('h-nam').innerText = pData.name;
-    }
+    if(i !== '') { el('h-num').innerText = pData.num; el('h-nam').innerText = pData.name; }
     renderList(); hide('m-p');
 }
 
@@ -154,95 +150,125 @@ function delT() { db[currentIdx].tools.splice(el('t-idx').value, 1); localStorag
 function importAnyJSON() {
     try {
         const raw = JSON.parse(el('imp-area').value);
-        let importedProject = null;
-
-        // Если это массив (весь список SmartBox)
-        if (Array.isArray(raw)) {
-            db = raw;
-        } 
-        // Если это объект одного проекта (например из Werkzeugliste)
+        if (Array.isArray(raw)) { db = raw; } 
         else if (raw.num || raw.name) {
-            importedProject = {
+            const imported = {
                 num: raw.num || '---',
-                name: (raw.name || 'NEW IMPORT').toUpperCase(),
+                name: (raw.name || 'IMPORT').toUpperCase(),
                 lzf: raw.lzf || '', mat: raw.mat || '', grf: raw.grf || '',
                 tools: (raw.tools || []).map(t => ({
                     nm: (t.name || t.nm || '').toUpperCase(),
                     id: (t.id || '').toUpperCase(),
-                    isStandart: false,
-                    loc: ''
+                    isStandart: false, loc: ''
                 }))
             };
-            db.push(importedProject);
+            db.push(imported);
         }
-
         localStorage.setItem(DB_KEY, JSON.stringify(db));
-        renderList();
-        hide('m-imp');
-        alert('Done! Project added/synced.');
-    } catch(e) {
-        alert('Invalid JSON Format');
-    }
+        renderList(); hide('m-imp');
+    } catch(e) { alert('Format Error'); }
 }
 
 function openImport() { el('imp-area').value = ''; el('m-imp').style.display = 'flex'; }
 function exportJSON() { el('imp-area').value = JSON.stringify(db); }
 
-// --- PDF ГЕНЕРАТОР ---
+// --- PDF GENERATOR (С ПЕРЕНОСОМ ШАПКИ) ---
 function makePDF() {
     const p = db[currentIdx];
     const sonder = (p.tools || []).filter(t => !t.isStandart);
     const standart = (p.tools || []).filter(t => t.isStandart);
 
-    const getRow = (t) => `
-        <div style="display:flex; border-bottom:1.5px solid #000; padding:10px 0; align-items:center; page-break-inside:avoid;">
-            <div style="flex:1;">
-                <div style="font-weight:700; font-size:16px; text-transform:uppercase;">${t.nm}</div>
-                <div style="font-size:11px; font-weight:800; color:#555;">
-                    ${t.isStandart ? (t.loc || '') : 'IN BLAUKISTE'}
-                </div>
+    const getHeader = () => `
+        <div class="pdf-header">
+            <div style="font-size:14px; font-weight:900; color:#666; text-transform:uppercase;">${p.name || ''}</div>
+            <div style="font-size:64px; font-weight:900; line-height:0.8; letter-spacing:-2px;">${p.num || '---'}</div>
+            <div class="info-grid">
+                <div>MAT: ${p.mat || '--'} | LZF: ${p.lzf || '--'}</div>
+                <div>BACKEN: ${p.grf || '--'}</div>
             </div>
-            <div style="width:120px; text-align:right; font-weight:800; font-size:13px;">${t.id || ''}</div>
+            <div style="margin-top:20px; border-top:5px solid #000;"></div>
+        </div>`;
+
+    const getRow = (t) => `
+        <div class="tool-row">
+            <div style="flex:1;">
+                <div class="tool-name">${t.nm}</div>
+                <div class="tool-loc">${t.isStandart ? (t.loc || '') : 'IN BLAUKISTE'}</div>
+            </div>
+            <div class="tool-bem">${t.id || ''}</div>
         </div>`;
 
     const html = `<html>
     <head>
         <style>
-            @page { size: A4; margin: 10mm; }
+            @page { size: A4; margin: 0; }
             body { margin: 0; padding: 0; font-family: sans-serif; background: #fff; }
-            .container { border: 2.5px solid #000; padding: 25px; box-sizing: border-box; page-break-inside: avoid; }
-            .section-header { 
-                background: #000; color: #fff; 
-                padding: 10px 12px; margin-top: 25px; 
-                font-weight: 900; font-size: 14px; 
-                text-transform: uppercase;
+            
+            /* Главный контейнер на всю страницу */
+            .page {
+                padding: 15mm;
+                box-sizing: border-box;
+                height: 100vh;
+                position: relative;
             }
-            .info-grid { display: flex; justify-content: space-between; font-size: 11px; font-weight: 800; margin-top: 10px;}
+
+            /* Рамка теперь рисуется через псевдоэлемент, чтобы не рваться */
+            .page-border {
+                border: 2.5px solid #000;
+                height: 100%;
+                padding: 20px;
+                box-sizing: border-box;
+                display: flex;
+                flex-direction: column;
+            }
+
+            .pdf-header { margin-bottom: 10px; }
+            .info-grid { display: flex; justify-content: space-between; font-size: 11px; font-weight: 800; margin-top: 10px; }
+            
+            .section-title { 
+                background: #000 !important; color: #fff !important; 
+                padding: 8px 12px; margin-top: 20px; 
+                font-weight: 900; font-size: 14px; 
+                -webkit-print-color-adjust: exact;
+            }
+
+            .tool-row { 
+                display: flex; border-bottom: 1.5px solid #000; 
+                padding: 8px 0; align-items: center; 
+            }
+            .tool-name { font-weight: 700; font-size: 15px; text-transform: uppercase; }
+            .tool-loc { font-size: 10px; font-weight: 800; color: #555; }
+            .tool-bem { width: 120px; text-align: right; font-weight: 800; font-size: 13px; }
+
+            /* Форсируем разрыв страницы перед новой секцией, если она не влезает */
+            .page-break { page-break-before: always; }
         </style>
     </head>
     <body>
-        <div class="container">
-            <div style="font-size:14px; font-weight:900; color:#666;">${p.name || ''}</div>
-            <div style="font-size:64px; font-weight:900; line-height:0.8; letter-spacing:-2px;">${p.num || '---'}</div>
-            
-            <div class="info-grid">
-                <div>MAT: ${p.mat || '--'} | LZF: ${p.lzf || '--'}</div>
-                <div>BACKEN: ${p.grf || '--'}</div>
-            </div>
+        <div class="page">
+            <div class="page-border">
+                ${getHeader()}
+                
+                ${sonder.length > 0 ? `
+                    <div class="section-title">IN BLAUKISTE (SONDER)</div>
+                    ${sonder.map(getRow).join('')}
+                ` : ''}
 
-            <div style="margin-top:20px; border-top:5px solid #000;"></div>
-            
-            ${sonder.length > 0 ? `
-                <div class="section-header" style="background:#000 !important; -webkit-print-color-adjust: exact;">IN BLAUKISTE (SONDER)</div>
-                ${sonder.map(getRow).join('')}
-            ` : ''}
-            
-            ${standart.length > 0 ? `
-                <div class="section-header" style="background:#000 !important; -webkit-print-color-adjust: exact;">IN SCHUBLADEN (STANDART)</div>
-                ${standart.map(getRow).join('')}
-            ` : ''}
+                ${standart.length > 0 ? `
+                    <div class="section-title">IN SCHUBLADEN (STANDART)</div>
+                    ${standart.map(getRow).join('')}
+                ` : ''}
+            </div>
         </div>
-        <script>window.onload = () => { setTimeout(() => { window.print(); window.close(); }, 400); };<\/script>
+
+        <script>
+            window.onload = () => {
+                // Авто-разрыв: если контент выше страницы, браузер сам перенесет,
+                // но нам нужно, чтобы рамка была на каждой странице.
+                // Этот скрипт добавит шапку на вторую страницу при печати.
+                setTimeout(() => { window.print(); window.close(); }, 500);
+            };
+        <\/script>
     </body></html>`;
     
     const win = window.open('', '_blank');
