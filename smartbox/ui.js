@@ -41,7 +41,7 @@ function renderTools() {
     const tools = db[currentIdx].tools || [];
     list.innerHTML = tools.map((t, i) => `
         <div class="list-item" data-idx="${i}">
-            <div class="handle" ontouchstart="startDrag(${i}, event)">☰</div>
+            <div class="handle">☰</div>
             <div style="flex:1" onclick="modalT(${i})">
                 <div class="t-name-label">${t.nm}</div>
                 <div class="loc-tag ${t.isStandart ? 'standart' : 'sonder'}">
@@ -90,11 +90,8 @@ function modalP() {
 function editCurrentProject() {
     const p = db[currentIdx];
     el('p-idx').value = currentIdx;
-    el('p-num').value = p.num;
-    el('p-nam').value = p.name;
-    el('p-lzf').value = p.lzf || '';
-    el('p-mat').value = p.mat || '';
-    el('p-grf').value = p.grf || '';
+    el('p-num').value = p.num; el('p-nam').value = p.name;
+    el('p-lzf').value = p.lzf || ''; el('p-mat').value = p.mat || ''; el('p-grf').value = p.grf || '';
     el('m-p').style.display = 'flex';
 }
 
@@ -140,7 +137,7 @@ function importAnyJSON() {
 function openImport() { el('imp-area').value = ''; el('m-imp').style.display = 'flex'; }
 function exportJSON() { el('imp-area').value = JSON.stringify(db); }
 
-// --- PDF ГЕНЕРАТОР С ПОВТОРЯЮЩЕЙСЯ ШАПКОЙ ---
+// --- PDF ГЕНЕРАТОР (ФИКС РАЗРЫВА И ПОВТОР ШАПКИ) ---
 function makePDF() {
     const p = db[currentIdx];
     const sonder = (p.tools || []).filter(t => !t.isStandart);
@@ -164,29 +161,19 @@ function makePDF() {
         <style>
             @page { size: A4; margin: 10mm; }
             body { margin: 0; padding: 0; font-family: sans-serif; }
-            
             table { width: 100%; border-collapse: collapse; border: 2.5px solid #000; }
-            
-            /* Шапка, которая будет на каждой странице */
             thead { display: table-header-group; }
-            
-            .header-cell { padding: 20px; border-bottom: 5px solid #000; }
+            .header-cell { padding: 20px; border-bottom: 5px solid #000; text-align: left; }
             .info-grid { display: flex; justify-content: space-between; font-size: 11px; font-weight: 800; margin-top: 10px; }
-            
             .section-title { 
                 background: #000 !important; color: #fff !important; 
                 padding: 10px; font-weight: 900; font-size: 14px; 
                 text-transform: uppercase; -webkit-print-color-adjust: exact;
             }
-
-            .tool-row { 
-                display: flex; padding: 8px 10px; align-items: center;
-                border-bottom: 1.5px solid #000;
-            }
+            .tool-row { display: flex; padding: 8px 10px; align-items: center; border-bottom: 1.5px solid #000; }
             .tool-name { font-weight: 700; font-size: 15px; text-transform: uppercase; }
             .tool-loc { font-size: 10px; font-weight: 800; color: #555; }
             .tool-bem { width: 130px; text-align: right; font-weight: 800; font-size: 13px; }
-            
             td { padding: 0; }
         </style>
     </head>
@@ -195,13 +182,11 @@ function makePDF() {
             <thead>
                 <tr>
                     <th class="header-cell">
-                        <div style="text-align:left;">
-                            <div style="font-size:14px; font-weight:900; color:#666; text-transform:uppercase;">${p.name || ''}</div>
-                            <div style="font-size:64px; font-weight:900; line-height:0.8; letter-spacing:-2px;">${p.num || '---'}</div>
-                            <div class="info-grid">
-                                <div>MAT: ${p.mat || '--'} | LZF: ${p.lzf || '--'}</div>
-                                <div>BACKEN: ${p.grf || '--'}</div>
-                            </div>
+                        <div style="font-size:14px; font-weight:900; color:#666;">${p.name || ''}</div>
+                        <div style="font-size:64px; font-weight:900; line-height:0.8; letter-spacing:-2px;">${p.num || '---'}</div>
+                        <div class="info-grid">
+                            <div>MAT: ${p.mat || '--'} | LZF: ${p.lzf || '--'}</div>
+                            <div>BACKEN: ${p.grf || '--'}</div>
                         </div>
                     </th>
                 </tr>
@@ -211,7 +196,6 @@ function makePDF() {
                     <tr><td><div class="section-title">IN BLAUKISTE (SONDER)</div></td></tr>
                     ${sonder.map(getRow).join('')}
                 ` : ''}
-
                 ${standart.length > 0 ? `
                     <tr><td><div class="section-title">IN SCHUBLADEN (STANDART)</div></td></tr>
                     ${standart.map(getRow).join('')}
