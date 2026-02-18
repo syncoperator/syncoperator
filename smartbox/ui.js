@@ -5,7 +5,6 @@ let currentIdx = null;
 const el = (id) => document.getElementById(id);
 const hide = (id) => { if(el(id)) el(id).style.display = 'none'; };
 
-// --- ПРОЕКТЫ ---
 function renderList() {
     const list = el('list-p');
     if(!list) return;
@@ -36,49 +35,21 @@ function goHome() {
     renderList();
 }
 
-// --- ИНСТРУМЕНТЫ ---
 function renderTools() {
     const list = el('list-t');
     if(!list || currentIdx === null) return;
     const tools = db[currentIdx].tools || [];
-    list.innerHTML = '';
-    
-    tools.forEach((t, i) => {
-        const item = document.createElement('div');
-        item.className = 'list-item';
-        item.setAttribute('data-idx', i);
-        
-        const locClass = t.isStandart ? 'standart' : 'sonder';
-        const locText = t.isStandart ? `STANDART | ${t.loc || ''}` : 'SONDER | BLAUKISTE';
-
-        item.innerHTML = `
-            <div class="handle">☰</div>
+    list.innerHTML = tools.map((t, i) => `
+        <div class="list-item" data-idx="${i}">
+            <div class="handle" ontouchstart="startDrag(${i}, event)">☰</div>
             <div style="flex:1" onclick="modalT(${i})">
                 <div class="t-name-label">${t.nm}</div>
-                <div class="loc-tag ${locClass}">${locText}</div>
+                <div class="loc-tag ${t.isStandart ? 'standart' : 'sonder'}">
+                    ${t.isStandart ? 'STANDART | ' + (t.loc || '') : 'SONDER | BLAUKISTE'}
+                </div>
                 <div style="font-size:11px; margin-top:5px; font-weight:700; color:#86868b;">${t.id || ''}</div>
-            </div>`;
-        
-        const handle = item.querySelector('.handle');
-        handle.ontouchstart = () => { startIdx = i; };
-        handle.ontouchmove = (e) => {
-            const touch = e.touches[0];
-            const target = document.elementFromPoint(touch.clientX, touch.clientY)?.closest('.list-item');
-            if (target) {
-                const overIdx = parseInt(target.getAttribute('data-idx'));
-                if (overIdx !== startIdx) {
-                    const currentTools = db[currentIdx].tools;
-                    const itemToMove = currentTools.splice(startIdx, 1)[0];
-                    currentTools.splice(overIdx, 0, itemToMove);
-                    startIdx = overIdx;
-                    localStorage.setItem(DB_KEY, JSON.stringify(db));
-                    renderTools();
-                }
-            }
-        };
-        list.appendChild(item);
-    });
-    list.innerHTML += '<div style="height:150px"></div>';
+            </div>
+        </div>`).join('') + '<div style="height:150px"></div>';
 }
 
 function modalT(i = null) {
@@ -88,11 +59,9 @@ function modalT(i = null) {
     el('t-id').value = t.id; 
     el('t-nm').value = t.nm; 
     el('t-loc').value = t.loc || '';
-    
     const btn = el('btn-storage-toggle');
     if(t.isStandart) btn.classList.add('on'); else btn.classList.remove('on');
     btn.onclick = () => btn.classList.toggle('on');
-    
     el('btn-del-t').style.display = edit ? 'block' : 'none';
     el('m-t').style.display = 'flex';
 }
@@ -146,7 +115,6 @@ function saveP() {
 function deleteProject(i) { if(confirm('Löschen?')) { db.splice(i,1); localStorage.setItem(DB_KEY, JSON.stringify(db)); renderList(); } }
 function delT() { db[currentIdx].tools.splice(el('t-idx').value, 1); localStorage.setItem(DB_KEY, JSON.stringify(db)); renderTools(); hide('m-t'); }
 
-// --- УМНЫЙ ИМПОРТ ---
 function importAnyJSON() {
     try {
         const raw = JSON.parse(el('imp-area').value);
@@ -172,103 +140,85 @@ function importAnyJSON() {
 function openImport() { el('imp-area').value = ''; el('m-imp').style.display = 'flex'; }
 function exportJSON() { el('imp-area').value = JSON.stringify(db); }
 
-// --- PDF GENERATOR (С ПЕРЕНОСОМ ШАПКИ) ---
+// --- PDF ГЕНЕРАТОР С ПОВТОРЯЮЩЕЙСЯ ШАПКОЙ ---
 function makePDF() {
     const p = db[currentIdx];
     const sonder = (p.tools || []).filter(t => !t.isStandart);
     const standart = (p.tools || []).filter(t => t.isStandart);
 
-    const getHeader = () => `
-        <div class="pdf-header">
-            <div style="font-size:14px; font-weight:900; color:#666; text-transform:uppercase;">${p.name || ''}</div>
-            <div style="font-size:64px; font-weight:900; line-height:0.8; letter-spacing:-2px;">${p.num || '---'}</div>
-            <div class="info-grid">
-                <div>MAT: ${p.mat || '--'} | LZF: ${p.lzf || '--'}</div>
-                <div>BACKEN: ${p.grf || '--'}</div>
-            </div>
-            <div style="margin-top:20px; border-top:5px solid #000;"></div>
-        </div>`;
-
     const getRow = (t) => `
-        <div class="tool-row">
-            <div style="flex:1;">
-                <div class="tool-name">${t.nm}</div>
-                <div class="tool-loc">${t.isStandart ? (t.loc || '') : 'IN BLAUKISTE'}</div>
-            </div>
-            <div class="tool-bem">${t.id || ''}</div>
-        </div>`;
+        <tr>
+            <td colspan="2">
+                <div class="tool-row">
+                    <div style="flex:1;">
+                        <div class="tool-name">${t.nm}</div>
+                        <div class="tool-loc">${t.isStandart ? (t.loc || '') : 'IN BLAUKISTE'}</div>
+                    </div>
+                    <div class="tool-bem">${t.id || ''}</div>
+                </div>
+            </td>
+        </tr>`;
 
     const html = `<html>
     <head>
         <style>
-            @page { size: A4; margin: 0; }
-            body { margin: 0; padding: 0; font-family: sans-serif; background: #fff; }
+            @page { size: A4; margin: 10mm; }
+            body { margin: 0; padding: 0; font-family: sans-serif; }
             
-            /* Главный контейнер на всю страницу */
-            .page {
-                padding: 15mm;
-                box-sizing: border-box;
-                height: 100vh;
-                position: relative;
-            }
-
-            /* Рамка теперь рисуется через псевдоэлемент, чтобы не рваться */
-            .page-border {
-                border: 2.5px solid #000;
-                height: 100%;
-                padding: 20px;
-                box-sizing: border-box;
-                display: flex;
-                flex-direction: column;
-            }
-
-            .pdf-header { margin-bottom: 10px; }
+            table { width: 100%; border-collapse: collapse; border: 2.5px solid #000; }
+            
+            /* Шапка, которая будет на каждой странице */
+            thead { display: table-header-group; }
+            
+            .header-cell { padding: 20px; border-bottom: 5px solid #000; }
             .info-grid { display: flex; justify-content: space-between; font-size: 11px; font-weight: 800; margin-top: 10px; }
             
             .section-title { 
                 background: #000 !important; color: #fff !important; 
-                padding: 8px 12px; margin-top: 20px; 
-                font-weight: 900; font-size: 14px; 
-                -webkit-print-color-adjust: exact;
+                padding: 10px; font-weight: 900; font-size: 14px; 
+                text-transform: uppercase; -webkit-print-color-adjust: exact;
             }
 
             .tool-row { 
-                display: flex; border-bottom: 1.5px solid #000; 
-                padding: 8px 0; align-items: center; 
+                display: flex; padding: 8px 10px; align-items: center;
+                border-bottom: 1.5px solid #000;
             }
             .tool-name { font-weight: 700; font-size: 15px; text-transform: uppercase; }
             .tool-loc { font-size: 10px; font-weight: 800; color: #555; }
-            .tool-bem { width: 120px; text-align: right; font-weight: 800; font-size: 13px; }
-
-            /* Форсируем разрыв страницы перед новой секцией, если она не влезает */
-            .page-break { page-break-before: always; }
+            .tool-bem { width: 130px; text-align: right; font-weight: 800; font-size: 13px; }
+            
+            td { padding: 0; }
         </style>
     </head>
     <body>
-        <div class="page">
-            <div class="page-border">
-                ${getHeader()}
-                
+        <table>
+            <thead>
+                <tr>
+                    <th class="header-cell">
+                        <div style="text-align:left;">
+                            <div style="font-size:14px; font-weight:900; color:#666; text-transform:uppercase;">${p.name || ''}</div>
+                            <div style="font-size:64px; font-weight:900; line-height:0.8; letter-spacing:-2px;">${p.num || '---'}</div>
+                            <div class="info-grid">
+                                <div>MAT: ${p.mat || '--'} | LZF: ${p.lzf || '--'}</div>
+                                <div>BACKEN: ${p.grf || '--'}</div>
+                            </div>
+                        </div>
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
                 ${sonder.length > 0 ? `
-                    <div class="section-title">IN BLAUKISTE (SONDER)</div>
+                    <tr><td><div class="section-title">IN BLAUKISTE (SONDER)</div></td></tr>
                     ${sonder.map(getRow).join('')}
                 ` : ''}
 
                 ${standart.length > 0 ? `
-                    <div class="section-title">IN SCHUBLADEN (STANDART)</div>
+                    <tr><td><div class="section-title">IN SCHUBLADEN (STANDART)</div></td></tr>
                     ${standart.map(getRow).join('')}
                 ` : ''}
-            </div>
-        </div>
-
-        <script>
-            window.onload = () => {
-                // Авто-разрыв: если контент выше страницы, браузер сам перенесет,
-                // но нам нужно, чтобы рамка была на каждой странице.
-                // Этот скрипт добавит шапку на вторую страницу при печати.
-                setTimeout(() => { window.print(); window.close(); }, 500);
-            };
-        <\/script>
+            </tbody>
+        </table>
+        <script>window.onload = () => { setTimeout(() => { window.print(); window.close(); }, 500); };<\/script>
     </body></html>`;
     
     const win = window.open('', '_blank');
