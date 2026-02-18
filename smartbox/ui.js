@@ -11,11 +11,11 @@ function renderList() {
     list.innerHTML = db.map((p, i) => `
         <div class="list-item" onclick="openProject(${i})">
             <div style="flex:1">
-                <div style="font-size:10px; font-weight:800; color:#888;">PROJEKT</div>
-                <div style="font-size:22px; font-weight:900;">${p.num || '---'}</div>
-                <div style="font-size:12px; font-weight:700; color:#444;">${p.name || ''}</div>
+                <div class="t-id-label">PROJEKT</div>
+                <div class="t-name-label">${p.num || '---'}</div>
+                <div style="font-size:13px; font-weight:600; color:#8e8e93;">${p.name || ''}</div>
             </div>
-            <div style="padding:10px; color:#ccc;" onclick="event.stopPropagation(); deleteProject(${i})">✕</div>
+            <div style="font-size:20px; color:#c7c7cc; padding-left:15px;" onclick="event.stopPropagation(); deleteProject(${i})">✕</div>
         </div>`).join('') + '<div style="height:120px;"></div>';
 }
 
@@ -26,6 +26,7 @@ function openProject(i) {
     el('h-num').innerText = db[i].num;
     el('h-nam').innerText = db[i].name;
     renderTools();
+    window.scrollTo(0,0);
 }
 
 function goHome() {
@@ -41,8 +42,8 @@ function renderTools() {
     list.innerHTML = tools.map((t, i) => `
         <div class="list-item" onclick="modalT(${i})">
             <div style="flex:1">
-                <div style="font-size:10px; font-weight:800; color:#888;">${t.id || '---'}</div>
-                <div style="font-size:16px; font-weight:800;">${t.nm}</div>
+                <div class="t-id-label">${t.id || '---'}</div>
+                <div class="t-name-label">${t.nm}</div>
                 <div class="loc-tag ${t.isStandart ? 'standart' : 'sonder'}">
                     ${t.isStandart ? 'STANDART | ' + (t.loc || '') : 'SONDER | BLAUKISTE'}
                 </div>
@@ -118,7 +119,13 @@ function delT() { db[currentIdx].tools.splice(el('t-idx').value,1); localStorage
 function openImport() { el('imp-area').value = ''; el('m-imp').style.display = 'flex'; }
 function exportJSON() { el('imp-area').value = JSON.stringify(db); }
 function importAnyJSON() {
-    try { db = JSON.parse(el('imp-area').value); localStorage.setItem(DB_KEY, JSON.stringify(db)); renderList(); hide('m-imp'); } catch(e) { alert('Error'); }
+    try { 
+        const parsed = JSON.parse(el('imp-area').value);
+        if(Array.isArray(parsed)) db = parsed;
+        localStorage.setItem(DB_KEY, JSON.stringify(db)); 
+        renderList(); 
+        hide('m-imp'); 
+    } catch(e) { alert('JSON Error'); }
 }
 
 function makePDF() {
@@ -126,38 +133,17 @@ function makePDF() {
     const LIMIT = 13;
     const totalPages = Math.ceil((p.tools || []).length / LIMIT) || 1;
     let html = "";
-
     for(let i=0; i<totalPages; i++) {
         const segment = (p.tools || []).slice(i*LIMIT, (i+1)*LIMIT);
         const sonder = segment.filter(t => !t.isStandart);
         const standart = segment.filter(t => t.isStandart);
-        const row = (t) => `<tr><td style="border-bottom:2px solid #000;padding:10px;"><div style="font-weight:800;font-size:16px;">${t.nm}</div><div style="font-size:10px;font-weight:700;">${t.isStandart?t.loc:'BLAUKISTE'}</div></td><td style="border-bottom:2px solid #000;text-align:right;font-weight:900;">${t.id||''}</td></tr>`;
-
-        html += `
-        <div style="width:210mm; height:297mm; padding:10mm; box-sizing:border-box; page-break-after:always;">
-            <div style="border:3px solid #000; height:100%; display:flex; flex-direction:column;">
-                <div style="padding:20px; border-bottom:5px solid #000;">
-                    <div style="font-size:12px; font-weight:900; color:#666;">${p.name || ''}</div>
-                    <div style="font-size:64px; font-weight:900; line-height:0.8; margin:10px 0;">${p.num || '---'}</div>
-                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:5px; font-size:11px; font-weight:900; border-top:2px solid #000; padding-top:10px;">
-                        <div>MAT: ${p.mat||'--'}</div><div>LZF: ${p.lzf||'--'}</div>
-                        <div>SÄGE: ${p.slg||'--'}</div><div>ABST: ${p.abs||'--'}</div>
-                        <div>BACKEN: ${p.grf||'--'}</div><div>STÜCK: ${p.stk||'--'}</div>
-                    </div>
-                </div>
-                <table style="width:100%; border-collapse:collapse;">
-                    <tbody>
-                        ${sonder.length?`<tr><td colspan="2" style="background:#000;color:#fff;padding:8px;font-weight:900;">SONDER</td></tr>${sonder.map(row).join('')}`:''}
-                        ${standart.length?`<tr><td colspan="2" style="background:#000;color:#fff;padding:8px;font-weight:900;">STANDART</td></tr>${standart.map(row).join('')}`:''}
-                    </tbody>
-                </table>
-            </div>
-        </div>`;
+        const row = (t) => `<tr><td style="border-bottom:2.5px solid #000;padding:12px;"><div style="font-weight:900;font-size:18px;text-transform:uppercase;">${t.nm}</div><div style="font-size:11px;font-weight:800;color:#555;">${t.isStandart?t.loc:'IN BLAUKISTE'}</div></td><td style="border-bottom:2.5px solid #000;text-align:right;font-weight:900;font-size:16px;">${t.id||''}</td></tr>`;
+        html += `<div style="width:210mm;height:297mm;padding:12mm;box-sizing:border-box;page-break-after:always;"><div style="border:4px solid #000;height:100%;display:flex;flex-direction:column;"><div style="padding:25px;border-bottom:6px solid #000;"><div style="font-size:14px;font-weight:900;color:#666;text-transform:uppercase;">${p.name||''}</div><div style="font-size:72px;font-weight:900;line-height:0.8;margin:12px 0;letter-spacing:-3px;">${p.num||'---'}</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px;font-weight:900;border-top:3px solid #000;padding-top:12px;margin-top:10px;"><div>MAT: ${p.mat||'--'}</div><div>LZF: ${p.lzf||'--'}</div><div>SÄGE: ${p.slg||'--'}</div><div>ABST: ${p.abs||'--'}</div><div>BACKEN: ${p.grf||'--'}</div><div>STÜCK: ${p.stk||'--'}</div></div></div><table style="width:100%;border-collapse:collapse;"><tbody>${sonder.length?`<tr><td colspan="2" style="background:#000;color:#fff;padding:12px;font-weight:900;font-size:15px;text-transform:uppercase;-webkit-print-color-adjust:exact;">Sonderwerkzeuge</td></tr>${sonder.map(row).join('')}`:''}${standart.length?`<tr><td colspan="2" style="background:#000;color:#fff;padding:12px;font-weight:900;font-size:15px;text-transform:uppercase;-webkit-print-color-adjust:exact;">Standartwerkzeuge</td></tr>${standart.map(row).join('')}`:''}</tbody></table></div></div>`;
     }
     const win = window.open('','_blank');
     win.document.write(`<html><head><style>@page{margin:0;}body{margin:0;font-family:sans-serif;}</style></head><body>${html}</body></html>`);
     win.document.close();
-    setTimeout(() => { win.print(); win.close(); }, 700);
+    setTimeout(() => { win.print(); win.close(); }, 800);
 }
 
 window.onload = renderList;
