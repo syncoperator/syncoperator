@@ -112,20 +112,17 @@ function saveP() {
 function deleteProject(i) { if(confirm('Löschen?')) { db.splice(i,1); localStorage.setItem(DB_KEY, JSON.stringify(db)); renderList(); } }
 function delT() { db[currentIdx].tools.splice(el('t-idx').value, 1); localStorage.setItem(DB_KEY, JSON.stringify(db)); renderTools(); hide('m-t'); }
 
-// --- УМНЫЙ ИМПОРТ ---
 function importAnyJSON() {
     try {
         const raw = JSON.parse(el('imp-area').value);
         if (Array.isArray(raw)) { db = raw; } 
         else if (raw.num || raw.name) {
             const imported = {
-                num: raw.num || '---',
-                name: (raw.name || 'IMPORT').toUpperCase(),
+                num: raw.num || '---', name: (raw.name || 'IMPORT').toUpperCase(),
                 lzf: raw.lzf || '', mat: raw.mat || '', grf: raw.grf || '',
                 tools: (raw.tools || []).map(t => ({
                     nm: (t.name || t.nm || '').toUpperCase(),
-                    id: (t.id || '').toUpperCase(),
-                    isStandart: false, loc: ''
+                    id: (t.id || '').toUpperCase(), isStandart: false, loc: ''
                 }))
             };
             db.push(imported);
@@ -138,81 +135,54 @@ function importAnyJSON() {
 function openImport() { el('imp-area').value = ''; el('m-imp').style.display = 'flex'; }
 function exportJSON() { el('imp-area').value = JSON.stringify(db); }
 
-// --- PDF ГЕНЕРАТОР (МАКСИМАЛЬНАЯ СТАБИЛЬНОСТЬ) ---
+// --- ГЕНЕРАЦИЯ PDF С ЖЕСТКИМ РАЗДЕЛЕНИЕМ СТРАНИЦ ---
 function makePDF() {
     const p = db[currentIdx];
-    const sonder = (p.tools || []).filter(t => !t.isStandart);
-    const standart = (p.tools || []).filter(t => t.isStandart);
+    const allTools = p.tools || [];
+    const LIMIT = 13; // Лимит инструментов на страницу
 
-    const getRow = (t) => `
-        <tr style="page-break-inside: avoid;">
-            <td style="border-bottom: 1.5px solid #000; padding: 8px 10px;">
-                <div style="font-weight: 700; font-size: 15px; text-transform: uppercase;">${t.nm}</div>
-                <div style="font-size: 10px; font-weight: 800; color: #555;">${t.isStandart ? (t.loc || '') : 'IN BLAUKISTE'}</div>
-            </td>
-            <td style="border-bottom: 1.5px solid #000; padding: 8px 10px; text-align: right; font-weight: 800; font-size: 13px;">
-                ${t.id || ''}
-            </td>
-        </tr>`;
+    const createPage = (toolsSegment, isFirst) => {
+        const sonder = toolsSegment.filter(t => !t.isStandart);
+        const standart = toolsSegment.filter(t => t.isStandart);
+        const getRow = (t) => `
+            <tr>
+                <td style="border-bottom: 2px solid #000; padding: 10px;">
+                    <div style="font-weight: 800; font-size: 16px;">${t.nm}</div>
+                    <div style="font-size: 11px; font-weight: 700; color: #444;">${t.isStandart ? (t.loc || '') : 'IN BLAUKISTE'}</div>
+                </td>
+                <td style="border-bottom: 2px solid #000; padding: 10px; text-align: right; font-weight: 900; font-size: 14px;">${t.id || ''}</td>
+            </tr>`;
 
-    const html = `<html>
-    <head>
-        <style>
-            @page { size: A4; margin: 10mm; }
-            body { margin: 0; padding: 0; font-family: Helvetica, Arial, sans-serif; background: #fff; }
-            
-            table { width: 100%; border-collapse: collapse; border: 2.5px solid #000; table-layout: fixed; }
-            
-            /* Фикс для повтора шапки в iOS и Chrome */
-            thead { display: table-header-group; }
-            tfoot { display: table-footer-group; }
+        return `
+        <div style="page-break-after: always; padding: 10mm; box-sizing: border-box;">
+            <table style="width: 100%; border-collapse: collapse; border: 3px solid #000;">
+                <thead>
+                    <tr>
+                        <th colspan="2" style="padding: 20px; text-align: left; border-bottom: 5px solid #000;">
+                            <div style="font-size: 14px; font-weight: 900; color: #666;">${p.name || ''}</div>
+                            <div style="font-size: 60px; font-weight: 900; line-height: 0.8; letter-spacing: -2px;">${p.num || '---'}</div>
+                            <div style="display: flex; justify-content: space-between; font-size: 11px; font-weight: 900; margin-top: 15px; border-top: 2px solid #000; padding-top: 5px;">
+                                <span>MAT: ${p.mat || '--'} | LZF: ${p.lzf || '--'}</span>
+                                <span>BACKEN: ${p.grf || '--'}</span>
+                            </div>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${sonder.length > 0 ? `<tr><td colspan="2" style="background:#000; color:#fff; padding:10px; font-weight:900; font-size:14px; -webkit-print-color-adjust: exact;">IN BLAUKISTE (SONDER)</td></tr>${sonder.map(getRow).join('')}` : ''}
+                    ${standart.length > 0 ? `<tr><td colspan="2" style="background:#000; color:#fff; padding:10px; font-weight:900; font-size:14px; -webkit-print-color-adjust: exact;">IN SCHUBLADEN (STANDART)</td></tr>${standart.map(getRow).join('')}` : ''}
+                </tbody>
+            </table>
+        </div>`;
+    };
 
-            .header-box { padding: 15px; text-align: left; }
-            .info-grid { display: flex; justify-content: space-between; font-size: 10px; font-weight: 800; margin-top: 10px; border-top: 1px solid #eee; padding-top: 5px; }
-            
-            .section-title { 
-                background: #000 !important; color: #fff !important; 
-                padding: 10px; font-weight: 900; font-size: 13px; 
-                text-transform: uppercase; -webkit-print-color-adjust: exact;
-            }
+    let fullHtml = "";
+    for (let i = 0; i < allTools.length; i += LIMIT) {
+        fullHtml += createPage(allTools.slice(i, i + LIMIT), i === 0);
+    }
 
-            td, th { overflow: hidden; word-wrap: break-word; }
-        </style>
-    </head>
-    <body>
-        <table>
-            <thead>
-                <tr>
-                    <th colspan="2" class="header-box">
-                        <div style="font-size:12px; font-weight:900; color:#666;">${p.name || ''}</div>
-                        <div style="font-size:54px; font-weight:900; line-height:0.9; letter-spacing:-2px;">${p.num || '---'}</div>
-                        <div class="info-grid">
-                            <span>MAT: ${p.mat || '--'} | LZF: ${p.lzf || '--'}</span>
-                            <span>BACKEN: ${p.grf || '--'}</span>
-                        </div>
-                    </th>
-                </tr>
-            </thead>
-            <tbody>
-                ${sonder.length > 0 ? `
-                    <tr><td colspan="2" class="section-title">IN BLAUKISTE (SONDER)</td></tr>
-                    ${sonder.map(getRow).join('')}
-                ` : ''}
-                ${standart.length > 0 ? `
-                    <tr><td colspan="2" class="section-title">IN SCHUBLADEN (STANDART)</td></tr>
-                    ${standart.map(getRow).join('')}
-                ` : ''}
-            </tbody>
-        </table>
-        <script>
-            window.onload = () => { 
-                setTimeout(() => { window.print(); window.close(); }, 600); 
-            };
-        <\/script>
-    </body></html>`;
-    
     const win = window.open('', '_blank');
-    win.document.write(html);
+    win.document.write(`<html><head><style>@page { margin: 0; } body { margin: 0; font-family: sans-serif; }</style></head><body>${fullHtml || createPage([], true)}<script>window.onload=()=>{setTimeout(()=>{window.print();window.close();},600);};<\/script></body></html>`);
     win.document.close();
 }
 
