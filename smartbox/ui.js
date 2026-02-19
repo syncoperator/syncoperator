@@ -42,13 +42,13 @@ function renderTools() {
     list.innerHTML = tools.map((t, i) => `
         <div class="list-item" onclick="modalT(${i})">
             <div style="flex:1">
-                <div class="t-id-label" style="font-size:9px;">T-NR</div>
-                <div style="font-size:18px; font-weight:900; margin-bottom:2px;">${t.id || '---'}</div>
+                <div class="t-id-label" style="font-size:9px;">BEMERKUNG</div>
+                <div style="font-size:18px; font-weight:900; margin-bottom:2px;">${t.bem || '---'}</div>
                 <div style="font-size:16px; font-weight:800;">${t.nm}</div>
                 <div class="loc-tag ${t.isStandart ? 'standart' : 'sonder'}">
                     ${t.isStandart ? 'STANDART | ' + (t.loc || '') : 'SONDER | BLAUKISTE'}
                 </div>
-                ${t.rem ? `<div style="font-size:12px; color:#555; font-weight:600; margin-top:6px; padding:4px 8px; background:#f0f0f5; border-radius:6px;">${t.rem}</div>` : ''}
+                ${t.kom ? `<div style="font-size:12px; color:#555; font-weight:600; margin-top:6px; padding:4px 8px; background:#f0f0f5; border-radius:6px;">${t.kom}</div>` : ''}
             </div>
         </div>`).join('') + '<div style="height:160px;"></div>';
 }
@@ -87,8 +87,11 @@ function saveP() {
 function modalT(i = null) {
     const edit = i !== null;
     el('t-idx').value = edit ? i : '';
-    const t = edit ? db[currentIdx].tools[i] : {id:'', nm:'', isStandart:false, loc:'', rem:''};
-    el('t-id').value = t.id; el('t-nm').value = t.nm; el('t-loc').value = t.loc || ''; el('t-rem').value = t.rem || '';
+    const t = edit ? db[currentIdx].tools[i] : {bem:'', nm:'', isStandart:false, loc:'', kom:''};
+    el('t-bem').value = t.bem || ''; 
+    el('t-nm').value = t.nm || ''; 
+    el('t-loc').value = t.loc || ''; 
+    el('t-kom').value = t.kom || '';
     const btn = el('btn-storage-toggle');
     t.isStandart ? btn.classList.add('on') : btn.classList.remove('on');
     btn.onclick = () => btn.classList.toggle('on');
@@ -99,9 +102,11 @@ function modalT(i = null) {
 function saveT() {
     const i = el('t-idx').value;
     const t = {
-        id: el('t-id').value.toUpperCase(), nm: el('t-nm').value.toUpperCase(),
+        bem: el('t-bem').value.toUpperCase(), 
+        nm: el('t-nm').value.toUpperCase(),
         isStandart: el('btn-storage-toggle').classList.contains('on'),
-        loc: el('t-loc').value.toUpperCase(), rem: el('t-rem').value.toUpperCase()
+        loc: el('t-loc').value.toUpperCase(), 
+        kom: el('t-kom').value.toUpperCase()
     };
     if(!db[currentIdx].tools) db[currentIdx].tools = [];
     if(i === '') db[currentIdx].tools.push(t); else db[currentIdx].tools[i] = t;
@@ -127,8 +132,8 @@ function makePDF() {
         const segment = (p.tools || []).slice(i*LIMIT, (i+1)*LIMIT);
         const sonder = segment.filter(t => !t.isStandart);
         const standart = segment.filter(t => t.isStandart);
-        const row = (t) => `<tr><td style="border-bottom:1.5px solid #000;padding:10px;"><div style="font-weight:900;font-size:18px;text-transform:uppercase;">${t.nm}</div><div style="font-size:11px;font-weight:800;color:#333;">${t.isStandart?t.loc:'IN BLAUKISTE'}${t.rem ? ' | '+t.rem : ''}</div></td><td style="border-bottom:1.5px solid #000;text-align:right;padding-right:10px;"><div style="font-size:9px;font-weight:900;color:#666;">T-NR</div><div style="font-weight:900;font-size:16px;">${t.id||'--'}</div></td></tr>`;
-        html += `<div style="width:210mm;height:297mm;padding:10mm;box-sizing:border-box;page-break-after:always;"><div style="border:1.5px solid #000;height:100%;display:flex;flex-direction:column;box-sizing:border-box;"><div style="padding:20px;border-bottom:3px solid #000;"><div style="font-size:14px;font-weight:900;color:#666;text-transform:uppercase;">${p.name||''}</div><div style="font-size:72px;font-weight:900;line-height:0.8;margin:12px 0;letter-spacing:-3px;">${p.num||'---'}</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px;font-weight:900;border-top:1.5px solid #000;padding-top:12px;margin-top:10px;"><div>MAT: ${p.mat||'--'}</div><div>LZF: ${p.lzf||'--'}</div><div>SÄGE: ${p.slg||'--'}</div><div>ABST: ${p.abs||'--'}</div><div>BACKEN: ${p.grf||'--'}</div><div>STÜCK: ${p.stk||'--'}</div></div></div><table style="width:100%;border-collapse:collapse;"><tbody>${sonder.length?`<tr><td colspan="2" style="background:#000;color:#fff;padding:12px;font-weight:900;font-size:15px;text-transform:uppercase;-webkit-print-color-adjust:exact;">Sonderwerkzeuge</td></tr>${sonder.map(row).join('')}`:''}${standart.length?`<tr><td colspan="2" style="background:#000;color:#fff;padding:12px;font-weight:900;font-size:15px;text-transform:uppercase;-webkit-print-color-adjust:exact;">Standartwerkzeuge</td></tr>${standart.map(row).join('')}`:''}</tbody></table></div></div>`;
+        const row = (t) => `<tr><td style="border-bottom:1.5px solid #000;padding:10px;"><div style="font-weight:900;font-size:18px;text-transform:uppercase;">${t.nm}</div><div style="font-size:11px;font-weight:800;color:#333;">${t.isStandart?t.loc:'IN BLAUKISTE'}${t.kom ? ' | '+t.kom : ''}</div></td><td style="border-bottom:1.5px solid #000;text-align:right;padding-right:10px;"><div style="font-size:9px;font-weight:900;color:#666;">BEMERKUNG</div><div style="font-weight:900;font-size:16px;">${t.bem||'--'}</div></td></tr>`;
+        html += `<div style="width:210mm;height:297mm;padding:10mm;box-sizing:border-box;page-break-after:always;"><div style="border:1.5px solid #000;height:100%;display:flex;flex-direction:column;box-sizing:border-box;"><div style="padding:20px;border-bottom:3.5px solid #000;"><div style="font-size:14px;font-weight:900;color:#666;text-transform:uppercase;">${p.name||''}</div><div style="font-size:72px;font-weight:900;line-height:0.8;margin:12px 0;letter-spacing:-3px;">${p.num||'---'}</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px;font-weight:900;border-top:1.5px solid #000;padding-top:12px;margin-top:10px;"><div>MAT: ${p.mat||'--'}</div><div>LZF: ${p.lzf||'--'}</div><div>SÄGE: ${p.slg||'--'}</div><div>ABST: ${p.abs||'--'}</div><div>BACKEN: ${p.grf||'--'}</div><div>STÜCK: ${p.stk||'--'}</div></div></div><table style="width:100%;border-collapse:collapse;"><tbody>${sonder.length?`<tr><td colspan="2" style="background:#000;color:#fff;padding:12px;font-weight:900;font-size:15px;text-transform:uppercase;-webkit-print-color-adjust:exact;">Sonderwerkzeuge</td></tr>${sonder.map(row).join('')}`:''}${standart.length?`<tr><td colspan="2" style="background:#000;color:#fff;padding:12px;font-weight:900;font-size:15px;text-transform:uppercase;-webkit-print-color-adjust:exact;">Standartwerkzeuge</td></tr>${standart.map(row).join('')}`:''}</tbody></table></div></div>`;
     }
     const win = window.open('','_blank');
     win.document.write(`<html><head><style>@page{margin:0;}body{margin:0;padding:0;font-family:sans-serif;}</style></head><body>${html}</body></html>`);
