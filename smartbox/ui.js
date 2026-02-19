@@ -122,28 +122,32 @@ function makePDF() {
     const p = db[currentIdx];
     const tools = p.tools || [];
     
-    // 1. Формируем единую очередь с "метками" заголовков
-    const printQueue = [];
     const sonder = tools.filter(t => !t.isStandart);
     const standart = tools.filter(t => t.isStandart);
 
+    const fullList = [];
     if(sonder.length > 0) {
-        printQueue.push({ type: 'header', label: 'SONDERWERKZEUGE' });
-        sonder.forEach(t => printQueue.push({ type: 'row', data: t }));
+        fullList.push({ type: 'header', label: 'SONDERWERKZEUGE' });
+        sonder.forEach(t => fullList.push({ type: 'row', label: 'SONDERWERKZEUGE', data: t }));
     }
     if(standart.length > 0) {
-        printQueue.push({ type: 'header', label: 'STANDARTWERKZEUGE' });
-        standart.forEach(t => printQueue.push({ type: 'row', data: t }));
+        fullList.push({ type: 'header', label: 'STANDARTWERKZEUGE' });
+        standart.forEach(t => fullList.push({ type: 'row', label: 'STANDARTWERKZEUGE', data: t }));
     }
 
-    // 2. Разбиваем очередь на страницы (по 12 элементов)
-    const LIMIT = 12;
-    const totalPages = Math.ceil(printQueue.length / LIMIT) || 1;
+    const LIMIT = 11; // Чуть меньше, чтобы гарантированно влезло с дублирующейся плашкой
+    const totalPages = Math.ceil(fullList.length / LIMIT) || 1;
     let html = "";
 
     for(let i=0; i<totalPages; i++) {
-        const segment = printQueue.slice(i * LIMIT, (i + 1) * LIMIT);
+        let segment = fullList.slice(i * LIMIT, (i + 1) * LIMIT);
         
+        // ЕСЛИ страница начинается с обычной строки (не с заголовка), 
+        // добавляем плашку текущего типа в начало этой страницы
+        if (segment.length > 0 && segment[0].type === 'row') {
+            segment.unshift({ type: 'header', label: segment[0].label + " (FORTSETZUNG)" });
+        }
+
         const rowsHtml = segment.map(item => {
             if(item.type === 'header') {
                 return `<tr><td colspan="2" style="background:#000;color:#fff;padding:12px;font-weight:900;font-size:15px;text-transform:uppercase;-webkit-print-color-adjust:exact;">${item.label}</td></tr>`;
