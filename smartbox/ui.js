@@ -5,6 +5,8 @@ let currentIdx = null;
 const el = (id) => document.getElementById(id);
 const hide = (id) => { el(id).style.display = 'none'; };
 
+// ... (функции renderList, openProject, goHome, moveTool, renderTools остаются без изменений) ...
+
 function renderList() {
     const list = el('list-p');
     if(!list) return;
@@ -64,22 +66,6 @@ function renderTools() {
                 </div>
             </div>
         </div>`).join('') + '<div style="height:160px; padding-bottom: 80px;"></div>';
-}
-
-function modalP() {
-    el('p-idx').value = '';
-    ['p-num','p-nam','p-lzf','p-mat','p-slg','p-abs','p-grf','p-stk'].forEach(id => el(id).value = '');
-    el('m-p').style.display = 'flex';
-}
-
-function editCurrentProject() {
-    const p = db[currentIdx];
-    el('p-idx').value = currentIdx;
-    el('p-num').value = p.num || ''; el('p-nam').value = p.name || '';
-    el('p-lzf').value = p.lzf || ''; el('p-mat').value = p.mat || '';
-    el('p-slg').value = p.slg || ''; el('p-abs').value = p.abs || '';
-    el('p-grf').value = p.grf || ''; el('p-stk').value = p.stk || '';
-    el('m-p').style.display = 'flex';
 }
 
 function saveP() {
@@ -148,26 +134,25 @@ function makePDF() {
     }
 
     const LIMIT = 25; 
-    const totalPages = Math.ceil(fullList.length / LIMIT) || 1;
     let html = "";
 
-    for(let i=0; i<totalPages; i++) {
+    for(let i=0; i < Math.ceil(fullList.length / LIMIT) || 1; i++) {
         let segment = fullList.slice(i * LIMIT, (i + 1) * LIMIT);
         const rowsHtml = segment.map(item => {
             if(item.type === 'header') {
-                return `<tr style="height:32px; background:#000 !important; color:#fff !important;">
-                    <td colspan="2" style="padding:0 12px; font-weight:900; font-size:13px; text-transform:uppercase; border:none; vertical-align:middle;">${item.label}</td>
+                return `<tr style="height:35px; background:#000 !important; color:#fff !important;">
+                    <td colspan="2" style="padding:0 15px; font-weight:900; font-size:15px; text-transform:uppercase;">${item.label}</td>
                 </tr>`;
             } else {
                 const t = item.data;
-                return `<tr style="height:34px;">
-                    <td style="border-bottom:2px solid #000; padding:0 12px; vertical-align:middle;">
-                        <div style="font-weight:900; font-size:15px; text-transform:uppercase; line-height:1; white-space:nowrap;">${t.nm}</div>
-                        <div style="font-size:9.5px; font-weight:800; color:#000; text-transform:uppercase; line-height:1; margin-top:2px;">${t.isStandart ? (t.loc || 'STANDART') : 'IN BLAUKISTE'}${t.kom ? ' | ' + t.kom : ''}</div>
+                return `<tr style="height:35px;">
+                    <td style="border-bottom:2.5px solid #000; padding:0 15px; vertical-align:middle;">
+                        <div style="font-weight:900; font-size:17px; text-transform:uppercase; line-height:1;">${t.nm}</div>
+                        <div style="font-size:11px; font-weight:900; color:#000; margin-top:2px;">${t.isStandart ? (t.loc || 'STANDART') : 'IN BLAUKISTE'}${t.kom ? ' | ' + t.kom : ''}</div>
                     </td>
-                    <td style="border-bottom:2px solid #000; text-align:right; padding-right:12px; width:110px; vertical-align:middle;">
-                        <div style="font-size:7px; font-weight:900; color:#333; line-height:1;">BEMERKUNG</div>
-                        <div style="font-weight:900; font-size:13px; line-height:1;">${t.bem || '--'}</div>
+                    <td style="border-bottom:2.5px solid #000; text-align:right; padding-right:15px; width:130px; vertical-align:middle;">
+                        <div style="font-size:8px; font-weight:900; color:#000;">BEMERKUNG</div>
+                        <div style="font-weight:900; font-size:15px;">${t.bem || '--'}</div>
                     </td>
                 </tr>`;
             }
@@ -201,20 +186,27 @@ function makePDF() {
     win.document.write(`<html><head><style>
         @page { size: A4; margin: 0; }
         * { box-sizing: border-box; -webkit-print-color-adjust: exact; }
-        body { margin: 0; padding: 0; font-family: sans-serif; background: #fff; }
-        .page { width: 100vw; height: 100vh; padding: 3mm; page-break-after: always; display: flex; justify-content: center; }
-        .main-container { border: 2.5px solid #000; width: 204mm; height: 288mm; display: flex; flex-direction: column; }
-        .pdf-header { display: flex; padding: 12px 18px; border-bottom: 4px solid #000; align-items: center; }
+        body { margin: 0; padding: 0; font-family: sans-serif; background: #fff; overflow: hidden; }
+        .page { width: 210mm; height: 297mm; page-break-after: always; display: flex; justify-content: center; align-items: center; }
+        .main-container { 
+            border: 3px solid #000; 
+            width: 206mm; 
+            height: 290mm; 
+            display: flex; 
+            flex-direction: column; 
+            zoom: 1.02; /* Принудительное увеличение всего контента */
+        }
+        .pdf-header { display: flex; padding: 15px 20px; border-bottom: 5px solid #000; align-items: center; }
         .header-left { flex: 1; }
-        .header-right { width: 220px; border-left: 2px solid #000; padding-left: 18px; }
-        .bauteil-name { font-size: 13px; font-weight: 900; text-transform: uppercase; margin-bottom: 2px; }
-        .zeichnungs-num { font-size: 56px; font-weight: 900; line-height: 0.8; letter-spacing: -1.5px; }
-        .meta-grid { display: grid; grid-template-columns: 1fr; gap: 2px; }
-        .meta-item { display: flex; justify-content: space-between; font-size: 10px; font-weight: 900; text-transform: uppercase; }
+        .header-right { width: 240px; border-left: 3px solid #000; padding-left: 20px; }
+        .bauteil-name { font-size: 15px; font-weight: 900; text-transform: uppercase; margin-bottom: 3px; }
+        .zeichnungs-num { font-size: 62px; font-weight: 900; line-height: 0.8; letter-spacing: -2px; }
+        .meta-grid { display: grid; grid-template-columns: 1fr; gap: 3px; }
+        .meta-item { display: flex; justify-content: space-between; font-size: 11px; font-weight: 900; }
         .pdf-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
     </style></head><body>${html}</body></html>`);
     win.document.close();
-    setTimeout(() => { win.print(); win.close(); }, 600);
+    setTimeout(() => { win.print(); win.close(); }, 700);
 }
 
 window.onload = renderList;
