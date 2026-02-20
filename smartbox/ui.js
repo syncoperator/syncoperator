@@ -36,7 +36,7 @@ function goHome() {
     renderList();
 }
 
-// Сортировка стрелками
+// Надежная сортировка стрелками
 function moveTool(idx, direction) {
     const tools = db[currentIdx].tools;
     const newIdx = idx + direction;
@@ -53,8 +53,8 @@ function renderTools() {
     list.innerHTML = tools.map((t, i) => `
         <div class="list-item" style="display:flex; align-items:center; gap:12px;">
             <div style="display:flex; flex-direction:column; gap:4px;">
-                <button onclick="event.stopPropagation(); moveTool(${i}, -1)" style="padding:8px 10px; background:#e5e5ea; border-radius:8px; font-weight:bold;">↑</button>
-                <button onclick="event.stopPropagation(); moveTool(${i}, 1)" style="padding:8px 10px; background:#e5e5ea; border-radius:8px; font-weight:bold;">↓</button>
+                <button onclick="event.stopPropagation(); moveTool(${i}, -1)" style="padding:8px 10px; background:#e5e5ea; border:none; border-radius:8px; font-weight:bold;">↑</button>
+                <button onclick="event.stopPropagation(); moveTool(${i}, 1)" style="padding:8px 10px; background:#e5e5ea; border:none; border-radius:8px; font-weight:bold;">↓</button>
             </div>
             <div style="flex:1" onclick="modalT(${i})">
                 <div class="t-id-label" style="font-size:9px;">BEMERKUNG</div>
@@ -64,7 +64,7 @@ function renderTools() {
                     ${t.isStandart ? 'STANDART | ' + (t.loc || '') : 'SONDER | BLAUKISTE'}
                 </div>
             </div>
-        </div>`).join('') + '<div style="height:160px; padding-bottom: 50px;"></div>';
+        </div>`).join('') + '<div style="height:160px; padding-bottom: 80px;"></div>';
 }
 
 function modalP() {
@@ -166,13 +166,13 @@ function makePDF() {
                 </tr>`;
             } else {
                 const t = item.data;
-                return `<tr style="height:32px;">
-                    <td style="border-bottom:1px solid #000; padding:0 10px; vertical-align:middle;">
-                        <div style="font-weight:900; font-size:13px; text-transform:uppercase; line-height:1; white-space:nowrap; overflow:hidden;">${t.nm}</div>
-                        <div style="font-size:8px; font-weight:800; color:#333; text-transform:uppercase;">${t.isStandart ? (t.loc || 'STANDART') : 'IN BLAUKISTE'}${t.kom ? ' | ' + t.kom : ''}</div>
+                return `<tr style="height:30px;">
+                    <td style="border-bottom:1px solid #000; padding:0 10px; vertical-align:middle; overflow:hidden;">
+                        <div style="font-weight:900; font-size:12.5px; text-transform:uppercase; line-height:1; white-space:nowrap;">${t.nm}</div>
+                        <div style="font-size:8px; font-weight:800; color:#333; text-transform:uppercase; line-height:1; margin-top:1px;">${t.isStandart ? (t.loc || 'STANDART') : 'IN BLAUKISTE'}${t.kom ? ' | ' + t.kom : ''}</div>
                     </td>
-                    <td style="border-bottom:1px solid #000; text-align:right; padding-right:10px; width:85px; vertical-align:middle;">
-                        <div style="font-size:6.5px; font-weight:900; color:#666; line-height:1;">BEMERKUNG</div>
+                    <td style="border-bottom:1px solid #000; text-align:right; padding-right:10px; width:80px; vertical-align:middle;">
+                        <div style="font-size:6px; font-weight:900; color:#666; line-height:1;">BEMERKUNG</div>
                         <div style="font-weight:900; font-size:11px; line-height:1;">${t.bem || '--'}</div>
                     </td>
                 </tr>`;
@@ -207,16 +207,17 @@ function makePDF() {
     win.document.write(`<html><head><style>
         @page { size: A4; margin: 0; }
         body { margin: 0; padding: 0; font-family: sans-serif; background: #fff; }
-        .page { width: 210mm; height: 297mm; padding: 10mm; box-sizing: border-box; page-break-after: always; overflow: hidden; }
-        .main-container { border: 1.5px solid #000; height: 100%; display: flex; flex-direction: column; }
-        .pdf-header { display: flex; padding: 12px 15px; border-bottom: 3px solid #000; align-items: center; }
+        .page { width: 210mm; height: 297mm; padding: 8mm 10mm; box-sizing: border-box; page-break-after: always; overflow: hidden; position: relative; }
+        .main-container { border: 1.5px solid #000; height: 100%; display: flex; flex-direction: column; overflow: hidden; }
+        .pdf-header { display: flex; padding: 10px 15px; border-bottom: 3.5px solid #000; align-items: center; flex-shrink: 0; }
         .header-left { flex: 1; }
         .header-right { width: 190px; border-left: 1.5px solid #000; padding-left: 15px; }
-        .bauteil-name { font-size: 11px; font-weight: 900; text-transform: uppercase; color: #444; margin-bottom: 2px; }
-        .zeichnungs-num { font-size: 48px; font-weight: 900; line-height: 0.85; letter-spacing: -1.5px; }
-        .meta-grid { display: grid; grid-template-columns: 1fr; gap: 2px; }
+        .bauteil-name { font-size: 11px; font-weight: 900; text-transform: uppercase; color: #444; }
+        .zeichnungs-num { font-size: 46px; font-weight: 900; line-height: 0.8; letter-spacing: -1.5px; }
+        .meta-grid { display: grid; grid-template-columns: 1fr; gap: 1px; }
         .meta-item { display: flex; justify-content: space-between; font-size: 9px; font-weight: 900; text-transform: uppercase; }
-        .pdf-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+        .pdf-table { width: 100%; border-collapse: collapse; table-layout: fixed; flex-grow: 1; }
+        tr { page-break-inside: avoid; }
         * { -webkit-print-color-adjust: exact; box-sizing: border-box; }
     </style></head><body>${html}</body></html>`);
     win.document.close();
