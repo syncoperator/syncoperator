@@ -143,30 +143,30 @@ function makePDF() {
     
     let rows = "";
     if(sonder.length > 0) {
-        rows += `<tr style="height:38px; background:#000; color:#fff;"><td colspan="2" style="padding-left:15px; font-weight:900; font-size:16px;">SONDERWERKZEUGE</td></tr>`;
+        rows += `<tr style="height:35px; background:#000; color:#fff;"><td colspan="2" style="padding-left:12px; font-weight:900; font-size:16px;">SONDERWERKZEUGE</td></tr>`;
         sonder.forEach(t => {
-            rows += `<tr style="height:38px;">
-                <td style="border-bottom:3px solid #000; padding:0 15px; vertical-align:middle;">
-                    <div style="font-weight:900; font-size:19px;">${t.nm}</div>
-                    <div style="font-size:12px; font-weight:900;">IN BLAUKISTE ${t.kom ? ' | ' + t.kom : ''}</div>
+            rows += `<tr style="height:36px;">
+                <td style="border-bottom:2.5px solid #000; padding:0 12px; vertical-align:middle;">
+                    <div style="font-weight:900; font-size:18px;">${t.nm}</div>
+                    <div style="font-size:11px; font-weight:900;">IN BLAUKISTE ${t.kom ? ' | ' + t.kom : ''}</div>
                 </td>
-                <td style="border-bottom:3px solid #000; text-align:right; padding-right:15px; width:140px; vertical-align:middle;">
-                    <div style="font-size:9px; font-weight:900;">BEMERKUNG</div>
-                    <div style="font-weight:900; font-size:17px;">${t.bem || '--'}</div>
+                <td style="border-bottom:2.5px solid #000; text-align:right; padding-right:12px; width:135px; vertical-align:middle;">
+                    <div style="font-size:8px; font-weight:900;">BEMERKUNG</div>
+                    <div style="font-weight:900; font-size:15px;">${t.bem || '--'}</div>
                 </td></tr>`;
         });
     }
     if(standart.length > 0) {
-        rows += `<tr style="height:38px; background:#000; color:#fff;"><td colspan="2" style="padding-left:15px; font-weight:900; font-size:16px;">STANDARTWERKZEUGE</td></tr>`;
+        rows += `<tr style="height:35px; background:#000; color:#fff;"><td colspan="2" style="padding-left:12px; font-weight:900; font-size:16px;">STANDARTWERKZEUGE</td></tr>`;
         standart.forEach(t => {
-            rows += `<tr style="height:38px;">
-                <td style="border-bottom:3px solid #000; padding:0 15px; vertical-align:middle;">
-                    <div style="font-weight:900; font-size:19px;">${t.nm}</div>
-                    <div style="font-size:12px; font-weight:900;">${t.loc || 'STANDART'} ${t.kom ? ' | ' + t.kom : ''}</div>
+            rows += `<tr style="height:36px;">
+                <td style="border-bottom:2.5px solid #000; padding:0 12px; vertical-align:middle;">
+                    <div style="font-weight:900; font-size:18px;">${t.nm}</div>
+                    <div style="font-size:11px; font-weight:900;">${t.loc || 'STANDART'} ${t.kom ? ' | ' + t.kom : ''}</div>
                 </td>
-                <td style="border-bottom:3px solid #000; text-align:right; padding-right:15px; width:140px; vertical-align:middle;">
-                    <div style="font-size:9px; font-weight:900;">BEMERKUNG</div>
-                    <div style="font-weight:900; font-size:17px;">${t.bem || '--'}</div>
+                <td style="border-bottom:2.5px solid #000; text-align:right; padding-right:12px; width:135px; vertical-align:middle;">
+                    <div style="font-size:8px; font-weight:900;">BEMERKUNG</div>
+                    <div style="font-weight:900; font-size:15px;">${t.bem || '--'}</div>
                 </td></tr>`;
         });
     }
@@ -175,16 +175,16 @@ function makePDF() {
     win.document.write(`<html><head><style>
         @page { size: A4; margin: 0; }
         * { box-sizing: border-box; -webkit-print-color-adjust: exact; }
-        body { margin: 0; padding: 0; font-family: sans-serif; }
-        .page { width: 210mm; height: 297mm; display: flex; justify-content: center; align-items: center; page-break-after: always; }
-        .main { border: 4px solid #000; width: 208mm; height: 292mm; display: flex; flex-direction: column; }
-        .header { display: flex; padding: 15px 20px; border-bottom: 6px solid #000; align-items: center; }
+        body { margin: 0; padding: 0; font-family: sans-serif; background: #fff; overflow: hidden; }
+        .page { width: 210mm; height: 297mm; display: flex; justify-content: center; align-items: center; overflow: hidden; }
+        .main { border: 4px solid #000; width: 205mm; height: 290mm; display: flex; flex-direction: column; overflow: hidden; }
+        .header { display: flex; padding: 12px 15px; border-bottom: 5px solid #000; align-items: center; background: #fff; }
         .h-left { flex: 1; }
-        .h-right { width: 260px; border-left: 4px solid #000; padding-left: 20px; }
-        .b-name { font-size: 16px; font-weight: 900; text-transform: uppercase; }
-        .z-num { font-size: 64px; font-weight: 900; line-height: 0.8; }
-        .m-grid { display: grid; grid-template-columns: 1fr; gap: 4px; }
-        .m-item { display: flex; justify-content: space-between; font-size: 13px; font-weight: 900; }
+        .h-right { width: 250px; border-left: 4px solid #000; padding-left: 15px; }
+        .b-name { font-size: 15px; font-weight: 900; text-transform: uppercase; }
+        .z-num { font-size: 60px; font-weight: 900; line-height: 0.8; letter-spacing: -1.5px; }
+        .m-grid { display: grid; grid-template-columns: 1fr; gap: 3px; }
+        .m-item { display: flex; justify-content: space-between; font-size: 12px; font-weight: 900; }
         table { width: 100%; border-collapse: collapse; table-layout: fixed; }
     </style></head><body>
         <div class="page"><div class="main">
