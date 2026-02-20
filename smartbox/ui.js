@@ -75,10 +75,14 @@ function modalP() {
 function editCurrentProject() {
     const p = db[currentIdx];
     el('p-idx').value = currentIdx;
-    el('p-num').value = p.num || ''; el('p-nam').value = p.name || '';
-    el('p-lzf').value = p.lzf || ''; el('p-mat').value = p.mat || '';
-    el('p-slg').value = p.slg || ''; el('p-abs').value = p.abs || '';
-    el('p-grf').value = p.grf || ''; el('p-stk').value = p.stk || '';
+    el('p-num').value = p.num || ''; 
+    el('p-nam').value = p.name || '';
+    el('p-lzf').value = p.lzf || ''; 
+    el('p-mat').value = p.mat || '';
+    el('p-slg').value = p.slg || ''; 
+    el('p-abs').value = p.abs || '';
+    el('p-grf').value = p.grf || ''; 
+    el('p-stk').value = p.stk || '';
     el('m-p').style.display = 'flex';
 }
 
@@ -134,84 +138,72 @@ function importAnyJSON() {
 function makePDF() {
     const p = db[currentIdx];
     const tools = p.tools || [];
-    const sonder = tools.filter(t => !t.isStandart);
-    const standart = tools.filter(t => t.isStandart);
-    const fullList = [];
+    const sonder = tools.filter(x => !x.isStandart);
+    const standart = tools.filter(x => x.isStandart);
+    
+    let rows = "";
     if(sonder.length > 0) {
-        fullList.push({ type: 'header', label: 'SONDERWERKZEUGE' });
-        sonder.forEach(t => fullList.push({ type: 'row', data: t }));
+        rows += `<tr style="height:38px; background:#000; color:#fff;"><td colspan="2" style="padding-left:15px; font-weight:900; font-size:16px;">SONDERWERKZEUGE</td></tr>`;
+        sonder.forEach(t => {
+            rows += `<tr style="height:38px;">
+                <td style="border-bottom:3px solid #000; padding:0 15px; vertical-align:middle;">
+                    <div style="font-weight:900; font-size:19px;">${t.nm}</div>
+                    <div style="font-size:12px; font-weight:900;">IN BLAUKISTE ${t.kom ? ' | ' + t.kom : ''}</div>
+                </td>
+                <td style="border-bottom:3px solid #000; text-align:right; padding-right:15px; width:140px; vertical-align:middle;">
+                    <div style="font-size:9px; font-weight:900;">BEMERKUNG</div>
+                    <div style="font-weight:900; font-size:17px;">${t.bem || '--'}</div>
+                </td></tr>`;
+        });
     }
     if(standart.length > 0) {
-        fullList.push({ type: 'header', label: 'STANDARTWERKZEUGE' });
-        standart.forEach(t => fullList.push({ type: 'row', data: t }));
-    }
-
-    const LIMIT = 25; 
-    let html = "";
-    for(let i=0; i < Math.ceil(fullList.length / LIMIT) || 1; i++) {
-        let segment = fullList.slice(i * LIMIT, (i + 1) * LIMIT);
-        const rowsHtml = segment.map(item => {
-            if(item.type === 'header') {
-                return `<tr style="height:38px; background:#000 !important; color:#fff !important; -webkit-print-color-adjust:exact;">
-                    <td colspan="2" style="padding:0 15px; font-weight:900; font-size:16px; text-transform:uppercase; border:none; vertical-align:middle;">${item.label}</td>
-                </tr>`;
-            } else {
-                const t = item.data;
-                return `<tr style="height:38px;">
-                    <td style="border-bottom:3px solid #000; padding:0 15px; vertical-align:middle;">
-                        <div style="font-weight:900; font-size:19px; text-transform:uppercase; line-height:1;">${t.nm}</div>
-                        <div style="font-size:12px; font-weight:900; color:#000; margin-top:2px;">${t.isStandart ? (t.loc || 'STANDART') : 'IN BLAUKISTE'}${t.kom ? ' | ' + t.kom : ''}</div>
-                    </td>
-                    <td style="border-bottom:3px solid #000; text-align:right; padding-right:15px; width:140px; vertical-align:middle;">
-                        <div style="font-size:9px; font-weight:900; color:#000;">BEMERKUNG</div>
-                        <div style="font-weight:900; font-size:17px;">${t.bem || '--'}</div>
-                    </td>
-                </tr>`;
-            }
-        }).join('');
-
-        html += `
-        <div class="page">
-            <div class="main-container">
-                <div class="pdf-header">
-                    <div class="header-left">
-                        <div class="bauteil-name">${p.name || ''}</div>
-                        <div class="zeichnungs-num">${p.num || '---'}</div>
-                    </div>
-                    <div class="header-right">
-                        <div class="meta-grid">
-                            <div class="meta-item"><span>MAT:</span> <span>${p.mat || '--'}</span></div>
-                            <div class="meta-item"><span>LZF:</span> <span>${p.lzf || '--'}</span></div>
-                            <div class="meta-item"><span>SÄGE:</span> <span>${p.slg || '--'}</span></div>
-                            <div class="meta-item"><span>ABST:</span> <span>${p.abs || '--'}</span></div>
-                            <div class="meta-item"><span>BACKEN:</span> <span>${p.grf || '--'}</span></div>
-                            <div class="meta-item"><span>STÜCK:</span> <span>${p.stk || '--'}</span></div>
-                        </div>
-                    </div>
-                </div>
-                <table class="pdf-table"><tbody>${rowsHtml}</tbody></table>
-            </div>
-        </div>`;
+        rows += `<tr style="height:38px; background:#000; color:#fff;"><td colspan="2" style="padding-left:15px; font-weight:900; font-size:16px;">STANDARTWERKZEUGE</td></tr>`;
+        standart.forEach(t => {
+            rows += `<tr style="height:38px;">
+                <td style="border-bottom:3px solid #000; padding:0 15px; vertical-align:middle;">
+                    <div style="font-weight:900; font-size:19px;">${t.nm}</div>
+                    <div style="font-size:12px; font-weight:900;">${t.loc || 'STANDART'} ${t.kom ? ' | ' + t.kom : ''}</div>
+                </td>
+                <td style="border-bottom:3px solid #000; text-align:right; padding-right:15px; width:140px; vertical-align:middle;">
+                    <div style="font-size:9px; font-weight:900;">BEMERKUNG</div>
+                    <div style="font-weight:900; font-size:17px;">${t.bem || '--'}</div>
+                </td></tr>`;
+        });
     }
 
     const win = window.open('','_blank');
     win.document.write(`<html><head><style>
         @page { size: A4; margin: 0; }
         * { box-sizing: border-box; -webkit-print-color-adjust: exact; }
-        body { margin: 0; padding: 0; font-family: sans-serif; background: #fff; overflow: hidden; }
-        .page { width: 210mm; height: 297mm; page-break-after: always; display: flex; justify-content: center; align-items: center; }
-        .main-container { border: 4px solid #000; width: 208mm; height: 292mm; display: flex; flex-direction: column; }
-        .pdf-header { display: flex; padding: 15px 20px; border-bottom: 6px solid #000; align-items: center; }
-        .header-left { flex: 1; }
-        .header-right { width: 260px; border-left: 4px solid #000; padding-left: 20px; }
-        .bauteil-name { font-size: 16px; font-weight: 900; text-transform: uppercase; margin-bottom: 5px; }
-        .zeichnungs-num { font-size: 64px; font-weight: 900; line-height: 0.8; letter-spacing: -2px; }
-        .meta-grid { display: grid; grid-template-columns: 1fr; gap: 4px; }
-        .meta-item { display: flex; justify-content: space-between; font-size: 13px; font-weight: 900; }
-        .pdf-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-    </style></head><body>${html}</body></html>`);
+        body { margin: 0; padding: 0; font-family: sans-serif; }
+        .page { width: 210mm; height: 297mm; display: flex; justify-content: center; align-items: center; page-break-after: always; }
+        .main { border: 4px solid #000; width: 208mm; height: 292mm; display: flex; flex-direction: column; }
+        .header { display: flex; padding: 15px 20px; border-bottom: 6px solid #000; align-items: center; }
+        .h-left { flex: 1; }
+        .h-right { width: 260px; border-left: 4px solid #000; padding-left: 20px; }
+        .b-name { font-size: 16px; font-weight: 900; text-transform: uppercase; }
+        .z-num { font-size: 64px; font-weight: 900; line-height: 0.8; }
+        .m-grid { display: grid; grid-template-columns: 1fr; gap: 4px; }
+        .m-item { display: flex; justify-content: space-between; font-size: 13px; font-weight: 900; }
+        table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+    </style></head><body>
+        <div class="page"><div class="main">
+            <div class="header">
+                <div class="h-left"><div class="b-name">${p.name}</div><div class="z-num">${p.num}</div></div>
+                <div class="h-right"><div class="m-grid">
+                    <div class="m-item"><span>MAT:</span><span>${p.mat||'--'}</span></div>
+                    <div class="m-item"><span>LZF:</span><span>${p.lzf||'--'}</span></div>
+                    <div class="m-item"><span>SÄGE:</span><span>${p.slg||'--'}</span></div>
+                    <div class="m-item"><span>ABST:</span><span>${p.abs||'--'}</span></div>
+                    <div class="m-item"><span>BACKEN:</span><span>${p.grf||'--'}</span></div>
+                    <div class="m-item"><span>STÜCK:</span><span>${p.stk||'--'}</span></div>
+                </div></div>
+            </div>
+            <table><tbody>${rows}</tbody></table>
+        </div></div>
+    </body></html>`);
     win.document.close();
-    setTimeout(() => { win.print(); win.close(); }, 700);
+    setTimeout(() => { win.print(); win.close(); }, 500);
 }
 
 window.onload = renderList;
