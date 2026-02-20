@@ -148,7 +148,7 @@ function makePDF() {
         standart.forEach(t => fullList.push({ type: 'row', label: 'STANDARTWERKZEUGE', data: t }));
     }
 
-    const LIMIT = 25; 
+    const LIMIT = 25; // Увеличено до 25
     const totalPages = Math.ceil(fullList.length / LIMIT) || 1;
     let html = "";
 
@@ -171,8 +171,8 @@ function makePDF() {
                         <div style="font-weight:900; font-size:12.5px; text-transform:uppercase; line-height:1; white-space:nowrap;">${t.nm}</div>
                         <div style="font-size:8px; font-weight:800; color:#333; text-transform:uppercase; line-height:1; margin-top:1px;">${t.isStandart ? (t.loc || 'STANDART') : 'IN BLAUKISTE'}${t.kom ? ' | ' + t.kom : ''}</div>
                     </td>
-                    <td style="border-bottom:1px solid #000; text-align:right; padding-right:10px; width:80px; vertical-align:middle;">
-                        <div style="font-size:6px; font-weight:900; color:#666; line-height:1;">BEMERKUNG</div>
+                    <td style="border-bottom:1px solid #000; text-align:right; padding-right:10px; width:85px; vertical-align:middle;">
+                        <div style="font-size:6.5px; font-weight:900; color:#666; line-height:1;">BEMERKUNG</div>
                         <div style="font-weight:900; font-size:11px; line-height:1;">${t.bem || '--'}</div>
                     </td>
                 </tr>`;
