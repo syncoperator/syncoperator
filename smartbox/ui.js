@@ -5,8 +5,6 @@ let currentIdx = null;
 const el = (id) => document.getElementById(id);
 const hide = (id) => { el(id).style.display = 'none'; };
 
-// ... (функции renderList, openProject, goHome, moveTool, renderTools остаются без изменений) ...
-
 function renderList() {
     const list = el('list-p');
     if(!list) return;
@@ -68,6 +66,22 @@ function renderTools() {
         </div>`).join('') + '<div style="height:160px; padding-bottom: 80px;"></div>';
 }
 
+function modalP() {
+    el('p-idx').value = '';
+    ['p-num','p-nam','p-lzf','p-mat','p-slg','p-abs','p-grf','p-stk'].forEach(id => el(id).value = '');
+    el('m-p').style.display = 'flex';
+}
+
+function editCurrentProject() {
+    const p = db[currentIdx];
+    el('p-idx').value = currentIdx;
+    el('p-num').value = p.num || ''; el('p-nam').value = p.name || '';
+    el('p-lzf').value = p.lzf || ''; el('p-mat').value = p.mat || '';
+    el('p-slg').value = p.slg || ''; el('p-abs').value = p.abs || '';
+    el('p-grf').value = p.grf || ''; el('p-stk').value = p.stk || '';
+    el('m-p').style.display = 'flex';
+}
+
 function saveP() {
     const i = el('p-idx').value;
     const data = {
@@ -122,7 +136,6 @@ function makePDF() {
     const tools = p.tools || [];
     const sonder = tools.filter(t => !t.isStandart);
     const standart = tools.filter(t => t.isStandart);
-
     const fullList = [];
     if(sonder.length > 0) {
         fullList.push({ type: 'header', label: 'SONDERWERKZEUGE' });
@@ -135,24 +148,23 @@ function makePDF() {
 
     const LIMIT = 25; 
     let html = "";
-
     for(let i=0; i < Math.ceil(fullList.length / LIMIT) || 1; i++) {
         let segment = fullList.slice(i * LIMIT, (i + 1) * LIMIT);
         const rowsHtml = segment.map(item => {
             if(item.type === 'header') {
-                return `<tr style="height:35px; background:#000 !important; color:#fff !important;">
-                    <td colspan="2" style="padding:0 15px; font-weight:900; font-size:15px; text-transform:uppercase;">${item.label}</td>
+                return `<tr style="height:38px; background:#000 !important; color:#fff !important; -webkit-print-color-adjust:exact;">
+                    <td colspan="2" style="padding:0 15px; font-weight:900; font-size:16px; text-transform:uppercase; border:none; vertical-align:middle;">${item.label}</td>
                 </tr>`;
             } else {
                 const t = item.data;
-                return `<tr style="height:35px;">
-                    <td style="border-bottom:2.5px solid #000; padding:0 15px; vertical-align:middle;">
-                        <div style="font-weight:900; font-size:17px; text-transform:uppercase; line-height:1;">${t.nm}</div>
-                        <div style="font-size:11px; font-weight:900; color:#000; margin-top:2px;">${t.isStandart ? (t.loc || 'STANDART') : 'IN BLAUKISTE'}${t.kom ? ' | ' + t.kom : ''}</div>
+                return `<tr style="height:38px;">
+                    <td style="border-bottom:3px solid #000; padding:0 15px; vertical-align:middle;">
+                        <div style="font-weight:900; font-size:19px; text-transform:uppercase; line-height:1;">${t.nm}</div>
+                        <div style="font-size:12px; font-weight:900; color:#000; margin-top:2px;">${t.isStandart ? (t.loc || 'STANDART') : 'IN BLAUKISTE'}${t.kom ? ' | ' + t.kom : ''}</div>
                     </td>
-                    <td style="border-bottom:2.5px solid #000; text-align:right; padding-right:15px; width:130px; vertical-align:middle;">
-                        <div style="font-size:8px; font-weight:900; color:#000;">BEMERKUNG</div>
-                        <div style="font-weight:900; font-size:15px;">${t.bem || '--'}</div>
+                    <td style="border-bottom:3px solid #000; text-align:right; padding-right:15px; width:140px; vertical-align:middle;">
+                        <div style="font-size:9px; font-weight:900; color:#000;">BEMERKUNG</div>
+                        <div style="font-weight:900; font-size:17px;">${t.bem || '--'}</div>
                     </td>
                 </tr>`;
             }
@@ -188,21 +200,14 @@ function makePDF() {
         * { box-sizing: border-box; -webkit-print-color-adjust: exact; }
         body { margin: 0; padding: 0; font-family: sans-serif; background: #fff; overflow: hidden; }
         .page { width: 210mm; height: 297mm; page-break-after: always; display: flex; justify-content: center; align-items: center; }
-        .main-container { 
-            border: 3px solid #000; 
-            width: 206mm; 
-            height: 290mm; 
-            display: flex; 
-            flex-direction: column; 
-            zoom: 1.02; /* Принудительное увеличение всего контента */
-        }
-        .pdf-header { display: flex; padding: 15px 20px; border-bottom: 5px solid #000; align-items: center; }
+        .main-container { border: 4px solid #000; width: 208mm; height: 292mm; display: flex; flex-direction: column; }
+        .pdf-header { display: flex; padding: 15px 20px; border-bottom: 6px solid #000; align-items: center; }
         .header-left { flex: 1; }
-        .header-right { width: 240px; border-left: 3px solid #000; padding-left: 20px; }
-        .bauteil-name { font-size: 15px; font-weight: 900; text-transform: uppercase; margin-bottom: 3px; }
-        .zeichnungs-num { font-size: 62px; font-weight: 900; line-height: 0.8; letter-spacing: -2px; }
-        .meta-grid { display: grid; grid-template-columns: 1fr; gap: 3px; }
-        .meta-item { display: flex; justify-content: space-between; font-size: 11px; font-weight: 900; }
+        .header-right { width: 260px; border-left: 4px solid #000; padding-left: 20px; }
+        .bauteil-name { font-size: 16px; font-weight: 900; text-transform: uppercase; margin-bottom: 5px; }
+        .zeichnungs-num { font-size: 64px; font-weight: 900; line-height: 0.8; letter-spacing: -2px; }
+        .meta-grid { display: grid; grid-template-columns: 1fr; gap: 4px; }
+        .meta-item { display: flex; justify-content: space-between; font-size: 13px; font-weight: 900; }
         .pdf-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
     </style></head><body>${html}</body></html>`);
     win.document.close();
