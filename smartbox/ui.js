@@ -66,6 +66,22 @@ function renderTools() {
         </div>`).join('') + '<div style="height:160px; padding-bottom: 80px;"></div>';
 }
 
+function modalP() {
+    el('p-idx').value = '';
+    ['p-num','p-nam','p-lzf','p-mat','p-slg','p-abs','p-grf','p-stk'].forEach(id => el(id).value = '');
+    el('m-p').style.display = 'flex';
+}
+
+function editCurrentProject() {
+    const p = db[currentIdx];
+    el('p-idx').value = currentIdx;
+    el('p-num').value = p.num || ''; el('p-nam').value = p.name || '';
+    el('p-lzf').value = p.lzf || ''; el('p-mat').value = p.mat || '';
+    el('p-slg').value = p.slg || ''; el('p-abs').value = p.abs || '';
+    el('p-grf').value = p.grf || ''; el('p-stk').value = p.stk || '';
+    el('m-p').style.display = 'flex';
+}
+
 function saveP() {
     const i = el('p-idx').value;
     const data = {
@@ -109,6 +125,12 @@ function saveT() {
 function deleteProject(i) { if(confirm('Löschen?')) { db.splice(i,1); localStorage.setItem(DB_KEY, JSON.stringify(db)); renderList(); } }
 function delT() { db[currentIdx].tools.splice(el('t-idx').value,1); localStorage.setItem(DB_KEY, JSON.stringify(db)); renderTools(); hide('m-t'); }
 
+function openImport() { el('imp-area').value = ''; el('m-imp').style.display = 'flex'; }
+function exportJSON() { el('imp-area').value = JSON.stringify(db); }
+function importAnyJSON() {
+    try { const p = JSON.parse(el('imp-area').value); if(Array.isArray(p)) db = p; localStorage.setItem(DB_KEY, JSON.stringify(db)); renderList(); hide('m-imp'); } catch(e) { alert('JSON Error'); }
+}
+
 function makePDF() {
     const p = db[currentIdx];
     const tools = p.tools || [];
@@ -118,11 +140,11 @@ function makePDF() {
     const fullList = [];
     if(sonder.length > 0) {
         fullList.push({ type: 'header', label: 'SONDERWERKZEUGE' });
-        sonder.forEach(t => fullList.push({ type: 'row', label: 'SONDERWERKZEUGE', data: t }));
+        sonder.forEach(t => fullList.push({ type: 'row', data: t }));
     }
     if(standart.length > 0) {
         fullList.push({ type: 'header', label: 'STANDARTWERKZEUGE' });
-        standart.forEach(t => fullList.push({ type: 'row', label: 'STANDARTWERKZEUGE', data: t }));
+        standart.forEach(t => fullList.push({ type: 'row', data: t }));
     }
 
     const LIMIT = 25; 
@@ -133,7 +155,7 @@ function makePDF() {
         let segment = fullList.slice(i * LIMIT, (i + 1) * LIMIT);
         const rowsHtml = segment.map(item => {
             if(item.type === 'header') {
-                return `<tr style="height:32px; background:#000 !important; color:#fff !important; -webkit-print-color-adjust:exact;">
+                return `<tr style="height:32px; background:#000 !important; color:#fff !important;">
                     <td colspan="2" style="padding:0 12px; font-weight:900; font-size:13px; text-transform:uppercase; border:none; vertical-align:middle;">${item.label}</td>
                 </tr>`;
             } else {
@@ -143,7 +165,7 @@ function makePDF() {
                         <div style="font-weight:900; font-size:15px; text-transform:uppercase; line-height:1; white-space:nowrap;">${t.nm}</div>
                         <div style="font-size:9.5px; font-weight:800; color:#000; text-transform:uppercase; line-height:1; margin-top:2px;">${t.isStandart ? (t.loc || 'STANDART') : 'IN BLAUKISTE'}${t.kom ? ' | ' + t.kom : ''}</div>
                     </td>
-                    <td style="border-bottom:2px solid #000; text-align:right; padding-right:12px; width:100px; vertical-align:middle;">
+                    <td style="border-bottom:2px solid #000; text-align:right; padding-right:12px; width:110px; vertical-align:middle;">
                         <div style="font-size:7px; font-weight:900; color:#333; line-height:1;">BEMERKUNG</div>
                         <div style="font-weight:900; font-size:13px; line-height:1;">${t.bem || '--'}</div>
                     </td>
@@ -180,13 +202,13 @@ function makePDF() {
         @page { size: A4; margin: 0; }
         * { box-sizing: border-box; -webkit-print-color-adjust: exact; }
         body { margin: 0; padding: 0; font-family: sans-serif; background: #fff; }
-        .page { width: 100vw; height: 100vh; padding: 4mm; page-break-after: always; display: flex; justify-content: center; }
-        .main-container { border: 2.5px solid #000; width: 202mm; height: 285mm; display: flex; flex-direction: column; }
+        .page { width: 100vw; height: 100vh; padding: 3mm; page-break-after: always; display: flex; justify-content: center; }
+        .main-container { border: 2.5px solid #000; width: 204mm; height: 288mm; display: flex; flex-direction: column; }
         .pdf-header { display: flex; padding: 12px 18px; border-bottom: 4px solid #000; align-items: center; }
         .header-left { flex: 1; }
         .header-right { width: 220px; border-left: 2px solid #000; padding-left: 18px; }
-        .bauteil-name { font-size: 13px; font-weight: 900; text-transform: uppercase; color: #000; margin-bottom: 2px; }
-        .zeichnungs-num { font-size: 54px; font-weight: 900; line-height: 0.8; letter-spacing: -1.5px; }
+        .bauteil-name { font-size: 13px; font-weight: 900; text-transform: uppercase; margin-bottom: 2px; }
+        .zeichnungs-num { font-size: 56px; font-weight: 900; line-height: 0.8; letter-spacing: -1.5px; }
         .meta-grid { display: grid; grid-template-columns: 1fr; gap: 2px; }
         .meta-item { display: flex; justify-content: space-between; font-size: 10px; font-weight: 900; text-transform: uppercase; }
         .pdf-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
