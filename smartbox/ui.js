@@ -36,21 +36,35 @@ function goHome() {
     renderList();
 }
 
+// Сортировка стрелками
+function moveTool(idx, direction) {
+    const tools = db[currentIdx].tools;
+    const newIdx = idx + direction;
+    if (newIdx >= 0 && newIdx < tools.length) {
+        [tools[idx], tools[newIdx]] = [tools[newIdx], tools[idx]];
+        localStorage.setItem(DB_KEY, JSON.stringify(db));
+        renderTools();
+    }
+}
+
 function renderTools() {
     const list = el('list-t');
     const tools = db[currentIdx].tools || [];
     list.innerHTML = tools.map((t, i) => `
-        <div class="list-item" onclick="modalT(${i})">
-            <div style="flex:1">
+        <div class="list-item" style="display:flex; align-items:center; gap:12px;">
+            <div style="display:flex; flex-direction:column; gap:4px;">
+                <button onclick="event.stopPropagation(); moveTool(${i}, -1)" style="padding:8px 10px; background:#e5e5ea; border-radius:8px; font-weight:bold;">↑</button>
+                <button onclick="event.stopPropagation(); moveTool(${i}, 1)" style="padding:8px 10px; background:#e5e5ea; border-radius:8px; font-weight:bold;">↓</button>
+            </div>
+            <div style="flex:1" onclick="modalT(${i})">
                 <div class="t-id-label" style="font-size:9px;">BEMERKUNG</div>
-                <div style="font-size:18px; font-weight:900; margin-bottom:2px;">${t.bem || '---'}</div>
-                <div style="font-size:16px; font-weight:800;">${t.nm}</div>
+                <div style="font-size:17px; font-weight:900; margin-bottom:2px;">${t.bem || '---'}</div>
+                <div style="font-size:15px; font-weight:800;">${t.nm}</div>
                 <div class="loc-tag ${t.isStandart ? 'standart' : 'sonder'}">
                     ${t.isStandart ? 'STANDART | ' + (t.loc || '') : 'SONDER | BLAUKISTE'}
                 </div>
-                ${t.kom ? `<div style="font-size:12px; color:#555; font-weight:600; margin-top:6px; padding:4px 8px; background:#f0f0f5; border-radius:6px;">${t.kom}</div>` : ''}
             </div>
-        </div>`).join('') + '<div style="height:160px;"></div>';
+        </div>`).join('') + '<div style="height:160px; padding-bottom: 50px;"></div>';
 }
 
 function modalP() {
@@ -121,7 +135,6 @@ function importAnyJSON() {
 function makePDF() {
     const p = db[currentIdx];
     const tools = p.tools || [];
-    
     const sonder = tools.filter(t => !t.isStandart);
     const standart = tools.filter(t => t.isStandart);
 
@@ -135,15 +148,12 @@ function makePDF() {
         standart.forEach(t => fullList.push({ type: 'row', label: 'STANDARTWERKZEUGE', data: t }));
     }
 
-    // НОВЫЙ ЛИМИТ: 25 ПОЗИЦИЙ
     const LIMIT = 25; 
     const totalPages = Math.ceil(fullList.length / LIMIT) || 1;
     let html = "";
 
     for(let i=0; i<totalPages; i++) {
         let segment = fullList.slice(i * LIMIT, (i + 1) * LIMIT);
-        
-        // Дублирование плашки на новой странице
         if (segment.length > 0 && segment[0].type === 'row' && i > 0) {
             segment.unshift({ type: 'header', label: segment[0].label + " (FORTSETZUNG)" });
             if (segment.length > LIMIT) segment.pop();
@@ -151,50 +161,44 @@ function makePDF() {
 
         const rowsHtml = segment.map(item => {
             if(item.type === 'header') {
-                return `<tr style="height:28px; background:#000 !important; -webkit-print-color-adjust:exact;">
-                    <td colspan="2" style="color:#fff; padding:0 10px; font-weight:900; font-size:12px; text-transform:uppercase; vertical-align:middle; border:none;">
-                        ${item.label}
-                    </td>
+                return `<tr style="height:28px; background:#000 !important; color:#fff !important; -webkit-print-color-adjust:exact;">
+                    <td colspan="2" style="padding:0 10px; font-weight:900; font-size:11px; text-transform:uppercase; border:none; vertical-align:middle;">${item.label}</td>
                 </tr>`;
             } else {
                 const t = item.data;
-                return `<tr style="height:35px;">
-                    <td style="border-bottom:1.2px solid #000; padding:0 10px; vertical-align:middle;">
-                        <div style="font-weight:900; font-size:13px; text-transform:uppercase; line-height:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${t.nm}</div>
-                        <div style="font-size:8.5px; font-weight:800; color:#333; text-transform:uppercase; margin-top:2px;">
-                            ${t.isStandart ? (t.loc || 'STANDART') : 'IN BLAUKISTE'}${t.kom ? ' | ' + t.kom : ''}
-                        </div>
+                return `<tr style="height:32px;">
+                    <td style="border-bottom:1px solid #000; padding:0 10px; vertical-align:middle;">
+                        <div style="font-weight:900; font-size:13px; text-transform:uppercase; line-height:1; white-space:nowrap; overflow:hidden;">${t.nm}</div>
+                        <div style="font-size:8px; font-weight:800; color:#333; text-transform:uppercase;">${t.isStandart ? (t.loc || 'STANDART') : 'IN BLAUKISTE'}${t.kom ? ' | ' + t.kom : ''}</div>
                     </td>
-                    <td style="border-bottom:1.2px solid #000; text-align:right; padding-right:10px; vertical-align:middle; width:85px;">
-                        <div style="font-size:7px; font-weight:900; color:#666; line-height:1;">BEMERKUNG</div>
-                        <div style="font-weight:900; font-size:12px; line-height:1;">${t.bem || '--'}</div>
+                    <td style="border-bottom:1px solid #000; text-align:right; padding-right:10px; width:85px; vertical-align:middle;">
+                        <div style="font-size:6.5px; font-weight:900; color:#666; line-height:1;">BEMERKUNG</div>
+                        <div style="font-weight:900; font-size:11px; line-height:1;">${t.bem || '--'}</div>
                     </td>
                 </tr>`;
             }
         }).join('');
 
         html += `
-        <div style="width:210mm; height:297mm; padding:6mm 8mm; box-sizing:border-box; page-break-after:always; position:relative; overflow:hidden;">
-            <div style="border:1.5px solid #000; height:100%; display:flex; flex-direction:column; box-sizing:border-box;">
-                
-                <div style="padding:8px 15px; border-bottom:3px solid #000; flex-shrink:0;">
-                    <div style="font-size:11px; font-weight:900; color:#666; text-transform:uppercase; line-height:1;">${p.name || ''}</div>
-                    <div style="font-size:48px; font-weight:900; line-height:0.8; margin:6px 0; letter-spacing:-2px;">${p.num || '---'}</div>
-                    
-                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:2px 15px; font-size:10px; font-weight:900; border-top:1.2px solid #000; padding-top:6px; margin-top:4px;">
-                        <div style="display:flex; justify-content:space-between;"><span>MAT:</span> <span>${p.mat || '--'}</span></div>
-                        <div style="display:flex; justify-content:space-between;"><span>LZF:</span> <span>${p.lzf || '--'}</span></div>
-                        <div style="display:flex; justify-content:space-between;"><span>SÄGE:</span> <span>${p.slg || '--'}</span></div>
-                        <div style="display:flex; justify-content:space-between;"><span>ABST:</span> <span>${p.abs || '--'}</span></div>
-                        <div style="display:flex; justify-content:space-between;"><span>BACKEN:</span> <span>${p.grf || '--'}</span></div>
-                        <div style="display:flex; justify-content:space-between;"><span>STÜCK:</span> <span>${p.stk || '--'}</span></div>
+        <div class="page">
+            <div class="main-container">
+                <div class="pdf-header">
+                    <div class="header-left">
+                        <div class="bauteil-name">${p.name || ''}</div>
+                        <div class="zeichnungs-num">${p.num || '---'}</div>
+                    </div>
+                    <div class="header-right">
+                        <div class="meta-grid">
+                            <div class="meta-item"><span>MAT:</span> <span>${p.mat || '--'}</span></div>
+                            <div class="meta-item"><span>LZF:</span> <span>${p.lzf || '--'}</span></div>
+                            <div class="meta-item"><span>SÄGE:</span> <span>${p.slg || '--'}</span></div>
+                            <div class="meta-item"><span>ABST:</span> <span>${p.abs || '--'}</span></div>
+                            <div class="meta-item"><span>BACKEN:</span> <span>${p.grf || '--'}</span></div>
+                            <div class="meta-item"><span>STÜCK:</span> <span>${p.stk || '--'}</span></div>
+                        </div>
                     </div>
                 </div>
-
-                <table style="width:100%; border-collapse:collapse; table-layout:fixed; flex-grow:1;">
-                    <colgroup><col><col style="width:95px;"></colgroup>
-                    <tbody>${rowsHtml}</tbody>
-                </table>
+                <table class="pdf-table"><tbody>${rowsHtml}</tbody></table>
             </div>
         </div>`;
     }
@@ -202,14 +206,21 @@ function makePDF() {
     const win = window.open('','_blank');
     win.document.write(`<html><head><style>
         @page { size: A4; margin: 0; }
-        body { margin: 0; padding: 0; font-family: -apple-system, sans-serif; background: #fff; }
+        body { margin: 0; padding: 0; font-family: sans-serif; background: #fff; }
+        .page { width: 210mm; height: 297mm; padding: 10mm; box-sizing: border-box; page-break-after: always; overflow: hidden; }
+        .main-container { border: 1.5px solid #000; height: 100%; display: flex; flex-direction: column; }
+        .pdf-header { display: flex; padding: 12px 15px; border-bottom: 3px solid #000; align-items: center; }
+        .header-left { flex: 1; }
+        .header-right { width: 190px; border-left: 1.5px solid #000; padding-left: 15px; }
+        .bauteil-name { font-size: 11px; font-weight: 900; text-transform: uppercase; color: #444; margin-bottom: 2px; }
+        .zeichnungs-num { font-size: 48px; font-weight: 900; line-height: 0.85; letter-spacing: -1.5px; }
+        .meta-grid { display: grid; grid-template-columns: 1fr; gap: 2px; }
+        .meta-item { display: flex; justify-content: space-between; font-size: 9px; font-weight: 900; text-transform: uppercase; }
+        .pdf-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
         * { -webkit-print-color-adjust: exact; box-sizing: border-box; }
     </style></head><body>${html}</body></html>`);
     win.document.close();
-    
-    // Небольшая задержка перед печатью для рендеринга на мобильных
     setTimeout(() => { win.print(); win.close(); }, 500);
 }
-
 
 window.onload = renderList;
