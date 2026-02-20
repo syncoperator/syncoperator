@@ -143,30 +143,30 @@ function makePDF() {
     
     let rows = "";
     if(sonder.length > 0) {
-        rows += `<tr style="height:35px; background:#000; color:#fff;"><td colspan="2" style="padding-left:12px; font-weight:900; font-size:16px;">SONDERWERKZEUGE</td></tr>`;
+        rows += `<tr style="height:32px; background:#000; color:#fff;"><td colspan="2" style="padding-left:12px; font-weight:900; font-size:15px;">SONDERWERKZEUGE</td></tr>`;
         sonder.forEach(t => {
-            rows += `<tr style="height:36px;">
+            rows += `<tr style="height:35px;">
                 <td style="border-bottom:2.5px solid #000; padding:0 12px; vertical-align:middle;">
-                    <div style="font-weight:900; font-size:18px;">${t.nm}</div>
+                    <div style="font-weight:900; font-size:19px; line-height:1;">${t.nm}</div>
                     <div style="font-size:11px; font-weight:900;">IN BLAUKISTE ${t.kom ? ' | ' + t.kom : ''}</div>
                 </td>
-                <td style="border-bottom:2.5px solid #000; text-align:right; padding-right:12px; width:135px; vertical-align:middle;">
+                <td style="border-bottom:2.5px solid #000; text-align:right; padding-right:12px; width:130px; vertical-align:middle;">
                     <div style="font-size:8px; font-weight:900;">BEMERKUNG</div>
-                    <div style="font-weight:900; font-size:15px;">${t.bem || '--'}</div>
+                    <div style="font-weight:900; font-size:16px;">${t.bem || '--'}</div>
                 </td></tr>`;
         });
     }
     if(standart.length > 0) {
-        rows += `<tr style="height:35px; background:#000; color:#fff;"><td colspan="2" style="padding-left:12px; font-weight:900; font-size:16px;">STANDARTWERKZEUGE</td></tr>`;
+        rows += `<tr style="height:32px; background:#000; color:#fff;"><td colspan="2" style="padding-left:12px; font-weight:900; font-size:15px;">STANDARTWERKZEUGE</td></tr>`;
         standart.forEach(t => {
-            rows += `<tr style="height:36px;">
+            rows += `<tr style="height:35px;">
                 <td style="border-bottom:2.5px solid #000; padding:0 12px; vertical-align:middle;">
-                    <div style="font-weight:900; font-size:18px;">${t.nm}</div>
+                    <div style="font-weight:900; font-size:19px; line-height:1;">${t.nm}</div>
                     <div style="font-size:11px; font-weight:900;">${t.loc || 'STANDART'} ${t.kom ? ' | ' + t.kom : ''}</div>
                 </td>
-                <td style="border-bottom:2.5px solid #000; text-align:right; padding-right:12px; width:135px; vertical-align:middle;">
+                <td style="border-bottom:2.5px solid #000; text-align:right; padding-right:12px; width:130px; vertical-align:middle;">
                     <div style="font-size:8px; font-weight:900;">BEMERKUNG</div>
-                    <div style="font-weight:900; font-size:15px;">${t.bem || '--'}</div>
+                    <div style="font-weight:900; font-size:16px;">${t.bem || '--'}</div>
                 </td></tr>`;
         });
     }
@@ -175,16 +175,16 @@ function makePDF() {
     win.document.write(`<html><head><style>
         @page { size: A4; margin: 0; }
         * { box-sizing: border-box; -webkit-print-color-adjust: exact; }
-        body { margin: 0; padding: 0; font-family: sans-serif; background: #fff; overflow: hidden; }
-        .page { width: 210mm; height: 297mm; display: flex; justify-content: center; align-items: center; overflow: hidden; }
-        .main { border: 4px solid #000; width: 205mm; height: 290mm; display: flex; flex-direction: column; overflow: hidden; }
-        .header { display: flex; padding: 12px 15px; border-bottom: 5px solid #000; align-items: center; background: #fff; }
+        body { margin: 0; padding: 0; font-family: sans-serif; display: flex; justify-content: center; align-items: flex-start; background: #fff; }
+        .page { width: 210mm; height: 297mm; padding: 5mm 0; display: flex; justify-content: center; page-break-after: always; }
+        .main { border: 4px solid #000; width: 198mm; height: 277mm; display: flex; flex-direction: column; overflow: hidden; }
+        .header { display: flex; padding: 12px 15px; border-bottom: 5px solid #000; align-items: center; }
         .h-left { flex: 1; }
-        .h-right { width: 250px; border-left: 4px solid #000; padding-left: 15px; }
-        .b-name { font-size: 15px; font-weight: 900; text-transform: uppercase; }
-        .z-num { font-size: 60px; font-weight: 900; line-height: 0.8; letter-spacing: -1.5px; }
-        .m-grid { display: grid; grid-template-columns: 1fr; gap: 3px; }
-        .m-item { display: flex; justify-content: space-between; font-size: 12px; font-weight: 900; }
+        .h-right { width: 240px; border-left: 4px solid #000; padding-left: 15px; }
+        .b-name { font-size: 14px; font-weight: 900; text-transform: uppercase; }
+        .z-num { font-size: 58px; font-weight: 900; line-height: 0.8; letter-spacing: -1.5px; }
+        .m-grid { display: grid; grid-template-columns: 1fr; gap: 2px; }
+        .m-item { display: flex; justify-content: space-between; font-size: 11px; font-weight: 900; }
         table { width: 100%; border-collapse: collapse; table-layout: fixed; }
     </style></head><body>
         <div class="page"><div class="main">
