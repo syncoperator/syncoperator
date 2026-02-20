@@ -1,109 +1,195 @@
-<!DOCTYPE html>
-<html lang="de">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SmartBox Pro V2</title>
-    <style>
-        :root { --bg: #f2f2f7; --card: #ffffff; --accent: #007aff; --text: #1c1c1e; }
-        body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 0; overflow-x: hidden; }
-        .view { display: none; padding: 20px; min-height: 100vh; box-sizing: border-box; }
-        .view.active { display: block; }
-        .header-main { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
-        h1 { font-size: 28px; font-weight: 800; letter-spacing: -1px; margin: 0; }
-        .p-num-title { font-size: 48px; font-weight: 900; letter-spacing: -2px; line-height: 1; margin: 10px 0; }
-        button { border: none; border-radius: 14px; font-weight: 700; cursor: pointer; transition: transform 0.1s; -webkit-tap-highlight-color: transparent; }
-        button:active { transform: scale(0.96); }
-        .btn-json { background: #e5e5ea; color: #3a3a3c; padding: 8px 16px; font-size: 13px; z-index: 10; }
-        .btn-pdf { background: #000; color: #fff; padding: 12px 20px; font-size: 14px; }
-        .btn-secondary { background: #e5e5ea; color: #000; padding: 12px 20px; font-size: 14px; }
-        .btn-primary { background: var(--accent); color: #fff; padding: 16px; font-size: 17px; }
-        .actions-bar { position: fixed; bottom: 40px; left: 20px; right: 20px; z-index: 100; }
-        .btn-action { background: var(--accent); color: #fff; width: 100%; padding: 20px; font-size: 18px; font-weight: 800; box-shadow: 0 8px 25px rgba(0,122,255,0.3); text-transform: uppercase; }
-        .list-item { background: var(--card); border-radius: 16px; padding: 18px; margin-bottom: 12px; display: flex; align-items: center; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
-        .t-id-label { font-size: 10px; font-weight: 800; color: #8e8e93; text-transform: uppercase; }
-        .t-name-label { font-size: 18px; font-weight: 800; margin: 2px 0; }
-        .loc-tag { font-size: 10px; font-weight: 900; padding: 4px 10px; border-radius: 8px; margin-top: 6px; display: inline-block; }
-        .loc-tag.standart { background: #007aff; color: #fff; }
-        .loc-tag.sonder { background: #000; color: #fff; }
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); backdrop-filter: blur(5px); align-items: center; justify-content: center; z-index: 1000; }
-        .modal-content { background: #fff; padding: 25px; border-radius: 24px; width: 90%; max-width: 400px; box-shadow: 0 20px 50px rgba(0,0,0,0.3); }
-        input { width: 100%; padding: 14px; margin: 8px 0; border: 1px solid #e5e5ea; border-radius: 12px; font-size: 16px; background: #f9f9fb; box-sizing: border-box; }
-        .toggle-row { display: flex; justify-content: space-between; align-items: center; padding: 15px 0; }
-        .toggle-switch { width: 52px; height: 32px; background: #e5e5ea; border-radius: 16px; position: relative; transition: 0.2s; }
-        .toggle-switch::after { content: ''; position: absolute; top: 2px; left: 2px; width: 28px; height: 28px; background: #fff; border-radius: 50%; box-shadow: 0 2px 5px rgba(0,0,0,0.2); transition: 0.2s; }
-        .toggle-switch.on { background: #34c759; }
-        .toggle-switch.on::after { left: 22px; }
-        #list-p, #list-t { padding-bottom: 140px; }
-    </style>
-</head>
-<body>
-    <div id="v-home" class="view active">
-        <div class="header-main">
-            <h1>CitiTool Box</h1>
-            <button class="btn-json" onclick="openImport()">JSON DATA</button>
-        </div>
-        <div id="list-p"></div>
-        <div class="actions-bar">
-            <button class="btn-action" onclick="modalP()">+ NEUES PROJEKT</button>
-        </div>
-    </div>
-    <div id="v-det" class="view">
-        <div class="project-header">
-            <div id="h-nam" class="t-id-label"></div>
-            <div id="h-num" class="p-num-title"></div>
-            <div style="display:flex; gap:10px; margin-bottom:20px;">
-                <button class="btn-secondary" onclick="goHome()">ZURÜCK</button>
-                <button class="btn-secondary" onclick="editCurrentProject()">EDIT</button>
-                <button class="btn-pdf" onclick="makePDF()">PDF CARD</button>
+const DB_KEY = 'SMARTBOX_PRO_V2';
+let db = JSON.parse(localStorage.getItem(DB_KEY)) || [];
+let currentIdx = null;
+
+const el = (id) => document.getElementById(id);
+const hide = (id) => { el(id).style.display = 'none'; };
+
+function renderList() {
+    const list = el('list-p');
+    if(!list) return;
+    list.innerHTML = db.map((p, i) => `
+        <div class="list-item" onclick="openProject(${i})">
+            <div style="flex:1">
+                <div class="t-id-label">PROJEKT</div>
+                <div class="t-name-label">${p.num || '---'}</div>
+                <div style="font-size:13px; font-weight:600; color:#8e8e93;">${p.name || ''}</div>
             </div>
-        </div>
-        <div id="list-t"></div>
-        <div class="actions-bar">
-            <button class="btn-action" onclick="modalT()">+ WERKZEUG</button>
-        </div>
-    </div>
-    <div id="m-p" class="modal" onclick="if(event.target==this)hide('m-p')">
-        <div class="modal-content">
-            <input type="hidden" id="p-idx">
-            <input type="text" id="p-num" placeholder="PROJEKT NUMMER">
-            <input type="text" id="p-nam" placeholder="BAUTEIL NAME">
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                <input type="text" id="p-lzf" placeholder="LAUFZEIT">
-                <input type="text" id="p-mat" placeholder="MATERIAL">
-                <input type="text" id="p-slg" placeholder="SÄGELÄNGE">
-                <input type="text" id="p-abs" placeholder="ABSTAND">
-                <input type="text" id="p-grf" placeholder="BACKEN">
-                <input type="text" id="p-stk" placeholder="STÜCK">
+            <div style="font-size:20px; color:#c7c7cc; padding-left:15px;" onclick="event.stopPropagation(); deleteProject(${i})">✕</div>
+        </div>`).join('') + '<div style="height:140px;"></div>';
+}
+
+function openProject(i) {
+    currentIdx = i;
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    el('v-det').classList.add('active');
+    el('h-num').innerText = db[i].num;
+    el('h-nam').innerText = db[i].name;
+    renderTools();
+    window.scrollTo(0,0);
+}
+
+function goHome() {
+    currentIdx = null;
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    el('v-home').classList.add('active');
+    renderList();
+}
+
+function moveTool(idx, direction) {
+    const tools = db[currentIdx].tools;
+    const newIdx = idx + direction;
+    if (newIdx >= 0 && newIdx < tools.length) {
+        [tools[idx], tools[newIdx]] = [tools[newIdx], tools[idx]];
+        localStorage.setItem(DB_KEY, JSON.stringify(db));
+        renderTools();
+    }
+}
+
+function renderTools() {
+    const list = el('list-t');
+    const tools = db[currentIdx].tools || [];
+    list.innerHTML = tools.map((t, i) => `
+        <div class="list-item" style="display:flex; align-items:center; gap:12px;">
+            <div style="display:flex; flex-direction:column; gap:4px;">
+                <button onclick="event.stopPropagation(); moveTool(${i}, -1)" style="padding:8px 10px; background:#f2f2f7; border:none; border-radius:8px; font-weight:bold;">↑</button>
+                <button onclick="event.stopPropagation(); moveTool(${i}, 1)" style="padding:8px 10px; background:#f2f2f7; border:none; border-radius:8px; font-weight:bold;">↓</button>
             </div>
-            <button class="btn-primary" onclick="saveP()" style="width:100%; margin-top:15px;">SPEICHERN</button>
-        </div>
-    </div>
-    <div id="m-t" class="modal" onclick="if(event.target==this)hide('m-t')">
-        <div class="modal-content">
-            <input type="hidden" id="t-idx">
-            <input type="text" id="t-bem" placeholder="BEMERKUNG">
-            <input type="text" id="t-nm" placeholder="WERKZEUG NAME">
-            <div class="toggle-row">
-                <span style="font-weight:700;">STANDART PLATZ?</span>
-                <div id="btn-storage-toggle" class="toggle-switch"></div>
+            <div style="flex:1" onclick="modalT(${i})">
+                <div class="t-id-label" style="font-size:9px;">BEMERKUNG</div>
+                <div style="font-size:17px; font-weight:900; margin-bottom:2px;">${t.bem || '---'}</div>
+                <div style="font-size:15px; font-weight:800;">${t.nm}</div>
+                <div class="loc-tag ${t.isStandart ? 'standart' : 'sonder'}">
+                    ${t.isStandart ? 'STANDART | ' + (t.loc || '') : 'SONDER | BLAUKISTE'}
+                </div>
             </div>
-            <input type="text" id="t-loc" placeholder="PLATZ (z.B. SCHUBLADE 2)">
-            <input type="text" id="t-kom" placeholder="KOMMENTAR">
-            <button class="btn-primary" onclick="saveT()" style="width:100%; margin-top:15px;">FERТIG</button>
-            <button id="btn-del-t" onclick="delT()" style="width:100%; margin-top:10px; background:none; color:#ff3b30; font-size:14px;">LÖSCHEN</button>
-        </div>
-    </div>
-    <div id="m-imp" class="modal" onclick="if(event.target==this)hide('m-imp')">
-        <div class="modal-content">
-            <h3 style="margin-top:0;">DATA MANAGEMENT</h3>
-            <textarea id="imp-area" style="width:100%; height:180px; border-radius:12px; border:1px solid #ddd; padding:10px; box-sizing:border-box; font-family:monospace;"></textarea>
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:15px;">
-                <button class="btn-primary" onclick="importAnyJSON()">IMPORT</button>
-                <button class="btn-secondary" onclick="exportJSON()">EXPORT</button>
+        </div>`).join('') + '<div style="height:160px; padding-bottom: 80px;"></div>';
+}
+
+function modalP() {
+    el('p-idx').value = '';
+    ['p-num','p-nam','p-lzf','p-mat','p-slg','p-abs','p-grf','p-stk'].forEach(id => el(id).value = '');
+    el('m-p').style.display = 'flex';
+}
+
+function editCurrentProject() {
+    const p = db[currentIdx];
+    el('p-idx').value = currentIdx;
+    el('p-num').value = p.num || ''; el('p-nam').value = p.name || '';
+    el('p-lzf').value = p.lzf || ''; el('p-mat').value = p.mat || '';
+    el('p-slg').value = p.slg || ''; el('p-abs').value = p.abs || '';
+    el('p-grf').value = p.grf || ''; el('p-stk').value = p.stk || '';
+    el('m-p').style.display = 'flex';
+}
+
+function saveP() {
+    const i = el('p-idx').value;
+    const data = {
+        num: el('p-num').value, name: el('p-nam').value.toUpperCase(),
+        lzf: el('p-lzf').value, mat: el('p-mat').value,
+        slg: el('p-slg').value, abs: el('p-abs').value,
+        grf: el('p-grf').value, stk: el('p-stk').value,
+        tools: i !== '' ? db[i].tools : []
+    };
+    if(i === '') db.push(data); else db[i] = data;
+    localStorage.setItem(DB_KEY, JSON.stringify(db));
+    if(i !== '') { el('h-num').innerText = data.num; el('h-nam').innerText = data.name; }
+    renderList(); hide('m-p');
+}
+
+function modalT(i = null) {
+    const edit = i !== null;
+    el('t-idx').value = edit ? i : '';
+    const t = edit ? db[currentIdx].tools[i] : {bem:'', nm:'', isStandart:false, loc:'', kom:''};
+    el('t-bem').value = t.bem || ''; el('t-nm').value = t.nm || ''; el('t-loc').value = t.loc || ''; el('t-kom').value = t.kom || '';
+    const btn = el('btn-storage-toggle');
+    t.isStandart ? btn.classList.add('on') : btn.classList.remove('on');
+    btn.onclick = () => btn.classList.toggle('on');
+    el('btn-del-t').style.display = edit ? 'block' : 'none';
+    el('m-t').style.display = 'flex';
+}
+
+function saveT() {
+    const i = el('t-idx').value;
+    const t = {
+        bem: el('t-bem').value.toUpperCase(), nm: el('t-nm').value.toUpperCase(),
+        isStandart: el('btn-storage-toggle').classList.contains('on'),
+        loc: el('t-loc').value.toUpperCase(), kom: el('t-kom').value.toUpperCase()
+    };
+    if(!db[currentIdx].tools) db[currentIdx].tools = [];
+    if(i === '') db[currentIdx].tools.push(t); else db[currentIdx].tools[i] = t;
+    localStorage.setItem(DB_KEY, JSON.stringify(db));
+    renderTools(); hide('m-t');
+}
+
+function deleteProject(i) { if(confirm('Löschen?')) { db.splice(i,1); localStorage.setItem(DB_KEY, JSON.stringify(db)); renderList(); } }
+function delT() { db[currentIdx].tools.splice(el('t-idx').value,1); localStorage.setItem(DB_KEY, JSON.stringify(db)); renderTools(); hide('m-t'); }
+
+function openImport() { el('imp-area').value = ''; el('m-imp').style.display = 'flex'; }
+function exportJSON() { el('imp-area').value = JSON.stringify(db); }
+function importAnyJSON() {
+    try { const p = JSON.parse(el('imp-area').value); if(Array.isArray(p)) db = p; localStorage.setItem(DB_KEY, JSON.stringify(db)); renderList(); hide('m-imp'); } catch(e) { alert('JSON Error'); }
+}
+
+function makePDF() {
+    const p = db[currentIdx];
+    const tools = p.tools || [];
+    const sonder = tools.filter(x => !x.isStandart);
+    const standart = tools.filter(x => x.isStandart);
+    
+    let content = "";
+    const getRow = (t, label) => `
+        <div style="display:flex; border-bottom:1.5px solid #000; page-break-inside:avoid;">
+            <div style="flex:1; padding:8px 15px;">
+                <div style="font-weight:900; font-size:18px; letter-spacing:-0.5px;">${t.nm}</div>
+                <div style="font-size:10px; font-weight:800; color:#444; text-transform:uppercase;">${label} ${t.kom ? ' | ' + t.kom : ''}</div>
             </div>
+            <div style="width:160px; text-align:right; padding:8px 15px; border-left:1.5px solid #000; display:flex; flex-direction:column; justify-content:center;">
+                <div style="font-size:8px; font-weight:900; color:#888;">BEMERKUNG</div>
+                <div style="font-weight:900; font-size:16px;">${t.bem || '--'}</div>
+            </div>
+        </div>`;
+
+    if(sonder.length > 0) {
+        content += `<div style="background:#000; color:#fff; padding:8px 15px; font-weight:900; font-size:14px; letter-spacing:0.5px;">SONDERWERKZEUGE</div>`;
+        sonder.forEach(t => content += getRow(t, 'IN BLAUKISTE'));
+    }
+    if(standart.length > 0) {
+        content += `<div style="background:#000; color:#fff; padding:8px 15px; font-weight:900; font-size:14px; letter-spacing:0.5px;">STANDARTWERKZEUGE</div>`;
+        standart.forEach(t => content += getRow(t, t.loc || 'STANDART'));
+    }
+
+    const win = window.open('','_blank');
+    win.document.write(`<html><head><style>
+        @page { size: A4; margin: 10mm; }
+        * { box-sizing: border-box; -webkit-print-color-adjust: exact; }
+        body { margin: 0; padding: 0; font-family: sans-serif; color: #000; background: #fff; }
+        .frame { border: 2.5px solid #000; width: 100%; display: flex; flex-direction: column; page-break-inside: avoid; }
+        .head { display: flex; padding: 20px; border-bottom: 2.5px solid #000; }
+        .h-left { flex: 1; }
+        .h-right { width: 220px; border-left: 2.5px solid #000; padding-left: 20px; display: flex; flex-direction: column; justify-content: center; }
+        .p-name { font-size: 15px; font-weight: 900; text-transform: uppercase; margin-bottom: 2px; }
+        .p-num { font-size: 60px; font-weight: 900; line-height: 0.8; letter-spacing: -2px; }
+        .meta-grid { display: grid; gap: 4px; }
+        .meta-item { display: flex; justify-content: space-between; font-size: 11px; font-weight: 900; }
+    </style></head><body>
+        <div class="frame">
+            <div class="head">
+                <div class="h-left"><div class="p-name">${p.name}</div><div class="p-num">${p.num}</div></div>
+                <div class="h-right"><div class="meta-grid">
+                    <div class="meta-item"><span>MAT:</span><span>${p.mat||'--'}</span></div>
+                    <div class="meta-item"><span>LZF:</span><span>${p.lzf||'--'}</span></div>
+                    <div class="meta-item"><span>SÄGE:</span><span>${p.slg||'--'}</span></div>
+                    <div class="meta-item"><span>ABST:</span><span>${p.abs||'--'}</span></div>
+                    <div class="meta-item"><span>BACKEN:</span><span>${p.grf||'--'}</span></div>
+                    <div class="meta-item"><span>STOCK:</span><span>${p.stk||'--'}</span></div>
+                </div></div>
+            </div>
+            ${content}
         </div>
-    </div>
-    <script src="ui.js"></script>
-</body>
-</html>
+    </body></html>`);
+    win.document.close();
+    setTimeout(() => { win.print(); win.close(); }, 500);
+}
+
+window.onload = renderList;
