@@ -135,7 +135,7 @@ function makePDF() {
         standart.forEach(t => fullList.push({ type: 'row', label: 'STANDARTWERKZEUGE', data: t }));
     }
 
-    // УВЕЛИЧЕНО ДО 20 ПОЗИЦИЙ НА ЛИСТ
+    // ЛИМИТ 20 ПОЗИЦИЙ (строки + плашки)
     const LIMIT = 20; 
     const totalPages = Math.ceil(fullList.length / LIMIT) || 1;
     let html = "";
@@ -143,34 +143,37 @@ function makePDF() {
     for(let i=0; i<totalPages; i++) {
         let segment = fullList.slice(i * LIMIT, (i + 1) * LIMIT);
         
-        // Дублирование плашки типа на новой странице
-        if (segment.length > 0 && segment[0].type === 'row') {
+        if (segment.length > 0 && segment[0].type === 'row' && i > 0) {
             segment.unshift({ type: 'header', label: segment[0].label + " (FORTSETZUNG)" });
             if (segment.length > LIMIT) segment.pop();
         }
 
         const rowsHtml = segment.map(item => {
             if(item.type === 'header') {
-                return `<tr><td colspan="2" style="background:#000;color:#fff;padding:6px 12px;font-weight:900;font-size:13px;text-transform:uppercase;-webkit-print-color-adjust:exact;">${item.label}</td></tr>`;
+                return `<tr style="height:32px;">
+                    <td colspan="2" style="background:#000;color:#fff;padding:0 12px;font-weight:900;font-size:13px;text-transform:uppercase;-webkit-print-color-adjust:exact;vertical-align:middle;">
+                        ${item.label}
+                    </td>
+                </tr>`;
             } else {
                 const t = item.data;
-                return `<tr>
-                    <td style="border-bottom:1.5px solid #000;padding:3px 10px;">
-                        <div style="font-weight:900;font-size:15px;text-transform:uppercase;line-height:1.1;">${t.nm}</div>
-                        <div style="font-size:9.5px;font-weight:800;color:#333;">${t.isStandart ? t.loc : 'IN BLAUKISTE'}${t.kom ? ' | ' + t.kom : ''}</div>
+                return `<tr style="height:42px;">
+                    <td style="border-bottom:1.5px solid #000;padding:0 10px;vertical-align:middle;">
+                        <div style="font-weight:900;font-size:14px;text-transform:uppercase;line-height:1.1;white-space:nowrap;overflow:hidden;">${t.nm}</div>
+                        <div style="font-size:9px;font-weight:800;color:#333;text-transform:uppercase;">${t.isStandart ? t.loc : 'IN BLAUKISTE'}${t.kom ? ' | ' + t.kom : ''}</div>
                     </td>
-                    <td style="border-bottom:1.5px solid #000;text-align:right;padding-right:10px;">
-                        <div style="font-size:7px;font-weight:900;color:#666;">BEMERKUNG</div>
-                        <div style="font-weight:900;font-size:13px;">${t.bem || '--'}</div>
+                    <td style="border-bottom:1.5px solid #000;text-align:right;padding-right:10px;vertical-align:middle;width:80px;">
+                        <div style="font-size:7px;font-weight:900;color:#666;line-height:1;">BEMERKUNG</div>
+                        <div style="font-weight:900;font-size:13px;line-height:1;">${t.bem || '--'}</div>
                     </td>
                 </tr>`;
             }
         }).join('');
 
         html += `
-        <div style="width:210mm;height:297mm;padding:8mm 10mm;box-sizing:border-box;page-break-after:always;">
+        <div style="width:210mm;height:297mm;padding:8mm 10mm;box-sizing:border-box;page-break-after:always;overflow:hidden;">
             <div style="border:1.5px solid #000;height:100%;display:flex;flex-direction:column;box-sizing:border-box;">
-                <div style="padding:10px 20px;border-bottom:3.5px solid #000;">
+                <div style="padding:10px 20px;border-bottom:3.5px solid #000;flex-shrink:0;">
                     <div style="font-size:12px;font-weight:900;color:#666;text-transform:uppercase;">${p.name || ''}</div>
                     <div style="font-size:54px;font-weight:900;line-height:0.8;margin:5px 0;letter-spacing:-2px;">${p.num || '---'}</div>
                     <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:10.5px;font-weight:900;border-top:1.5px solid #000;padding-top:8px;margin-top:5px;">
@@ -179,7 +182,8 @@ function makePDF() {
                         <div>BACKEN: ${p.grf || '--'}</div><div>STÜCK: ${p.stk || '--'}</div>
                     </div>
                 </div>
-                <table style="width:100%;border-collapse:collapse;">
+                <table style="width:100%;border-collapse:collapse;table-layout:fixed;flex-grow:1;">
+                    <colgroup><col><col style="width:100px;"></colgroup>
                     <tbody>${rowsHtml}</tbody>
                 </table>
             </div>
@@ -187,9 +191,14 @@ function makePDF() {
     }
 
     const win = window.open('','_blank');
-    win.document.write(`<html><head><style>@page{margin:0;}body{margin:0;padding:0;font-family:sans-serif;}</style></head><body>${html}</body></html>`);
+    win.document.write(`<html><head><style>
+        @page { size: A4; margin: 0; }
+        body { margin: 0; padding: 0; font-family: -apple-system, sans-serif; -webkit-print-color-adjust: exact; }
+        * { box-sizing: border-box; }
+    </style></head><body>${html}</body></html>`);
     win.document.close();
     setTimeout(() => { win.print(); win.close(); }, 800);
 }
+
 
 window.onload = renderList;
