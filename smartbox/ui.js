@@ -139,51 +139,51 @@ function makePDF() {
     
     let rows = "";
     const addRow = (t, label) => {
-        rows += `<tr style="height:35px; page-break-inside:avoid;">
-            <td style="border-bottom:3px solid #000; padding:0 12px;">
-                <div style="font-weight:900; font-size:18px;">${t.nm}</div>
-                <div style="font-size:11px; font-weight:900; color:#000;">${label} ${t.kom ? ' | ' + t.kom : ''}</div>
+        rows += `<tr>
+            <td style="border-bottom:1px solid #000; padding:4px 10px;">
+                <div style="font-weight:800; font-size:16px;">${t.nm}</div>
+                <div style="font-size:10px; font-weight:600; text-transform:uppercase;">${label} ${t.kom ? ' | ' + t.kom : ''}</div>
             </td>
-            <td style="border-bottom:3px solid #000; text-align:right; padding-right:12px; width:130px;">
-                <div style="font-size:8px; font-weight:900;">BEMERKUNG</div>
-                <div style="font-weight:900; font-size:16px;">${t.bem || '--'}</div>
+            <td style="border-bottom:1px solid #000; text-align:right; padding-right:10px; width:140px;">
+                <div style="font-size:7px; font-weight:700;">BEMERKUNG</div>
+                <div style="font-weight:800; font-size:15px;">${t.bem || '--'}</div>
             </td></tr>`;
     };
 
     if(sonder.length > 0) {
-        rows += `<tr style="background:#000; color:#fff;"><td colspan="2" style="padding:6px 12px; font-weight:900; font-size:15px;">SONDERWERKZEUGE</td></tr>`;
+        rows += `<tr style="background:#f2f2f2;"><td colspan="2" style="padding:5px 10px; font-weight:900; font-size:13px; border-bottom:1.5px solid #000;">SONDERWERKZEUGE</td></tr>`;
         sonder.forEach(t => addRow(t, 'IN BLAUKISTE'));
     }
     if(standart.length > 0) {
-        rows += `<tr style="background:#000; color:#fff;"><td colspan="2" style="padding:6px 12px; font-weight:900; font-size:15px;">STANDARTWERKZEUGE</td></tr>`;
+        rows += `<tr style="background:#f2f2f2;"><td colspan="2" style="padding:5px 10px; font-weight:900; font-size:13px; border-bottom:1.5px solid #000;">STANDARTWERKZEUGE</td></tr>`;
         standart.forEach(t => addRow(t, t.loc || 'STANDART'));
     }
 
     const win = window.open('','_blank');
     win.document.write(`<html><head><style>
-        @page { size: A4; margin: 5mm; }
+        @page { size: A4; margin: 8mm; }
         * { box-sizing: border-box; -webkit-print-color-adjust: exact; }
-        body { margin: 0; padding: 0; font-family: sans-serif; }
-        .main-frame { border: 4px solid #000; width: 100%; min-height: 100px; display: flex; flex-direction: column; page-break-inside: avoid; }
-        .header { display: flex; padding: 15px; border-bottom: 5px solid #000; align-items: center; }
-        .h-left { flex: 1; }
-        .h-right { width: 230px; border-left: 4px solid #000; padding-left: 15px; }
-        .b-name { font-size: 15px; font-weight: 900; text-transform: uppercase; }
-        .z-num { font-size: 60px; font-weight: 900; line-height: 0.8; letter-spacing: -1.5px; }
-        .m-grid { display: grid; grid-template-columns: 1fr; gap: 2px; }
-        .m-item { display: flex; justify-content: space-between; font-size: 12px; font-weight: 900; }
+        body { margin: 0; padding: 0; font-family: sans-serif; color: #000; }
+        .frame { border: 2px solid #000; width: 100%; min-height: 270mm; display: flex; flex-direction: column; }
+        .head { display: flex; padding: 12px 15px; border-bottom: 2px solid #000; }
+        .h-main { flex: 1; }
+        .h-side { width: 200px; border-left: 2px solid #000; padding-left: 15px; }
+        .proj-name { font-size: 13px; font-weight: 800; margin-bottom: 2px; }
+        .proj-num { font-size: 48px; font-weight: 900; line-height: 0.9; }
+        .grid { display: grid; gap: 2px; }
+        .g-row { display: flex; justify-content: space-between; font-size: 11px; font-weight: 700; }
         table { width: 100%; border-collapse: collapse; table-layout: fixed; }
     </style></head><body>
-        <div class="main-frame">
-            <div class="header">
-                <div class="h-left"><div class="b-name">${p.name}</div><div class="z-num">${p.num}</div></div>
-                <div class="h-right"><div class="m-grid">
-                    <div class="m-item"><span>MAT:</span><span>${p.mat||'--'}</span></div>
-                    <div class="m-item"><span>LZF:</span><span>${p.lzf||'--'}</span></div>
-                    <div class="m-item"><span>SÄGE:</span><span>${p.slg||'--'}</span></div>
-                    <div class="m-item"><span>ABST:</span><span>${p.abs||'--'}</span></div>
-                    <div class="m-item"><span>BACKEN:</span><span>${p.grf||'--'}</span></div>
-                    <div class="m-item"><span>STÜCK:</span><span>${p.stk||'--'}</span></div>
+        <div class="frame">
+            <div class="head">
+                <div class="h-main"><div class="proj-name">${p.name}</div><div class="proj-num">${p.num}</div></div>
+                <div class="h-side"><div class="grid">
+                    <div class="g-row"><span>MAT:</span><span>${p.mat||'--'}</span></div>
+                    <div class="g-row"><span>LZF:</span><span>${p.lzf||'--'}</span></div>
+                    <div class="g-row"><span>SÄGE:</span><span>${p.slg||'--'}</span></div>
+                    <div class="g-row"><span>ABST:</span><span>${p.abs||'--'}</span></div>
+                    <div class="g-row"><span>BACKEN:</span><span>${p.grf||'--'}</span></div>
+                    <div class="g-row"><span>STOCK:</span><span>${p.stk||'--'}</span></div>
                 </div></div>
             </div>
             <table><tbody>${rows}</tbody></table>
