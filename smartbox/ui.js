@@ -135,46 +135,45 @@ function makePDF() {
         standart.forEach(t => fullList.push({ type: 'row', label: 'STANDARTWERKZEUGE', data: t }));
     }
 
-    // УСТАНОВКА: 14 элементов на страницу
-    const LIMIT = 14; 
+    // УВЕЛИЧЕНО ДО 20 ПОЗИЦИЙ НА ЛИСТ
+    const LIMIT = 20; 
     const totalPages = Math.ceil(fullList.length / LIMIT) || 1;
     let html = "";
 
     for(let i=0; i<totalPages; i++) {
         let segment = fullList.slice(i * LIMIT, (i + 1) * LIMIT);
         
-        // Дублирование плашки типа на новой странице, если список продолжается
+        // Дублирование плашки типа на новой странице
         if (segment.length > 0 && segment[0].type === 'row') {
             segment.unshift({ type: 'header', label: segment[0].label + " (FORTSETZUNG)" });
-            // Если добавили плашку, удаляем последний элемент, чтобы не вылезти за рамку 14 строк
             if (segment.length > LIMIT) segment.pop();
         }
 
         const rowsHtml = segment.map(item => {
             if(item.type === 'header') {
-                return `<tr><td colspan="2" style="background:#000;color:#fff;padding:8px 12px;font-weight:900;font-size:14px;text-transform:uppercase;-webkit-print-color-adjust:exact;">${item.label}</td></tr>`;
+                return `<tr><td colspan="2" style="background:#000;color:#fff;padding:6px 12px;font-weight:900;font-size:13px;text-transform:uppercase;-webkit-print-color-adjust:exact;">${item.label}</td></tr>`;
             } else {
                 const t = item.data;
                 return `<tr>
-                    <td style="border-bottom:1.5px solid #000;padding:6px 10px;">
-                        <div style="font-weight:900;font-size:16px;text-transform:uppercase;">${t.nm}</div>
-                        <div style="font-size:10px;font-weight:800;color:#333;">${t.isStandart ? t.loc : 'IN BLAUKISTE'}${t.kom ? ' | ' + t.kom : ''}</div>
+                    <td style="border-bottom:1.5px solid #000;padding:3px 10px;">
+                        <div style="font-weight:900;font-size:15px;text-transform:uppercase;line-height:1.1;">${t.nm}</div>
+                        <div style="font-size:9.5px;font-weight:800;color:#333;">${t.isStandart ? t.loc : 'IN BLAUKISTE'}${t.kom ? ' | ' + t.kom : ''}</div>
                     </td>
                     <td style="border-bottom:1.5px solid #000;text-align:right;padding-right:10px;">
-                        <div style="font-size:8px;font-weight:900;color:#666;">BEMERKUNG</div>
-                        <div style="font-weight:900;font-size:14px;">${t.bem || '--'}</div>
+                        <div style="font-size:7px;font-weight:900;color:#666;">BEMERKUNG</div>
+                        <div style="font-weight:900;font-size:13px;">${t.bem || '--'}</div>
                     </td>
                 </tr>`;
             }
         }).join('');
 
         html += `
-        <div style="width:210mm;height:297mm;padding:10mm;box-sizing:border-box;page-break-after:always;">
+        <div style="width:210mm;height:297mm;padding:8mm 10mm;box-sizing:border-box;page-break-after:always;">
             <div style="border:1.5px solid #000;height:100%;display:flex;flex-direction:column;box-sizing:border-box;">
-                <div style="padding:15px 20px;border-bottom:3.5px solid #000;">
-                    <div style="font-size:13px;font-weight:900;color:#666;text-transform:uppercase;">${p.name || ''}</div>
-                    <div style="font-size:64px;font-weight:900;line-height:0.8;margin:8px 0;letter-spacing:-3px;">${p.num || '---'}</div>
-                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:11px;font-weight:900;border-top:1.5px solid #000;padding-top:10px;margin-top:8px;">
+                <div style="padding:10px 20px;border-bottom:3.5px solid #000;">
+                    <div style="font-size:12px;font-weight:900;color:#666;text-transform:uppercase;">${p.name || ''}</div>
+                    <div style="font-size:54px;font-weight:900;line-height:0.8;margin:5px 0;letter-spacing:-2px;">${p.num || '---'}</div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:10.5px;font-weight:900;border-top:1.5px solid #000;padding-top:8px;margin-top:5px;">
                         <div>MAT: ${p.mat || '--'}</div><div>LZF: ${p.lzf || '--'}</div>
                         <div>SÄGE: ${p.slg || '--'}</div><div>ABST: ${p.abs || '--'}</div>
                         <div>BACKEN: ${p.grf || '--'}</div><div>STÜCK: ${p.stk || '--'}</div>
