@@ -36,7 +36,6 @@ function goHome() {
     renderList();
 }
 
-// Надежная сортировка стрелками
 function moveTool(idx, direction) {
     const tools = db[currentIdx].tools;
     const newIdx = idx + direction;
@@ -148,7 +147,7 @@ function makePDF() {
         standart.forEach(t => fullList.push({ type: 'row', label: 'STANDARTWERKZEUGE', data: t }));
     }
 
-    const LIMIT = 25; // Увеличено до 25
+    const LIMIT = 25; 
     const totalPages = Math.ceil(fullList.length / LIMIT) || 1;
     let html = "";
 
@@ -166,7 +165,7 @@ function makePDF() {
                 </tr>`;
             } else {
                 const t = item.data;
-                return `<tr style="height:30px;">
+                return `<tr style="height:31px;">
                     <td style="border-bottom:1px solid #000; padding:0 10px; vertical-align:middle; overflow:hidden;">
                         <div style="font-weight:900; font-size:12.5px; text-transform:uppercase; line-height:1; white-space:nowrap;">${t.nm}</div>
                         <div style="font-size:8px; font-weight:800; color:#333; text-transform:uppercase; line-height:1; margin-top:1px;">${t.isStandart ? (t.loc || 'STANDART') : 'IN BLAUKISTE'}${t.kom ? ' | ' + t.kom : ''}</div>
@@ -193,7 +192,7 @@ function makePDF() {
                             <div class="meta-item"><span>LZF:</span> <span>${p.lzf || '--'}</span></div>
                             <div class="meta-item"><span>SÄGE:</span> <span>${p.slg || '--'}</span></div>
                             <div class="meta-item"><span>ABST:</span> <span>${p.abs || '--'}</span></div>
-                            <div class="meta-item"><span>BACKEN:</span> <span>${p.grf || '--'}</span></div>
+                            <div class="meta-item)@><span>BACKEN:</span> <span>${p.grf || '--'}</span></div>
                             <div class="meta-item"><span>STÜCK:</span> <span>${p.stk || '--'}</span></div>
                         </div>
                     </div>
@@ -206,22 +205,21 @@ function makePDF() {
     const win = window.open('','_blank');
     win.document.write(`<html><head><style>
         @page { size: A4; margin: 0; }
+        * { box-sizing: border-box; -webkit-print-color-adjust: exact; }
         body { margin: 0; padding: 0; font-family: sans-serif; background: #fff; }
-        .page { width: 210mm; height: 297mm; padding: 8mm 10mm; box-sizing: border-box; page-break-after: always; overflow: hidden; position: relative; }
-        .main-container { border: 1.5px solid #000; height: 100%; display: flex; flex-direction: column; overflow: hidden; }
-        .pdf-header { display: flex; padding: 10px 15px; border-bottom: 3.5px solid #000; align-items: center; flex-shrink: 0; }
+        .page { width: 100vw; height: 98vh; padding: 8mm; page-break-after: always; overflow: hidden; display: flex; justify-content: center; align-items: flex-start; }
+        .main-container { border: 2px solid #000; width: 190mm; height: 275mm; display: flex; flex-direction: column; overflow: hidden; }
+        .pdf-header { display: flex; padding: 10px 15px; border-bottom: 3.5px solid #000; align-items: center; background: #fff; }
         .header-left { flex: 1; }
         .header-right { width: 190px; border-left: 1.5px solid #000; padding-left: 15px; }
         .bauteil-name { font-size: 11px; font-weight: 900; text-transform: uppercase; color: #444; }
         .zeichnungs-num { font-size: 46px; font-weight: 900; line-height: 0.8; letter-spacing: -1.5px; }
         .meta-grid { display: grid; grid-template-columns: 1fr; gap: 1px; }
         .meta-item { display: flex; justify-content: space-between; font-size: 9px; font-weight: 900; text-transform: uppercase; }
-        .pdf-table { width: 100%; border-collapse: collapse; table-layout: fixed; flex-grow: 1; }
-        tr { page-break-inside: avoid; }
-        * { -webkit-print-color-adjust: exact; box-sizing: border-box; }
+        .pdf-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
     </style></head><body>${html}</body></html>`);
     win.document.close();
-    setTimeout(() => { win.print(); win.close(); }, 500);
+    setTimeout(() => { win.print(); win.close(); }, 600);
 }
 
 window.onload = renderList;
