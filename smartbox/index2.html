@@ -1,195 +1,423 @@
-const DB_KEY = 'SMARTBOX_PRO_V2';
-let db = JSON.parse(localStorage.getItem(DB_KEY)) || [];
-let currentIdx = null;
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SMARTBOX PRO V2</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+    <style>
+        :root {
+            --bg: #f5f5f7;
+            --surface: #ffffff;
+            --accent: #007AFF;
+            --text-primary: #1d1d1f;
+            --text-secondary: #86868b;
+            --border: rgba(0, 0, 0, 0.05);
+        }
 
-const el = (id) => document.getElementById(id);
-const hide = (id) => { el(id).style.display = 'none'; };
+        body { 
+            background: var(--bg); 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+            margin: 0; 
+            color: var(--text-primary); 
+            -webkit-tap-highlight-color: transparent;
+        }
 
-function renderList() {
-    const list = el('list-p');
-    if(!list) return;
-    list.innerHTML = db.map((p, i) => `
-        <div class="list-item" onclick="openProject(${i})">
-            <div style="flex:1">
-                <div class="t-id-label">PROJEKT</div>
-                <div class="t-name-label">${p.num || '---'}</div>
-                <div style="font-size:13px; font-weight:600; color:#8e8e93;">${p.name || ''}</div>
-            </div>
-            <div style="font-size:20px; color:#c7c7cc; padding-left:15px;" onclick="event.stopPropagation(); deleteProject(${i})">✕</div>
-        </div>`).join('') + '<div style="height:140px;"></div>';
-}
+        header {
+            background: rgba(255, 255, 255, 0.8); 
+            backdrop-filter: blur(20px); 
+            -webkit-backdrop-filter: blur(20px);
+            padding: 16px 20px; 
+            border-bottom: 0.5px solid var(--border); 
+            position: sticky; 
+            top: 0; 
+            z-index: 1000;
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center;
+        }
 
-function openProject(i) {
-    currentIdx = i;
-    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-    el('v-det').classList.add('active');
-    el('h-num').innerText = db[i].num;
-    el('h-nam').innerText = db[i].name;
-    renderTools();
-    window.scrollTo(0,0);
-}
+        .view { display: none; }
+        .view.active { display: block; }
 
-function goHome() {
-    currentIdx = null;
-    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-    el('v-home').classList.add('active');
-    renderList();
-}
+        .project-header { padding: 24px 20px; background: #fff; border-bottom: 1px solid var(--border); }
+        .p-num-title { font-size: 42px; font-weight: 900; letter-spacing: -1.5px; margin: 4px 0; text-transform: uppercase; }
 
-function moveTool(idx, direction) {
-    const tools = db[currentIdx].tools;
-    const newIdx = idx + direction;
-    if (newIdx >= 0 && newIdx < tools.length) {
-        [tools[idx], tools[newIdx]] = [tools[newIdx], tools[idx]];
-        localStorage.setItem(DB_KEY, JSON.stringify(db));
-        renderTools();
-    }
-}
+        .list-item {
+            background: var(--surface); 
+            border-radius: 20px; 
+            margin: 12px 16px; 
+            padding: 18px;
+            border: 0.5px solid var(--border); 
+            display: flex; 
+            align-items: center; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+            cursor: pointer;
+        }
 
-function renderTools() {
-    const list = el('list-t');
-    const tools = db[currentIdx].tools || [];
-    list.innerHTML = tools.map((t, i) => `
-        <div class="list-item" style="display:flex; align-items:center; gap:12px;">
-            <div style="display:flex; flex-direction:column; gap:4px;">
-                <button onclick="event.stopPropagation(); moveTool(${i}, -1)" style="padding:8px 10px; background:#f2f2f7; border:none; border-radius:8px; font-weight:bold;">↑</button>
-                <button onclick="event.stopPropagation(); moveTool(${i}, 1)" style="padding:8px 10px; background:#f2f2f7; border:none; border-radius:8px; font-weight:bold;">↓</button>
-            </div>
-            <div style="flex:1" onclick="modalT(${i})">
-                <div class="t-id-label" style="font-size:9px;">BEMERKUNG</div>
-                <div style="font-size:17px; font-weight:900; margin-bottom:2px;">${t.bem || '---'}</div>
-                <div style="font-size:15px; font-weight:800;">${t.nm}</div>
-                <div class="loc-tag ${t.isStandart ? 'standart' : 'sonder'}">
-                    ${t.isStandart ? 'STANDART | ' + (t.loc || '') : 'SONDER | BLAUKISTE'}
+        .t-id-label { font-size: 11px; font-weight: 800; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 2px; }
+        .t-name-label { font-size: 22px; font-weight: 900; line-height: 1.1; margin-bottom: 6px; }
+        
+        .loc-tag { 
+            font-size: 10px; font-weight: 800; padding: 4px 10px; border-radius: 6px; 
+            display: inline-block; text-transform: uppercase; 
+        }
+        .loc-tag.sonder { background: var(--accent); color: #fff; }
+        .loc-tag.standart { background: #1d1d1f; color: #fff; }
+
+        .actions-bar {
+            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(15px); 
+            padding: 12px 24px; border-radius: 100px; z-index: 1500;
+            display: flex; gap: 20px;
+        }
+
+        .btn-action { background: none; color: #fff; border: none; font-weight: 700; font-size: 14px; cursor: pointer; }
+        .btn-save { background: var(--accent); color: #fff; width: 100%; padding: 16px; border: none; border-radius: 14px; font-weight: 700; font-size: 16px; margin-top: 10px; cursor: pointer; }
+        .btn-secondary { background: #f2f2f7; color: #1d1d1f; border: none; padding: 10px 16px; border-radius: 10px; font-weight: 700; font-size: 12px; cursor: pointer; }
+        .btn-pdf { background: #000; color: #fff; border: none; padding: 10px 16px; border-radius: 10px; font-weight: 700; font-size: 12px; cursor: pointer; z-index: 10; }
+
+        .modal { 
+            display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); 
+            z-index: 2000; align-items: flex-end; backdrop-filter: blur(5px); 
+        }
+        .modal-content { 
+            background: #fff; width: 100%; border-radius: 30px 30px 0 0; 
+            padding: 30px; box-sizing: border-box; max-height: 90vh; overflow-y: auto; 
+        }
+        
+        input, textarea { 
+            width: 100%; padding: 16px; margin: 8px 0; border: none; border-radius: 14px; 
+            font-size: 16px; box-sizing: border-box; background: #f5f5f7; font-family: inherit; font-weight: 600; 
+        }
+
+        .toggle-btn { display: flex; justify-content: space-between; align-items: center; padding: 15px 0; font-weight: 700; cursor: pointer; }
+        .switch { width: 44px; height: 24px; background: #e5e5e7; border-radius: 20px; position: relative; transition: 0.3s; }
+        .switch::after { content: ''; position: absolute; top: 2px; left: 2px; width: 20px; height: 20px; background: #fff; border-radius: 50%; transition: 0.3s; }
+        .toggle-btn.on .switch { background: #34c759; }
+        .toggle-btn.on .switch::after { left: 22px; }
+
+        .handle { cursor: grab; padding: 10px; color: #d2d2d7; font-size: 20px; margin-right: 10px; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .scroll-pad { height: 160px; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div style="font-weight: 900; letter-spacing: -0.5px;">SMARTBOX <span style="color:var(--accent)">PRO</span></div>
+        <button class="btn-secondary" onclick="openImport()">ДАННЫЕ</button>
+    </header>
+
+    <div id="v-home" class="view active">
+        <div class="project-header">
+            <div class="t-id-label">ОБЗОР</div>
+            <div class="p-num-title">ПРОЕКТЫ</div>
+        </div>
+        <div id="list-p"></div>
+        <div class="scroll-pad"></div>
+        <div class="actions-bar">
+            <button class="btn-action" onclick="modalP()">+ НОВЫЙ ПРОЕКТ</button>
+        </div>
+    </div>
+
+    <div id="v-det" class="view">
+        <div class="project-header">
+            <div style="display:flex; justify-content: space-between; align-items: flex-start;">
+                <button class="btn-secondary" onclick="goHome()">← НАЗАД</button>
+                <div style="display:flex; gap:8px;">
+                    <button class="btn-secondary" onclick="editCurrentProject()">ИЗМЕНИТЬ</button>
+                    <button class="btn-pdf" id="pdf-trigger">PDF ЭКСПОРТ</button>
                 </div>
             </div>
-        </div>`).join('') + '<div style="height:160px; padding-bottom: 80px;"></div>';
-}
-
-function modalP() {
-    el('p-idx').value = '';
-    ['p-num','p-nam','p-lzf','p-mat','p-slg','p-abs','p-grf','p-stk'].forEach(id => el(id).value = '');
-    el('m-p').style.display = 'flex';
-}
-
-function editCurrentProject() {
-    const p = db[currentIdx];
-    el('p-idx').value = currentIdx;
-    el('p-num').value = p.num || ''; el('p-nam').value = p.name || '';
-    el('p-lzf').value = p.lzf || ''; el('p-mat').value = p.mat || '';
-    el('p-slg').value = p.slg || ''; el('p-abs').value = p.abs || '';
-    el('p-grf').value = p.grf || ''; el('p-stk').value = p.stk || '';
-    el('m-p').style.display = 'flex';
-}
-
-function saveP() {
-    const i = el('p-idx').value;
-    const data = {
-        num: el('p-num').value, name: el('p-nam').value.toUpperCase(),
-        lzf: el('p-lzf').value, mat: el('p-mat').value,
-        slg: el('p-slg').value, abs: el('p-abs').value,
-        grf: el('p-grf').value, stk: el('p-stk').value,
-        tools: i !== '' ? db[i].tools : []
-    };
-    if(i === '') db.push(data); else db[i] = data;
-    localStorage.setItem(DB_KEY, JSON.stringify(db));
-    if(i !== '') { el('h-num').innerText = data.num; el('h-nam').innerText = data.name; }
-    renderList(); hide('m-p');
-}
-
-function modalT(i = null) {
-    const edit = i !== null;
-    el('t-idx').value = edit ? i : '';
-    const t = edit ? db[currentIdx].tools[i] : {bem:'', nm:'', isStandart:false, loc:'', kom:''};
-    el('t-bem').value = t.bem || ''; el('t-nm').value = t.nm || ''; el('t-loc').value = t.loc || ''; el('t-kom').value = t.kom || '';
-    const btn = el('btn-storage-toggle');
-    t.isStandart ? btn.classList.add('on') : btn.classList.remove('on');
-    btn.onclick = () => btn.classList.toggle('on');
-    el('btn-del-t').style.display = edit ? 'block' : 'none';
-    el('m-t').style.display = 'flex';
-}
-
-function saveT() {
-    const i = el('t-idx').value;
-    const t = {
-        bem: el('t-bem').value.toUpperCase(), nm: el('t-nm').value.toUpperCase(),
-        isStandart: el('btn-storage-toggle').classList.contains('on'),
-        loc: el('t-loc').value.toUpperCase(), kom: el('t-kom').value.toUpperCase()
-    };
-    if(!db[currentIdx].tools) db[currentIdx].tools = [];
-    if(i === '') db[currentIdx].tools.push(t); else db[currentIdx].tools[i] = t;
-    localStorage.setItem(DB_KEY, JSON.stringify(db));
-    renderTools(); hide('m-t');
-}
-
-function deleteProject(i) { if(confirm('Löschen?')) { db.splice(i,1); localStorage.setItem(DB_KEY, JSON.stringify(db)); renderList(); } }
-function delT() { db[currentIdx].tools.splice(el('t-idx').value,1); localStorage.setItem(DB_KEY, JSON.stringify(db)); renderTools(); hide('m-t'); }
-
-function openImport() { el('imp-area').value = ''; el('m-imp').style.display = 'flex'; }
-function exportJSON() { el('imp-area').value = JSON.stringify(db); }
-function importAnyJSON() {
-    try { const p = JSON.parse(el('imp-area').value); if(Array.isArray(p)) db = p; localStorage.setItem(DB_KEY, JSON.stringify(db)); renderList(); hide('m-imp'); } catch(e) { alert('JSON Error'); }
-}
-
-function makePDF() {
-    const p = db[currentIdx];
-    const tools = p.tools || [];
-    const sonder = tools.filter(x => !x.isStandart);
-    const standart = tools.filter(x => x.isStandart);
-    
-    let content = "";
-    const getRow = (t, label) => `
-        <div style="display:flex; border-bottom:1.5px solid #000; page-break-inside:avoid;">
-            <div style="flex:1; padding:8px 15px;">
-                <div style="font-weight:900; font-size:18px; letter-spacing:-0.5px;">${t.nm}</div>
-                <div style="font-size:10px; font-weight:800; color:#444; text-transform:uppercase;">${label} ${t.kom ? ' | ' + t.kom : ''}</div>
-            </div>
-            <div style="width:160px; text-align:right; padding:8px 15px; border-left:1.5px solid #000; display:flex; flex-direction:column; justify-content:center;">
-                <div style="font-size:8px; font-weight:900; color:#888;">BEMERKUNG</div>
-                <div style="font-weight:900; font-size:16px;">${t.bem || '--'}</div>
-            </div>
-        </div>`;
-
-    if(sonder.length > 0) {
-        content += `<div style="background:#000; color:#fff; padding:8px 15px; font-weight:900; font-size:14px; letter-spacing:0.5px;">SONDERWERKZEUGE</div>`;
-        sonder.forEach(t => content += getRow(t, 'IN BLAUKISTE'));
-    }
-    if(standart.length > 0) {
-        content += `<div style="background:#000; color:#fff; padding:8px 15px; font-weight:900; font-size:14px; letter-spacing:0.5px;">STANDARTWERKZEUGE</div>`;
-        standart.forEach(t => content += getRow(t, t.loc || 'STANDART'));
-    }
-
-    const win = window.open('','_blank');
-    win.document.write(`<html><head><style>
-        @page { size: A4; margin: 10mm; }
-        * { box-sizing: border-box; -webkit-print-color-adjust: exact; }
-        body { margin: 0; padding: 0; font-family: sans-serif; color: #000; background: #fff; }
-        .frame { border: 2.5px solid #000; width: 100%; display: flex; flex-direction: column; page-break-inside: avoid; }
-        .head { display: flex; padding: 20px; border-bottom: 2.5px solid #000; }
-        .h-left { flex: 1; }
-        .h-right { width: 220px; border-left: 2.5px solid #000; padding-left: 20px; display: flex; flex-direction: column; justify-content: center; }
-        .p-name { font-size: 15px; font-weight: 900; text-transform: uppercase; margin-bottom: 2px; }
-        .p-num { font-size: 60px; font-weight: 900; line-height: 0.8; letter-spacing: -2px; }
-        .meta-grid { display: grid; gap: 4px; }
-        .meta-item { display: flex; justify-content: space-between; font-size: 11px; font-weight: 900; }
-    </style></head><body>
-        <div class="frame">
-            <div class="head">
-                <div class="h-left"><div class="p-name">${p.name}</div><div class="p-num">${p.num}</div></div>
-                <div class="h-right"><div class="meta-grid">
-                    <div class="meta-item"><span>MAT:</span><span>${p.mat||'--'}</span></div>
-                    <div class="meta-item"><span>LZF:</span><span>${p.lzf||'--'}</span></div>
-                    <div class="meta-item"><span>SÄGE:</span><span>${p.slg||'--'}</span></div>
-                    <div class="meta-item"><span>ABST:</span><span>${p.abs||'--'}</span></div>
-                    <div class="meta-item"><span>BACKEN:</span><span>${p.grf||'--'}</span></div>
-                    <div class="meta-item"><span>STOCK:</span><span>${p.stk||'--'}</span></div>
-                </div></div>
-            </div>
-            ${content}
+            <div class="t-id-label" style="margin-top:20px;">ПРОЕКТ</div>
+            <div class="p-num-title" id="h-num">---</div>
+            <div style="font-size:18px; font-weight:700; color:var(--text-secondary);" id="h-nam">---</div>
         </div>
-    </body></html>`);
-    win.document.close();
-    setTimeout(() => { win.print(); win.close(); }, 500);
-}
+        <div id="list-t"></div>
+        <div class="scroll-pad"></div>
+        <div class="actions-bar">
+            <button class="btn-action" onclick="modalT()">+ ИНСТРУМЕНТ</button>
+        </div>
+    </div>
 
-window.onload = renderList;
+    <!-- Modals -->
+    <div id="m-p" class="modal" onclick="if(event.target==this) this.style.display='none'">
+        <div class="modal-content">
+            <h2 style="margin-top:0; font-weight:900;">Проект</h2>
+            <input type="hidden" id="p-idx">
+            <input type="text" id="p-num" placeholder="НОМЕР">
+            <input type="text" id="p-nam" placeholder="НАЗВАНИЕ">
+            <div class="grid-2">
+                <input type="text" id="p-lzf" placeholder="LZF">
+                <input type="text" id="p-mat" placeholder="МАТЕРИАЛ">
+                <input type="text" id="p-slg" placeholder="ПИЛА">
+                <input type="text" id="p-abs" placeholder="ОТСТУП">
+                <input type="text" id="p-grf" placeholder="КУЛАЧКИ">
+                <input type="text" id="p-stk" placeholder="ШТОК">
+            </div>
+            <button class="btn-save" onclick="saveP()">СОХРАНИТЬ</button>
+            <button id="btn-del-p" style="color:red; background:none; border:none; width:100%; margin-top:15px; font-weight:700; display:none" onclick="delP()">Удалить проект</button>
+        </div>
+    </div>
+
+    <div id="m-t" class="modal" onclick="if(event.target==this) this.style.display='none'">
+        <div class="modal-content">
+            <h2 style="margin-top:0; font-weight:900;">Инструмент</h2>
+            <input type="hidden" id="t-idx">
+            <input type="text" id="t-bem" placeholder="T-НОМЕР (напр. T05)">
+            <input type="text" id="t-nm" placeholder="ОПИСАНИЕ">
+            <div id="btn-storage-toggle" class="toggle-btn">
+                <span>СТАНДАРТ (СКЛАД)</span>
+                <div class="switch"></div>
+            </div>
+            <input type="text" id="t-loc" placeholder="МЕСТО ХРАНЕНИЯ">
+            <textarea id="t-kom" placeholder="КОММЕНТАРИЙ" rows="3"></textarea>
+            <button class="btn-save" onclick="saveT()">СОХРАНИТЬ</button>
+            <button id="btn-del-t" style="color:red; background:none; border:none; width:100%; margin-top:15px; font-weight:700;" onclick="delT()">Удалить</button>
+        </div>
+    </div>
+
+    <div id="m-imp" class="modal" onclick="if(event.target==this) this.style.display='none'">
+        <div class="modal-content">
+            <h2 style="font-weight:900;">Данные</h2>
+            <textarea id="imp-area" style="height:200px; font-family:monospace; font-size:12px;"></textarea>
+            <div class="grid-2">
+                <button class="btn-secondary" onclick="exportJSON()">ЭКСПОРТ</button>
+                <button class="btn-save" style="margin:0" onclick="importAnyJSON()">ИМПОРТ</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const DB_KEY = 'SMARTBOX_PRO_V2_DATA';
+        let db = JSON.parse(localStorage.getItem(DB_KEY)) || [];
+        let currentIdx = null;
+        let sortableInstance = null;
+
+        const el = (id) => document.getElementById(id);
+
+        function renderList() {
+            el('list-p').innerHTML = db.map((p, i) => `
+                <div class="list-item" onclick="openProject(${i})">
+                    <div style="flex:1">
+                        <div class="t-id-label">PROJEKT</div>
+                        <div class="t-name-label">${p.num || '---'}</div>
+                        <div style="font-size:14px; font-weight:700; color:var(--text-secondary);">${p.name || ''}</div>
+                    </div>
+                    <div style="color:#c7c7cc; font-size:20px;">❯</div>
+                </div>`).join('');
+        }
+
+        function openProject(i) {
+            currentIdx = i;
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            el('v-det').classList.add('active');
+            el('h-num').innerText = db[i].num || '---';
+            el('h-nam').innerText = db[i].name || '---';
+            renderTools();
+        }
+
+        function goHome() {
+            currentIdx = null;
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            el('v-home').classList.add('active');
+            renderList();
+        }
+
+        function renderTools() {
+            const list = el('list-t');
+            const tools = db[currentIdx].tools || [];
+            
+            list.innerHTML = tools.map((t, i) => `
+                <div class="list-item" data-id="${i}">
+                    <div class="handle">≡</div>
+                    <div style="flex:1" onclick="modalT(${i})">
+                        <div class="t-id-label">${t.bem || 'T-NR'}</div>
+                        <div class="t-name-label">${t.nm || '---'}</div>
+                        <div class="loc-tag ${t.isStandart ? 'standart' : 'sonder'}">
+                            ${t.isStandart ? 'STANDART | ' + (t.loc || 'LAGER') : 'SONDER | BLAUKISTE'}
+                        </div>
+                    </div>
+                </div>`).join('');
+
+            if(sortableInstance) sortableInstance.destroy();
+            sortableInstance = new Sortable(list, {
+                handle: '.handle',
+                animation: 250,
+                ghostClass: 'sortable-ghost',
+                onEnd: () => {
+                    const newTools = Array.from(list.querySelectorAll('.list-item')).map(item => {
+                        return db[currentIdx].tools[parseInt(item.dataset.id)];
+                    });
+                    db[currentIdx].tools = newTools;
+                    localStorage.setItem(DB_KEY, JSON.stringify(db));
+                    renderTools(); // Обновляем data-id
+                }
+            });
+        }
+
+        // Модалки Проекта
+        function modalP() {
+            el('p-idx').value = '';
+            ['p-num','p-nam','p-lzf','p-mat','p-slg','p-abs','p-grf','p-stk'].forEach(id => el(id).value = '');
+            el('btn-del-p').style.display = 'none';
+            el('m-p').style.display = 'flex';
+        }
+
+        function editCurrentProject() {
+            const p = db[currentIdx];
+            el('p-idx').value = currentIdx;
+            el('p-num').value = p.num; el('p-nam').value = p.name;
+            el('p-lzf').value = p.lzf||''; el('p-mat').value = p.mat||'';
+            el('p-slg').value = p.slg||''; el('p-abs').value = p.abs||'';
+            el('p-grf').value = p.grf||''; el('p-stk').value = p.stk||'';
+            el('btn-del-p').style.display = 'block';
+            el('m-p').style.display = 'flex';
+        }
+
+        function saveP() {
+            const i = el('p-idx').value;
+            const data = {
+                num: el('p-num').value.toUpperCase(), name: el('p-nam').value.toUpperCase(),
+                lzf: el('p-lzf').value, mat: el('p-mat').value,
+                slg: el('p-slg').value, abs: el('p-abs').value,
+                grf: el('p-grf').value, stk: el('p-stk').value,
+                tools: i !== '' ? db[i].tools : []
+            };
+            if(i === '') db.push(data); else db[i] = data;
+            localStorage.setItem(DB_KEY, JSON.stringify(db));
+            if(i !== '') { el('h-num').innerText = data.num; el('h-nam').innerText = data.name; }
+            renderList(); el('m-p').style.display = 'none';
+        }
+
+        function delP() {
+            if(confirm('Удалить проект?')) {
+                db.splice(currentIdx, 1);
+                localStorage.setItem(DB_KEY, JSON.stringify(db));
+                el('m-p').style.display = 'none';
+                goHome();
+            }
+        }
+
+        // Модалки Инструмента
+        function modalT(i = null) {
+            const edit = i !== null;
+            el('t-idx').value = edit ? i : '';
+            const t = edit ? db[currentIdx].tools[i] : {bem:'', nm:'', isStandart:false, loc:'', kom:''};
+            el('t-bem').value = t.bem; el('t-nm').value = t.nm; el('t-loc').value = t.loc; el('t-kom').value = t.kom;
+            const btn = el('btn-storage-toggle');
+            t.isStandart ? btn.classList.add('on') : btn.classList.remove('on');
+            btn.onclick = () => btn.classList.toggle('on');
+            el('btn-del-t').style.display = edit ? 'block' : 'none';
+            el('m-t').style.display = 'flex';
+        }
+
+        function saveT() {
+            const i = el('t-idx').value;
+            const t = {
+                bem: el('t-bem').value.toUpperCase(), nm: el('t-nm').value.toUpperCase(),
+                isStandart: el('btn-storage-toggle').classList.contains('on'),
+                loc: el('t-loc').value.toUpperCase(), kom: el('t-kom').value.toUpperCase()
+            };
+            if(!db[currentIdx].tools) db[currentIdx].tools = [];
+            if(i === '') db[currentIdx].tools.push(t); else db[currentIdx].tools[i] = t;
+            localStorage.setItem(DB_KEY, JSON.stringify(db));
+            renderTools(); el('m-t').style.display = 'none';
+        }
+
+        function delT() {
+            db[currentIdx].tools.splice(el('t-idx').value, 1);
+            localStorage.setItem(DB_KEY, JSON.stringify(db));
+            renderTools(); el('m-t').style.display = 'none';
+        }
+
+        // Импорт/Экспорт
+        function openImport() { el('imp-area').value = ''; el('m-imp').style.display = 'flex'; }
+        function exportJSON() { el('imp-area').value = JSON.stringify(db, null, 2); }
+        function importAnyJSON() {
+            try {
+                const data = JSON.parse(el('imp-area').value);
+                if(Array.isArray(data)) { db = data; localStorage.setItem(DB_KEY, JSON.stringify(db)); renderList(); el('m-imp').style.display='none'; }
+            } catch(e) { alert('Ошибка JSON'); }
+        }
+
+        // Генерация PDF
+        function makePDF() {
+            const p = db[currentIdx];
+            const sonder = (p.tools || []).filter(x => !x.isStandart);
+            const standart = (p.tools || []).filter(x => x.isStandart);
+            
+            const getRow = (t, label) => `
+                <div class="row">
+                    <div class="row-main">
+                        <div class="t-name">${t.nm || '---'}</div>
+                        <div class="t-info">${label} ${t.kom ? ' | ' + t.kom : ''}</div>
+                    </div>
+                    <div class="row-side">
+                        <div class="side-label">BEMERKUNG</div>
+                        <div class="side-val">${t.bem || '--'}</div>
+                    </div>
+                </div>`;
+
+            const win = window.open('','_blank');
+            win.document.write(`<html><head><style>
+                @page { size: A4; margin: 0; }
+                body { margin: 0; padding: 10mm; font-family: sans-serif; }
+                .wrapper { border: 2.5px solid #000; width: 100%; box-sizing: border-box; }
+                .header { display: flex; border-bottom: 2.5px solid #000; }
+                .h-left { flex: 1; padding: 20px; }
+                .h-right { width: 220px; border-left: 2.5px solid #000; padding: 15px; }
+                .p-name { font-size: 14px; font-weight: 900; text-transform: uppercase; }
+                .p-num { font-size: 60px; font-weight: 900; line-height: 1; letter-spacing: -2px; }
+                .meta { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; font-size: 11px; font-weight: 900; }
+                .meta div { display: flex; justify-content: space-between; border-bottom: 1px solid #eee; padding: 2px 0; }
+                .section-head { background: #000; color: #fff; padding: 8px 15px; font-weight: 900; font-size: 13px; }
+                .row { display: flex; border-bottom: 1.5px solid #000; page-break-inside: avoid; }
+                .row-main { flex: 1; padding: 10px 15px; }
+                .row-side { width: 160px; border-left: 1.5px solid #000; padding: 10px; text-align: right; display: flex; flex-direction: column; justify-content: center; }
+                .t-name { font-weight: 900; font-size: 20px; line-height: 1.1; }
+                .t-info { font-size: 10px; font-weight: 700; color: #444; margin-top: 3px; }
+                .side-label { font-size: 8px; color: #888; font-weight: 900; }
+                .side-val { font-weight: 900; font-size: 18px; }
+                .wrapper { border-bottom: none; }
+                .row:last-child { border-bottom: 2.5px solid #000; }
+            </style></head><body>
+                <div class="wrapper">
+                    <div class="header">
+                        <div class="h-left">
+                            <div class="p-name">${p.name || ''}</div>
+                            <div class="p-num">${p.num || '---'}</div>
+                        </div>
+                        <div class="h-right">
+                            <div class="meta">
+                                <div><span>MAT:</span><span>${p.mat||'--'}</span></div>
+                                <div><span>LZF:</span><span>${p.lzf||'--'}</span></div>
+                                <div><span>SÄGE:</span><span>${p.slg||'--'}</span></div>
+                                <div><span>ABST:</span><span>${p.abs||'--'}</span></div>
+                                <div><span>BACK:</span><span>${p.grf||'--'}</span></div>
+                                <div><span>STK:</span><span>${p.stk||'--'}</span></div>
+                            </div>
+                        </div>
+                    </div>
+                    ${sonder.length ? '<div class="section-head">SONDERWERKZEUGE</div>' + sonder.map(t => getRow(t, 'IN BLAUKISTE')).join('') : ''}
+                    ${standart.length ? '<div class="section-head">STANDARTWERKZEUGE</div>' + standart.map(t => getRow(t, t.loc || 'STANDART')).join('') : ''}
+                </div>
+            </body></html>`);
+            win.document.close();
+            setTimeout(() => { win.print(); win.close(); }, 500);
+        }
+
+        // Инициализация
+        window.onload = () => {
+            renderList();
+            el('pdf-trigger').addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                makePDF();
+            });
+        };
+    </script>
+</body>
+</html>
+
