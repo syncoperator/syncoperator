@@ -15,7 +15,6 @@
         .p-num-big{font-size:28px;font-weight:900;letter-spacing:-1px}
         .p-name-sub{font-size:11px;font-weight:700;color:var(--sub);text-transform:uppercase}
         
-        /* Компактные карточки для больших списков */
         .tool-card{background:var(--card);border-radius:16px;margin:8px 16px;padding:14px;display:flex;justify-content:space-between;align-items:center}
         .t-label-min{font-size:9px;font-weight:900;color:var(--sub);text-transform:uppercase}
         .t-val-main{font-size:20px;font-weight:900;line-height:1}
@@ -37,7 +36,6 @@
         .btn-toggle{background:#f2f2f7;padding:14px;border-radius:12px;text-align:center;font-weight:800;margin:8px 0;cursor:pointer}
         .btn-toggle.active{background:#34c759;color:#fff}
         
-        /* Отступ для 25+ инструментов */
         #list-t{padding-bottom:200px}
     </style>
 </head>
@@ -146,7 +144,7 @@
             pidx.value = edit ? i : '';
             const p = edit ? db[i] : {};
             pnum.value=p.num||''; pname.value=p.name||''; plzf.value=p.lzf||'';
-            pmat.value=p.mat||''; psag.value=p.sag||''; pabs.value=p.abs||'';
+            pmat.value=p.mat||''; psag.value=p.slg||p.sag||''; pabs.value=p.abs||'';
             pgrf.value=p.grf||''; pstk.value=p.stk||'';
             delP.style.display = edit ? 'block' : 'none';
             mp.style.display='flex';
@@ -172,28 +170,35 @@
 
         function renderTools(){
             const list = db[currentIdx].tools || [];
-            tlist.innerHTML = list.map((t,i)=>`
+            tlist.innerHTML = list.map((t,i)=>{
+                // Поддержка обеих версий ключей (id/bem и isStd/isStandart)
+                const tID = t.id || t.bem || '';
+                const tSTD = t.hasOwnProperty('isStd') ? t.isStd : (t.isStandart || false);
+                return `
                 <div class="tool-card" onclick="modalT(${i})">
                     <div style="flex:1">
                         <div class="t-label-min">BEMERKUNG</div>
-                        <div class="t-val-main">${esc(t.id)}</div>
+                        <div class="t-val-main">${esc(tID)}</div>
                         <div class="t-name-sub">${esc(t.nm)}</div>
-                        <div class="tag ${t.isStd?'tag-std':'tag-sonder'}">${t.isStd?'STANDART | '+esc(t.loc):'SONDER'}</div>
+                        <div class="tag ${tSTD?'tag-std':'tag-sonder'}">${tSTD?'STANDART | '+esc(t.loc || ''):'SONDER'}</div>
                     </div>
                     <div style="display:flex; flex-direction:column; gap:5px">
                         <button class="btn-icon" onclick="event.stopPropagation();moveTool(${i},-1)">↑</button>
                         <button class="btn-icon" onclick="event.stopPropagation();moveTool(${i},1)">↓</button>
                     </div>
-                </div>`).join('') + '<div style="height:120px"></div>';
+                </div>`}).join('') + '<div style="height:120px"></div>';
         }
 
         function modalT(i=null){
             const edit = i !== null;
             tidx.value = edit ? i : '';
             const t = edit ? db[currentIdx].tools[i] : {id:'', nm:'', isStd:false, loc:'', kom:''};
-            tid.value=t.id; tnm.value=t.nm; tloc.value=t.loc; tkom.value=t.kom;
-            tstd.classList.toggle('active', t.isStd);
-            tstd.textContent = t.isStd ? 'STANDART (STORAGE)' : 'SONDER (BLAUKISTE)';
+            const tID = t.id || t.bem || '';
+            const tSTD = t.hasOwnProperty('isStd') ? t.isStd : (t.isStandart || false);
+            
+            tid.value=tID; tnm.value=t.nm; tloc.value=t.loc||''; tkom.value=t.kom||'';
+            tstd.classList.toggle('active', tSTD);
+            tstd.textContent = tSTD ? 'STANDART (STORAGE)' : 'SONDER (BLAUKISTE)';
             delT.style.display = edit ? 'block' : 'none';
             mt.style.display='flex';
         }
@@ -227,20 +232,21 @@
 
         function makePDF(){
             const p = db[currentIdx];
-            const sonder = (p.tools||[]).filter(t => !t.isStd);
-            const std = (p.tools||[]).filter(t => t.isStd);
+            const tools = p.tools || [];
+            const sonder = tools.filter(t => !(t.hasOwnProperty('isStd') ? t.isStd : (t.isStandart || false)));
+            const std = tools.filter(t => (t.hasOwnProperty('isStd') ? t.isStd : (t.isStandart || false)));
             
             let html = `<html><head><style>
                 @page { size: A4; margin: 8mm; }
                 body { font-family: sans-serif; margin: 0; -webkit-print-color-adjust: exact; }
                 table { width: 100%; border-collapse: collapse; border: 1.5px solid #000; }
                 thead { display: table-header-group; }
-                .h-cell { border-bottom: 1.5px solid #000; padding: 12px; border-left: none; border-right: none; }
-                .meta { width: 220px; border-left: none; font-size: 10px; font-weight: 900; padding: 8px; }
+                .h-cell { border-bottom: 1.5px solid #000; padding: 12px; }
+                .meta { width: 220px; font-size: 10px; font-weight: 900; padding: 8px; }
                 .meta div { display: flex; justify-content: space-between; margin-bottom: 1px; }
                 .cat { background: #000 !important; color: #fff !important; font-weight: 900; padding: 6px 12px; text-transform: uppercase; font-size: 12px; }
-                .t-row td { border-bottom: 1.5px solid #000; padding: 8px 12px; border-left: none; border-right: none; }
-                .bem { width: 140px; border-left: none; text-align: right; }
+                .t-row td { border-bottom: 1.5px solid #000; padding: 8px 12px; }
+                .bem-col { width: 140px; text-align: right; }
                 .t-name { font-weight: 900; font-size: 16px; display: block; text-transform: uppercase; }
                 .t-sub { font-size: 9px; font-weight: 800; color: #444; text-transform: uppercase; margin-top: 2px; }
                 .b-lab { font-size: 7px; color: #888; display: block; font-weight: 900; }
@@ -255,7 +261,7 @@
                         <td class="h-cell meta">
                             <div><span>MAT:</span><span>${esc(p.mat) || '--'}</span></div>
                             <div><span>LZF:</span><span>${esc(p.lzf) || '--'}</span></div>
-                            <div><span>SÄGE:</span><span>${esc(p.sag) || '--'}</span></div>
+                            <div><span>SÄGE:</span><span>${esc(p.slg || p.sag) || '--'}</span></div>
                             <div><span>ABST:</span><span>${esc(p.abs) || '--'}</span></div>
                             <div><span>GRF:</span><span>${esc(p.grf) || '--'}</span></div>
                             <div><span>STOCK:</span><span>${esc(p.stk) || '--'}</span></div>
@@ -268,14 +274,16 @@
                 if(!list.length) return;
                 html += `<tr><td colspan="2" class="cat">${title}</td></tr>`;
                 list.forEach(t => {
+                    const tID = t.id || t.bem || '';
+                    const tSTD = t.hasOwnProperty('isStd') ? t.isStd : (t.isStandart || false);
                     html += `<tr class="t-row">
                         <td>
                             <span class="t-name">${esc(t.nm)}</span>
-                            <span class="t-sub">${t.isStd?esc(t.loc):'IN BLAUKISTE'} ${t.kom?'| '+esc(t.kom):''}</span>
+                            <span class="t-sub">${tSTD?esc(t.loc || ''):'IN BLAUKISTE'} ${t.kom?'| '+esc(t.kom):''}</span>
                         </td>
-                        <td class="bem">
+                        <td class="bem-col">
                             <span class="b-lab">BEMERKUNG</span>
-                            <span style="font-weight:900; font-size:16px; text-transform:uppercase;">${esc(t.id)}</span>
+                            <span style="font-weight:900; font-size:16px; text-transform:uppercase;">${esc(tID)}</span>
                         </td>
                     </tr>`;
                 });
