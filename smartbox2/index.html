@@ -16,11 +16,11 @@
         h1 { font-size: 32px; font-weight: 900; letter-spacing: -1px; margin: 0 0 20px 0; text-transform: uppercase; }
         .h-sub { font-size: 14px; font-weight: 700; color: #8e8e93; }
 
-        .list-item { border-bottom: 1.5px solid #eee; padding: 16px 0; display: flex; align-items: center; gap: 12px; cursor: pointer; }
+        .list-item { border-bottom: 1.5px solid #eee; padding: 12px 0; display: flex; align-items: center; gap: 12px; cursor: pointer; }
         .t-id-label { font-size: 9px; font-weight: 900; color: #8e8e93; text-transform: uppercase; }
-        .t-name-label { font-size: 22px; font-weight: 900; line-height: 1; }
+        .t-name-label { font-size: 20px; font-weight: 900; line-height: 1; }
 
-        .loc-tag { display: inline-block; padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: 800; margin-top: 8px; }
+        .loc-tag { display: inline-block; padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: 800; margin-top: 6px; }
         .standart { background: #e8f2ff; color: #007aff; }
         .sonder { background: #fff2e8; color: #ff9500; }
 
@@ -63,6 +63,7 @@
         <div class="fab" onclick="modalT()">+</div>
     </div>
 
+    <!-- Modals (P, T, Imp) -->
     <div id="m-p" class="modal" onclick="if(event.target==this) hide('m-p')">
         <div class="modal-content">
             <input type="hidden" id="p-idx">
@@ -236,76 +237,92 @@
 
         function makePDF() {
             const p = db[currentIdx];
-            const sonder = (p.tools || []).filter(x => !x.isStandart);
-            const standart = (p.tools || []).filter(x => x.isStandart);
+            const tools = p.tools || [];
             
             let html = `
             <html><head><style>
-                @page { size: A4; margin: 10mm; }
+                @page { size: A4; margin: 8mm; }
                 body { margin: 0; font-family: sans-serif; -webkit-print-color-adjust: exact; background: white; }
                 
-                /* HEADER BLOCK */
-                .header { border: 2.5px solid black; display: flex; margin-bottom: -2.5px; }
-                .header-left { flex: 1; padding: 15px 20px; }
-                .header-right { width: 220px; border-left: 2.5px solid black; padding: 10px 15px; }
-                .meta-row { display: flex; justify-content: space-between; font-size: 11px; font-weight: 900; padding: 2px 0; border-bottom: 1px solid #eee; }
+                table { width: 100%; border-collapse: collapse; table-layout: fixed; }
                 
-                /* TOOL BLOCKS */
-                .cat-title { background: black; color: white; font-weight: 900; font-size: 14px; padding: 8px 15px; text-transform: uppercase; border-left: 2.5px solid black; border-right: 2.5px solid black; margin-bottom: -2px; }
+                /* ШАПКА ТАБЛИЦЫ - повторяется на каждой странице */
+                thead { display: table-header-group; }
                 
-                .tool-row { 
-                    display: flex; 
-                    border: 2.5px solid black; 
-                    margin-bottom: -2.5px; 
-                    break-inside: avoid; /* САМОЕ ВАЖНОЕ ПРАВИЛО */
-                    page-break-inside: avoid;
-                }
-                .tool-left { flex: 1; padding: 10px 15px; }
-                .tool-right { width: 160px; border-left: 2.5px solid black; padding: 10px 15px; text-align: right; }
+                .header-container { border: 2.5px solid black; display: flex; width: 100%; box-sizing: border-box; background: white; }
+                .header-left { flex: 1; padding: 12px 18px; border-right: 2.5px solid black; }
+                .header-right { width: 200px; padding: 8px 12px; }
                 
-                .tool-name { font-weight: 900; font-size: 18px; text-transform: uppercase; }
-                .tool-info { font-size: 10px; font-weight: 800; color: #444; margin-top: 2px; text-transform: uppercase; }
-                .bem-label { font-size: 8px; font-weight: 900; color: #888; }
-                .bem-val { font-weight: 900; font-size: 16px; margin-top: 2px; }
-            </style></head><body>
-                <div class="header">
-                    <div class="header-left">
-                        <div style="font-size:14px; font-weight:900; text-transform:uppercase;">${p.name || '---'}</div>
-                        <div style="font-size:60px; font-weight:900; line-height:0.8; letter-spacing:-2px;">${p.num || '000000'}</div>
-                    </div>
-                    <div class="header-right">
-                        <div class="meta-row"><span>MAT:</span><span>${p.mat||'--'}</span></div>
-                        <div class="meta-row"><span>LZF:</span><span>${p.lzf||'--'}</span></div>
-                        <div class="meta-row"><span>SÄGE:</span><span>${p.slg||'--'}</span></div>
-                        <div class="meta-row"><span>ABST:</span><span>${p.abs||'--'}</span></div>
-                        <div class="meta-row"><span>BACKEN:</span><span>${p.grf||'--'}</span></div>
-                        <div class="meta-row"><span>STOCK:</span><span>${p.stk||'--'}</span></div>
-                    </div>
-                </div>`;
+                .meta-row { display: flex; justify-content: space-between; font-size: 10px; font-weight: 900; padding: 1px 0; border-bottom: 1px solid #eee; }
+                .meta-row:last-child { border: none; }
 
-            const addGroup = (title, list, labelFn) => {
+                .cat-row { background: black; color: white; font-weight: 900; font-size: 13px; padding: 6px 15px; text-transform: uppercase; }
+                
+                /* СТРОКИ ИНСТРУМЕНТА */
+                tr { page-break-inside: avoid; }
+                td { border: 2px solid black; vertical-align: middle; overflow: hidden; }
+                
+                .tool-name { font-weight: 900; font-size: 16px; text-transform: uppercase; line-height: 1.1; }
+                .tool-info { font-size: 9px; font-weight: 800; color: #333; margin-top: 1px; text-transform: uppercase; }
+                
+                .bem-cell { width: 150px; text-align: right; padding: 8px 12px; }
+                .bem-label { font-size: 7px; font-weight: 900; color: #777; margin-bottom: 1px; }
+                .bem-val { font-weight: 900; font-size: 15px; }
+
+                /* Отступ сверху на 2-ой странице для красоты */
+                thead:before { content: ""; display: block; height: 5mm; }
+                tr:first-child thead:before { display: none; }
+            </style></head><body>
+                <table>
+                    <thead>
+                        <tr>
+                            <th colspan="2" style="padding:0; border:none; text-align:left;">
+                                <div class="header-container">
+                                    <div class="header-left">
+                                        <div style="font-size:12px; font-weight:900; text-transform:uppercase; margin-bottom:2px;">${p.name || '---'}</div>
+                                        <div style="font-size:52px; font-weight:900; line-height:0.8; letter-spacing:-2px;">${p.num || '000000'}</div>
+                                    </div>
+                                    <div class="header-right">
+                                        <div class="meta-row"><span>MAT:</span><span>${p.mat||'--'}</span></div>
+                                        <div class="meta-row"><span>LZF:</span><span>${p.lzf||'--'}</span></div>
+                                        <div class="meta-row"><span>SÄGE:</span><span>${p.slg||'--'}</span></div>
+                                        <div class="meta-row"><span>ABST:</span><span>${p.abs||'--'}</span></div>
+                                        <div class="meta-row"><span>BACKEN:</span><span>${p.grf||'--'}</span></div>
+                                        <div class="meta-row"><span>STOCK:</span><span>${p.stk||'--'}</span></div>
+                                    </div>
+                                </div>
+                                <div style="height:5px;"></div>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>`;
+
+            const sonder = tools.filter(x => !x.isStandart);
+            const standart = tools.filter(x => x.isStandart);
+
+            const renderRows = (title, list, labelFn) => {
                 if(list.length > 0) {
-                    html += `<div class="cat-title">${title}</div>`;
+                    html += `<tr><td colspan="2" class="cat-row">${title}</td></tr>`;
                     list.forEach(t => {
                         html += `
-                        <div class="tool-row">
-                            <div class="tool-left">
+                        <tr>
+                            <td style="padding:8px 15px;">
                                 <div class="tool-name">${t.nm}</div>
                                 <div class="tool-info">${labelFn(t)}${t.kom ? ' | '+t.kom : ''}</div>
-                            </div>
-                            <div class="tool-right">
+                            </td>
+                            <td class="bem-cell">
                                 <div class="bem-label">BEMERKUNG</div>
                                 <div class="bem-val">${t.bem || '--'}</div>
-                            </div>
-                        </div>`;
+                            </td>
+                        </tr>`;
                     });
                 }
             };
 
-            addGroup('SONDERWERKZEUGE', sonder, () => 'IN BLAUKISTE');
-            addGroup('STANDARTWERKZEUGE', standart, (t) => t.loc || 'STANDART');
+            renderRows('SONDERWERKZEUGE', sonder, () => 'IN BLAUKISTE');
+            renderRows('STANDARTWERKZEUGE', standart, (t) => t.loc || 'STANDART');
 
-            html += `</body></html>`;
+            html += `</tbody></table></body></html>`;
 
             const win = window.open('','_blank');
             win.document.write(html);
