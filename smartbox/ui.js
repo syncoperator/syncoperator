@@ -35,6 +35,7 @@ function goHome() {
     renderList();
 }
 
+// Прямая сортировка стрелками
 function moveTool(idx, dir) {
     const t = db[currentIdx].tools;
     const n = idx + dir;
@@ -50,9 +51,9 @@ function renderTools() {
     const tools = db[currentIdx].tools || [];
     list.innerHTML = tools.map((t, i) => `
         <div class="list-item">
-            <div style="display:flex; flex-direction:column; gap:5px; margin-right:5px;">
-                <button onclick="moveTool(${i},-1)" style="border:none; background:#eee; border-radius:4px; padding:5px; font-weight:bold;">↑</button>
-                <button onclick="moveTool(${i},1)" style="border:none; background:#eee; border-radius:4px; padding:5px; font-weight:bold;">↓</button>
+            <div style="display:flex; flex-direction:column; gap:5px; margin-right:10px;">
+                <button onclick="moveTool(${i},-1)" style="border:none; background:#f0f0f0; border-radius:6px; padding:8px; font-weight:900;">↑</button>
+                <button onclick="moveTool(${i},1)" style="border:none; background:#f0f0f0; border-radius:6px; padding:8px; font-weight:900;">↓</button>
             </div>
             <div style="flex:1" onclick="modalT(${i})">
                 <div class="t-id-label">BEMERKUNG</div>
@@ -62,7 +63,7 @@ function renderTools() {
                     ${t.isStandart ? 'STANDART | ' + (t.loc || '') : 'SONDER | BLAUKISTE'}
                 </div>
             </div>
-        </div>`).join('') + '<div style="height:120px;"></div>';
+        </div>`).join('') + '<div style="height:150px;"></div>';
 }
 
 function saveP() {
@@ -112,6 +113,7 @@ function importAnyJSON() {
     try { const d = JSON.parse(el('imp-area').value); if(Array.isArray(d)) db = d; localStorage.setItem(DB_KEY, JSON.stringify(db)); renderList(); hide('m-imp'); } catch(e) { alert('Error'); }
 }
 
+// ТОТ САМЫЙ PDF С ЖИРНЫМИ ЛИНИЯМИ И БЕЗ РАЗРЫВОВ
 function makePDF() {
     const p = db[currentIdx];
     const sonder = (p.tools || []).filter(x => !x.isStandart);
@@ -119,63 +121,70 @@ function makePDF() {
     
     let html = `
     <html><head><style>
-        @page { size: A4; margin: 0; }
-        body { margin: 10mm; font-family: sans-serif; -webkit-print-color-adjust: exact; }
-        /* Внешняя рамка через таблицу для корректного переноса */
-        .outer-table { width: 100%; border: 2.5px solid #000; border-collapse: collapse; }
-        .outer-table > tbody > tr > td { border: none; padding: 0; }
-        .inner-table { width: 100%; border-collapse: collapse; }
-        .inner-table td { border-bottom: 1.5px solid #000; padding: 10px 15px; vertical-align: middle; }
-        .head-cell { padding: 20px !important; border-bottom: 2.5px solid #000 !important; }
-        .meta-cell { width: 220px; border-left: 2.5px solid #000 !important; border-bottom: 2.5px solid #000 !important; padding: 15px !important; }
-        .cat-row { background: #000 !important; color: #fff !important; font-weight: 900; font-size: 14px; padding: 8px 15px !important; }
-        .tool-name { font-weight: 900; font-size: 18px; line-height: 1.2; }
-        .tool-info { font-size: 10px; font-weight: 800; color: #444; text-transform: uppercase; margin-top: 3px; }
-        .bem-cell { width: 160px; border-left: 1.5px solid #000 !important; text-align: right; }
-        .bem-label { font-size: 8px; font-weight: 900; color: #888; }
-        .bem-val { font-weight: 900; font-size: 16px; }
+        @page { size: A4; margin: 10mm; }
+        body { margin: 0; font-family: sans-serif; -webkit-print-color-adjust: exact; }
+        
+        /* Внешняя рамка - жирная, 3px */
+        .pdf-frame { border: 3px solid #000; width: 100%; border-collapse: collapse; }
+        
+        /* Шапка */
+        .header-row td { border-bottom: 3px solid #000; padding: 20px; }
+        .meta-box { width: 200px; border-left: 3px solid #000; padding: 12px; font-size: 11px; font-weight: 900; }
+        
+        /* Разделители категорий (черные плашки) */
+        .cat-head { background: #000 !important; color: #fff !important; font-weight: 900; font-size: 14px; padding: 8px 15px !important; text-transform: uppercase; }
+        
+        /* Строки инструментов */
+        .tool-row td { border-bottom: 2px solid #000; padding: 12px 15px; vertical-align: middle; }
+        .bem-box { border-left: 2px solid #000; width: 150px; text-align: right; }
+        
+        .t-name { font-weight: 900; font-size: 18px; display: block; }
+        .t-sub { font-size: 10px; font-weight: 800; color: #444; margin-top: 4px; text-transform: uppercase; }
+        .b-label { font-size: 8px; color: #888; font-weight: 900; display: block; }
+        .b-val { font-size: 16px; font-weight: 900; }
+        
         tr { page-break-inside: avoid; }
     </style></head><body>
-        <table class="outer-table">
+        <table class="pdf-frame">
             <thead>
-                <tr>
-                    <td class="head-cell">
-                        <div style="font-size:15px; font-weight:900; text-transform:uppercase;">${p.name}</div>
-                        <div style="font-size:60px; font-weight:900; line-height:0.8; letter-spacing:-2px;">${p.num}</div>
+                <tr class="header-row">
+                    <td>
+                        <div style="font-size:14px; font-weight:900;">${p.name || ''}</div>
+                        <div style="font-size:55px; font-weight:900; line-height:0.9; letter-spacing:-2px;">${p.num}</div>
                     </td>
-                    <td class="meta-cell">
-                        <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:900; margin-bottom:3px;"><span>MAT:</span><span>${p.mat||'--'}</span></div>
-                        <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:900; margin-bottom:3px;"><span>LZF:</span><span>${p.lzf||'--'}</span></div>
-                        <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:900; margin-bottom:3px;"><span>SÄGE:</span><span>${p.slg||'--'}</span></div>
-                        <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:900; margin-bottom:3px;"><span>ABST:</span><span>${p.abs||'--'}</span></div>
-                        <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:900; margin-bottom:3px;"><span>BACKEN:</span><span>${p.grf||'--'}</span></div>
-                        <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:900;"><span>STOCK:</span><span>${p.stk||'--'}</span></div>
+                    <td class="meta-box">
+                        <div style="display:flex; justify-content:space-between; margin-bottom:2px;"><span>MAT:</span><span>${p.mat||'--'}</span></div>
+                        <div style="display:flex; justify-content:space-between; margin-bottom:2px;"><span>LZF:</span><span>${p.lzf||'--'}</span></div>
+                        <div style="display:flex; justify-content:space-between; margin-bottom:2px;"><span>SÄGE:</span><span>${p.slg||'--'}</span></div>
+                        <div style="display:flex; justify-content:space-between; margin-bottom:2px;"><span>ABST:</span><span>${p.abs||'--'}</span></div>
+                        <div style="display:flex; justify-content:space-between; margin-bottom:2px;"><span>BACKEN:</span><span>${p.grf||'--'}</span></div>
+                        <div style="display:flex; justify-content:space-between;"><span>STOCK:</span><span>${p.stk||'--'}</span></div>
                     </td>
                 </tr>
             </thead>
             <tbody>`;
 
-    const addGroup = (title, list, labelFn) => {
+    const renderGroup = (title, list, locStr) => {
         if(list.length > 0) {
-            html += `<tr><td colspan="2" class="cat-row">${title}</td></tr>`;
-            list.forEach((t, idx) => {
+            html += `<tr><td colspan="2" class="cat-head">${title}</td></tr>`;
+            list.forEach(t => {
                 html += `
-                <tr>
-                    <td style="padding:10px 15px;">
-                        <div class="tool-name">${t.nm}</div>
-                        <div class="tool-info">${labelFn(t)} ${t.kom ? ' | '+t.kom : ''}</div>
+                <tr class="tool-row">
+                    <td>
+                        <span class="t-name">${t.nm}</span>
+                        <span class="t-sub">${t.isStandart ? (t.loc || 'STANDART') : 'IN BLAUKISTE'} ${t.kom ? ' | ' + t.kom : ''}</span>
                     </td>
-                    <td class="bem-cell">
-                        <div class="bem-label">BEMERKUNG</div>
-                        <div class="bem-val">${t.bem || '--'}</div>
+                    <td class="bem-box">
+                        <span class="b-label">BEMERKUNG</span>
+                        <span class="b-val">${t.bem || '--'}</span>
                     </td>
                 </tr>`;
             });
         }
     };
 
-    addGroup('SONDERWERKZEUGE', sonder, () => 'IN BLAUKISTE');
-    addGroup('STANDARTWERKZEUGE', standart, (t) => t.loc || 'STANDART');
+    renderGroup('SONDERWERKZEUGE', sonder);
+    renderGroup('STANDARTWERKZEUGE', standart);
 
     html += `</tbody></table></body></html>`;
 
