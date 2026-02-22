@@ -7,158 +7,163 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
     <style>
         :root {
-            --bg: #f5f5f7;
+            --bg: #f2f2f7;
             --surface: #ffffff;
             --accent: #007AFF;
-            --text-primary: #1d1d1f;
-            --text-secondary: #86868b;
-            --border: rgba(0, 0, 0, 0.15);
+            --text-primary: #1c1c1e;
+            --text-secondary: #8e8e93;
+            --border-ui: rgba(0,0,0,0.1);
         }
 
         body { 
             background: var(--bg); 
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
             margin: 0; 
-            color: var(--text-primary); 
-            -webkit-tap-highlight-color: transparent;
+            color: var(--text-primary);
+            overflow-x: hidden;
         }
 
+        /* UI Styles */
         header {
-            background: rgba(255, 255, 255, 0.85); 
-            backdrop-filter: blur(20px); 
-            -webkit-backdrop-filter: blur(20px);
-            padding: 16px 20px; 
-            border-bottom: 0.5px solid var(--border); 
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            padding: 15px 20px;
+            border-bottom: 0.5px solid var(--border-ui);
             position: sticky; top: 0; z-index: 1000;
             display: flex; justify-content: space-between; align-items: center;
         }
 
-        .view { display: none; }
+        .view { display: none; padding-bottom: 120px; }
         .view.active { display: block; }
 
-        .project-header { padding: 24px 20px; background: #fff; border-bottom: 1px solid var(--border); }
-        .p-num-title { font-size: 42px; font-weight: 900; letter-spacing: -2px; margin: 4px 0; text-transform: uppercase; line-height: 1; }
+        .project-header { background: #fff; padding: 25px 20px; border-bottom: 1px solid var(--border-ui); }
+        .p-num-title { font-size: 48px; font-weight: 900; letter-spacing: -3px; margin: 5px 0; line-height: 0.9; }
 
         .list-item {
-            background: var(--surface); 
-            border-radius: 20px; 
-            margin: 12px 16px; 
-            padding: 18px;
-            border: 0.5px solid var(--border); 
-            display: flex; align-items: center; 
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            background: #fff; margin: 12px 16px; padding: 16px; border-radius: 18px;
+            display: flex; align-items: center; border: 0.5px solid var(--border-ui);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
         }
 
-        /* T-NR сверху мелко, Описание крупно */
-        .t-id-label { font-size: 11px; font-weight: 800; color: var(--accent); text-transform: uppercase; margin-bottom: 2px; }
-        .t-name-label { font-size: 24px; font-weight: 900; line-height: 1.1; margin-bottom: 8px; }
+        .t-id-label { font-size: 11px; font-weight: 800; color: var(--accent); text-transform: uppercase; }
+        .t-name-label { font-size: 22px; font-weight: 900; line-height: 1.1; margin-top: 2px; }
         
         .loc-tag { 
-            font-size: 10px; font-weight: 800; padding: 4px 10px; border-radius: 6px; 
-            display: inline-block; text-transform: uppercase; 
+            font-size: 10px; font-weight: 800; padding: 4px 8px; border-radius: 5px; 
+            margin-top: 8px; display: inline-block; text-transform: uppercase;
         }
         .loc-tag.sonder { background: var(--accent); color: #fff; }
-        .loc-tag.standart { background: #1d1d1f; color: #fff; }
+        .loc-tag.standart { background: #1c1c1e; color: #fff; }
 
         .actions-bar {
             position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.9); backdrop-filter: blur(15px); 
-            padding: 12px 24px; border-radius: 100px; z-index: 1500;
+            background: #000; padding: 12px 25px; border-radius: 100px; z-index: 1500;
             display: flex; gap: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);
         }
 
-        .btn-action { background: none; color: #fff; border: none; font-weight: 700; font-size: 14px; cursor: pointer; }
-        .btn-save { background: var(--accent); color: #fff; width: 100%; padding: 18px; border: none; border-radius: 16px; font-weight: 700; font-size: 16px; margin-top: 10px; cursor: pointer; }
-        .btn-secondary { background: #f2f2f7; color: #1d1d1f; border: none; padding: 10px 16px; border-radius: 10px; font-weight: 700; font-size: 12px; cursor: pointer; }
-        .btn-pdf { background: #000; color: #fff; border: none; padding: 10px 18px; border-radius: 10px; font-weight: 800; font-size: 12px; cursor: pointer; }
+        .btn-action { background: none; color: #fff; border: none; font-weight: 700; font-size: 14px; }
+        .btn-save { background: var(--accent); color: #fff; width: 100%; padding: 18px; border: none; border-radius: 15px; font-weight: 700; margin-top: 15px; }
+        .btn-secondary { background: #e5e5ea; color: #000; border: none; padding: 8px 15px; border-radius: 8px; font-weight: 700; font-size: 12px; }
+        .btn-pdf { background: #000; color: #fff; border: none; padding: 8px 15px; border-radius: 8px; font-weight: 800; font-size: 12px; }
 
         .modal { 
-            display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); 
-            z-index: 2000; align-items: flex-end; backdrop-filter: blur(10px); 
+            display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); 
+            z-index: 2000; align-items: flex-end; backdrop-filter: blur(8px);
         }
         .modal-content { 
-            background: #fff; width: 100%; border-radius: 32px 32px 0 0; 
-            padding: 30px; box-sizing: border-box; max-height: 95vh; overflow-y: auto; 
-            padding-bottom: 80px;
+            background: #fff; width: 100%; border-radius: 30px 30px 0 0; padding: 30px; 
+            box-sizing: border-box; max-height: 90vh; overflow-y: auto;
+        }
+
+        input, textarea { 
+            width: 100%; padding: 15px; margin: 8px 0; border: none; border-radius: 12px; 
+            background: #f2f2f7; font-size: 16px; box-sizing: border-box; font-weight: 600;
+        }
+
+        .handle { cursor: grab; padding: 10px; color: #ccc; font-size: 20px; margin-right: 10px; }
+
+        /* PDF PREVIEW (Full Overlay) */
+        #pdf-overlay {
+            display: none; position: fixed; inset: 0; background: #fff; z-index: 5000;
+            overflow-y: auto; padding: 0;
         }
         
-        input, textarea { 
-            width: 100%; padding: 16px; margin: 8px 0; border: none; border-radius: 14px; 
-            font-size: 16px; box-sizing: border-box; background: #f5f5f7; font-family: inherit; font-weight: 600; 
+        .pdf-controls {
+            position: sticky; top: 0; background: #f9f9f9; padding: 15px;
+            display: flex; justify-content: space-between; border-bottom: 1px solid #ddd;
+            z-index: 5001;
         }
 
-        .toggle-btn { display: flex; justify-content: space-between; align-items: center; padding: 15px 0; font-weight: 700; cursor: pointer; border-bottom: 1px solid #f0f0f0; }
-        .switch { width: 44px; height: 24px; background: #e5e5e7; border-radius: 20px; position: relative; transition: 0.3s; }
-        .switch::after { content: ''; position: absolute; top: 2px; left: 2px; width: 20px; height: 20px; background: #fff; border-radius: 50%; transition: 0.3s; }
-        .toggle-btn.on .switch { background: #34c759; }
-        .toggle-btn.on .switch::after { left: 22px; }
-
-        .handle { cursor: grab; padding: 15px 10px; color: #d2d2d7; font-size: 24px; margin-right: 10px; }
-        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .scroll-pad { height: 180px; }
-
-        /* PDF PREVIEW LAYER (Fix for White Sheets) */
-        #pdf-preview-layer {
-            display: none; position: fixed; inset: 0; background: #fff; z-index: 9999;
-            overflow-y: auto; padding: 20px;
-        }
-
+        /* PRINT STYLES */
         @media print {
-            body * { visibility: hidden; }
-            #pdf-preview-layer, #pdf-preview-layer * { visibility: visible; }
-            #pdf-preview-layer { position: absolute; left: 0; top: 0; width: 100%; display: block !important; padding: 0; }
+            .no-print { display: none !important; }
+            body { background: #fff; margin: 0; padding: 0; }
+            #pdf-overlay { display: block !important; position: static; }
+            .pdf-container { width: 100% !important; border: none !important; }
+        }
+
+        .pdf-container {
+            width: 1000px; margin: 20px auto; background: #fff; color: #000;
+            border: 5px solid #000; box-sizing: border-box; text-transform: uppercase;
         }
     </style>
 </head>
 <body>
 
-    <header id="main-header">
+    <header class="no-print">
         <div style="font-weight: 900; font-size: 18px;">SMARTBOX <span style="color:var(--accent)">PRO</span></div>
         <button class="btn-secondary" onclick="openImport()">DATEN</button>
     </header>
 
-    <div id="v-home" class="view active">
+    <div id="v-home" class="view active no-print">
         <div class="project-header">
             <div class="t-id-label">ÜBERSICHT</div>
-            <div class="p-num-title">PROJEKTE</div>
+            <div class="p-num-title">AUFTRÄGE</div>
         </div>
         <div id="list-p"></div>
-        <div class="scroll-pad"></div>
         <div class="actions-bar">
             <button class="btn-action" onclick="modalP()">+ NEUER AUFTRAG</button>
         </div>
     </div>
 
-    <div id="v-det" class="view">
+    <div id="v-det" class="view no-print">
         <div class="project-header">
             <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                 <button class="btn-secondary" onclick="goHome()">← BACK</button>
                 <div style="display:flex; gap:8px;">
                     <button class="btn-secondary" onclick="editCurrentProject()">EDIT</button>
-                    <button class="btn-pdf" onclick="showPDFPreview()">PDF EXPORT</button>
+                    <button class="btn-pdf" onclick="renderPDF()">PDF EXPORT</button>
                 </div>
             </div>
-            <div class="t-id-label">AUFTRAGSNUMMER</div>
+            <div class="t-id-label" id="h-sub">AUFTRAGSNUMMER</div>
             <div class="p-num-title" id="h-num">---</div>
             <div style="font-size:20px; font-weight:700; color:var(--text-secondary);" id="h-nam">---</div>
         </div>
         <div id="list-t"></div>
-        <div class="scroll-pad"></div>
         <div class="actions-bar">
             <button class="btn-action" onclick="modalT()">+ WERKZEUG</button>
         </div>
     </div>
 
+    <!-- PDF OVERLAY LAYER -->
+    <div id="pdf-overlay">
+        <div class="pdf-controls no-print">
+            <button class="btn-secondary" onclick="closePDF()">← EDIT MODUS</button>
+            <button class="btn-pdf" onclick="window.print()">DRUCKEN / SPEICHERN</button>
+        </div>
+        <div id="pdf-content"></div>
+    </div>
+
     <!-- Modals -->
-    <div id="m-p" class="modal" onclick="if(event.target==this) this.style.display='none'">
+    <div id="m-p" class="modal no-print" onclick="if(event.target==this) this.style.display='none'">
         <div class="modal-content">
-            <h2 style="margin:0 0 20px; font-weight:900;">Auftrag</h2>
+            <h2 style="margin:0 0 20px; font-weight:900;">Auftrag Details</h2>
             <input type="hidden" id="p-idx">
-            <input type="text" id="p-num" placeholder="NUMMER (z.B. 230947)">
+            <input type="text" id="p-num" placeholder="AUFTRAGSNUMMER (z.B. 230947)">
             <input type="text" id="p-nam" placeholder="BEZEICHNUNG">
-            <div class="grid-2">
-                <input type="text" id="p-lzf" placeholder="LZF">
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
                 <input type="text" id="p-mat" placeholder="MAT">
+                <input type="text" id="p-lzf" placeholder="LZF">
                 <input type="text" id="p-slg" placeholder="SÄGE">
                 <input type="text" id="p-abs" placeholder="ABST">
                 <input type="text" id="p-grf" placeholder="BACK">
@@ -169,45 +174,25 @@
         </div>
     </div>
 
-    <div id="m-t" class="modal" onclick="if(event.target==this) this.style.display='none'">
+    <div id="m-t" class="modal no-print" onclick="if(event.target==this) this.style.display='none'">
         <div class="modal-content">
             <h2 style="margin:0 0 20px; font-weight:900;">Werkzeug</h2>
             <input type="hidden" id="t-idx">
             <input type="text" id="t-bem" placeholder="T-NUMMER (BEMERKUNG)">
             <input type="text" id="t-nm" placeholder="BESCHREIBUNG">
-            <div id="btn-storage-toggle" class="toggle-btn">
-                <span>STANDART (LAGER)</span>
-                <div class="switch"></div>
+            <div id="btn-storage-toggle" style="display:flex; justify-content:space-between; padding:15px 0; font-weight:700; cursor:pointer;">
+                <span>LAGER (STANDART)</span>
+                <input type="checkbox" id="t-is-std" style="width:20px; margin:0;">
             </div>
-            <input type="text" id="t-loc" placeholder="LAGERPLATZ">
-            <textarea id="t-kom" placeholder="KOMMENTAR" rows="3"></textarea>
-            <button class="btn-save" onclick="saveT()">SPEICHERN</button>
+            <input type="text" id="t-loc" placeholder="PLATZ (z.B. FACH A1)">
+            <textarea id="t-kom" placeholder="ZUSATZ INFO / KOMMENTAR" rows="2"></textarea>
+            <button class="btn-save" onclick="saveT()">HINZUFÜGEN</button>
             <button id="btn-del-t" style="color:red; background:none; border:none; width:100%; margin-top:20px; font-weight:700;" onclick="delT()">Löschen</button>
         </div>
     </div>
 
-    <!-- PDF PREVIEW -->
-    <div id="pdf-preview-layer">
-        <div id="pdf-tools-top" style="display:flex; justify-content:space-between; margin-bottom:20px;" class="no-print">
-            <button class="btn-secondary" onclick="closePDF()">← EDIT MODUS</button>
-            <button class="btn-pdf" onclick="window.print()">DRUCKEN / SPEICHERN</button>
-        </div>
-        <div id="pdf-content-target"></div>
-    </div>
-
-    <div id="m-imp" class="modal" onclick="if(event.target==this) this.style.display='none'">
-        <div class="modal-content">
-            <h2 style="font-weight:900;">Backup / Restore</h2>
-            <textarea id="imp-area" style="height:250px; font-family:monospace; font-size:12px;"></textarea>
-            <div class="grid-2">
-                <button class="btn-secondary" onclick="exportJSON()">EXPORT</button>
-                <button class="btn-save" style="margin:0" onclick="importAnyJSON()">IMPORT</button>
-            </div>
-        </div>
-    </div>
-
     <script>
-        const DB_KEY = 'SMARTBOX_V2_PRO';
+        const DB_KEY = 'SB_PRO_V2_DATA';
         let db = JSON.parse(localStorage.getItem(DB_KEY)) || [];
         let curIdx = null;
         let sortable = null;
@@ -220,9 +205,9 @@
                     <div style="flex:1">
                         <div class="t-id-label">AUFTRAG</div>
                         <div class="t-name-label">${p.num || '---'}</div>
-                        <div style="font-size:15px; font-weight:700; color:var(--text-secondary);">${p.name || ''}</div>
+                        <div style="font-size:14px; font-weight:700; color:var(--text-secondary);">${p.name || ''}</div>
                     </div>
-                    <div style="color:#d2d2d7; font-size:24px;">❯</div>
+                    <div style="color:#ccc; font-size:20px;">❯</div>
                 </div>`).join('');
         }
 
@@ -250,16 +235,16 @@
                     <div class="handle">≡</div>
                     <div style="flex:1" onclick="modalT(${i})">
                         <div class="t-id-label">${t.bem || 'T-NR'}</div>
-                        <div class="t-name-label">${t.nm || '---'}</div>
-                        <div class="loc-tag ${t.isStandart ? 'standart' : 'sonder'}">
-                            ${t.isStandart ? 'STANDART | ' + (t.loc || 'LAGER') : 'SONDER | BLAUKISTE'}
+                        <div class="t-name-label">${t.nm || 'UNBEKANNT'}</div>
+                        <div class="loc-tag ${t.isStd ? 'standart' : 'sonder'}">
+                            ${t.isStd ? 'LAGER: ' + (t.loc || '---') : 'SONDER: BLAUKISTE'}
                         </div>
                     </div>
                 </div>`).join('');
 
             if(sortable) sortable.destroy();
             sortable = new Sortable(list, {
-                handle: '.handle', animation: 250,
+                handle: '.handle', animation: 200,
                 onEnd: () => {
                     db[curIdx].tools = Array.from(list.querySelectorAll('.list-item')).map(item => db[curIdx].tools[parseInt(item.dataset.id)]);
                     localStorage.setItem(DB_KEY, JSON.stringify(db));
@@ -268,29 +253,28 @@
             });
         }
 
-        // Project logic
+        // Logic
         function modalP() {
             el('p-idx').value = '';
-            ['p-num','p-nam','p-lzf','p-mat','p-slg','p-abs','p-grf','p-stk'].forEach(id => el(id).value = '');
-            el('btn-del-p').style.display = 'none'; el('m-p').style.display = 'flex';
+            ['p-num','p-nam','p-mat','p-lzf','p-slg','p-abs','p-grf','p-stk'].forEach(id => el(id).value = '');
+            el('m-p').style.display = 'flex'; el('btn-del-p').style.display = 'none';
         }
 
         function editCurrentProject() {
             const p = db[curIdx]; el('p-idx').value = curIdx;
             el('p-num').value = p.num; el('p-nam').value = p.name;
-            el('p-lzf').value = p.lzf; el('p-mat').value = p.mat;
+            el('p-mat').value = p.mat; el('p-lzf').value = p.lzf;
             el('p-slg').value = p.slg; el('p-abs').value = p.abs;
             el('p-grf').value = p.grf; el('p-stk').value = p.stk;
-            el('btn-del-p').style.display = 'block'; el('m-p').style.display = 'flex';
+            el('m-p').style.display = 'flex'; el('btn-del-p').style.display = 'block';
         }
 
         function saveP() {
             const i = el('p-idx').value;
             const data = {
                 num: el('p-num').value.toUpperCase(), name: el('p-nam').value.toUpperCase(),
-                lzf: el('p-lzf').value, mat: el('p-mat').value,
-                slg: el('p-slg').value, abs: el('p-abs').value,
-                grf: el('p-grf').value, stk: el('p-stk').value,
+                mat: el('p-mat').value, lzf: el('p-lzf').value, slg: el('p-slg').value,
+                abs: el('p-abs').value, grf: el('p-grf').value, stk: el('p-stk').value,
                 tools: i !== '' ? db[i].tools : []
             };
             if(i === '') db.push(data); else db[i] = data;
@@ -303,23 +287,19 @@
             if(confirm('Auftrag löschen?')) { db.splice(curIdx, 1); localStorage.setItem(DB_KEY, JSON.stringify(db)); goHome(); el('m-p').style.display='none'; }
         }
 
-        // Tool logic
         function modalT(i = null) {
             const edit = i !== null; el('t-idx').value = edit ? i : '';
-            const t = edit ? db[curIdx].tools[i] : {bem:'', nm:'', isStandart:false, loc:'', kom:''};
-            el('t-bem').value = t.bem; el('t-nm').value = t.nm; el('t-loc').value = t.loc; el('t-kom').value = t.kom;
-            const btn = el('btn-storage-toggle');
-            t.isStandart ? btn.classList.add('on') : btn.classList.remove('on');
-            btn.onclick = () => btn.classList.toggle('on');
-            el('btn-del-t').style.display = edit ? 'block' : 'none'; el('m-t').style.display = 'flex';
+            const t = edit ? db[curIdx].tools[i] : {bem:'', nm:'', isStd:false, loc:'', kom:''};
+            el('t-bem').value = t.bem; el('t-nm').value = t.nm; 
+            el('t-is-std').checked = t.isStd; el('t-loc').value = t.loc; el('t-kom').value = t.kom;
+            el('m-t').style.display = 'flex'; el('btn-del-t').style.display = edit ? 'block' : 'none';
         }
 
         function saveT() {
             const i = el('t-idx').value;
             const t = {
                 bem: el('t-bem').value.toUpperCase(), nm: el('t-nm').value.toUpperCase(),
-                isStandart: el('btn-storage-toggle').classList.contains('on'),
-                loc: el('t-loc').value.toUpperCase(), kom: el('t-kom').value.toUpperCase()
+                isStd: el('t-is-std').checked, loc: el('t-loc').value.toUpperCase(), kom: el('t-kom').value.toUpperCase()
             };
             if(!db[curIdx].tools) db[curIdx].tools = [];
             if(i === '') db[curIdx].tools.push(t); else db[curIdx].tools[i] = t;
@@ -331,75 +311,76 @@
             localStorage.setItem(DB_KEY, JSON.stringify(db)); renderTools(); el('m-t').style.display = 'none';
         }
 
-        function openImport() { el('imp-area').value = ''; el('m-imp').style.display = 'flex'; }
-        function exportJSON() { el('imp-area').value = JSON.stringify(db, null, 2); }
-        function importAnyJSON() {
-            try {
-                const data = JSON.parse(el('imp-area').value);
-                if(Array.isArray(data)) { db = data; localStorage.setItem(DB_KEY, JSON.stringify(db)); renderList(); el('m-imp').style.display='none'; }
-            } catch(e) { alert('Format Error'); }
+        function openImport() { 
+            const val = prompt('Daten einfügen (JSON):');
+            if(val) { try { db = JSON.parse(val); localStorage.setItem(DB_KEY, JSON.stringify(db)); renderList(); } catch(e){alert('Error');} }
         }
 
-        // PDF ENGINE (Premium Light Style)
-        function showPDFPreview() {
+        // --- PDF RENDER ENGINE ---
+        function renderPDF() {
             const p = db[curIdx];
             if(!p) return;
-            const sonder = (p.tools || []).filter(x => !x.isStandart);
-            const standart = (p.tools || []).filter(x => x.isStandart);
+            
+            const sonder = (p.tools || []).filter(t => !t.isStd);
+            const standard = (p.tools || []).filter(t => t.isStd);
 
-            const getRow = (t, loc) => `
-                <div style="display:flex; border-bottom:4px solid #000; page-break-inside:avoid;">
-                    <div style="flex:1; padding:12px 20px;">
-                        <div style="font-weight:900; font-size:26px; line-height:1.1;">${t.nm || ''}</div>
-                        <div style="font-size:12px; font-weight:800; color:#333; text-transform:uppercase;">${loc} ${t.kom ? ' | ' + t.kom : ''}</div>
+            const row = (t, loc) => `
+                <div style="display:flex; border-bottom:4px solid #000; min-height:80px; page-break-inside:avoid;">
+                    <div style="flex:1; padding:15px 25px;">
+                        <div style="font-weight:900; font-size:32px; line-height:1;">${t.nm || '---'}</div>
+                        <div style="font-size:14px; font-weight:800; color:#333; margin-top:5px;">${loc} ${t.kom ? ' | ' + t.kom : ''}</div>
                     </div>
-                    <div style="width:200px; border-left:4px solid #000; padding:10px; text-align:right; display:flex; flex-direction:column; justify-content:center;">
-                        <div style="font-size:10px; font-weight:900; color:#666;">BEMERKUNG</div>
-                        <div style="font-weight:900; font-size:24px;">${t.bem || '--'}</div>
+                    <div style="width:220px; border-left:4px solid #000; padding:10px; display:flex; flex-direction:column; justify-content:center; text-align:right;">
+                        <div style="font-size:11px; font-weight:900; color:#666;">BEMERKUNG</div>
+                        <div style="font-weight:900; font-size:28px;">${t.bem || '--'}</div>
                     </div>
                 </div>`;
 
-            const pdfHtml = `
-                <div style="border:5px solid #000; font-family:sans-serif; width:100%; box-sizing:border-box; color:#000;">
+            const html = `
+                <div class="pdf-container">
                     <!-- HEADER -->
-                    <div style="display:flex; border-bottom:5px solid #000; background:#fff;">
-                        <div style="flex:1; padding:25px;">
-                            <div style="font-size:16px; font-weight:900; text-transform:uppercase; margin-bottom:5px;">${p.name || ''}</div>
-                            <div style="font-size:80px; font-weight:900; line-height:0.8; letter-spacing:-5px;">${p.num || '---'}</div>
+                    <div style="display:flex; border-bottom:5px solid #000;">
+                        <div style="flex:1; padding:30px;">
+                            <div style="font-size:18px; font-weight:900; color:#000;">${p.name || 'UNBEKANNT'}</div>
+                            <div style="font-size:95px; font-weight:900; line-height:0.8; letter-spacing:-6px; margin-top:10px;">${p.num || '---'}</div>
                         </div>
-                        <div style="width:280px; border-left:5px solid #000; padding:15px;">
-                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; font-size:14px; font-weight:900;">
-                                <div style="display:flex; justify-content:space-between; border-bottom:1.5px solid #000; padding-bottom:2px;"><span>MAT:</span><span>${p.mat||'--'}</span></div>
-                                <div style="display:flex; justify-content:space-between; border-bottom:1.5px solid #000; padding-bottom:2px;"><span>LZF:</span><span>${p.lzf||'--'}</span></div>
-                                <div style="display:flex; justify-content:space-between; border-bottom:1.5px solid #000; padding-bottom:2px;"><span>SÄGE:</span><span>${p.slg||'--'}</span></div>
-                                <div style="display:flex; justify-content:space-between; border-bottom:1.5px solid #000; padding-bottom:2px;"><span>ABST:</span><span>${p.abs||'--'}</span></div>
-                                <div style="display:flex; justify-content:space-between; border-bottom:1.5px solid #000; padding-bottom:2px;"><span>BACK:</span><span>${p.grf||'--'}</span></div>
-                                <div style="display:flex; justify-content:space-between; border-bottom:1.5px solid #000; padding-bottom:2px;"><span>STK:</span><span>${p.stk||'--'}</span></div>
+                        <div style="width:320px; border-left:5px solid #000; padding:15px;">
+                            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; font-size:15px; font-weight:900;">
+                                <div style="border-bottom:2px solid #000; display:flex; justify-content:space-between;"><span>MAT:</span><span>${p.mat||'--'}</span></div>
+                                <div style="border-bottom:2px solid #000; display:flex; justify-content:space-between;"><span>LZF:</span><span>${p.lzf||'--'}</span></div>
+                                <div style="border-bottom:2px solid #000; display:flex; justify-content:space-between;"><span>SÄGE:</span><span>${p.slg||'--'}</span></div>
+                                <div style="border-bottom:2px solid #000; display:flex; justify-content:space-between;"><span>ABST:</span><span>${p.abs||'--'}</span></div>
+                                <div style="border-bottom:2px solid #000; display:flex; justify-content:space-between;"><span>BACK:</span><span>${p.grf||'--'}</span></div>
+                                <div style="border-bottom:2px solid #000; display:flex; justify-content:space-between;"><span>STK:</span><span>${p.stk||'--'}</span></div>
                             </div>
                         </div>
                     </div>
+
                     <!-- SONDER -->
-                    ${sonder.length ? '<div style="background:#000; color:#fff; padding:12px 20px; font-weight:900; font-size:18px;">SONDERWERKZEUGE</div>' + sonder.map(t => getRow(t, 'IN BLAUKISTE')).join('') : ''}
+                    ${sonder.length ? `
+                        <div style="background:#000; color:#fff; padding:12px 25px; font-weight:900; font-size:20px;">SONDERWERKZEUGE</div>
+                        ${sonder.map(t => row(t, 'IN BLAUKISTE')).join('')}
+                    ` : ''}
+
                     <!-- STANDART -->
-                    ${standart.length ? '<div style="background:#000; color:#fff; padding:12px 20px; font-weight:900; font-size:18px;">STANDARTWERKZEUGE</div>' + standart.map(t => getRow(t, t.loc || 'LAGER')).join('') : ''}
+                    ${standard.length ? `
+                        <div style="background:#000; color:#fff; padding:12px 25px; font-weight:900; font-size:20px;">STANDARTWERKZEUGE</div>
+                        ${standard.map(t => row(t, t.loc || 'LAGER')).join('')}
+                    ` : ''}
                 </div>`;
 
-            el('pdf-content-target').innerHTML = pdfHtml;
-            el('pdf-preview-layer').style.display = 'block';
+            el('pdf-content').innerHTML = html;
+            el('pdf-overlay').style.display = 'block';
             document.body.style.overflow = 'hidden';
         }
 
         function closePDF() {
-            el('pdf-preview-layer').style.display = 'none';
+            el('pdf-overlay').style.display = 'none';
             document.body.style.overflow = 'auto';
         }
 
         window.onload = renderList;
     </script>
-    
-    <style class="no-print">
-        @media print { .no-print { display: none !important; } }
-    </style>
 </body>
 </html>
 
