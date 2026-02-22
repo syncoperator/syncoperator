@@ -3,390 +3,289 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SMARTBOX PRO V2 - UI/UX Expert System</title>
+    <title>SMARTBOX PRO V2</title>
     <style>
-        /* Light Premium Design Tokens */
         :root {
             --bg-color: #ffffff;
             --text-color: #000000;
-            --border-color: #000000;
-            --border-width: 3px;
-            --font-main: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            --border-heavy: 3px solid #000;
+            --border-light: 1px solid #000;
+            --font-main: "Inter", -apple-system, sans-serif;
         }
 
-        * {
-            box-sizing: border-box;
-            -webkit-print-color-adjust: exact;
-        }
+        * { box-sizing: border-box; -webkit-print-color-adjust: exact; }
 
         body {
             margin: 0;
             font-family: var(--font-main);
-            background-color: var(--bg-color);
+            background: #f4f4f4;
             color: var(--text-color);
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
         }
 
-        /* Header UI */
+        /* UI Elements */
         header {
-            padding: 20px;
-            border-bottom: 1px solid #eee;
+            background: #fff;
+            padding: 15px 25px;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            border-bottom: var(--border-light);
             position: sticky;
             top: 0;
-            background: white;
             z-index: 100;
         }
 
-        .header-title {
-            font-size: 24px;
-            font-weight: 900;
-            text-transform: uppercase;
+        .ui-container {
+            max-width: 900px;
+            margin: 20px auto;
+            background: #fff;
+            padding: 30px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            padding-bottom: 160px;
         }
 
-        .controls {
-            display: flex;
-            gap: 10px;
-        }
-
-        button {
-            background: black;
-            color: white;
-            border: none;
-            padding: 10px 15px;
-            font-weight: 700;
-            cursor: pointer;
-            text-transform: uppercase;
-            font-size: 12px;
-            transition: opacity 0.2s;
-        }
-
-        button:hover {
-            opacity: 0.8;
-        }
-
-        button.secondary {
-            background: #eee;
-            color: black;
-        }
-
-        /* Main Content */
-        main {
-            padding: 20px;
-            max-width: 1200px;
-            margin: 0 auto;
-            width: 100%;
-        }
-
-        #tool-list {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-            padding-bottom: 160px; /* Essential padding to avoid overlapping with fixed actions */
-        }
-
-        /* Tool Card Styles */
         .tool-card {
-            border: 2px solid #000;
+            border: var(--border-light);
+            margin-bottom: 10px;
             padding: 15px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            background: #fff;
-            position: relative;
         }
 
-        .tool-info {
-            display: flex;
-            flex-direction: column;
-        }
+        .card-labels { display: flex; flex-direction: column; gap: 2px; }
+        .label-small { font-size: 9px; font-weight: 900; text-transform: uppercase; }
+        .value-large { font-size: 20px; font-weight: 900; text-transform: uppercase; border: none; outline: none; }
 
-        .label-bemerkung {
-            font-size: 9px;
+        button {
+            background: #000;
+            color: #fff;
+            border: none;
+            padding: 8px 16px;
             font-weight: 900;
+            cursor: pointer;
             text-transform: uppercase;
-            margin-bottom: 4px;
+            font-size: 11px;
         }
 
-        .value-text {
-            font-size: 22px;
-            font-weight: 900;
-            line-height: 1;
-        }
+        button.sec { background: #eee; color: #000; margin-left: 5px; }
 
-        .card-actions {
-            display: flex;
-            gap: 5px;
-        }
-
-        /* Print/PDF Preparation Layout (Hidden in UI) */
-        #print-container {
-            display: none;
-        }
+        /* Print Layout (The Frame) */
+        #print-area { display: none; }
 
         @media print {
-            body * { visibility: hidden; }
-            #print-container, #print-container * { visibility: visible; }
-            #print-container {
-                display: block;
-                position: absolute;
-                left: 0;
-                top: 0;
+            @page { margin: 10mm; }
+            body { background: #fff; }
+            .ui-container, header, .no-print { display: none !important; }
+            #print-area { display: block; width: 100%; }
+            
+            table.master-frame {
                 width: 100%;
+                border-collapse: collapse;
+                border: var(--border-heavy);
             }
-            header, .controls, #tool-list, .card-actions { display: none !important; }
+
+            .header-cell { padding: 10px 15px; border-bottom: var(--border-heavy); }
+            .meta-table { width: 100%; border-left: var(--border-heavy); }
+            .meta-table td { 
+                font-size: 9px; 
+                font-weight: 900; 
+                padding: 3px 10px; 
+                border-bottom: 0.5px solid #000; 
+            }
+            
+            .category-row {
+                background: #000 !important;
+                color: #fff !important;
+                font-weight: 900;
+                font-size: 12px;
+                padding: 6px 15px;
+                text-transform: uppercase;
+            }
+
+            .tool-row td {
+                border-bottom: var(--border-light);
+                padding: 8px 15px;
+                vertical-align: middle;
+            }
+
+            .tool-name { font-size: 14px; font-weight: 900; text-transform: uppercase; }
+            .tool-sub { font-size: 8px; font-weight: 900; text-transform: uppercase; }
+            .bemerkung-box { text-align: right; }
         }
 
-        /* PDF Frame Structure */
-        .pdf-frame {
-            width: 100%;
-            border-collapse: collapse;
-            border: var(--border-width) solid #000;
-        }
-
-        .pdf-header-cell {
-            border-bottom: var(--border-width) solid #000;
-            padding: 15px;
-            vertical-align: top;
-        }
-
-        .meta-box {
-            border-left: var(--border-width) solid #000;
-            width: 250px;
-            padding: 10px;
-        }
-
-        .meta-item {
-            display: flex;
-            justify-content: space-between;
-            font-size: 10px;
-            font-weight: 900;
-            border-bottom: 1px solid #000;
-            padding: 2px 0;
-        }
-
-        .meta-item:last-child { border-bottom: none; }
-
-        .tool-row td {
-            border-bottom: 1px solid #000;
-            padding: 8px 15px;
-        }
-
-        /* Project Info Form */
-        .project-meta-form {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            margin-bottom: 30px;
-            background: #f9f9f9;
-            padding: 20px;
-            border: 1px solid #ddd;
-        }
-
-        .input-group {
-            display: flex;
-            flex-direction: column;
-        }
-
-        label {
-            font-size: 10px;
-            font-weight: 900;
-            margin-bottom: 5px;
-        }
-
-        input {
-            padding: 8px;
-            border: 1px solid #000;
-            font-family: var(--font-main);
-            font-weight: 700;
-        }
+        /* Inputs */
+        .meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+        .meta-grid input { border: var(--border-light); padding: 8px; font-weight: 900; }
     </style>
 </head>
 <body>
 
 <header>
-    <div class="header-title">SMARTBOX PRO V2</div>
-    <div class="controls">
-        <button onclick="exportJSON()">JSON Export</button>
-        <button class="secondary" onclick="triggerImport()">Import</button>
-        <button onclick="window.print()">Print PDF</button>
+    <div style="font-weight: 900; font-size: 18px;">SMARTBOX PRO V2</div>
+    <div class="no-print">
+        <button onclick="exportData()">Export JSON</button>
+        <button class="sec" onclick="document.getElementById('file-input').click()">Import JSON</button>
+        <button class="sec" onclick="window.print()">Print PDF</button>
+        <input type="file" id="file-input" style="display:none" onchange="importData(event)">
     </div>
 </header>
 
-<main>
-    <section class="project-meta-form">
-        <div class="input-group">
-            <label>PROJECT NAME</label>
-            <input type="text" id="proj-name" value="PROJEKT_ALPHA">
-        </div>
-        <div class="input-group">
-            <label>PROJECT NUMBER</label>
-            <input type="text" id="proj-num" value="2024-001">
-        </div>
-    </section>
-
-    <div style="margin-bottom: 20px;">
-        <button onclick="addTool()">+ Добавить Инструмент</button>
+<div class="ui-container">
+    <div class="meta-grid">
+        <input type="text" id="p-title" placeholder="TITLE (e.g. EINSCHRAUBNIPPEL)" value="EINSCHRAUBNIPPEL DN10">
+        <input type="text" id="p-number" placeholder="PROJECT NUMBER" value="230947">
     </div>
 
-    <div id="tool-list">
-        <!-- Инструменты будут здесь -->
+    <div id="editor-list"></div>
+    
+    <div style="margin-top: 20px;" class="no-print">
+        <button onclick="addTool('SONDER')">+ Add Sonderwerkzeug</button>
+        <button onclick="addTool('STANDART')" class="sec">+ Add Standartwerkzeug</button>
     </div>
-</main>
+</div>
 
-<!-- Контейнер для печати (согласно правилу единой таблицы) -->
-<div id="print-container"></div>
-
-<input type="file" id="import-input" style="display:none" onchange="importJSON(event)">
+<div id="print-area">
+    <table class="master-frame">
+        <thead>
+            <tr>
+                <td class="header-cell" style="width: 60%;">
+                    <div id="pr-title" style="font-size: 11px; font-weight: 900;">TITLE</div>
+                    <div id="pr-number" style="font-size: 42px; font-weight: 900; line-height: 1;">000000</div>
+                </td>
+                <td class="header-cell" style="padding: 0; width: 40%;">
+                    <table class="meta-table" cellspacing="0">
+                        <tr><td>MAT: <span id="m-mat">1.4104 #30</span></td><td>LZF: <span id="m-lzf">--</span></td></tr>
+                        <tr><td>SÄGE: <span id="m-sage">--</span></td><td>ABST: <span id="m-abst">0.5mm</span></td></tr>
+                        <tr><td>BACKEN: <span id="m-back">18-25</span></td><td>STÜCK: <span id="m-stuck">--</span></td></tr>
+                    </table>
+                </td>
+            </tr>
+        </thead>
+        <tbody id="print-body">
+            <!-- Content generated by JS -->
+        </tbody>
+    </table>
+</div>
 
 <script>
-    // Инициализация данных
-    let tools = [
-        { id: 1, bemerkung: "T-NR 102", value: "FRAISER D12" },
-        { id: 2, bemerkung: "T-NR 105", value: "DRILL 5.0" }
-    ];
+    let state = {
+        title: "EINSCHRAUBNIPPEL DN10",
+        number: "230947",
+        meta: { mat: "1.4104 #30", lzf: "--", sage: "--", abst: "0.5mm", back: "18-25", stuck: "--" },
+        tools: [
+            { type: 'SONDER', name: 'BOHRST.D6 MHC 20-6 G54', sub: 'IN BLAUKISTE', note: '--' },
+            { type: 'SONDER', name: 'SPIBO D4 MIT KTB G54', sub: 'IN BLAUKISTE', note: '--' }
+        ]
+    };
 
-    const toolList = document.getElementById('tool-list');
-
-    function renderTools() {
-        toolList.innerHTML = '';
-        tools.forEach((tool, index) => {
-            const card = document.createElement('div');
-            card.className = 'tool-card';
-            card.innerHTML = `
-                <div class="tool-info">
-                    <div class="label-bemerkung">BEMERKUNG</div>
-                    <div class="value-text" contenteditable="true" onblur="updateValue(${index}, 'value', this.innerText)">${tool.value}</div>
-                    <div class="label-bemerkung" style="margin-top: 10px;">${tool.bemerkung}</div>
+    function render() {
+        // Update UI
+        const list = document.getElementById('editor-list');
+        list.innerHTML = '';
+        state.tools.forEach((t, i) => {
+            const div = document.createElement('div');
+            div.className = 'tool-card';
+            div.innerHTML = `
+                <div class="card-labels">
+                    <span class="label-small">${t.type}</span>
+                    <input class="value-large" value="${t.name}" onchange="updateTool(${i}, 'name', this.value)">
+                    <input style="font-size:10px; font-weight:700; border:none; color:#666;" value="${t.sub}" onchange="updateTool(${i}, 'sub', this.value)">
                 </div>
-                <div class="card-actions">
-                    <button class="secondary" onclick="moveTool(${index}, -1)">↑</button>
-                    <button class="secondary" onclick="moveTool(${index}, 1)">↓</button>
-                    <button style="background:red" onclick="deleteTool(${index})">X</button>
+                <div style="text-align:right">
+                    <div class="label-small">BEMERKUNG</div>
+                    <input style="text-align:right; font-weight:900;" value="${t.note}" onchange="updateTool(${i}, 'note', this.value)">
+                    <div style="margin-top:5px">
+                        <button class="sec" onclick="move(${i}, -1)">↑</button>
+                        <button class="sec" onclick="move(${i}, 1)">↓</button>
+                        <button class="sec" style="color:red" onclick="remove(${i})">X</button>
+                    </div>
                 </div>
             `;
-            toolList.appendChild(card);
+            list.appendChild(div);
         });
-        updatePrintView();
+
+        // Update Print
+        document.getElementById('pr-title').innerText = document.getElementById('p-title').value;
+        document.getElementById('pr-number').innerText = document.getElementById('p-number').value;
+        
+        const tbody = document.getElementById('print-body');
+        tbody.innerHTML = '';
+
+        const categories = ['SONDER', 'STANDART'];
+        categories.forEach(cat => {
+            const filtered = state.tools.filter(t => t.type === cat);
+            if(filtered.length > 0) {
+                const catRow = document.createElement('tr');
+                catRow.innerHTML = `<td colspan="2" class="category-row">${cat}WERKZEUGE</td>`;
+                tbody.appendChild(catRow);
+
+                filtered.forEach(t => {
+                    const tr = document.createElement('tr');
+                    tr.className = 'tool-row';
+                    tr.innerHTML = `
+                        <td>
+                            <div class="tool-name">${t.name}</div>
+                            <div class="tool-sub">${t.sub}</div>
+                        </td>
+                        <td class="bemerkung-box">
+                            <div class="label-small">BEMERKUNG</div>
+                            <div style="font-weight:900; font-size:12px;">${t.note}</div>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+        });
     }
 
-    function addTool() {
-        const nr = tools.length + 100;
-        tools.push({ id: Date.now(), bemerkung: `T-NR ${nr}`, value: "NEW TOOL" });
-        renderTools();
+    function addTool(type) {
+        state.tools.push({ type, name: 'NEW TOOL', sub: 'IN BLAUKISTE', note: '--' });
+        render();
     }
 
-    function deleteTool(index) {
-        tools.splice(index, 1);
-        renderTools();
+    function updateTool(i, field, val) {
+        state.tools[i][field] = val;
+        render();
     }
 
-    function updateValue(index, field, val) {
-        tools[index][field] = val;
-        updatePrintView();
-    }
-
-    function moveTool(index, direction) {
-        const newIndex = index + direction;
-        if (newIndex >= 0 && newIndex < tools.length) {
-            const temp = tools[index];
-            tools[index] = tools[newIndex];
-            tools[newIndex] = temp;
-            renderTools();
+    function move(i, dir) {
+        let n = i + dir;
+        if(n >= 0 && n < state.tools.length) {
+            [state.tools[i], state.tools[n]] = [state.tools[n], state.tools[i]];
+            render();
         }
     }
 
-    function exportJSON() {
-        const data = {
-            project: {
-                name: document.getElementById('proj-name').value,
-                number: document.getElementById('proj-num').value
-            },
-            tools: tools
-        };
-        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `smartbox_${data.project.name}.json`;
-        a.click();
+    function remove(i) {
+        state.tools.splice(i, 1);
+        render();
     }
 
-    function triggerImport() {
-        document.getElementById('import-input').click();
+    function exportData() {
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state));
+        const dlAnchorElem = document.createElement('a');
+        dlAnchorElem.setAttribute("href", dataStr);
+        dlAnchorElem.setAttribute("download", `smartbox_${state.number}.json`);
+        dlAnchorElem.click();
     }
 
-    function importJSON(event) {
-        const file = event.target.files[0];
-        if (!file) return;
+    function importData(e) {
+        const file = e.target.files[0];
         const reader = new FileReader();
-        reader.onload = function(e) {
-            const data = JSON.parse(e.target.result);
-            if (data.tools) {
-                tools = data.tools;
-                document.getElementById('proj-name').value = data.project.name || "";
-                document.getElementById('proj-num').value = data.project.number || "";
-                renderTools();
-            }
+        reader.onload = (event) => {
+            state = JSON.parse(event.target.result);
+            document.getElementById('p-title').value = state.title;
+            document.getElementById('p-number').value = state.number;
+            render();
         };
         reader.readAsText(file);
     }
 
-    function updatePrintView() {
-        const projName = document.getElementById('proj-name').value;
-        const projNum = document.getElementById('proj-num').value;
-        const printContainer = document.getElementById('print-container');
+    document.getElementById('p-title').addEventListener('input', render);
+    document.getElementById('p-number').addEventListener('input', render);
 
-        let html = `
-            <table class="pdf-frame">
-                <thead>
-                    <tr>
-                        <td class="pdf-header-cell">
-                            <h1 style="margin:0; font-weight:900;">${projName}</h1>
-                            <p style="margin:5px 0 0 0; font-weight:700;">PROJ-NR: ${projNum}</p>
-                        </td>
-                        <td class="pdf-header-cell meta-box" style="width: 250px;">
-                            <div class="meta-item"><span>MAT</span><span>______</span></div>
-                            <div class="meta-item"><span>LZF</span><span>______</span></div>
-                            <div class="meta-item"><span>SÄGE</span><span>______</span></div>
-                            <div class="meta-item"><span>ABST</span><span>______</span></div>
-                            <div class="meta-item"><span>BACKEN</span><span>______</span></div>
-                            <div class="meta-item"><span>STOCK</span><span>______</span></div>
-                        </td>
-                    </tr>
-                </thead>
-                <tbody>
-        `;
-
-        tools.forEach(tool => {
-            html += `
-                <tr class="tool-row">
-                    <td colspan="2">
-                        <div style="font-size: 10px; font-weight: 900;">${tool.bemerkung}</div>
-                        <div style="font-size: 18px; font-weight: 900;">${tool.value}</div>
-                    </td>
-                </tr>
-            `;
-        });
-
-        // Fill remaining space to keep border solid
-        html += `
-                </tbody>
-            </table>
-        `;
-        printContainer.innerHTML = html;
-    }
-
-    // Слушатели для обновления мета-данных
-    document.getElementById('proj-name').addEventListener('input', updatePrintView);
-    document.getElementById('proj-num').addEventListener('input', updatePrintView);
-
-    // Начальный рендер
-    renderTools();
+    render();
 </script>
 
 </body>
