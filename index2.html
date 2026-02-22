@@ -1,308 +1,166 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="de">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-    <title>CITITOOL | NextGen 2026</title>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SMARTBOX PRO V2</title>
     <style>
         :root {
-            --bg: #f2f5f9;
-            --surface: #ffffff;
-            --main: #0a0c10;
-            --accent: #0066ff;
-            --border: #e8ebf0;
-            --text-muted: #64748b;
-            --radius: 20px;
-            --shadow: 0 10px 25px -5px rgba(0,0,0,0.05);
+            --bg: #ffffff;
+            --fg: #000000;
+            --accent: #007aff;
+            --gray: #f2f2f7;
+            --border: #000000;
         }
 
-        body {
-            font-family: 'Plus Jakarta Sans', sans-serif;
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { 
+            margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+            background: var(--bg); color: var(--fg); overflow-x: hidden;
+        }
+
+        /* Основные экраны */
+        .view { display: none; padding: 20px; animation: fadeIn 0.2s ease; }
+        .view.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* Заголовки */
+        h1 { font-size: 32px; font-weight: 900; letter-spacing: -1px; margin: 0 0 20px 0; text-transform: uppercase; }
+        .h-sub { font-size: 14px; font-weight: 700; color: #8e8e93; margin-bottom: 5px; }
+
+        /* Элементы списка в приложении */
+        .list-item {
             background: var(--bg);
-            color: var(--main);
-            margin: 0; padding: 0;
-            -webkit-font-smoothing: antialiased;
-        }
-
-        /* --- HEADER & STATUS --- */
-        header {
-            background: var(--surface);
-            padding: 20px 24px;
+            border-bottom: 1.5px solid #eee;
+            padding: 16px 0;
             display: flex;
-            justify-content: space-between;
             align-items: center;
-            border-bottom: 1px solid var(--border);
-            position: sticky; top: 0; z-index: 1000;
+            justify-content: space-between;
+        }
+        .t-id-label { font-size: 9px; font-weight: 900; color: #8e8e93; margin-bottom: 2px; }
+        .t-name-label { font-size: 22px; font-weight: 900; line-height: 1; margin-bottom: 4px; }
+
+        /* Теги */
+        .loc-tag { 
+            display: inline-block; padding: 4px 8px; border-radius: 6px; 
+            font-size: 11px; font-weight: 800; margin-top: 8px;
+        }
+        .standart { background: #e8f2ff; color: #007aff; }
+        .sonder { background: #fff2e8; color: #ff9500; }
+
+        /* Кнопки */
+        .btn-main {
+            background: var(--fg); color: var(--bg); border: none;
+            padding: 16px 24px; border-radius: 14px; font-size: 16px; font-weight: 700;
+            width: 100%; margin-top: 10px; cursor: pointer;
+        }
+        .btn-sec {
+            background: var(--gray); color: var(--fg); border: none;
+            padding: 12px; border-radius: 12px; font-size: 14px; font-weight: 700;
+        }
+        .fab {
+            position: fixed; bottom: 30px; right: 20px;
+            width: 64px; height: 64px; background: var(--fg); color: var(--bg);
+            border-radius: 32px; display: flex; align-items: center; justify-content: center;
+            font-size: 30px; box-shadow: 0 8px 24px rgba(0,0,0,0.2); z-index: 100;
         }
 
-        .logo { font-weight: 800; font-size: 20px; letter-spacing: -0.5px; }
-        .logo span { color: var(--accent); }
-
-        /* --- NAV TABS --- */
-        .nav-tabs {
-            display: flex;
-            background: var(--surface);
-            padding: 10px 20px;
-            gap: 10px;
-            border-bottom: 1px solid var(--border);
+        /* Модальные окна */
+        .modal {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+            display: none; align-items: flex-end; z-index: 1000;
+        }
+        .modal-content {
+            background: var(--bg); width: 100%; padding: 30px 20px;
+            border-top-left-radius: 24px; border-top-right-radius: 24px;
+            max-height: 90vh; overflow-y: auto;
+        }
+        input {
+            width: 100%; padding: 14px; background: var(--gray);
+            border: none; border-radius: 12px; margin-bottom: 15px;
+            font-size: 16px; font-weight: 600;
         }
 
-        .tab-btn {
-            flex: 1; border: none; background: #f8fafc; padding: 12px;
-            border-radius: 12px; font-weight: 700; font-size: 11px;
-            color: var(--text-muted); text-transform: uppercase;
-            transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        /* Переключатель Standart */
+        .toggle-btn {
+            padding: 14px; border-radius: 12px; background: #ff3b30; color: #fff;
+            text-align: center; font-weight: 800; margin-bottom: 15px; cursor: pointer;
         }
+        .toggle-btn.on { background: #34c759; }
 
-        .tab-btn.active {
-            background: var(--main);
-            color: #fff;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        }
-
-        /* --- WORKBENCH AREA --- */
-        .scroll-container { padding: 20px; padding-bottom: 120px; }
-
-        .card {
-            background: var(--surface);
-            border-radius: var(--radius);
-            padding: 24px;
-            margin-bottom: 20px;
-            border: 1px solid var(--border);
-            box-shadow: var(--shadow);
-        }
-
-        .section-title {
-            font-size: 11px; font-weight: 800; text-transform: uppercase;
-            color: var(--text-muted); margin-bottom: 16px; letter-spacing: 1px;
-            display: flex; justify-content: space-between;
-        }
-
-        /* --- SLOTS (Drag Target) --- */
-        .slot-item {
-            display: grid; grid-template-columns: 48px 1fr auto;
-            align-items: center; gap: 16px;
-            padding: 16px; background: #fcfdfe;
-            border-radius: 16px; border: 1px solid var(--border);
-            margin-bottom: 10px; transition: 0.2s;
-        }
-
-        .slot-item.drag-over { border: 2px dashed var(--accent); background: #f0f7ff; }
-
-        .slot-num {
-            width: 48px; height: 48px; background: #f1f5f9;
-            border-radius: 12px; display: flex; align-items: center;
-            justify-content: center; font-family: 'JetBrains Mono', monospace;
-            font-weight: 700; color: var(--main);
-        }
-
-        .slot-info b { font-size: 14px; display: block; }
-        .slot-info span { font-size: 11px; color: var(--text-muted); }
-
-        /* --- LIBRARY (Drag Sources) --- */
-        .lib-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .op-item {
-            background: var(--surface); border: 1px solid var(--border);
-            padding: 15px; border-radius: 14px; font-size: 12px; font-weight: 700;
-            cursor: grab; box-shadow: 0 2px 5px rgba(0,0,0,0.02);
-        }
-        .op-item:active { cursor: grabbing; opacity: 0.6; }
-
-        /* --- SYNC TIMELINE --- */
-        .sync-row {
-            display: flex; gap: 12px; margin-bottom: 12px;
-        }
-        .m-code {
-            min-width: 65px; height: 45px; background: var(--main);
-            color: #fff; border-radius: 10px; display: flex;
-            align-items: center; justify-content: center;
-            font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 700;
-        }
-        .op-block {
-            flex-grow: 1; background: var(--surface); border: 1px solid var(--border);
-            border-radius: 10px; padding: 0 16px; display: flex; align-items: center;
-            font-size: 13px; font-weight: 600;
-        }
-
-        /* --- COMMAND CENTER (DOCK) --- */
-        .dock {
-            position: fixed; bottom: 30px; left: 20px; right: 20px;
-            background: rgba(10, 12, 16, 0.95);
-            backdrop-filter: blur(20px); height: 70px;
-            border-radius: 24px; display: grid; grid-template-columns: repeat(4, 1fr);
-            align-items: center; box-shadow: 0 20px 50px rgba(0,0,0,0.3);
-            z-index: 2000;
-        }
-
-        .dock-btn {
-            border: none; background: none; color: #fff;
-            display: flex; flex-direction: column; align-items: center; gap: 4px;
-            font-size: 9px; font-weight: 700; opacity: 0.5; transition: 0.2s;
-        }
-        .dock-btn.active { opacity: 1; color: var(--accent); }
-
-        .add-btn {
-            width: 50px; height: 50px; background: var(--accent);
-            border-radius: 16px; display: flex; align-items: center;
-            justify-content: center; color: #fff; font-size: 24px;
-            box-shadow: 0 8px 20px rgba(0,102,255,0.4); border: none;
-        }
-
-        /* --- PRINT / PDF --- */
-        @media print {
-            .dock, .nav-tabs, .add-btn, .lib-grid { display: none !important; }
-        }
+        /* Отступ снизу для списка, чтобы FAB не перекрывал */
+        #list-t, #list-p { padding-bottom: 100px; }
     </style>
 </head>
 <body>
 
-<header>
-    <div class="logo">CITI<span>TOOL</span></div>
-    <div style="display: flex; gap: 8px;">
-        <button onclick="exportPdf()" style="border:none; background:none; font-size:12px; font-weight:700;">PDF</button>
-        <button onclick="exportJson()" style="border:none; background:none; font-size:12px; font-weight:700;">JSON</button>
+    <div id="v-home" class="view active">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h1>Projekte</h1>
+            <button class="btn-sec" onclick="openImport()">Data</button>
+        </div>
+        <div id="list-p"></div>
+        <div class="fab" onclick="modalP()">+</div>
     </div>
-</header>
 
-<div class="nav-tabs">
-    <button class="tab-btn active" onclick="switchKanal(1)">Kanal 1</button>
-    <button class="tab-btn" onclick="switchKanal(2)">Kanal 2</button>
-</div>
-
-<main class="scroll-container">
-    <div class="section-title">Station Configuration <span id="ch-indicator">CH 1</span></div>
-    <div id="slotList">
-        </div>
-
-    <div class="section-title" style="margin-top: 30px;">Sync Timeline</div>
-    <div id="syncList">
-        </div>
-
-    <div class="section-title" style="margin-top: 30px;">Quick Library</div>
-    <div class="lib-grid" id="libraryList">
-        </div>
-</main>
-
-<div class="dock">
-    <button class="dock-btn active">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
-        MAP
-    </button>
-    <button class="dock-btn" onclick="document.getElementById('fileInput').click()">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-        LOAD
-    </button>
-    <button class="dock-btn" onclick="window.scrollTo({top: 0, behavior: 'smooth'})">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
-        TOP
-    </button>
-    <button class="dock-btn" onclick="addSlot()">
-        <div class="add-btn">+</div>
-    </button>
-</div>
-
-<input type="file" id="fileInput" style="display: none" onchange="importJson(event)">
-
-<script>
-    // --- APP STATE ---
-    let state = {
-        activeKanal: 1,
-        slots: { 1: [], 2: [] },
-        library: [
-            { id: 'op1', title: 'Axial Drill', spindle: 'SP4', tool: 'T0101' },
-            { id: 'op2', title: 'Radial Mill', spindle: 'SP3', tool: 'T0202' },
-            { id: 'op3', title: 'Face Turn', spindle: 'SP4', tool: 'T0303' }
-        ]
-    };
-
-    // --- CORE FUNCTIONS ---
-    function switchKanal(num) {
-        state.activeKanal = num;
-        document.querySelectorAll('.tab-btn').forEach((btn, idx) => {
-            btn.classList.toggle('active', idx + 1 === num);
-        });
-        document.getElementById('ch-indicator').innerText = `CH ${num}`;
-        renderSlots();
-    }
-
-    function renderSlots() {
-        const list = document.getElementById('slotList');
-        list.innerHTML = '';
-        const currentSlots = state.slots[state.activeKanal];
-
-        if(currentSlots.length === 0) {
-            list.innerHTML = '<div style="text-align:center; padding:20px; color:#94a3b8; font-size:12px;">Keine Slots definiert</div>';
-        }
-
-        currentSlots.forEach((slot, index) => {
-            const el = document.createElement('div');
-            el.className = 'slot-item';
-            el.innerHTML = `
-                <div class="slot-num">${String(index + 1).padStart(2, '0')}</div>
-                <div class="slot-info">
-                    <b>${slot.title || 'Leerer Slot'}</b>
-                    <span>${slot.tool || '---'} • ${slot.spindle || '---'}</span>
-                </div>
-                <button onclick="deleteSlot(${index})" style="border:none; background:none; color:#ff4d4d; font-weight:800;">×</button>
-            `;
-            list.appendChild(el);
-        });
-    }
-
-    function renderLibrary() {
-        const list = document.getElementById('libraryList');
-        list.innerHTML = state.library.map(item => `
-            <div class="op-item" draggable="true" ondragstart="handleDragStart(event, '${item.id}')">
-                ${item.title}
+    <div id="v-det" class="view">
+        <div style="display:flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px;">
+            <button class="btn-sec" onclick="goHome()">← Back</button>
+            <div style="text-align: right;">
+                <button class="btn-sec" onclick="editCurrentProject()">Edit</button>
+                <button class="btn-sec" style="background:#000; color:#fff; margin-left:8px;" onclick="makePDF()">PDF</button>
             </div>
-        `).join('');
-    }
+        </div>
+        <div class="h-sub" id="h-nam">NAME</div>
+        <h1 id="h-num" style="font-size: 48px; margin-bottom: 25px;">000000</h1>
+        
+        <div id="list-t"></div>
+        <div class="fab" onclick="modalT()">+</div>
+    </div>
 
-    function addSlot() {
-        state.slots[state.activeKanal].push({ title: 'New Operation', tool: 'T0000', spindle: 'SP1' });
-        renderSlots();
-    }
+    <div id="m-p" class="modal" onclick="if(event.target==this) hide('m-p')">
+        <div class="modal-content">
+            <h2 style="margin-top:0">Projekt Info</h2>
+            <input type="hidden" id="p-idx">
+            <input type="text" id="p-num" placeholder="PROJEKT NUMMER">
+            <input type="text" id="p-nam" placeholder="PROJEKT NAME">
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                <input type="text" id="p-lzf" placeholder="LZF">
+                <input type="text" id="p-mat" placeholder="MAT">
+                <input type="text" id="p-slg" placeholder="SÄGE">
+                <input type="text" id="p-abs" placeholder="ABST">
+                <input type="text" id="p-grf" placeholder="BACKEN">
+                <input type="text" id="p-stk" placeholder="STOCK">
+            </div>
+            <button class="btn-main" onclick="saveP()">Speichern</button>
+        </div>
+    </div>
 
-    function deleteSlot(index) {
-        state.slots[state.activeKanal].splice(index, 1);
-        renderSlots();
-    }
+    <div id="m-t" class="modal" onclick="if(event.target==this) hide('m-t')">
+        <div class="modal-content">
+            <h2 style="margin-top:0">Werkzeug</h2>
+            <input type="hidden" id="t-idx">
+            <input type="text" id="t-bem" placeholder="BEMERKUNG">
+            <input type="text" id="t-nm" placeholder="NAME">
+            <div id="btn-storage-toggle" class="toggle-btn">STANDART (STORAGE)</div>
+            <input type="text" id="t-loc" placeholder="LAGERORT">
+            <input type="text" id="t-kom" placeholder="ZUSATZ INFO">
+            <button class="btn-main" onclick="saveT()">Speichern</button>
+            <button id="btn-del-t" class="btn-sec" style="width:100%; margin-top:10px; color:red;" onclick="delT()">Löschen</button>
+        </div>
+    </div>
 
-    // --- DRAG & DROP LOGIC ---
-    function handleDragStart(e, id) {
-        e.dataTransfer.setData('text/plain', id);
-    }
+    <div id="m-imp" class="modal" onclick="if(event.target==this) hide('m-imp')">
+        <div class="modal-content">
+            <h2>Data Management</h2>
+            <textarea id="imp-area" style="width:100%; height:150px; background:var(--gray); border:none; border-radius:12px; padding:10px; font-family:monospace;"></textarea>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:10px;">
+                <button class="btn-sec" onclick="exportJSON()">Export JSON</button>
+                <button class="btn-sec" onclick="importAnyJSON()">Import JSON</button>
+            </div>
+        </div>
+    </div>
 
-    // --- EXPORT LOGIC ---
-    function exportPdf() { window.print(); }
-    
-    function exportJson() {
-        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state));
-        const downloadAnchorNode = document.createElement('a');
-        downloadAnchorNode.setAttribute("href", dataStr);
-        downloadAnchorNode.setAttribute("download", "cititool_config.json");
-        document.body.appendChild(downloadAnchorNode);
-        downloadAnchorNode.click();
-        downloadAnchorNode.remove();
-    }
-
-    function importJson(e) {
-        const file = e.target.files[0];
-        const reader = new FileReader();
-        reader.onload = function(event) {
-            state = JSON.parse(event.target.result);
-            renderSlots();
-        };
-        reader.readAsText(file);
-    }
-
-    // Init
-    window.onload = () => {
-        renderSlots();
-        renderLibrary();
-    };
-</script>
-
+    <script src="ui.js"></script>
 </body>
 </html>
