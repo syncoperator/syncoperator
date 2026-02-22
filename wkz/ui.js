@@ -1,320 +1,231 @@
-/* CITITOOL PREMIUM V12 STABLE FIXED */
-
 const DB_KEY = 'QS_DATA_V8';
-let db;
+let db = JSON.parse(localStorage.getItem(DB_KEY)) || [];
 let currentIdx = null;
 
-// ---------- SAFE LOAD ----------
-function loadDB(){
-    try{
-        const raw = JSON.parse(localStorage.getItem(DB_KEY));
-        db = Array.isArray(raw) ? raw : [];
-    }catch{
-        db = [];
+const el = (id) => document.getElementById(id);
+const show = (id) => { if(el(id)) el(id).style.display = 'flex'; };
+const hide = (id) => { if(el(id)) el(id).style.display = 'none'; };
+
+// --- ПРОЕКТЫ ---
+function modalP(edit = false) {
+    if (!edit) currentIdx = null; 
+    const p = (edit && currentIdx !== null && db[currentIdx]) ? db[currentIdx] : {num:'', name:'', lzf:'', sag:'', stt:'', stn:'', abs:'', grf:'', mat:''};
+    el('p-idx').value = edit ? currentIdx : '';
+    el('p-num').value = p.num || '';
+    el('p-nam').value = p.name || '';
+    el('p-lzf').value = p.lzf || '';
+    el('p-sag').value = p.sag || '';
+    el('p-stt').value = p.stt || '';
+    el('p-stn').value = p.stn || '';
+    el('p-abs').value = p.abs || '';
+    el('p-grf').value = p.grf || '';
+    if(el('p-mat')) el('p-mat').value = p.mat || ''; 
+    show('m-p');
+}
+
+function saveP() {
+    const idx = el('p-idx').value;
+    const newP = {
+        num: el('p-num').value,
+        name: el('p-nam').value.toUpperCase(),
+        lzf: el('p-lzf').value, 
+        sag: el('p-sag').value,
+        stt: el('p-stt').value, 
+        stn: el('p-stn').value,
+        abs: el('p-abs').value, 
+        grf: el('p-grf').value,
+        mat: el('p-mat') ? el('p-mat').value.toUpperCase() : '',
+        tools: (idx !== '' && db[idx]) ? (db[idx].tools || []) : []
+    };
+    if (idx === '') { db.push(newP); currentIdx = db.length - 1; } 
+    else { db[idx] = newP; }
+    localStorage.setItem(DB_KEY, JSON.stringify(db));
+    hide('m-p');
+    renderList();
+    if(idx !== '') openProject(idx); else goHome();
+}
+
+function renderList() {
+    const list = el('list-p'); if(!list) return;
+    list.innerHTML = db.map((p, i) => `
+        <div class="list-item" onclick="openProject(${i})">
+            <div><small>${p.name || '---'}</small><b>${p.num || '---'}</b></div>
+            <div style="color:var(--danger); font-weight:900; padding:15px; z-index:20;" onclick="event.stopPropagation(); deleteProject(${i})">✕</div>
+        </div>`).join('') + '<div style="height:100px"></div>';
+}
+
+function openProject(i) {
+    if (db[i]) {
+        currentIdx = i;
+        el('v-home').classList.remove('active');
+        el('v-det').classList.add('active');
+        el('h-num').innerText = db[i].num || '---';
+        el('h-nam').innerText = db[i].name || '---';
+        renderTools();
     }
 }
-const save = () => localStorage.setItem(DB_KEY, JSON.stringify(db));
 
-// ---------- ESCAPE HTML ----------
-const esc = s => String(s ?? '')
-    .replaceAll('&','&amp;')
-    .replaceAll('<','&lt;')
-    .replaceAll('>','&gt;')
-    .replaceAll('"','&quot;');
+function goHome() { currentIdx = null; el('v-home').classList.add('active'); el('v-det').classList.remove('active'); renderList(); }
 
-// ---------- STYLES ----------
-function injectStyles(){
-const style=document.createElement('style');
-style.textContent=`
-:root{--bg:#f2f2f7;--accent:#007aff;--card:#fff;--text:#1c1c1e;--sub:#8e8e93}
-body{background:var(--bg);font-family:-apple-system,sans-serif;margin:0;color:var(--text);padding-bottom:120px}
-header{background:rgba(255,255,255,.8);backdrop-filter:blur(20px);padding:15px 20px;position:sticky;top:0;z-index:1000;display:flex;justify-content:space-between;align-items:center;border-bottom:.5px solid rgba(0,0,0,.1)}
-.h-title{font-weight:800;font-size:22px}
-.project-card{background:var(--card);border-radius:20px;margin:12px 16px;padding:20px;display:flex;justify-content:space-between}
-.p-num-big{font-size:28px;font-weight:900}
-.p-name-sub{font-size:11px;font-weight:700;color:var(--sub)}
-.tool-card{background:var(--card);border-radius:16px;margin:8px 16px;padding:16px;display:flex;justify-content:space-between}
-.t-name-main{font-size:18px;font-weight:800}
-.t-dia-val{color:var(--accent);font-weight:700}
-.rev-badge{background:#000;color:#fff;font-size:8px;font-weight:900;padding:2px 6px;border-radius:4px}
-.btn-icon{background:#f2f2f7;border:none;border-radius:10px;width:36px;height:36px;color:var(--accent);font-weight:900}
-.fab{position:fixed;bottom:30px;right:20px;background:var(--accent);color:#fff;width:60px;height:60px;border-radius:30px;display:flex;align-items:center;justify-content:center;font-size:30px;z-index:2000}
-.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:3000;align-items:flex-end}
-.modal-content{background:#fff;width:100%;border-radius:25px 25px 0 0;padding:25px;max-height:90vh;overflow:auto}
-input,textarea{width:100%;padding:14px;margin:8px 0;border:1px solid #eee;border-radius:12px;background:#f9f9fb;font-size:16px;box-sizing:border-box}
-.btn-save{background:var(--accent);color:#fff;width:100%;padding:16px;border:none;border-radius:14px;font-weight:700;margin-top:10px}
-`;
-document.head.appendChild(style);
+// --- ИНСТРУМЕНТЫ (Твой рабочий Drag & Drop) ---
+let startIdx = null;
+function renderTools() {
+    const list = el('list-t'); if(!list || currentIdx === null) return;
+    const tools = db[currentIdx].tools || [];
+    list.innerHTML = '';
+    tools.forEach((t, i) => {
+        const item = document.createElement('div');
+        item.className = 'list-item';
+        item.setAttribute('data-idx', i);
+        item.style.padding = '12px 15px';
+        item.style.display = 'flex';
+        item.style.alignItems = 'center';
+        item.style.gap = '15px';
+        const revMark = t.rev ? `<div style="background:#000; color:#fff; font-size:9px; padding:2px 6px; border-radius:4px; margin-bottom:5px; font-weight:900; width:fit-content;">UNTEN START ↓</div>` : '';
+        item.innerHTML = `
+            <div class="handle" style="cursor:grab; color:#ccc; font-size:24px; padding:10px; user-select:none; touch-action:none;">☰</div>
+            <div style="flex:1; min-width:0;" onclick="modalT(${i})">
+                ${revMark}
+                <small style="color:#8e8e93; font-weight:700; font-size:11px;">${t.id || 'T0000'}</small>
+                <b style="font-size:20px; font-weight:900; display:block; line-height:1.2; word-wrap:break-word; white-space:pre-wrap;">${t.nm || '---'}</b>
+            </div>`;
+        const handle = item.querySelector('.handle');
+        handle.ontouchstart = (e) => { startIdx = i; item.style.background = "#f9f9f9"; };
+        handle.ontouchmove = (e) => {
+            e.preventDefault();
+            const touch = e.touches[0];
+            const target = document.elementFromPoint(touch.clientX, touch.clientY);
+            const targetItem = target?.closest('.list-item');
+            if (targetItem) {
+                const overIdx = parseInt(targetItem.getAttribute('data-idx'));
+                if (overIdx !== startIdx) { moveTool(startIdx, overIdx); startIdx = overIdx; }
+            }
+        };
+        handle.ontouchend = () => { item.style.background = ""; renderTools(); };
+        item.draggable = true;
+        item.ondragstart = () => { startIdx = i; item.style.opacity = '0.4'; };
+        item.ondragover = (e) => e.preventDefault();
+        item.ondrop = () => { if(startIdx !== i) moveTool(startIdx, i); };
+        item.ondragend = () => { item.style.opacity = '1'; renderTools(); };
+        list.appendChild(item);
+    });
+    list.innerHTML += '<div style="height:180px; pointer-events:none;"></div>'; 
 }
 
-// ---------- APP ----------
-function setupApp(){
-document.body.innerHTML=`
-<header>
-<div class="h-title">CitiTool</div>
-<button class="btn-icon" onclick="openImport()">JSON</button>
-</header>
-
-<div id="home">
-<div id="plist"></div>
-<div class="fab" onclick="modalP()">+</div>
-</div>
-
-<div id="detail" style="display:none">
-<div style="padding:20px">
-<div id="detName" class="p-name-sub"></div>
-<div id="detNum" style="font-size:40px;font-weight:900"></div>
-<div style="display:flex;gap:10px;margin-top:15px">
-<button class="btn-save" onclick="goHome()">Назад</button>
-<button class="btn-save" style="background:#000" onclick="makePDF()">PDF</button>
-</div>
-</div>
-<div id="tlist"></div>
-<div class="fab" onclick="modalT()">+</div>
-</div>
-
-${modalProjectHTML()}
-${modalToolHTML()}
-${modalImportHTML()}
-`;
+function moveTool(from, to) {
+    const tools = db[currentIdx].tools;
+    const item = tools.splice(from, 1)[0];
+    tools.splice(to, 0, item);
+    localStorage.setItem(DB_KEY, JSON.stringify(db));
+    renderTools();
 }
 
-// ---------- MODALS HTML ----------
-function modalProjectHTML(){
-return `
-<div id="mp" class="modal" onclick="if(event.target==this)this.style.display='none'">
-<div class="modal-content">
-<input type="hidden" id="pidx">
-<input id="pnum" placeholder="NUMMER">
-<input id="pname" placeholder="NAME">
-<input id="plzf" placeholder="Laufzeit">
-<input id="pmat" placeholder="Material">
-<input id="psag" placeholder="Sägelänge">
-<input id="pabs" placeholder="Abstand">
-<input id="pgrf" placeholder="Greifer">
-<input id="pstt" placeholder="Soll">
-<input id="pstn" placeholder="Ist">
-<button class="btn-save" onclick="saveP()">SPEICHERN</button>
-</div></div>`;
+// --- СТАНДАРТНЫЕ ФУНКЦИИ ---
+function modalT(i = null) {
+    const edit = i !== null;
+    el('t-idx').value = edit ? i : '';
+    const t = edit ? db[currentIdx].tools[i] : {id:'', nm:'', dia:'', rev:false};
+    el('t-id').value = t.id; el('t-nm').value = t.nm; el('t-dia').value = t.dia;
+    const btn = el('btn-rev-toggle');
+    if(btn) {
+        if(t.rev) btn.classList.add('on'); else btn.classList.remove('on');
+        btn.onclick = () => btn.classList.toggle('on');
+    }
+    el('btn-del-t').style.display = edit ? 'block' : 'none';
+    show('m-t');
 }
 
-function modalToolHTML(){
-return `
-<div id="mt" class="modal" onclick="if(event.target==this)this.style.display='none'">
-<div class="modal-content">
-<input type="hidden" id="tidx">
-<input id="tid" placeholder="T-NR">
-<input id="tnm" placeholder="NAME">
-<input id="tdia" placeholder="Ø">
-<button id="revbtn" class="btn-save" style="background:#eee;color:#000" onclick="this.classList.toggle('active');this.textContent=this.classList.contains('active')?'REVOLVER UNTEN':'REVOLVER OBEN'">REVOLVER OBEN</button>
-<button class="btn-save" onclick="saveT()">SPEICHERN</button>
-<button id="delT" class="btn-save" style="background:none;color:red" onclick="deleteTool()">Löschen</button>
-</div></div>`;
+function saveT() {
+    const i = el('t-idx').value;
+    const btn = el('btn-rev-toggle');
+    const t = { id: el('t-id').value.toUpperCase(), nm: el('t-nm').value.toUpperCase(), dia: el('t-dia').value, rev: btn ? btn.classList.contains('on') : false };
+    if(!db[currentIdx].tools) db[currentIdx].tools = [];
+    if(i === '') db[currentIdx].tools.push(t); else db[currentIdx].tools[i] = t;
+    localStorage.setItem(DB_KEY, JSON.stringify(db));
+    renderTools(); hide('m-t');
 }
 
-function modalImportHTML(){
-return `
-<div id="mi" class="modal" onclick="if(event.target==this)this.style.display='none'">
-<div class="modal-content">
-<textarea id="imp"></textarea>
-<button class="btn-save" onclick="importJSON()">IMPORT</button>
-</div></div>`;
+function deleteProject(i) { if(confirm('Löschen?')) { db.splice(i, 1); localStorage.setItem(DB_KEY, JSON.stringify(db)); renderList(); } }
+function delT() { const i = el('t-idx').value; db[currentIdx].tools.splice(i, 1); localStorage.setItem(DB_KEY, JSON.stringify(db)); renderTools(); hide('m-t'); }
+function exportJSON() { el('imp-area').value = JSON.stringify(db); el('imp-area').select(); alert("JSON kopiert!"); }
+function importJSON() { try { const parsed = JSON.parse(el('imp-area').value); if(Array.isArray(parsed)) { db = parsed; localStorage.setItem(DB_KEY, JSON.stringify(db)); renderList(); hide('m-imp'); } } catch(e) { alert("JSON-Fehler"); } }
+
+// --- PDF (ОБНОВЛЕННЫЙ С УМНЫМ ПЕРЕНОСОМ) ---
+function makePDF() {
+    const p = db[currentIdx];
+    
+    // Шаблон шапки
+    const getPageHead = () => `
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; min-height:90px;">
+            <div style="display:flex; flex-direction:column; justify-content:center;">
+                <div style="font-size:13px; font-weight:900; text-transform:uppercase; color:#666; margin-bottom:2px; line-height:1;">${p.name || ''}</div>
+                <div style="font-size:64px; font-weight:900; line-height:0.8; letter-spacing:-2px; margin:0;">${p.num || '---'}</div>
+            </div>
+            <div style="width:220px; font-size:11px; font-weight:800; line-height:1.5;">
+                <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>LAUFZEIT</span><span>${p.lzf || ''}</span></div>
+                <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>MATERIAL</span><span>${p.mat || p.nam || ''}</span></div>
+                <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>SÄGELÄNGE</span><span>${p.sag || ''}</span></div>
+                <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>ABSTAND</span><span>${p.abs || ''}</span></div>
+                <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>GREIFBACKEN</span><span>${p.grf || ''}</span></div>
+                <div style="display:flex; justify-content:space-between;"><span>STÜCKZAHL</span><span>${p.stt || ''} / ${p.stn || ''}</span></div>
+            </div>
+        </div>
+        <div style="border-bottom:5px solid #000; margin-bottom:15px;"></div>`;
+
+    const tableHead = `
+        <div style="display:flex; font-size:10px; font-weight:900; text-transform:uppercase; margin-bottom:6px; padding:0 2px;">
+            <div style="width:75px;">T-NR</div>
+            <div style="flex:1;">WERKZEUGNAME / KOMMENTAR</div>
+            <div style="width:125px; text-align:right;">Ø / TOLERANZ</div>
+        </div>
+        <div style="border-bottom:4px solid #000; margin-bottom:0px;"></div>`;
+
+    const getRow = (t) => {
+        const displayDia = t.dia.includes('/') ? t.dia.split('/').join('<br>') : t.dia;
+        return `
+        <div style="display:flex; align-items:baseline; border-bottom:1.5px solid #000; padding:10px 0; width:100%;">
+            <div style="width:75px; font-weight:800; font-size:15px;">${t.id}</div>
+            <div style="flex:1; font-weight:700; font-size:15px; text-transform:uppercase; padding-right:10px; white-space:pre-wrap;">${t.nm}</div>
+            <div style="width:125px; text-align:right; font-weight:800; font-size:14px; line-height:1.2;">${displayDia}</div>
+        </div>`;
+    };
+
+    const footerLine = `<div style="border-top:1px solid #000; padding-top:5px; font-size:9px; font-weight:800; text-align:center; color:#666; margin-top:20px;"></div>`;
+
+    let oben = [], unten = [], target = oben;
+    (p.tools || []).forEach(t => { if(t.rev) target = unten; target.push(t); });
+
+    // СБОРКА СТРАНИЦЫ 1
+    let html = `
+    <div style="width:210mm; padding:12mm; box-sizing:border-box; background:#fff; font-family:sans-serif; color:#000;">
+        <div style="border:2px solid #000; padding:25px; min-height:265mm; display:flex; flex-direction:column; box-sizing:border-box; page-break-after: always;">
+            ${getPageHead()}
+            <div style="flex:1;">
+                <div style="margin-bottom:5px; font-size:18px; font-weight:900; letter-spacing:0.5px; text-transform:uppercase;">REVOLVER OBEN</div>
+                ${tableHead}
+                ${oben.map(getRow).join('')}
+                ${unten.length === 0 ? '' : ``}
+            </div>
+            ${footerLine}
+        </div>`;
+
+    // СБОРКА СТРАНИЦЫ 2 (только если есть Unten)
+    if (unten.length > 0) {
+        html += `
+        <div style="border:2px solid #000; padding:25px; min-height:265mm; display:flex; flex-direction:column; box-sizing:border-box; margin-top: 20px;">
+            ${getPageHead()}
+            <div style="flex:1;">
+                <div style="margin-bottom:5px; font-size:18px; font-weight:900; letter-spacing:0.5px; text-transform:uppercase;">REVOLVER UNTEN</div>
+                ${tableHead}
+                ${unten.map(getRow).join('')}
+            </div>
+            ${footerLine}
+        </div>`;
+    }
+
+    html += `</div>`;
+    el('print-container').innerHTML = html;
+    setTimeout(() => { window.print(); }, 150);
 }
 
-// ---------- PROJECT LIST ----------
-function renderProjects(){
-const box=document.getElementById('plist');
-box.innerHTML=db.map((p,i)=>`
-<div class="project-card" onclick="openProject(${i})">
-<div>
-<div class="p-name-sub">${esc(p.name||'---')}</div>
-<div class="p-num-big">${esc(p.num||'---')}</div>
-</div>
-<div onclick="event.stopPropagation();delProject(${i})">✕</div>
-</div>`).join('');
-}
-
-function openProject(i){
-if(!db[i]) return;
-currentIdx=i;
-home.style.display='none';
-detail.style.display='block';
-detName.textContent=db[i].name||'';
-detNum.textContent=db[i].num||'';
-renderTools();
-}
-
-function goHome(){
-currentIdx=null;
-home.style.display='block';
-detail.style.display='none';
-renderProjects();
-}
-
-// ---------- PROJECT SAVE ----------
-function modalP(i=null){
-const edit=i!=null;
-pidx.value=edit?i:'';
-const p=edit?db[i]:{};
-pnum.value=p.num||'';
-pname.value=p.name||'';
-plzf.value=p.lzf||'';
-pmat.value=p.mat||'';
-psag.value=p.sag||'';
-pabs.value=p.abs||'';
-pgrf.value=p.grf||'';
-pstt.value=p.stt||'';
-pstn.value=p.stn||'';
-mp.style.display='flex';
-}
-
-function saveP(){
-const idx=pidx.value;
-const data={
-num:pnum.value,
-name:pname.value.toUpperCase(),
-lzf:plzf.value,
-mat:pmat.value,
-sag:psag.value,
-abs:pabs.value,
-grf:pgrf.value,
-stt:pstt.value,
-stn:pstn.value,
-tools: idx===''?[]:(db[idx].tools||[])
-};
-if(idx==='') db.push(data);
-else db[idx]=data;
-save();
-mp.style.display='none';
-renderProjects();
-}
-
-// ---------- TOOLS ----------
-function renderTools(){
-if(currentIdx==null||!db[currentIdx]) return;
-const list=db[currentIdx].tools||[];
-tlist.innerHTML=list.map((t,i)=>`
-<div class="tool-card" onclick="modalT(${i})">
-<div>
-${t.rev?'<div class="rev-badge">REVOLVER UNTEN</div>':''}
-<div>${esc(t.id)}</div>
-<div class="t-name-main">${esc(t.nm)}</div>
-<div class="t-dia-val">${esc(t.dia)}</div>
-</div>
-<div>
-<button class="btn-icon" onclick="event.stopPropagation();moveTool(${i},-1)">↑</button>
-<button class="btn-icon" onclick="event.stopPropagation();moveTool(${i},1)">↓</button>
-</div>
-</div>`).join('');
-}
-
-function modalT(i=null){
-const edit=i!=null;
-const t=edit?db[currentIdx].tools[i]:{};
-tidx.value=edit?i:'';
-tid.value=t.id||'';
-tnm.value=t.nm||'';
-tdia.value=t.dia||'';
-revbtn.classList.toggle('active',t.rev);
-revbtn.textContent=t.rev?'REVOLVER UNTEN':'REVOLVER OBEN';
-delT.style.display=edit?'block':'none';
-mt.style.display='flex';
-}
-
-function saveT(){
-if(currentIdx==null) return;
-const i=tidx.value;
-const t={
-id:tid.value.toUpperCase(),
-nm:tnm.value.toUpperCase(),
-dia:tdia.value,
-rev:revbtn.classList.contains('active')
-};
-if(i==='') db[currentIdx].tools.push(t);
-else db[currentIdx].tools[Number(i)]=t;
-save();
-mt.style.display='none';
-renderTools();
-}
-
-function deleteTool(){
-const i=Number(tidx.value);
-if(!confirm('Удалить инструмент?')) return;
-db[currentIdx].tools.splice(i,1);
-save();
-mt.style.display='none';
-renderTools();
-}
-
-function moveTool(i,d){
-const arr=db[currentIdx].tools;
-const n=i+d;
-if(n<0||n>=arr.length) return;
-[arr[i],arr[n]]=[arr[n],arr[i]];
-save();
-renderTools();
-}
-
-// ---------- DELETE PROJECT ----------
-function delProject(i){
-if(!confirm('Удалить проект?')) return;
-db.splice(i,1);
-save();
-renderProjects();
-}
-
-// ---------- IMPORT ----------
-function openImport(){
-imp.value=JSON.stringify(db,null,2);
-mi.style.display='flex';
-}
-
-function importJSON(){
-try{
-const parsed=JSON.parse(imp.value);
-if(!Array.isArray(parsed)) throw 1;
-db=parsed;
-save();
-location.reload();
-}catch{
-alert('Ошибка JSON');
-}
-}
-
-// ---------- PDF ----------
-function makePDF(){
-if(currentIdx==null) return;
-const p=db[currentIdx];
-const rows=(list)=>list.map(t=>`
-<tr>
-<td>${esc(t.id)}</td>
-<td>${esc(t.nm)}</td>
-<td>${esc(t.dia)}</td>
-</tr>`).join('');
-
-const oben=(p.tools||[]).filter(x=>!x.rev);
-const unten=(p.tools||[]).filter(x=>x.rev);
-
-const html=`
-<html><body style="font-family:sans-serif">
-<h2>${esc(p.name)}</h2>
-<h1>${esc(p.num)}</h1>
-<table border=1 width=100%>${rows(oben)}</table>
-<br>
-<table border=1 width=100%>${rows(unten)}</table>
-<script>print()<\/script>
-</body></html>`;
-
-const w=window.open('');
-if(!w){alert('Popup blocked');return;}
-w.document.write(html);
-w.document.close();
-}
-
-// ---------- INIT ----------
-window.onload=()=>{
-loadDB();
-injectStyles();
-setupApp();
-renderProjects();
-};
+window.onload = renderList;
