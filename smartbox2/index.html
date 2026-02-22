@@ -1,181 +1,302 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="de">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>SMARTBOX PRO V2</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
     <style>
-        /* UI DESIGN: LIGHT PREMIUM */
-        :root { --bg: #ffffff; --text: #000000; --sub: #8e8e93; --border-thick: 3px solid #000; }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 0; }
-        
-        header { padding: 20px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; background: #fff; z-index: 10; }
-        .h-title { font-weight: 900; font-size: 20px; }
-        
-        /* TOOL CARDS UI */
-        .list-container { padding: 10px; padding-bottom: 160px; } /* Отступ в конце списка */
-        .tool-card { 
-            background: #fff; border: 1px solid #eee; border-radius: 12px; margin-bottom: 10px; padding: 15px;
-            display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 8px rgba(0,0,0,0.02);
-        }
-        .t-info { flex: 1; }
-        .t-label { font-size: 9px; font-weight: 900; color: var(--sub); text-transform: uppercase; margin-bottom: 2px; }
-        .t-value { font-size: 22px; font-weight: 900; line-height: 1; }
-        .t-name { font-size: 14px; font-weight: 700; margin-top: 5px; }
+        :root { --bg:#F2F2F7; --card:#FFF; --accent:#007AFF; --sub:#8E8E93; --danger:#FF3B30; --border-thick: 3px solid #000; }
+        body { margin:0; font-family:'Inter',sans-serif; background:var(--bg); color:#000; overflow-x:hidden; }
 
-        .controls { display: flex; gap: 8px; }
-        .btn-ui { background: #f2f2f7; border: none; border-radius: 8px; width: 40px; height: 40px; font-weight: 900; cursor: pointer; }
-        .fab { position: fixed; bottom: 30px; right: 20px; background: #000; color: #fff; width: 60px; height: 60px; border-radius: 30px; display: flex; align-items: center; justify-content: center; font-size: 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); border: none; }
+        /* UI LIGHT PREMIUM */
+        .view { display:none; flex-direction:column; height:100vh; width:100%; position:fixed; top:0; left:0; z-index:10; }
+        .view.active { display:flex; }
+        .nav-bar { height:64px; display:flex; align-items:center; justify-content:space-between; padding:0 20px; background:rgba(255,255,255,0.8); backdrop-filter:blur(20px); border-bottom:0.5px solid #D1D1D6; z-index:20; }
+        .nav-title { font-weight:900; font-size:17px; }
+        .nav-title span { color:var(--accent); }
+        .nav-btn { background:none; border:none; color:var(--accent); font-size:17px; font-weight:600; cursor:pointer; }
+        .nav-info { text-align:center; cursor:pointer; flex:1; }
+        .nav-info span { display:block; font-size:10px; color:var(--sub); font-weight:700; text-transform:uppercase; }
+        .nav-info b { font-size:18px; font-weight:900; }
 
-        /* PDF STYLES (EXACT WERKZEUGLISTE) */
+        /* TOOL CARDS СТРУКТУРА */
+        .content-scroll { flex:1; overflow-y:auto; padding:16px 16px 180px; -webkit-overflow-scrolling:touch; }
+        .list-item { background:var(--card); padding:15px; border-radius:16px; margin-bottom:12px; display:flex; align-items:center; gap:15px; box-shadow:0 2px 8px rgba(0,0,0,0.04); cursor:pointer; }
+        .t-info { flex:1; min-width:0; }
+        .t-label { font-size:9px; font-weight:900; color:var(--sub); text-transform:uppercase; margin-bottom:2px; }
+        .t-value { font-size:22px; font-weight:900; line-height:1; }
+        .t-descr { font-size:14px; font-weight:700; margin-top:5px; color:#333; }
+        .handle { cursor:grab; color:#D1D1D6; font-size:24px; padding:5px; user-select:none; touch-action:none; }
+
+        /* ОВЕРЛЕИ И ФОРМЫ */
+        .overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.4); backdrop-filter:blur(5px); z-index:100; align-items:flex-end; }
+        .sheet { background:var(--card); width:100%; border-radius:20px 20px 0 0; padding:20px 20px 40px; box-sizing:border-box; animation:up 0.3s ease; }
+        @keyframes up { from{transform:translateY(100%)} to{transform:translateY(0)} }
+        .field { margin-bottom:12px; }
+        .field label { display:block; font-size:11px; font-weight:700; color:var(--sub); text-transform:uppercase; margin-bottom:4px; }
+        .field input, textarea { width:100%; padding:12px; background:#F2F2F7; border:none; border-radius:10px; font-size:16px; font-weight:600; box-sizing:border-box; }
+        .rev-toggle-btn { margin-top:8px; padding:14px; border-radius:12px; border:2px solid #E5E5EA; text-align:center; font-weight:800; font-size:13px; cursor:pointer; background:#F2F2F7; }
+        .rev-toggle-btn.on { background:#000; color:#fff; border-color:#000; }
+        .btn-action { width:100%; padding:16px; border-radius:14px; border:none; font-weight:800; font-size:16px; cursor:pointer; margin-top:8px; }
+        .btn-action.primary { background:var(--accent); color:#fff; }
+        .btn-action.danger { background:#FFF1F0; color:var(--danger); }
+        
+        .fab { position:fixed; bottom:30px; right:20px; background:#000; color:#fff; width:60px; height:60px; border-radius:30px; display:flex; align-items:center; justify-content:center; font-size:30px; z-index:50; border:none; box-shadow:0 4px 15px rgba(0,0,0,0.2); }
+
+        /* PDF ГЕНЕРАЦИЯ (ЕДИНАЯ ТАБЛИЦА) */
+        #print-container { display:none; }
         @media print {
-            .no-print { display: none !important; }
-            body { padding: 0; margin: 0; }
-            @page { margin: 10mm; }
-            .pdf-frame { width: 100%; border-collapse: collapse; border: var(--border-thick); }
-            .pdf-frame td, .pdf-frame th { border: 1px solid #000; padding: 8px; vertical-align: middle; }
-            .p-num { font-size: 40pt; font-weight: 900; letter-spacing: -2px; line-height: 0.8; }
-            .meta-box { border-left: var(--border-thick) !important; width: 250px; padding: 0 !important; }
-            .meta-table { width: 100%; border-collapse: collapse; font-size: 9pt; font-weight: 900; }
-            .meta-table td { border: none !important; border-bottom: 1px solid #000 !important; padding: 3px 5px; }
-            .th-row { font-size: 8pt; font-weight: 900; text-align: left; background: #f0f0f0; }
-            .cat-row { background: #000 !important; color: #fff !important; text-align: center; font-weight: 900; font-size: 10pt; }
+            .no-print { display:none !important; }
+            #print-container { display:block !important; }
+            body { background:#fff; padding:0; margin:0; }
+            @page { size: A4; margin: 10mm; }
+            .pdf-frame { width:100%; border-collapse:collapse; border:var(--border-thick); font-family:sans-serif; }
+            .pdf-frame td, .pdf-frame th { border:1px solid #000; padding:8px; vertical-align:middle; }
+            .p-num-big { font-size:52pt; font-weight:900; line-height:0.8; letter-spacing:-2px; }
+            .meta-box { border-left:var(--border-thick) !important; width:220px; padding:0 !important; }
+            .meta-table { width:100%; border-collapse:collapse; font-size:9pt; font-weight:900; }
+            .meta-table td { border:none !important; border-bottom:1px solid #000 !important; padding:4px 8px; }
+            .pdf-cat { background:#000 !important; color:#fff !important; text-align:center; font-weight:900; font-size:14pt; padding:8px !important; }
+            .th-row th { font-size:9pt; font-weight:900; text-align:left; background:#f0f0f0; border-bottom:var(--border-thick); }
+            .t-row td { font-size:14pt; font-weight:900; border-bottom:1.5px solid #000; }
         }
     </style>
 </head>
 <body>
 
-<div id="ui-main" class="no-print">
-    <header>
-        <div class="h-title">SMARTBOX <span>PRO</span></div>
-        <div style="display:flex; gap:10px;">
-            <button class="btn-ui" onclick="makePDF()">PDF</button>
-            <button class="btn-ui" onclick="toggleJSON()">JSON</button>
+    <div id="v-home" class="view active no-print">
+        <div class="nav-bar">
+            <h1 class="nav-title">SMARTBOX <span>PRO</span></h1>
+            <button class="nav-btn" onclick="show('m-imp')">JSON</button>
         </div>
-    </header>
-
-    <div id="tool-list" class="list-container"></div>
-    <button class="fab" onclick="addTool()">+</button>
-</div>
-
-<div id="json-modal" class="no-print" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.8); z-index:100; padding:20px;">
-    <textarea id="json-io" style="width:100%; height:80%; border-radius:12px; padding:15px; font-family:monospace;"></textarea>
-    <div style="display:flex; gap:10px; margin-top:10px;">
-        <button class="btn-ui" style="width:100%; height:50px;" onclick="importData()">IMPORT</button>
-        <button class="btn-ui" style="width:100%; height:50px;" onclick="toggleJSON()">CLOSE</button>
+        <div id="list-p" class="content-scroll"></div>
+        <button class="fab" onclick="modalP()">+</button>
     </div>
-</div>
 
-<script>
-    let db = JSON.parse(localStorage.getItem('SB_PRO_V2')) || {
-        project: { num: "230947", name: "EINSCHRAUBNIPPEL DN10", mat: "1.4104 30", lzf: "4:45", sag: "1003", abs: "0.5", grf: "18-25", stk: "100" },
-        tools: [
-            { id: "T0101", nm: "KOPIERST. R0.8 G54", kom: "FACH A | DNMG150608", tol: "", cat: "SONDER" },
-            { id: "T1212", nm: "KUGELFRAESER D10", kom: "IN BLAUKISTE", tol: "10.6-10.8", cat: "STANDART" }
-        ]
-    };
-
-    function save() { localStorage.setItem('SB_PRO_V2', JSON.stringify(db)); render(); }
-
-    function render() {
-        const list = document.getElementById('tool-list');
-        list.innerHTML = db.tools.map((t, i) => `
-            <div class="tool-card">
-                <div class="t-info" onclick="editTool(${i})">
-                    <div class="t-label">BEMERKUNG</div>
-                    <div class="t-value">${t.id}</div>
-                    <div class="t-name">${t.nm}</div>
-                </div>
-                <div class="controls">
-                    <button class="btn-ui" onclick="move(${i}, -1)">↑</button>
-                    <button class="btn-ui" onclick="move(${i}, 1)">↓</button>
-                </div>
+    <div id="v-det" class="view no-print">
+        <div class="nav-bar">
+            <button class="nav-btn" onclick="goHome()">←</button>
+            <div class="nav-info" onclick="modalP(true)">
+                <span id="h-nam">PROJEKT NAME</span>
+                <b id="h-num">000000</b>
             </div>
-        `).join('');
-    }
+            <button class="nav-btn" onclick="makePDF()">PDF</button>
+        </div>
+        <div id="list-t" class="content-scroll"></div>
+        <button class="fab" onclick="modalT()">+</button>
+    </div>
 
-    function move(i, dir) {
-        let target = i + dir;
-        if (target >= 0 && target < db.tools.length) {
-            [db.tools[i], db.tools[target]] = [db.tools[target], db.tools[i]];
-            save();
+    <div id="m-p" class="overlay no-print" onclick="if(event.target==this)hide('m-p')">
+        <div class="sheet">
+            <input type="hidden" id="p-idx">
+            <div class="field"><label>Zeichnungsnummer</label><input type="text" id="p-num"></div>
+            <div class="field"><label>Kunde / Name</label><input type="text" id="p-nam"></div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                <div class="field"><label>Laufzeit</label><input type="text" id="p-lzf"></div>
+                <div class="field"><label>Sägelänge</label><input type="text" id="p-sag"></div>
+                <div class="field"><label>Stück</label><input type="text" id="p-stt"></div>
+                <div class="field"><label>Material</label><input type="text" id="p-mat"></div>
+                <div class="field"><label>Abstand</label><input type="text" id="p-abs"></div>
+                <div class="field"><label>Greifer</label><input type="text" id="p-grf"></div>
+            </div>
+            <button class="btn-action primary" onclick="saveP()">Speichern</button>
+        </div>
+    </div>
+
+    <div id="m-t" class="overlay no-print" onclick="if(event.target==this)hide('m-t')">
+        <div class="sheet">
+            <input type="hidden" id="t-idx">
+            <div class="field"><label>T-NR</label><input type="text" id="t-id"></div>
+            <div class="field"><label>Werkzeugname</label><input type="text" id="t-nm"></div>
+            <div class="field"><label>Ø / Toleranz</label><input type="text" id="t-dia"></div>
+            <div class="field">
+                <label>Modus</label>
+                <div id="btn-rev-toggle" class="rev-toggle-btn">UNTEN START ↓</div>
+            </div>
+            <button class="btn-action primary" onclick="saveT()">Speichern</button>
+            <button id="btn-del-t" class="btn-action danger" onclick="delT()">Löschen</button>
+        </div>
+    </div>
+
+    <div id="m-imp" class="overlay no-print" onclick="if(event.target==this)hide('m-imp')">
+        <div class="sheet">
+            <h2 style="margin:0 0 15px 0">Data</h2>
+            <textarea id="imp-area" rows="8"></textarea>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:15px">
+                <button class="btn-action" style="background:#E5E5EA" onclick="exportJSON()">Export</button>
+                <button class="btn-action primary" onclick="importJSON()">Import</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="print-container"></div>
+
+    <script>
+        const DB_KEY = 'SMARTBOX_PRO_V2';
+        let db = JSON.parse(localStorage.getItem(DB_KEY)) || [];
+        let currentIdx = null;
+
+        const el = (id) => document.getElementById(id);
+        const show = (id) => el(id).style.display = 'flex';
+        const hide = (id) => el(id).style.display = 'none';
+
+        function saveP() {
+            const idx = el('p-idx').value;
+            const newP = {
+                num: el('p-num').value,
+                name: el('p-nam').value.toUpperCase(),
+                lzf: el('p-lzf').value, sag: el('p-sag').value, stt: el('p-stt').value,
+                abs: el('p-abs').value, grf: el('p-grf').value, mat: el('p-mat').value.toUpperCase(),
+                tools: (idx !== '' && db[idx]) ? (db[idx].tools || []) : []
+            };
+            if (idx === '') db.push(newP); else db[idx] = newP;
+            localStorage.setItem(DB_KEY, JSON.stringify(db));
+            hide('m-p'); renderList(); goHome();
         }
-    }
 
-    function makePDF() {
-        const p = db.project;
-        const sonder = db.tools.filter(t => t.cat === 'SONDER');
-        const std = db.tools.filter(t => t.cat === 'STANDART');
-
-        let printHtml = `
-        <table class="pdf-frame">
-            <tr>
-                <td colspan="2" style="border-bottom:3px solid #000">
-                    <div style="font-size:10pt; font-weight:900;">${p.name}</div>
-                    <div class="p-num">${p.num}</div>
-                </td>
-                <td class="meta-box" style="border-bottom:3px solid #000">
-                    <table class="meta-table">
-                        <tr><td>MATERIAL</td><td>${p.mat}</td></tr>
-                        <tr><td>LAUFZEIT</td><td>${p.lzf}</td></tr>
-                        <tr><td>SÄGELÄНGE</td><td>${p.sag}</td></tr>
-                        <tr><td>ABSTAND</td><td>${p.abs}</td></tr>
-                        <tr><td>BACKEN</td><td>${p.grf}</td></tr>
-                        <tr><td>STOCK</td><td>${p.stk}</td></tr>
-                    </table>
-                </td>
-            </tr>
-            <tr class="th-row">
-                <th style="width:80px">T-NR</th>
-                <th>WERKZEUGNAME / KOMMENTAR</th>
-                <th style="width:150px; text-align:right">Ø / TOLERANZ</th>
-            </tr>
-            ${renderPdfGroup("Sonderwerkzeuge", sonder)}
-            ${renderPdfGroup("Standartwerkzeuge", std)}
-        </table>`;
-
-        const win = window.open('', '_blank');
-        win.document.write('<html><head><link rel="stylesheet" href="' + window.location.href + '"><style>body{padding:0; margin:0;}</style></head><body>' + printHtml + '</body></html>');
-        win.document.close();
-        setTimeout(() => { win.print(); win.close(); }, 500);
-    }
-
-    function renderPdfGroup(title, list) {
-        if (!list.length) return '';
-        let rows = list.map(t => `
-            <tr>
-                <td style="font-weight:900; text-align:center;">${t.id}</td>
-                <td><div style="font-weight:900;">${t.nm}</div><div style="font-size:8pt;">${t.kom}</div></td>
-                <td style="text-align:right; font-weight:900;">${t.tol}</td>
-            </tr>`).join('');
-        return `<tr><td colspan="3" class="cat-row">${title}</td></tr>` + rows;
-    }
-
-    function toggleJSON() {
-        const m = document.getElementById('json-modal');
-        const io = document.getElementById('json-io');
-        if (m.style.display === 'none') {
-            io.value = JSON.stringify(db, null, 2);
-            m.style.display = 'block';
-        } else {
-            m.style.display = 'none';
+        function renderList() {
+            el('list-p').innerHTML = db.map((p, i) => `
+                <div class="list-item" onclick="openProject(${i})">
+                    <div class="t-info">
+                        <div class="t-label">${p.name || 'PROJEKT'}</div>
+                        <div class="t-value">${p.num || '---'}</div>
+                    </div>
+                    <div style="color:var(--danger); font-weight:900; padding:10px;" onclick="event.stopPropagation(); deleteProject(${i})">✕</div>
+                </div>`).join('');
         }
-    }
 
-    function importData() {
-        try {
-            db = JSON.parse(document.getElementById('json-io').value);
-            save();
-            toggleJSON();
-        } catch (e) { alert("Ошибка JSON"); }
-    }
+        function openProject(i) {
+            currentIdx = i;
+            el('v-home').classList.remove('active');
+            el('v-det').classList.add('active');
+            el('h-num').innerText = db[i].num;
+            el('h-nam').innerText = db[i].name;
+            renderTools();
+        }
 
-    function addTool() {
-        db.tools.push({ id: "T0000", nm: "NEUES WERKZEUG", kom: "", tol: "", cat: "SONDER" });
-        save();
-    }
+        function goHome() { currentIdx = null; el('v-home').classList.add('active'); el('v-det').classList.remove('active'); renderList(); }
 
-    window.onload = render;
-</script>
+        function renderTools() {
+            const list = el('list-t'); if(!list || currentIdx === null) return;
+            const tools = db[currentIdx].tools || [];
+            list.innerHTML = '';
+            tools.forEach((t, i) => {
+                const item = document.createElement('div');
+                item.className = 'list-item';
+                item.setAttribute('data-idx', i);
+                const revMark = t.rev ? `<div style="background:#000; color:#fff; font-size:9px; padding:2px 6px; border-radius:4px; margin-bottom:5px; font-weight:900; width:fit-content;">UNTEN START ↓</div>` : '';
+                item.innerHTML = `
+                    <div class="handle">☰</div>
+                    <div class="t-info" onclick="modalT(${i})">
+                        ${revMark}
+                        <div class="t-label">BEMERKUNG</div>
+                        <div class="t-value">${t.id || 'T0000'}</div>
+                        <div class="t-descr">${t.nm || '---'}</div>
+                    </div>`;
+                
+                // DRAG & DROP LOGIC
+                const handle = item.querySelector('.handle');
+                handle.ontouchstart = () => { startIdx = i; item.style.background = "#F2F2F7"; };
+                handle.ontouchmove = (e) => {
+                    e.preventDefault();
+                    const touch = e.touches[0];
+                    const target = document.elementFromPoint(touch.clientX, touch.clientY);
+                    const targetItem = target?.closest('.list-item');
+                    if (targetItem) {
+                        const overIdx = parseInt(targetItem.getAttribute('data-idx'));
+                        if (overIdx !== startIdx) { moveTool(startIdx, overIdx); startIdx = overIdx; }
+                    }
+                };
+                handle.ontouchend = () => { item.style.background = ""; renderTools(); };
+                list.appendChild(item);
+            });
+        }
+
+        function moveTool(from, to) {
+            const tools = db[currentIdx].tools;
+            const item = tools.splice(from, 1)[0];
+            tools.splice(to, 0, item);
+            localStorage.setItem(DB_KEY, JSON.stringify(db));
+            renderTools();
+        }
+
+        function modalT(i = null) {
+            const edit = i !== null;
+            el('t-idx').value = edit ? i : '';
+            const t = edit ? db[currentIdx].tools[i] : {id:'', nm:'', dia:'', rev:false};
+            el('t-id').value = t.id; el('t-nm').value = t.nm; el('t-dia').value = t.dia;
+            const btn = el('btn-rev-toggle');
+            if(t.rev) btn.classList.add('on'); else btn.classList.remove('on');
+            btn.onclick = () => btn.classList.toggle('on');
+            el('btn-del-t').style.display = edit ? 'block' : 'none';
+            show('m-t');
+        }
+
+        function saveT() {
+            const i = el('t-idx').value;
+            const t = { 
+                id: el('t-id').value.toUpperCase(), 
+                nm: el('t-nm').value.toUpperCase(), 
+                dia: el('t-dia').value, 
+                rev: el('btn-rev-toggle').classList.contains('on') 
+            };
+            if(!db[currentIdx].tools) db[currentIdx].tools = [];
+            if(i === '') db[currentIdx].tools.push(t); else db[currentIdx].tools[i] = t;
+            localStorage.setItem(DB_KEY, JSON.stringify(db));
+            renderTools(); hide('m-t');
+        }
+
+        function makePDF() {
+            const p = db[currentIdx];
+            let oben = [], unten = [], target = oben;
+            (p.tools || []).forEach(t => { if(t.rev) target = unten; target.push(t); });
+
+            const getTableContent = (title, list) => `
+                <tr><td colspan="3" class="pdf-cat">${title}</td></tr>
+                <tr class="th-row"><th>T-NR</th><th>WERKZEUGNAME / KOMMENTAR</th><th style="text-align:right">Ø / TOLERANZ</th></tr>
+                ${list.map(t => `
+                    <tr class="t-row">
+                        <td style="width:80px; text-align:center">${t.id}</td>
+                        <td>${t.nm}</td>
+                        <td style="width:140px; text-align:right">${t.dia}</td>
+                    </tr>`).join('')}`;
+
+            const html = `
+            <table class="pdf-frame">
+                <tr>
+                    <td colspan="2" style="border-bottom:var(--border-thick)">
+                        <div style="font-size:12pt; font-weight:900">${p.name}</div>
+                        <div class="p-num-big">${p.num}</div>
+                    </td>
+                    <td class="meta-box" style="border-bottom:var(--border-thick)">
+                        <table class="meta-table">
+                            <tr><td>MATERIAL</td><td style="text-align:right">${p.mat}</td></tr>
+                            <tr><td>LAUFZEIT</td><td style="text-align:right">${p.lzf}</td></tr>
+                            <tr><td>SÄGELÄNGE</td><td style="text-align:right">${p.sag}</td></tr>
+                            <tr><td>ABSTAND</td><td style="text-align:right">${p.abs}</td></tr>
+                            <tr><td>GREIFER</td><td style="text-align:right">${p.grf}</td></tr>
+                            <tr><td>STÜCK</td><td style="text-align:right">${p.stt}</td></tr>
+                        </table>
+                    </td>
+                </tr>
+                ${getTableContent('REVOLVER OBEN', oben)}
+                ${unten.length ? getTableContent('REVOLVER UNTEN', unten) : ''}
+            </table>`;
+
+            const win = window.open('', '_blank');
+            win.document.write(`<html><head><style>body{margin:0;padding:0;}</style></head><body>${html}</body></html>`);
+            win.document.close();
+            setTimeout(() => { win.print(); win.close(); }, 500);
+        }
+
+        function modalP(edit = false) { el('p-idx').value = edit ? currentIdx : ''; if(!edit) { el('p-num').value=''; el('p-nam').value=''; } else { const p=db[currentIdx]; el('p-num').value=p.num; el('p-nam').value=p.name; el('p-lzf').value=p.lzf; el('p-mat').value=p.mat; el('p-sag').value=p.sag; el('p-abs').value=p.abs; el('p-grf').value=p.grf; el('p-stt').value=p.stt; } show('m-p'); }
+        function deleteProject(i) { if(confirm('Löschen?')) { db.splice(i,1); localStorage.setItem(DB_KEY, JSON.stringify(db)); renderList(); } }
+        function delT() { db[currentIdx].tools.splice(el('t-idx').value,1); localStorage.setItem(DB_KEY, JSON.stringify(db)); renderTools(); hide('m-t'); }
+        function exportJSON() { el('imp-area').value = JSON.stringify(db); }
+        function importJSON() { try { db = JSON.parse(el('imp-area').value); localStorage.setItem(DB_KEY, JSON.stringify(db)); renderList(); hide('m-imp'); } catch(e) { alert("Error"); } }
+        
+        window.onload = renderList;
+    </script>
 </body>
 </html>
