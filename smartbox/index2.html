@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="de">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>SMARTBOX PRO V2</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
     <style>
@@ -21,10 +21,11 @@
             margin: 0; 
             color: var(--text-primary); 
             -webkit-tap-highlight-color: transparent;
+            overflow-x: hidden;
         }
 
         header {
-            background: rgba(255, 255, 255, 0.8); 
+            background: rgba(255, 255, 255, 0.85); 
             backdrop-filter: blur(20px); 
             -webkit-backdrop-filter: blur(20px);
             padding: 16px 20px; 
@@ -41,7 +42,7 @@
         .view.active { display: block; }
 
         .project-header { padding: 24px 20px; background: #fff; border-bottom: 1px solid var(--border); }
-        .p-num-title { font-size: 42px; font-weight: 900; letter-spacing: -1.5px; margin: 4px 0; text-transform: uppercase; }
+        .p-num-title { font-size: 42px; font-weight: 900; letter-spacing: -2px; margin: 4px 0; text-transform: uppercase; line-height: 1; }
 
         .list-item {
             background: var(--surface); 
@@ -51,10 +52,10 @@
             border: 0.5px solid var(--border); 
             display: flex; 
             align-items: center; 
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-            transition: transform 0.1s;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
         }
 
+        /* Стиль карточки: T-NR сверху мелко, Описание крупно */
         .t-id-label { font-size: 11px; font-weight: 800; color: var(--accent); text-transform: uppercase; margin-bottom: 2px; }
         .t-name-label { font-size: 24px; font-weight: 900; line-height: 1.1; margin-bottom: 8px; }
         
@@ -75,7 +76,7 @@
         .btn-action { background: none; color: #fff; border: none; font-weight: 700; font-size: 14px; cursor: pointer; }
         .btn-save { background: var(--accent); color: #fff; width: 100%; padding: 18px; border: none; border-radius: 16px; font-weight: 700; font-size: 16px; margin-top: 10px; cursor: pointer; }
         .btn-secondary { background: #f2f2f7; color: #1d1d1f; border: none; padding: 10px 16px; border-radius: 10px; font-weight: 700; font-size: 12px; cursor: pointer; }
-        .btn-pdf { background: #000; color: #fff; border: none; padding: 10px 18px; border-radius: 12px; font-weight: 800; font-size: 12px; cursor: pointer; }
+        .btn-pdf { background: #000; color: #fff; border: none; padding: 10px 18px; border-radius: 10px; font-weight: 800; font-size: 12px; cursor: pointer; }
 
         .modal { 
             display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); 
@@ -84,6 +85,7 @@
         .modal-content { 
             background: #fff; width: 100%; border-radius: 32px 32px 0 0; 
             padding: 30px; box-sizing: border-box; max-height: 95vh; overflow-y: auto; 
+            padding-bottom: 60px;
         }
         
         input, textarea { 
@@ -97,108 +99,116 @@
         .toggle-btn.on .switch { background: #34c759; }
         .toggle-btn.on .switch::after { left: 22px; }
 
-        .handle { cursor: grab; padding: 15px 5px; color: #d2d2d7; font-size: 24px; margin-right: 15px; }
+        .handle { cursor: grab; padding: 15px 10px; color: #d2d2d7; font-size: 24px; margin-right: 10px; }
         .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .scroll-pad { height: 180px; }
+        
+        /* Паддинг в конце списка для защиты от перекрытия кнопками */
+        .scroll-pad { height: 200px; }
 
-        .sortable-ghost { opacity: 0.3; background: #cce4ff; }
+        /* Стили для PDF печати */
+        @media print {
+            body * { visibility: hidden; }
+            #print-area, #print-area * { visibility: visible; }
+            #print-area { position: absolute; left: 0; top: 0; width: 100%; }
+        }
+
+        #print-area { display: none; }
     </style>
 </head>
 <body>
 
     <header>
-        <div style="font-weight: 900; letter-spacing: -0.5px; font-size: 18px;">SMARTBOX <span style="color:var(--accent)">PRO</span></div>
-        <button class="btn-secondary" onclick="openImport()">ДАННЫЕ</button>
+        <div style="font-weight: 900; font-size: 18px;">SMARTBOX <span style="color:var(--accent)">PRO</span></div>
+        <button class="btn-secondary" onclick="openImport()">DATEN</button>
     </header>
 
-    <!-- Главная страница (Проекты) -->
     <div id="v-home" class="view active">
         <div class="project-header">
-            <div class="t-id-label">ОБЗОР</div>
-            <div class="p-num-title">ПРОЕКТЫ</div>
+            <div class="t-id-label">ÜBERSICHT</div>
+            <div class="p-num-title">PROJEKTE</div>
         </div>
         <div id="list-p"></div>
         <div class="scroll-pad"></div>
         <div class="actions-bar">
-            <button class="btn-action" onclick="modalP()">+ НОВЫЙ ПРОЕКТ</button>
+            <button class="btn-action" onclick="modalP()">+ NEUES PROJEKT</button>
         </div>
     </div>
 
-    <!-- Детализация проекта (Инструменты) -->
     <div id="v-det" class="view">
         <div class="project-header">
             <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                <button class="btn-secondary" onclick="goHome()">← НАЗАД</button>
+                <button class="btn-secondary" onclick="goHome()">← ZURÜCK</button>
                 <div style="display:flex; gap:8px;">
-                    <button class="btn-secondary" onclick="editCurrentProject()">ИЗМЕНИТЬ</button>
-                    <button class="btn-pdf" id="pdf-btn">PDF ЭКСПОРТ</button>
+                    <button class="btn-secondary" onclick="editCurrentProject()">EDIT</button>
+                    <button class="btn-pdf" onclick="generatePDF()">PDF EXPORT</button>
                 </div>
             </div>
-            <div class="t-id-label">НОМЕР ПРОЕКТА</div>
+            <div class="t-id-label">PROJEKT NR</div>
             <div class="p-num-title" id="h-num">---</div>
             <div style="font-size:20px; font-weight:700; color:var(--text-secondary);" id="h-nam">---</div>
         </div>
         <div id="list-t"></div>
         <div class="scroll-pad"></div>
         <div class="actions-bar">
-            <button class="btn-action" onclick="modalT()">+ ИНСТРУМЕНТ</button>
+            <button class="btn-action" onclick="modalT()">+ WERKZEUG</button>
         </div>
     </div>
 
-    <!-- Модальное окно Проекта -->
+    <!-- Modals -->
     <div id="m-p" class="modal" onclick="if(event.target==this) this.style.display='none'">
         <div class="modal-content">
-            <h2 style="margin:0 0 20px; font-weight:900; font-size:28px;">Проект</h2>
+            <h2 style="margin:0 0 20px; font-weight:900;">Projekt</h2>
             <input type="hidden" id="p-idx">
-            <input type="text" id="p-num" placeholder="НОМЕР ПРОЕКТА">
-            <input type="text" id="p-nam" placeholder="НАЗВАНИЕ ПРОЕКТА">
+            <input type="text" id="p-num" placeholder="PROJEKT NR">
+            <input type="text" id="p-nam" placeholder="BEZEICHNUNG">
             <div class="grid-2">
                 <input type="text" id="p-lzf" placeholder="LZF">
-                <input type="text" id="p-mat" placeholder="МАТЕРИАЛ">
-                <input type="text" id="p-slg" placeholder="ПИЛА">
-                <input type="text" id="p-abs" placeholder="ОТСТУП">
-                <input type="text" id="p-grf" placeholder="КУЛАЧКИ">
-                <input type="text" id="p-stk" placeholder="ШТОК">
+                <input type="text" id="p-mat" placeholder="MAT">
+                <input type="text" id="p-slg" placeholder="SÄGE">
+                <input type="text" id="p-abs" placeholder="ABST">
+                <input type="text" id="p-grf" placeholder="BACK">
+                <input type="text" id="p-stk" placeholder="STK">
             </div>
-            <button class="btn-save" onclick="saveP()">СОХРАНИТЬ</button>
-            <button id="btn-del-p" style="color:red; background:none; border:none; width:100%; margin-top:15px; font-weight:700; display:none; cursor:pointer" onclick="delP()">Удалить проект</button>
+            <button class="btn-save" onclick="saveP()">SPEICHERN</button>
+            <button id="btn-del-p" style="color:red; background:none; border:none; width:100%; margin-top:20px; font-weight:700; display:none" onclick="delP()">Löschen</button>
         </div>
     </div>
 
-    <!-- Модальное окно Инструмента -->
     <div id="m-t" class="modal" onclick="if(event.target==this) this.style.display='none'">
         <div class="modal-content">
-            <h2 style="margin:0 0 20px; font-weight:900; font-size:28px;">Инструмент</h2>
+            <h2 style="margin:0 0 20px; font-weight:900;">Werkzeug</h2>
             <input type="hidden" id="t-idx">
-            <input type="text" id="t-bem" placeholder="T-НОМЕР (напр. T01)">
-            <input type="text" id="t-nm" placeholder="ОПИСАНИЕ (напр. ФРЕЗА)">
+            <input type="text" id="t-bem" placeholder="T-NUMMER">
+            <input type="text" id="t-nm" placeholder="BESCHREIBUNG">
             <div id="btn-storage-toggle" class="toggle-btn">
-                <span>СТАНДАРТ (СКЛАД)</span>
+                <span>STANDART (LAGER)</span>
                 <div class="switch"></div>
             </div>
-            <input type="text" id="t-loc" placeholder="МЕСТО ХРАНЕНИЯ (напр. A-01)">
-            <textarea id="t-kom" placeholder="КОММЕНТАРИЙ" rows="3"></textarea>
-            <button class="btn-save" onclick="saveT()">СОХРАНИТЬ</button>
-            <button id="btn-del-t" style="color:red; background:none; border:none; width:100%; margin-top:15px; font-weight:700; cursor:pointer;" onclick="delT()">Удалить из списка</button>
+            <input type="text" id="t-loc" placeholder="LAGERPLATZ">
+            <textarea id="t-kom" placeholder="KOMMENTAR" rows="3"></textarea>
+            <button class="btn-save" onclick="saveT()">SPEICHERN</button>
+            <button id="btn-del-t" style="color:red; background:none; border:none; width:100%; margin-top:20px; font-weight:700;" onclick="delT()">Löschen</button>
         </div>
     </div>
 
-    <!-- Управление данными -->
     <div id="m-imp" class="modal" onclick="if(event.target==this) this.style.display='none'">
         <div class="modal-content">
-            <h2 style="font-weight:900; font-size:28px;">Менеджер Данных</h2>
-            <textarea id="imp-area" style="height:250px; font-family:monospace; font-size:12px;" placeholder="Вставьте JSON для импорта"></textarea>
+            <h2 style="font-weight:900;">Daten Manager</h2>
+            <textarea id="imp-area" style="height:250px; font-family:monospace; font-size:12px;"></textarea>
             <div class="grid-2">
-                <button class="btn-secondary" onclick="exportJSON()">JSON ЭКСПОРТ</button>
-                <button class="btn-save" style="margin:0" onclick="importAnyJSON()">JSON ИМПОРТ</button>
+                <button class="btn-secondary" onclick="exportJSON()">JSON EXPORT</button>
+                <button class="btn-save" style="margin:0" onclick="importAnyJSON()">JSON IMPORT</button>
             </div>
         </div>
     </div>
 
+    <!-- Область для генерации PDF (скрытая) -->
+    <div id="print-area"></div>
+
     <script>
-        const STORAGE_KEY = 'SMARTBOX_PRO_V2_DATA';
-        let db = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-        let currentIdx = null;
+        const DB_KEY = 'SMARTBOX_V2_PRO';
+        let db = JSON.parse(localStorage.getItem(DB_KEY)) || [];
+        let curIdx = null;
         let sortable = null;
 
         const el = (id) => document.getElementById(id);
@@ -216,7 +226,7 @@
         }
 
         function openProject(i) {
-            currentIdx = i;
+            curIdx = i;
             document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
             el('v-det').classList.add('active');
             el('h-num').innerText = db[i].num || '---';
@@ -225,7 +235,7 @@
         }
 
         function goHome() {
-            currentIdx = null;
+            curIdx = null;
             document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
             el('v-home').classList.add('active');
             renderList();
@@ -233,8 +243,7 @@
 
         function renderTools() {
             const list = el('list-t');
-            const tools = db[currentIdx].tools || [];
-            
+            const tools = db[curIdx].tools || [];
             list.innerHTML = tools.map((t, i) => `
                 <div class="list-item" data-id="${i}">
                     <div class="handle">≡</div>
@@ -244,7 +253,6 @@
                         <div class="loc-tag ${t.isStandart ? 'standart' : 'sonder'}">
                             ${t.isStandart ? 'STANDART | ' + (t.loc || 'LAGER') : 'SONDER | BLAUKISTE'}
                         </div>
-                        ${t.kom ? `<div style="font-size:12px; margin-top:8px; color:#888; font-weight:600;">${t.kom}</div>` : ''}
                     </div>
                 </div>`).join('');
 
@@ -252,19 +260,14 @@
             sortable = new Sortable(list, {
                 handle: '.handle',
                 animation: 250,
-                ghostClass: 'sortable-ghost',
                 onEnd: () => {
-                    const newOrder = Array.from(list.querySelectorAll('.list-item')).map(item => {
-                        return db[currentIdx].tools[parseInt(item.dataset.id)];
-                    });
-                    db[currentIdx].tools = newOrder;
-                    localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
-                    renderTools(); // Обновляем индексы в data-id
+                    db[curIdx].tools = Array.from(list.querySelectorAll('.list-item')).map(item => db[curIdx].tools[parseInt(item.dataset.id)]);
+                    localStorage.setItem(DB_KEY, JSON.stringify(db));
+                    renderTools();
                 }
             });
         }
 
-        // Логика Проектов
         function modalP() {
             el('p-idx').value = '';
             ['p-num','p-nam','p-lzf','p-mat','p-slg','p-abs','p-grf','p-stk'].forEach(id => el(id).value = '');
@@ -273,8 +276,8 @@
         }
 
         function editCurrentProject() {
-            const p = db[currentIdx];
-            el('p-idx').value = currentIdx;
+            const p = db[curIdx];
+            el('p-idx').value = curIdx;
             el('p-num').value = p.num; el('p-nam').value = p.name;
             el('p-lzf').value = p.lzf; el('p-mat').value = p.mat;
             el('p-slg').value = p.slg; el('p-abs').value = p.abs;
@@ -286,158 +289,112 @@
         function saveP() {
             const i = el('p-idx').value;
             const data = {
-                num: el('p-num').value.toUpperCase(),
-                name: el('p-nam').value.toUpperCase(),
+                num: el('p-num').value.toUpperCase(), name: el('p-nam').value.toUpperCase(),
                 lzf: el('p-lzf').value, mat: el('p-mat').value,
                 slg: el('p-slg').value, abs: el('p-abs').value,
                 grf: el('p-grf').value, stk: el('p-stk').value,
                 tools: i !== '' ? db[i].tools : []
             };
             if(i === '') db.push(data); else db[i] = data;
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
+            localStorage.setItem(DB_KEY, JSON.stringify(db));
             if(i !== '') { el('h-num').innerText = data.num; el('h-nam').innerText = data.name; }
             renderList(); el('m-p').style.display = 'none';
         }
 
         function delP() {
-            if(confirm('Удалить этот проект и все его инструменты?')) {
-                db.splice(currentIdx, 1);
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
-                el('m-p').style.display = 'none';
-                goHome();
-            }
+            if(confirm('Projekt löschen?')) { db.splice(curIdx, 1); localStorage.setItem(DB_KEY, JSON.stringify(db)); goHome(); el('m-p').style.display='none'; }
         }
 
-        // Логика Инструментов
         function modalT(i = null) {
-            const isEdit = i !== null;
-            el('t-idx').value = isEdit ? i : '';
-            const t = isEdit ? db[currentIdx].tools[i] : {bem:'', nm:'', isStandart:false, loc:'', kom:''};
+            const edit = i !== null;
+            el('t-idx').value = edit ? i : '';
+            const t = edit ? db[curIdx].tools[i] : {bem:'', nm:'', isStandart:false, loc:'', kom:''};
             el('t-bem').value = t.bem; el('t-nm').value = t.nm; el('t-loc').value = t.loc; el('t-kom').value = t.kom;
-            const toggle = el('btn-storage-toggle');
-            t.isStandart ? toggle.classList.add('on') : toggle.classList.remove('on');
-            toggle.onclick = () => toggle.classList.toggle('on');
-            el('btn-del-t').style.display = isEdit ? 'block' : 'none';
+            const btn = el('btn-storage-toggle');
+            t.isStandart ? btn.classList.add('on') : btn.classList.remove('on');
+            btn.onclick = () => btn.classList.toggle('on');
+            el('btn-del-t').style.display = edit ? 'block' : 'none';
             el('m-t').style.display = 'flex';
         }
 
         function saveT() {
             const i = el('t-idx').value;
-            const tool = {
-                bem: el('t-bem').value.toUpperCase(),
-                nm: el('t-nm').value.toUpperCase(),
+            const t = {
+                bem: el('t-bem').value.toUpperCase(), nm: el('t-nm').value.toUpperCase(),
                 isStandart: el('btn-storage-toggle').classList.contains('on'),
-                loc: el('t-loc').value.toUpperCase(),
-                kom: el('t-kom').value.toUpperCase()
+                loc: el('t-loc').value.toUpperCase(), kom: el('t-kom').value.toUpperCase()
             };
-            if(!db[currentIdx].tools) db[currentIdx].tools = [];
-            if(i === '') db[currentIdx].tools.push(tool); else db[currentIdx].tools[i] = tool;
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
+            if(!db[curIdx].tools) db[curIdx].tools = [];
+            if(i === '') db[curIdx].tools.push(t); else db[curIdx].tools[i] = t;
+            localStorage.setItem(DB_KEY, JSON.stringify(db));
             renderTools(); el('m-t').style.display = 'none';
         }
 
         function delT() {
-            db[currentIdx].tools.splice(el('t-idx').value, 1);
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
+            db[curIdx].tools.splice(el('t-idx').value, 1);
+            localStorage.setItem(DB_KEY, JSON.stringify(db));
             renderTools(); el('m-t').style.display = 'none';
         }
 
-        // Данные
         function openImport() { el('imp-area').value = ''; el('m-imp').style.display = 'flex'; }
         function exportJSON() { el('imp-area').value = JSON.stringify(db, null, 2); }
         function importAnyJSON() {
             try {
                 const data = JSON.parse(el('imp-area').value);
-                if(Array.isArray(data)) { 
-                    db = data; 
-                    localStorage.setItem(STORAGE_KEY, JSON.stringify(db)); 
-                    renderList(); 
-                    el('m-imp').style.display='none'; 
-                }
-            } catch(e) { alert('Ошибка формата JSON'); }
+                if(Array.isArray(data)) { db = data; localStorage.setItem(DB_KEY, JSON.stringify(db)); renderList(); el('m-imp').style.display='none'; }
+            } catch(e) { alert('Fehler'); }
         }
 
-        // Генерация PDF (Фикс разрывов и дизайна)
-        function makePDF() {
-            const p = db[currentIdx];
+        // Фикс PDF: Генерация дизайна Premium Light с жирными рамками
+        function generatePDF() {
+            const p = db[curIdx];
             if(!p) return;
             const sonder = (p.tools || []).filter(x => !x.isStandart);
             const standart = (p.tools || []).filter(x => x.isStandart);
 
-            const row = (t, info) => `
-                <div class="pdf-row">
-                    <div class="pdf-main">
-                        <div class="pdf-t-name">${t.nm || '---'}</div>
-                        <div class="pdf-t-info">${info} ${t.kom ? ' | ' + t.kom : ''}</div>
+            const getRow = (t, loc) => `
+                <div style="display:flex; border-bottom:3px solid #000; page-break-inside:avoid;">
+                    <div style="flex:1; padding:12px 20px;">
+                        <div style="font-weight:900; font-size:26px; line-height:1.1;">${t.nm || ''}</div>
+                        <div style="font-size:12px; font-weight:800; color:#444; text-transform:uppercase;">${loc} ${t.kom ? ' | ' + t.kom : ''}</div>
                     </div>
-                    <div class="pdf-side">
-                        <div class="pdf-side-lbl">BEMERKUNG</div>
-                        <div class="pdf-side-val">${t.bem || '--'}</div>
+                    <div style="width:180px; border-left:3px solid #000; padding:10px; text-align:right; display:flex; flex-direction:column; justify-content:center;">
+                        <div style="font-size:10px; font-weight:900; color:#666;">BEMERKUNG</div>
+                        <div style="font-weight:900; font-size:24px;">${t.bem || '--'}</div>
                     </div>
                 </div>`;
 
-            const html = `<!DOCTYPE html><html><head><style>
-                @page { size: A4; margin: 10mm; }
-                body { font-family: sans-serif; margin: 0; color: #000; }
-                .pdf-wrapper { border: 3px solid #000; width: 100%; box-sizing: border-box; }
-                .pdf-header { display: flex; border-bottom: 3px solid #000; background: #fff; }
-                .pdf-h-left { flex: 1; padding: 25px; }
-                .pdf-h-right { width: 240px; border-left: 3px solid #000; padding: 15px; }
-                .pdf-p-name { font-size: 16px; font-weight: 900; text-transform: uppercase; margin-bottom: 5px; }
-                .pdf-p-num { font-size: 65px; font-weight: 900; line-height: 0.9; letter-spacing: -3px; }
-                .pdf-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; font-size: 12px; font-weight: 900; }
-                .pdf-meta div { display: flex; justify-content: space-between; border-bottom: 1px solid #ccc; padding: 3px 0; }
-                .pdf-section { background: #000; color: #fff; padding: 10px 15px; font-weight: 900; font-size: 14px; text-transform: uppercase; }
-                .pdf-row { display: flex; border-bottom: 2px solid #000; page-break-inside: avoid; }
-                .pdf-row:last-child { border-bottom: none; }
-                .pdf-main { flex: 1; padding: 12px 20px; }
-                .pdf-side { width: 180px; border-left: 2px solid #000; padding: 10px; text-align: right; display: flex; flex-direction: column; justify-content: center; }
-                .pdf-t-name { font-weight: 900; font-size: 24px; line-height: 1.1; margin-bottom: 2px; }
-                .pdf-t-info { font-size: 11px; font-weight: 700; color: #333; text-transform: uppercase; }
-                .pdf-side-lbl { font-size: 9px; color: #666; font-weight: 900; margin-bottom: 2px; }
-                .pdf-side-val { font-weight: 900; font-size: 22px; line-height: 1; }
-                /* Исправляем разрыв нижней границы на страницах */
-                .pdf-wrapper { border-bottom: 3px solid #000; }
-            </style></head><body>
-                <div class="pdf-wrapper">
-                    <div class="pdf-header">
-                        <div class="pdf-h-left">
-                            <div class="pdf-p-name">${p.name || ''}</div>
-                            <div class="pdf-p-num">${p.num || '---'}</div>
+            const pdfHtml = `
+                <div style="border:4px solid #000; font-family:sans-serif; width:100%; box-sizing:border-box;">
+                    <div style="display:flex; border-bottom:4px solid #000; background:#fff;">
+                        <div style="flex:1; padding:25px;">
+                            <div style="font-size:16px; font-weight:900; text-transform:uppercase; margin-bottom:5px;">${p.name || ''}</div>
+                            <div style="font-size:75px; font-weight:900; line-height:0.85; letter-spacing:-4px;">${p.num || '---'}</div>
                         </div>
-                        <div class="pdf-h-right">
-                            <div class="pdf-meta">
-                                <div><span>MAT:</span><span>${p.mat||'--'}</span></div>
-                                <div><span>LZF:</span><span>${p.lzf||'--'}</span></div>
-                                <div><span>SÄGE:</span><span>${p.slg||'--'}</span></div>
-                                <div><span>ABST:</span><span>${p.abs||'--'}</span></div>
-                                <div><span>BACK:</span><span>${p.grf||'--'}</span></div>
-                                <div><span>STK:</span><span>${p.stk||'--'}</span></div>
+                        <div style="width:260px; border-left:4px solid #000; padding:15px;">
+                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; font-size:13px; font-weight:900;">
+                                <div style="display:flex; justify-content:space-between; border-bottom:1px solid #ddd;"><span>MAT:</span><span>${p.mat||'--'}</span></div>
+                                <div style="display:flex; justify-content:space-between; border-bottom:1px solid #ddd;"><span>LZF:</span><span>${p.lzf||'--'}</span></div>
+                                <div style="display:flex; justify-content:space-between; border-bottom:1px solid #ddd;"><span>SÄGE:</span><span>${p.slg||'--'}</span></div>
+                                <div style="display:flex; justify-content:space-between; border-bottom:1px solid #ddd;"><span>ABST:</span><span>${p.abs||'--'}</span></div>
+                                <div style="display:flex; justify-content:space-between; border-bottom:1px solid #ddd;"><span>BACK:</span><span>${p.grf||'--'}</span></div>
+                                <div style="display:flex; justify-content:space-between; border-bottom:1px solid #ddd;"><span>STK:</span><span>${p.stk||'--'}</span></div>
                             </div>
                         </div>
                     </div>
-                    ${sonder.length ? '<div class="pdf-section">Sonderwerkzeuge (СПЕЦ)</div>' + sonder.map(t => row(t, 'IN BLAUKISTE')).join('') : ''}
-                    ${standart.length ? '<div class="pdf-section">Standartwerkzeuge (СКЛАД)</div>' + standart.map(t => row(t, t.loc || 'LAGER')).join('') : ''}
-                </div>
-                <script>window.onload = () => { setTimeout(() => { window.print(); window.close(); }, 300); };<\/script>
-            </body></html>`;
+                    ${sonder.length ? '<div style="background:#000; color:#fff; padding:12px 20px; font-weight:900; font-size:16px;">SONDERWERKZEUGE (СПЕЦ)</div>' + sonder.map(t => getRow(t, 'IN BLAUKISTE')).join('') : ''}
+                    ${standart.length ? '<div style="background:#000; color:#fff; padding:12px 20px; font-weight:900; font-size:16px;">STANDARTWERKZEUGE (СКЛАД)</div>' + standart.map(t => getRow(t, t.loc || 'LAGER')).join('') : ''}
+                </div>`;
 
-            // Создаем временное окно для печати
-            const printWin = window.open('', '_blank');
-            if (printWin) {
-                printWin.document.write(html);
-                printWin.document.close();
-            } else {
-                alert('Пожалуйста, разрешите всплывающие окна для экспорта PDF');
-            }
+            el('print-area').innerHTML = pdfHtml;
+            
+            // Запуск печати
+            setTimeout(() => {
+                window.print();
+            }, 500);
         }
 
-        window.onload = () => {
-            renderList();
-            // Обработчик кнопки PDF с проверкой на существование
-            const btn = el('pdf-btn');
-            if(btn) btn.onclick = makePDF;
-        };
+        window.onload = renderList;
     </script>
 </body>
 </html>
