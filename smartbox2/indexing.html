@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>QS CENTRAL SMARTBOX PRO</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root{--bg:#f2f2f7;--accent:#007aff;--card:#fff;--text:#1c1c1e;--sub:#8e8e93}
+        body{background:var(--bg);font-family:'Inter', -apple-system,sans-serif;margin:0;color:var(--text);padding-bottom:120px}
+        header{background:rgba(255,255,255,.8);backdrop-filter:blur(20px);padding:15px 20px;position:sticky;top:0;z-index:1000;display:flex;justify-content:space-between;align-items:center;border-bottom:.5px solid rgba(0,0,0,.1)}
+        .h-title{font-weight:900;font-size:22px}
+        .h-title span{color:var(--accent)}
+        .project-card{background:var(--card);border-radius:20px;margin:12px 16px;padding:20px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 2px 8px rgba(0,0,0,0.05)}
+        .p-num-big{font-size:28px;font-weight:900;letter-spacing:-1px}
+        .p-name-sub{font-size:11px;font-weight:700;color:var(--sub);text-transform:uppercase}
+        .tool-card{background:var(--card);border-radius:16px;margin:8px 16px;padding:14px;display:flex;justify-content:space-between;align-items:center}
+        .t-label-min{font-size:9px;font-weight:900;color:var(--sub);text-transform:uppercase}
+        .t-val-main{font-size:20px;font-weight:900;line-height:1}
+        .t-name-sub{font-size:13px;font-weight:700}
+        .tag{font-size:9px;font-weight:900;padding:3px 8px;border-radius:5px;margin-top:5px;display:inline-block;text-transform:uppercase}
+        .tag-sonder{background:#fff2e8;color:#ff9500}
+        .tag-std{background:#e8f2ff;color:#007aff}
+        .btn-icon{background:#f2f2f7;border:none;border-radius:10px;width:36px;height:36px;color:var(--accent);font-weight:900}
+        .fab{position:fixed;bottom:30px;right:20px;background:var(--text);color:#fff;width:60px;height:60px;border-radius:30px;display:flex;align-items:center;justify-content:center;font-size:30px;z-index:2000;box-shadow:0 4px 12px rgba(0,0,0,0.2)}
+        .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:3000;align-items:flex-end}
+        .modal-content{background:#fff;width:100%;border-radius:25px 25px 0 0;padding:25px;max-height:90vh;overflow:auto;animation:up 0.3s ease-out}
+        @keyframes up{from{transform:translateY(100%)}to{transform:translateY(0)}}
+        input,textarea{width:100%;padding:14px;margin:8px 0;border:1.5px solid #eee;border-radius:12px;background:#f9f9fb;font-size:16px;box-sizing:border-box;font-family:inherit;font-weight:600}
+        .btn-save{background:var(--text);color:#fff;width:100%;padding:16px;border:none;border-radius:14px;font-weight:700;margin-top:10px;font-size:16px}
+        .btn-toggle{background:#f2f2f7;padding:14px;border-radius:12px;text-align:center;font-weight:800;margin:8px 0;cursor:pointer}
+        .btn-toggle.active{background:#34c759;color:#fff}
+        #list-t{padding-bottom:200px}
+    </style>
+</head>
+<body>
+
+    <div id="v-home">
+        <header>
+            <div class="h-title">QS <span>SMARTBOX</span></div>
+            <button class="btn-icon" onclick="openImport()">JSON</button>
+        </header>
+        <div id="plist"></div>
+        <div class="fab" onclick="modalP()">+</div>
+    </div>
+
+    <div id="v-det" style="display:none">
+        <header>
+            <button class="btn-icon" onclick="goHome()">←</button>
+            <div style="text-align:center" onclick="modalP(currentIdx)">
+                <div id="detName" class="p-name-sub"></div>
+                <div id="detNum" style="font-size:20px;font-weight:900"></div>
+            </div>
+            <button class="btn-icon" onclick="makePDF()">PDF</button>
+        </header>
+        <div id="list-t"></div>
+        <div class="fab" onclick="modalT()">+</div>
+    </div>
+
+    <div id="mp" class="modal" onclick="if(event.target==this)this.style.display='none'">
+        <div class="modal-content">
+            <input type="hidden" id="pidx"><input id="pnum" placeholder="ZEICHNUNGSNUMMER"><input id="pname" placeholder="KUNDE / NAME">
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px">
+                <input id="plzf" placeholder="LAUFZEIT"><input id="pmat" placeholder="MATERIAL"><input id="psag" placeholder="SÄGELÄNGE"><input id="pabs" placeholder="ABSTAND"><input id="pgrf" placeholder="GREIFER"><input id="pstk" placeholder="STOCK">
+            </div>
+            <button class="btn-save" onclick="saveP()">SPEICHERN</button>
+            <button id="delP" class="btn-save" style="background:none;color:red;display:none" onclick="delProject()">Löschen</button>
+        </div>
+    </div>
+
+    <div id="mt" class="modal" onclick="if(event.target==this)this.style.display='none'">
+        <div class="modal-content">
+            <input type="hidden" id="tidx"><input id="tid" placeholder="BEMERKUNG (T-NR)"><input id="tnm" placeholder="WERKZEUG NAME">
+            <div id="tstd" class="btn-toggle" onclick="this.classList.toggle('active');this.textContent=this.classList.contains('active')?'STANDART (STORAGE)':'SONDER (BLAUKISTE)'">SONDER (BLAUKISTE)</div>
+            <input id="tloc" placeholder="LAGERORT"><input id="tkom" placeholder="ZUSATZ INFO">
+            <button class="btn-save" onclick="saveT()">SPEICHERN</button>
+            <button id="delT" class="btn-save" style="background:none;color:red" onclick="deleteTool()">Löschen</button>
+        </div>
+    </div>
+
+    <div id="mi" class="modal" onclick="if(event.target==this)this.style.display='none'">
+        <div class="modal-content"><textarea id="imp" rows="10"></textarea>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px">
+                <button class="btn-save" style="background:#f2f2f7;color:#000" onclick="exportJSON()">EXPORT</button>
+                <button class="btn-save" onclick="importJSON()">IMPORT</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const DB_KEY = 'SMARTBOX_ULTIMATE_V1';
+        let db = JSON.parse(localStorage.getItem(DB_KEY)) || [];
+        let currentIdx = null;
+        const esc = s => String(s ?? '').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');
+        const save = () => localStorage.setItem(DB_KEY, JSON.stringify(db));
+
+        function checkDemo() {
+            if (db.length === 0) {
+                db = [{ "num": "230947", "name": "EINSCHRAUBNIPPEL DN10", "lzf": "4Min 45Sek", "mat": "1.4104 ⌀30", "slg": "1003mm", "abs": "0.5mm", "grf": "18-25", "stk": "100", "tools": [
+                    {"bem": "T0101", "nm": "KOPIERSTAHL NEGATIV R0.8 G54", "isStandart": true, "loc": "FACH A", "kom": "DNMG150608-NMT WS10"},
+                    {"bem": "T0202", "nm": "KOPIERSTAHL NEGATIV R0.4 G54", "isStandart": true},
+                    {"bem": "T0303", "nm": "DREHBOHRER D18 G54", "isStandart": true},
+                    {"bem": "T0404", "nm": "SPIBO D7 HM IK G54", "isStandart": true},
+                    {"bem": "T0505", "nm": "SPIBO 9.5 HM IK G54", "isStandart": true},
+                    {"bem": "T0606", "nm": "A-GEWINDESTAHL M29X1.5 G54", "isStandart": true},
+                    {"bem": "T0707", "nm": "BOHRST.D10 CCGT R0.2 G54", "isStandart": true},
+                    {"bem": "T0808", "nm": "BOHRST.D6 MHC 20-6 G54", "isStandart": true},
+                    {"bem": "T0909", "nm": "ZENTRIERBO D10 RADIAL G55", "isStandart": true},
+                    {"bem": "T1010", "nm": "KOPIERST.NEGATIV R0.4 G55", "isStandart": true},
+                    {"bem": "T1111", "nm": "KOPIERST. NEGATIV R0.4 G55", "isStandart": true},
+                    {"bem": "T1212", "nm": "FRÄSER D10 RADIAL G55", "isStandart": true},
+                    {"bem": "T1313", "nm": "A-STECHSTAHL TUNGALOY 2MM G55", "isStandart": true},
+                    {"bem": "T1414", "nm": "A-STECHSTAHL TUNGALOY 3MM G55", "isStandart": true},
+                    {"bem": "T1515", "nm": "ZENTRIERBO D8 G55", "isStandart": true},
+                    {"bem": "T1616", "nm": "ABSTECHSTAHL 3MM RECHTS G54", "isStandart": true},
+                    {"id": "T1212", "nm": "KUGELFRAESER D10/JOKE G54", "isStd": false},
+                    {"id": "T0505", "nm": "SPIBO D4 MIT KTB G54", "isStd": false},
+                    {"id": "T0505", "nm": "SPIBO D4 MIT KTB G54", "isStd": false}
+                ]}];
+                save();
+            }
+        }
+
+        function renderProjects(){ plist.innerHTML = db.map((p,i)=>`<div class="project-card" onclick="openProject(${i})"><div><div class="p-name-sub">${esc(p.name)}</div><div class="p-num-big">${esc(p.num)}</div></div><div style="color:#ccc">→</div></div>`).join(''); }
+        function openProject(i){ currentIdx=i; document.getElementById('v-home').style.display='none'; document.getElementById('v-det').style.display='block'; detName.textContent=db[i].name; detNum.textContent=db[i].num; renderTools(); }
+        function goHome(){ currentIdx=null; document.getElementById('v-home').style.display='block'; document.getElementById('v-det').style.display='none'; renderProjects(); }
+        
+        function modalP(i=null){
+            const edit=i!==null; pidx.value=edit?i:''; const p=edit?db[i]:{};
+            pnum.value=p.num||''; pname.value=p.name||''; plzf.value=p.lzf||''; pmat.value=p.mat||''; psag.value=p.slg||p.sag||''; pabs.value=p.abs||''; pgrf.value=p.grf||''; pstk.value=p.stk||'';
+            delP.style.display=edit?'block':'none'; mp.style.display='flex';
+        }
+
+        function saveP(){
+            const i=pidx.value; const data={ num:pnum.value, name:pname.value.toUpperCase(), lzf:plzf.value, mat:pmat.value, sag:psag.value, abs:pabs.value, grf:pgrf.value, stk:pstk.value, tools:i===''?[]:(db[i].tools||[]) };
+            if(i==='') db.push(data); else db[i]=data; save(); mp.style.display='none'; renderProjects(); if(i!=='') openProject(i);
+        }
+
+        function delProject(){ if(confirm('Löschen?')){ db.splice(currentIdx,1); save(); goHome(); mp.style.display='none'; } }
+
+        function renderTools(){
+            const list=db[currentIdx].tools||[];
+            document.getElementById('list-t').innerHTML = list.map((t,i)=>{
+                const tID=t.id||t.bem||''; const tSTD=t.hasOwnProperty('isStd')?t.isStd:(t.isStandart||false);
+                return `<div class="tool-card" onclick="modalT(${i})"><div style="flex:1"><div class="t-label-min">BEMERKUNG</div><div class="t-val-main">${esc(tID)}</div><div class="t-name-sub">${esc(t.nm)}</div><div class="tag ${tSTD?'tag-std':'tag-sonder'}">${tSTD?'STANDART | '+esc(t.loc||''):'SONDER'}</div></div><div style="display:flex; flex-direction:column; gap:5px"><button class="btn-icon" onclick="event.stopPropagation();moveTool(${i},-1)">↑</button><button class="btn-icon" onclick="event.stopPropagation();moveTool(${i},1)">↓</button></div></div>`
+            }).join('') + '<div style="height:120px"></div>';
+        }
+
+        function modalT(i=null){
+            const edit=i!==null; tidx.value=edit?i:''; const t=edit?db[currentIdx].tools[i]:{id:'', nm:'', isStd:false, loc:'', kom:''};
+            const tID=t.id||t.bem||''; const tSTD=t.hasOwnProperty('isStd')?t.isStd:(t.isStandart||false);
+            tid.value=tID; tnm.value=t.nm; tloc.value=t.loc||''; tkom.value=t.kom||'';
+            tstd.classList.toggle('active',tSTD); tstd.textContent=tSTD?'STANDART (STORAGE)':'SONDER (BLAUKISTE)';
+            delT.style.display=edit?'block':'none'; mt.style.display='flex';
+        }
+
+        function saveT(){
+            const i=tidx.value; const t={ id:tid.value.toUpperCase(), nm:tnm.value.toUpperCase(), isStd:tstd.classList.contains('active'), loc:tloc.value.toUpperCase(), kom:tkom.value.toUpperCase() };
+            if(!db[currentIdx].tools) db[currentIdx].tools=[]; if(i==='') db[currentIdx].tools.push(t); else db[currentIdx].tools[i]=t;
+            save(); mt.style.display='none'; renderTools();
+        }
+
+        function deleteTool(){ db[currentIdx].tools.splice(tidx.value,1); save(); mt.style.display='none'; renderTools(); }
+        function moveTool(i,d){ const arr=db[currentIdx].tools; const n=i+d; if(n>=0 && n<arr.length){ [arr[i],arr[n]]=[arr[n],arr[i]]; save(); renderTools(); } }
+        function openImport(){ imp.value=JSON.stringify(db); mi.style.display='flex'; }
+        function exportJSON(){ imp.value=JSON.stringify(db,null,2); }
+        function importJSON(){ try{ db=JSON.parse(imp.value); save(); location.reload(); }catch{ alert('Error'); } }
+
+        function makePDF(){
+            const p=db[currentIdx]; const tools=p.tools||[];
+            const sonder=tools.filter(t=>!(t.hasOwnProperty('isStd')?t.isStd:(t.isStandart||false)));
+            const std=tools.filter(t=>(t.hasOwnProperty('isStd')?t.isStd:(t.isStandart||false)));
+            let html=`<html><head><style>
+                @page { size: A4; margin: 8mm; }
+                body { font-family: sans-serif; margin: 0; -webkit-print-color-adjust: exact; color: #1a1a1a; }
+                table { width: 100%; border-collapse: collapse; border: 1.5px solid #000; table-layout: fixed; }
+                .h-cell { border-bottom: 1.5px solid #000; padding: 10px 14px; vertical-align: bottom; }
+                .meta { width: 180px; font-size: 9px; font-weight: 800; padding: 6px 10px; line-height: 1.2; border-left: none; }
+                .meta div { display: flex; justify-content: space-between; margin-bottom: 2px; border-bottom: 0.5px solid #ddd; }
+                .meta span:first-child { color: #666; }
+                .cat { background: #000 !important; color: #fff !important; font-weight: 900; padding: 5px 14px; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px; }
+                .t-row td { border-bottom: 1.5px solid #000; padding: 6px 14px; line-height: 1.2; border-left: none; border-right: none; }
+                .t-row:nth-child(even) td { background-color: #fcfcfc; }
+                .bem-col { width: 100px; text-align: right; vertical-align: middle; }
+                .t-name { font-weight: 800; font-size: 14px; display: block; text-transform: uppercase; letter-spacing: -0.3px; }
+                .t-sub { font-size: 8.5px; font-weight: 600; color: #555; text-transform: uppercase; margin-top: 1px; }
+                .b-val { font-weight: 900; font-size: 16px; color: #000; }
+                tr { page-break-inside: avoid; }
+            </style></head><body><table>
+                <thead><tr>
+                    <td class="h-cell">
+                        <div style="font-size:11px; font-weight:800; color:#555; text-transform:uppercase; margin-bottom:2px;">${esc(p.name)}</div>
+                        <div style="font-size:44px; font-weight:900; line-height:0.8; letter-spacing:-2.5px;">${esc(p.num)}</div>
+                    </td>
+                    <td class="h-cell meta">
+                        <div><span>MAT:</span><span>${esc(p.mat)||'--'}</span></div>
+                        <div><span>LZF:</span><span>${esc(p.lzf)||'--'}</span></div>
+                        <div><span>SÄGE:</span><span>${esc(p.slg||p.sag)||'--'}</span></div>
+                        <div><span>ABST:</span><span>${esc(p.abs)||'--'}</span></div>
+                        <div><span>GRF:</span><span>${esc(p.grf)||'--'}</span></div>
+                        <div><span>STOCK:</span><span>${esc(p.stk)||'--'}</span></div>
+                    </td>
+                </tr></thead><tbody>`;
+            const addGrp=(title,list)=>{
+                if(!list.length) return; html+=`<tr><td colspan="2" class="cat">${title}</td></tr>`;
+                list.forEach(t=>{
+                    const tID=t.id||t.bem||''; const tSTD=t.hasOwnProperty('isStd')?t.isStd:(t.isStandart||false);
+                    html+=`<tr class="t-row">
+                        <td>
+                            <span class="t-name">${esc(t.nm)}</span>
+                            <span class="t-sub">${tSTD?esc(t.loc||'LAGER'):'IN BLAUKISTE'} ${t.kom?' | '+esc(t.kom):''}</span>
+                        </td>
+                        <td class="bem-col"><span class="b-val">${esc(tID)}</span></td>
+                    </tr>`;
+                });
+            };
+            addGrp('SONDERWERKZEUGE',sonder); addGrp('STANDARTWERKZEUGE',std);
+            html+=`</tbody></table><script>setTimeout(()=>window.print(),500)<\/script></body></html>`;
+            const w=window.open(); w.document.write(html); w.document.close();
+        }
+        window.onload=()=>{ checkDemo(); renderProjects(); };
+    </script>
+</body>
+</html>
