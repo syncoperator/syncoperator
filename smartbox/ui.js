@@ -35,7 +35,7 @@ function goHome() {
     renderList();
 }
 
-// Drag and Drop reordering (Up/Down buttons)
+// Drag & Drop reordering (Кнопки перемещения)
 function moveTool(idx, dir) {
     const t = db[currentIdx].tools;
     const n = idx + dir;
@@ -64,22 +64,6 @@ function renderTools() {
                 </div>
             </div>
         </div>`).join('') + '<div style="height:120px;"></div>';
-}
-
-function modalP() {
-    el('p-idx').value = '';
-    ['p-num','p-nam','p-lzf','p-mat','p-slg','p-abs','p-grf','p-stk'].forEach(id => el(id).value = '');
-    el('m-p').style.display = 'flex';
-}
-
-function editCurrentProject() {
-    const p = db[currentIdx];
-    el('p-idx').value = currentIdx;
-    el('p-num').value = p.num; el('p-nam').value = p.name;
-    el('p-lzf').value = p.lzf||''; el('p-mat').value = p.mat||'';
-    el('p-slg').value = p.slg||''; el('p-abs').value = p.abs||'';
-    el('p-grf').value = p.grf||''; el('p-stk').value = p.stk||'';
-    el('m-p').style.display = 'flex';
 }
 
 function saveP() {
@@ -130,6 +114,7 @@ function importAnyJSON() {
     try { const data = JSON.parse(el('imp-area').value); if(Array.isArray(data)) db = data; localStorage.setItem(DB_KEY, JSON.stringify(db)); renderList(); hide('m-imp'); } catch(e) { alert('Error'); }
 }
 
+// Генерация PDF с фиксированной черной рамкой
 function makePDF() {
     const p = db[currentIdx];
     const sonder = (p.tools || []).filter(x => !x.isStandart);
