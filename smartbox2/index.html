@@ -1,536 +1,530 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="de">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SMARTBOX PRO V2 - Final Edition</title>
+    <title>QS CENTRAL NEXT</title>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         :root {
-            --bg-color: #FFFFFF;
-            --secondary-bg: #F2F2F7;
-            --text-main: #000000;
-            --text-secondary: #8E8E93;
-            --border-heavy: 3px solid #000;
-            --border-medium: 2px solid #000;
-            --border-ui: 1.5px solid #E5E5EA;
-            --radius-input: 14px;
-            --radius-modal: 24px;
-            --font-main: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Roboto", sans-serif;
+            --bg: #F2F2F7;
+            --card: #FFFFFF;
+            --accent: #007AFF;
+            --text: #1C1C1E;
+            --sub: #8E8E93;
+            --danger: #FF3B30;
+            --success: #34C759;
+            --radius-lg: 20px;
+            --radius-md: 14px;
+            --shadow: 0 4px 12px rgba(0,0,0,0.05);
         }
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-
-        body {
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
             margin: 0;
-            font-family: var(--font-main);
-            background-color: var(--bg-color);
-            color: var(--text-main);
+            padding-bottom: 100px;
+            overflow-x: hidden;
         }
 
-        /* --- UI ИНТЕРФЕЙС (МОБИЛЬНЫЙ) --- */
+        /* Navigation */
         header {
-            position: sticky; top: 0;
-            background: rgba(255, 255, 255, 0.9);
-            backdrop-filter: blur(10px);
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 12px 20px; border-bottom: var(--border-ui); z-index: 100;
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            padding: 16px 20px;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 0.5px solid rgba(0,0,0,0.1);
         }
 
-        .header-btns { display: flex; gap: 8px; }
-        .header-btns button {
-            background: var(--secondary-bg); border: none; padding: 8px 14px;
-            border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer;
+        .nav-brand { font-size: 20px; font-weight: 800; letter-spacing: -0.5px; }
+        .nav-brand span { color: var(--accent); }
+
+        /* Cards */
+        .container { padding: 12px; }
+        .card {
+            background: var(--card);
+            border-radius: var(--radius-lg);
+            margin-bottom: 12px;
+            padding: 16px;
+            box-shadow: var(--shadow);
+            transition: transform 0.2s ease;
+            position: relative;
         }
+        .card:active { transform: scale(0.98); }
 
-        #main-container { padding: 10px 20px; padding-bottom: 160px; }
-
-        .project-card { margin-bottom: 24px; padding: 16px 0; border-bottom: var(--border-ui); cursor: pointer; }
-        .label-mini { font-size: 9px; font-weight: 900; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 2px; }
-        .val-huge { font-size: 26px; font-weight: 900; line-height: 1; margin-bottom: 4px; }
-        .val-sub { font-size: 16px; font-weight: 700; }
+        .project-num { font-size: 24px; font-weight: 900; line-height: 1.1; margin-bottom: 4px; }
+        .project-name { font-size: 13px; font-weight: 600; color: var(--sub); text-transform: uppercase; }
 
         .tool-card {
-            display: flex; align-items: center; padding: 16px 0;
-            border-bottom: var(--border-ui); gap: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px;
+            cursor: grab;
+        }
+        .tool-info .t-nr { font-size: 11px; color: var(--sub); font-weight: 700; margin-bottom: 2px; }
+        .tool-info .t-desc { font-size: 17px; font-weight: 800; color: var(--text); }
+        .tool-info .t-dia { color: var(--accent); font-weight: 700; font-size: 14px; margin-top: 2px; }
+
+        .badge-rev {
+            display: inline-block;
+            background: #000;
+            color: #fff;
+            font-size: 9px;
+            font-weight: 900;
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-bottom: 6px;
         }
 
-        .sort-controls { display: flex; flex-direction: column; gap: 4px; }
-        .sort-btn {
-            width: 42px; height: 42px; background: var(--secondary-bg);
-            border: none; border-radius: 10px; font-size: 18px; cursor: pointer;
-            display: flex; align-items: center; justify-content: center;
+        /* Buttons */
+        .btn-round {
+            background: var(--accent);
+            color: white;
+            border: none;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
-
-        .card-body { flex-grow: 1; cursor: pointer; }
-        .tag {
-            display: inline-block; padding: 3px 8px; border-radius: 6px;
-            font-size: 10px; font-weight: 800; text-transform: uppercase; margin-top: 6px;
-        }
-        .tag-std { background: #E1F5FE; color: #0288D1; }
-        .tag-son { background: #FFF3E0; color: #EF6C00; }
-
         .fab {
-            position: fixed; right: 24px; bottom: 24px;
-            width: 64px; height: 64px; background: #000; color: #fff;
-            border-radius: 50%; display: flex; align-items: center; justify-content: center;
-            font-size: 32px; box-shadow: 0 8px 24px rgba(0,0,0,0.2); border: none; z-index: 99;
+            position: fixed;
+            bottom: 30px;
+            right: 25px;
+            width: 64px;
+            height: 64px;
+            border-radius: 32px;
+            background: var(--accent);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 8px 24px rgba(0,122,255,0.3);
+            z-index: 999;
+            border: none;
         }
 
-        /* --- МОДАЛЬНЫЕ ОКНА --- */
-        .modal-overlay {
-            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.4); display: none; z-index: 1000; align-items: flex-end;
+        /* Modal / Sheets */
+        .overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.4);
+            display: none;
+            align-items: flex-end;
+            z-index: 2000;
         }
-        .modal-overlay.active { display: flex; }
-
-        .bottom-sheet {
-            width: 100%; background: #fff; border-radius: var(--radius-modal) var(--radius-modal) 0 0;
-            padding: 24px; padding-bottom: 40px; transform: translateY(100%); transition: transform 0.25s ease-out;
+        .sheet {
+            background: white;
+            width: 100%;
+            border-radius: 24px 24px 0 0;
+            padding: 24px;
+            max-height: 92vh;
+            overflow-y: auto;
+            animation: slideUp 0.3s ease-out;
         }
-        .modal-overlay.active .bottom-sheet { transform: translateY(0); }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
 
-        .input-group { margin-bottom: 16px; }
-        .input-group label { display: block; font-size: 10px; font-weight: 900; margin-bottom: 6px; color: var(--text-secondary); }
-        .input-group input, .input-group select {
-            width: 100%; background: var(--secondary-bg); border: none; border-radius: var(--radius-input);
-            padding: 14px; font-size: 16px; font-weight: 600; outline: none;
+        input, textarea {
+            width: 100%;
+            background: #F2F2F7;
+            border: 1px solid #E5E5EA;
+            padding: 14px;
+            border-radius: var(--radius-md);
+            font-size: 16px;
+            margin-bottom: 12px;
+            outline: none;
         }
+        input:focus { border-color: var(--accent); }
 
-        .btn-black {
-            width: 100%; background: #000; color: #fff; padding: 18px;
-            border: none; border-radius: var(--radius-input); font-size: 16px; font-weight: 800;
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .full { grid-column: span 2; }
+
+        .btn-action {
+            width: 100%;
+            padding: 16px;
+            border-radius: var(--radius-md);
+            font-weight: 700;
+            border: none;
+            margin-top: 8px;
+            font-size: 16px;
         }
-        .btn-del { width: 100%; background: none; color: #FF3B30; padding: 12px; border: none; font-weight: 700; }
+        .primary { background: var(--accent); color: white; }
+        .ghost { background: transparent; color: var(--sub); }
+        .danger { background: #fff; color: var(--danger); }
 
-        /* --- PDF PRINT LAYOUT (MASTER FRAME) --- */
-        #pdf-export { display: none; }
+        /* Drag and Drop styles */
+        .dragging { opacity: 0.5; border: 2px dashed var(--accent); }
 
+        #detail-view { display: none; }
+        .back-bar { display: flex; align-items: center; gap: 12px; padding: 10px 0; }
+        
+        /* Print/PDF styles */
         @media print {
-            @page { margin: 10mm; size: A4 portrait; }
-            body { background: #fff; }
-            header, #main-container, .fab, .modal-overlay, .no-print { display: none !important; }
-            #pdf-export { display: block; width: 100%; }
-
-            table.master-frame {
-                width: 100%; border-collapse: collapse; border: var(--border-heavy); table-layout: fixed;
-            }
-
-            /* Заставляем шапку печататься на каждой странице */
-            thead { display: table-header-group; }
-            
-            .ph-main { padding: 10px 15px; border-bottom: var(--border-heavy); width: 62%; vertical-align: top; }
-            .ph-meta { border-bottom: var(--border-heavy); border-left: var(--border-heavy); width: 38%; padding: 0; }
-
-            .p-num { font-size: 52px; font-weight: 900; line-height: 0.8; margin: 4px 0; letter-spacing: -2px; }
-            .p-title { font-size: 10px; font-weight: 900; text-transform: uppercase; }
-
-            .meta-grid { width: 100%; border-collapse: collapse; }
-            .meta-grid td { 
-                border-bottom: 1.5px solid #000; padding: 4px 10px; font-size: 9px; 
-                font-weight: 900; height: 22px; text-transform: uppercase;
-            }
-            .meta-grid tr:last-child td { border-bottom: none; }
-            .meta-grid .val-right { text-align: right; }
-
-            .cat-banner { 
-                background: #000 !important; color: #fff !important; 
-                font-size: 12px; font-weight: 900; padding: 5px 15px; 
-                text-transform: uppercase; border-bottom: var(--border-heavy);
-                -webkit-print-color-adjust: exact;
-            }
-
-            .row-tool { page-break-inside: avoid; }
-            .row-tool td { border-bottom: var(--border-medium); padding: 8px 15px; vertical-align: middle; }
-            
-            .txt-nm { font-size: 13px; font-weight: 900; text-transform: uppercase; line-height: 1.1; }
-            .txt-loc { font-size: 8px; font-weight: 900; text-transform: uppercase; margin-top: 2px; }
-            
-            .col-bem { border-left: var(--border-medium); width: 120px; text-align: right; }
-            .bem-lbl { font-size: 7px; font-weight: 900; display: block; opacity: 0.8; }
-            .bem-val { font-size: 11px; font-weight: 900; text-transform: uppercase; }
+            body { background: white; padding: 0; }
+            .no-print { display: none !important; }
+            .card { box-shadow: none; border: 1px solid #000; border-radius: 0; page-break-inside: avoid; }
         }
     </style>
 </head>
 <body>
 
-<header>
-    <div style="font-weight: 900; font-size: 18px;">SmartBox Pro</div>
-    <div class="header-btns no-print">
-        <button onclick="exportData()">Export JSON</button>
-        <button onclick="document.getElementById('fileIn').click()">Import</button>
-        <button style="background: #000; color: #fff;" onclick="window.print()">Print PDF</button>
+    <!-- Home View -->
+    <div id="home-view">
+        <header>
+            <div class="nav-brand">QS <span>CENTRAL</span></div>
+            <div style="display:flex; gap:10px;">
+                <button class="btn-round" style="background:#E5E5EA; color:var(--text)" onclick="openSync()">
+                    <i data-lucide="database"></i>
+                </button>
+            </div>
+        </header>
+        <div class="container" id="project-list"></div>
+        <button class="fab" onclick="showProjectModal()"><i data-lucide="plus" size="32"></i></button>
     </div>
-</header>
 
-<div id="main-container">
-    <div class="project-card" onclick="openProjEdit()">
-        <div class="label-mini">PROJEKT</div>
-        <div id="ui-p-num" class="val-huge">230947</div>
-        <div id="ui-p-name" class="val-sub">EINSCHRAUBNIPPEL DN10</div>
-    </div>
-    <div id="tool-list"></div>
-</div>
-
-<button class="fab no-print" onclick="openToolEdit(-1)">+</button>
-
-<!-- MODALS -->
-<div id="modal-proj" class="modal-overlay" onclick="closeM()">
-    <div class="bottom-sheet" onclick="event.stopPropagation()">
-        <div class="input-group"><label>NUMMER</label><input type="text" id="in-num"></div>
-        <div class="input-group"><label>BESCHREIBUNG</label><input type="text" id="in-name"></div>
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
-            <div class="input-group"><label>MAT</label><input type="text" id="in-mat"></div>
-            <div class="input-group"><label>LZF</label><input type="text" id="in-lzf"></div>
-            <div class="input-group"><label>SÄGE</label><input type="text" id="in-slg"></div>
-            <div class="input-group"><label>ABST</label><input type="text" id="in-abs"></div>
-            <div class="input-group"><label>BACKEN</label><input type="text" id="in-grf"></div>
-            <div class="input-group"><label>STÜCK</label><input type="text" id="in-stk"></div>
+    <!-- Detail View -->
+    <div id="detail-view">
+        <header>
+            <button class="btn-round" style="background:transparent; color:var(--text)" onclick="closeProject()">
+                <i data-lucide="chevron-left"></i>
+            </button>
+            <div style="text-align:center">
+                <div id="view-p-name" class="project-name">NAME</div>
+                <div id="view-p-num" style="font-weight:900; font-size:18px;">0000</div>
+            </div>
+            <button class="btn-round" style="background:transparent; color:var(--accent)" onclick="exportPDF()">
+                <i data-lucide="file-text"></i>
+            </button>
+        </header>
+        
+        <div class="container">
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; margin-bottom:16px;">
+                <button class="btn-action primary" style="margin:0" onclick="showToolModal()">+ Werkzeug</button>
+                <button class="btn-action" style="margin:0; background:#E5E5EA" onclick="showProjectModal(currentIdx)">Edit Info</button>
+            </div>
+            <div id="tool-list"></div>
+            <div style="height:80px;"></div> <!-- Padding for overlap -->
         </div>
-        <button class="btn-black" onclick="saveProj()">SPEICHERN</button>
     </div>
-</div>
 
-<div id="modal-tool" class="modal-overlay" onclick="closeM()">
-    <div class="bottom-sheet" onclick="event.stopPropagation()">
-        <div class="input-group"><label>BESCHREIBUNG</label><input type="text" id="t-in-nm"></div>
-        <div class="input-group"><label>TYP</label>
-            <select id="t-in-type">
-                <option value="sonder">Sonderwerkzeug (Blaukiste)</option>
-                <option value="standard">Standardwerkzeug (Schrank)</option>
-            </select>
+    <!-- Modals -->
+    <div id="modal-project" class="overlay" onclick="closeModals(event)">
+        <div class="sheet">
+            <h3 id="p-modal-title" style="margin-top:0">Neues Projekt</h3>
+            <input type="hidden" id="f-p-idx">
+            <input type="text" id="f-p-num" placeholder="Zeichnungsnummer">
+            <input type="text" id="f-p-nam" placeholder="Kunde / Name">
+            <div class="grid">
+                <input type="text" id="f-p-mat" placeholder="Material" class="full">
+                <input type="text" id="f-p-lzf" placeholder="Laufzeit">
+                <input type="text" id="f-p-sag" placeholder="Sägelänge">
+                <input type="text" id="f-p-stt" placeholder="Soll (T)">
+                <input type="text" id="f-p-stn" placeholder="Ist (N)">
+            </div>
+            <button class="btn-action primary" onclick="saveProject()">Speichern</button>
+            <button class="btn-action ghost" onclick="hideModal('modal-project')">Abbrechen</button>
+            <button id="btn-del-p" class="btn-action danger" style="display:none" onclick="deleteProject()">Projekt löschen</button>
         </div>
-        <div class="input-group"><label>BEMERKUNG</label><input type="text" id="t-in-bem"></div>
-        <div class="input-group"><label>LAGERORT / KOMMENTAR</label><input type="text" id="t-in-loc"></div>
-        <button class="btn-black" onclick="saveTool()">SPEICHERN</button>
-        <button class="btn-del" id="t-del-btn" onclick="delTool()">LÖSCHEN</button>
     </div>
-</div>
 
-<!-- PDF PRINT MASTER -->
-<div id="pdf-export">
-    <table class="master-frame">
-        <thead>
-            <tr>
-                <td class="ph-main">
-                    <div id="pdf-p-name" class="p-title">PROJECT</div>
-                    <div id="pdf-p-num" class="p-num">000000</div>
-                </td>
-                <td class="ph-meta">
-                    <table class="meta-grid">
-                        <tr><td>MAT: <span id="pdf-mat"></span></td><td class="val-right">LZF: <span id="pdf-lzf"></span></td></tr>
-                        <tr><td>SÄGE: <span id="pdf-slg"></span></td><td class="val-right">ABST: <span id="pdf-abs"></span></td></tr>
-                        <tr><td>BACKEN: <span id="pdf-grf"></span></td><td class="val-right">STÜCK: <span id="pdf-stk"></span></td></tr>
-                    </table>
-                </td>
-            </tr>
-        </thead>
-        <tbody id="pdf-body"></tbody>
-    </table>
-</div>
+    <div id="modal-tool" class="overlay" onclick="closeModals(event)">
+        <div class="sheet">
+            <h3 style="margin-top:0">Werkzeug</h3>
+            <input type="hidden" id="f-t-idx">
+            <input type="text" id="f-t-id" placeholder="T-Nr (z.B. T0101)">
+            <input type="text" id="f-t-nm" placeholder="Beschreibung">
+            <input type="text" id="f-t-dia" placeholder="Ø / Toleranz">
+            
+            <div style="margin: 10px 0;">
+                <label style="font-size:12px; font-weight:700; color:var(--sub)">REVOLVER POSITION</label>
+                <button id="f-t-rev" class="btn-action" style="background:#F2F2F7; border: 1px solid #DDD;" onclick="toggleRev()">
+                    OBEN
+                </button>
+            </div>
 
-<input type="file" id="fileIn" style="display:none" onchange="importData(event)">
+            <button class="btn-action primary" onclick="saveTool()">Speichern</button>
+            <button id="btn-del-t" class="btn-action danger" onclick="deleteTool()">Löschen</button>
+            <button class="btn-action ghost" onclick="hideModal('modal-tool')">Abbrechen</button>
+        </div>
+    </div>
 
-<script>
-    let state = {
-        num: "230947", name: "EINSCHRAUBNIPPEL DN10",
-        mat: "1.4104 ⌀30", lzf: "4Min 45Sek", slg: "1003mm", abs: "0.5mm", grf: "18-25", stk: "100",
-        tools: []
-    };
-    let editIdx = -1;
+    <div id="modal-sync" class="overlay" onclick="closeModals(event)">
+        <div class="sheet">
+            <h3 style="margin-top:0">Daten Management</h3>
+            <p style="font-size:12px; color:var(--sub)">Kopieren Sie den Code für ein Backup oder fügen Sie einen Code ein.</p>
+            <textarea id="f-sync-data" rows="8" style="font-family: monospace; font-size:12px;"></textarea>
+            <div class="grid">
+                <button class="btn-action primary" onclick="importData()">Import</button>
+                <button class="btn-action" style="background:#E5E5EA" onclick="copyData()">Kopieren</button>
+            </div>
+            <button class="btn-action ghost" onclick="hideModal('modal-sync')">Schließen</button>
+        </div>
+    </div>
 
-    function render() {
-        // UI
-        document.getElementById('ui-p-num').innerText = state.num;
-        document.getElementById('ui-p-name').innerText = state.name;
+    <script>
+        // --- Core Logic ---
+        const DB_KEY = 'QS_CENTRAL_NEXT_DB';
+        let db = JSON.parse(localStorage.getItem(DB_KEY)) || [];
+        let currentIdx = null;
+        let isRevDown = false;
 
-        const list = document.getElementById('tool-list');
-        list.innerHTML = '';
-        state.tools.forEach((t, i) => {
-            const div = document.createElement('div');
-            div.className = 'tool-card';
-            div.innerHTML = `
-                <div class="sort-controls no-print">
-                    <button class="sort-btn" onclick="moveT(${i},-1);event.stopPropagation()">↑</button>
-                    <button class="sort-btn" onclick="moveT(${i},1);event.stopPropagation()">↓</button>
+        function save() {
+            localStorage.setItem(DB_KEY, JSON.stringify(db));
+            renderProjects();
+            if(currentIdx !== null) renderTools();
+        }
+
+        // --- UI Navigation ---
+        function showModal(id) { document.getElementById(id).style.display = 'flex'; }
+        function hideModal(id) { document.getElementById(id).style.display = 'none'; }
+        function closeModals(e) { if(e.target.classList.contains('overlay')) e.target.style.display = 'none'; }
+
+        function openProject(idx) {
+            currentIdx = idx;
+            const p = db[idx];
+            document.getElementById('home-view').style.display = 'none';
+            document.getElementById('detail-view').style.display = 'block';
+            document.getElementById('view-p-name').textContent = p.nam || '---';
+            document.getElementById('view-p-num').textContent = p.num || '0000';
+            renderTools();
+        }
+
+        function closeProject() {
+            currentIdx = null;
+            document.getElementById('home-view').style.display = 'block';
+            document.getElementById('detail-view').style.display = 'none';
+        }
+
+        // --- Project CRUD ---
+        function showProjectModal(idx = null) {
+            const isEdit = idx !== null;
+            document.getElementById('f-p-idx').value = isEdit ? idx : '';
+            document.getElementById('p-modal-title').textContent = isEdit ? 'Projekt bearbeiten' : 'Neues Projekt';
+            document.getElementById('btn-del-p').style.display = isEdit ? 'block' : 'none';
+            
+            const p = isEdit ? db[idx] : {};
+            document.getElementById('f-p-num').value = p.num || '';
+            document.getElementById('f-p-nam').value = p.nam || '';
+            document.getElementById('f-p-mat').value = p.mat || '';
+            document.getElementById('f-p-lzf').value = p.lzf || '';
+            document.getElementById('f-p-sag').value = p.sag || '';
+            document.getElementById('f-p-stt').value = p.stt || '';
+            document.getElementById('f-p-stn').value = p.stn || '';
+            
+            showModal('modal-project');
+        }
+
+        function saveProject() {
+            const idx = document.getElementById('f-p-idx').value;
+            const data = {
+                num: document.getElementById('f-p-num').value,
+                nam: document.getElementById('f-p-nam').value.toUpperCase(),
+                mat: document.getElementById('f-p-mat').value,
+                lzf: document.getElementById('f-p-lzf').value,
+                sag: document.getElementById('f-p-sag').value,
+                stt: document.getElementById('f-p-stt').value,
+                stn: document.getElementById('f-p-stn').value,
+                tools: idx === '' ? [] : (db[idx].tools || [])
+            };
+
+            if(idx === '') db.push(data);
+            else db[idx] = data;
+
+            save();
+            hideModal('modal-project');
+            if(idx !== '') openProject(idx);
+        }
+
+        function deleteProject() {
+            if(!confirm("Projekt wirklich löschen?")) return;
+            db.splice(currentIdx, 1);
+            save();
+            closeProject();
+            hideModal('modal-project');
+        }
+
+        // --- Tool CRUD ---
+        function showToolModal(tIdx = null) {
+            const isEdit = tIdx !== null;
+            document.getElementById('f-t-idx').value = isEdit ? tIdx : '';
+            document.getElementById('btn-del-t').style.display = isEdit ? 'block' : 'none';
+
+            const t = isEdit ? db[currentIdx].tools[tIdx] : {};
+            document.getElementById('f-t-id').value = t.id || '';
+            document.getElementById('f-t-nm').value = t.nm || '';
+            document.getElementById('f-t-dia').value = t.dia || '';
+            isRevDown = t.rev || false;
+            updateRevUI();
+
+            showModal('modal-tool');
+        }
+
+        function toggleRev() {
+            isRevDown = !isRevDown;
+            updateRevUI();
+        }
+
+        function updateRevUI() {
+            const btn = document.getElementById('f-t-rev');
+            btn.textContent = isRevDown ? 'UNTEN' : 'OBEN';
+            btn.style.background = isRevDown ? '#000' : '#F2F2F7';
+            btn.style.color = isRevDown ? '#FFF' : '#000';
+        }
+
+        function saveTool() {
+            const tIdx = document.getElementById('f-t-idx').value;
+            const tool = {
+                id: document.getElementById('f-t-id').value.toUpperCase(),
+                nm: document.getElementById('f-t-nm').value.toUpperCase(),
+                dia: document.getElementById('f-t-dia').value,
+                rev: isRevDown
+            };
+
+            if(tIdx === '') db[currentIdx].tools.push(tool);
+            else db[currentIdx].tools[tIdx] = tool;
+
+            save();
+            hideModal('modal-tool');
+        }
+
+        function deleteTool() {
+            const tIdx = document.getElementById('f-t-idx').value;
+            db[currentIdx].tools.splice(tIdx, 1);
+            save();
+            hideModal('modal-tool');
+        }
+
+        // --- Rendering ---
+        function renderProjects() {
+            const list = document.getElementById('project-list');
+            list.innerHTML = db.map((p, i) => `
+                <div class="card" onclick="openProject(${i})">
+                    <div class="project-name">${p.nam || 'UNBENANNT'}</div>
+                    <div class="project-num">${p.num || '----'}</div>
+                    <div style="font-size:10px; color:var(--sub); margin-top:8px">
+                        ${p.tools?.length || 0} Werkzeuge • ${p.mat || 'Material n.A.'}
+                    </div>
                 </div>
-                <div class="card-body" onclick="openToolEdit(${i})">
-                    <div class="label-mini">BEMERKUNG: ${t.bem || '--'}</div>
-                    <div class="val-huge" style="font-size: 18px;">${t.nm}</div>
-                    <div class="tag ${t.isStandart ? 'tag-std' : 'tag-son'}">${t.isStandart ? 'Standard' : 'Sonder'}</div>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        function renderTools() {
+            const list = document.getElementById('tool-list');
+            const tools = db[currentIdx].tools || [];
+            
+            list.innerHTML = tools.map((t, i) => `
+                <div class="card tool-card" draggable="true" ondragstart="handleDragStart(event, ${i})" ondragover="handleDragOver(event)" ondrop="handleDrop(event, ${i})" onclick="showToolModal(${i})">
+                    <div class="tool-info">
+                        ${t.rev ? '<div class="badge-rev">UNTEN</div>' : ''}
+                        <div class="t-nr">${t.id || 'T---'}</div>
+                        <div class="t-desc">${t.nm || 'Keine Beschreibung'}</div>
+                        <div class="t-dia">${t.dia || ''}</div>
+                    </div>
+                    <div style="color:var(--sub)">
+                        <i data-lucide="grip-vertical"></i>
+                    </div>
                 </div>
-            `;
-            list.appendChild(div);
-        });
-
-        // PDF SYNC
-        document.getElementById('pdf-p-num').innerText = state.num;
-        document.getElementById('pdf-p-name').innerText = state.name.toUpperCase();
-        document.getElementById('pdf-mat').innerText = (state.mat || '--').toUpperCase();
-        document.getElementById('pdf-lzf').innerText = (state.lzf || '--').toUpperCase();
-        document.getElementById('pdf-slg').innerText = (state.slg || '--').toUpperCase();
-        document.getElementById('pdf-abs').innerText = (state.abs || '--').toUpperCase();
-        document.getElementById('pdf-grf').innerText = (state.grf || '--').toUpperCase();
-        document.getElementById('pdf-stk').innerText = (state.stk || '--').toUpperCase();
-
-        const pdfBody = document.getElementById('pdf-body');
-        pdfBody.innerHTML = '';
-
-        const sonder = state.tools.filter(t => !t.isStandart);
-        const standard = state.tools.filter(t => t.isStandart);
-
-        if(sonder.length > 0) {
-            pdfBody.innerHTML += `<tr><td colspan="2" class="cat-banner">SONDERWERKZEUGE</td></tr>`;
-            sonder.forEach(t => pdfBody.innerHTML += pdfRow(t));
+            `).join('');
+            lucide.createIcons();
         }
-        if(standard.length > 0) {
-            pdfBody.innerHTML += `<tr><td colspan="2" class="cat-banner">STANDARTWERKZEUGE</td></tr>`;
-            standard.forEach(t => pdfBody.innerHTML += pdfRow(t));
-        }
-    }
 
-    function pdfRow(t) {
-        const name = (t.nm || '--').toUpperCase();
-        const loc = t.isStandart ? (t.loc || 'LAGER --').toUpperCase() : 'IN BLAUKISTE';
-        const bem = (t.bem || '--').toUpperCase();
-        return `
-            <tr class="row-tool">
-                <td>
-                    <div class="txt-nm">${name}</div>
-                    <div class="txt-loc">${loc}</div>
-                </td>
-                <td class="col-bem">
-                    <span class="bem-lbl">BEMERKUNG</span>
-                    <span class="bem-val">${bem}</span>
-                </td>
-            </tr>
-        `;
-    }
-
-    // Modal Handlers
-    function openProjEdit() {
-        document.getElementById('in-num').value = state.num;
-        document.getElementById('in-name').value = state.name;
-        document.getElementById('in-mat').value = state.mat;
-        document.getElementById('in-lzf').value = state.lzf;
-        document.getElementById('in-slg').value = state.slg;
-        document.getElementById('in-abs').value = state.abs;
-        document.getElementById('in-grf').value = state.grf;
-        document.getElementById('in-stk').value = state.stk;
-        document.getElementById('modal-proj').classList.add('active');
-    }
-    function saveProj() {
-        state.num = document.getElementById('in-num').value;
-        state.name = document.getElementById('in-name').value;
-        state.mat = document.getElementById('in-mat').value;
-        state.lzf = document.getElementById('in-lzf').value;
-        state.slg = document.getElementById('in-slg').value;
-        state.abs = document.getElementById('in-abs').value;
-        state.grf = document.getElementById('in-grf').value;
-        state.stk = document.getElementById('in-stk').value;
-        closeM(); render();
-    }
-    function openToolEdit(idx) {
-        editIdx = idx;
-        if(idx === -1) {
-            document.getElementById('t-in-nm').value = "";
-            document.getElementById('t-in-bem').value = "";
-            document.getElementById('t-in-loc').value = "";
-            document.getElementById('t-in-type').value = "standard";
-            document.getElementById('t-del-btn').style.display = "none";
-        } else {
-            const t = state.tools[idx];
-            document.getElementById('t-in-nm').value = t.nm;
-            document.getElementById('t-in-bem').value = t.bem || "";
-            document.getElementById('t-in-loc').value = t.loc || "";
-            document.getElementById('t-in-type').value = t.isStandart ? "standard" : "sonder";
-            document.getElementById('t-del-btn').style.display = "block";
+        // --- Drag & Drop Reordering ---
+        let dragSrcIdx = null;
+        function handleDragStart(e, idx) {
+            dragSrcIdx = idx;
+            e.target.classList.add('dragging');
         }
-        document.getElementById('modal-tool').classList.add('active');
-    }
-    function saveTool() {
-        const obj = {
-            nm: document.getElementById('t-in-nm').value,
-            bem: document.getElementById('t-in-bem').value,
-            loc: document.getElementById('t-in-loc').value,
-            isStandart: document.getElementById('t-in-type').value === "standard"
+        function handleDragOver(e) { e.preventDefault(); }
+        function handleDrop(e, targetIdx) {
+            e.preventDefault();
+            if(dragSrcIdx === targetIdx) return;
+            const tools = db[currentIdx].tools;
+            const item = tools.splice(dragSrcIdx, 1)[0];
+            tools.splice(targetIdx, 0, item);
+            save();
+        }
+
+        // --- Data Management ---
+        function openSync() {
+            document.getElementById('f-sync-data').value = JSON.stringify(db, null, 2);
+            showModal('modal-sync');
+        }
+        function copyData() {
+            const area = document.getElementById('f-sync-data');
+            area.select();
+            document.execCommand('copy');
+            alert("Код скопирован в буфер обмена!");
+        }
+        function importData() {
+            try {
+                const data = JSON.parse(document.getElementById('f-sync-data').value);
+                if(Array.isArray(data)) {
+                    db = data;
+                    save();
+                    location.reload();
+                }
+            } catch(e) { alert("Invalid JSON"); }
+        }
+
+        // --- PDF Export ---
+        function exportPDF() {
+            const p = db[currentIdx];
+            const oben = (p.tools || []).filter(t => !t.rev);
+            const unten = (p.tools || []).filter(t => t.rev);
+            
+            const rows = (arr) => arr.map(t => `
+                <tr>
+                    <td style="padding:10px; border-bottom:1px solid #eee"><b>${t.id}</b></td>
+                    <td style="padding:10px; border-bottom:1px solid #eee">${t.nm}</td>
+                    <td style="padding:10px; border-bottom:1px solid #eee; text-align:right"><b>${t.dia}</b></td>
+                </tr>
+            `).join('');
+
+            const win = window.open('', '_blank');
+            win.document.write(`
+                <html>
+                <body style="font-family:sans-serif; padding:40px; color:#333">
+                    <div style="display:flex; justify-content:space-between; align-items:flex-end; border-bottom:2px solid #000; padding-bottom:10px; margin-bottom:20px">
+                        <div>
+                            <div style="font-size:14px; text-transform:uppercase; font-weight:bold">${p.nam}</div>
+                            <div style="font-size:48px; font-weight:900; margin-top:-5px">${p.num}</div>
+                        </div>
+                        <div style="text-align:right; font-size:12px">
+                            ${p.mat} | LZ: ${p.lzf} | S: ${p.sag}<br>
+                            Soll: ${p.stt} | Ist: ${p.stn}
+                        </div>
+                    </div>
+                    
+                    <h3 style="background:#f0f0f0; padding:8px">REVOLVER OBEN</h3>
+                    <table style="width:100%; border-collapse:collapse; margin-bottom:30px">${rows(oben)}</table>
+                    
+                    <h3 style="background:#f0f0f0; padding:8px">REVOLVER UNTEN</h3>
+                    <table style="width:100%; border-collapse:collapse">${rows(unten)}</table>
+                    
+                    <script>setTimeout(() => { window.print(); }, 500);<\/script>
+                </body>
+                </html>
+            `);
+            win.document.close();
+        }
+
+        window.onload = () => {
+            renderProjects();
+            lucide.createIcons();
         };
-        if(editIdx === -1) state.tools.push(obj); else state.tools[editIdx] = obj;
-        closeM(); render();
-    }
-    function delTool() { state.tools.splice(editIdx, 1); closeM(); render(); }
-    function closeM() { document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('active')); }
-
-    function moveT(i, d) {
-        let n = i + d;
-        if(n >= 0 && n < state.tools.length) {
-            [state.tools[i], state.tools[n]] = [state.tools[n], state.tools[i]];
-            render();
-        }
-    }
-
-    function exportData() {
-        const blob = new Blob([JSON.stringify(state, null, 2)], {type: 'application/json'});
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = `SBOX_${state.num}.json`;
-        a.click();
-    }
-    function importData(e) {
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-            const data = JSON.parse(ev.target.result);
-            const src = Array.isArray(data) ? data[0] : data;
-            state = { ...state, ...src };
-            if(src.tools) state.tools = src.tools.map(t => ({...t, isStandart: t.isStandart ?? true}));
-            render();
-        };
-        reader.readAsText(e.target.files[0]);
-    }
-
-    // Инициализация загруженными данными, если они есть
-    const initialData = [
-  {
-    "num": "230947",
-    "name": "EINSCHRAUBNIPPEL DN10",
-    "lzf": "4Min 45Sek",
-    "mat": "1.4104 ⌀30",
-    "slg": "1003mm",
-    "abs": "0.5mm",
-    "grf": "18-25",
-    "stk": "100",
-    "tools": [
-      {
-        "bem": "",
-        "nm": "KOPIERSTAHL NEGATIV R0.8 G54",
-        "isStandart": true,
-        "loc": "FACH A",
-        "kom": "DNMG150608-NMT WS10 | 220 050 20 86 / F4"
-      },
-      {
-        "bem": "",
-        "nm": "KOPIERSTAHL NEGATIV R0.4 G54",
-        "isStandart": true,
-        "loc": "",
-        "kom": ""
-      },
-      {
-        "bem": "",
-        "nm": "DREHBOHRER D18 G54",
-        "isStandart": true,
-        "loc": "",
-        "kom": ""
-      },
-      {
-        "bem": "",
-        "nm": "SPIBO D7 HM IK G54",
-        "isStandart": true,
-        "loc": "",
-        "kom": ""
-      },
-      {
-        "bem": "",
-        "nm": "SPIBO 9.5 HM IK G54",
-        "isStandart": true,
-        "loc": "",
-        "kom": ""
-      },
-      {
-        "bem": "",
-        "nm": "A-GEWINDESTAHL M29X1.5 G54",
-        "isStandart": true,
-        "loc": "",
-        "kom": ""
-      },
-      {
-        "bem": "",
-        "nm": "BOHRST.D10 CCGT R0.2 G54",
-        "isStandart": true,
-        "loc": "",
-        "kom": ""
-      },
-      {
-        "bem": "",
-        "nm": "BOHRST.D6 MHC 20-6 G54",
-        "isStandart": true,
-        "loc": "",
-        "kom": ""
-      },
-      {
-        "bem": "",
-        "nm": "ZENTRIERBO D10 RADIAL G55",
-        "isStandart": true,
-        "loc": "",
-        "kom": ""
-      },
-      {
-        "bem": "",
-        "nm": "KOPIERST.NEGATIV R0.4 G55",
-        "isStandart": true,
-        "loc": "",
-        "kom": ""
-      },
-      {
-        "bem": "",
-        "nm": "KOPIERST. NEGATIV R0.4 G55",
-        "isStandart": true,
-        "loc": "",
-        "kom": ""
-      },
-      {
-        "bem": "",
-        "nm": "FRÄSER D10 RADIAL G55",
-        "isStandart": true,
-        "loc": "",
-        "kom": ""
-      },
-      {
-        "bem": "",
-        "nm": "A-STECHSTAHL TUNGALOY 2MM G55",
-        "isStandart": true,
-        "loc": "",
-        "kom": ""
-      },
-      {
-        "bem": "",
-        "nm": "A-STECHSTAHL TUNGALOY 3MM G55",
-        "isStandart": true,
-        "loc": "",
-        "kom": ""
-      },
-      {
-        "bem": "",
-        "nm": "ZENTRIERBO D8 G55",
-        "isStandart": true,
-        "loc": "",
-        "kom": ""
-      },
-      {
-        "bem": "",
-        "nm": "ABSTECHSTAHL 3MM RECHTS G54",
-        "isStandart": true,
-        "loc": "",
-        "kom": ""
-      },
-      {
-        "id": "T1212",
-        "nm": "KUGELFRAESER D10/JOKE G54",
-        "dia": "",
-        "rev": false,
-        "isStandart": false
-      },
-      {
-        "id": "T0505",
-        "nm": "SPIBO D4 MIT KTB G54",
-        "dia": "",
-        "rev": false,
-        "isStandart": false
-      }
-    ]
-  }
-];
-    state = initialData[0];
-    render();
-</script>
+    </script>
 </body>
 </html>
 
