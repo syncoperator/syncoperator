@@ -11,9 +11,8 @@
         .view { display: none; padding: 20px; }
         .view.active { display: block; }
         h1 { font-size: 32px; font-weight: 900; margin: 0 0 20px 0; text-transform: uppercase; }
-        .h-sub { font-size: 14px; font-weight: 700; color: #8e8e93; }
         
-        /* Твой дизайн карточек */
+        /* Твой дизайн: T-NR мелко сверху, Beschreibung жирно снизу */
         .list-item { border-bottom: 1.5px solid #eee; padding: 16px 0; display: flex; align-items: center; gap: 12px; cursor: pointer; }
         .t-id-label { font-size: 9px; font-weight: 900; color: #8e8e93; text-transform: uppercase; } 
         .t-name-label { font-size: 22px; font-weight: 900; line-height: 1; margin: 2px 0; } 
@@ -65,12 +64,9 @@
             <input type="text" id="p-num" placeholder="PROJEKT NUMMER">
             <input type="text" id="p-nam" placeholder="NAME">
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
-                <input type="text" id="p-lzf" placeholder="LZF">
-                <input type="text" id="p-mat" placeholder="MAT">
-                <input type="text" id="p-slg" placeholder="SÄGE">
-                <input type="text" id="p-abs" placeholder="ABST">
-                <input type="text" id="p-grf" placeholder="BACKEN">
-                <input type="text" id="p-stk" placeholder="STOCK">
+                <input type="text" id="p-lzf" placeholder="LZF"><input type="text" id="p-mat" placeholder="MAT">
+                <input type="text" id="p-slg" placeholder="SÄGE"><input type="text" id="p-abs" placeholder="ABST">
+                <input type="text" id="p-grf" placeholder="BACKEN"><input type="text" id="p-stk" placeholder="STOCK">
             </div>
             <button class="btn-main" onclick="saveP()">Speichern</button>
         </div>
@@ -82,8 +78,7 @@
             <input type="text" id="t-bem" placeholder="BEMERKUNG">
             <input type="text" id="t-nm" placeholder="WERKZEUG NAME">
             <div id="btn-storage-toggle" class="toggle-btn">STANDART (STORAGE)</div>
-            <input type="text" id="t-loc" placeholder="LAGERORT">
-            <input type="text" id="t-kom" placeholder="ZUSATZ INFO">
+            <input type="text" id="t-loc" placeholder="LAGERORT"><input type="text" id="t-kom" placeholder="ZUSATZ INFO">
             <button class="btn-main" onclick="saveT()">Speichern</button>
             <button id="btn-del-t" style="width:100%; margin-top:15px; color:red; border:none; background:none; font-weight:700;" onclick="delT()">Löschen</button>
         </div>
@@ -165,6 +160,7 @@
         }
 
         function modalP() { el('p-idx').value = ''; ['p-num','p-nam','p-lzf','p-mat','p-slg','p-abs','p-grf','p-stk'].forEach(id => el(id).value = ''); el('m-p').style.display = 'flex'; }
+        
         function editCurrentProject() {
             const p = db[currentIdx]; el('p-idx').value = currentIdx;
             el('p-num').value = p.num; el('p-nam').value = p.name;
@@ -195,7 +191,6 @@
         function exportJSON() { el('imp-area').value = JSON.stringify(db); }
         function importAnyJSON() { try { const d = JSON.parse(el('imp-area').value); if(Array.isArray(d)) db = d; localStorage.setItem(DB_KEY, JSON.stringify(db)); renderList(); hide('m-imp'); } catch(e) { alert('Error'); } }
 
-        // ВОТ ЗДЕСЬ ФИКС: PDF 1в1 как на скрине, рамка не рвется
         function makePDF() {
             const p = db[currentIdx];
             const sonder = (p.tools || []).filter(x => !x.isStandart);
@@ -204,12 +199,12 @@
             let html = `<html><head><style>
                 @page { size: A4; margin: 10mm; }
                 body { margin: 0; font-family: sans-serif; -webkit-print-color-adjust: exact; }
-                .main-table { width: 100%; border: 2.5px solid #000; border-collapse: collapse; }
-                .header-td { border-bottom: 2.5px solid #000; padding: 20px; vertical-align: top; }
-                .meta-td { width: 220px; border-left: 2.5px solid #000; border-bottom: 2.5px solid #000; padding: 12px; font-size: 11px; font-weight: 900; }
+                .main-table { width: 100%; border: 3px solid #000; border-collapse: collapse; }
+                .header-td { border-bottom: 3px solid #000; padding: 20px; }
+                .meta-td { width: 220px; border-left: 3px solid #000; border-bottom: 3px solid #000; padding: 12px; font-size: 11px; font-weight: 900; }
                 .cat-row { background: #000 !important; color: #fff !important; font-weight: 900; font-size: 14px; padding: 8px 15px !important; text-transform: uppercase; }
-                .tool-td { border-bottom: 1.5px solid #000; padding: 12px 15px; }
-                .bem-td { width: 150px; border-left: 1.5px solid #000; border-bottom: 1.5px solid #000; text-align: right; padding: 10px 15px; }
+                .tool-td { border-bottom: 2px solid #000; padding: 12px 15px; }
+                .bem-td { width: 150px; border-left: 2px solid #000; border-bottom: 2px solid #000; text-align: right; padding: 10px 15px; }
                 .t-name { font-weight: 900; font-size: 18px; display: block; }
                 .t-sub { font-size: 10px; font-weight: 800; color: #444; text-transform: uppercase; margin-top: 4px; }
                 .b-label { font-size: 8px; font-weight: 900; color: #888; display: block; }
@@ -252,10 +247,8 @@
                     });
                 }
             };
-
             addGrp('SONDERWERKZEUGE', sonder, 'IN BLAUKISTE');
             addGrp('STANDARTWERKZEUGE', standart, 'STANDART');
-
             html += `</tbody></table></body></html>`;
             const win = window.open('','_blank'); win.document.write(html); win.document.close();
             setTimeout(() => { win.print(); win.close(); }, 500);
