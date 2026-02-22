@@ -12,7 +12,7 @@
             --accent: #007AFF;
             --text-primary: #1d1d1f;
             --text-secondary: #86868b;
-            --border: rgba(0, 0, 0, 0.05);
+            --border: rgba(0, 0, 0, 0.1);
         }
 
         body { 
@@ -51,12 +51,12 @@
             border: 0.5px solid var(--border); 
             display: flex; 
             align-items: center; 
-            box-shadow: 0 2px 10px rgba(0,0,0,0.03);
-            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            transition: transform 0.1s;
         }
 
-        .t-id-label { font-size: 11px; font-weight: 800; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 2px; }
-        .t-name-label { font-size: 22px; font-weight: 900; line-height: 1.1; margin-bottom: 6px; }
+        .t-id-label { font-size: 11px; font-weight: 800; color: var(--accent); text-transform: uppercase; margin-bottom: 2px; }
+        .t-name-label { font-size: 24px; font-weight: 900; line-height: 1.1; margin-bottom: 8px; }
         
         .loc-tag { 
             font-size: 10px; font-weight: 800; padding: 4px 10px; border-radius: 6px; 
@@ -67,23 +67,23 @@
 
         .actions-bar {
             position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(15px); 
+            background: rgba(0, 0, 0, 0.9); backdrop-filter: blur(15px); 
             padding: 12px 24px; border-radius: 100px; z-index: 1500;
-            display: flex; gap: 20px;
+            display: flex; gap: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);
         }
 
         .btn-action { background: none; color: #fff; border: none; font-weight: 700; font-size: 14px; cursor: pointer; }
-        .btn-save { background: var(--accent); color: #fff; width: 100%; padding: 16px; border: none; border-radius: 14px; font-weight: 700; font-size: 16px; margin-top: 10px; cursor: pointer; }
+        .btn-save { background: var(--accent); color: #fff; width: 100%; padding: 18px; border: none; border-radius: 16px; font-weight: 700; font-size: 16px; margin-top: 10px; cursor: pointer; }
         .btn-secondary { background: #f2f2f7; color: #1d1d1f; border: none; padding: 10px 16px; border-radius: 10px; font-weight: 700; font-size: 12px; cursor: pointer; }
-        .btn-pdf { background: #000; color: #fff; border: none; padding: 10px 16px; border-radius: 10px; font-weight: 700; font-size: 12px; cursor: pointer; z-index: 10; }
+        .btn-pdf { background: #000; color: #fff; border: none; padding: 10px 18px; border-radius: 12px; font-weight: 800; font-size: 12px; cursor: pointer; }
 
         .modal { 
-            display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); 
-            z-index: 2000; align-items: flex-end; backdrop-filter: blur(5px); 
+            display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); 
+            z-index: 2000; align-items: flex-end; backdrop-filter: blur(10px); 
         }
         .modal-content { 
-            background: #fff; width: 100%; border-radius: 30px 30px 0 0; 
-            padding: 30px; box-sizing: border-box; max-height: 90vh; overflow-y: auto; 
+            background: #fff; width: 100%; border-radius: 32px 32px 0 0; 
+            padding: 30px; box-sizing: border-box; max-height: 95vh; overflow-y: auto; 
         }
         
         input, textarea { 
@@ -91,24 +91,27 @@
             font-size: 16px; box-sizing: border-box; background: #f5f5f7; font-family: inherit; font-weight: 600; 
         }
 
-        .toggle-btn { display: flex; justify-content: space-between; align-items: center; padding: 15px 0; font-weight: 700; cursor: pointer; }
+        .toggle-btn { display: flex; justify-content: space-between; align-items: center; padding: 15px 0; font-weight: 700; cursor: pointer; border-bottom: 1px solid #f0f0f0; }
         .switch { width: 44px; height: 24px; background: #e5e5e7; border-radius: 20px; position: relative; transition: 0.3s; }
         .switch::after { content: ''; position: absolute; top: 2px; left: 2px; width: 20px; height: 20px; background: #fff; border-radius: 50%; transition: 0.3s; }
         .toggle-btn.on .switch { background: #34c759; }
         .toggle-btn.on .switch::after { left: 22px; }
 
-        .handle { cursor: grab; padding: 10px; color: #d2d2d7; font-size: 20px; margin-right: 10px; }
+        .handle { cursor: grab; padding: 15px 5px; color: #d2d2d7; font-size: 24px; margin-right: 15px; }
         .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .scroll-pad { height: 160px; }
+        .scroll-pad { height: 180px; }
+
+        .sortable-ghost { opacity: 0.3; background: #cce4ff; }
     </style>
 </head>
 <body>
 
     <header>
-        <div style="font-weight: 900; letter-spacing: -0.5px;">SMARTBOX <span style="color:var(--accent)">PRO</span></div>
+        <div style="font-weight: 900; letter-spacing: -0.5px; font-size: 18px;">SMARTBOX <span style="color:var(--accent)">PRO</span></div>
         <button class="btn-secondary" onclick="openImport()">ДАННЫЕ</button>
     </header>
 
+    <!-- Главная страница (Проекты) -->
     <div id="v-home" class="view active">
         <div class="project-header">
             <div class="t-id-label">ОБЗОР</div>
@@ -121,18 +124,19 @@
         </div>
     </div>
 
+    <!-- Детализация проекта (Инструменты) -->
     <div id="v-det" class="view">
         <div class="project-header">
-            <div style="display:flex; justify-content: space-between; align-items: flex-start;">
+            <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                 <button class="btn-secondary" onclick="goHome()">← НАЗАД</button>
                 <div style="display:flex; gap:8px;">
                     <button class="btn-secondary" onclick="editCurrentProject()">ИЗМЕНИТЬ</button>
-                    <button class="btn-pdf" id="pdf-trigger">PDF ЭКСПОРТ</button>
+                    <button class="btn-pdf" id="pdf-btn">PDF ЭКСПОРТ</button>
                 </div>
             </div>
-            <div class="t-id-label" style="margin-top:20px;">ПРОЕКТ</div>
+            <div class="t-id-label">НОМЕР ПРОЕКТА</div>
             <div class="p-num-title" id="h-num">---</div>
-            <div style="font-size:18px; font-weight:700; color:var(--text-secondary);" id="h-nam">---</div>
+            <div style="font-size:20px; font-weight:700; color:var(--text-secondary);" id="h-nam">---</div>
         </div>
         <div id="list-t"></div>
         <div class="scroll-pad"></div>
@@ -141,13 +145,13 @@
         </div>
     </div>
 
-    <!-- Modals -->
+    <!-- Модальное окно Проекта -->
     <div id="m-p" class="modal" onclick="if(event.target==this) this.style.display='none'">
         <div class="modal-content">
-            <h2 style="margin-top:0; font-weight:900;">Проект</h2>
+            <h2 style="margin:0 0 20px; font-weight:900; font-size:28px;">Проект</h2>
             <input type="hidden" id="p-idx">
-            <input type="text" id="p-num" placeholder="НОМЕР">
-            <input type="text" id="p-nam" placeholder="НАЗВАНИЕ">
+            <input type="text" id="p-num" placeholder="НОМЕР ПРОЕКТА">
+            <input type="text" id="p-nam" placeholder="НАЗВАНИЕ ПРОЕКТА">
             <div class="grid-2">
                 <input type="text" id="p-lzf" placeholder="LZF">
                 <input type="text" id="p-mat" placeholder="МАТЕРИАЛ">
@@ -157,43 +161,45 @@
                 <input type="text" id="p-stk" placeholder="ШТОК">
             </div>
             <button class="btn-save" onclick="saveP()">СОХРАНИТЬ</button>
-            <button id="btn-del-p" style="color:red; background:none; border:none; width:100%; margin-top:15px; font-weight:700; display:none" onclick="delP()">Удалить проект</button>
+            <button id="btn-del-p" style="color:red; background:none; border:none; width:100%; margin-top:15px; font-weight:700; display:none; cursor:pointer" onclick="delP()">Удалить проект</button>
         </div>
     </div>
 
+    <!-- Модальное окно Инструмента -->
     <div id="m-t" class="modal" onclick="if(event.target==this) this.style.display='none'">
         <div class="modal-content">
-            <h2 style="margin-top:0; font-weight:900;">Инструмент</h2>
+            <h2 style="margin:0 0 20px; font-weight:900; font-size:28px;">Инструмент</h2>
             <input type="hidden" id="t-idx">
-            <input type="text" id="t-bem" placeholder="T-НОМЕР (напр. T05)">
-            <input type="text" id="t-nm" placeholder="ОПИСАНИЕ">
+            <input type="text" id="t-bem" placeholder="T-НОМЕР (напр. T01)">
+            <input type="text" id="t-nm" placeholder="ОПИСАНИЕ (напр. ФРЕЗА)">
             <div id="btn-storage-toggle" class="toggle-btn">
                 <span>СТАНДАРТ (СКЛАД)</span>
                 <div class="switch"></div>
             </div>
-            <input type="text" id="t-loc" placeholder="МЕСТО ХРАНЕНИЯ">
+            <input type="text" id="t-loc" placeholder="МЕСТО ХРАНЕНИЯ (напр. A-01)">
             <textarea id="t-kom" placeholder="КОММЕНТАРИЙ" rows="3"></textarea>
             <button class="btn-save" onclick="saveT()">СОХРАНИТЬ</button>
-            <button id="btn-del-t" style="color:red; background:none; border:none; width:100%; margin-top:15px; font-weight:700;" onclick="delT()">Удалить</button>
+            <button id="btn-del-t" style="color:red; background:none; border:none; width:100%; margin-top:15px; font-weight:700; cursor:pointer;" onclick="delT()">Удалить из списка</button>
         </div>
     </div>
 
+    <!-- Управление данными -->
     <div id="m-imp" class="modal" onclick="if(event.target==this) this.style.display='none'">
         <div class="modal-content">
-            <h2 style="font-weight:900;">Данные</h2>
-            <textarea id="imp-area" style="height:200px; font-family:monospace; font-size:12px;"></textarea>
+            <h2 style="font-weight:900; font-size:28px;">Менеджер Данных</h2>
+            <textarea id="imp-area" style="height:250px; font-family:monospace; font-size:12px;" placeholder="Вставьте JSON для импорта"></textarea>
             <div class="grid-2">
-                <button class="btn-secondary" onclick="exportJSON()">ЭКСПОРТ</button>
-                <button class="btn-save" style="margin:0" onclick="importAnyJSON()">ИМПОРТ</button>
+                <button class="btn-secondary" onclick="exportJSON()">JSON ЭКСПОРТ</button>
+                <button class="btn-save" style="margin:0" onclick="importAnyJSON()">JSON ИМПОРТ</button>
             </div>
         </div>
     </div>
 
     <script>
-        const DB_KEY = 'SMARTBOX_PRO_V2_DATA';
-        let db = JSON.parse(localStorage.getItem(DB_KEY)) || [];
+        const STORAGE_KEY = 'SMARTBOX_PRO_V2_DATA';
+        let db = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
         let currentIdx = null;
-        let sortableInstance = null;
+        let sortable = null;
 
         const el = (id) => document.getElementById(id);
 
@@ -203,9 +209,9 @@
                     <div style="flex:1">
                         <div class="t-id-label">PROJEKT</div>
                         <div class="t-name-label">${p.num || '---'}</div>
-                        <div style="font-size:14px; font-weight:700; color:var(--text-secondary);">${p.name || ''}</div>
+                        <div style="font-size:15px; font-weight:700; color:var(--text-secondary);">${p.name || ''}</div>
                     </div>
-                    <div style="color:#c7c7cc; font-size:20px;">❯</div>
+                    <div style="color:#d2d2d7; font-size:24px;">❯</div>
                 </div>`).join('');
         }
 
@@ -238,26 +244,27 @@
                         <div class="loc-tag ${t.isStandart ? 'standart' : 'sonder'}">
                             ${t.isStandart ? 'STANDART | ' + (t.loc || 'LAGER') : 'SONDER | BLAUKISTE'}
                         </div>
+                        ${t.kom ? `<div style="font-size:12px; margin-top:8px; color:#888; font-weight:600;">${t.kom}</div>` : ''}
                     </div>
                 </div>`).join('');
 
-            if(sortableInstance) sortableInstance.destroy();
-            sortableInstance = new Sortable(list, {
+            if(sortable) sortable.destroy();
+            sortable = new Sortable(list, {
                 handle: '.handle',
                 animation: 250,
                 ghostClass: 'sortable-ghost',
                 onEnd: () => {
-                    const newTools = Array.from(list.querySelectorAll('.list-item')).map(item => {
+                    const newOrder = Array.from(list.querySelectorAll('.list-item')).map(item => {
                         return db[currentIdx].tools[parseInt(item.dataset.id)];
                     });
-                    db[currentIdx].tools = newTools;
-                    localStorage.setItem(DB_KEY, JSON.stringify(db));
-                    renderTools(); // Обновляем data-id
+                    db[currentIdx].tools = newOrder;
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
+                    renderTools(); // Обновляем индексы в data-id
                 }
             });
         }
 
-        // Модалки Проекта
+        // Логика Проектов
         function modalP() {
             el('p-idx').value = '';
             ['p-num','p-nam','p-lzf','p-mat','p-slg','p-abs','p-grf','p-stk'].forEach(id => el(id).value = '');
@@ -269,9 +276,9 @@
             const p = db[currentIdx];
             el('p-idx').value = currentIdx;
             el('p-num').value = p.num; el('p-nam').value = p.name;
-            el('p-lzf').value = p.lzf||''; el('p-mat').value = p.mat||'';
-            el('p-slg').value = p.slg||''; el('p-abs').value = p.abs||'';
-            el('p-grf').value = p.grf||''; el('p-stk').value = p.stk||'';
+            el('p-lzf').value = p.lzf; el('p-mat').value = p.mat;
+            el('p-slg').value = p.slg; el('p-abs').value = p.abs;
+            el('p-grf').value = p.grf; el('p-stk').value = p.stk;
             el('btn-del-p').style.display = 'block';
             el('m-p').style.display = 'flex';
         }
@@ -279,118 +286,127 @@
         function saveP() {
             const i = el('p-idx').value;
             const data = {
-                num: el('p-num').value.toUpperCase(), name: el('p-nam').value.toUpperCase(),
+                num: el('p-num').value.toUpperCase(),
+                name: el('p-nam').value.toUpperCase(),
                 lzf: el('p-lzf').value, mat: el('p-mat').value,
                 slg: el('p-slg').value, abs: el('p-abs').value,
                 grf: el('p-grf').value, stk: el('p-stk').value,
                 tools: i !== '' ? db[i].tools : []
             };
             if(i === '') db.push(data); else db[i] = data;
-            localStorage.setItem(DB_KEY, JSON.stringify(db));
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
             if(i !== '') { el('h-num').innerText = data.num; el('h-nam').innerText = data.name; }
             renderList(); el('m-p').style.display = 'none';
         }
 
         function delP() {
-            if(confirm('Удалить проект?')) {
+            if(confirm('Удалить этот проект и все его инструменты?')) {
                 db.splice(currentIdx, 1);
-                localStorage.setItem(DB_KEY, JSON.stringify(db));
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
                 el('m-p').style.display = 'none';
                 goHome();
             }
         }
 
-        // Модалки Инструмента
+        // Логика Инструментов
         function modalT(i = null) {
-            const edit = i !== null;
-            el('t-idx').value = edit ? i : '';
-            const t = edit ? db[currentIdx].tools[i] : {bem:'', nm:'', isStandart:false, loc:'', kom:''};
+            const isEdit = i !== null;
+            el('t-idx').value = isEdit ? i : '';
+            const t = isEdit ? db[currentIdx].tools[i] : {bem:'', nm:'', isStandart:false, loc:'', kom:''};
             el('t-bem').value = t.bem; el('t-nm').value = t.nm; el('t-loc').value = t.loc; el('t-kom').value = t.kom;
-            const btn = el('btn-storage-toggle');
-            t.isStandart ? btn.classList.add('on') : btn.classList.remove('on');
-            btn.onclick = () => btn.classList.toggle('on');
-            el('btn-del-t').style.display = edit ? 'block' : 'none';
+            const toggle = el('btn-storage-toggle');
+            t.isStandart ? toggle.classList.add('on') : toggle.classList.remove('on');
+            toggle.onclick = () => toggle.classList.toggle('on');
+            el('btn-del-t').style.display = isEdit ? 'block' : 'none';
             el('m-t').style.display = 'flex';
         }
 
         function saveT() {
             const i = el('t-idx').value;
-            const t = {
-                bem: el('t-bem').value.toUpperCase(), nm: el('t-nm').value.toUpperCase(),
+            const tool = {
+                bem: el('t-bem').value.toUpperCase(),
+                nm: el('t-nm').value.toUpperCase(),
                 isStandart: el('btn-storage-toggle').classList.contains('on'),
-                loc: el('t-loc').value.toUpperCase(), kom: el('t-kom').value.toUpperCase()
+                loc: el('t-loc').value.toUpperCase(),
+                kom: el('t-kom').value.toUpperCase()
             };
             if(!db[currentIdx].tools) db[currentIdx].tools = [];
-            if(i === '') db[currentIdx].tools.push(t); else db[currentIdx].tools[i] = t;
-            localStorage.setItem(DB_KEY, JSON.stringify(db));
+            if(i === '') db[currentIdx].tools.push(tool); else db[currentIdx].tools[i] = tool;
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
             renderTools(); el('m-t').style.display = 'none';
         }
 
         function delT() {
             db[currentIdx].tools.splice(el('t-idx').value, 1);
-            localStorage.setItem(DB_KEY, JSON.stringify(db));
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
             renderTools(); el('m-t').style.display = 'none';
         }
 
-        // Импорт/Экспорт
+        // Данные
         function openImport() { el('imp-area').value = ''; el('m-imp').style.display = 'flex'; }
         function exportJSON() { el('imp-area').value = JSON.stringify(db, null, 2); }
         function importAnyJSON() {
             try {
                 const data = JSON.parse(el('imp-area').value);
-                if(Array.isArray(data)) { db = data; localStorage.setItem(DB_KEY, JSON.stringify(db)); renderList(); el('m-imp').style.display='none'; }
-            } catch(e) { alert('Ошибка JSON'); }
+                if(Array.isArray(data)) { 
+                    db = data; 
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(db)); 
+                    renderList(); 
+                    el('m-imp').style.display='none'; 
+                }
+            } catch(e) { alert('Ошибка формата JSON'); }
         }
 
-        // Генерация PDF
+        // Генерация PDF (Фикс разрывов и дизайна)
         function makePDF() {
             const p = db[currentIdx];
+            if(!p) return;
             const sonder = (p.tools || []).filter(x => !x.isStandart);
             const standart = (p.tools || []).filter(x => x.isStandart);
-            
-            const getRow = (t, label) => `
-                <div class="row">
-                    <div class="row-main">
-                        <div class="t-name">${t.nm || '---'}</div>
-                        <div class="t-info">${label} ${t.kom ? ' | ' + t.kom : ''}</div>
+
+            const row = (t, info) => `
+                <div class="pdf-row">
+                    <div class="pdf-main">
+                        <div class="pdf-t-name">${t.nm || '---'}</div>
+                        <div class="pdf-t-info">${info} ${t.kom ? ' | ' + t.kom : ''}</div>
                     </div>
-                    <div class="row-side">
-                        <div class="side-label">BEMERKUNG</div>
-                        <div class="side-val">${t.bem || '--'}</div>
+                    <div class="pdf-side">
+                        <div class="pdf-side-lbl">BEMERKUNG</div>
+                        <div class="pdf-side-val">${t.bem || '--'}</div>
                     </div>
                 </div>`;
 
-            const win = window.open('','_blank');
-            win.document.write(`<html><head><style>
-                @page { size: A4; margin: 0; }
-                body { margin: 0; padding: 10mm; font-family: sans-serif; }
-                .wrapper { border: 2.5px solid #000; width: 100%; box-sizing: border-box; }
-                .header { display: flex; border-bottom: 2.5px solid #000; }
-                .h-left { flex: 1; padding: 20px; }
-                .h-right { width: 220px; border-left: 2.5px solid #000; padding: 15px; }
-                .p-name { font-size: 14px; font-weight: 900; text-transform: uppercase; }
-                .p-num { font-size: 60px; font-weight: 900; line-height: 1; letter-spacing: -2px; }
-                .meta { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; font-size: 11px; font-weight: 900; }
-                .meta div { display: flex; justify-content: space-between; border-bottom: 1px solid #eee; padding: 2px 0; }
-                .section-head { background: #000; color: #fff; padding: 8px 15px; font-weight: 900; font-size: 13px; }
-                .row { display: flex; border-bottom: 1.5px solid #000; page-break-inside: avoid; }
-                .row-main { flex: 1; padding: 10px 15px; }
-                .row-side { width: 160px; border-left: 1.5px solid #000; padding: 10px; text-align: right; display: flex; flex-direction: column; justify-content: center; }
-                .t-name { font-weight: 900; font-size: 20px; line-height: 1.1; }
-                .t-info { font-size: 10px; font-weight: 700; color: #444; margin-top: 3px; }
-                .side-label { font-size: 8px; color: #888; font-weight: 900; }
-                .side-val { font-weight: 900; font-size: 18px; }
-                .wrapper { border-bottom: none; }
-                .row:last-child { border-bottom: 2.5px solid #000; }
+            const html = `<!DOCTYPE html><html><head><style>
+                @page { size: A4; margin: 10mm; }
+                body { font-family: sans-serif; margin: 0; color: #000; }
+                .pdf-wrapper { border: 3px solid #000; width: 100%; box-sizing: border-box; }
+                .pdf-header { display: flex; border-bottom: 3px solid #000; background: #fff; }
+                .pdf-h-left { flex: 1; padding: 25px; }
+                .pdf-h-right { width: 240px; border-left: 3px solid #000; padding: 15px; }
+                .pdf-p-name { font-size: 16px; font-weight: 900; text-transform: uppercase; margin-bottom: 5px; }
+                .pdf-p-num { font-size: 65px; font-weight: 900; line-height: 0.9; letter-spacing: -3px; }
+                .pdf-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; font-size: 12px; font-weight: 900; }
+                .pdf-meta div { display: flex; justify-content: space-between; border-bottom: 1px solid #ccc; padding: 3px 0; }
+                .pdf-section { background: #000; color: #fff; padding: 10px 15px; font-weight: 900; font-size: 14px; text-transform: uppercase; }
+                .pdf-row { display: flex; border-bottom: 2px solid #000; page-break-inside: avoid; }
+                .pdf-row:last-child { border-bottom: none; }
+                .pdf-main { flex: 1; padding: 12px 20px; }
+                .pdf-side { width: 180px; border-left: 2px solid #000; padding: 10px; text-align: right; display: flex; flex-direction: column; justify-content: center; }
+                .pdf-t-name { font-weight: 900; font-size: 24px; line-height: 1.1; margin-bottom: 2px; }
+                .pdf-t-info { font-size: 11px; font-weight: 700; color: #333; text-transform: uppercase; }
+                .pdf-side-lbl { font-size: 9px; color: #666; font-weight: 900; margin-bottom: 2px; }
+                .pdf-side-val { font-weight: 900; font-size: 22px; line-height: 1; }
+                /* Исправляем разрыв нижней границы на страницах */
+                .pdf-wrapper { border-bottom: 3px solid #000; }
             </style></head><body>
-                <div class="wrapper">
-                    <div class="header">
-                        <div class="h-left">
-                            <div class="p-name">${p.name || ''}</div>
-                            <div class="p-num">${p.num || '---'}</div>
+                <div class="pdf-wrapper">
+                    <div class="pdf-header">
+                        <div class="pdf-h-left">
+                            <div class="pdf-p-name">${p.name || ''}</div>
+                            <div class="pdf-p-num">${p.num || '---'}</div>
                         </div>
-                        <div class="h-right">
-                            <div class="meta">
+                        <div class="pdf-h-right">
+                            <div class="pdf-meta">
                                 <div><span>MAT:</span><span>${p.mat||'--'}</span></div>
                                 <div><span>LZF:</span><span>${p.lzf||'--'}</span></div>
                                 <div><span>SÄGE:</span><span>${p.slg||'--'}</span></div>
@@ -400,22 +416,27 @@
                             </div>
                         </div>
                     </div>
-                    ${sonder.length ? '<div class="section-head">SONDERWERKZEUGE</div>' + sonder.map(t => getRow(t, 'IN BLAUKISTE')).join('') : ''}
-                    ${standart.length ? '<div class="section-head">STANDARTWERKZEUGE</div>' + standart.map(t => getRow(t, t.loc || 'STANDART')).join('') : ''}
+                    ${sonder.length ? '<div class="pdf-section">Sonderwerkzeuge (СПЕЦ)</div>' + sonder.map(t => row(t, 'IN BLAUKISTE')).join('') : ''}
+                    ${standart.length ? '<div class="pdf-section">Standartwerkzeuge (СКЛАД)</div>' + standart.map(t => row(t, t.loc || 'LAGER')).join('') : ''}
                 </div>
-            </body></html>`);
-            win.document.close();
-            setTimeout(() => { win.print(); win.close(); }, 500);
+                <script>window.onload = () => { setTimeout(() => { window.print(); window.close(); }, 300); };<\/script>
+            </body></html>`;
+
+            // Создаем временное окно для печати
+            const printWin = window.open('', '_blank');
+            if (printWin) {
+                printWin.document.write(html);
+                printWin.document.close();
+            } else {
+                alert('Пожалуйста, разрешите всплывающие окна для экспорта PDF');
+            }
         }
 
-        // Инициализация
         window.onload = () => {
             renderList();
-            el('pdf-trigger').addEventListener('click', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                makePDF();
-            });
+            // Обработчик кнопки PDF с проверкой на существование
+            const btn = el('pdf-btn');
+            if(btn) btn.onclick = makePDF;
         };
     </script>
 </body>
