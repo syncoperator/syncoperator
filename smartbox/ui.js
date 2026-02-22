@@ -137,47 +137,46 @@ function makePDF() {
     const sonder = tools.filter(x => !x.isStandart);
     const standart = tools.filter(x => x.isStandart);
     
-    let rows = "";
-    const addRow = (t, label) => {
-        rows += `<tr>
-            <td style="border-bottom:1.5px solid #000; padding:8px 15px;">
-                <div style="font-weight:900; font-size:18px; letter-spacing:-0.3px;">${t.nm}</div>
-                <div style="font-size:10px; font-weight:800; color:#444;">${label} ${t.kom ? ' | ' + t.kom : ''}</div>
-            </td>
-            <td style="border-bottom:1.5px solid #000; text-align:right; padding-right:15px; width:150px; vertical-align:middle;">
+    let content = "";
+    const getRow = (t, label) => `
+        <div style="display:flex; border-bottom:1.5px solid #000; page-break-inside:avoid;">
+            <div style="flex:1; padding:8px 15px;">
+                <div style="font-weight:900; font-size:18px; letter-spacing:-0.5px;">${t.nm}</div>
+                <div style="font-size:10px; font-weight:800; color:#444; text-transform:uppercase;">${label} ${t.kom ? ' | ' + t.kom : ''}</div>
+            </div>
+            <div style="width:160px; text-align:right; padding:8px 15px; border-left:1.5px solid #000; display:flex; flex-direction:column; justify-content:center;">
                 <div style="font-size:8px; font-weight:900; color:#888;">BEMERKUNG</div>
                 <div style="font-weight:900; font-size:16px;">${t.bem || '--'}</div>
-            </td></tr>`;
-    };
+            </div>
+        </div>`;
 
     if(sonder.length > 0) {
-        rows += `<tr style="background:#000; color:#fff;"><td colspan="2" style="padding:7px 15px; font-weight:900; font-size:14px;">SONDERWERKZEUGE</td></tr>`;
-        sonder.forEach(t => addRow(t, 'IN BLAUKISTE'));
+        content += `<div style="background:#000; color:#fff; padding:8px 15px; font-weight:900; font-size:14px; letter-spacing:0.5px;">SONDERWERKZEUGE</div>`;
+        sonder.forEach(t => content += getRow(t, 'IN BLAUKISTE'));
     }
     if(standart.length > 0) {
-        rows += `<tr style="background:#000; color:#fff;"><td colspan="2" style="padding:7px 15px; font-weight:900; font-size:14px;">STANDARTWERKZEUGE</td></tr>`;
-        standart.forEach(t => addRow(t, t.loc || 'STANDART'));
+        content += `<div style="background:#000; color:#fff; padding:8px 15px; font-weight:900; font-size:14px; letter-spacing:0.5px;">STANDARTWERKZEUGE</div>`;
+        standart.forEach(t => content += getRow(t, t.loc || 'STANDART'));
     }
 
     const win = window.open('','_blank');
     win.document.write(`<html><head><style>
-        @page { size: A4; margin: 0; }
+        @page { size: A4; margin: 10mm; }
         * { box-sizing: border-box; -webkit-print-color-adjust: exact; }
-        body { margin: 0; padding: 10mm; font-family: sans-serif; display: flex; justify-content: center; }
-        .frame { border: 2.5px solid #000; width: 100%; height: auto; display: flex; flex-direction: column; page-break-inside: avoid; }
+        body { margin: 0; padding: 0; font-family: sans-serif; color: #000; background: #fff; }
+        .frame { border: 2.5px solid #000; width: 100%; display: flex; flex-direction: column; page-break-inside: avoid; }
         .head { display: flex; padding: 20px; border-bottom: 2.5px solid #000; }
-        .h-main { flex: 1; }
-        .h-side { width: 220px; border-left: 2.5px solid #000; padding-left: 20px; }
+        .h-left { flex: 1; }
+        .h-right { width: 220px; border-left: 2.5px solid #000; padding-left: 20px; display: flex; flex-direction: column; justify-content: center; }
         .p-name { font-size: 15px; font-weight: 900; text-transform: uppercase; margin-bottom: 2px; }
         .p-num { font-size: 60px; font-weight: 900; line-height: 0.8; letter-spacing: -2px; }
         .meta-grid { display: grid; gap: 4px; }
         .meta-item { display: flex; justify-content: space-between; font-size: 11px; font-weight: 900; }
-        table { width: 100%; border-collapse: collapse; table-layout: fixed; }
     </style></head><body>
         <div class="frame">
             <div class="head">
-                <div class="h-main"><div class="p-name">${p.name}</div><div class="p-num">${p.num}</div></div>
-                <div class="h-side"><div class="meta-grid">
+                <div class="h-left"><div class="p-name">${p.name}</div><div class="p-num">${p.num}</div></div>
+                <div class="h-right"><div class="meta-grid">
                     <div class="meta-item"><span>MAT:</span><span>${p.mat||'--'}</span></div>
                     <div class="meta-item"><span>LZF:</span><span>${p.lzf||'--'}</span></div>
                     <div class="meta-item"><span>SÄGE:</span><span>${p.slg||'--'}</span></div>
@@ -186,7 +185,7 @@ function makePDF() {
                     <div class="meta-item"><span>STOCK:</span><span>${p.stk||'--'}</span></div>
                 </div></div>
             </div>
-            <table><tbody>${rows}</tbody></table>
+            ${content}
         </div>
     </body></html>`);
     win.document.close();
