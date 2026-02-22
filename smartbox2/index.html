@@ -63,7 +63,7 @@
         <div class="fab" onclick="modalT()">+</div>
     </div>
 
-    <!-- Modals (P, T, Imp) -->
+    <!-- Modals -->
     <div id="m-p" class="modal" onclick="if(event.target==this) hide('m-p')">
         <div class="modal-content">
             <input type="hidden" id="p-idx">
@@ -238,91 +238,105 @@
         function makePDF() {
             const p = db[currentIdx];
             const tools = p.tools || [];
+            const ITEMS_PER_PAGE = 25;
             
-            let html = `
-            <html><head><style>
-                @page { size: A4; margin: 8mm; }
-                body { margin: 0; font-family: sans-serif; -webkit-print-color-adjust: exact; background: white; }
+            // Разделяем инструменты на страницы по 25 штук
+            const pages = [];
+            for (let i = 0; i < tools.length; i += ITEMS_PER_PAGE) {
+                pages.push(tools.slice(i, i + ITEMS_PER_PAGE));
+            }
+
+            // Если список пуст, создаем одну пустую страницу
+            if (pages.length === 0) pages.push([]);
+
+            let html = `<html><head><style>
+                @page { size: A4; margin: 0; }
+                body { margin: 0; padding: 0; font-family: sans-serif; -webkit-print-color-adjust: exact; background: #eee; }
                 
-                table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-                
-                /* ШАПКА ТАБЛИЦЫ - повторяется на каждой странице */
-                thead { display: table-header-group; }
-                
-                .header-container { border: 2.5px solid black; display: flex; width: 100%; box-sizing: border-box; background: white; }
+                .page { 
+                    width: 210mm; 
+                    height: 297mm; 
+                    background: white; 
+                    margin: 0 auto; 
+                    padding: 10mm; 
+                    box-sizing: border-box; 
+                    position: relative;
+                    page-break-after: always; /* ГАРАНТИЯ РАЗРЫВА */
+                }
+
+                .header-container { border: 2.5px solid black; display: flex; width: 100%; margin-bottom: 5mm; }
                 .header-left { flex: 1; padding: 12px 18px; border-right: 2.5px solid black; }
                 .header-right { width: 200px; padding: 8px 12px; }
                 
                 .meta-row { display: flex; justify-content: space-between; font-size: 10px; font-weight: 900; padding: 1px 0; border-bottom: 1px solid #eee; }
                 .meta-row:last-child { border: none; }
 
-                .cat-row { background: black; color: white; font-weight: 900; font-size: 13px; padding: 6px 15px; text-transform: uppercase; }
+                table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+                td { border: 2px solid black; vertical-align: middle; padding: 6px 15px; }
                 
-                /* СТРОКИ ИНСТРУМЕНТА */
-                tr { page-break-inside: avoid; }
-                td { border: 2px solid black; vertical-align: middle; overflow: hidden; }
+                .cat-row { background: black; color: white; font-weight: 900; font-size: 13px; padding: 6px 15px; border: 2px solid black; }
                 
-                .tool-name { font-weight: 900; font-size: 16px; text-transform: uppercase; line-height: 1.1; }
-                .tool-info { font-size: 9px; font-weight: 800; color: #333; margin-top: 1px; text-transform: uppercase; }
+                .tool-name { font-weight: 900; font-size: 14px; text-transform: uppercase; line-height: 1; }
+                .tool-info { font-size: 8.5px; font-weight: 800; color: #333; margin-top: 1px; text-transform: uppercase; }
                 
-                .bem-cell { width: 150px; text-align: right; padding: 8px 12px; }
+                .bem-cell { width: 140px; text-align: right; padding: 5px 12px; }
                 .bem-label { font-size: 7px; font-weight: 900; color: #777; margin-bottom: 1px; }
-                .bem-val { font-weight: 900; font-size: 15px; }
+                .bem-val { font-weight: 900; font-size: 14px; }
 
-                /* Отступ сверху на 2-ой странице для красоты */
-                thead:before { content: ""; display: block; height: 5mm; }
-                tr:first-child thead:before { display: none; }
-            </style></head><body>
-                <table>
-                    <thead>
-                        <tr>
-                            <th colspan="2" style="padding:0; border:none; text-align:left;">
-                                <div class="header-container">
-                                    <div class="header-left">
-                                        <div style="font-size:12px; font-weight:900; text-transform:uppercase; margin-bottom:2px;">${p.name || '---'}</div>
-                                        <div style="font-size:52px; font-weight:900; line-height:0.8; letter-spacing:-2px;">${p.num || '000000'}</div>
-                                    </div>
-                                    <div class="header-right">
-                                        <div class="meta-row"><span>MAT:</span><span>${p.mat||'--'}</span></div>
-                                        <div class="meta-row"><span>LZF:</span><span>${p.lzf||'--'}</span></div>
-                                        <div class="meta-row"><span>SÄGE:</span><span>${p.slg||'--'}</span></div>
-                                        <div class="meta-row"><span>ABST:</span><span>${p.abs||'--'}</span></div>
-                                        <div class="meta-row"><span>BACKEN:</span><span>${p.grf||'--'}</span></div>
-                                        <div class="meta-row"><span>STOCK:</span><span>${p.stk||'--'}</span></div>
-                                    </div>
-                                </div>
-                                <div style="height:5px;"></div>
-                            </th>
-                        </tr>
-                    </thead>
-                    <tbody>`;
-
-            const sonder = tools.filter(x => !x.isStandart);
-            const standart = tools.filter(x => x.isStandart);
-
-            const renderRows = (title, list, labelFn) => {
-                if(list.length > 0) {
-                    html += `<tr><td colspan="2" class="cat-row">${title}</td></tr>`;
-                    list.forEach(t => {
-                        html += `
-                        <tr>
-                            <td style="padding:8px 15px;">
-                                <div class="tool-name">${t.nm}</div>
-                                <div class="tool-info">${labelFn(t)}${t.kom ? ' | '+t.kom : ''}</div>
-                            </td>
-                            <td class="bem-cell">
-                                <div class="bem-label">BEMERKUNG</div>
-                                <div class="bem-val">${t.bem || '--'}</div>
-                            </td>
-                        </tr>`;
-                    });
+                .page-counter { position: absolute; bottom: 5mm; right: 10mm; font-size: 10px; font-weight: 800; color: #ccc; }
+                
+                @media print {
+                    body { background: none; }
+                    .page { margin: 0; border: none; }
                 }
-            };
+            </style></head><body>`;
 
-            renderRows('SONDERWERKZEUGE', sonder, () => 'IN BLAUKISTE');
-            renderRows('STANDARTWERKZEUGE', standart, (t) => t.loc || 'STANDART');
+            pages.forEach((pageTools, pageIdx) => {
+                html += `
+                <div class="page">
+                    <!-- Шапка на каждой странице -->
+                    <div class="header-container">
+                        <div class="header-left">
+                            <div style="font-size:12px; font-weight:900; text-transform:uppercase; margin-bottom:2px;">${p.name || '---'}</div>
+                            <div style="font-size:48px; font-weight:900; line-height:0.8; letter-spacing:-2px;">${p.num || '000000'}</div>
+                        </div>
+                        <div class="header-right">
+                            <div class="meta-row"><span>MAT:</span><span>${p.mat||'--'}</span></div>
+                            <div class="meta-row"><span>LZF:</span><span>${p.lzf||'--'}</span></div>
+                            <div class="meta-row"><span>SÄGE:</span><span>${p.slg||'--'}</span></div>
+                            <div class="meta-row"><span>ABST:</span><span>${p.abs||'--'}</span></div>
+                            <div class="meta-row"><span>BACKEN:</span><span>${p.grf||'--'}</span></div>
+                            <div class="meta-row"><span>STOCK:</span><span>${p.stk||'--'}</span></div>
+                        </div>
+                    </div>
 
-            html += `</tbody></table></body></html>`;
+                    <table>
+                        <tbody>`;
+                
+                // Чтобы категории (Sonder/Standart) не ломали логику "25 на страницу", 
+                // просто выводим инструменты этой страницы
+                pageTools.forEach(t => {
+                    html += `
+                    <tr>
+                        <td>
+                            <div class="tool-name">${t.nm}</div>
+                            <div class="tool-info">${t.isStandart ? (t.loc || 'STANDART') : 'SONDER | BLAUKISTE'}${t.kom ? ' | '+t.kom : ''}</div>
+                        </td>
+                        <td class="bem-cell">
+                            <div class="bem-label">BEMERKUNG</div>
+                            <div class="bem-val">${t.bem || '--'}</div>
+                        </td>
+                    </tr>`;
+                });
+
+                html += `
+                        </tbody>
+                    </table>
+                    <div class="page-counter">Seite ${pageIdx + 1} von ${pages.length}</div>
+                </div>`;
+            });
+
+            html += `</body></html>`;
 
             const win = window.open('','_blank');
             win.document.write(html);
@@ -331,7 +345,7 @@
                 win.focus();
                 win.print(); 
                 win.close(); 
-            }, 800);
+            }, 1000);
         }
 
         window.onload = renderList;
