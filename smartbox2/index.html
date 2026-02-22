@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>QS CENTRAL SMARTBOX PRO</title>
+    <title>QS SMARTBOX PRO V4</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
         :root{--bg:#f2f2f7;--accent:#007aff;--card:#fff;--text:#1c1c1e;--sub:#8e8e93}
-        body{background:var(--bg);font-family:'Inter', sans-serif;margin:0;color:var(--text);padding-bottom:120px}
+        body{background:var(--bg);font-family:'Inter',sans-serif;margin:0;color:var(--text);padding-bottom:140px}
         header{background:rgba(255,255,255,.8);backdrop-filter:blur(20px);padding:15px 20px;position:sticky;top:0;z-index:1000;display:flex;justify-content:space-between;align-items:center;border-bottom:.5px solid rgba(0,0,0,.1)}
         .h-title{font-weight:900;font-size:22px}
         .h-title span{color:var(--accent)}
@@ -88,7 +88,7 @@
     </div>
 
     <script>
-        const DB_KEY = 'SMARTBOX_PRO_V3';
+        const DB_KEY = 'SMARTBOX_FINAL_V4';
         let db = JSON.parse(localStorage.getItem(DB_KEY)) || [];
         let currentIdx = null;
         const esc = s => String(s ?? '').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');
@@ -98,7 +98,15 @@
             if (db.length === 0) {
                 db = [{ "num": "230947", "name": "EINSCHRAUBNIPPEL DN10", "lzf": "4Min 45Sek", "mat": "1.4104 ⌀30", "slg": "1003mm", "abs": "0.5mm", "grf": "18-25", "stk": "100", "tools": [
                     {"bem": "T0101", "nm": "KOPIERSTAHL NEGATIV R0.8 G54", "isStandart": true, "loc": "FACH A", "kom": "DNMG150608-NMT WS10"},
-                    {"id": "T1212", "nm": "KUGELFRAESER D10/JOKE G54", "isStd": false}
+                    {"bem": "T0202", "nm": "KOPIERSTAHL NEGATIV R0.4 G54", "isStandart": true},
+                    {"bem": "T0303", "nm": "DREHBOHRER D18 G54", "isStandart": true},
+                    {"bem": "T0404", "nm": "SPIBO D7 HM IK G54", "isStandart": true},
+                    {"bem": "T0505", "nm": "SPIBO 9.5 HM IK G54", "isStandart": true},
+                    {"bem": "T0606", "nm": "A-GEWINDESTAHL M29X1.5 G54", "isStandart": true},
+                    {"bem": "T0707", "nm": "BOHRST.D10 CCGT R0.2 G54", "isStandart": true},
+                    {"bem": "T0808", "nm": "BOHRST.D6 MHC 20-6 G54", "isStandart": true},
+                    {"bem": "T1212", "nm": "KUGELFRAESER D10/JOKE G54", "isStd": false},
+                    {"bem": "T0505", "nm": "SPIBO D4 MIT KTB G54", "isStd": false}
                 ]}];
                 save();
             }
@@ -124,21 +132,21 @@
         function renderTools(){
             const list=db[currentIdx].tools||[];
             document.getElementById('list-t').innerHTML = list.map((t,i)=>{
-                const tID=t.id||t.bem||''; const tSTD=t.hasOwnProperty('isStd')?t.isStd:(t.isStandart||false);
+                const tID=t.bem||t.id||''; const tSTD=t.hasOwnProperty('isStd')?t.isStd:(t.isStandart||false);
                 return `<div class="tool-card" onclick="modalT(${i})"><div style="flex:1"><div class="t-label-min">BEMERKUNG</div><div class="t-val-main">${esc(tID)}</div><div class="t-name-sub">${esc(t.nm)}</div><div class="tag ${tSTD?'tag-std':'tag-sonder'}">${tSTD?'STANDART | '+esc(t.loc||''):'SONDER'}</div></div><div style="display:flex; flex-direction:column; gap:5px"><button class="btn-icon" onclick="event.stopPropagation();moveTool(${i},-1)">↑</button><button class="btn-icon" onclick="event.stopPropagation();moveTool(${i},1)">↓</button></div></div>`
             }).join('') + '<div style="height:120px"></div>';
         }
 
         function modalT(i=null){
-            const edit=i!==null; tidx.value=edit?i:''; const t=edit?db[currentIdx].tools[i]:{id:'', nm:'', isStd:false, loc:'', kom:''};
-            const tID=t.id||t.bem||''; const tSTD=t.hasOwnProperty('isStd')?t.isStd:(t.isStandart||false);
+            const edit=i!==null; tidx.value=edit?i:''; const t=edit?db[currentIdx].tools[i]:{bem:'', nm:'', isStd:false, loc:'', kom:''};
+            const tID=t.bem||t.id||''; const tSTD=t.hasOwnProperty('isStd')?t.isStd:(t.isStandart||false);
             tid.value=tID; tnm.value=t.nm; tloc.value=t.loc||''; tkom.value=t.kom||'';
             tstd.classList.toggle('active',tSTD); tstd.textContent=tSTD?'STANDART (STORAGE)':'SONDER (BLAUKISTE)';
             delT.style.display=edit?'block':'none'; mt.style.display='flex';
         }
 
         function saveT(){
-            const i=tidx.value; const t={ id:tid.value.toUpperCase(), nm:tnm.value.toUpperCase(), isStd:tstd.classList.contains('active'), loc:tloc.value.toUpperCase(), kom:tkom.value.toUpperCase() };
+            const i=tidx.value; const t={ bem:tid.value.toUpperCase(), nm:tnm.value.toUpperCase(), isStd:tstd.classList.contains('active'), loc:tloc.value.toUpperCase(), kom:tkom.value.toUpperCase() };
             if(!db[currentIdx].tools) db[currentIdx].tools=[]; if(i==='') db[currentIdx].tools.push(t); else db[currentIdx].tools[i]=t;
             save(); mt.style.display='none'; renderTools();
         }
@@ -157,80 +165,74 @@
 
             let html = `<html><head><style>
                 @page { size: A4; margin: 8mm; }
-                body { font-family: 'Helvetica', sans-serif; margin: 0; padding: 0; color: #000; -webkit-print-color-adjust: exact; }
+                body { font-family: 'Helvetica', sans-serif; margin: 0; color: #000; -webkit-print-color-adjust: exact; }
                 
-                /* Основная обертка таблицы */
-                .container { width: 100%; border: 1.5pt solid #000; box-sizing: border-box; }
-                table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+                /* ГЛАВНАЯ РАМКА - ЖЕСТКО 1.5pt */
+                .outer { border: 1.5pt solid #000; width: 100%; box-sizing: border-box; }
                 
-                /* Линии ячеек */
-                td { border-bottom: 1.5pt solid #000; border-right: 1.5pt solid #000; padding: 0; }
-                td:last-child { border-right: none; }
+                /* ШАПКА */
+                .header-box { display: flex; border-bottom: 1.5pt solid #000; }
+                .project-info { flex: 1; padding: 12px 14px; }
+                .p-name-pdf { font-size: 11px; font-weight: bold; text-transform: uppercase; margin-bottom: 4px; }
+                .p-num-pdf { font-size: 48px; font-weight: 900; line-height: 0.8; letter-spacing: -2px; }
                 
-                /* Шапка */
-                .h-main { padding: 12px 14px; vertical-align: bottom; }
-                .p-name { font-size: 11px; font-weight: bold; text-transform: uppercase; margin-bottom: 2px; }
-                .p-num { font-size: 46px; font-weight: 900; line-height: 0.8; letter-spacing: -2px; }
+                .meta-pdf { width: 220px; border-left: 1.5pt solid #000; padding: 6px 10px; font-size: 9px; font-weight: bold; }
+                .meta-line { display: flex; justify-content: space-between; border-bottom: 0.5pt solid #ccc; margin-bottom: 2px; }
                 
-                .meta-table { width: 100%; font-size: 9px; font-weight: bold; }
-                .meta-table td { border: none; border-bottom: 0.5pt solid #ddd; padding: 2px 8px; }
-                .meta-table tr:last-child td { border-bottom: none; }
+                /* КАТЕГОРИИ */
+                .cat-title { background: #000 !important; color: #fff !important; font-weight: 900; font-size: 11px; padding: 6px 14px; text-transform: uppercase; border-bottom: 1.5pt solid #000; }
                 
-                /* Заголовки категорий */
-                .cat-row { background: #000 !important; color: #fff !important; font-weight: 900; font-size: 11px; padding: 6px 14px; text-transform: uppercase; }
+                /* СТРОКИ ИНСТРУМЕНТОВ - ЧИСТЫЙ CSS БЕЗ СЛИВАНИЯ ТАБЛИЦ */
+                .tool-row { display: flex; border-bottom: 1.5pt solid #000; min-height: 45px; page-break-inside: avoid; }
+                .tool-row:last-child { border-bottom: none; }
                 
-                /* Инструменты */
-                .t-name { font-weight: 900; font-size: 15px; text-transform: uppercase; padding-top: 8px; padding-left: 14px; display: block; }
-                .t-sub { font-size: 9px; font-weight: 700; color: #444; padding-left: 14px; padding-bottom: 8px; display: block; text-transform: uppercase; }
+                .tool-desc { flex: 1; border-right: 1.5pt solid #000; padding: 8px 14px; display: flex; flex-direction: column; justify-content: center; }
+                .tool-bem { width: 120px; padding: 8px 14px; text-align: right; display: flex; flex-direction: column; justify-content: center; }
                 
-                /* Колонка Бемеркунг */
-                .col-bem { width: 110px; padding: 8px 14px; text-align: right; }
-                .label-bem { font-size: 7px; font-weight: 900; color: #777; display: block; margin-bottom: 1px; }
-                .val-bem { font-size: 19px; font-weight: 900; line-height: 1; }
+                .t-name-pdf { font-weight: 900; font-size: 16px; text-transform: uppercase; line-height: 1.1; }
+                .t-sub-pdf { font-size: 9px; font-weight: bold; color: #444; text-transform: uppercase; margin-top: 2px; }
                 
-                tr:last-child td { border-bottom: none; }
-            </style></head><body><div class="container">
-                <table>
-                    <tr>
-                        <td class="h-main" style="width: 65%;">
-                            <div class="p-name">${esc(p.name)}</div>
-                            <div class="p-num">${esc(p.num)}</div>
-                        </td>
-                        <td style="width: 35%; vertical-align: top;">
-                            <table class="meta-table">
-                                <tr><td>MAT:</td><td style="text-align:right">${esc(p.mat) || '--'}</td></tr>
-                                <tr><td>LZF:</td><td style="text-align:right">${esc(p.lzf) || '--'}</td></tr>
-                                <tr><td>SÄGE:</td><td style="text-align:right">${esc(p.slg || p.sag) || '--'}</td></tr>
-                                <tr><td>ABST:</td><td style="text-align:right">${esc(p.abs) || '--'}</td></tr>
-                                <tr><td>GRF:</td><td style="text-align:right">${esc(p.grf) || '--'}</td></tr>
-                                <tr><td>STOCK:</td><td style="text-align:right">${esc(p.stk) || '--'}</td></tr>
-                            </table>
-                        </td>
-                    </tr>
-                </table>`;
+                .label-bem-pdf { font-size: 7.5px; font-weight: 900; color: #888; margin-bottom: 2px; }
+                .val-bem-pdf { font-size: 20px; font-weight: 900; line-height: 1; }
+            </style></head><body>
+            <div class="outer">
+                <div class="header-box">
+                    <div class="project-info">
+                        <div class="p-name-pdf">${esc(p.name)}</div>
+                        <div class="p-num-pdf">${esc(p.num)}</div>
+                    </div>
+                    <div class="meta-pdf">
+                        <div class="meta-line"><span>MAT:</span><span>${esc(p.mat) || '--'}</span></div>
+                        <div class="meta-line"><span>LZF:</span><span>${esc(p.lzf) || '--'}</span></div>
+                        <div class="meta-line"><span>SÄGE:</span><span>${esc(p.slg || p.sag) || '--'}</span></div>
+                        <div class="meta-line"><span>ABST:</span><span>${esc(p.abs) || '--'}</span></div>
+                        <div class="meta-line"><span>GRF:</span><span>${esc(p.grf) || '--'}</span></div>
+                        <div class="meta-line"><span>STOCK:</span><span>${esc(p.stk) || '--'}</span></div>
+                    </div>
+                </div>`;
 
-            const addGrp = (title, list) => {
+            const addSection = (title, list) => {
                 if (!list.length) return;
-                html += `<table><tr><td class="cat-row">${title}</td></tr></table><table>`;
+                html += `<div class="cat-title">${title}</div>`;
                 list.forEach(t => {
-                    const tID = t.id || t.bem || '';
+                    const tID = t.bem || t.id || '';
                     const tSTD = t.hasOwnProperty('isStd') ? t.isStd : (t.isStandart || false);
-                    html += `<tr>
-                        <td style="border-right: 1.5pt solid #000;">
-                            <span class="t-name">${esc(t.nm)}</span>
-                            <span class="t-sub">${tSTD ? esc(t.loc || 'LAGER') : 'IN BLAUKISTE'} ${t.kom ? ' | ' + esc(t.kom) : ''}</span>
-                        </td>
-                        <td class="col-bem">
-                            <span class="label-bem">BEMERKUNG</span>
-                            <span class="val-bem">${esc(tID)}</span>
-                        </td>
-                    </tr>`;
+                    html += `
+                    <div class="tool-row">
+                        <div class="tool-desc">
+                            <span class="t-name-pdf">${esc(t.nm)}</span>
+                            <span class="t-sub-pdf">${tSTD ? esc(t.loc || 'LAGER') : 'IN BLAUKISTE'} ${t.kom ? ' | ' + esc(t.kom) : ''}</span>
+                        </div>
+                        <div class="tool-bem">
+                            <span class="label-bem-pdf">BEMERKUNG</span>
+                            <span class="val-bem-pdf">${esc(tID)}</span>
+                        </div>
+                    </div>`;
                 });
-                html += `</table>`;
             };
 
-            addGrp('Sonderwerkzeuge', sonder);
-            addGrp('Standartwerkzeuge', std);
+            addSection('Sonderwerkzeuge', sonder);
+            addSection('Standartwerkzeuge', std);
 
             html += `</div><script>setTimeout(()=>window.print(),500)<\/script></body></html>`;
             const w = window.open(); w.document.write(html); w.document.close();
