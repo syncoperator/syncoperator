@@ -1,197 +1,231 @@
-const DB_KEY = 'SMARTBOX_PRO_V2';
+const DB_KEY = 'QS_DATA_V8';
 let db = JSON.parse(localStorage.getItem(DB_KEY)) || [];
 let currentIdx = null;
 
 const el = (id) => document.getElementById(id);
-const hide = (id) => { el(id).style.display = 'none'; };
+const show = (id) => { if(el(id)) el(id).style.display = 'flex'; };
+const hide = (id) => { if(el(id)) el(id).style.display = 'none'; };
+
+// --- ПРОЕКТЫ ---
+function modalP(edit = false) {
+    if (!edit) currentIdx = null; 
+    const p = (edit && currentIdx !== null && db[currentIdx]) ? db[currentIdx] : {num:'', name:'', lzf:'', sag:'', stt:'', stn:'', abs:'', grf:'', mat:''};
+    el('p-idx').value = edit ? currentIdx : '';
+    el('p-num').value = p.num || '';
+    el('p-nam').value = p.name || '';
+    el('p-lzf').value = p.lzf || '';
+    el('p-sag').value = p.sag || '';
+    el('p-stt').value = p.stt || '';
+    el('p-stn').value = p.stn || '';
+    el('p-abs').value = p.abs || '';
+    el('p-grf').value = p.grf || '';
+    if(el('p-mat')) el('p-mat').value = p.mat || ''; 
+    show('m-p');
+}
+
+function saveP() {
+    const idx = el('p-idx').value;
+    const newP = {
+        num: el('p-num').value,
+        name: el('p-nam').value.toUpperCase(),
+        lzf: el('p-lzf').value, 
+        sag: el('p-sag').value,
+        stt: el('p-stt').value, 
+        stn: el('p-stn').value,
+        abs: el('p-abs').value, 
+        grf: el('p-grf').value,
+        mat: el('p-mat') ? el('p-mat').value.toUpperCase() : '',
+        tools: (idx !== '' && db[idx]) ? (db[idx].tools || []) : []
+    };
+    if (idx === '') { db.push(newP); currentIdx = db.length - 1; } 
+    else { db[idx] = newP; }
+    localStorage.setItem(DB_KEY, JSON.stringify(db));
+    hide('m-p');
+    renderList();
+    if(idx !== '') openProject(idx); else goHome();
+}
 
 function renderList() {
-    const list = el('list-p');
-    if(!list) return;
+    const list = el('list-p'); if(!list) return;
     list.innerHTML = db.map((p, i) => `
         <div class="list-item" onclick="openProject(${i})">
-            <div style="flex:1">
-                <div class="t-id-label">PROJEKT</div>
-                <div class="t-name-large">${p.num || '---'}</div>
-                <div style="font-size:13px; font-weight:600; color:#8e8e93;">${p.name || ''}</div>
-            </div>
-            <div style="font-size:20px; color:#c7c7cc;" onclick="event.stopPropagation(); deleteProject(${i})">✕</div>
-        </div>`).join('') + '<div style="height:100px;"></div>';
+            <div><small>${p.name || '---'}</small><b>${p.num || '---'}</b></div>
+            <div style="color:var(--danger); font-weight:900; padding:15px; z-index:20;" onclick="event.stopPropagation(); deleteProject(${i})">✕</div>
+        </div>`).join('') + '<div style="height:100px"></div>';
 }
 
 function openProject(i) {
-    currentIdx = i;
-    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-    el('v-det').classList.add('active');
-    el('h-num').innerText = db[i].num;
-    el('h-nam').innerText = db[i].name;
-    renderTools();
-}
-
-function goHome() {
-    currentIdx = null;
-    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-    el('v-home').classList.add('active');
-    renderList();
-}
-
-// Прямая сортировка стрелками
-function moveTool(idx, dir) {
-    const t = db[currentIdx].tools;
-    const n = idx + dir;
-    if(n >= 0 && n < t.length) {
-        [t[idx], t[n]] = [t[n], t[idx]];
-        localStorage.setItem(DB_KEY, JSON.stringify(db));
+    if (db[i]) {
+        currentIdx = i;
+        el('v-home').classList.remove('active');
+        el('v-det').classList.add('active');
+        el('h-num').innerText = db[i].num || '---';
+        el('h-nam').innerText = db[i].name || '---';
         renderTools();
     }
 }
 
+function goHome() { currentIdx = null; el('v-home').classList.add('active'); el('v-det').classList.remove('active'); renderList(); }
+
+// --- ИНСТРУМЕНТЫ (Твой рабочий Drag & Drop) ---
+let startIdx = null;
 function renderTools() {
-    const list = el('list-t');
+    const list = el('list-t'); if(!list || currentIdx === null) return;
     const tools = db[currentIdx].tools || [];
-    list.innerHTML = tools.map((t, i) => `
-        <div class="list-item">
-            <div style="display:flex; flex-direction:column; gap:5px; margin-right:10px;">
-                <button onclick="moveTool(${i},-1)" style="border:none; background:#f0f0f0; border-radius:6px; padding:8px; font-weight:900;">↑</button>
-                <button onclick="moveTool(${i},1)" style="border:none; background:#f0f0f0; border-radius:6px; padding:8px; font-weight:900;">↓</button>
-            </div>
-            <div style="flex:1" onclick="modalT(${i})">
-                <div class="t-id-label">BEMERKUNG</div>
-                <div class="t-name-large" style="font-size:18px;">${t.bem || '---'}</div>
-                <div style="font-weight:700; font-size:15px;">${t.nm}</div>
-                <div class="loc-tag ${t.isStandart ? 'standart' : 'sonder'}">
-                    ${t.isStandart ? 'STANDART | ' + (t.loc || '') : 'SONDER | BLAUKISTE'}
-                </div>
-            </div>
-        </div>`).join('') + '<div style="height:150px;"></div>';
+    list.innerHTML = '';
+    tools.forEach((t, i) => {
+        const item = document.createElement('div');
+        item.className = 'list-item';
+        item.setAttribute('data-idx', i);
+        item.style.padding = '12px 15px';
+        item.style.display = 'flex';
+        item.style.alignItems = 'center';
+        item.style.gap = '15px';
+        const revMark = t.rev ? `<div style="background:#000; color:#fff; font-size:9px; padding:2px 6px; border-radius:4px; margin-bottom:5px; font-weight:900; width:fit-content;">UNTEN START ↓</div>` : '';
+        item.innerHTML = `
+            <div class="handle" style="cursor:grab; color:#ccc; font-size:24px; padding:10px; user-select:none; touch-action:none;">☰</div>
+            <div style="flex:1; min-width:0;" onclick="modalT(${i})">
+                ${revMark}
+                <small style="color:#8e8e93; font-weight:700; font-size:11px;">${t.id || 'T0000'}</small>
+                <b style="font-size:20px; font-weight:900; display:block; line-height:1.2; word-wrap:break-word; white-space:pre-wrap;">${t.nm || '---'}</b>
+            </div>`;
+        const handle = item.querySelector('.handle');
+        handle.ontouchstart = (e) => { startIdx = i; item.style.background = "#f9f9f9"; };
+        handle.ontouchmove = (e) => {
+            e.preventDefault();
+            const touch = e.touches[0];
+            const target = document.elementFromPoint(touch.clientX, touch.clientY);
+            const targetItem = target?.closest('.list-item');
+            if (targetItem) {
+                const overIdx = parseInt(targetItem.getAttribute('data-idx'));
+                if (overIdx !== startIdx) { moveTool(startIdx, overIdx); startIdx = overIdx; }
+            }
+        };
+        handle.ontouchend = () => { item.style.background = ""; renderTools(); };
+        item.draggable = true;
+        item.ondragstart = () => { startIdx = i; item.style.opacity = '0.4'; };
+        item.ondragover = (e) => e.preventDefault();
+        item.ondrop = () => { if(startIdx !== i) moveTool(startIdx, i); };
+        item.ondragend = () => { item.style.opacity = '1'; renderTools(); };
+        list.appendChild(item);
+    });
+    list.innerHTML += '<div style="height:180px; pointer-events:none;"></div>'; 
 }
 
-function saveP() {
-    const i = el('p-idx').value;
-    const data = {
-        num: el('p-num').value, name: el('p-nam').value.toUpperCase(),
-        lzf: el('p-lzf').value, mat: el('p-mat').value,
-        slg: el('p-slg').value, abs: el('p-abs').value,
-        grf: el('p-grf').value, stk: el('p-stk').value,
-        tools: i !== '' ? db[i].tools : []
-    };
-    if(i === '') db.push(data); else db[i] = data;
+function moveTool(from, to) {
+    const tools = db[currentIdx].tools;
+    const item = tools.splice(from, 1)[0];
+    tools.splice(to, 0, item);
     localStorage.setItem(DB_KEY, JSON.stringify(db));
-    renderList(); hide('m-p');
-    if(i !== '') openProject(i);
+    renderTools();
 }
 
+// --- СТАНДАРТНЫЕ ФУНКЦИИ ---
 function modalT(i = null) {
     const edit = i !== null;
     el('t-idx').value = edit ? i : '';
-    const t = edit ? db[currentIdx].tools[i] : {bem:'', nm:'', isStandart:false, loc:'', kom:''};
-    el('t-bem').value = t.bem; el('t-nm').value = t.nm; el('t-loc').value = t.loc||''; el('t-kom').value = t.kom||'';
-    const btn = el('btn-storage-toggle');
-    t.isStandart ? btn.classList.add('on') : btn.classList.remove('on');
-    btn.onclick = () => btn.classList.toggle('on');
-    el('m-t').style.display = 'flex';
+    const t = edit ? db[currentIdx].tools[i] : {id:'', nm:'', dia:'', rev:false};
+    el('t-id').value = t.id; el('t-nm').value = t.nm; el('t-dia').value = t.dia;
+    const btn = el('btn-rev-toggle');
+    if(btn) {
+        if(t.rev) btn.classList.add('on'); else btn.classList.remove('on');
+        btn.onclick = () => btn.classList.toggle('on');
+    }
+    el('btn-del-t').style.display = edit ? 'block' : 'none';
+    show('m-t');
 }
 
 function saveT() {
     const i = el('t-idx').value;
-    const t = {
-        bem: el('t-bem').value.toUpperCase(), nm: el('t-nm').value.toUpperCase(),
-        isStandart: el('btn-storage-toggle').classList.contains('on'),
-        loc: el('t-loc').value.toUpperCase(), kom: el('t-kom').value.toUpperCase()
-    };
+    const btn = el('btn-rev-toggle');
+    const t = { id: el('t-id').value.toUpperCase(), nm: el('t-nm').value.toUpperCase(), dia: el('t-dia').value, rev: btn ? btn.classList.contains('on') : false };
     if(!db[currentIdx].tools) db[currentIdx].tools = [];
     if(i === '') db[currentIdx].tools.push(t); else db[currentIdx].tools[i] = t;
     localStorage.setItem(DB_KEY, JSON.stringify(db));
     renderTools(); hide('m-t');
 }
 
-function deleteProject(i) { if(confirm('Löschen?')) { db.splice(i,1); localStorage.setItem(DB_KEY, JSON.stringify(db)); renderList(); } }
-function delT() { db[currentIdx].tools.splice(el('t-idx').value,1); localStorage.setItem(DB_KEY, JSON.stringify(db)); renderTools(); hide('m-t'); }
-function openImport() { el('imp-area').value = ''; el('m-imp').style.display = 'flex'; }
-function exportJSON() { el('imp-area').value = JSON.stringify(db); }
-function importAnyJSON() {
-    try { const d = JSON.parse(el('imp-area').value); if(Array.isArray(d)) db = d; localStorage.setItem(DB_KEY, JSON.stringify(db)); renderList(); hide('m-imp'); } catch(e) { alert('Error'); }
-}
+function deleteProject(i) { if(confirm('Löschen?')) { db.splice(i, 1); localStorage.setItem(DB_KEY, JSON.stringify(db)); renderList(); } }
+function delT() { const i = el('t-idx').value; db[currentIdx].tools.splice(i, 1); localStorage.setItem(DB_KEY, JSON.stringify(db)); renderTools(); hide('m-t'); }
+function exportJSON() { el('imp-area').value = JSON.stringify(db); el('imp-area').select(); alert("JSON kopiert!"); }
+function importJSON() { try { const parsed = JSON.parse(el('imp-area').value); if(Array.isArray(parsed)) { db = parsed; localStorage.setItem(DB_KEY, JSON.stringify(db)); renderList(); hide('m-imp'); } } catch(e) { alert("JSON-Fehler"); } }
 
-// ТОТ САМЫЙ PDF С ЖИРНЫМИ ЛИНИЯМИ И БЕЗ РАЗРЫВОВ
+// --- PDF (ОБНОВЛЕННЫЙ С УМНЫМ ПЕРЕНОСОМ) ---
 function makePDF() {
     const p = db[currentIdx];
-    const sonder = (p.tools || []).filter(x => !x.isStandart);
-    const standart = (p.tools || []).filter(x => x.isStandart);
     
-    let html = `
-    <html><head><style>
-        @page { size: A4; margin: 10mm; }
-        body { margin: 0; font-family: sans-serif; -webkit-print-color-adjust: exact; }
-        
-        /* Внешняя рамка - жирная, 3px */
-        .pdf-frame { border: 3px solid #000; width: 100%; border-collapse: collapse; }
-        
-        /* Шапка */
-        .header-row td { border-bottom: 3px solid #000; padding: 20px; }
-        .meta-box { width: 200px; border-left: 3px solid #000; padding: 12px; font-size: 11px; font-weight: 900; }
-        
-        /* Разделители категорий (черные плашки) */
-        .cat-head { background: #000 !important; color: #fff !important; font-weight: 900; font-size: 14px; padding: 8px 15px !important; text-transform: uppercase; }
-        
-        /* Строки инструментов */
-        .tool-row td { border-bottom: 2px solid #000; padding: 12px 15px; vertical-align: middle; }
-        .bem-box { border-left: 2px solid #000; width: 150px; text-align: right; }
-        
-        .t-name { font-weight: 900; font-size: 18px; display: block; }
-        .t-sub { font-size: 10px; font-weight: 800; color: #444; margin-top: 4px; text-transform: uppercase; }
-        .b-label { font-size: 8px; color: #888; font-weight: 900; display: block; }
-        .b-val { font-size: 16px; font-weight: 900; }
-        
-        tr { page-break-inside: avoid; }
-    </style></head><body>
-        <table class="pdf-frame">
-            <thead>
-                <tr class="header-row">
-                    <td>
-                        <div style="font-size:14px; font-weight:900;">${p.name || ''}</div>
-                        <div style="font-size:55px; font-weight:900; line-height:0.9; letter-spacing:-2px;">${p.num}</div>
-                    </td>
-                    <td class="meta-box">
-                        <div style="display:flex; justify-content:space-between; margin-bottom:2px;"><span>MAT:</span><span>${p.mat||'--'}</span></div>
-                        <div style="display:flex; justify-content:space-between; margin-bottom:2px;"><span>LZF:</span><span>${p.lzf||'--'}</span></div>
-                        <div style="display:flex; justify-content:space-between; margin-bottom:2px;"><span>SÄGE:</span><span>${p.slg||'--'}</span></div>
-                        <div style="display:flex; justify-content:space-between; margin-bottom:2px;"><span>ABST:</span><span>${p.abs||'--'}</span></div>
-                        <div style="display:flex; justify-content:space-between; margin-bottom:2px;"><span>BACKEN:</span><span>${p.grf||'--'}</span></div>
-                        <div style="display:flex; justify-content:space-between;"><span>STOCK:</span><span>${p.stk||'--'}</span></div>
-                    </td>
-                </tr>
-            </thead>
-            <tbody>`;
+    // Шаблон шапки
+    const getPageHead = () => `
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; min-height:90px;">
+            <div style="display:flex; flex-direction:column; justify-content:center;">
+                <div style="font-size:13px; font-weight:900; text-transform:uppercase; color:#666; margin-bottom:2px; line-height:1;">${p.name || ''}</div>
+                <div style="font-size:64px; font-weight:900; line-height:0.8; letter-spacing:-2px; margin:0;">${p.num || '---'}</div>
+            </div>
+            <div style="width:220px; font-size:11px; font-weight:800; line-height:1.5;">
+                <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>LAUFZEIT</span><span>${p.lzf || ''}</span></div>
+                <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>MATERIAL</span><span>${p.mat || p.nam || ''}</span></div>
+                <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>SÄGELÄNGE</span><span>${p.sag || ''}</span></div>
+                <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>ABSTAND</span><span>${p.abs || ''}</span></div>
+                <div style="display:flex; justify-content:space-between; border-bottom:1px solid #f0f0f0;"><span>GREIFBACKEN</span><span>${p.grf || ''}</span></div>
+                <div style="display:flex; justify-content:space-between;"><span>STÜCKZAHL</span><span>${p.stt || ''} / ${p.stn || ''}</span></div>
+            </div>
+        </div>
+        <div style="border-bottom:5px solid #000; margin-bottom:15px;"></div>`;
 
-    const renderGroup = (title, list, locStr) => {
-        if(list.length > 0) {
-            html += `<tr><td colspan="2" class="cat-head">${title}</td></tr>`;
-            list.forEach(t => {
-                html += `
-                <tr class="tool-row">
-                    <td>
-                        <span class="t-name">${t.nm}</span>
-                        <span class="t-sub">${t.isStandart ? (t.loc || 'STANDART') : 'IN BLAUKISTE'} ${t.kom ? ' | ' + t.kom : ''}</span>
-                    </td>
-                    <td class="bem-box">
-                        <span class="b-label">BEMERKUNG</span>
-                        <span class="b-val">${t.bem || '--'}</span>
-                    </td>
-                </tr>`;
-            });
-        }
+    const tableHead = `
+        <div style="display:flex; font-size:10px; font-weight:900; text-transform:uppercase; margin-bottom:6px; padding:0 2px;">
+            <div style="width:75px;">T-NR</div>
+            <div style="flex:1;">WERKZEUGNAME / KOMMENTAR</div>
+            <div style="width:125px; text-align:right;">Ø / TOLERANZ</div>
+        </div>
+        <div style="border-bottom:4px solid #000; margin-bottom:0px;"></div>`;
+
+    const getRow = (t) => {
+        const displayDia = t.dia.includes('/') ? t.dia.split('/').join('<br>') : t.dia;
+        return `
+        <div style="display:flex; align-items:baseline; border-bottom:1.5px solid #000; padding:10px 0; width:100%;">
+            <div style="width:75px; font-weight:800; font-size:15px;">${t.id}</div>
+            <div style="flex:1; font-weight:700; font-size:15px; text-transform:uppercase; padding-right:10px; white-space:pre-wrap;">${t.nm}</div>
+            <div style="width:125px; text-align:right; font-weight:800; font-size:14px; line-height:1.2;">${displayDia}</div>
+        </div>`;
     };
 
-    renderGroup('SONDERWERKZEUGE', sonder);
-    renderGroup('STANDARTWERKZEUGE', standart);
+    const footerLine = `<div style="border-top:1px solid #000; padding-top:5px; font-size:9px; font-weight:800; text-align:center; color:#666; margin-top:20px;"></div>`;
 
-    html += `</tbody></table></body></html>`;
+    let oben = [], unten = [], target = oben;
+    (p.tools || []).forEach(t => { if(t.rev) target = unten; target.push(t); });
 
-    const win = window.open('','_blank');
-    win.document.write(html);
-    win.document.close();
-    setTimeout(() => { win.print(); win.close(); }, 500);
+    // СБОРКА СТРАНИЦЫ 1
+    let html = `
+    <div style="width:210mm; padding:12mm; box-sizing:border-box; background:#fff; font-family:sans-serif; color:#000;">
+        <div style="border:2px solid #000; padding:25px; min-height:265mm; display:flex; flex-direction:column; box-sizing:border-box; page-break-after: always;">
+            ${getPageHead()}
+            <div style="flex:1;">
+                <div style="margin-bottom:5px; font-size:18px; font-weight:900; letter-spacing:0.5px; text-transform:uppercase;">REVOLVER OBEN</div>
+                ${tableHead}
+                ${oben.map(getRow).join('')}
+                ${unten.length === 0 ? '' : ``}
+            </div>
+            ${footerLine}
+        </div>`;
+
+    // СБОРКА СТРАНИЦЫ 2 (только если есть Unten)
+    if (unten.length > 0) {
+        html += `
+        <div style="border:2px solid #000; padding:25px; min-height:265mm; display:flex; flex-direction:column; box-sizing:border-box; margin-top: 20px;">
+            ${getPageHead()}
+            <div style="flex:1;">
+                <div style="margin-bottom:5px; font-size:18px; font-weight:900; letter-spacing:0.5px; text-transform:uppercase;">REVOLVER UNTEN</div>
+                ${tableHead}
+                ${unten.map(getRow).join('')}
+            </div>
+            ${footerLine}
+        </div>`;
+    }
+
+    html += `</div>`;
+    el('print-container').innerHTML = html;
+    setTimeout(() => { window.print(); }, 150);
 }
 
 window.onload = renderList;
