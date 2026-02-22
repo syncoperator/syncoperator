@@ -15,8 +15,8 @@ function renderList() {
                 <div class="t-name-label">${p.num || '---'}</div>
                 <div style="font-size:13px; font-weight:600; color:#8e8e93;">${p.name || ''}</div>
             </div>
-            <div style="font-size:20px; color:#c7c7cc; padding-left:15px;" onclick="event.stopPropagation(); deleteProject(${i})">✕</div>
-        </div>`).join('') + '<div style="height:140px;"></div>';
+            <div style="font-size:20px; color:#c7c7cc;" onclick="event.stopPropagation(); deleteProject(${i})">✕</div>
+        </div>`).join('') + '<div style="height:100px;"></div>';
 }
 
 function openProject(i) {
@@ -26,7 +26,6 @@ function openProject(i) {
     el('h-num').innerText = db[i].num;
     el('h-nam').innerText = db[i].name;
     renderTools();
-    window.scrollTo(0,0);
 }
 
 function goHome() {
@@ -36,11 +35,11 @@ function goHome() {
     renderList();
 }
 
-function moveTool(idx, direction) {
-    const tools = db[currentIdx].tools;
-    const newIdx = idx + direction;
-    if (newIdx >= 0 && newIdx < tools.length) {
-        [tools[idx], tools[newIdx]] = [tools[newIdx], tools[idx]];
+function moveTool(idx, dir) {
+    const t = db[currentIdx].tools;
+    const n = idx + dir;
+    if(n >= 0 && n < t.length) {
+        [t[idx], t[n]] = [t[n], t[idx]];
         localStorage.setItem(DB_KEY, JSON.stringify(db));
         renderTools();
     }
@@ -50,20 +49,19 @@ function renderTools() {
     const list = el('list-t');
     const tools = db[currentIdx].tools || [];
     list.innerHTML = tools.map((t, i) => `
-        <div class="list-item" style="display:flex; align-items:center; gap:12px;">
-            <div style="display:flex; flex-direction:column; gap:4px;">
-                <button onclick="event.stopPropagation(); moveTool(${i}, -1)" style="padding:8px 10px; background:#f2f2f7; border:none; border-radius:8px; font-weight:bold;">↑</button>
-                <button onclick="event.stopPropagation(); moveTool(${i}, 1)" style="padding:8px 10px; background:#f2f2f7; border:none; border-radius:8px; font-weight:bold;">↓</button>
+        <div class="list-item">
+            <div style="display:flex; flex-direction:column; gap:5px;">
+                <button onclick="moveTool(${i},-1)" style="border:none; background:#eee; border-radius:4px; padding:5px;">↑</button>
+                <button onclick="moveTool(${i},1)" style="border:none; background:#eee; border-radius:4px; padding:5px;">↓</button>
             </div>
             <div style="flex:1" onclick="modalT(${i})">
-                <div class="t-id-label" style="font-size:9px;">BEMERKUNG</div>
-                <div style="font-size:17px; font-weight:900; margin-bottom:2px;">${t.bem || '---'}</div>
-                <div style="font-size:15px; font-weight:800;">${t.nm}</div>
+                <div class="t-id-label">BEMERKUNG: ${t.bem || '---'}</div>
+                <div style="font-size:18px; font-weight:900;">${t.nm}</div>
                 <div class="loc-tag ${t.isStandart ? 'standart' : 'sonder'}">
                     ${t.isStandart ? 'STANDART | ' + (t.loc || '') : 'SONDER | BLAUKISTE'}
                 </div>
             </div>
-        </div>`).join('') + '<div style="height:160px; padding-bottom: 80px;"></div>';
+        </div>`).join('') + '<div style="height:120px;"></div>';
 }
 
 function modalP() {
@@ -75,10 +73,10 @@ function modalP() {
 function editCurrentProject() {
     const p = db[currentIdx];
     el('p-idx').value = currentIdx;
-    el('p-num').value = p.num || ''; el('p-nam').value = p.name || '';
-    el('p-lzf').value = p.lzf || ''; el('p-mat').value = p.mat || '';
-    el('p-slg').value = p.slg || ''; el('p-abs').value = p.abs || '';
-    el('p-grf').value = p.grf || ''; el('p-stk').value = p.stk || '';
+    el('p-num').value = p.num; el('p-nam').value = p.name;
+    el('p-lzf').value = p.lzf||''; el('p-mat').value = p.mat||'';
+    el('p-slg').value = p.slg||''; el('p-abs').value = p.abs||'';
+    el('p-grf').value = p.grf||''; el('p-stk').value = p.stk||'';
     el('m-p').style.display = 'flex';
 }
 
@@ -93,19 +91,18 @@ function saveP() {
     };
     if(i === '') db.push(data); else db[i] = data;
     localStorage.setItem(DB_KEY, JSON.stringify(db));
-    if(i !== '') { el('h-num').innerText = data.num; el('h-nam').innerText = data.name; }
     renderList(); hide('m-p');
+    if(i !== '') openProject(i);
 }
 
 function modalT(i = null) {
     const edit = i !== null;
     el('t-idx').value = edit ? i : '';
     const t = edit ? db[currentIdx].tools[i] : {bem:'', nm:'', isStandart:false, loc:'', kom:''};
-    el('t-bem').value = t.bem || ''; el('t-nm').value = t.nm || ''; el('t-loc').value = t.loc || ''; el('t-kom').value = t.kom || '';
+    el('t-bem').value = t.bem; el('t-nm').value = t.nm; el('t-loc').value = t.loc||''; el('t-kom').value = t.kom||'';
     const btn = el('btn-storage-toggle');
     t.isStandart ? btn.classList.add('on') : btn.classList.remove('on');
     btn.onclick = () => btn.classList.toggle('on');
-    el('btn-del-t').style.display = edit ? 'block' : 'none';
     el('m-t').style.display = 'flex';
 }
 
@@ -128,66 +125,75 @@ function delT() { db[currentIdx].tools.splice(el('t-idx').value,1); localStorage
 function openImport() { el('imp-area').value = ''; el('m-imp').style.display = 'flex'; }
 function exportJSON() { el('imp-area').value = JSON.stringify(db); }
 function importAnyJSON() {
-    try { const p = JSON.parse(el('imp-area').value); if(Array.isArray(p)) db = p; localStorage.setItem(DB_KEY, JSON.stringify(db)); renderList(); hide('m-imp'); } catch(e) { alert('JSON Error'); }
+    try { db = JSON.parse(el('imp-area').value); localStorage.setItem(DB_KEY, JSON.stringify(db)); renderList(); hide('m-imp'); } catch(e) { alert('Fehler'); }
 }
 
 function makePDF() {
     const p = db[currentIdx];
-    const tools = p.tools || [];
-    const sonder = tools.filter(x => !x.isStandart);
-    const standart = tools.filter(x => x.isStandart);
+    const sonder = (p.tools || []).filter(x => !x.isStandart);
+    const standart = (p.tools || []).filter(x => x.isStandart);
     
-    let content = "";
-    const getRow = (t, label) => `
-        <div style="display:flex; border-bottom:1.5px solid #000; page-break-inside:avoid;">
-            <div style="flex:1; padding:8px 15px;">
-                <div style="font-weight:900; font-size:18px; letter-spacing:-0.5px;">${t.nm}</div>
-                <div style="font-size:10px; font-weight:800; color:#444; text-transform:uppercase;">${label} ${t.kom ? ' | ' + t.kom : ''}</div>
-            </div>
-            <div style="width:160px; text-align:right; padding:8px 15px; border-left:1.5px solid #000; display:flex; flex-direction:column; justify-content:center;">
-                <div style="font-size:8px; font-weight:900; color:#888;">BEMERKUNG</div>
-                <div style="font-weight:900; font-size:16px;">${t.bem || '--'}</div>
-            </div>
-        </div>`;
+    let html = `
+    <html><head><style>
+        @page { size: A4; margin: 10mm; }
+        body { margin: 0; font-family: sans-serif; -webkit-print-color-adjust: exact; }
+        .wrapper { border: 2.5px solid #000; width: 100%; border-bottom: none; }
+        table { width: 100%; border-collapse: collapse; }
+        td { border-bottom: 1.5px solid #000; vertical-align: middle; }
+        .head-cell { padding: 20px; }
+        .meta-cell { width: 220px; border-left: 2.5px solid #000; padding: 15px; }
+        .cat-row { background: #000; color: #fff; font-weight: 900; font-size: 14px; padding: 8px 15px; }
+        .tool-name { font-weight: 900; font-size: 18px; }
+        .tool-info { font-size: 10px; font-weight: 800; color: #444; }
+        .bem-label { font-size: 8px; font-weight: 900; color: #888; text-align: right; }
+        .bem-val { font-weight: 900; font-size: 16px; text-align: right; }
+    </style></head><body>
+        <div class="wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <td class="head-cell">
+                            <div style="font-size:15px; font-weight:900; text-transform:uppercase;">${p.name}</div>
+                            <div style="font-size:60px; font-weight:900; line-height:0.8; letter-spacing:-2px;">${p.num}</div>
+                        </td>
+                        <td class="meta-cell">
+                            <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:900;"><span>MAT:</span><span>${p.mat||'--'}</span></div>
+                            <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:900;"><span>LZF:</span><span>${p.lzf||'--'}</span></div>
+                            <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:900;"><span>SÄGE:</span><span>${p.slg||'--'}</span></div>
+                            <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:900;"><span>ABST:</span><span>${p.abs||'--'}</span></div>
+                            <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:900;"><span>BACKEN:</span><span>${p.grf||'--'}</span></div>
+                            <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:900;"><span>STOCK:</span><span>${p.stk||'--'}</span></div>
+                        </td>
+                    </tr>
+                </thead>
+                <tbody>`;
 
-    if(sonder.length > 0) {
-        content += `<div style="background:#000; color:#fff; padding:8px 15px; font-weight:900; font-size:14px; letter-spacing:0.5px;">SONDERWERKZEUGE</div>`;
-        sonder.forEach(t => content += getRow(t, 'IN BLAUKISTE'));
-    }
-    if(standart.length > 0) {
-        content += `<div style="background:#000; color:#fff; padding:8px 15px; font-weight:900; font-size:14px; letter-spacing:0.5px;">STANDARTWERKZEUGE</div>`;
-        standart.forEach(t => content += getRow(t, t.loc || 'STANDART'));
-    }
+    const addGroup = (title, list, labelFn) => {
+        if(list.length > 0) {
+            html += `<tr><td colspan="2" class="cat-row">${title}</td></tr>`;
+            list.forEach(t => {
+                html += `
+                <tr>
+                    <td style="padding:10px 15px;">
+                        <div class="tool-name">${t.nm}</div>
+                        <div class="tool-info">${labelFn(t)} ${t.kom ? ' | '+t.kom : ''}</div>
+                    </td>
+                    <td style="padding:10px 15px; border-left: 1.5px solid #000; width:160px;">
+                        <div class="bem-label">BEMERKUNG</div>
+                        <div class="bem-val">${t.bem || '--'}</div>
+                    </td>
+                </tr>`;
+            });
+        }
+    };
+
+    addGroup('SONDERWERKZEUGE', sonder, () => 'IN BLAUKISTE');
+    addGroup('STANDARTWERKZEUGE', standart, (t) => t.loc || 'STANDART');
+
+    html += `</tbody></table></div></body></html>`;
 
     const win = window.open('','_blank');
-    win.document.write(`<html><head><style>
-        @page { size: A4; margin: 10mm; }
-        * { box-sizing: border-box; -webkit-print-color-adjust: exact; }
-        body { margin: 0; padding: 0; font-family: sans-serif; color: #000; background: #fff; }
-        .frame { border: 2.5px solid #000; width: 100%; display: flex; flex-direction: column; page-break-inside: avoid; }
-        .head { display: flex; padding: 20px; border-bottom: 2.5px solid #000; }
-        .h-left { flex: 1; }
-        .h-right { width: 220px; border-left: 2.5px solid #000; padding-left: 20px; display: flex; flex-direction: column; justify-content: center; }
-        .p-name { font-size: 15px; font-weight: 900; text-transform: uppercase; margin-bottom: 2px; }
-        .p-num { font-size: 60px; font-weight: 900; line-height: 0.8; letter-spacing: -2px; }
-        .meta-grid { display: grid; gap: 4px; }
-        .meta-item { display: flex; justify-content: space-between; font-size: 11px; font-weight: 900; }
-    </style></head><body>
-        <div class="frame">
-            <div class="head">
-                <div class="h-left"><div class="p-name">${p.name}</div><div class="p-num">${p.num}</div></div>
-                <div class="h-right"><div class="meta-grid">
-                    <div class="meta-item"><span>MAT:</span><span>${p.mat||'--'}</span></div>
-                    <div class="meta-item"><span>LZF:</span><span>${p.lzf||'--'}</span></div>
-                    <div class="meta-item"><span>SÄGE:</span><span>${p.slg||'--'}</span></div>
-                    <div class="meta-item"><span>ABST:</span><span>${p.abs||'--'}</span></div>
-                    <div class="meta-item"><span>BACKEN:</span><span>${p.grf||'--'}</span></div>
-                    <div class="meta-item"><span>STOCK:</span><span>${p.stk||'--'}</span></div>
-                </div></div>
-            </div>
-            ${content}
-        </div>
-    </body></html>`);
+    win.document.write(html);
     win.document.close();
     setTimeout(() => { win.print(); win.close(); }, 500);
 }
