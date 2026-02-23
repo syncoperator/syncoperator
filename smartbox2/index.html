@@ -35,7 +35,10 @@
         .btn-save{background:var(--text);color:#fff;width:100%;padding:16px;border:none;border-radius:14px;font-weight:700;margin-top:10px;font-size:16px;cursor:pointer}
         .btn-toggle{background:#f2f2f7;padding:14px;border-radius:12px;text-align:center;font-weight:800;margin:8px 0;cursor:pointer}
         .btn-toggle.active{background:#34c759;color:#fff}
-        #list-t{padding-bottom:200px}
+        
+        /* Drag and Drop & Padding Fix */
+        #list-t{padding-bottom:150px}
+        .dragging{opacity:0.5;scale:0.95}
     </style>
 </head>
 <body>
@@ -95,7 +98,7 @@
 
     <div id="mi" class="modal" onclick="if(event.target==this)this.style.display='none'">
         <div class="modal-content">
-            <textarea id="imp" rows="10"></textarea>
+            <textarea id="imp" rows="10" placeholder="Paste JSON here..."></textarea>
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px">
                 <button class="btn-save" style="background:#f2f2f7;color:#000" onclick="exportJSON()">EXPORT</button>
                 <button class="btn-save" onclick="importJSON()">IMPORT</button>
@@ -104,46 +107,12 @@
     </div>
 
     <script>
-        const DB_KEY = 'SMARTBOX_FINAL_V5'; 
+        const DB_KEY = 'SMARTBOX_V6_FINAL'; 
         let db = JSON.parse(localStorage.getItem(DB_KEY)) || [];
         let currentIdx = null;
         
         const esc = s => (s ? String(s) : '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
         const save = () => localStorage.setItem(DB_KEY, JSON.stringify(db));
-
-        function checkDemo() {
-            if (!db || db.length === 0) {
-                db = [{ "num": "230947", "name": "EINSCHRAUBNIPPEL DN10", "lzf": "4Min 45Sek", "mat": "1.4104 ⌀30", "slg": "1003mm", "abs": "0.5mm", "grf": "18-25", "stk": "100", "tools": [
-                    {"bem": "T0101", "nm": "KOPIERST.R0.8 G54", "isStandart": true, "loc": "REVOLVER OBEN"},
-                    {"bem": "T0707", "nm": "ECO-CUT D18 G54", "isStandart": true, "loc": "REVOLVER OBEN"},
-                    {"bem": "T0404", "nm": "SPIBO 9.5 HM IK G54", "isStandart": true, "loc": "REVOLVER OBEN"},
-                    {"bem": "T0808", "nm": "SPIBO D7 HM IK G54", "isStandart": true, "loc": "REVOLVER OBEN"},
-                    {"bem": "T0202", "nm": "KOPIERST. NEGATIV R0.4 G54", "isStandart": true, "loc": "REVOLVER OBEN"},
-                    {"bem": "T0303", "nm": "GEWINDESTAHL M29X1.5 G54", "isStandart": true, "loc": "REVOLVER OBEN"},
-                    {"bem": "T0909", "nm": "BOHRST.D10 CCGT R0.2 G54", "isStandart": true, "loc": "REVOLVER OBEN"},
-                    {"bem": "T1010", "nm": "BOHRST.D6 MHC 20-6 G54", "isStandart": true, "loc": "REVOLVER OBEN"},
-                    {"bem": "T0505", "nm": "SPIBO D4 MIT KTB G54", "isStandart": true, "loc": "REVOLVER OBEN"},
-                    {"bem": "T1212", "nm": "KUGELFRAESER D10/JOKE G54", "isStandart": false, "kom": "SONDER"},
-                    {"bem": "T1111", "nm": "SCHAFTFRAESER D10 RADIAL G55", "isStandart": true, "loc": "REVOLVER OBEN"},
-                    {"bem": "T0606", "nm": "ZENTBO D10 RADIAL G55", "isStandart": true, "loc": "REVOLVER OBEN"},
-                    {"bem": "T1216", "nm": "STANGENANSCHLAG G54", "isStandart": true, "loc": "REVOLVER UNTEN"},
-                    {"bem": "T0101", "nm": "KOPIERST.NEGATIV R0.4 G55", "isStandart": true, "loc": "REVOLVER UNTEN"},
-                    {"bem": "T0202", "nm": "KOPIERST. NEGATIV R0.4 G55", "isStandart": true, "loc": "REVOLVER UNTEN"},
-                    {"bem": "T0303", "nm": "STECHSTAHL 3MM G55", "isStandart": true, "loc": "REVOLVER UNTEN"},
-                    {"bem": "T0404", "nm": "STECHST.TUNGALOY 2MM G55", "isStandart": true, "loc": "REVOLVER UNTEN"},
-                    {"bem": "T0707", "nm": "ZETRBO D8 G55", "isStandart": true, "loc": "REVOLVER UNTEN"},
-                    {"bem": "T1010", "nm": "ABSTECHST.3MM RECHTS G54", "isStandart": true, "loc": "REVOLVER UNTEN"},
-                    // Доп. инструменты для проверки вместимости 25 позиций
-                    {"bem": "T1313", "nm": "GEWINDEBOHRER M8 G54", "isStandart": true, "loc": "REVOLVER OBEN"},
-                    {"bem": "T1414", "nm": "FASENFRAESER D12 G55", "isStandart": true, "loc": "REVOLVER UNTEN"},
-                    {"bem": "T1515", "nm": "REIBUELE D6 H7 G54", "isStandart": true, "loc": "REVOLVER OBEN"},
-                    {"bem": "T1616", "nm": "PLANFRAESER D40 G55", "isStandart": false, "kom": "SONDER"},
-                    {"bem": "T1717", "nm": "INNENDREHST. D16 G54", "isStandart": true, "loc": "REVOLVER OBEN"},
-                    {"bem": "T1818", "nm": "MESSTASTER RENISHAW", "isStandart": false, "kom": "SONDER"}
-                ]}];
-                save();
-            }
-        }
 
         function renderProjects(){ 
             document.getElementById('plist').innerHTML = db.map((p,i) => `
@@ -152,7 +121,7 @@
                         <div class="p-name-sub">${esc(p.name)}</div>
                         <div class="p-num-big">${esc(p.num)}</div>
                     </div>
-                    <div style="color:#ccc; font-size:24px;">→</div>
+                    <div style="color:#ccc; font-size:24px;">→ ${p.tools ? p.tools.length : 0}</div>
                 </div>
             `).join(''); 
         }
@@ -177,16 +146,14 @@
             const edit = typeof i === 'number';
             document.getElementById('pidx').value = edit ? i : ''; 
             const p = edit ? db[i] : {};
-            
             document.getElementById('pnum').value = p.num || ''; 
             document.getElementById('pname').value = p.name || ''; 
             document.getElementById('plzf').value = p.lzf || ''; 
             document.getElementById('pmat').value = p.mat || ''; 
-            document.getElementById('psag').value = p.slg || p.sag || ''; 
+            document.getElementById('psag').value = p.sag || ''; 
             document.getElementById('pabs').value = p.abs || ''; 
             document.getElementById('pgrf').value = p.grf || ''; 
             document.getElementById('pstk').value = p.stk || '';
-            
             document.getElementById('delP').style.display = edit ? 'block' : 'none'; 
             document.getElementById('mp').style.display = 'flex';
         }
@@ -204,42 +171,64 @@
                 stk: document.getElementById('pstk').value, 
                 tools: idVal === '' ? [] : (db[idVal].tools || []) 
             };
-            
-            if(idVal === '') { db.push(data); } else { db[idVal] = data; }
+            if(idVal === '') db.push(data); else db[idVal] = data;
             save(); 
             document.getElementById('mp').style.display = 'none'; 
-            renderProjects(); 
-            if(idVal !== '') openProject(idVal);
+            idVal === '' ? renderProjects() : openProject(idVal);
         }
 
         function delProject(){ 
-            if(confirm('Löschen?')){ 
-                db.splice(currentIdx, 1); 
-                save(); 
-                goHome(); 
-                document.getElementById('mp').style.display = 'none'; 
-            } 
+            if(confirm('Löschen?')){ db.splice(currentIdx, 1); save(); goHome(); document.getElementById('mp').style.display='none'; } 
         }
 
         function renderTools(){
             const list = db[currentIdx].tools || [];
-            document.getElementById('list-t').innerHTML = list.map((t, i) => {
-                const tID = t.bem || t.id || ''; 
-                const tSTD = t.isStandart || t.isStd || false;
-                
-                return `
-                <div class="tool-card" onclick="modalT(${i})">
+            const container = document.getElementById('list-t');
+            container.innerHTML = list.map((t, i) => `
+                <div class="tool-card" draggable="true" data-index="${i}" onclick="modalT(${i})">
                     <div style="flex:1">
-                        <div class="t-label-min">T-NR: ${esc(tID)}</div>
+                        <div class="t-label-min">T-NR: ${esc(t.bem)}</div>
                         <div class="t-val-main">${esc(t.nm)}</div>
-                        <div class="tag ${tSTD?'tag-std':'tag-sonder'}">${tSTD ? 'LAGER: '+esc(t.loc||'') : 'SONDER'} ${t.kom ? ' | '+esc(t.kom) : ''}</div>
+                        <div class="tag ${t.isStandart?'tag-std':'tag-sonder'}">${t.isStandart ? 'LAGER: '+esc(t.loc) : 'SONDER'} ${t.kom ? ' | '+esc(t.kom) : ''}</div>
                     </div>
-                    <div style="display:flex; flex-direction:column; gap:5px">
-                        <button class="btn-icon" onclick="event.stopPropagation();moveTool(${i},-1)">↑</button>
-                        <button class="btn-icon" onclick="event.stopPropagation();moveTool(${i},1)">↓</button>
-                    </div>
-                </div>`;
-            }).join('');
+                </div>`).join('');
+            setupDragAndDrop();
+        }
+
+        function setupDragAndDrop(){
+            const cards = document.querySelectorAll('.tool-card');
+            const container = document.getElementById('list-t');
+            cards.forEach(card => {
+                card.addEventListener('dragstart', () => card.classList.add('dragging'));
+                card.addEventListener('dragend', () => {
+                    card.classList.remove('dragging');
+                    reorderTools();
+                });
+            });
+            container.addEventListener('dragover', e => {
+                e.preventDefault();
+                const afterElement = getDragAfterElement(container, e.clientY);
+                const dragging = document.querySelector('.dragging');
+                if (afterElement == null) container.appendChild(dragging);
+                else container.insertBefore(dragging, afterElement);
+            });
+        }
+
+        function getDragAfterElement(container, y) {
+            const draggableElements = [...container.querySelectorAll('.tool-card:not(.dragging)')];
+            return draggableElements.reduce((closest, child) => {
+                const box = child.getBoundingClientRect();
+                const offset = y - box.top - box.height / 2;
+                if (offset < 0 && offset > closest.offset) return { offset: offset, element: child };
+                else return closest;
+            }, { offset: Number.NEGATIVE_INFINITY }).element;
+        }
+
+        function reorderTools(){
+            const newOrder = [...document.querySelectorAll('.tool-card')].map(c => db[currentIdx].tools[c.dataset.index]);
+            db[currentIdx].tools = newOrder;
+            save();
+            renderTools();
         }
 
         function toggleStd(btn) {
@@ -251,153 +240,94 @@
             const edit = typeof i === 'number'; 
             document.getElementById('tidx').value = edit ? i : ''; 
             const t = edit ? db[currentIdx].tools[i] : {};
-            
-            const tID = t.bem || t.id || ''; 
-            const tSTD = t.isStandart || t.isStd || false;
-            
-            document.getElementById('tid').value = tID; 
+            document.getElementById('tid').value = t.bem || ''; 
             document.getElementById('tnm').value = t.nm || ''; 
             document.getElementById('tloc').value = t.loc || ''; 
             document.getElementById('tkom').value = t.kom || '';
-            
-            const tstdBtn = document.getElementById('tstd');
-            if(tSTD) {
-                tstdBtn.classList.add('active');
-                tstdBtn.textContent = 'STANDART (STORAGE)';
-            } else {
-                tstdBtn.classList.remove('active');
-                tstdBtn.textContent = 'SONDER (BLAUKISTE)';
-            }
-            
+            const btn = document.getElementById('tstd');
+            if(t.isStandart) { btn.classList.add('active'); btn.textContent = 'STANDART (STORAGE)'; }
+            else { btn.classList.remove('active'); btn.textContent = 'SONDER (BLAUKISTE)'; }
             document.getElementById('delT').style.display = edit ? 'block' : 'none'; 
             document.getElementById('mt').style.display = 'flex';
         }
 
         function saveT(){
             const idVal = document.getElementById('tidx').value; 
-            const tstdBtn = document.getElementById('tstd');
             const t = { 
                 bem: document.getElementById('tid').value.toUpperCase(), 
                 nm: document.getElementById('tnm').value.toUpperCase(), 
-                isStandart: tstdBtn.classList.contains('active'), 
+                isStandart: document.getElementById('tstd').classList.contains('active'), 
                 loc: document.getElementById('tloc').value.toUpperCase(), 
                 kom: document.getElementById('tkom').value.toUpperCase() 
             };
-            
             if(!db[currentIdx].tools) db[currentIdx].tools = []; 
-            if(idVal === '') { db[currentIdx].tools.push(t); } else { db[currentIdx].tools[idVal] = t; }
-            save(); 
-            document.getElementById('mt').style.display = 'none'; 
-            renderTools();
+            if(idVal === '') db[currentIdx].tools.push(t); else db[currentIdx].tools[idVal] = t;
+            save(); document.getElementById('mt').style.display = 'none'; renderTools();
         }
 
-        function deleteTool(){ 
-            db[currentIdx].tools.splice(document.getElementById('tidx').value, 1); 
-            save(); 
-            document.getElementById('mt').style.display = 'none'; 
-            renderTools(); 
-        }
-
-        function moveTool(i, d){ 
-            const arr = db[currentIdx].tools; 
-            const n = i + d; 
-            if(n >= 0 && n < arr.length){ 
-                [arr[i], arr[n]] = [arr[n], arr[i]]; 
-                save(); 
-                renderTools(); 
-            } 
-        }
-
-        function openImport(){ 
-            document.getElementById('imp').value = JSON.stringify(db); 
-            document.getElementById('mi').style.display = 'flex'; 
-        }
-
-        function exportJSON(){ 
-            document.getElementById('imp').value = JSON.stringify(db, null, 2); 
-        }
-
-        function importJSON(){ 
-            try { 
-                db = JSON.parse(document.getElementById('imp').value); 
-                save(); 
-                location.reload(); 
-            } catch(e) { 
-                alert('JSON Format Error'); 
-            } 
-        }
+        function deleteTool(){ db[currentIdx].tools.splice(document.getElementById('tidx').value, 1); save(); document.getElementById('mt').style.display='none'; renderTools(); }
+        function openImport(){ document.getElementById('imp').value = JSON.stringify(db); document.getElementById('mi').style.display='flex'; }
+        function exportJSON(){ document.getElementById('imp').value = JSON.stringify(db, null, 2); }
+        function importJSON(){ try { db = JSON.parse(document.getElementById('imp').value); save(); location.reload(); } catch(e) { alert('Error'); } }
 
         function makePDF(){
             const p = db[currentIdx]; 
-            const tools = p.tools || [];
-            const sonder = tools.filter(t => !(t.isStandart || t.isStd || false));
-            const std = tools.filter(t => (t.isStandart || t.isStd || false));
+            const sonder = (p.tools || []).filter(t => !t.isStandart);
+            const std = (p.tools || []).filter(t => t.isStandart);
             
             let html = `<html><head><style>
                 @page { size: A4; margin: 0; }
-                body { font-family: 'Inter', sans-serif; margin: 0; padding: 10mm; -webkit-print-color-adjust: exact; background: #fff; }
-                /* Жесткая фиксация под 1 страницу A4 */
-                .outer-border { border: 3px solid #000; height: 277mm; display: flex; flex-direction: column; box-sizing: border-box; overflow: hidden; }
-                .header { display: flex; border-bottom: 3px solid #000; padding: 10px 15px; }
-                .header-left { flex: 1; display: flex; flex-direction: column; justify-content: center; }
-                .proj-name { font-size: 10pt; font-weight: 800; color: #555; text-transform: uppercase; }
-                .proj-num { font-size: 30pt; font-weight: 900; line-height: 0.9; letter-spacing: -1px; margin-top: 4px; }
-                .meta-table { width: 180px; font-size: 7.5pt; font-weight: 800; border-left: 2px solid #eee; padding-left: 10px; }
-                .meta-row { display: flex; justify-content: space-between; border-bottom: 0.5px solid #ddd; padding: 2px 0; }
-                .meta-row:last-child { border-bottom: none; }
-                .meta-label { color: #888; text-transform: uppercase; font-size: 6.5pt; }
-                .category-bar { background: #000; color: #fff; font-weight: 900; padding: 4px 15px; font-size: 9pt; text-transform: uppercase; }
-                /* Компактные строки для вместимости до 30 штук */
-                .tool-item { display: flex; justify-content: space-between; align-items: center; padding: 3px 15px; border-bottom: 1.5px solid #000; box-sizing: border-box; }
-                .tool-content { flex: 1; }
-                .tool-title { font-size: 9pt; font-weight: 800; text-transform: uppercase; line-height: 1.1; }
-                .tool-desc { font-size: 6.5pt; font-weight: 600; color: #444; text-transform: uppercase; margin-top: 2px; }
-                .tool-id { font-size: 12pt; font-weight: 900; text-align: right; width: 100px; }
-                .empty-fill { flex: 1; }
+                * { box-sizing: border-box; -webkit-print-color-adjust: exact; }
+                body { font-family: 'Inter', sans-serif; margin: 0; padding: 10mm; background: #fff; }
+                .outer-border { 
+                    border: 3.5px solid #000; 
+                    height: 277mm; 
+                    display: flex; 
+                    flex-direction: column; 
+                    overflow: hidden; 
+                }
+                .header { display: flex; border-bottom: 3.5px solid #000; padding: 10px 15px; align-items: center; }
+                .h-left { flex: 1; }
+                .p-name { font-size: 10pt; font-weight: 700; color: #666; text-transform: uppercase; }
+                .p-num { font-size: 32pt; font-weight: 900; line-height: 0.9; margin-top: 4px; letter-spacing: -1px; }
+                .meta { width: 170px; font-size: 7.5pt; font-weight: 800; border-left: 2px solid #000; padding-left: 12px; }
+                .m-row { display: flex; justify-content: space-between; border-bottom: 0.5px solid #ddd; padding: 2px 0; }
+                .cat { background: #000; color: #fff; font-weight: 900; padding: 5px 15px; font-size: 9pt; text-transform: uppercase; }
+                .t-row { display: flex; justify-content: space-between; align-items: center; padding: 4px 15px; border-bottom: 1.5px solid #000; min-height: 34px; }
+                .t-title { font-size: 9.5pt; font-weight: 800; text-transform: uppercase; }
+                .t-sub { font-size: 7pt; font-weight: 600; color: #444; margin-top: 1px; }
+                .t-nr { font-size: 13pt; font-weight: 900; text-align: right; min-width: 80px; }
+                .fill { flex: 1; }
             </style></head><body><div class="outer-border">
                 <div class="header">
-                    <div class="header-left">
-                        <div class="proj-name">${esc(p.name)}</div>
-                        <div class="proj-num">${esc(p.num)}</div>
-                    </div>
-                    <div class="meta-table">
-                        <div class="meta-row"><span class="meta-label">MAT</span><span>${esc(p.mat)||'--'}</span></div>
-                        <div class="meta-row"><span class="meta-label">LZF</span><span>${esc(p.lzf)||'--'}</span></div>
-                        <div class="meta-row"><span class="meta-label">SÄGE</span><span>${esc(p.slg||p.sag)||'--'}</span></div>
-                        <div class="meta-row"><span class="meta-label">ABST</span><span>${esc(p.abs)||'--'}</span></div>
-                        <div class="meta-row"><span class="meta-label">STK</span><span>${esc(p.stk)||'--'}</span></div>
+                    <div class="h-left"><div class="p-name">${esc(p.name)}</div><div class="p-num">${esc(p.num)}</div></div>
+                    <div class="meta">
+                        <div class="m-row"><span>MAT</span><span>${esc(p.mat)}</span></div>
+                        <div class="m-row"><span>LZF</span><span>${esc(p.lzf)}</span></div>
+                        <div class="m-row"><span>SÄGE</span><span>${esc(p.sag)}</span></div>
+                        <div class="m-row"><span>ABST</span><span>${esc(p.abs)}</span></div>
+                        <div class="m-row"><span>STK</span><span>${esc(p.stk)}</span></div>
                     </div>
                 </div>`;
-
-            const addGrp = (title, list) => {
-                if(!list.length) return;
-                html += `<div class="category-bar">${title}</div>`;
-                list.forEach(t => {
-                    const tID = t.id || t.bem || '';
-                    const tSTD = t.hasOwnProperty('isStd') ? t.isStd : (t.isStandart || false);
-                    html += `<div class="tool-item">
-                        <div class="tool-content">
-                            <div class="tool-title">${esc(t.nm)}</div>
-                            <div class="tool-desc">${tSTD ? esc(t.loc || 'LAGER') : 'SONDER (BLAUKISTE)'} ${t.kom ? ' | ' + esc(t.kom) : ''}</div>
-                        </div>
-                        <div class="tool-id">${esc(tID)}</div>
+            
+            const add = (title, arr) => {
+                if(!arr.length) return;
+                html += `<div class="cat">${title}</div>`;
+                arr.forEach(t => {
+                    html += `<div class="t-row">
+                        <div><div class="t-title">${esc(t.nm)}</div><div class="t-sub">${t.isStandart ? 'LAGER: '+esc(t.loc) : 'SONDER (BLAUKISTE)'}${t.kom?' | '+esc(t.kom):''}</div></div>
+                        <div class="t-nr">${esc(t.bem)}</div>
                     </div>`;
                 });
             };
 
-            addGrp('Sonderwerkzeuge', sonder);
-            addGrp('Standartwerkzeuge', std);
-            html += `<div class="empty-fill"></div></div><script>setTimeout(()=>window.print(),500)<\/script></body></html>`;
-            
-            const w = window.open();
-            w.document.write(html);
-            w.document.close();
+            add('Sonderwerkzeuge', sonder);
+            add('Standartwerkzeuge', std);
+            html += `<div class="fill"></div></div><script>setTimeout(()=>window.print(),500)<\/script></body></html>`;
+            const w = window.open(); w.document.write(html); w.document.close();
         }
-        
-        window.onload = () => { 
-            checkDemo(); 
-            renderProjects(); 
-        };
+
+        window.onload = renderProjects;
     </script>
 </body>
 </html>
