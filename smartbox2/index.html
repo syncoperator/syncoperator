@@ -104,11 +104,10 @@
     </div>
 
     <script>
-        const DB_KEY = 'SMARTBOX_FINAL_V4'; // Changed key to force fresh demo load
+        const DB_KEY = 'SMARTBOX_FINAL_V5'; 
         let db = JSON.parse(localStorage.getItem(DB_KEY)) || [];
         let currentIdx = null;
         
-        // Bulletproof string escape for older iOS Safari (No replaceAll)
         const esc = s => (s ? String(s) : '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
         const save = () => localStorage.setItem(DB_KEY, JSON.stringify(db));
 
@@ -133,7 +132,14 @@
                     {"bem": "T0303", "nm": "STECHSTAHL 3MM G55", "isStandart": true, "loc": "REVOLVER UNTEN"},
                     {"bem": "T0404", "nm": "STECHST.TUNGALOY 2MM G55", "isStandart": true, "loc": "REVOLVER UNTEN"},
                     {"bem": "T0707", "nm": "ZETRBO D8 G55", "isStandart": true, "loc": "REVOLVER UNTEN"},
-                    {"bem": "T1010", "nm": "ABSTECHST.3MM RECHTS G54", "isStandart": true, "loc": "REVOLVER UNTEN"}
+                    {"bem": "T1010", "nm": "ABSTECHST.3MM RECHTS G54", "isStandart": true, "loc": "REVOLVER UNTEN"},
+                    // Доп. инструменты для проверки вместимости 25 позиций
+                    {"bem": "T1313", "nm": "GEWINDEBOHRER M8 G54", "isStandart": true, "loc": "REVOLVER OBEN"},
+                    {"bem": "T1414", "nm": "FASENFRAESER D12 G55", "isStandart": true, "loc": "REVOLVER UNTEN"},
+                    {"bem": "T1515", "nm": "REIBUELE D6 H7 G54", "isStandart": true, "loc": "REVOLVER OBEN"},
+                    {"bem": "T1616", "nm": "PLANFRAESER D40 G55", "isStandart": false, "kom": "SONDER"},
+                    {"bem": "T1717", "nm": "INNENDREHST. D16 G54", "isStandart": true, "loc": "REVOLVER OBEN"},
+                    {"bem": "T1818", "nm": "MESSTASTER RENISHAW", "isStandart": false, "kom": "SONDER"}
                 ]}];
                 save();
             }
@@ -221,7 +227,6 @@
                 const tID = t.bem || t.id || ''; 
                 const tSTD = t.isStandart || t.isStd || false;
                 
-                // T-NR small on top, Description large below (as requested in user settings)
                 return `
                 <div class="tool-card" onclick="modalT(${i})">
                     <div style="flex:1">
@@ -330,22 +335,24 @@
             
             let html = `<html><head><style>
                 @page { size: A4; margin: 0; }
-                body { font-family: 'Inter', sans-serif; margin: 0; padding: 10mm; -webkit-print-color-adjust: exact; }
-                .outer-border { border: 3px solid #000; min-height: 275mm; display: flex; flex-direction: column; box-sizing: border-box; }
-                .header { display: flex; border-bottom: 3px solid #000; padding: 15px 20px; }
-                .header-left { flex: 1; }
-                .proj-name { font-size: 11pt; font-weight: 800; color: #555; text-transform: uppercase; }
-                .proj-num { font-size: 44pt; font-weight: 900; line-height: 0.9; letter-spacing: -2px; }
-                .meta-table { width: 200px; font-size: 8.5pt; font-weight: 800; border-left: 2px solid #eee; padding-left: 15px; }
+                body { font-family: 'Inter', sans-serif; margin: 0; padding: 10mm; -webkit-print-color-adjust: exact; background: #fff; }
+                /* Жесткая фиксация под 1 страницу A4 */
+                .outer-border { border: 3px solid #000; height: 277mm; display: flex; flex-direction: column; box-sizing: border-box; overflow: hidden; }
+                .header { display: flex; border-bottom: 3px solid #000; padding: 10px 15px; }
+                .header-left { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+                .proj-name { font-size: 10pt; font-weight: 800; color: #555; text-transform: uppercase; }
+                .proj-num { font-size: 30pt; font-weight: 900; line-height: 0.9; letter-spacing: -1px; margin-top: 4px; }
+                .meta-table { width: 180px; font-size: 7.5pt; font-weight: 800; border-left: 2px solid #eee; padding-left: 10px; }
                 .meta-row { display: flex; justify-content: space-between; border-bottom: 0.5px solid #ddd; padding: 2px 0; }
                 .meta-row:last-child { border-bottom: none; }
-                .meta-label { color: #888; text-transform: uppercase; font-size: 7.5pt; }
-                .category-bar { background: #000; color: #fff; font-weight: 900; padding: 6px 20px; font-size: 11pt; text-transform: uppercase; }
-                .tool-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; border-bottom: 1.5px solid #000; page-break-inside: avoid; }
+                .meta-label { color: #888; text-transform: uppercase; font-size: 6.5pt; }
+                .category-bar { background: #000; color: #fff; font-weight: 900; padding: 4px 15px; font-size: 9pt; text-transform: uppercase; }
+                /* Компактные строки для вместимости до 30 штук */
+                .tool-item { display: flex; justify-content: space-between; align-items: center; padding: 3px 15px; border-bottom: 1.5px solid #000; box-sizing: border-box; }
                 .tool-content { flex: 1; }
-                .tool-title { font-size: 14pt; font-weight: 800; text-transform: uppercase; }
-                .tool-desc { font-size: 8.5pt; font-weight: 600; color: #444; text-transform: uppercase; margin-top: 2px; }
-                .tool-id { font-size: 20pt; font-weight: 900; text-align: right; width: 120px; }
+                .tool-title { font-size: 9pt; font-weight: 800; text-transform: uppercase; line-height: 1.1; }
+                .tool-desc { font-size: 6.5pt; font-weight: 600; color: #444; text-transform: uppercase; margin-top: 2px; }
+                .tool-id { font-size: 12pt; font-weight: 900; text-align: right; width: 100px; }
                 .empty-fill { flex: 1; }
             </style></head><body><div class="outer-border">
                 <div class="header">
