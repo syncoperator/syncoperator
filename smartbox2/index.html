@@ -14,13 +14,10 @@
         .project-card{background:var(--card);border-radius:20px;margin:12px 16px;padding:20px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 2px 8px rgba(0,0,0,0.05)}
         .p-num-big{font-size:28px;font-weight:900;letter-spacing:-1px}
         .p-name-sub{font-size:11px;font-weight:700;color:var(--sub);text-transform:uppercase}
-        
-        /* UI КАРТОЧКА (DESIGN LIGHT PREMIUM) */
         .tool-card{background:var(--card);border-radius:16px;margin:8px 16px;padding:14px;display:flex;justify-content:space-between;align-items:center}
         .t-label-min{font-size:9px;font-weight:900;color:var(--sub);text-transform:uppercase}
         .t-val-main{font-size:20px;font-weight:900;line-height:1}
         .t-name-sub{font-size:13px;font-weight:700}
-        
         .tag{font-size:9px;font-weight:900;padding:3px 8px;border-radius:5px;margin-top:5px;display:inline-block;text-transform:uppercase}
         .tag-sonder{background:#fff2e8;color:#ff9500}
         .tag-std{background:#e8f2ff;color:#007aff}
@@ -34,11 +31,6 @@
         .btn-toggle{background:#f2f2f7;padding:14px;border-radius:12px;text-align:center;font-weight:800;margin:8px 0;cursor:pointer}
         .btn-toggle.active{background:#34c759;color:#fff}
         #list-t{padding-bottom:200px}
-
-        /* PDF СТИЛИ (ЭФФЕКТ РАМКИ) */
-        @media print {
-            .no-print { display: none !important; }
-        }
     </style>
 </head>
 <body>
@@ -76,8 +68,7 @@
         const esc = s => String(s ?? '').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');
         const save = () => localStorage.setItem(DB_KEY, JSON.stringify(db));
 
-        // Функции навигации и рендера UI (без изменений)
-        function checkDemo(){ if(db.length===0){ db=[{"num":"230947","name":"EINSCHRAUBNIPPEL DN10","lzf":"4Min 45Sek","mat":"1.4104 ⌀30","slg":"1003mm","abs":"0.5mm","grf":"18-25","stk":"100","tools":[{"bem":"T0101","nm":"KOPIERST. NEGATIV R0.8","isStandart":true,"loc":"FACH A","kom":"DNMG150608"}]}]; save(); } }
+        function checkDemo() { if (db.length === 0) { db = [{ "num": "230947", "name": "EINSCHRAUBNIPPEL DN10", "lzf": "4Min 45Sek", "mat": "1.4104 ⌀30", "slg": "1003mm", "abs": "0.5mm", "grf": "18-25", "stk": "100", "tools": [{"bem": "T0101", "nm": "KOPIERSTAHL NEGATIV R0.8 G54", "isStandart": true, "loc": "FACH A", "kom": "DNMG150608"}] }]; save(); } }
         function renderProjects(){ plist.innerHTML = db.map((p,i)=>`<div class="project-card" onclick="openProject(${i})"><div><div class="p-name-sub">${esc(p.name)}</div><div class="p-num-big">${esc(p.num)}</div></div><div style="color:#ccc">→</div></div>`).join(''); }
         function openProject(i){ currentIdx=i; document.getElementById('v-home').style.display='none'; document.getElementById('v-det').style.display='block'; detName.textContent=db[i].name; detNum.textContent=db[i].num; renderTools(); }
         function goHome(){ currentIdx=null; document.getElementById('v-home').style.display='block'; document.getElementById('v-det').style.display='none'; renderProjects(); }
@@ -93,97 +84,78 @@
         function exportJSON(){ imp.value=JSON.stringify(db,null,2); }
         function importJSON(){ try{ db=JSON.parse(imp.value); save(); location.reload(); }catch{ alert('Error'); } }
 
-        // --- ГЕНЕРАЦИЯ PDF С ЖИРНОЙ РАМКОЙ ---
         function makePDF(){
             const p=db[currentIdx]; const tools=p.tools||[];
             const sonder=tools.filter(t=>!(t.hasOwnProperty('isStd')?t.isStd:(t.isStandart||false)));
             const std=tools.filter(t=>(t.hasOwnProperty('isStd')?t.isStd:(t.isStandart||false)));
-
             let html=`<html><head><style>
                 @page { size: A4; margin: 10mm; }
-                body { font-family: 'Inter', Arial, sans-serif; margin: 0; padding: 0; color: #000; }
+                body { font-family: sans-serif; margin: 0; padding: 0; color: #000; }
+                table { width: 100%; border-collapse: collapse; border: none; table-layout: fixed; }
+                td { border: none !important; padding: 4px 0; vertical-align: top; }
                 
-                /* ГЛАВНАЯ РАМА 3px */
-                .page-frame { 
-                    width: 100%; border-collapse: collapse; 
-                    border: 3px solid #000; table-layout: fixed; 
-                }
+                /* ШАПКА БЕЗ РАМОК */
+                .h-title-box { padding-bottom: 20px; }
+                .p-name { font-size: 12px; font-weight: 700; color: #666; text-transform: uppercase; }
+                .p-num { font-size: 40px; font-weight: 900; line-height: 1; margin-top: 5px; }
                 
-                .page-frame td { border: 1.5px solid #000; vertical-align: middle; }
-                
-                /* ШАПКА */
-                .header-cell { padding: 15px; border-bottom: 3px solid #000 !important; }
-                .p-name { font-size: 11pt; font-weight: 800; text-transform: uppercase; color: #444; margin-bottom: 2px; }
-                .p-num { font-size: 52pt; font-weight: 900; line-height: 0.8; letter-spacing: -3px; }
-                
-                /* МЕТА-БОКС СПРАВА */
-                .meta-box { width: 220px; padding: 0 !important; border-bottom: 3px solid #000 !important; }
-                .meta-table { width: 100%; border-collapse: collapse; font-size: 9pt; font-weight: 900; }
-                .meta-table td { border: none !important; border-bottom: 1px solid #000 !important; padding: 4px 10px; }
-                .meta-table tr:last-child td { border-bottom: none !important; }
-                .meta-label { color: #666; font-size: 8pt; }
+                /* МЕТА ДАННЫЕ */
+                .meta-table { width: 100%; font-size: 10px; font-weight: 600; margin-top: 10px; }
+                .meta-table td { padding: 2px 0; border-bottom: 1px solid #eee !important; }
+                .meta-label { color: #888; width: 80px; }
 
-                /* КАТЕГОРИИ (SONDER / STANDART) */
-                .cat-row { background: #000 !important; color: #fff !important; font-weight: 900; text-align: center; font-size: 13pt; padding: 8px !important; text-transform: uppercase; }
+                /* ЗАГОЛОВКИ КАТЕГОРИЙ */
+                .cat-head { font-size: 14px; font-weight: 900; text-transform: uppercase; padding: 20px 0 10px 0 !important; border-bottom: 2px solid #000 !important; }
                 
-                /* ЗАГОЛОВКИ КОЛОНОК */
-                .th-row { background: #f0f0f0; font-size: 8.5pt; font-weight: 900; text-transform: uppercase; }
-                .th-row td { padding: 6px 12px !important; border-bottom: 2px solid #000 !important; }
-
                 /* СТРОКИ ИНСТРУМЕНТОВ */
-                .t-row td { padding: 8px 12px; font-size: 11pt; border-bottom: 1.5px solid #000; }
-                .t-name { font-weight: 800; font-size: 13pt; text-transform: uppercase; display: block; }
-                .t-kom { font-size: 9pt; font-weight: 600; color: #333; display: block; margin-top: 2px; }
-                .t-id { font-size: 18pt; font-weight: 900; text-align: right; }
+                .t-row td { padding: 10px 0; border-bottom: 1px solid #eee !important; }
+                .t-name { font-weight: 800; font-size: 14px; text-transform: uppercase; display: block; }
+                .t-info { font-size: 9px; color: #666; font-weight: 600; margin-top: 2px; }
+                .t-id { font-size: 18px; font-weight: 900; text-align: right; vertical-align: middle; }
 
                 tr { page-break-inside: avoid; }
             </style></head><body>
             
-            <table class="page-frame">
-                <thead>
-                    <tr>
-                        <td class="header-cell">
-                            <div class="p-name">${esc(p.name)}</div>
-                            <div class="p-num">${esc(p.num)}</div>
-                        </td>
-                        <td class="meta-box">
-                            <table class="meta-table">
-                                <tr><td class="meta-label">MATERIAL</td><td style="text-align:right">${esc(p.mat)||'--'}</td></tr>
-                                <tr><td class="meta-label">LAUFZEIT</td><td style="text-align:right">${esc(p.lzf)||'--'}</td></tr>
-                                <tr><td class="meta-label">SÄGELÄNGE</td><td style="text-align:right">${esc(p.slg||p.sag)||'--'}</td></tr>
-                                <tr><td class="meta-label">ABSTAND</td><td style="text-align:right">${esc(p.abs)||'--'}</td></tr>
-                                <tr><td class="meta-label">GREIFER</td><td style="text-align:right">${esc(p.grf)||'--'}</td></tr>
-                                <tr><td class="meta-label">STOCK</td><td style="text-align:right">${esc(p.stk)||'--'}</td></tr>
-                            </table>
-                        </td>
-                    </tr>
-                </thead>
-                <tbody>`;
+            <table>
+                <tr>
+                    <td class="h-title-box">
+                        <div class="p-name">${esc(p.name)}</div>
+                        <div class="p-num">${esc(p.num)}</div>
+                    </td>
+                    <td style="width:200px">
+                        <table class="meta-table">
+                            <tr><td class="meta-label">MAT</td><td style="text-align:right">${esc(p.mat)||'--'}</td></tr>
+                            <tr><td class="meta-label">LZF</td><td style="text-align:right">${esc(p.lzf)||'--'}</td></tr>
+                            <tr><td class="meta-label">SÄGE</td><td style="text-align:right">${esc(p.slg||p.sag)||'--'}</td></tr>
+                            <tr><td class="meta-label">STOCK</td><td style="text-align:right">${esc(p.stk)||'--'}</td></tr>
+                        </table>
+                    </td>
+                </tr>
+            </table>`;
 
-            const drawGroup = (title, list) => {
+            const addGrp=(title,list)=>{
                 if(!list.length) return;
-                html += `<tr><td colspan="2" class="cat-row">${title}</td></tr>`;
-                html += `<tr class="th-row"><td>WERKZEUGNAME / KOMMENTAR</td><td style="width:100px; text-align:right">T-NR</td></tr>`;
-                list.forEach(t => {
-                    const tID = t.id || t.bem || '';
-                    const tSTD = t.hasOwnProperty('isStd') ? t.isStd : (t.isStandart || false);
+                html += `<table><tr><td class="cat-head">${title}</td><td class="cat-head" style="width:80px; text-align:right">T-NR</td></tr>`;
+                list.forEach(t=>{
+                    const tID=t.id||t.bem||''; 
+                    const tSTD=t.hasOwnProperty('isStd')?t.isStd:(t.isStandart||false);
                     html += `<tr class="t-row">
                         <td>
                             <span class="t-name">${esc(t.nm)}</span>
-                            <span class="t-kom">${tSTD ? 'LAGER: '+esc(t.loc) : 'IN BLAUKISTE'} ${t.kom ? ' | '+esc(t.kom) : ''}</span>
+                            <span class="t-info">${tSTD?'LAGER: '+esc(t.loc||'--'):'SONDER (BLAUKISTE)'} ${t.kom?' | '+esc(t.kom):''}</span>
                         </td>
                         <td class="t-id">${esc(tID)}</td>
                     </tr>`;
                 });
+                html += `</table>`;
             };
 
-            drawGroup('Sonderwerkzeuge', sonder);
-            drawGroup('Standartwerkzeuge', std);
+            addGrp('Sonderwerkzeuge', sonder);
+            addGrp('Standartwerkzeuge', std);
 
-            html += `</tbody></table><script>setTimeout(()=>window.print(),500)<\/script></body></html>`;
+            html += `<script>setTimeout(()=>window.print(),500)<\/script></body></html>`;
             const w=window.open(); w.document.write(html); w.document.close();
         }
-
         window.onload=()=>{ checkDemo(); renderProjects(); };
     </script>
 </body>
