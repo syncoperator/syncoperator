@@ -11,11 +11,11 @@
         header{background:rgba(255,255,255,.8);backdrop-filter:blur(20px);padding:15px 20px;position:sticky;top:0;z-index:1000;display:flex;justify-content:space-between;align-items:center;border-bottom:.5px solid rgba(0,0,0,.1)}
         .h-title{font-weight:900;font-size:22px}
         .h-title span{color:var(--accent)}
-        
         .project-card{background:var(--card);border-radius:20px;margin:12px 16px;padding:20px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 2px 8px rgba(0,0,0,0.05)}
         .p-num-big{font-size:28px;font-weight:900;letter-spacing:-1px}
         .p-name-sub{font-size:11px;font-weight:700;color:var(--sub);text-transform:uppercase}
         
+        /* LIGHT PREMIUM TOOL CARD */
         .tool-card{background:var(--card);border-radius:16px;margin:8px 16px;padding:14px;display:flex;justify-content:space-between;align-items:center}
         .t-label-min{font-size:9px;font-weight:900;color:var(--sub);text-transform:uppercase}
         .t-val-main{font-size:20px;font-weight:900;line-height:1}
@@ -36,8 +36,7 @@
         .btn-save{background:var(--text);color:#fff;width:100%;padding:16px;border:none;border-radius:14px;font-weight:700;margin-top:10px;font-size:16px}
         .btn-toggle{background:#f2f2f7;padding:14px;border-radius:12px;text-align:center;font-weight:800;margin:8px 0;cursor:pointer}
         .btn-toggle.active{background:#34c759;color:#fff}
-        
-        #list-t { padding-bottom: 200px; } /* Предотвращение перекрытия */
+        #list-t { padding-bottom: 200px; }
     </style>
 </head>
 <body>
@@ -69,19 +68,30 @@
     <div id="mi" class="modal" onclick="if(event.target==this)this.style.display='none'"><div class="modal-content"><textarea id="imp" rows="10"></textarea><div style="display:grid; grid-template-columns:1fr 1fr; gap:10px"><button class="btn-save" style="background:#f2f2f7;color:#000" onclick="exportJSON()">EXPORT</button><button class="btn-save" onclick="importJSON()">IMPORT</button></div></div></div>
 
     <script>
-        const DB_KEY = 'SMARTBOX_ULTIMATE_V1';
+        const DB_KEY = 'SMARTBOX_V_PREMIUM';
         let db = JSON.parse(localStorage.getItem(DB_KEY)) || [];
         let currentIdx = null;
         const esc = s => String(s ?? '').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');
         const save = () => localStorage.setItem(DB_KEY, JSON.stringify(db));
 
+        [span_3](start_span)[span_4](start_span)[span_5](start_span)// ДЕМО ДАННЫЕ ИЗ PDF[span_3](end_span)[span_4](end_span)[span_5](end_span)
         function checkDemo() {
             if (db.length === 0) {
-                db = [{ "num": "230947", "name": "EINSCHRAUBNIPPEL DN10", "lzf": "4Min 45Sek", "mat": "1.4104 ⌀30", "slg": "1003mm", "abs": "0.5mm", "grf": "18-25", "stk": "100", "tools": [
-                    {"id": "T0707", "nm": "A-GEWINDESTAHL M29X1.5 G54", "isStd": false, "kom": "SONDER (BLAUKISTE)"},
-                    {"id": "T0101", "nm": "KOPIERSTAHL NEGATIV R0.8 G54", "isStd": true, "loc": "FACH A", "kom": "DNMG150608-NMT"},
-                    {"id": "T0202", "nm": "DREHBOHRER D18 G54", "isStd": true, "loc": ""}
-                ]}];
+                db = [{ 
+                    "num": "230947", 
+                    "name": "EINSCHRAUBNIPPEL DN10", 
+                    "lzf": "4Min 45Sek", 
+                    "mat": "1.4104 30", 
+                    "slg": "1003mm", 
+                    "abs": "0.5mm", 
+                    "grf": "18-25", 
+                    "stk": "100", 
+                    "tools": [
+                        {"id": "T0707", "nm": "A-GEWINDESTAHL M29X1.5 G54", "isStd": false, "kom": "SONDER (BLAUKISTE)"},
+                        {"id": "T0101", "nm": "KOPIERSTAHL NEGATIV R0.8 G54", "isStd": true, "loc": "FACH A", "kom": "DNMG150608-NMT"},
+                        {"id": "T0202", "nm": "DREHBOHRER D18 G54", "isStd": true, "loc": "REVOLVER OBEN"}
+                    ]
+                }];
                 save();
             }
         }
@@ -95,20 +105,18 @@
             pnum.value=p.num||''; pname.value=p.name||''; plzf.value=p.lzf||''; pmat.value=p.mat||''; psag.value=p.slg||p.sag||''; pabs.value=p.abs||''; pgrf.value=p.grf||''; pstk.value=p.stk||'';
             delP.style.display=edit?'block':'none'; mp.style.display='flex';
         }
-
         function saveP(){
             const i=pidx.value; const data={ num:pnum.value, name:pname.value.toUpperCase(), lzf:plzf.value, mat:pmat.value, sag:psag.value, abs:pabs.value, grf:pgrf.value, stk:pstk.value, tools:i===''?[]:(db[i].tools||[]) };
             if(i==='') db.push(data); else db[i]=data; save(); mp.style.display='none'; renderProjects(); if(i!=='') openProject(i);
         }
-
         function delProject(){ if(confirm('Löschen?')){ db.splice(currentIdx,1); save(); goHome(); mp.style.display='none'; } }
 
         function renderTools(){
             const list=db[currentIdx].tools||[];
             document.getElementById('list-t').innerHTML = list.map((t,i)=>{
                 const tID=t.id||t.bem||''; const tSTD=t.hasOwnProperty('isStd')?t.isStd:(t.isStandart||false);
-                return `<div class="tool-card" onclick="modalT(${i})"><div style="flex:1"><div class="t-label-min">BEMERKUNG</div><div class="t-val-main">${esc(tID)}</div><div class="t-name-sub">${esc(t.nm)}</div><div class="tag ${tSTD?'tag-std':'tag-sonder'}">${tSTD?'STANDART | '+esc(t.loc||''):'SONDER'}</div></div><div style="display:flex; flex-direction:column; gap:5px"><button class="btn-icon" onclick="event.stopPropagation();moveTool(${i},-1)">↑</button><button class="btn-icon" onclick="event.stopPropagation();moveTool(${i},1)">↓</button></div></div>`
-            }).join('') + '<div style="height:120px"></div>';
+                return `<div class="tool-card" onclick="modalT(${i})"><div style="flex:1"><div class="t-label-min">T-NR</div><div class="t-val-main">${esc(tID)}</div><div class="t-name-sub">${esc(t.nm)}</div><div class="tag ${tSTD?'tag-std':'tag-sonder'}">${tSTD?'STANDART | '+esc(t.loc||''):'SONDER'}</div></div><div style="display:flex; flex-direction:column; gap:5px"><button class="btn-icon" onclick="event.stopPropagation();moveTool(${i},-1)">↑</button><button class="btn-icon" onclick="event.stopPropagation();moveTool(${i},1)">↓</button></div></div>`
+            }).join('') + '<div style="height:150px"></div>';
         }
 
         function modalT(i=null){
@@ -118,19 +126,18 @@
             tstd.classList.toggle('active',tSTD); tstd.textContent=tSTD?'STANDART (STORAGE)':'SONDER (BLAUKISTE)';
             delT.style.display=edit?'block':'none'; mt.style.display='flex';
         }
-
         function saveT(){
             const i=tidx.value; const t={ id:tid.value.toUpperCase(), nm:tnm.value.toUpperCase(), isStd:tstd.classList.contains('active'), loc:tloc.value.toUpperCase(), kom:tkom.value.toUpperCase() };
             if(!db[currentIdx].tools) db[currentIdx].tools=[]; if(i==='') db[currentIdx].tools.push(t); else db[currentIdx].tools[i]=t;
             save(); mt.style.display='none'; renderTools();
         }
-
         function deleteTool(){ db[currentIdx].tools.splice(tidx.value,1); save(); mt.style.display='none'; renderTools(); }
         function moveTool(i,d){ const arr=db[currentIdx].tools; const n=i+d; if(n>=0 && n<arr.length){ [arr[i],arr[n]]=[arr[n],arr[i]]; save(); renderTools(); } }
         function openImport(){ imp.value=JSON.stringify(db); mi.style.display='flex'; }
         function exportJSON(){ imp.value=JSON.stringify(db,null,2); }
         function importJSON(){ try{ db=JSON.parse(imp.value); save(); location.reload(); }catch{ alert('Error'); } }
 
+        // PDF ГЕНЕРАЦИЯ С ФИКСИРОВАННОЙ РАМКОЙ
         function makePDF(){
             const p=db[currentIdx]; const tools=p.tools||[];
             const sonder=tools.filter(t=>!(t.hasOwnProperty('isStd')?t.isStd:(t.isStandart||false)));
@@ -140,93 +147,92 @@
                 @page { size: A4; margin: 0; }
                 body { font-family: 'Inter', sans-serif; margin: 0; padding: 10mm; color: #000; box-sizing: border-box; }
                 
-                .page-border { 
-                    border: 3px solid #000; 
+                .pdf-frame { 
+                    border: 3.5px solid #000; 
                     min-height: calc(297mm - 20mm); 
                     display: flex; 
                     flex-direction: column; 
                     box-sizing: border-box;
                 }
 
-                .header-box {
-                    display: flex;
-                    justify-content: space-between;
-                    padding: 15px 20px;
-                    border-bottom: 3px solid #000;
-                }
-
-                .p-info { flex: 1; }
-                .p-name-pdf { font-size: 11pt; font-weight: 800; text-transform: uppercase; color: #555; }
-                .p-num-pdf { font-size: 46pt; font-weight: 900; line-height: 0.8; letter-spacing: -2.5px; margin-top: 5px; }
-
-                .meta-box { width: 220px; font-size: 9pt; font-weight: 700; }
-                .meta-row { display: flex; justify-content: space-between; border-bottom: 1px solid #eee; padding: 3px 0; }
-                .meta-label { color: #888; text-transform: uppercase; font-size: 7.5pt; }
-
-                .cat-title { background: #000; color: #fff; font-weight: 900; text-transform: uppercase; padding: 8px 20px; font-size: 12pt; }
-                
-                .col-heads { 
+                .p-header { 
                     display: flex; 
                     justify-content: space-between; 
-                    padding: 4px 20px; 
-                    font-size: 8pt; 
+                    padding: 20px; 
+                    border-bottom: 3.5px solid #000; 
+                }
+                .p-title-side { flex: 1; }
+                .p-name { font-size: 11pt; font-weight: 800; text-transform: uppercase; color: #555; margin: 0; }
+                .p-num { font-size: 52pt; font-weight: 900; line-height: 0.85; letter-spacing: -3px; margin: 5px 0 0 0; }
+
+                .p-meta { width: 220px; font-size: 9.5pt; font-weight: 800; }
+                .meta-l { display: flex; justify-content: space-between; border-bottom: 1px solid #eee; padding: 3px 0; }
+                .meta-tag { color: #888; text-transform: uppercase; font-size: 8pt; }
+
+                .section-bar { background: #000; color: #fff; font-weight: 900; text-transform: uppercase; padding: 10px 20px; font-size: 13pt; }
+                
+                .table-head { 
+                    display: flex; 
+                    justify-content: space-between; 
+                    padding: 5px 20px; 
+                    font-size: 8.5pt; 
                     font-weight: 900; 
-                    background: #f9f9f9; 
-                    border-bottom: 2px solid #000;
+                    background: #f4f4f4; 
+                    border-bottom: 2.5px solid #000;
                 }
 
-                .t-row { 
+                .tool-row { 
                     display: flex; 
                     justify-content: space-between; 
                     align-items: center; 
-                    padding: 10px 20px; 
+                    padding: 14px 20px; 
                     border-bottom: 1.5px solid #000;
                 }
-                .t-desc { flex: 1; text-align: left; }
-                .t-main { font-weight: 800; font-size: 14pt; text-transform: uppercase; }
-                .t-sub { font-size: 9pt; color: #555; font-weight: 600; margin-top: 2px; }
-                .t-nr { font-size: 20pt; font-weight: 900; text-align: right; width: 120px; }
+                .tool-info { flex: 1; text-align: left; }
+                .tool-name { font-weight: 900; font-size: 14.5pt; text-transform: uppercase; }
+                .tool-sub { font-size: 9.5pt; color: #444; font-weight: 700; margin-top: 3px; }
+                .tool-nr { font-size: 24pt; font-weight: 900; text-align: right; width: 130px; }
 
-                .spacer { flex-grow: 1; }
+                .flex-fill { flex-grow: 1; }
             </style></head><body>
             
-            <div class="page-border">
-                <div class="header-box">
-                    <div class="p-info">
-                        <div class="p-name-pdf">${esc(p.name)}</div>
-                        <div class="p-num-pdf">${esc(p.num)}</div>
+            <div class="pdf-frame">
+                <div class="p-header">
+                    <div class="p-title-side">
+                        <p class="p-name">${esc(p.name)}</p>
+                        <p class="p-num">${esc(p.num)}</p>
                     </div>
-                    <div class="meta-box">
-                        <div class="meta-row"><span class="meta-label">MAT</span><span>${esc(p.mat)||'--'}</span></div>
-                        <div class="meta-row"><span class="meta-label">LZF</span><span>${esc(p.lzf)||'--'}</span></div>
-                        <div class="meta-row"><span class="meta-label">SÄGE</span><span>${esc(p.slg||p.sag)||'--'}</span></div>
-                        <div class="meta-row"><span class="meta-label">STOCK</span><span>${esc(p.stk)||'--'}</span></div>
-                        <div class="meta-row" style="border:none"><span class="meta-label">ABST</span><span>${esc(p.abs)||'--'}</span></div>
+                    <div class="p-meta">
+                        <div class="meta-l"><span class="meta-tag">MAT</span><span>${esc(p.mat)||'--'}</span></div>
+                        <div class="meta-l"><span class="meta-tag">LZF</span><span>${esc(p.lzf)||'--'}</span></div>
+                        <div class="meta-l"><span class="meta-tag">SÄGE</span><span>${esc(p.slg||p.sag)||'--'}</span></div>
+                        <div class="meta-l"><span class="meta-tag">STOCK</span><span>${esc(p.stk)||'--'}</span></div>
+                        <div class="meta-l" style="border:none"><span class="meta-tag">ABST</span><span>${esc(p.abs)||'--'}</span></div>
                     </div>
                 </div>`;
 
-            const addSection = (title, list) => {
+            const renderSection = (title, list) => {
                 if(!list.length) return;
-                html += `<div class="cat-title">${title}</div>`;
-                html += `<div class="col-heads"><span>WERKZEUGNAME / KOMMENTAR</span><span>T-NR</span></div>`;
+                html += `<div class="section-bar">${title}</div>`;
+                html += `<div class="table-head"><span>WERKZEUGNAME / KOMMENTAR</span><span>T-NR</span></div>`;
                 list.forEach(t => {
                     const tID = t.id || t.bem || '';
                     const tSTD = t.hasOwnProperty('isStd') ? t.isStd : (t.isStandart || false);
                     html += `
-                    <div class="t-row">
-                        <div class="t-desc">
-                            <div class="t-main">${esc(t.nm)}</div>
-                            <div class="t-sub">${tSTD ? 'LAGER: '+esc(t.loc||'--') : 'SONDER (BLAUKISTE)'} ${t.kom ? ' | '+esc(t.kom) : ''}</div>
+                    <div class="tool-row">
+                        <div class="tool-info">
+                            <div class="tool-name">${esc(t.nm)}</div>
+                            <div class="tool-sub">${tSTD ? 'LAGER: '+esc(t.loc||'--') : 'SONDER (BLAUKISTE)'} ${t.kom ? ' | '+esc(t.kom) : ''}</div>
                         </div>
-                        <div class="t-nr">${esc(tID)}</div>
+                        <div class="tool-nr">${esc(tID)}</div>
                     </div>`;
                 });
             };
 
-            addSection('Sonderwerkzeuge', sonder);
-            addSection('Standartwerkzeuge', std);
+            renderSection('Sonderwerkzeuge', sonder);
+            renderSection('Standartwerkzeuge', std);
 
-            html += `<div class="spacer"></div></div>
+            html += `<div class="flex-fill"></div></div>
                 <script>setTimeout(()=>window.print(),500)<\/script>
             </body></html>`;
             
