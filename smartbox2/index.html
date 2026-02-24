@@ -23,12 +23,12 @@
         .list-item:active { background:#F2F2F7; }
         .list-item b { font-size:20px; display:block; letter-spacing:-0.5px; pointer-events:none; }
         .list-item small { color:var(--sub); font-size:11px; font-weight:700; text-transform:uppercase; pointer-events:none; }
-        .badge-sonder { background:var(--sonder); color:#fff; font-size:9px; font-weight:900; padding:2px 6px; border-radius:4px; text-transform:uppercase; margin-bottom:4px; display:inline-block; }
-        .badge-std { background:#E5E5EA; color:#000; font-size:9px; font-weight:900; padding:2px 6px; border-radius:4px; text-transform:uppercase; margin-bottom:4px; display:inline-block; }
+        .badge-sonder { background:#555; color:#fff; font-size:9px; font-weight:900; padding:2px 6px; border-radius:4px; text-transform:uppercase; margin-bottom:4px; display:inline-block; }
+        .badge-std { background:#E5E5EA; color:#333; font-size:9px; font-weight:900; padding:2px 6px; border-radius:4px; text-transform:uppercase; margin-bottom:4px; display:inline-block; }
         .rev-toggle-btn { margin-top:8px; padding:14px; border-radius:12px; border:2px solid #E5E5EA; text-align:center; font-weight:800; font-size:13px; cursor:pointer; background:#F2F2F7; }
         .rev-toggle-btn.on { background:#000; color:#fff; border-color:#000; }
         .type-toggle-btn { margin-bottom:12px; padding:12px; border-radius:10px; border:2px solid #E5E5EA; text-align:center; font-weight:800; font-size:12px; cursor:pointer; background:#fff; }
-        .type-toggle-btn.is-sonder { border-color:var(--sonder); color:var(--sonder); }
+        .type-toggle-btn.is-sonder { border-color:#000; color:#000; }
         .action-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; padding:16px; }
         .btn-main { padding:14px; border-radius:12px; border:none; font-weight:700; cursor:pointer; }
         .btn-main.primary { background:var(--accent); color:#fff; }
@@ -138,13 +138,13 @@
     <div id="print-container"></div>
 
     <script>
-        const DB_KEY = 'QS_DATA_V2026';
+        const DB_KEY = 'QS_DATA_V2026_FINAL';
         let db = JSON.parse(localStorage.getItem(DB_KEY)) || [];
         let currentIdx = null;
 
         const el = (id) => document.getElementById(id);
         const show = (id) => { if(el(id)) el(id).style.display = 'flex'; };
-        const hide = (id) => { if(el(id)) el(id).style.display = 'none'; };
+        const hide = (id) => { if(el(id)) el(id).style.none = 'none'; el(id).style.display = 'none'; };
 
         function modalP(edit = false) {
             if (!edit) currentIdx = null; 
@@ -193,7 +193,7 @@
                 const item = document.createElement('div');
                 item.className = 'list-item'; item.setAttribute('data-idx', i);
                 const revMark = t.rev ? `<div style="background:#000; color:#fff; font-size:9px; padding:2px 6px; border-radius:4px; margin-bottom:5px; font-weight:900; width:fit-content;">UNTEN START ↓</div>` : '';
-                const typeBadge = t.isSonder ? `<span class="badge-sonder">Sonderwerkzeug (Blaukiste)</span>` : `<span class="badge-std">Standard</span>`;
+                const typeBadge = t.isSonder ? `<span class="badge-sonder">Sonder (Blaukiste)</span>` : `<span class="badge-std">Standard</span>`;
                 item.innerHTML = `
                     <div class="handle" style="cursor:grab; color:#ccc; font-size:24px; padding:10px;">☰</div>
                     <div style="flex:1; min-width:0;" onclick="modalT(${i})">
@@ -282,23 +282,26 @@
                 <div style="border-bottom:4px solid #000; margin-bottom:0px;"></div>`;
 
             const getRow = (t) => {
-                const typeText = t.isSonder ? 'SONDER' : 'STANDARD';
-                const typeColor = t.isSonder ? '#FF9500' : '#8E8E93';
+                const typeText = t.isSonder ? 'Sonderwerkzeug (Blaukiste)' : 'Standard';
                 return `
                 <div style="display:flex; align-items:baseline; border-bottom:1.5px solid #000; padding:10px 0; width:100%;">
                     <div style="width:75px; font-weight:800; font-size:15px;">${t.id}</div>
                     <div style="flex:1; padding-right:10px;">
                         <div style="font-weight:700; font-size:15px; text-transform:uppercase;">${t.nm}</div>
                         <div style="font-size:11px; font-weight:800; margin-top:2px;">
-                            <span style="color:${typeColor}">${typeText}</span>
-                            ${t.bem ? `<span style="color:#D1D1D6; margin:0 4px;">|</span><span style="color:#007AFF;">${t.bem}</span>` : ''}
+                            <span style="color:#000;">${typeText}</span>
+                            ${t.bem ? `<span style="color:#D1D1D6; margin:0 4px;">|</span><span style="color:#000;">${t.bem}</span>` : ''}
                         </div>
                     </div>
                     <div style="width:125px; text-align:right; font-weight:800; font-size:14px; line-height:1.2;">${t.dia.replace('/','<br>')}</div>
                 </div>`;
             };
 
-            let oben = [], unten = []; (p.tools || []).forEach(t => t.rev ? unten.push(t) : oben.push(t));
+            let oben = [], unten = [], reachedUnten = false;
+            (p.tools || []).forEach(t => {
+                if (t.rev) reachedUnten = true;
+                if (reachedUnten) unten.push(t); else oben.push(t);
+            });
 
             let html = `<div style="width:210mm; padding:12mm; background:#fff; font-family:sans-serif; color:#000;">
                 <div style="border:2px solid #000; padding:25px; min-height:265mm; display:flex; flex-direction:column; page-break-after:always;">
@@ -309,6 +312,7 @@
                         ${oben.map(getRow).join('')}
                     </div>
                 </div>`;
+
             if (unten.length > 0) {
                 html += `<div style="border:2px solid #000; padding:25px; min-height:265mm; display:flex; flex-direction:column; margin-top:20px;">
                     ${getPageHead()}
