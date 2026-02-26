@@ -40,7 +40,12 @@
         .field label { display:block; font-size:11px; font-weight:700; color:var(--sub); text-transform:uppercase; margin-bottom:4px; }
         .field input, textarea { width:100%; padding:12px; background:#F2F2F7; border:none; border-radius:10px; font-size:16px; font-weight:600; box-sizing:border-box; font-family:inherit; }
         #print-container { display:none; }
-        @media print { body{background:#fff; overflow:visible;} .view, .overlay{display:none!important;} #print-container{display:block!important;} }
+        @media print { 
+            @page { margin: 0; size: A4; }
+            body { background:#fff; overflow:visible; } 
+            .view, .overlay { display:none!important; } 
+            #print-container { display:block!important; width: 210mm; } 
+        }
     </style>
 </head>
 <body>
@@ -121,8 +126,7 @@
     <script>
         const DB_KEY = 'QS_PREMIUM_FINAL_2026';
         let db = JSON.parse(localStorage.getItem(DB_KEY)) || [];
-        let currentIdx = null;
-        let tEditIdx = null;
+        let currentIdx = null, tEditIdx = null;
 
         const el = (id) => document.getElementById(id);
         const show = (id) => { el(id).style.display = 'flex'; };
@@ -174,9 +178,8 @@
                 <div class="list-item" onclick="modalT(${i})">
                     <div style="flex:1;">
                         ${t.rev ? '<div style="background:#000; color:#fff; font-size:9px; padding:2px 6px; border-radius:4px; margin-bottom:5px; font-weight:900; width:fit-content;">UNTEN START ↓</div>' : ''}
-                        ${t.isSonder ? '<span class="badge-sonder">Sonder (Blaukiste)</span>' : '<span class="badge-std">Standard</span>'}
+                        ${t.isSonder ? '<span class="badge-sonder">Sonder</span>' : '<span class="badge-std">Standard</span>'}
                         <small style="display:block;">${t.id}</small><b>${t.nm}</b>
-                        ${t.bem ? `<div style="font-size:11px; color:var(--accent); font-weight:700;">${t.bem}</div>` : ''}
                     </div>
                 </div>`).join('') + '<div style="height:180px;"></div>';
         }
@@ -192,15 +195,10 @@
                 document.querySelectorAll('#m-t input, #m-t textarea').forEach(i => i.value = '');
                 el('btn-rev-toggle').classList.remove('on'); el('btn-type-toggle').classList.remove('is-sonder');
             }
-            el('btn-type-toggle').innerText = el('btn-type-toggle').classList.contains('is-sonder') ? "SONDERWERKZEUG (BLAUKISTE)" : "STANDARD (LAGER)";
             show('m-t');
         }
 
-        function toggleType() {
-            const b = el('btn-type-toggle'); b.classList.toggle('is-sonder');
-            b.innerText = b.classList.contains('is-sonder') ? "SONDERWERKZEUG (BLAUKISTE)" : "STANDARD (LAGER)";
-        }
-
+        function toggleType() { el('btn-type-toggle').classList.toggle('is-sonder'); }
         el('btn-rev-toggle').onclick = function() { this.classList.toggle('on'); };
 
         function saveT() {
@@ -221,77 +219,58 @@
 
         function makePDF() {
             const p = db[currentIdx];
-            const getHead = () => `
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; min-height:90px;">
-                    <div>
-                        <div style="font-size:16px; font-weight:900; text-transform:uppercase; color:#000;">${p.name}</div>
-                        <div style="font-size:72px; font-weight:900; line-height:0.8; letter-spacing:-3px;">${p.num}</div>
-                    </div>
-                    <div style="width:240px; font-size:12px; font-weight:800; line-height:1.6;">
-                        <div style="display:flex; justify-content:space-between; border-bottom:1.5px solid #000;"><span>LAUFZEIT</span><span>${p.lzf}</span></div>
-                        <div style="display:flex; justify-content:space-between; border-bottom:1.5px solid #000;"><span>MATERIAL</span><span>${p.mat}</span></div>
-                        <div style="display:flex; justify-content:space-between; border-bottom:1.5px solid #000;"><span>SÄGELÄNGE</span><span>${p.sag}</span></div>
-                        <div style="display:flex; justify-content:space-between; border-bottom:1.5px solid #000;"><span>ABSTAND</span><span>${p.abs}</span></div>
-                        <div style="display:flex; justify-content:space-between;"><span>STÜCKZAHL</span><span>${p.stt} / ${p.stn}</span></div>
-                    </div>
-                </div><div style="border-bottom:6px solid #000; margin-bottom:15px;"></div>`;
-
-            const getFoot = () => `
-                <div style="margin-top:auto;">
-                    <div style="border-top:1.5px solid #000; margin-top:10px; padding-top:8px; font-size:11px; font-weight:900; display:flex; justify-content:space-between; letter-spacing:1px;">
-                        <span>QS CENTRAL PREMIUM</span>
-                        <span>CHECKLISTE PRODUKTION</span>
-                    </div>
-                </div>`;
-
-            const tableHead = `
-                <div style="display:flex; font-size:11px; font-weight:900; text-transform:uppercase; margin-bottom:8px;">
-                    <div style="width:90px;">T-NR</div>
-                    <div style="flex:1;">WERKZEUGNAME / KOMMENTAR</div>
-                    <div style="width:130px; text-align:right;">Ø / TOLERANZ</div>
-                </div>
-                <div style="border-bottom:5px solid #000;"></div>`;
-
-            const getRow = (t) => `
-                <div style="display:flex; align-items:center; border-bottom:2px solid #000; padding:14px 0;">
-                    <div style="width:90px; font-weight:900; font-size:20px; display:flex; align-items:center;">${t.id}</div>
-                    <div style="flex:1;">
-                        <div style="font-weight:800; font-size:18px;">${t.nm}</div>
-                        <div style="font-size:12px; font-weight:900; margin-top:3px;">
-                            ${t.isSonder ? 'SONDERWERKZEUG (BLAUKISTE)' : 'STANDARD'}
-                            ${t.bem ? ` | <span style="color:#000;">${t.bem}</span>` : ''}
+            const getLayout = (title, tools) => `
+                <div style="width:210mm; height:297mm; padding:10mm; box-sizing:border-box; background:#fff; page-break-after:always;">
+                    <div style="border:1.5px solid #000; height:100%; padding:25px; box-sizing:border-box; display:flex; flex-direction:column;">
+                        <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:10px; min-height:100px;">
+                            <div>
+                                <div style="font-size:18px; font-weight:900; text-transform:uppercase; color:#000;">${p.name}</div>
+                                <div style="font-size:90px; font-weight:900; line-height:0.8; letter-spacing:-4px; margin-left:-4px;">${p.num}</div>
+                            </div>
+                            <div style="width:250px; font-size:12px; font-weight:800; line-height:1.7;">
+                                <div style="display:flex; justify-content:space-between; border-bottom:1.5px solid #000;"><span>LAUFZEIT</span><span>${p.lzf}</span></div>
+                                <div style="display:flex; justify-content:space-between; border-bottom:1.5px solid #000;"><span>MATERIAL</span><span>${p.mat}</span></div>
+                                <div style="display:flex; justify-content:space-between; border-bottom:1.5px solid #000;"><span>SÄGELÄNGE</span><span>${p.sag}</span></div>
+                                <div style="display:flex; justify-content:space-between; border-bottom:1.5px solid #000;"><span>ABSTAND</span><span>${p.abs}</span></div>
+                                <div style="display:flex; justify-content:space-between;"><span>STÜCKZAHL</span><span>${p.stt} / ${p.stn}</span></div>
+                            </div>
+                        </div>
+                        <div style="border-bottom:7px solid #000; margin-bottom:12px;"></div>
+                        <div style="flex:1;">
+                            <div style="font-size:22px; font-weight:900; margin-bottom:8px; letter-spacing:-0.5px; text-transform:uppercase;">${title}</div>
+                            <div style="display:flex; font-size:11px; font-weight:900; text-transform:uppercase; margin-bottom:5px; padding:0 2px;">
+                                <div style="width:95px;">T-NR</div>
+                                <div style="flex:1;">WERKZEUGNAME / KOMMENTAR</div>
+                                <div style="width:135px; text-align:right;">Ø / TOLERANZ</div>
+                            </div>
+                            <div style="border-bottom:5px solid #000;"></div>
+                            ${tools.map(t => `
+                                <div style="display:flex; align-items:center; border-bottom:1.5px solid #000; padding:8px 0;">
+                                    <div style="width:95px; font-weight:900; font-size:20px;">${t.id}</div>
+                                    <div style="flex:1; padding-right:10px;">
+                                        <div style="font-weight:800; font-size:17px; line-height:1.1; text-transform:uppercase;">${t.nm}</div>
+                                        <div style="font-size:9px; font-weight:800; margin-top:1px;">
+                                            <span style="color:#333;">${t.isSonder ? 'SONDERWERKZEUG' : 'STANDARD'}</span>
+                                            ${t.bem ? ` | <span style="color:#000;">${t.bem}</span>` : ''}
+                                        </div>
+                                    </div>
+                                    <div style="width:135px; text-align:right; font-weight:900; font-size:16px; line-height:1;">${t.dia.replace('/','<br>')}</div>
+                                </div>`).join('')}
+                        </div>
+                        <div style="border-top:1.5px solid #000; margin-top:10px; padding-top:6px; font-size:11px; font-weight:900; display:flex; justify-content:space-between;">
+                            <span>QS CENTRAL PREMIUM</span><span>CHECKLISTE PRODUKTION</span>
                         </div>
                     </div>
-                    <div style="width:130px; text-align:right; font-weight:900; font-size:17px;">${t.dia.replace('/','<br>')}</div>
                 </div>`;
 
             let oben = [], unten = [], reached = false;
             (p.tools || []).forEach(t => { if(t.rev) reached = true; if(reached) unten.push(t); else oben.push(t); });
 
-            let html = `<div style="width:210mm; padding:12mm; background:#fff; font-family:sans-serif;">
-                <div style="border:3px solid #000; padding:30px; min-height:265mm; display:flex; flex-direction:column; page-break-after:always; box-sizing:border-box;">
-                    ${getHead()}
-                    <div style="flex:1;">
-                        <div style="font-size:32px; font-weight:900; margin-bottom:10px; letter-spacing:-1px;">REVOLVER OBEN</div>
-                        ${tableHead}
-                        ${oben.map(getRow).join('')}
-                    </div>
-                    ${getFoot()}
-                </div>`;
-            
-            if(unten.length > 0) {
-                html += `<div style="border:3px solid #000; padding:30px; min-height:265mm; display:flex; flex-direction:column; box-sizing:border-box;">
-                    ${getHead()}
-                    <div style="flex:1;">
-                        <div style="font-size:32px; font-weight:900; margin-bottom:10px; letter-spacing:-1px;">REVOLVER UNTEN</div>
-                        ${tableHead}
-                        ${unten.map(getRow).join('')}
-                    </div>
-                    ${getFoot()}
-                </div>`;
-            }
-            html += `</div>`;
-            el('print-container').innerHTML = html; setTimeout(() => window.print(), 250);
+            let html = getLayout("REVOLVER OBEN", oben);
+            if(unten.length > 0) html += getLayout("REVOLVER UNTEN", unten);
+
+            el('print-container').innerHTML = html;
+            setTimeout(() => window.print(), 250);
         }
 
         window.onload = renderList;
