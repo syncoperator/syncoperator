@@ -1,148 +1,151 @@
 <!DOCTYPE html>
-<html lang="de">
+<html>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>SyncOperator</title>
+<title>SyncOperator Industrial</title>
 
 <style>
 body{margin:0;font-family:-apple-system;background:#f2f4f8}
-.top{padding:18px;font-weight:700;font-size:20px}
+.top{padding:18px;font-size:20px;font-weight:700}
 .box{background:#fff;margin:12px;padding:14px;border-radius:16px}
-button{width:100%;padding:12px;margin-top:8px;border:none;border-radius:10px;background:#111;color:#fff}
+button{width:100%;padding:10px;margin-top:6px;border:none;border-radius:10px;background:#111;color:#fff}
 input,textarea{width:100%;padding:10px;margin-top:6px;border-radius:10px;border:1px solid #ddd}
-.item{padding:10px;border-bottom:1px solid #eee;cursor:pointer}
+.row{display:flex;gap:6px}
+.small{flex:1;background:#eee;color:#000}
+.item{height:58px;display:flex;align-items:center;padding:0 12px;border-bottom:1px solid #eee;cursor:pointer}
 .modalBG{position:fixed;inset:0;background:rgba(0,0,0,.4);display:none;align-items:center;justify-content:center}
-.modal{background:#fff;padding:20px;border-radius:18px;width:90%;max-width:400px}
-.row{display:flex;gap:6px;margin-top:8px}
+.modal{background:#fff;padding:20px;border-radius:18px;width:92%;max-width:420px}
 .chip{flex:1;padding:8px;border-radius:10px;background:#eee;text-align:center;cursor:pointer}
 .on{background:#111;color:#fff}
 </style>
 </head>
 <body>
 
-<div class="top">SyncOperator</div>
-
+<div class="top">SyncOperator Industrial</div>
 <div id="app"></div>
 
-<div class="modalBG" id="modalBG">
-<div class="modal" id="modal"></div>
+<div id="modalBG" class="modalBG">
+<div id="modal" class="modal"></div>
 </div>
 
 <script>
 
 // ---------- DB ----------
 let db
-const req=indexedDB.open("SyncOperatorDB",1)
-req.onupgradeneeded=e=>{
-db=e.target.result
-db.createObjectStore("projects",{keyPath:"uid"})
+const open=indexedDB.open("SyncOperatorDB",2)
+open.onupgradeneeded=e=>{
+let d=e.target.result
+if(!d.objectStoreNames.contains("projects"))
+d.createObjectStore("projects",{keyPath:"uid"})
 }
-req.onsuccess=e=>{db=e.target.result;loadProjects()}
+open.onsuccess=e=>{db=e.target.result;loadProjects()}
 
 // ---------- STATE ----------
-let state={
-view:"dash",
-projects:[],
-active:null,
-modalTool:null
-}
-
-// ---------- UTILS ----------
+let state={view:"dash",projects:[],active:null,modal:null}
 const uuid=()=>crypto.randomUUID()
 
-// ---------- DB FUNCS ----------
 function saveProject(p){
 let tx=db.transaction("projects","readwrite")
 tx.objectStore("projects").put(p)
 }
 
+// ---------- LOAD ----------
 function loadProjects(){
 let tx=db.transaction("projects","readonly")
-let req=tx.objectStore("projects").getAll()
-req.onsuccess=()=>{
-state.projects=req.result
-render()
-}
+let r=tx.objectStore("projects").getAll()
+r.onsuccess=()=>{state.projects=r.result;render()}
 }
 
-// ---------- UI ----------
+// ---------- RENDER ----------
 function render(){
 app.innerHTML=""
-if(state.view==="dash") renderDash()
-else renderProject()
+state.view==="dash"?renderDash():renderProject()
 }
 
 // ---------- DASH ----------
 function renderDash(){
-let el=document.createElement("div")
+let wrap=document.createElement("div")
 
 state.projects.forEach(p=>{
 let d=document.createElement("div")
-d.className="box item"
-d.textContent=p.num+"  "+p.name
-d.onclick=()=>{state.active=p;state.view="project";render()}
-el.appendChild(d)
+d.className="box"
+d.innerHTML=`
+<b>${p.num} ${p.name}</b>
+<div class="row">
+<button class="small" onclick="openProject('${p.uid}')">OPEN</button>
+<button class="small" onclick="deleteProject('${p.uid}')">DEL</button>
+</div>`
+wrap.appendChild(d)
 })
 
-let add=document.createElement("div")
-add.className="box"
-add.innerHTML=`
+wrap.innerHTML+=`
+<div class="box">
 <input id="num" placeholder="Nummer">
 <input id="name" placeholder="Name">
-<button onclick="createProject()">Projekt erstellen</button>
+<button onclick="createProject()">Create</button>
+</div>
 `
-el.appendChild(add)
-
-app.appendChild(el)
+app.appendChild(wrap)
 }
 
 function createProject(){
-let p={
-uid:uuid(),
-num:num.value,
-name:name.value,
-tools:[],
-created:Date.now(),
-updated:Date.now()
-}
+let p={uid:uuid(),num:num.value,name:name.value,tools:[]}
 state.projects.push(p)
 saveProject(p)
 render()
 }
 
-// ---------- PROJECT VIEW ----------
+function openProject(id){
+state.active=state.projects.find(p=>p.uid===id)
+state.view="proj"
+render()
+}
+
+function deleteProject(id){
+state.projects=state.projects.filter(p=>p.uid!==id)
+let tx=db.transaction("projects","readwrite")
+tx.objectStore("projects").delete(id)
+render()
+}
+
+// ---------- PROJECT ----------
 function renderProject(){
 let p=state.active
 let el=document.createElement("div")
 
-let head=document.createElement("div")
-head.className="box"
-head.innerHTML=`
+el.innerHTML=`
+<div class="box">
 <b>${p.num} ${p.name}</b>
-<button onclick="state.view='dash';render()">← zurück</button>
-<textarea id="paste" placeholder="T0101 TOOLNAME"></textarea>
-<button onclick="parseTools()">Tools hinzufügen</button>
+<button onclick="state.view='dash';render()">← Back</button>
+<textarea id="paste"></textarea>
+<button onclick="parseTools()">Add Tools</button>
+</div>
 `
-el.appendChild(head)
 
-p.tools.forEach(t=>{
+// Virtual List Container
+let listContainer=document.createElement("div")
+listContainer.className="box"
+listContainer.style.height="500px"
+listContainer.style.overflow="auto"
+listContainer.style.position="relative"
+
+renderVirtualList(listContainer,p.tools,(t)=>{
 let row=document.createElement("div")
-row.className="box item"
+row.className="item"
 row.textContent=t.id+"  "+t.nm
 row.onclick=()=>openModal(t)
-el.appendChild(row)
+return row
 })
 
+el.appendChild(listContainer)
 app.appendChild(el)
 }
 
 // ---------- PARSER ----------
 function parseTools(){
-let lines=paste.value.split("\n")
 let p=state.active
-
-lines.forEach(l=>{
+paste.value.split("\n").forEach(l=>{
 let txt=l.trim()
 if(!txt)return
 let parts=txt.split(" ")
@@ -159,29 +162,58 @@ rev:false,
 sonder:false
 })
 })
-
 saveProject(p)
 render()
 }
 
+// ---------- VIRTUAL LIST ----------
+const ROW_HEIGHT=58
+
+function renderVirtualList(container,items,renderRow){
+
+container.innerHTML=""
+
+const spacer=document.createElement("div")
+spacer.style.height=items.length*ROW_HEIGHT+"px"
+container.appendChild(spacer)
+
+const viewport=document.createElement("div")
+viewport.style.position="absolute"
+viewport.style.left="0"
+viewport.style.right="0"
+viewport.style.top="0"
+container.appendChild(viewport)
+
+function draw(){
+const scrollTop=container.scrollTop
+const start=Math.floor(scrollTop/ROW_HEIGHT)
+const visible=Math.ceil(container.clientHeight/ROW_HEIGHT)+4
+const end=Math.min(start+visible,items.length)
+
+viewport.innerHTML=""
+viewport.style.transform=`translateY(${start*ROW_HEIGHT}px)`
+
+for(let i=start;i<end;i++){
+viewport.appendChild(renderRow(items[i],i))
+}
+}
+
+container.onscroll=draw
+draw()
+}
+
 // ---------- MODAL ----------
 function openModal(t){
-state.modalTool=JSON.parse(JSON.stringify(t))
+state.modal=JSON.parse(JSON.stringify(t))
 modalBG.style.display="flex"
 drawModal()
 }
 
 function drawModal(){
-let t=state.modalTool
-
+let t=state.modal
 modal.innerHTML=`
 <b>${t.id}</b><br>${t.nm}
-
-<input id="dia" placeholder="Dia" value="${t.dia||""}">
-
-<div class="row">${chips(["B1","B3","B4","B6","D"],t.fach,"fach")}</div>
-<div class="row">${chips(["D2","D6","D10","D16"],t.spann,"spann")}</div>
-<div class="row">${chips(["D10","D14","D16","D18","D20"],t.red,"red")}</div>
+<input id="dia" value="${t.dia||""}" placeholder="Dia">
 
 <div class="row">
 <div class="chip ${t.rev?"on":""}" onclick="toggle('rev')">REV</div>
@@ -194,28 +226,14 @@ modal.innerHTML=`
 `
 }
 
-function chips(arr,val,key){
-return arr.map(v=>`<div class="chip ${val===v?"on":""}" onclick="setChip('${key}','${v}')">${v}</div>`).join("")
-}
-
-function setChip(k,v){
-state.modalTool[k]=v
-drawModal()
-}
-
-function toggle(k){
-state.modalTool[k]=!state.modalTool[k]
-drawModal()
-}
-
-function closeModal(){
-modalBG.style.display="none"
-}
+function toggle(k){state.modal[k]=!state.modal[k];drawModal()}
+function closeModal(){modalBG.style.display="none"}
 
 function saveTool(){
 let p=state.active
-let i=p.tools.findIndex(x=>x.uid===state.modalTool.uid)
-p.tools[i]=state.modalTool
+let i=p.tools.findIndex(x=>x.uid===state.modal.uid)
+state.modal.dia=dia.value
+p.tools[i]=state.modal
 saveProject(p)
 closeModal()
 render()
@@ -223,15 +241,13 @@ render()
 
 function deleteTool(){
 let p=state.active
-p.tools=p.tools.filter(x=>x.uid!==state.modalTool.uid)
+p.tools=p.tools.filter(x=>x.uid!==state.modal.uid)
 saveProject(p)
 closeModal()
 render()
 }
 
-modalBG.onclick=e=>{
-if(e.target===modalBG) closeModal()
-}
+modalBG.onclick=e=>{if(e.target===modalBG)closeModal()}
 
 </script>
 </body>
