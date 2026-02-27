@@ -2,150 +2,168 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SyncOperator</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tool Builder</title>
 
 <style>
-body{margin:0;font-family:-apple-system;background:#f2f4f8}
-.header{padding:25px;font-size:28px;font-weight:700}
-.container{max-width:520px;margin:auto;padding:15px}
-.card{background:white;padding:18px;border-radius:20px;margin-bottom:18px;box-shadow:0 8px 25px rgba(0,0,0,.08)}
-input,select{width:100%;padding:12px;border-radius:12px;border:1px solid #e2e6ef;margin:7px 0;font-size:15px}
-button{width:100%;padding:14px;border:none;border-radius:14px;background:#111;color:white;font-weight:600;margin-top:10px}
-.output{background:#0f172a;color:#e2e8f0;padding:15px;border-radius:16px;font-family:monospace;white-space:pre-wrap;max-height:300px;overflow:auto}
-.row{display:flex;gap:10px}.row>*{flex:1}
+body{margin:0;background:#f2f4f8;font-family:-apple-system}
+.wrap{max-width:650px;margin:auto;padding:15px}
+.card{background:#fff;padding:15px;border-radius:18px;margin-bottom:15px;box-shadow:0 8px 25px rgba(0,0,0,.08)}
+input,select,textarea{width:100%;padding:10px;margin:5px 0;border-radius:10px;border:1px solid #ddd;font-size:14px}
+button{width:100%;padding:12px;margin-top:10px;border:none;border-radius:12px;background:#111;color:#fff;font-weight:600}
+.tool{border:1px solid #e5e5e5;border-radius:14px;padding:12px;margin-top:12px}
+.row{display:flex;gap:6px}.row>*{flex:1}
+.title{font-weight:700;margin-bottom:5px}
+.json{background:#0f172a;color:#e2e8f0;padding:15px;border-radius:14px;white-space:pre-wrap;font-family:monospace}
 </style>
 </head>
 <body>
-
-<div class="header">SyncOperator</div>
-<div class="container">
+<div class="wrap">
 
 <div class="card">
-<label>Zeichnungsnummer</label>
-<input id="drawing">
-
-<button onclick="saveProject()">Projekt speichern</button>
-<button onclick="loadProject()">Projekt laden</button>
-<button onclick="deleteProject()">Projekt löschen</button>
-</div>
-
-<div class="card">
-
-<input id="id" placeholder="Tool ID">
+<div class="title">Teil</div>
+<input id="num" placeholder="Nummer">
 <input id="name" placeholder="Name">
-<input id="dia" placeholder="Durchmesser">
-
-<select id="offset">
-<option>G54</option>
-<option>G55</option>
-</select>
-
+<input id="lzf" placeholder="LZF">
+<input id="sag" placeholder="SAG">
 <div class="row">
-<select id="fach">
-<option value="">Fach</option>
-<option>B1</option><option>B3</option><option>B4</option>
-<option>B6</option><option>B8</option>
-<option>C2</option><option>C9</option>
-<option>D</option>
-</select>
-
-<select id="spann">
-<option value="">Spannzange</option>
-<option>D2</option>
-<option>D3-4</option>
-<option>D6</option>
-<option>D10</option>
-<option>D12</option>
-<option>D16</option>
-</select>
+<input id="stt" placeholder="STT">
+<input id="stn" placeholder="STN">
 </div>
-
-<select id="red">
-<option value="">Reduzierhülse</option>
-<option>D10</option>
-<option>D14</option>
-<option>D16</option>
-<option>D18</option>
-<option>D20</option>
-</select>
-
+<input id="mat" placeholder="Material">
 <div class="row">
-<select id="sonder">
-<option value="false">Sonder false</option>
-<option value="true">Sonder true</option>
-</select>
-
-<select id="rev">
-<option value="false">Rev false</option>
-<option value="true">Rev true</option>
-</select>
+<input id="abs" placeholder="Abstechmaß">
+<input id="grf" placeholder="Greifer">
 </div>
-
-<button onclick="addTool()">Tool hinzufügen</button>
-
 </div>
 
 <div class="card">
-<button onclick="copyJSON()">JSON kopieren</button>
+<div class="title">Tools einfügen</div>
+<textarea id="input" rows="6" placeholder="T0101 TOOLNAME G54"></textarea>
+<button onclick="parse()">Tools erzeugen</button>
 </div>
 
-<div class="output" id="json"></div>
+<div id="tools"></div>
+
+<div class="card">
+<button onclick="exportJSON()">JSON kopieren</button>
+</div>
+
+<div id="out" class="json"></div>
 
 </div>
 
 <script>
-
 let tools=[]
 
-function addTool(){
-
-let bem=[]
-if(fach.value) bem.push("FACH "+fach.value)
-if(spann.value) bem.push("SPANNZANGE "+spann.value)
-if(red.value) bem.push("REDUZIERHUELSE "+red.value)
-
-tools.push({
-id:id.value,
-nm:name.value+" "+offset.value,
-dia:dia.value,
-bem:bem.join(" | "),
-rev:rev.value==="true",
-isSonder:sonder.value==="true"
+function parse(){
+tools=[]
+let lines=input.value.split("\n").filter(x=>x.trim())
+lines.forEach(line=>{
+let parts=line.trim().split(" ")
+let id=parts.shift()
+let nm=parts.join(" ")
+tools.push({id,nm,dia:"",fach:"",spann:"",red:"",rev:false,sonder:false})
 })
-
 render()
 }
 
 function render(){
-json.textContent=JSON.stringify(tools,null,2)
+toolsDiv.innerHTML=""
+tools.forEach((t,i)=>{
+let el=document.createElement("div")
+el.className="tool"
+el.innerHTML=`
+<div class="title">${t.id} — ${t.nm}</div>
+
+<input placeholder="Dia" value="${t.dia}" onchange="tools[${i}].dia=this.value">
+
+<div class="row">
+<select onchange="tools[${i}].fach=this.value">
+<option value="">Fach</option>
+<option ${sel(t.fach,"B1")}>B1</option>
+<option ${sel(t.fach,"B3")}>B3</option>
+<option ${sel(t.fach,"B4")}>B4</option>
+<option ${sel(t.fach,"B6")}>B6</option>
+<option ${sel(t.fach,"B8")}>B8</option>
+<option ${sel(t.fach,"D")}>D</option>
+</select>
+
+<select onchange="tools[${i}].spann=this.value">
+<option value="">Spann</option>
+<option ${sel(t.spann,"D2")}>D2</option>
+<option ${sel(t.spann,"D3-4")}>D3-4</option>
+<option ${sel(t.spann,"D6")}>D6</option>
+<option ${sel(t.spann,"D10")}>D10</option>
+<option ${sel(t.spann,"D12")}>D12</option>
+<option ${sel(t.spann,"D16")}>D16</option>
+</select>
+</div>
+
+<select onchange="tools[${i}].red=this.value">
+<option value="">Reduzierhülse</option>
+<option ${sel(t.red,"D10")}>D10</option>
+<option ${sel(t.red,"D14")}>D14</option>
+<option ${sel(t.red,"D16")}>D16</option>
+<option ${sel(t.red,"D18")}>D18</option>
+<option ${sel(t.red,"D20")}>D20</option>
+</select>
+
+<div class="row">
+<label><input type="checkbox" ${t.rev?"checked":""}
+onchange="setRev(${i},this.checked)"> Rev</label>
+
+<label><input type="checkbox" ${t.sonder?"checked":""}
+onchange="tools[${i}].sonder=this.checked"> Sonder</label>
+</div>
+`
+toolsDiv.appendChild(el)
+})
 }
 
-function saveProject(){
-if(!drawing.value) return alert("Zeichnungsnummer fehlt")
-localStorage.setItem("job_"+drawing.value,JSON.stringify(tools))
-alert("Gespeichert")
-}
+function sel(a,b){return a===b?"selected":""}
 
-function loadProject(){
-if(!drawing.value) return
-let data=localStorage.getItem("job_"+drawing.value)
-if(!data) return alert("Nicht gefunden")
-tools=JSON.parse(data)
+function setRev(index,val){
+for(let i=index;i<tools.length;i++){
+tools[i].rev=val
+}
 render()
 }
 
-function deleteProject(){
-localStorage.removeItem("job_"+drawing.value)
-tools=[]
-render()
+function buildBem(t){
+let arr=[]
+if(t.fach) arr.push("FACH "+t.fach)
+if(t.red) arr.push("REDUZIERHUELSE "+t.red)
+if(t.spann) arr.push("SPANNZANGE "+t.spann)
+return arr.join(" | ")
 }
 
-function copyJSON(){
-navigator.clipboard.writeText(JSON.stringify(tools,null,2))
-}
+function exportJSON(){
 
+let obj=[{
+num:num.value,
+name:name.value,
+lzf:lzf.value,
+sag:sag.value,
+stt:stt.value,
+stn:stn.value,
+mat:mat.value,
+abs:abs.value,
+grf:grf.value,
+tools:tools.map(t=>({
+id:t.id,
+nm:t.nm,
+dia:t.dia,
+bem:buildBem(t),
+rev:t.rev,
+isSonder:t.sonder
+}))
+}]
+
+let txt=JSON.stringify(obj,null,2)
+out.textContent=txt
+navigator.clipboard.writeText(txt)
+}
 </script>
-
 </body>
 </html>
