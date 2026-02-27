@@ -2,154 +2,153 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>SyncOperator</title>
 
 <style>
-body{
-margin:0;
-background:#f2f4f8;
-font-family:-apple-system,BlinkMacSystemFont;
-color:#111;
-}
-
-.wrap{max-width:700px;margin:auto;padding:15px}
-
-.block{
-background:white;
-padding:18px;
-border-radius:22px;
-margin-bottom:18px;
-box-shadow:0 8px 25px rgba(0,0,0,.08)
-}
-
-.title{font-size:20px;font-weight:700;margin-bottom:12px}
-
-input,textarea{
-width:100%;
-padding:13px;
-border-radius:14px;
-border:1px solid #e3e6ef;
-margin-top:8px;
-font-size:16px;
-}
-
-button{
-width:100%;
-padding:15px;
-border:none;
-border-radius:16px;
-background:#111;
-color:white;
-font-size:16px;
-font-weight:600;
-margin-top:12px;
-}
-
-.tool{
-border:1px solid #e5e7ef;
-border-radius:18px;
-padding:14px;
-margin-top:14px;
-}
-
-.toolhead{
-font-weight:700;
-margin-bottom:6px;
-}
-
-.chips{
-display:flex;
-flex-wrap:wrap;
-gap:6px;
-margin-top:10px;
-}
-
-.chip{
-padding:6px 12px;
-border-radius:20px;
-background:#eef1f7;
-font-size:14px;
-cursor:pointer;
-}
-
-.active{
-background:#111;
-color:white;
-}
-
-.row{
-display:flex;
-gap:10px;
-margin-top:10px;
-}
-
-.toggle{
-flex:1;
-padding:10px;
-border-radius:14px;
-text-align:center;
-background:#eef1f7;
-cursor:pointer;
-}
-
-.toggle.on{
-background:#111;
-color:white;
-}
-
-.json{
-background:#0f172a;
-color:#e2e8f0;
-padding:15px;
-border-radius:16px;
-white-space:pre-wrap;
-font-family:monospace;
-margin-top:15px;
-}
+body{margin:0;font-family:-apple-system;background:#f2f4f8}
+.top{padding:18px;font-weight:700;font-size:20px}
+.box{background:#fff;margin:12px;padding:14px;border-radius:16px}
+button{width:100%;padding:12px;margin-top:8px;border:none;border-radius:10px;background:#111;color:#fff}
+input,textarea{width:100%;padding:10px;margin-top:6px;border-radius:10px;border:1px solid #ddd}
+.item{padding:10px;border-bottom:1px solid #eee;cursor:pointer}
+.modalBG{position:fixed;inset:0;background:rgba(0,0,0,.4);display:none;align-items:center;justify-content:center}
+.modal{background:#fff;padding:20px;border-radius:18px;width:90%;max-width:400px}
+.row{display:flex;gap:6px;margin-top:8px}
+.chip{flex:1;padding:8px;border-radius:10px;background:#eee;text-align:center;cursor:pointer}
+.on{background:#111;color:#fff}
 </style>
 </head>
-
 <body>
-<div class="wrap">
 
-<div class="block">
-<div class="title">Teil</div>
-<input id="num" placeholder="Nummer">
-<input id="name" placeholder="Name">
-<input id="mat" placeholder="Material">
-<input id="grf" placeholder="Greifer">
-</div>
+<div class="top">SyncOperator</div>
 
-<div class="block">
-<div class="title">Tools einfügen</div>
-<textarea id="input" rows="6" placeholder="T0101 TOOLNAME G54"></textarea>
-<button onclick="parse()">Tools erzeugen</button>
-</div>
+<div id="app"></div>
 
-<div id="list"></div>
-
-<div class="block">
-<button onclick="exportJSON()">JSON kopieren</button>
-<div id="json" class="json"></div>
-</div>
-
+<div class="modalBG" id="modalBG">
+<div class="modal" id="modal"></div>
 </div>
 
 <script>
 
-let tools=[]
+// ---------- DB ----------
+let db
+const req=indexedDB.open("SyncOperatorDB",1)
+req.onupgradeneeded=e=>{
+db=e.target.result
+db.createObjectStore("projects",{keyPath:"uid"})
+}
+req.onsuccess=e=>{db=e.target.result;loadProjects()}
 
-function parse(){
-tools=[]
-let lines=input.value.split("\n")
+// ---------- STATE ----------
+let state={
+view:"dash",
+projects:[],
+active:null,
+modalTool:null
+}
+
+// ---------- UTILS ----------
+const uuid=()=>crypto.randomUUID()
+
+// ---------- DB FUNCS ----------
+function saveProject(p){
+let tx=db.transaction("projects","readwrite")
+tx.objectStore("projects").put(p)
+}
+
+function loadProjects(){
+let tx=db.transaction("projects","readonly")
+let req=tx.objectStore("projects").getAll()
+req.onsuccess=()=>{
+state.projects=req.result
+render()
+}
+}
+
+// ---------- UI ----------
+function render(){
+app.innerHTML=""
+if(state.view==="dash") renderDash()
+else renderProject()
+}
+
+// ---------- DASH ----------
+function renderDash(){
+let el=document.createElement("div")
+
+state.projects.forEach(p=>{
+let d=document.createElement("div")
+d.className="box item"
+d.textContent=p.num+"  "+p.name
+d.onclick=()=>{state.active=p;state.view="project";render()}
+el.appendChild(d)
+})
+
+let add=document.createElement("div")
+add.className="box"
+add.innerHTML=`
+<input id="num" placeholder="Nummer">
+<input id="name" placeholder="Name">
+<button onclick="createProject()">Projekt erstellen</button>
+`
+el.appendChild(add)
+
+app.appendChild(el)
+}
+
+function createProject(){
+let p={
+uid:uuid(),
+num:num.value,
+name:name.value,
+tools:[],
+created:Date.now(),
+updated:Date.now()
+}
+state.projects.push(p)
+saveProject(p)
+render()
+}
+
+// ---------- PROJECT VIEW ----------
+function renderProject(){
+let p=state.active
+let el=document.createElement("div")
+
+let head=document.createElement("div")
+head.className="box"
+head.innerHTML=`
+<b>${p.num} ${p.name}</b>
+<button onclick="state.view='dash';render()">← zurück</button>
+<textarea id="paste" placeholder="T0101 TOOLNAME"></textarea>
+<button onclick="parseTools()">Tools hinzufügen</button>
+`
+el.appendChild(head)
+
+p.tools.forEach(t=>{
+let row=document.createElement("div")
+row.className="box item"
+row.textContent=t.id+"  "+t.nm
+row.onclick=()=>openModal(t)
+el.appendChild(row)
+})
+
+app.appendChild(el)
+}
+
+// ---------- PARSER ----------
+function parseTools(){
+let lines=paste.value.split("\n")
+let p=state.active
 
 lines.forEach(l=>{
-let t=l.trim()
-if(!t)return
-let parts=t.split(" ")
+let txt=l.trim()
+if(!txt)return
+let parts=txt.split(" ")
 let id=parts.shift()
-tools.push({
+p.tools.push({
+uid:uuid(),
 id:id,
 nm:parts.join(" "),
 dia:"",
@@ -161,102 +160,79 @@ sonder:false
 })
 })
 
+saveProject(p)
 render()
 }
 
-function chip(v,current,cb){
-return `<div class="chip ${current===v?"active":""}" onclick="${cb}('${v}')">${v}</div>`
+// ---------- MODAL ----------
+function openModal(t){
+state.modalTool=JSON.parse(JSON.stringify(t))
+modalBG.style.display="flex"
+drawModal()
 }
 
-function render(){
-list.innerHTML=""
+function drawModal(){
+let t=state.modalTool
 
-tools.forEach((t,i)=>{
+modal.innerHTML=`
+<b>${t.id}</b><br>${t.nm}
 
-let el=document.createElement("div")
-el.className="block tool"
+<input id="dia" placeholder="Dia" value="${t.dia||""}">
 
-el.innerHTML=`
-
-<div class="toolhead">${t.id} — ${t.nm}</div>
-
-<input placeholder="Dia" value="${t.dia}" oninput="tools[${i}].dia=this.value">
-
-<div class="chips">
-${chip("B1",t.fach,`setFach${i}`)}
-${chip("B3",t.fach,`setFach${i}`)}
-${chip("B4",t.fach,`setFach${i}`)}
-${chip("B6",t.fach,`setFach${i}`)}
-${chip("B8",t.fach,`setFach${i}`)}
-${chip("D",t.fach,`setFach${i}`)}
-</div>
-
-<div class="chips">
-${chip("D2",t.spann,`setSpann${i}`)}
-${chip("D6",t.spann,`setSpann${i}`)}
-${chip("D10",t.spann,`setSpann${i}`)}
-${chip("D16",t.spann,`setSpann${i}`)}
-</div>
-
-<div class="chips">
-${chip("D10",t.red,`setRed${i}`)}
-${chip("D14",t.red,`setRed${i}`)}
-${chip("D16",t.red,`setRed${i}`)}
-${chip("D18",t.red,`setRed${i}`)}
-${chip("D20",t.red,`setRed${i}`)}
-</div>
+<div class="row">${chips(["B1","B3","B4","B6","D"],t.fach,"fach")}</div>
+<div class="row">${chips(["D2","D6","D10","D16"],t.spann,"spann")}</div>
+<div class="row">${chips(["D10","D14","D16","D18","D20"],t.red,"red")}</div>
 
 <div class="row">
-<div class="toggle ${t.rev?"on":""}" onclick="setRev(${i})">REV</div>
-<div class="toggle ${t.sonder?"on":""}" onclick="tools[${i}].sonder=!tools[${i}].sonder;render()">SONDER</div>
+<div class="chip ${t.rev?"on":""}" onclick="toggle('rev')">REV</div>
+<div class="chip ${t.sonder?"on":""}" onclick="toggle('sonder')">SONDER</div>
 </div>
+
+<button onclick="saveTool()">SAVE</button>
+<button onclick="deleteTool()">DELETE</button>
+<button onclick="closeModal()">CANCEL</button>
 `
-
-list.appendChild(el)
-
-window["setFach"+i]=(v)=>{tools[i].fach=v;render()}
-window["setSpann"+i]=(v)=>{tools[i].spann=v;render()}
-window["setRed"+i]=(v)=>{tools[i].red=v;render()}
-})
 }
 
-function setRev(i){
-let state=!tools[i].rev
-for(let x=i;x<tools.length;x++){
-tools[x].rev=state
+function chips(arr,val,key){
+return arr.map(v=>`<div class="chip ${val===v?"on":""}" onclick="setChip('${key}','${v}')">${v}</div>`).join("")
 }
+
+function setChip(k,v){
+state.modalTool[k]=v
+drawModal()
+}
+
+function toggle(k){
+state.modalTool[k]=!state.modalTool[k]
+drawModal()
+}
+
+function closeModal(){
+modalBG.style.display="none"
+}
+
+function saveTool(){
+let p=state.active
+let i=p.tools.findIndex(x=>x.uid===state.modalTool.uid)
+p.tools[i]=state.modalTool
+saveProject(p)
+closeModal()
 render()
 }
 
-function bem(t){
-let a=[]
-if(t.fach)a.push("FACH "+t.fach)
-if(t.red)a.push("REDUZIERHUELSE "+t.red)
-if(t.spann)a.push("SPANNZANGE "+t.spann)
-return a.join(" | ")
+function deleteTool(){
+let p=state.active
+p.tools=p.tools.filter(x=>x.uid!==state.modalTool.uid)
+saveProject(p)
+closeModal()
+render()
 }
 
-function exportJSON(){
-
-let out=[{
-num:num.value,
-name:name.value,
-mat:mat.value,
-grf:grf.value,
-tools:tools.map(t=>({
-id:t.id,
-nm:t.nm,
-dia:t.dia,
-bem:bem(t),
-rev:t.rev,
-isSonder:t.sonder
-}))
-}]
-
-let txt=JSON.stringify(out,null,2)
-json.textContent=txt
-navigator.clipboard.writeText(txt)
+modalBG.onclick=e=>{
+if(e.target===modalBG) closeModal()
 }
+
 </script>
 </body>
 </html>
