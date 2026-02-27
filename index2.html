@@ -40,7 +40,7 @@ button{width:100%;padding:12px;margin-top:10px;border:none;border-radius:12px;ba
 <div class="card">
 <div class="title">Tools einfügen</div>
 <textarea id="input" rows="6" placeholder="T0101 TOOLNAME G54"></textarea>
-<button onclick="parse()">Tools erzeugen</button>
+<button onclick="parseTools()">Tools erzeugen</button>
 </div>
 
 <div id="tools"></div>
@@ -54,26 +54,46 @@ button{width:100%;padding:12px;margin-top:10px;border:none;border-radius:12px;ba
 </div>
 
 <script>
+
 let tools=[]
 
-function parse(){
+function parseTools(){
 tools=[]
-let lines=input.value.split("\n").filter(x=>x.trim())
+let lines=document.getElementById("input").value.split("\n")
+
 lines.forEach(line=>{
-let parts=line.trim().split(" ")
+let txt=line.trim()
+if(!txt) return
+
+let parts=txt.split(" ")
 let id=parts.shift()
 let nm=parts.join(" ")
-tools.push({id,nm,dia:"",fach:"",spann:"",red:"",rev:false,sonder:false})
+
+tools.push({
+id:id,
+nm:nm,
+dia:"",
+fach:"",
+spann:"",
+red:"",
+rev:false,
+sonder:false
 })
-render()
+})
+
+renderTools()
 }
 
-function render(){
-toolsDiv.innerHTML=""
+function renderTools(){
+const container=document.getElementById("tools")
+container.innerHTML=""
+
 tools.forEach((t,i)=>{
-let el=document.createElement("div")
-el.className="tool"
-el.innerHTML=`
+
+let card=document.createElement("div")
+card.className="tool"
+
+card.innerHTML=`
 <div class="title">${t.id} — ${t.nm}</div>
 
 <input placeholder="Dia" value="${t.dia}" onchange="tools[${i}].dia=this.value">
@@ -81,53 +101,53 @@ el.innerHTML=`
 <div class="row">
 <select onchange="tools[${i}].fach=this.value">
 <option value="">Fach</option>
-<option ${sel(t.fach,"B1")}>B1</option>
-<option ${sel(t.fach,"B3")}>B3</option>
-<option ${sel(t.fach,"B4")}>B4</option>
-<option ${sel(t.fach,"B6")}>B6</option>
-<option ${sel(t.fach,"B8")}>B8</option>
-<option ${sel(t.fach,"D")}>D</option>
+${opt(t.fach,"B1")}
+${opt(t.fach,"B3")}
+${opt(t.fach,"B4")}
+${opt(t.fach,"B6")}
+${opt(t.fach,"B8")}
+${opt(t.fach,"D")}
 </select>
 
 <select onchange="tools[${i}].spann=this.value">
 <option value="">Spann</option>
-<option ${sel(t.spann,"D2")}>D2</option>
-<option ${sel(t.spann,"D3-4")}>D3-4</option>
-<option ${sel(t.spann,"D6")}>D6</option>
-<option ${sel(t.spann,"D10")}>D10</option>
-<option ${sel(t.spann,"D12")}>D12</option>
-<option ${sel(t.spann,"D16")}>D16</option>
+${opt(t.spann,"D2")}
+${opt(t.spann,"D3-4")}
+${opt(t.spann,"D6")}
+${opt(t.spann,"D10")}
+${opt(t.spann,"D12")}
+${opt(t.spann,"D16")}
 </select>
 </div>
 
 <select onchange="tools[${i}].red=this.value">
 <option value="">Reduzierhülse</option>
-<option ${sel(t.red,"D10")}>D10</option>
-<option ${sel(t.red,"D14")}>D14</option>
-<option ${sel(t.red,"D16")}>D16</option>
-<option ${sel(t.red,"D18")}>D18</option>
-<option ${sel(t.red,"D20")}>D20</option>
+${opt(t.red,"D10")}
+${opt(t.red,"D14")}
+${opt(t.red,"D16")}
+${opt(t.red,"D18")}
+${opt(t.red,"D20")}
 </select>
 
 <div class="row">
-<label><input type="checkbox" ${t.rev?"checked":""}
-onchange="setRev(${i},this.checked)"> Rev</label>
-
-<label><input type="checkbox" ${t.sonder?"checked":""}
-onchange="tools[${i}].sonder=this.checked"> Sonder</label>
+<label><input type="checkbox" ${t.rev?"checked":""} onchange="setRev(${i},this.checked)"> Rev</label>
+<label><input type="checkbox" ${t.sonder?"checked":""} onchange="tools[${i}].sonder=this.checked"> Sonder</label>
 </div>
 `
-toolsDiv.appendChild(el)
+
+container.appendChild(card)
 })
 }
 
-function sel(a,b){return a===b?"selected":""}
+function opt(current,val){
+return `<option value="${val}" ${current===val?"selected":""}>${val}</option>`
+}
 
 function setRev(index,val){
 for(let i=index;i<tools.length;i++){
 tools[i].rev=val
 }
-render()
+renderTools()
 }
 
 function buildBem(t){
@@ -140,7 +160,7 @@ return arr.join(" | ")
 
 function exportJSON(){
 
-let obj=[{
+let result=[{
 num:num.value,
 name:name.value,
 lzf:lzf.value,
@@ -160,10 +180,11 @@ isSonder:t.sonder
 }))
 }]
 
-let txt=JSON.stringify(obj,null,2)
-out.textContent=txt
-navigator.clipboard.writeText(txt)
+let json=JSON.stringify(result,null,2)
+document.getElementById("out").textContent=json
+navigator.clipboard.writeText(json)
 }
+
 </script>
 </body>
 </html>
