@@ -2,54 +2,137 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Tool Builder</title>
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>SyncOperator</title>
 
 <style>
-body{margin:0;background:#f2f4f8;font-family:-apple-system}
-.wrap{max-width:650px;margin:auto;padding:15px}
-.card{background:#fff;padding:15px;border-radius:18px;margin-bottom:15px;box-shadow:0 8px 25px rgba(0,0,0,.08)}
-input,select,textarea{width:100%;padding:10px;margin:5px 0;border-radius:10px;border:1px solid #ddd;font-size:14px}
-button{width:100%;padding:12px;margin-top:10px;border:none;border-radius:12px;background:#111;color:#fff;font-weight:600}
-.tool{border:1px solid #e5e5e5;border-radius:14px;padding:12px;margin-top:12px}
-.row{display:flex;gap:6px}.row>*{flex:1}
-.title{font-weight:700;margin-bottom:5px}
-.json{background:#0f172a;color:#e2e8f0;padding:15px;border-radius:14px;white-space:pre-wrap;font-family:monospace}
+body{
+margin:0;
+background:#f2f4f8;
+font-family:-apple-system,BlinkMacSystemFont;
+color:#111;
+}
+
+.wrap{max-width:700px;margin:auto;padding:15px}
+
+.block{
+background:white;
+padding:18px;
+border-radius:22px;
+margin-bottom:18px;
+box-shadow:0 8px 25px rgba(0,0,0,.08)
+}
+
+.title{font-size:20px;font-weight:700;margin-bottom:12px}
+
+input,textarea{
+width:100%;
+padding:13px;
+border-radius:14px;
+border:1px solid #e3e6ef;
+margin-top:8px;
+font-size:16px;
+}
+
+button{
+width:100%;
+padding:15px;
+border:none;
+border-radius:16px;
+background:#111;
+color:white;
+font-size:16px;
+font-weight:600;
+margin-top:12px;
+}
+
+.tool{
+border:1px solid #e5e7ef;
+border-radius:18px;
+padding:14px;
+margin-top:14px;
+}
+
+.toolhead{
+font-weight:700;
+margin-bottom:6px;
+}
+
+.chips{
+display:flex;
+flex-wrap:wrap;
+gap:6px;
+margin-top:10px;
+}
+
+.chip{
+padding:6px 12px;
+border-radius:20px;
+background:#eef1f7;
+font-size:14px;
+cursor:pointer;
+}
+
+.active{
+background:#111;
+color:white;
+}
+
+.row{
+display:flex;
+gap:10px;
+margin-top:10px;
+}
+
+.toggle{
+flex:1;
+padding:10px;
+border-radius:14px;
+text-align:center;
+background:#eef1f7;
+cursor:pointer;
+}
+
+.toggle.on{
+background:#111;
+color:white;
+}
+
+.json{
+background:#0f172a;
+color:#e2e8f0;
+padding:15px;
+border-radius:16px;
+white-space:pre-wrap;
+font-family:monospace;
+margin-top:15px;
+}
 </style>
 </head>
+
 <body>
 <div class="wrap">
 
-<div class="card">
+<div class="block">
 <div class="title">Teil</div>
 <input id="num" placeholder="Nummer">
 <input id="name" placeholder="Name">
-<input id="lzf" placeholder="LZF">
-<input id="sag" placeholder="SAG">
-<div class="row">
-<input id="stt" placeholder="STT">
-<input id="stn" placeholder="STN">
-</div>
 <input id="mat" placeholder="Material">
-<div class="row">
-<input id="abs" placeholder="Abstechmaß">
 <input id="grf" placeholder="Greifer">
 </div>
-</div>
 
-<div class="card">
+<div class="block">
 <div class="title">Tools einfügen</div>
 <textarea id="input" rows="6" placeholder="T0101 TOOLNAME G54"></textarea>
-<button onclick="parseTools()">Tools erzeugen</button>
+<button onclick="parse()">Tools erzeugen</button>
 </div>
 
-<div id="tools"></div>
+<div id="list"></div>
 
-<div class="card">
+<div class="block">
 <button onclick="exportJSON()">JSON kopieren</button>
+<div id="json" class="json"></div>
 </div>
-
-<div id="out" class="json"></div>
 
 </div>
 
@@ -57,21 +140,18 @@ button{width:100%;padding:12px;margin-top:10px;border:none;border-radius:12px;ba
 
 let tools=[]
 
-function parseTools(){
+function parse(){
 tools=[]
-let lines=document.getElementById("input").value.split("\n")
+let lines=input.value.split("\n")
 
-lines.forEach(line=>{
-let txt=line.trim()
-if(!txt) return
-
-let parts=txt.split(" ")
+lines.forEach(l=>{
+let t=l.trim()
+if(!t)return
+let parts=t.split(" ")
 let id=parts.shift()
-let nm=parts.join(" ")
-
 tools.push({
 id:id,
-nm:nm,
+nm:parts.join(" "),
 dia:"",
 fach:"",
 spann:"",
@@ -81,110 +161,102 @@ sonder:false
 })
 })
 
-renderTools()
+render()
 }
 
-function renderTools(){
-const container=document.getElementById("tools")
-container.innerHTML=""
+function chip(v,current,cb){
+return `<div class="chip ${current===v?"active":""}" onclick="${cb}('${v}')">${v}</div>`
+}
+
+function render(){
+list.innerHTML=""
 
 tools.forEach((t,i)=>{
 
-let card=document.createElement("div")
-card.className="tool"
+let el=document.createElement("div")
+el.className="block tool"
 
-card.innerHTML=`
-<div class="title">${t.id} — ${t.nm}</div>
+el.innerHTML=`
 
-<input placeholder="Dia" value="${t.dia}" onchange="tools[${i}].dia=this.value">
+<div class="toolhead">${t.id} — ${t.nm}</div>
 
-<div class="row">
-<select onchange="tools[${i}].fach=this.value">
-<option value="">Fach</option>
-${opt(t.fach,"B1")}
-${opt(t.fach,"B3")}
-${opt(t.fach,"B4")}
-${opt(t.fach,"B6")}
-${opt(t.fach,"B8")}
-${opt(t.fach,"D")}
-</select>
+<input placeholder="Dia" value="${t.dia}" oninput="tools[${i}].dia=this.value">
 
-<select onchange="tools[${i}].spann=this.value">
-<option value="">Spann</option>
-${opt(t.spann,"D2")}
-${opt(t.spann,"D3-4")}
-${opt(t.spann,"D6")}
-${opt(t.spann,"D10")}
-${opt(t.spann,"D12")}
-${opt(t.spann,"D16")}
-</select>
+<div class="chips">
+${chip("B1",t.fach,`setFach${i}`)}
+${chip("B3",t.fach,`setFach${i}`)}
+${chip("B4",t.fach,`setFach${i}`)}
+${chip("B6",t.fach,`setFach${i}`)}
+${chip("B8",t.fach,`setFach${i}`)}
+${chip("D",t.fach,`setFach${i}`)}
 </div>
 
-<select onchange="tools[${i}].red=this.value">
-<option value="">Reduzierhülse</option>
-${opt(t.red,"D10")}
-${opt(t.red,"D14")}
-${opt(t.red,"D16")}
-${opt(t.red,"D18")}
-${opt(t.red,"D20")}
-</select>
+<div class="chips">
+${chip("D2",t.spann,`setSpann${i}`)}
+${chip("D6",t.spann,`setSpann${i}`)}
+${chip("D10",t.spann,`setSpann${i}`)}
+${chip("D16",t.spann,`setSpann${i}`)}
+</div>
+
+<div class="chips">
+${chip("D10",t.red,`setRed${i}`)}
+${chip("D14",t.red,`setRed${i}`)}
+${chip("D16",t.red,`setRed${i}`)}
+${chip("D18",t.red,`setRed${i}`)}
+${chip("D20",t.red,`setRed${i}`)}
+</div>
 
 <div class="row">
-<label><input type="checkbox" ${t.rev?"checked":""} onchange="setRev(${i},this.checked)"> Rev</label>
-<label><input type="checkbox" ${t.sonder?"checked":""} onchange="tools[${i}].sonder=this.checked"> Sonder</label>
+<div class="toggle ${t.rev?"on":""}" onclick="setRev(${i})">REV</div>
+<div class="toggle ${t.sonder?"on":""}" onclick="tools[${i}].sonder=!tools[${i}].sonder;render()">SONDER</div>
 </div>
 `
 
-container.appendChild(card)
+list.appendChild(el)
+
+window["setFach"+i]=(v)=>{tools[i].fach=v;render()}
+window["setSpann"+i]=(v)=>{tools[i].spann=v;render()}
+window["setRed"+i]=(v)=>{tools[i].red=v;render()}
 })
 }
 
-function opt(current,val){
-return `<option value="${val}" ${current===val?"selected":""}>${val}</option>`
+function setRev(i){
+let state=!tools[i].rev
+for(let x=i;x<tools.length;x++){
+tools[x].rev=state
+}
+render()
 }
 
-function setRev(index,val){
-for(let i=index;i<tools.length;i++){
-tools[i].rev=val
-}
-renderTools()
-}
-
-function buildBem(t){
-let arr=[]
-if(t.fach) arr.push("FACH "+t.fach)
-if(t.red) arr.push("REDUZIERHUELSE "+t.red)
-if(t.spann) arr.push("SPANNZANGE "+t.spann)
-return arr.join(" | ")
+function bem(t){
+let a=[]
+if(t.fach)a.push("FACH "+t.fach)
+if(t.red)a.push("REDUZIERHUELSE "+t.red)
+if(t.spann)a.push("SPANNZANGE "+t.spann)
+return a.join(" | ")
 }
 
 function exportJSON(){
 
-let result=[{
+let out=[{
 num:num.value,
 name:name.value,
-lzf:lzf.value,
-sag:sag.value,
-stt:stt.value,
-stn:stn.value,
 mat:mat.value,
-abs:abs.value,
 grf:grf.value,
 tools:tools.map(t=>({
 id:t.id,
 nm:t.nm,
 dia:t.dia,
-bem:buildBem(t),
+bem:bem(t),
 rev:t.rev,
 isSonder:t.sonder
 }))
 }]
 
-let json=JSON.stringify(result,null,2)
-document.getElementById("out").textContent=json
-navigator.clipboard.writeText(json)
+let txt=JSON.stringify(out,null,2)
+json.textContent=txt
+navigator.clipboard.writeText(txt)
 }
-
 </script>
 </body>
 </html>
