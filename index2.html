@@ -2,229 +2,184 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>QS PRO</title>
-
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
 <style>
-body{margin:0;font-family:-apple-system;background:#f2f2f7}
-.top{padding:15px;background:#fff;font-weight:800;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
-.btn{background:#007aff;color:#fff;border:none;padding:10px 14px;border-radius:10px;font-weight:700}
-.list{padding:15px}
-.card{background:#fff;padding:15px;border-radius:14px;margin-bottom:10px}
-.small{font-size:12px;color:#666}
-.modal{position:fixed;inset:0;background:rgba(0,0,0,.4);display:none;align-items:center;justify-content:center}
-.box{background:#fff;padding:20px;border-radius:16px;width:92%;max-width:420px;max-height:90vh;overflow:auto}
-input,select,textarea{width:100%;padding:10px;margin-top:6px;margin-bottom:12px;border-radius:8px;border:1px solid #ddd}
+body{margin:0;font-family:Inter;background:#F2F2F7}
+.view{display:none;position:fixed;inset:0;flex-direction:column}
+.view.active{display:flex}
+.nav{height:60px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;background:#fff;border-bottom:1px solid #ddd}
+.btn{background:#007AFF;color:#fff;border:0;padding:10px 16px;border-radius:12px;font-weight:800}
+.list{flex:1;overflow:auto;padding:16px}
+.card{background:#fff;border-radius:16px;padding:16px;margin-bottom:12px}
+.overlay{display:none;position:fixed;inset:0;background:#0005;align-items:flex-end}
+.sheet{background:#fff;width:100%;border-radius:20px 20px 0 0;padding:20px;max-height:92vh;overflow:auto}
+input,textarea{width:100%;padding:12px;border-radius:10px;border:0;background:#eee;margin-bottom:10px;font-weight:600}
+.wizard button{width:100%;margin:6px 0;padding:14px;border-radius:12px;border:0;font-weight:800}
 .drag{cursor:grab}
+#print{display:none}
+@media print{
+body *{display:none}
+#print,#print *{display:block}
+#print{position:absolute;left:0;top:0;width:100%}
+}
 </style>
 </head>
 <body>
 
-<div class="top">
-<span>QS PRO</span>
-<button class="btn" onclick="newProject()">+ NEU</button>
-<button class="btn" onclick="copyProject()">COPY</button>
-<button class="btn" onclick="exportJSON()">JSON</button>
-<button class="btn" onclick="window.print()">PDF</button>
+<div id="home" class="view active">
+<div class="nav"><b>QS PRO</b><button class="btn" onclick="newProject()">+ NEU</button></div>
+<div id="plist" class="list"></div>
 </div>
 
-<div style="padding:10px">
-<input id="search" placeholder="Suche Werkzeug..." oninput="renderTools()">
+<div id="proj" class="view">
+<div class="nav">
+<button onclick="back()">←</button>
+<b id="ptitle"></b>
+<button onclick="pdf()">PDF</button>
+</div>
+<div class="list" id="tlist"></div>
+<button class="btn" onclick="importTools()">+ PARSE</button>
 </div>
 
-<div id="main" class="list"></div>
-
-<!-- IMPORT -->
-<div class="modal" id="imp">
-<div class="box">
-<textarea id="impText" rows="8"></textarea>
-<button class="btn" onclick="parseTools()">Import</button>
-</div>
+<div id="modal" class="overlay" onclick="if(event.target==this)hide()">
+<div class="sheet" id="sheet"></div>
 </div>
 
-<!-- WIZARD -->
-<div class="modal" id="wiz">
-<div class="box">
-
-<div id="w1">
-<b>Typ</b><br><br>
-<button class="btn" onclick="setType(false)">Standard</button>
-<button class="btn" onclick="setType(true)">Sonder</button>
-</div>
-
-<div id="w2" style="display:none">
-<b>Fach</b>
-<select id="fach"></select>
-<button class="btn" onclick="next(3)">Weiter</button>
-</div>
-
-<div id="w3" style="display:none">
-<b>Spannzange</b>
-<input id="spann">
-<button class="btn" onclick="next(4)">Weiter</button>
-</div>
-
-<div id="w4" style="display:none">
-<b>Reduzierhülse</b>
-<input id="hulse">
-<button class="btn" onclick="saveTool()">Speichern</button>
-</div>
-
-</div>
-</div>
+<div id="print"></div>
 
 <script>
-const KEY="QS_PRO_DB"
-let db=JSON.parse(localStorage.getItem(KEY)||"[]")
-let p=0
-let edit=null
+let DB=JSON.parse(localStorage.qs||"[]")
+let current=null
 
-function save(){localStorage.setItem(KEY,JSON.stringify(db))}
+const save=()=>localStorage.qs=JSON.stringify(DB)
 
-/* PROJECT */
+const show=(html)=>{sheet.innerHTML=html;modal.style.display="flex"}
+const hide=()=>modal.style.display="none"
+
+function render(){
+plist.innerHTML=DB.map((p,i)=>`
+<div class=card onclick="openP(${i})">
+<b>${p.num}</b><div>${p.name}</div>
+</div>`).join("")
+}
 
 function newProject(){
-db.push({num:"NEW",name:"PROJEKT",tools:[]})
-p=db.length-1
-save()
+show(`
+<h3>Projekt</h3>
+<input id=num placeholder=Nummer>
+<input id=name placeholder=Name>
+<button class=btn onclick="createP()">Speichern</button>`)
+}
+
+function createP(){
+DB.push({num:num.value,name:name.value,tools:[]})
+save();hide();render()
+}
+
+function openP(i){
+current=i
+home.classList.remove("active")
+proj.classList.add("active")
+ptitle.innerText=DB[i].num
 renderTools()
 }
 
-function copyProject(){
-db.push(JSON.parse(JSON.stringify(db[p])))
-save()
-alert("kopiert")
+function back(){
+proj.classList.remove("active")
+home.classList.add("active")
+render()
 }
-
-/* RENDER */
 
 function renderTools(){
-if(!db.length){main.innerHTML="kein projekt";return}
+let arr=DB[current].tools
+tlist.innerHTML=arr.map((t,i)=>`
+<div class="card drag" draggable=true
+ondragstart="drag=${i}"
+ondragover="event.preventDefault()"
+ondrop="dropTool(${i})">
+<b>${t.id}</b> ${t.nm}<br>
+<small>${t.bem||""}</small>
+</div>`).join("")
+}
 
-let list=db[p].tools
-let filter=search.value.toLowerCase()
+let drag=null
+function dropTool(i){
+let a=DB[current].tools
+a.splice(i,0,a.splice(drag,1)[0])
+save();renderTools()
+}
 
-main.innerHTML=`<div class="card">
-<b>${db[p].num}</b><br>${db[p].name}<br><br>
-<button onclick="imp.style.display='flex'">Import</button>
+function importTools(){
+show(`
+<h3>Вставь список</h3>
+<textarea id=raw rows=8></textarea>
+<button class=btn onclick="parse()">Parse</button>`)
+}
+
+function parse(){
+let lines=raw.value.split("\\n").filter(x=>x.trim())
+let arr=DB[current].tools
+
+lines.forEach(l=>{
+let id=l.match(/T\\d+/)?.[0]||""
+let name=l.replace(id,"").trim()
+arr.push({id,nm:name,dia:"",bem:"",rev:false})
+})
+
+save();hide();renderTools()
+}
+
+function wizard(i){
+let t=DB[current].tools[i]
+show(`
+<h3>${t.id}</h3>
+<div class=wizard>
+<button onclick="setBem(${i},'Schrank A')">Schrank</button>
+<button onclick="setBem(${i},'Blaukiste')">Blaukiste</button>
+<button onclick="setBem(${i},'Spannzange')">Spannzange</button>
+<button onclick="setBem(${i},'Reduzierhülse')">Reduzierhülse</button>
+<button onclick="toggleRev(${i})">Revolver unten</button>
+</div>`)
+}
+
+function setBem(i,val){
+let t=DB[current].tools[i]
+t.bem=(t.bem? t.bem+" | ":"")+val
+save();wizard(i);renderTools()
+}
+
+function toggleRev(i){
+let t=DB[current].tools[i]
+t.rev=!t.rev
+save();wizard(i);renderTools()
+}
+
+function pdf(){
+let p=DB[current]
+print.innerHTML=`
+<div style="padding:40px;font-family:sans-serif">
+<h1>${p.name}</h1>
+<h2>${p.num}</h2>
+<hr>
+${p.tools.map(t=>`
+<div style="margin:10px 0">
+<b>${t.id}</b> ${t.nm}<br>${t.bem||""}
+</div>`).join("")}
 </div>`
-
-list
-.filter(t=>t.nm.toLowerCase().includes(filter))
-.forEach((t,i)=>{
-let d=document.createElement("div")
-d.className="card drag"
-d.draggable=true
-d.ondragstart=e=>e.dataTransfer.setData("i",i)
-d.ondrop=e=>{
-let from=e.dataTransfer.getData("i")
-let tmp=list[from]
-list.splice(from,1)
-list.splice(i,0,tmp)
-save()
-renderTools()
+setTimeout(()=>window.print(),200)
 }
-d.ondragover=e=>e.preventDefault()
-
-d.innerHTML=`
-<b>${t.id}</b><br>
-${t.nm}
-<div class="small">${t.bem||""}</div>
-<button onclick="editTool(${i})">edit</button>
-<button onclick="rev(${i})">rev</button>
-`
-main.appendChild(d)
-})
-}
-
-/* IMPORT PARSER */
-
-function parseTools(){
-let rows=impText.value.split("\n").filter(x=>x.trim())
-rows.forEach(r=>{
-let id=r.split(" ")[0]
-let name=r.replace(id,"").trim()
-
-let dia=name.match(/D\d+/i)
-let spann=dia?dia[0].replace("D",""):""
-
-db[p].tools.push({
-id,
-nm:name,
-bem:"",
-rev:false,
-isSonder:false,
-spann
-})
-})
-save()
-imp.style.display="none"
-renderTools()
-}
-
-/* EDIT */
-
-function editTool(i){
-edit=i
-wiz.style.display="flex"
-show(1)
-}
-
-function setType(v){
-db[p].tools[edit].isSonder=v
-show(2)
-}
-
-function show(n){
-document.querySelectorAll("#wiz .box>div").forEach(x=>x.style.display="none")
-document.getElementById("w"+n).style.display="block"
-}
-
-function next(n){show(n)}
-
-function saveTool(){
-let f=fach.value
-let s=spann.value
-let h=hulse.value
-
-let arr=[]
-if(f)arr.push("FACH "+f)
-if(s)arr.push("SPANNZANGE "+s)
-if(h)arr.push("REDUZIERHUELSE "+h)
-
-db[p].tools[edit].bem=arr.join(" | ")
-save()
-wiz.style.display="none"
-renderTools()
-}
-
-/* REV */
-
-function rev(i){
-db[p].tools[i].rev=!db[p].tools[i].rev
-save()
-renderTools()
-}
-
-/* JSON */
 
 function exportJSON(){
-alert(JSON.stringify(db[p]))
+let blob=new Blob([JSON.stringify(DB,null,2)],{type:"application/json"})
+let a=document.createElement("a")
+a.href=URL.createObjectURL(blob)
+a.download="qs.json"
+a.click()
 }
 
-/* FACH LIST */
-
-let letters="ABCDEFG"
-letters.split("").forEach(l=>{
-for(let i=1;i<=20;i++){
-let o=document.createElement("option")
-o.value=l+i
-o.text=l+i
-fach.appendChild(o)
-}
-})
-
-renderTools()
+render()
 </script>
 </body>
 </html>
