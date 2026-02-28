@@ -2,243 +2,256 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>QS CENTRAL</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>QS TOOL SYSTEM</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
-
 <style>
-:root{--bg:#F2F2F7;--card:#fff;--accent:#007AFF;--danger:#ff3b30;--sub:#8e8e93;}
-body{margin:0;font-family:Inter;background:var(--bg);overflow:hidden;}
-.view{display:none;flex-direction:column;height:100vh;}
-.view.active{display:flex;}
-.nav{height:60px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;background:#fff;border-bottom:1px solid #ddd;font-weight:800;}
-.btn{border:none;background:var(--accent);color:#fff;padding:10px 16px;border-radius:10px;font-weight:700;}
-.list{flex:1;overflow:auto;padding:14px;}
-.card{background:#fff;padding:16px;border-radius:14px;margin-bottom:12px;box-shadow:0 2px 6px rgba(0,0,0,.05);}
-.small{font-size:12px;color:var(--sub);font-weight:700}
-.big{font-size:20px;font-weight:900}
-.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);align-items:flex-end;z-index:99;}
-.sheet{background:#fff;width:100%;border-radius:20px 20px 0 0;padding:20px;max-height:92vh;overflow:auto;}
-.field{margin-bottom:14px}
-input,textarea{width:100%;padding:12px;border-radius:10px;border:none;background:#f1f1f4;font-size:16px;}
-.grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;}
-.grid button{padding:12px 0;border-radius:10px;border:1px solid #ddd;background:#fff;font-weight:700;}
-.grid button.sel{background:#000;color:#fff;border-color:#000;}
-.row{display:flex;gap:10px;margin-top:14px}
-.row button{flex:1}
-.badge{display:inline-block;padding:3px 8px;font-size:10px;font-weight:800;border-radius:6px;margin-bottom:6px;}
-.std{background:#eee}
+body{margin:0;font-family:Inter;background:#f2f2f7}
+header{height:60px;display:flex;align-items:center;justify-content:space-between;padding:0 15px;background:#fff;border-bottom:1px solid #ddd;font-weight:900}
+button{font-family:inherit}
+.main{padding:15px}
+.card{background:#fff;border-radius:14px;padding:15px;margin-bottom:12px;box-shadow:0 2px 6px rgba(0,0,0,.05)}
+.tool{background:#fff;border-radius:14px;padding:15px;margin-bottom:10px;cursor:grab;border:1px solid #eee}
+.badge{display:inline-block;font-size:10px;font-weight:800;padding:2px 6px;border-radius:5px;margin-bottom:4px}
+.std{background:#e5e5ea}
 .sonder{background:#000;color:#fff}
-.del{background:var(--danger)}
-@media print{body{background:#fff}.view,.overlay{display:none!important}#print{display:block}}
+.rev{background:#000;color:#fff;font-size:9px;padding:2px 6px;border-radius:4px;margin-bottom:4px;display:inline-block}
+.plus{background:#007aff;color:#fff;border:none;padding:8px 14px;border-radius:10px;font-weight:800}
+.overlay{position:fixed;inset:0;background:#fff;display:none;flex-direction:column;z-index:99}
+.overlay.active{display:flex}
+.modal-head{padding:15px;font-weight:900;border-bottom:1px solid #eee}
+.modal-body{flex:1;overflow:auto;padding:15px}
+input,textarea{width:100%;padding:12px;margin-bottom:10px;border-radius:10px;border:none;background:#f2f2f7;font-weight:600}
+.grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.sel{padding:10px;border-radius:10px;background:#f2f2f7;text-align:center;font-weight:700}
+.sel.active{background:#007aff;color:#fff}
+.bigbtn{padding:14px;border:none;border-radius:12px;font-weight:800;margin-top:10px}
+.primary{background:#007aff;color:#fff}
+.secondary{background:#e5e5ea}
 </style>
 </head>
-
 <body>
 
-<div id="home" class="view active">
-<div class="nav"><div>QS CENTRAL</div><button class="btn" onclick="openProjectModal()">+ Neu</button></div>
-<div id="plist" class="list"></div>
-</div>
+<header>
+<span>QS TOOL</span>
+<button class="plus" onclick="openProjectModal()">+ NEU</button>
+</header>
 
-<div id="proj" class="view">
-<div class="nav">
-<button onclick="back()">←</button>
-<div id="phead"></div>
-<button onclick="printPDF()">PDF</button>
-</div>
-<div style="padding:12px">
-<button class="btn" style="width:100%" onclick="openToolWizard()">+ Werkzeug</button>
-</div>
-<div id="tlist" class="list"></div>
-</div>
+<div class="main" id="projectList"></div>
 
-<div id="pmodal" class="overlay" onclick="if(event.target==this)close('pmodal')">
-<div class="sheet">
-<div class="field"><input id="pnum" placeholder="Zeichnungsnummer"></div>
-<div class="field"><input id="pname" placeholder="Name"></div>
-<button class="btn" style="width:100%" onclick="saveProject()">Speichern</button>
+<div class="overlay" id="projectModal">
+<div class="modal-head">Projekt</div>
+<div class="modal-body">
+<input id="pnum" placeholder="Nummer">
+<input id="pname" placeholder="Name">
+<input id="plzf" placeholder="Laufzeit">
+<input id="pmat" placeholder="Material">
+<button class="bigbtn primary" onclick="saveProject()">Speichern</button>
+<button class="bigbtn secondary" onclick="closeProjectModal()">Abbrechen</button>
 </div>
 </div>
 
-<div id="twizard" class="overlay">
-<div class="sheet">
-<div id="stepbox"></div>
-<div class="row">
-<button onclick="prevStep()">←</button>
-<button class="btn" onclick="nextStep()">Weiter</button>
-</div>
-<div class="row" id="delrow" style="display:none">
-<button class="btn del" onclick="deleteTool()">Löschen</button>
-</div>
-</div>
-</div>
+<div class="overlay" id="toolModal">
+<div class="modal-head">Tool</div>
+<div class="modal-body">
 
-<div id="print"></div>
+<input id="tid" placeholder="T0101">
+<input id="tnm" placeholder="Name">
+
+<div id="typeToggle" class="sel" onclick="toggleType()">STANDARD</div>
+
+<h4>Fach</h4>
+<div id="fachLetters" class="grid"></div>
+<div id="fachNums" class="grid"></div>
+
+<h4>Spannzange</h4>
+<div id="spannGrid" class="grid"></div>
+
+<h4>Reduzierhülse</h4>
+<div id="redGrid" class="grid"></div>
+
+<textarea id="tbem" placeholder="Bemerkung"></textarea>
+
+<div id="revBtn" class="sel" onclick="toggleRev()">REVOLVER START</div>
+
+<button class="bigbtn primary" onclick="saveTool()">Speichern</button>
+<button class="bigbtn secondary" onclick="closeToolModal()">Abbrechen</button>
+
+</div>
+</div>
 
 <script>
-const DBKEY="QS_MOBILE_FINAL";
-let db=JSON.parse(localStorage.getItem(DBKEY)||"[]");
-let cur=null;
-let step=0;
-let tool={};
-let editIndex=null;
+let db=JSON.parse(localStorage.getItem("QSDB")||"[]")
+let cur=null
+let editIndex=null
+let type=false
+let rev=false
+let fachL="",fachN=""
+let spann="",red=""
 
-const el=id=>document.getElementById(id);
-function saveDB(){localStorage.setItem(DBKEY,JSON.stringify(db))}
+function saveDB(){localStorage.setItem("QSDB",JSON.stringify(db))}
 
 function renderProjects(){
-plist.innerHTML=db.map((p,i)=>`
-<div class=card onclick="openProject(${i})">
-<div class=small>${p.name}</div>
-<div class=big>${p.num}</div>
-</div>`).join("");
+let h=""
+db.forEach((p,i)=>{
+h+=`<div class="card" onclick="openProject(${i})"><b>${p.num}</b><div>${p.name}</div></div>`
+})
+document.getElementById("projectList").innerHTML=h
+}
+renderProjects()
+
+function openProjectModal(){
+document.getElementById("projectModal").classList.add("active")
 }
 
-function openProjectModal(){pmodal.style.display="flex";}
+function closeProjectModal(){
+document.getElementById("projectModal").classList.remove("active")
+}
 
 function saveProject(){
-db.push({num:pnum.value,name:pname.value,tools:[]});
-saveDB();close("pmodal");renderProjects();
+db.push({
+num:pnum.value,
+name:pname.value,
+lzf:plzf.value,
+mat:pmat.value,
+tools:[]
+})
+saveDB()
+closeProjectModal()
+renderProjects()
 }
 
 function openProject(i){
-cur=i;
-home.classList.remove("active");
-proj.classList.add("active");
-phead.innerHTML=db[i].num;
-renderTools();
-}
-
-function back(){
-proj.classList.remove("active");
-home.classList.add("active");
+cur=i
+document.body.innerHTML=`
+<header>
+<button onclick="location.reload()">←</button>
+<span>${db[i].num}</span>
+<div>
+<button onclick="exportJSON()">JSON</button>
+<button onclick="printPDF()">PDF</button>
+</div>
+</header>
+<div class="main">
+<button class="plus" onclick="openToolModal()">+ Werkzeug</button>
+<div id="toolList"></div>
+</div>`
+renderTools()
 }
 
 function renderTools(){
-let t=db[cur].tools;
-tlist.innerHTML=t.map((x,i)=>`
-<div class=card onclick="editTool(${i})">
-<div class="badge ${x.type=="S"?"sonder":"std"}">${x.type=="S"?"Sonder":"Standard"}</div>
-<div class=big>${x.name}</div>
-<div class=small>${x.id}</div>
-<div class=small>${x.loc}</div>
-</div>`).join("");
+let p=db[cur]
+let html=""
+let reached=false
+p.tools.forEach((t,i)=>{
+if(t.rev)reached=true
+html+=`
+<div class="tool" draggable="true" ondragstart="drag(${i})" ondragover="event.preventDefault()" ondrop="drop(${i})" onclick="editTool(${i})">
+${t.rev?'<div class="rev">UNTEN START</div>':""}
+<div class="badge ${t.type?'sonder':'std'}">${t.type?'SONDER':'STANDARD'}</div>
+<b>${t.id}</b>
+<div>${t.nm}</div>
+${t.bem?`<small>${t.bem}</small>`:""}
+</div>`
+})
+toolList.innerHTML=html
 }
 
-function openToolWizard(){
-tool={};
-step=0;
-editIndex=null;
-delrow.style.display="none";
-twizard.style.display="flex";
-renderStep();
+let dragIndex=null
+function drag(i){dragIndex=i}
+function drop(i){
+let arr=db[cur].tools
+let a=arr.splice(dragIndex,1)[0]
+arr.splice(i,0,a)
+saveDB()
+renderTools()
+}
+
+function openToolModal(){
+editIndex=null
+resetTool()
+toolModal.classList.add("active")
+}
+
+function closeToolModal(){
+toolModal.classList.remove("active")
 }
 
 function editTool(i){
-tool=JSON.parse(JSON.stringify(db[cur].tools[i]));
-editIndex=i;
-step=0;
-delrow.style.display="flex";
-twizard.style.display="flex";
-renderStep();
+let t=db[cur].tools[i]
+editIndex=i
+openToolModal()
+tid.value=t.id
+tnm.value=t.nm
+tbem.value=t.bem
+type=t.type
+rev=t.rev
 }
 
-function renderStep(){
-let box=stepbox;
-
-if(step==0){
-box.innerHTML=`
-<h3>Typ</h3>
-<div class=row>
-<button onclick="tool.type='STD';nextStep()">Standard</button>
-<button onclick="tool.type='S';nextStep()">Sonder</button>
-</div>`;
-return;
+function resetTool(){
+tid.value=""
+tnm.value=""
+tbem.value=""
+type=false
+rev=false
 }
 
-if(step==1){
-let letters="ABCDEFG".split("");
-box.innerHTML=`<h3>Fach</h3>
-<div class=grid>
-${letters.map(l=>`<button onclick="tool.fach='${l}';mark(this)">${l}</button>`).join("")}
-</div>
-<input id="fachnum" value="${tool.loc?tool.loc.split("-")[1]:""}" placeholder="Nummer">`;
-return;
+function toggleType(){
+type=!type
+typeToggle.innerText=type?"SONDER":"STANDARD"
 }
 
-if(step==2){
-box.innerHTML=`<h3>Aufnahme</h3>
-<div class=row>
-<button onclick="tool.holder='Spannzange';nextStep()">Spannzange</button>
-<button onclick="tool.holder='Reduzierhülse';nextStep()">Reduzierhülse</button>
-</div>`;
-return;
+function toggleRev(){
+rev=!rev
+revBtn.classList.toggle("active")
 }
-
-if(step==3){
-let d="";
-for(let i=1;i<=25;i++)d+=`<button onclick="tool.d='D${i}';mark(this)">D${i}</button>`;
-box.innerHTML=`<h3>Größe</h3><div class=grid>${d}</div>`;
-return;
-}
-
-if(step==4){
-box.innerHTML=`<h3>Daten</h3>
-<input id="tid" value="${tool.id||""}" placeholder="T-Nr">
-<input id="tnm" value="${tool.name||""}" placeholder="Werkzeugname">
-<textarea id="tbem">${tool.bem||""}</textarea>`;
-return;
-}
-}
-
-function mark(btn){
-btn.parentNode.querySelectorAll("button").forEach(b=>b.classList.remove("sel"));
-btn.classList.add("sel");
-}
-
-function nextStep(){
-if(step==1){tool.loc="Fach "+tool.fach+"-"+fachnum.value;}
-if(step==4){
-tool.id=tid.value;
-tool.name=tnm.value;
-tool.bem=tbem.value;
-saveTool();
-return;
-}
-step++;renderStep();
-}
-
-function prevStep(){ if(step==0)return close("twizard"); step--;renderStep(); }
 
 function saveTool(){
-if(editIndex!==null) db[cur].tools[editIndex]=tool;
-else db[cur].tools.push(tool);
-saveDB();
-close("twizard");
-renderTools();
+let t={
+id:tid.value.toUpperCase(),
+nm:tnm.value.toUpperCase(),
+bem:tbem.value,
+type:type,
+rev:rev
+}
+if(editIndex===null) db[cur].tools.push(t)
+else db[cur].tools[editIndex]=t
+saveDB()
+closeToolModal()
+renderTools()
 }
 
-function deleteTool(){
-db[cur].tools.splice(editIndex,1);
-saveDB();
-close("twizard");
-renderTools();
+function exportJSON(){
+let txt=JSON.stringify([db[cur]])
+prompt("JSON",txt)
 }
-
-function close(id){el(id).style.display="none"}
 
 function printPDF(){
-let p=db[cur];
-print.innerHTML=`<div style="padding:30px;font-family:sans-serif">
-<h1>${p.num}</h1>
-<h3>${p.name}</h3><hr>
-${p.tools.map(t=>`<div><b>${t.name}</b><br>${t.id} — ${t.loc} — ${t.holder} ${t.d}</div><br>`).join("")}
-</div>`;
-window.print();
+let p=db[cur]
+let w=window.open("")
+let rows=""
+p.tools.forEach(t=>{
+rows+=`<tr><td>${t.id}</td><td>${t.nm}</td><td>${t.bem||""}</td></tr>`
+})
+w.document.write(`<table border=1 style="width:100%;border-collapse:collapse">
+<tr><th>ID</th><th>Name</th><th>Bem</th></tr>${rows}</table>`)
+w.print()
 }
 
-renderProjects();
+function makeGrid(el,arr,cb){
+arr.forEach(v=>{
+let d=document.createElement("div")
+d.className="sel"
+d.innerText=v
+d.onclick=()=>cb(v,d)
+el.appendChild(d)
+})
+}
+
+makeGrid(fachLetters,["A","B","C","D","E","F","G"],(v,d)=>{fachL=v;[...fachLetters.children].forEach(x=>x.classList.remove("active"));d.classList.add("active")})
+makeGrid(fachNums,Array.from({length:25},(_,i)=>i+1),(v,d)=>{fachN=v;[...fachNums.children].forEach(x=>x.classList.remove("active"));d.classList.add("active")})
+makeGrid(spannGrid,Array.from({length:25},(_,i)=>"D"+(i+1)),(v,d)=>{spann=v;[...spannGrid.children].forEach(x=>x.classList.remove("active"));d.classList.add("active")})
+makeGrid(redGrid,Array.from({length:25},(_,i)=>"D"+(i+1)),(v,d)=>{red=v;[...redGrid.children].forEach(x=>x.classList.remove("active"));d.classList.add("active")})
 </script>
 </body>
 </html>
