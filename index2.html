@@ -2,184 +2,353 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>QS PRO</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>QS CENTRAL</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
+
 <style>
-body{margin:0;font-family:Inter;background:#F2F2F7}
-.view{display:none;position:fixed;inset:0;flex-direction:column}
-.view.active{display:flex}
-.nav{height:60px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;background:#fff;border-bottom:1px solid #ddd}
-.btn{background:#007AFF;color:#fff;border:0;padding:10px 16px;border-radius:12px;font-weight:800}
-.list{flex:1;overflow:auto;padding:16px}
-.card{background:#fff;border-radius:16px;padding:16px;margin-bottom:12px}
-.overlay{display:none;position:fixed;inset:0;background:#0005;align-items:flex-end}
-.sheet{background:#fff;width:100%;border-radius:20px 20px 0 0;padding:20px;max-height:92vh;overflow:auto}
-input,textarea{width:100%;padding:12px;border-radius:10px;border:0;background:#eee;margin-bottom:10px;font-weight:600}
-.wizard button{width:100%;margin:6px 0;padding:14px;border-radius:12px;border:0;font-weight:800}
-.drag{cursor:grab}
-#print{display:none}
+:root{
+--bg:#F2F2F7;
+--card:#fff;
+--accent:#007AFF;
+--danger:#ff3b30;
+--sub:#8e8e93;
+}
+body{
+margin:0;
+font-family:Inter;
+background:var(--bg);
+overflow:hidden;
+}
+.view{display:none;flex-direction:column;height:100vh;}
+.view.active{display:flex;}
+
+.nav{
+height:60px;
+display:flex;
+align-items:center;
+justify-content:space-between;
+padding:0 16px;
+background:#fff;
+border-bottom:1px solid #ddd;
+font-weight:800;
+}
+
+.btn{
+border:none;
+background:var(--accent);
+color:#fff;
+padding:10px 16px;
+border-radius:10px;
+font-weight:700;
+}
+
+.list{
+flex:1;
+overflow:auto;
+padding:14px;
+}
+
+.card{
+background:#fff;
+padding:16px;
+border-radius:14px;
+margin-bottom:12px;
+box-shadow:0 2px 6px rgba(0,0,0,.05);
+}
+
+.small{font-size:12px;color:var(--sub);font-weight:700}
+.big{font-size:20px;font-weight:900}
+
+.overlay{
+display:none;
+position:fixed;
+inset:0;
+background:rgba(0,0,0,.4);
+align-items:flex-end;
+z-index:99;
+}
+.sheet{
+background:#fff;
+width:100%;
+border-radius:20px 20px 0 0;
+padding:20px;
+max-height:92vh;
+overflow:auto;
+}
+
+.field{margin-bottom:14px}
+input,textarea{
+width:100%;
+padding:12px;
+border-radius:10px;
+border:none;
+background:#f1f1f4;
+font-size:16px;
+}
+
+.grid{
+display:grid;
+grid-template-columns:repeat(5,1fr);
+gap:8px;
+}
+.grid button{
+padding:12px 0;
+border-radius:10px;
+border:1px solid #ddd;
+background:#fff;
+font-weight:700;
+}
+.grid button.sel{
+background:#000;
+color:#fff;
+border-color:#000;
+}
+
+.row{display:flex;gap:10px;margin-top:14px}
+.row button{flex:1}
+
+.badge{
+display:inline-block;
+padding:3px 8px;
+font-size:10px;
+font-weight:800;
+border-radius:6px;
+margin-bottom:6px;
+}
+.std{background:#eee}
+.sonder{background:#000;color:#fff}
+
 @media print{
-body *{display:none}
-#print,#print *{display:block}
-#print{position:absolute;left:0;top:0;width:100%}
+body{background:#fff}
+.view,.overlay{display:none!important}
+#print{display:block}
 }
 </style>
 </head>
+
 <body>
 
+<!-- HOME -->
 <div id="home" class="view active">
-<div class="nav"><b>QS PRO</b><button class="btn" onclick="newProject()">+ NEU</button></div>
+<div class="nav">
+<div>QS CENTRAL</div>
+<button class="btn" onclick="openProjectModal()">+ Neu</button>
+</div>
 <div id="plist" class="list"></div>
 </div>
 
+<!-- PROJECT -->
 <div id="proj" class="view">
 <div class="nav">
 <button onclick="back()">←</button>
-<b id="ptitle"></b>
-<button onclick="pdf()">PDF</button>
-</div>
-<div class="list" id="tlist"></div>
-<button class="btn" onclick="importTools()">+ PARSE</button>
+<div id="phead"></div>
+<button onclick="printPDF()">PDF</button>
 </div>
 
-<div id="modal" class="overlay" onclick="if(event.target==this)hide()">
-<div class="sheet" id="sheet"></div>
+<div style="padding:12px">
+<button class="btn" style="width:100%" onclick="openToolWizard()">+ Werkzeug</button>
+</div>
+
+<div id="tlist" class="list"></div>
+</div>
+
+<!-- PROJECT MODAL -->
+<div id="pmodal" class="overlay" onclick="if(event.target==this)close('pmodal')">
+<div class="sheet">
+<div class="field"><input id="pnum" placeholder="Zeichnungsnummer"></div>
+<div class="field"><input id="pname" placeholder="Name"></div>
+<button class="btn" style="width:100%" onclick="saveProject()">Speichern</button>
+</div>
+</div>
+
+<!-- TOOL WIZARD -->
+<div id="twizard" class="overlay">
+<div class="sheet">
+
+<div id="stepbox"></div>
+
+<div class="row">
+<button onclick="prevStep()">←</button>
+<button class="btn" onclick="nextStep()">Weiter</button>
+</div>
+
+</div>
 </div>
 
 <div id="print"></div>
 
 <script>
-let DB=JSON.parse(localStorage.qs||"[]")
-let current=null
+const DBKEY="QS_MOBILE_FINAL";
+let db=JSON.parse(localStorage.getItem(DBKEY)||"[]");
+let cur=null;
+let step=0;
+let tool={};
 
-const save=()=>localStorage.qs=JSON.stringify(DB)
+const el=id=>document.getElementById(id);
 
-const show=(html)=>{sheet.innerHTML=html;modal.style.display="flex"}
-const hide=()=>modal.style.display="none"
+function saveDB(){localStorage.setItem(DBKEY,JSON.stringify(db))}
 
-function render(){
-plist.innerHTML=DB.map((p,i)=>`
-<div class=card onclick="openP(${i})">
-<b>${p.num}</b><div>${p.name}</div>
-</div>`).join("")
+function renderProjects(){
+el("plist").innerHTML=db.map((p,i)=>`
+<div class=card onclick="openProject(${i})">
+<div class=small>${p.name}</div>
+<div class=big>${p.num}</div>
+</div>`).join("");
 }
 
-function newProject(){
-show(`
-<h3>Projekt</h3>
-<input id=num placeholder=Nummer>
-<input id=name placeholder=Name>
-<button class=btn onclick="createP()">Speichern</button>`)
+function openProjectModal(){
+el("pnum").value="";
+el("pname").value="";
+el("pmodal").style.display="flex";
 }
 
-function createP(){
-DB.push({num:num.value,name:name.value,tools:[]})
-save();hide();render()
+function saveProject(){
+db.push({num:pnum.value,name:pname.value,tools:[]});
+saveDB();
+close("pmodal");
+renderProjects();
 }
 
-function openP(i){
-current=i
-home.classList.remove("active")
-proj.classList.add("active")
-ptitle.innerText=DB[i].num
-renderTools()
+function openProject(i){
+cur=i;
+home.classList.remove("active");
+proj.classList.add("active");
+phead.innerHTML=db[i].num;
+renderTools();
 }
 
 function back(){
-proj.classList.remove("active")
-home.classList.add("active")
-render()
+proj.classList.remove("active");
+home.classList.add("active");
 }
 
 function renderTools(){
-let arr=DB[current].tools
-tlist.innerHTML=arr.map((t,i)=>`
-<div class="card drag" draggable=true
-ondragstart="drag=${i}"
-ondragover="event.preventDefault()"
-ondrop="dropTool(${i})">
-<b>${t.id}</b> ${t.nm}<br>
-<small>${t.bem||""}</small>
-</div>`).join("")
+let t=db[cur].tools;
+el("tlist").innerHTML=t.map(x=>`
+<div class=card>
+<div class="badge ${x.type=="S"? "sonder":"std"}">${x.type=="S"?"Sonder":"Standard"}</div>
+<div class=big>${x.name}</div>
+<div class=small>${x.id}</div>
+<div class=small>${x.loc}</div>
+</div>`).join("");
 }
 
-let drag=null
-function dropTool(i){
-let a=DB[current].tools
-a.splice(i,0,a.splice(drag,1)[0])
-save();renderTools()
+function close(id){el(id).style.display="none"}
+
+function openToolWizard(){
+tool={};
+step=0;
+twizard.style.display="flex";
+renderStep();
 }
 
-function importTools(){
-show(`
-<h3>Вставь список</h3>
-<textarea id=raw rows=8></textarea>
-<button class=btn onclick="parse()">Parse</button>`)
+function renderStep(){
+let box=el("stepbox");
+
+if(step==0){
+box.innerHTML=`
+<h3>Typ</h3>
+<div class=row>
+<button onclick="tool.type='STD';nextStep()">Standard</button>
+<button onclick="tool.type='S';nextStep()">Sonder</button>
+</div>`;
+return;
 }
 
-function parse(){
-let lines=raw.value.split("\\n").filter(x=>x.trim())
-let arr=DB[current].tools
-
-lines.forEach(l=>{
-let id=l.match(/T\\d+/)?.[0]||""
-let name=l.replace(id,"").trim()
-arr.push({id,nm:name,dia:"",bem:"",rev:false})
-})
-
-save();hide();renderTools()
+if(step==1){
+let letters="ABCDEFG".split("");
+box.innerHTML=`
+<h3>Fach</h3>
+<div class=grid>
+${letters.map(l=>`<button onclick="tool.fach='${l}';mark(this)">${l}</button>`).join("")}
+</div>
+<input id="fachnum" placeholder="Nummer">
+`;
+return;
 }
 
-function wizard(i){
-let t=DB[current].tools[i]
-show(`
-<h3>${t.id}</h3>
-<div class=wizard>
-<button onclick="setBem(${i},'Schrank A')">Schrank</button>
-<button onclick="setBem(${i},'Blaukiste')">Blaukiste</button>
-<button onclick="setBem(${i},'Spannzange')">Spannzange</button>
-<button onclick="setBem(${i},'Reduzierhülse')">Reduzierhülse</button>
-<button onclick="toggleRev(${i})">Revolver unten</button>
-</div>`)
+if(step==2){
+box.innerHTML=`
+<h3>Aufnahme</h3>
+<div class=row>
+<button onclick="tool.holder='Spannzange';nextStep()">Spannzange</button>
+<button onclick="tool.holder='Reduzierhülse';nextStep()">Reduzierhülse</button>
+</div>`;
+return;
 }
 
-function setBem(i,val){
-let t=DB[current].tools[i]
-t.bem=(t.bem? t.bem+" | ":"")+val
-save();wizard(i);renderTools()
+if(step==3){
+let d="";
+for(let i=1;i<=25;i++)d+=`<button onclick="tool.d='D${i}';mark(this)">D${i}</button>`;
+box.innerHTML=`<h3>Größe</h3><div class=grid>${d}</div>`;
+return;
 }
 
-function toggleRev(i){
-let t=DB[current].tools[i]
-t.rev=!t.rev
-save();wizard(i);renderTools()
+if(step==4){
+box.innerHTML=`
+<h3>Basisdaten</h3>
+<input id="tid" placeholder="T-Nr">
+<input id="tnm" placeholder="Werkzeugname">
+<textarea id="tbem" placeholder="Bemerkung"></textarea>
+`;
+return;
+}
 }
 
-function pdf(){
-let p=DB[current]
-print.innerHTML=`
-<div style="padding:40px;font-family:sans-serif">
-<h1>${p.name}</h1>
-<h2>${p.num}</h2>
+function mark(btn){
+btn.parentNode.querySelectorAll("button").forEach(b=>b.classList.remove("sel"));
+btn.classList.add("sel");
+}
+
+function nextStep(){
+
+if(step==1){
+tool.loc="Fach "+tool.fach+"-"+fachnum.value;
+}
+if(step==4){
+tool.id=tid.value;
+tool.name=tnm.value;
+tool.bem=tbem.value;
+saveTool();
+return;
+}
+
+step++;
+renderStep();
+}
+
+function prevStep(){
+if(step==0)return close("twizard");
+step--;
+renderStep();
+}
+
+function saveTool(){
+db[cur].tools.push(tool);
+saveDB();
+close("twizard");
+renderTools();
+}
+
+function printPDF(){
+let p=db[cur];
+let html=`
+<div style="padding:30px;font-family:sans-serif">
+<h1>${p.num}</h1>
+<h3>${p.name}</h3>
 <hr>
 ${p.tools.map(t=>`
-<div style="margin:10px 0">
-<b>${t.id}</b> ${t.nm}<br>${t.bem||""}
+<div style="margin-bottom:10px">
+<b>${t.name}</b><br>
+${t.id} — ${t.loc} — ${t.holder} ${t.d}
 </div>`).join("")}
-</div>`
-setTimeout(()=>window.print(),200)
+</div>`;
+print.innerHTML=html;
+window.print();
 }
 
-function exportJSON(){
-let blob=new Blob([JSON.stringify(DB,null,2)],{type:"application/json"})
-let a=document.createElement("a")
-a.href=URL.createObjectURL(blob)
-a.download="qs.json"
-a.click()
-}
-
-render()
+renderProjects();
 </script>
 </body>
 </html>
