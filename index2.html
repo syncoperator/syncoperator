@@ -7,153 +7,52 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
 
 <style>
-:root{
---bg:#F2F2F7;
---card:#fff;
---accent:#007AFF;
---danger:#ff3b30;
---sub:#8e8e93;
-}
-body{
-margin:0;
-font-family:Inter;
-background:var(--bg);
-overflow:hidden;
-}
+:root{--bg:#F2F2F7;--card:#fff;--accent:#007AFF;--danger:#ff3b30;--sub:#8e8e93;}
+body{margin:0;font-family:Inter;background:var(--bg);overflow:hidden;}
 .view{display:none;flex-direction:column;height:100vh;}
 .view.active{display:flex;}
-
-.nav{
-height:60px;
-display:flex;
-align-items:center;
-justify-content:space-between;
-padding:0 16px;
-background:#fff;
-border-bottom:1px solid #ddd;
-font-weight:800;
-}
-
-.btn{
-border:none;
-background:var(--accent);
-color:#fff;
-padding:10px 16px;
-border-radius:10px;
-font-weight:700;
-}
-
-.list{
-flex:1;
-overflow:auto;
-padding:14px;
-}
-
-.card{
-background:#fff;
-padding:16px;
-border-radius:14px;
-margin-bottom:12px;
-box-shadow:0 2px 6px rgba(0,0,0,.05);
-}
-
+.nav{height:60px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;background:#fff;border-bottom:1px solid #ddd;font-weight:800;}
+.btn{border:none;background:var(--accent);color:#fff;padding:10px 16px;border-radius:10px;font-weight:700;}
+.list{flex:1;overflow:auto;padding:14px;}
+.card{background:#fff;padding:16px;border-radius:14px;margin-bottom:12px;box-shadow:0 2px 6px rgba(0,0,0,.05);}
 .small{font-size:12px;color:var(--sub);font-weight:700}
 .big{font-size:20px;font-weight:900}
-
-.overlay{
-display:none;
-position:fixed;
-inset:0;
-background:rgba(0,0,0,.4);
-align-items:flex-end;
-z-index:99;
-}
-.sheet{
-background:#fff;
-width:100%;
-border-radius:20px 20px 0 0;
-padding:20px;
-max-height:92vh;
-overflow:auto;
-}
-
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);align-items:flex-end;z-index:99;}
+.sheet{background:#fff;width:100%;border-radius:20px 20px 0 0;padding:20px;max-height:92vh;overflow:auto;}
 .field{margin-bottom:14px}
-input,textarea{
-width:100%;
-padding:12px;
-border-radius:10px;
-border:none;
-background:#f1f1f4;
-font-size:16px;
-}
-
-.grid{
-display:grid;
-grid-template-columns:repeat(5,1fr);
-gap:8px;
-}
-.grid button{
-padding:12px 0;
-border-radius:10px;
-border:1px solid #ddd;
-background:#fff;
-font-weight:700;
-}
-.grid button.sel{
-background:#000;
-color:#fff;
-border-color:#000;
-}
-
+input,textarea{width:100%;padding:12px;border-radius:10px;border:none;background:#f1f1f4;font-size:16px;}
+.grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;}
+.grid button{padding:12px 0;border-radius:10px;border:1px solid #ddd;background:#fff;font-weight:700;}
+.grid button.sel{background:#000;color:#fff;border-color:#000;}
 .row{display:flex;gap:10px;margin-top:14px}
 .row button{flex:1}
-
-.badge{
-display:inline-block;
-padding:3px 8px;
-font-size:10px;
-font-weight:800;
-border-radius:6px;
-margin-bottom:6px;
-}
+.badge{display:inline-block;padding:3px 8px;font-size:10px;font-weight:800;border-radius:6px;margin-bottom:6px;}
 .std{background:#eee}
 .sonder{background:#000;color:#fff}
-
-@media print{
-body{background:#fff}
-.view,.overlay{display:none!important}
-#print{display:block}
-}
+.del{background:var(--danger)}
+@media print{body{background:#fff}.view,.overlay{display:none!important}#print{display:block}}
 </style>
 </head>
 
 <body>
 
-<!-- HOME -->
 <div id="home" class="view active">
-<div class="nav">
-<div>QS CENTRAL</div>
-<button class="btn" onclick="openProjectModal()">+ Neu</button>
-</div>
+<div class="nav"><div>QS CENTRAL</div><button class="btn" onclick="openProjectModal()">+ Neu</button></div>
 <div id="plist" class="list"></div>
 </div>
 
-<!-- PROJECT -->
 <div id="proj" class="view">
 <div class="nav">
 <button onclick="back()">←</button>
 <div id="phead"></div>
 <button onclick="printPDF()">PDF</button>
 </div>
-
 <div style="padding:12px">
 <button class="btn" style="width:100%" onclick="openToolWizard()">+ Werkzeug</button>
 </div>
-
 <div id="tlist" class="list"></div>
 </div>
 
-<!-- PROJECT MODAL -->
 <div id="pmodal" class="overlay" onclick="if(event.target==this)close('pmodal')">
 <div class="sheet">
 <div class="field"><input id="pnum" placeholder="Zeichnungsnummer"></div>
@@ -162,17 +61,16 @@ body{background:#fff}
 </div>
 </div>
 
-<!-- TOOL WIZARD -->
 <div id="twizard" class="overlay">
 <div class="sheet">
-
 <div id="stepbox"></div>
-
 <div class="row">
 <button onclick="prevStep()">←</button>
 <button class="btn" onclick="nextStep()">Weiter</button>
 </div>
-
+<div class="row" id="delrow" style="display:none">
+<button class="btn del" onclick="deleteTool()">Löschen</button>
+</div>
 </div>
 </div>
 
@@ -184,30 +82,24 @@ let db=JSON.parse(localStorage.getItem(DBKEY)||"[]");
 let cur=null;
 let step=0;
 let tool={};
+let editIndex=null;
 
 const el=id=>document.getElementById(id);
-
 function saveDB(){localStorage.setItem(DBKEY,JSON.stringify(db))}
 
 function renderProjects(){
-el("plist").innerHTML=db.map((p,i)=>`
+plist.innerHTML=db.map((p,i)=>`
 <div class=card onclick="openProject(${i})">
 <div class=small>${p.name}</div>
 <div class=big>${p.num}</div>
 </div>`).join("");
 }
 
-function openProjectModal(){
-el("pnum").value="";
-el("pname").value="";
-el("pmodal").style.display="flex";
-}
+function openProjectModal(){pmodal.style.display="flex";}
 
 function saveProject(){
 db.push({num:pnum.value,name:pname.value,tools:[]});
-saveDB();
-close("pmodal");
-renderProjects();
+saveDB();close("pmodal");renderProjects();
 }
 
 function openProject(i){
@@ -225,26 +117,35 @@ home.classList.add("active");
 
 function renderTools(){
 let t=db[cur].tools;
-el("tlist").innerHTML=t.map(x=>`
-<div class=card>
-<div class="badge ${x.type=="S"? "sonder":"std"}">${x.type=="S"?"Sonder":"Standard"}</div>
+tlist.innerHTML=t.map((x,i)=>`
+<div class=card onclick="editTool(${i})">
+<div class="badge ${x.type=="S"?"sonder":"std"}">${x.type=="S"?"Sonder":"Standard"}</div>
 <div class=big>${x.name}</div>
 <div class=small>${x.id}</div>
 <div class=small>${x.loc}</div>
 </div>`).join("");
 }
 
-function close(id){el(id).style.display="none"}
-
 function openToolWizard(){
 tool={};
 step=0;
+editIndex=null;
+delrow.style.display="none";
+twizard.style.display="flex";
+renderStep();
+}
+
+function editTool(i){
+tool=JSON.parse(JSON.stringify(db[cur].tools[i]));
+editIndex=i;
+step=0;
+delrow.style.display="flex";
 twizard.style.display="flex";
 renderStep();
 }
 
 function renderStep(){
-let box=el("stepbox");
+let box=stepbox;
 
 if(step==0){
 box.innerHTML=`
@@ -258,19 +159,16 @@ return;
 
 if(step==1){
 let letters="ABCDEFG".split("");
-box.innerHTML=`
-<h3>Fach</h3>
+box.innerHTML=`<h3>Fach</h3>
 <div class=grid>
 ${letters.map(l=>`<button onclick="tool.fach='${l}';mark(this)">${l}</button>`).join("")}
 </div>
-<input id="fachnum" placeholder="Nummer">
-`;
+<input id="fachnum" value="${tool.loc?tool.loc.split("-")[1]:""}" placeholder="Nummer">`;
 return;
 }
 
 if(step==2){
-box.innerHTML=`
-<h3>Aufnahme</h3>
+box.innerHTML=`<h3>Aufnahme</h3>
 <div class=row>
 <button onclick="tool.holder='Spannzange';nextStep()">Spannzange</button>
 <button onclick="tool.holder='Reduzierhülse';nextStep()">Reduzierhülse</button>
@@ -286,12 +184,10 @@ return;
 }
 
 if(step==4){
-box.innerHTML=`
-<h3>Basisdaten</h3>
-<input id="tid" placeholder="T-Nr">
-<input id="tnm" placeholder="Werkzeugname">
-<textarea id="tbem" placeholder="Bemerkung"></textarea>
-`;
+box.innerHTML=`<h3>Daten</h3>
+<input id="tid" value="${tool.id||""}" placeholder="T-Nr">
+<input id="tnm" value="${tool.name||""}" placeholder="Werkzeugname">
+<textarea id="tbem">${tool.bem||""}</textarea>`;
 return;
 }
 }
@@ -302,10 +198,7 @@ btn.classList.add("sel");
 }
 
 function nextStep(){
-
-if(step==1){
-tool.loc="Fach "+tool.fach+"-"+fachnum.value;
-}
+if(step==1){tool.loc="Fach "+tool.fach+"-"+fachnum.value;}
 if(step==4){
 tool.id=tid.value;
 tool.name=tnm.value;
@@ -313,38 +206,35 @@ tool.bem=tbem.value;
 saveTool();
 return;
 }
-
-step++;
-renderStep();
+step++;renderStep();
 }
 
-function prevStep(){
-if(step==0)return close("twizard");
-step--;
-renderStep();
-}
+function prevStep(){ if(step==0)return close("twizard"); step--;renderStep(); }
 
 function saveTool(){
-db[cur].tools.push(tool);
+if(editIndex!==null) db[cur].tools[editIndex]=tool;
+else db[cur].tools.push(tool);
 saveDB();
 close("twizard");
 renderTools();
 }
 
+function deleteTool(){
+db[cur].tools.splice(editIndex,1);
+saveDB();
+close("twizard");
+renderTools();
+}
+
+function close(id){el(id).style.display="none"}
+
 function printPDF(){
 let p=db[cur];
-let html=`
-<div style="padding:30px;font-family:sans-serif">
+print.innerHTML=`<div style="padding:30px;font-family:sans-serif">
 <h1>${p.num}</h1>
-<h3>${p.name}</h3>
-<hr>
-${p.tools.map(t=>`
-<div style="margin-bottom:10px">
-<b>${t.name}</b><br>
-${t.id} — ${t.loc} — ${t.holder} ${t.d}
-</div>`).join("")}
+<h3>${p.name}</h3><hr>
+${p.tools.map(t=>`<div><b>${t.name}</b><br>${t.id} — ${t.loc} — ${t.holder} ${t.d}</div><br>`).join("")}
 </div>`;
-print.innerHTML=html;
 window.print();
 }
 
