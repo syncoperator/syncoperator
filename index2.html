@@ -3,96 +3,93 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>QS CENTRAL</title>
+<title>QS CENTRAL PRO</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#F2F2F7;--card:#fff;--accent:#007AFF;--sub:#8E8E93}
-body{margin:0;font-family:Inter;background:var(--bg)}
+body{margin:0;font-family:Inter;background:#f2f2f7}
 .view{display:none;height:100vh;flex-direction:column}
 .view.active{display:flex}
-.nav{height:60px;display:flex;align-items:center;justify-content:space-between;padding:0 18px;background:#fff;border-bottom:1px solid #ddd}
-.title{font-weight:900}
-.btn{background:var(--accent);color:#fff;border:0;padding:8px 14px;border-radius:10px;font-weight:700}
+.nav{height:60px;background:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 16px;border-bottom:1px solid #ddd}
+.btn{background:#007aff;color:#fff;border:0;padding:8px 14px;border-radius:10px;font-weight:700}
 .list{flex:1;overflow:auto;padding:14px}
 .card{background:#fff;padding:16px;border-radius:16px;margin-bottom:10px;box-shadow:0 2px 8px rgba(0,0,0,.05);cursor:pointer}
-.small{font-size:11px;color:var(--sub);font-weight:700}
-.badge{font-size:10px;padding:2px 6px;border-radius:5px;font-weight:800}
+.small{font-size:11px;color:#777;font-weight:700}
+.badge{font-size:10px;padding:2px 6px;border-radius:6px;font-weight:800}
 .std{background:#eee}
 .sonder{background:#000;color:#fff}
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);display:none;align-items:flex-end}
 .sheet{background:#fff;width:100%;border-radius:20px 20px 0 0;padding:20px;max-height:90vh;overflow:auto}
 input,textarea{width:100%;padding:12px;margin-bottom:10px;border-radius:10px;border:0;background:#f2f2f7;font-weight:600}
+.grid{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin-bottom:10px}
+.pick{background:#eee;border-radius:8px;padding:10px;text-align:center;font-weight:700;cursor:pointer}
+.pick.sel{background:#007aff;color:#fff}
 </style>
 </head>
 <body>
 
 <div id="home" class="view active">
-<div class="nav">
-<div class="title">QS CENTRAL</div>
-<button class="btn" onclick="openProjectModal()">+ Projekt</button>
-</div>
+<div class="nav"><b>QS CENTRAL</b><button class="btn" onclick="openProjectModal()">+ Projekt</button></div>
 <div id="projects" class="list"></div>
 </div>
 
 <div id="toolsView" class="view">
-<div class="nav">
-<button onclick="back()">←</button>
-<div id="pTitle" class="title"></div>
-<button class="btn" onclick="openImport()">Import</button>
-</div>
-<div class="list" id="tools"></div>
+<div class="nav"><button onclick="back()">←</button><b id="pTitle"></b><button class="btn" onclick="openImport()">Import</button></div>
+<div id="tools" class="list"></div>
 </div>
 
-<div id="projectModal" class="overlay" onclick="closeIfBg(event,this)">
+<div id="projectModal" class="overlay" onclick="closeBg(event,this)">
 <div class="sheet">
 <input id="pNum" placeholder="Zeichnungsnummer">
 <input id="pName" placeholder="Name">
 <button class="btn" style="width:100%" onclick="saveProject()">Speichern</button>
-</div>
-</div>
+</div></div>
 
-<div id="toolModal" class="overlay" onclick="closeIfBg(event,this)">
-<div class="sheet">
-<input id="tId" placeholder="T-Nr">
-<input id="tName" placeholder="Name">
-<input id="tDia" placeholder="Ø">
-<textarea id="tBem" placeholder="Bemerkung"></textarea>
-<button class="btn" onclick="toggleType()" id="typeBtn">STANDARD</button>
-<button class="btn" onclick="toggleRev()" id="revBtn">REVOLVER OBEN</button>
-<br><br>
-<button class="btn" style="width:100%" onclick="saveTool()">Speichern</button>
-</div>
-</div>
-
-<div id="importModal" class="overlay" onclick="closeIfBg(event,this)">
+<div id="importModal" class="overlay" onclick="closeBg(event,this)">
 <div class="sheet">
 <textarea id="importArea" rows="6" placeholder="T0101 BOHRER D10"></textarea>
 <button class="btn" style="width:100%" onclick="runImport()">Importieren</button>
-</div>
-</div>
+</div></div>
+
+<div id="wizard" class="overlay" onclick="closeBg(event,this)">
+<div class="sheet">
+
+<input id="wLine" placeholder="T0101 BOHRER D10 G54">
+
+<div class="grid" id="fachGrid"></div>
+
+<input id="wExtra" placeholder="Spannzange / Hülse">
+
+<textarea id="wBem" placeholder="Zusatz Bemerkung"></textarea>
+
+<button class="btn" onclick="toggleType()" id="typeBtn">STANDARD</button>
+<button class="btn" onclick="toggleRev()" id="revBtn">REVOLVER OBEN</button>
+
+<br><br>
+<button class="btn" style="width:100%" onclick="saveWizard()">Speichern</button>
+
+</div></div>
 
 <script>
-const KEY="QS_DB_V1";
+const KEY="QS_DB_PRO";
 let db=JSON.parse(localStorage.getItem(KEY)||"[]");
 let current=null;
-let editTool=null;
 let type="std";
 let rev=false;
+let fach="";
 
 const saveDB=()=>localStorage.setItem(KEY,JSON.stringify(db));
 const el=id=>document.getElementById(id);
-
-function closeIfBg(e,el){if(e.target===el)el.style.display="none"}
+function closeBg(e,x){if(e.target===x)x.style.display="none"}
 
 function renderProjects(){
-el("projects").innerHTML=db.map((p,i)=>`
-<div class="card" onclick="openProject(${i})">
-<div class="small">${p.name}</div>
+projects.innerHTML=db.map((p,i)=>`
+<div class=card onclick="openProject(${i})">
+<div class=small>${p.name}</div>
 <b>${p.num}</b>
 </div>`).join("")
 }
 
-function openProjectModal(){el("projectModal").style.display="flex"}
+function openProjectModal(){projectModal.style.display="flex"}
 
 function saveProject(){
 db.push({num:pNum.value,name:pName.value,tools:[]})
@@ -118,34 +115,24 @@ home.classList.add("active")
 function renderTools(){
 let t=db[current].tools
 tools.innerHTML=t.map((x,i)=>`
-<div class="card" onclick="edit(${i})">
+<div class=card onclick="editTool(${i})">
 <span class="badge ${x.type}">${x.type=="std"?"Standard":"Sonder"}</span>
-<div class="small">${x.id}</div>
+<div class=small>${x.id}</div>
 <b>${x.name}</b>
-<div class="small">${x.bem||""}</div>
+<div class=small>${x.bem||""}</div>
 </div>`).join("")+
-`<div class="card" onclick="openTool()">+ Werkzeug</div>`
+`<div class=card onclick="openWizard()">+ Werkzeug</div>`
 }
 
-function openTool(){
-editTool=null
-tId.value=tName.value=tDia.value=tBem.value=""
-type="std";rev=false
+function openWizard(){
+wLine.value=""
+wExtra.value=""
+wBem.value=""
+type="std"
+rev=false
+fach=""
 updateBtns()
-toolModal.style.display="flex"
-}
-
-function edit(i){
-let t=db[current].tools[i]
-editTool=i
-tId.value=t.id
-tName.value=t.name
-tDia.value=t.dia
-tBem.value=t.bem
-type=t.type
-rev=t.rev
-updateBtns()
-toolModal.style.display="flex"
+wizard.style.display="flex"
 }
 
 function toggleType(){type=type=="std"?"sonder":"std";updateBtns()}
@@ -156,13 +143,51 @@ typeBtn.textContent=type=="std"?"STANDARD":"SONDERWERKZEUG"
 revBtn.textContent=rev?"REVOLVER UNTEN":"REVOLVER OBEN"
 }
 
-function saveTool(){
-let t={id:tId.value,name:tName.value,dia:tDia.value,bem:tBem.value,type,rev}
-if(editTool==null)db[current].tools.push(t)
-else db[current].tools[editTool]=t
+function buildFach(){
+let letters="ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("")
+fachGrid.innerHTML=letters.map(l=>`<div class="pick ${fach==l?"sel":""}" onclick="selectFach('${l}')">${l}</div>`).join("")
+}
+function selectFach(l){fach=l;buildFach()}
+
+function parseLine(line){
+let p=line.trim().split(" ")
+let id=p.shift()
+let name=p.join(" ")
+let diaMatch=name.match(/D\d+(\.\d+)?/)
+let dia=diaMatch?diaMatch[0].replace("D","")+" mm":""
+return{id,name,dia}
+}
+
+function saveWizard(){
+let parsed=parseLine(wLine.value)
+let bem=""
+if(fach)bem+="FACH "+fach
+if(wExtra.value)bem+=" | "+wExtra.value
+if(wBem.value)bem+=" | "+wBem.value
+
+db[current].tools.push({
+id:parsed.id,
+name:parsed.name,
+dia:parsed.dia,
+bem:bem,
+type:type,
+rev:rev
+})
+
 saveDB()
-toolModal.style.display="none"
+wizard.style.display="none"
 renderTools()
+}
+
+function editTool(i){
+let t=db[current].tools[i]
+openWizard()
+wLine.value=t.id+" "+t.name
+wBem.value=t.bem
+type=t.type
+rev=t.rev
+updateBtns()
+db[current].tools.splice(i,1)
 }
 
 function openImport(){importModal.style.display="flex"}
@@ -170,15 +195,8 @@ function openImport(){importModal.style.display="flex"}
 function runImport(){
 let lines=importArea.value.split("\n").filter(x=>x.trim())
 lines.forEach(l=>{
-let p=l.trim().split(" ")
-db[current].tools.push({
-id:p[0]||"",
-name:p.slice(1).join(" "),
-dia:"",
-bem:"",
-type:"std",
-rev:false
-})
+let p=parseLine(l)
+db[current].tools.push({...p,bem:"",type:"std",rev:false})
 })
 saveDB()
 importModal.style.display="none"
@@ -186,6 +204,7 @@ importArea.value=""
 renderTools()
 }
 
+buildFach()
 renderProjects()
 </script>
 </body>
