@@ -7,23 +7,22 @@
 
 <style>
 body{margin:0;font-family:-apple-system;background:#f2f2f7}
-header{height:60px;background:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 15px;font-weight:800;border-bottom:1px solid #ddd}
-.main{padding:15px}
-.card{background:#fff;border-radius:16px;padding:15px;margin-bottom:12px}
-.plus{background:#007aff;color:#fff;padding:15px;border-radius:14px;text-align:center;font-weight:800;margin-bottom:15px}
+header{height:60px;background:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 16px;font-weight:700;border-bottom:1px solid #ddd}
+.main{padding:16px}
+.card{background:#fff;border-radius:18px;padding:16px;margin-bottom:12px}
+.btn{background:#007aff;color:#fff;padding:14px;border-radius:14px;text-align:center;font-weight:700;margin-bottom:14px}
+.btn.gray{background:#e5e5ea;color:#000}
 .overlay{position:fixed;inset:0;background:#0007;display:none;align-items:flex-end}
-.modal{background:#fff;width:100%;border-radius:22px 22px 0 0;max-height:92%;overflow:auto}
-.modal-head{padding:16px;font-weight:900;text-align:center;border-bottom:1px solid #eee}
-.modal-body{padding:15px}
-input,textarea{width:100%;padding:14px;margin-bottom:12px;border-radius:12px;border:none;background:#f2f2f7;font-size:16px}
-.section{background:#f2f2f7;padding:12px;border-radius:14px;margin-bottom:10px}
-.grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:8px}
-.sel{background:#fff;padding:11px;border-radius:10px;text-align:center;font-weight:700;border:2px solid transparent}
+.sheet{background:#fff;width:100%;border-radius:24px 24px 0 0;max-height:92%;overflow:auto}
+.head{padding:16px;text-align:center;font-weight:800;border-bottom:1px solid #eee}
+.pad{padding:16px}
+input,textarea{width:100%;padding:14px;border:none;border-radius:12px;background:#f2f2f7;margin-bottom:12px;font-size:16px}
+.sec{background:#f2f2f7;border-radius:14px;margin-bottom:10px}
+.sec h4{margin:0;padding:14px;font-size:14px}
+.grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;padding:12px}
+.sel{background:#fff;padding:12px;border-radius:10px;text-align:center;font-weight:700;border:2px solid transparent}
 .sel.active{border:2px solid #007aff;color:#007aff}
-.big{padding:16px;border-radius:14px;font-weight:800;text-align:center;margin-top:12px}
-.primary{background:#007aff;color:#fff}
-.secondary{background:#e5e5ea}
-.tool{background:#fff;padding:14px;border-radius:16px;margin-bottom:10px}
+.tool{background:#fff;border-radius:16px;padding:14px;margin-bottom:10px}
 .small{font-size:12px;color:#666}
 </style>
 </head>
@@ -38,68 +37,48 @@ input,textarea{width:100%;padding:14px;margin-bottom:12px;border-radius:12px;bor
 
 <!-- PROJECT -->
 <div class="overlay" id="projModal">
-<div class="modal">
-<div class="modal-head">Projekt</div>
-<div class="modal-body">
+<div class="sheet">
+<div class="head">Projekt</div>
+<div class="pad">
 <input id="pname" placeholder="Name">
 <input id="pnum" placeholder="Nummer">
-<div class="big primary" onclick="createProject()">Speichern</div>
-<div class="big secondary" onclick="projModal.style.display='none'">Abbrechen</div>
+<div class="btn" onclick="createProject()">Speichern</div>
+<div class="btn gray" onclick="projModal.style.display='none'">Abbrechen</div>
 </div>
 </div>
 </div>
 
 <!-- TOOL -->
 <div class="overlay" id="toolModal">
-<div class="modal">
-<div class="modal-head">Tool</div>
-<div class="modal-body">
+<div class="sheet">
+<div class="head">Tool</div>
+<div class="pad">
 
 <input id="tid" placeholder="T0101">
 <input id="tnm" placeholder="Name">
 
-<div class="section">
-<div>Typ</div>
-<div class="grid" id="typeGrid"></div>
-</div>
+<div class="sec"><h4>Typ</h4><div id="type" class="grid"></div></div>
+<div class="sec"><h4>Fach</h4><div id="fach" class="grid"></div></div>
+<div class="sec"><h4>Nummer</h4><div id="num" class="grid"></div></div>
+<div class="sec"><h4>Spannzange</h4><div id="spann" class="grid"></div></div>
+<div class="sec"><h4>Reduzier</h4><div id="red" class="grid"></div></div>
 
-<div class="section" id="fachBlock">
-<div>Fach</div>
-<div class="grid" id="fachLetters"></div>
-</div>
+<textarea id="tbem" placeholder="Extra"></textarea>
 
-<div class="section" id="numBlock" style="display:none">
-<div>Nummer</div>
-<div class="grid" id="fachNums"></div>
-</div>
-
-<div class="section" id="spannBlock" style="display:none">
-<div>Spannzange</div>
-<div class="grid" id="spannGrid"></div>
-</div>
-
-<div class="section" id="redBlock" style="display:none">
-<div>Reduzierhülse</div>
-<div class="grid" id="redGrid"></div>
-</div>
-
-<textarea id="tbem" placeholder="Zusatz"></textarea>
-
-<div class="big primary" onclick="saveTool()">Speichern</div>
-<div class="big secondary" onclick="closeTool()">Abbrechen</div>
+<div class="btn" onclick="saveTool()">Speichern</div>
+<div class="btn gray" onclick="closeTool()">Abbrechen</div>
 
 </div>
 </div>
 </div>
 
 <script>
-const KEY="QSDBFINAL"
+const KEY="QSFINAL"
 let db=JSON.parse(localStorage.getItem(KEY)||"[]")
-let cur=null
-let edit=null
+let cur=null,edit=null
 
-function save(){localStorage.setItem(KEY,JSON.stringify(db))}
 const app=document.getElementById("app")
+function save(){localStorage.setItem(KEY,JSON.stringify(db))}
 
 function render(){
 app.innerHTML=""
@@ -125,9 +104,11 @@ render()
 function openProject(i){
 cur=i
 app.innerHTML=`
-<div class="plus" onclick="openTool()">+ Werkzeug</div>
+<div class="btn" onclick="openTool()">+ Werkzeug</div>
+<div class="btn gray" onclick="exportJSON()">JSON Export</div>
+<div class="btn gray" onclick="printPDF()">PDF</div>
 <div id="list"></div>
-<button onclick="render()">← Back</button>`
+<div class="btn gray" onclick="render()">← Back</div>`
 renderTools()
 }
 
@@ -147,36 +128,28 @@ l.innerHTML+=`
 let dragIndex=null
 function drag(i){dragIndex=i}
 function drop(i){
-const arr=db[cur].tools
-const item=arr.splice(dragIndex,1)[0]
-arr.splice(i,0,item)
-save()
-renderTools()
+let arr=db[cur].tools
+let el=arr.splice(dragIndex,1)[0]
+arr.splice(i,0,el)
+save();renderTools()
 }
 
-function openTool(){
-edit=null
-toolModal.style.display="flex"
-reset()
-}
-
+function openTool(){edit=null;toolModal.style.display="flex";reset()}
 function closeTool(){toolModal.style.display="none"}
 
 function editTool(i){
-edit=i
-openTool()
-const t=db[cur].tools[i]
-tid.value=t.id
-tnm.value=t.nm
-tbem.value=t.bem
+edit=i;openTool()
+let t=db[cur].tools[i]
+tid.value=t.id;tnm.value=t.nm;tbem.value=t.bem
 }
 
-let type="STD",fach=null,num=null,spann=null,red=null
+let type,fach,num,spann,red
 
-function grid(el,arr,cb){
+function grid(id,arr,cb){
+const el=document.getElementById(id)
 el.innerHTML=""
 arr.forEach(v=>{
-const d=document.createElement("div")
+let d=document.createElement("div")
 d.className="sel"
 d.textContent=v
 d.onclick=()=>{
@@ -189,24 +162,12 @@ el.appendChild(d)
 }
 
 function reset(){
-fach=num=spann=red=null
-grid(typeGrid,["STANDARD","SONDER"],v=>type=v)
-grid(fachLetters,["A","B","C","D","E","F","G"],v=>{
-fach=v
-numBlock.style.display="block"
-})
-grid(fachNums,[...Array(25).keys()].map(x=>x+1),v=>{
-num=v
-spannBlock.style.display="block"
-})
-grid(spannGrid,[...Array(25).keys()].map(x=>"D"+(x+1)),v=>{
-spann=v
-redBlock.style.display="block"
-})
-grid(redGrid,[...Array(25).keys()].map(x=>"D"+(x+1)),v=>red=v)
-tid.value=""
-tnm.value=""
-tbem.value=""
+grid("type",["STANDARD","SONDER"],v=>type=v)
+grid("fach",["A","B","C","D","E","F","G"],v=>fach=v)
+grid("num",[...Array(25).keys()].map(x=>x+1),v=>num=v)
+grid("spann",[...Array(25).keys()].map(x=>"D"+(x+1)),v=>spann=v)
+grid("red",[...Array(25).keys()].map(x=>"D"+(x+1)),v=>red=v)
+tid.value="";tnm.value="";tbem.value=""
 }
 
 function saveTool(){
@@ -216,7 +177,7 @@ if(spann)bem.push("SPANNZANGE "+spann)
 if(red)bem.push("REDUZIER "+red)
 if(tbem.value)bem.push(tbem.value)
 
-const t={id:tid.value.toUpperCase(),nm:tnm.value.toUpperCase(),bem:bem.join(" | "),type:type}
+let t={id:tid.value.toUpperCase(),nm:tnm.value.toUpperCase(),bem:bem.join(" | ")}
 
 if(edit===null)db[cur].tools.push(t)
 else db[cur].tools[edit]=t
@@ -224,6 +185,19 @@ else db[cur].tools[edit]=t
 save()
 closeTool()
 renderTools()
+}
+
+function exportJSON(){
+const data=JSON.stringify(db[cur],null,2)
+navigator.clipboard.writeText(data)
+alert("JSON kopiert")
+}
+
+function printPDF(){
+let p=db[cur]
+let w=window.open()
+w.document.write("<pre>"+JSON.stringify(p,null,2)+"</pre>")
+w.print()
 }
 
 render()
