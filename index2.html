@@ -3,18 +3,35 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>QS</title>
+<title>QS CORE</title>
 
 <style>
-body{margin:0;background:#111;color:#fff;font-family:system-ui}
-header{padding:16px;font-weight:800;display:flex;justify-content:space-between;border-bottom:1px solid #222}
-button{padding:12px 14px;border-radius:10px;border:none;font-weight:700}
+body{margin:0;background:#0d0d0d;color:#fff;font-family:system-ui}
+header{padding:18px;font-weight:800;display:flex;justify-content:space-between;border-bottom:1px solid #222}
+button{padding:14px;border-radius:12px;border:none;font-weight:700;font-size:15px}
 .primary{background:#fff;color:#000}
-.secondary{background:#222;color:#fff}
-.container{padding:16px}
-.card{background:#1a1a1a;padding:16px;border-radius:14px;margin-bottom:12px}
-input,textarea{width:100%;padding:12px;background:#000;border:1px solid #333;border-radius:10px;color:#fff;margin-top:6px}
-.tool{padding:14px;border-bottom:1px solid #222}
+.secondary{background:#1c1c1c;color:#fff}
+.wrap{padding:18px}
+.card{background:#161616;border:1px solid #262626;padding:18px;border-radius:16px;margin-bottom:14px}
+.input{margin-bottom:14px}
+input,textarea{
+width:100%;
+padding:14px;
+background:#000;
+border:1px solid #333;
+border-radius:12px;
+color:#fff;
+font-size:16px
+}
+.tool{padding:16px;border-bottom:1px solid #222}
+.modal{
+position:fixed;inset:0;background:#000d;
+display:none;align-items:center;justify-content:center;
+}
+.box{
+background:#111;padding:20px;border-radius:18px;width:92%;max-width:420px
+}
+.title{font-weight:900;margin-bottom:14px}
 </style>
 </head>
 
@@ -22,90 +39,147 @@ input,textarea{width:100%;padding:12px;background:#000;border:1px solid #333;bor
 
 <header>
 <div>QS CORE</div>
-<button class="primary" onclick="createProject()">NEU</button>
+<button class="primary" onclick="openProjectModal()">NEU</button>
 </header>
 
-<div id="home" class="container"></div>
+<div id="home" class="wrap"></div>
 
-<div id="project" class="container" style="display:none">
-<button class="secondary" onclick="back()">←</button>
-<h2 id="title"></h2>
-<div id="tools"></div>
-<button class="primary" onclick="addTool()">+ Werkzeug</button>
-<button class="secondary" onclick="exportJSON()">Export JSON</button>
+<div id="projectView" class="wrap" style="display:none">
+<button class="secondary" onclick="closeProject()">←</button>
+<h2 id="projectTitle"></h2>
+<div id="toolList"></div>
+<br>
+<button class="primary" onclick="openToolModal()">+ Werkzeug</button>
+<button class="secondary" onclick="exportJSON()">JSON</button>
+<button class="secondary" onclick="printPDF()">PDF</button>
+</div>
+
+
+<!-- project modal -->
+<div id="projectModal" class="modal">
+<div class="box">
+<div class="title">Projekt</div>
+<div class="input"><input id="pNum" placeholder="Nummer"></div>
+<div class="input"><input id="pName" placeholder="Name"></div>
+<button class="primary" onclick="saveProject()">Speichern</button>
+</div>
+</div>
+
+<!-- tool modal -->
+<div id="toolModal" class="modal">
+<div class="box">
+<div class="title">Werkzeug</div>
+
+<div class="input"><input id="tId" placeholder="T-Nr"></div>
+<div class="input"><input id="tName" placeholder="Name"></div>
+<div class="input"><input id="tDia" placeholder="Ø"></div>
+<div class="input"><textarea id="tNote" placeholder="Bemerkung"></textarea></div>
+
+<button class="primary" onclick="saveTool()">Speichern</button>
+</div>
 </div>
 
 <script>
 
-const KEY="qs_final_db"
+const KEY="QS_DB_V1"
 let db=JSON.parse(localStorage.getItem(KEY)||"[]")
-let current=null
+let currentProject=null
+let editToolIndex=null
 
-function save(){localStorage.setItem(KEY,JSON.stringify(db))}
+function saveDB(){localStorage.setItem(KEY,JSON.stringify(db))}
 
 function renderHome(){
 home.innerHTML=""
 db.forEach((p,i)=>{
-let d=document.createElement("div")
-d.className="card"
-d.innerHTML="<b>"+p.num+"</b><br>"+p.name
-d.onclick=()=>openProject(i)
-home.appendChild(d)
+let c=document.createElement("div")
+c.className="card"
+c.innerHTML="<b>"+p.num+"</b><br>"+p.name
+c.onclick=()=>openProject(i)
+home.appendChild(c)
 })
 }
 
-function createProject(){
-let num=prompt("Nummer")
-if(!num)return
-let name=prompt("Name")
+function openProjectModal(){
+projectModal.style.display="flex"
+}
+
+function saveProject(){
+let num=pNum.value.trim()
+let name=pName.value.trim()
+if(!num||!name)return
 db.push({num,name,tools:[]})
-save()
+saveDB()
+projectModal.style.display="none"
+pNum.value=""
+pName.value=""
 renderHome()
 }
 
 function openProject(i){
-current=i
+currentProject=i
 home.style.display="none"
-project.style.display="block"
-title.innerText=db[i].num+" — "+db[i].name
+projectView.style.display="block"
+projectTitle.innerText=db[i].num+" — "+db[i].name
 renderTools()
 }
 
-function back(){
-project.style.display="none"
+function closeProject(){
+projectView.style.display="none"
 home.style.display="block"
 }
 
 function renderTools(){
-tools.innerHTML=""
-db[current].tools.forEach((t,i)=>{
+toolList.innerHTML=""
+db[currentProject].tools.forEach((t,i)=>{
 let d=document.createElement("div")
 d.className="tool"
 d.innerHTML="<b>"+t.id+"</b> "+t.name+"<br><small>"+(t.note||"")+"</small>"
 d.onclick=()=>editTool(i)
-tools.appendChild(d)
+toolList.appendChild(d)
 })
 }
 
-function addTool(){
-let id=prompt("ID")
-if(!id)return
-let name=prompt("Name")
-let note=prompt("Bemerkung")
-db[current].tools.push({id,name,note})
-save()
-renderTools()
+function openToolModal(){
+editToolIndex=null
+toolModal.style.display="flex"
 }
 
 function editTool(i){
-let t=db[current].tools[i]
-let n=prompt("Bemerkung",t.note)
-if(n!==null){t.note=n;save();renderTools()}
+editToolIndex=i
+let t=db[currentProject].tools[i]
+tId.value=t.id
+tName.value=t.name
+tDia.value=t.dia
+tNote.value=t.note
+toolModal.style.display="flex"
+}
+
+function saveTool(){
+let t={
+id:tId.value,
+name:tName.value,
+dia:tDia.value,
+note:tNote.value
+}
+
+if(editToolIndex==null)
+db[currentProject].tools.push(t)
+else
+db[currentProject].tools[editToolIndex]=t
+
+saveDB()
+toolModal.style.display="none"
+tId.value=tName.value=tDia.value=tNote.value=""
+renderTools()
 }
 
 function exportJSON(){
-navigator.clipboard.writeText(JSON.stringify(db[current]))
-alert("JSON kopiert")
+let data=JSON.stringify(db[currentProject],null,2)
+navigator.clipboard.writeText(data)
+}
+
+function printPDF(){
+window.print()
 }
 
 renderHome()
