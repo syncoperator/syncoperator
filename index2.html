@@ -1,119 +1,45 @@
 <!DOCTYPE html>
-<html lang="de">
+<html>
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>QS TOOL CORE</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>QS</title>
 
 <style>
-body{
-margin:0;
-font-family:system-ui;
-background:#111;
-color:#fff;
-}
-header{
-padding:18px;
-font-weight:800;
-font-size:18px;
-border-bottom:1px solid #222;
-display:flex;
-justify-content:space-between;
-align-items:center;
-}
-button{
-background:#fff;
-color:#000;
-border:none;
-padding:12px 16px;
-font-weight:700;
-border-radius:10px;
-}
-button.secondary{
-background:#222;
-color:#fff;
-}
-.container{
-padding:16px;
-}
-.card{
-background:#1a1a1a;
-padding:16px;
-border-radius:14px;
-margin-bottom:12px;
-}
-input,textarea{
-width:100%;
-padding:14px;
-background:#000;
-border:1px solid #333;
-border-radius:10px;
-color:#fff;
-font-size:16px;
-margin-top:6px;
-}
-label{
-font-size:12px;
-opacity:.6;
-}
-.tool{
-padding:14px;
-border-bottom:1px solid #222;
-}
-.row{
-display:flex;
-gap:10px;
-}
-.hidden{
-display:none;
-}
-.selector{
-display:grid;
-grid-template-columns:repeat(5,1fr);
-gap:8px;
-margin-top:10px;
-}
-.sel{
-background:#000;
-padding:12px;
-text-align:center;
-border-radius:10px;
-border:1px solid #333;
-}
-.sel.active{
-background:#fff;
-color:#000;
-}
+body{margin:0;background:#111;color:#fff;font-family:system-ui}
+header{padding:16px;font-weight:800;display:flex;justify-content:space-between;border-bottom:1px solid #222}
+button{padding:12px 14px;border-radius:10px;border:none;font-weight:700}
+.primary{background:#fff;color:#000}
+.secondary{background:#222;color:#fff}
+.container{padding:16px}
+.card{background:#1a1a1a;padding:16px;border-radius:14px;margin-bottom:12px}
+input,textarea{width:100%;padding:12px;background:#000;border:1px solid #333;border-radius:10px;color:#fff;margin-top:6px}
+.tool{padding:14px;border-bottom:1px solid #222}
 </style>
 </head>
+
 <body>
 
 <header>
-<div>QS TOOL CORE</div>
-<button onclick="newProject()">NEU</button>
+<div>QS CORE</div>
+<button class="primary" onclick="createProject()">NEU</button>
 </header>
 
 <div id="home" class="container"></div>
 
-<div id="project" class="container hidden">
-<button class="secondary" onclick="back()">← zurück</button>
-<h2 id="pTitle"></h2>
-
-<div id="toolList"></div>
-
-<button onclick="startWizard()">+ Werkzeug</button>
+<div id="project" class="container" style="display:none">
+<button class="secondary" onclick="back()">←</button>
+<h2 id="title"></h2>
+<div id="tools"></div>
+<button class="primary" onclick="addTool()">+ Werkzeug</button>
 <button class="secondary" onclick="exportJSON()">Export JSON</button>
 </div>
 
-<div id="wizard" class="container hidden"></div>
-
 <script>
 
-const KEY="qs-db-v7"
+const KEY="qs_final_db"
 let db=JSON.parse(localStorage.getItem(KEY)||"[]")
 let current=null
-let wizard={}
-let step=0
 
 function save(){localStorage.setItem(KEY,JSON.stringify(db))}
 
@@ -128,7 +54,7 @@ home.appendChild(d)
 })
 }
 
-function newProject(){
+function createProject(){
 let num=prompt("Nummer")
 if(!num)return
 let name=prompt("Name")
@@ -139,139 +65,35 @@ renderHome()
 
 function openProject(i){
 current=i
-home.classList.add("hidden")
-project.classList.remove("hidden")
-pTitle.innerText=db[i].num+" — "+db[i].name
+home.style.display="none"
+project.style.display="block"
+title.innerText=db[i].num+" — "+db[i].name
 renderTools()
 }
 
 function back(){
-project.classList.add("hidden")
-wizardDiv.classList.add("hidden")
-home.classList.remove("hidden")
+project.style.display="none"
+home.style.display="block"
 }
 
 function renderTools(){
-toolList.innerHTML=""
+tools.innerHTML=""
 db[current].tools.forEach((t,i)=>{
 let d=document.createElement("div")
 d.className="tool"
-d.innerHTML=
-"<b>"+t.id+"</b> "+t.name+
-"<br><small>"+(t.note||"")+"</small>"
+d.innerHTML="<b>"+t.id+"</b> "+t.name+"<br><small>"+(t.note||"")+"</small>"
 d.onclick=()=>editTool(i)
-toolList.appendChild(d)
+tools.appendChild(d)
 })
 }
 
-function startWizard(){
-wizard={}
-step=0
-wizardDiv.classList.remove("hidden")
-project.classList.add("hidden")
-nextStep()
-}
-
-function nextStep(){
-
-if(step==0){
-wizardDiv.innerHTML=`
-<h3>ID</h3>
-<input id=id>
-<button onclick="wizard.id=id.value;step++;nextStep()">Weiter</button>`
-}
-
-if(step==1){
-wizardDiv.innerHTML=`
-<h3>Name</h3>
-<input id=name>
-<button onclick="wizard.name=name.value;step++;nextStep()">Weiter</button>`
-}
-
-if(step==2){
-wizardDiv.innerHTML=`
-<h3>Typ</h3>
-<div class="selector">
-<div class="sel" onclick="pickType(this,'STD')">STD</div>
-<div class="sel" onclick="pickType(this,'SONDER')">SONDER</div>
-</div>`
-}
-
-if(step==3){
-wizardDiv.innerHTML=`
-<h3>Fach</h3>
-<div class="selector">
-${"ABCDEFG".split("").map(l=>`<div class=sel onclick="pickFach(this,'${l}')">${l}</div>`).join("")}
-</div>`
-}
-
-if(step==4){
-wizardDiv.innerHTML=`
-<h3>Slot</h3>
-<input id=slot type=number>
-<button onclick="wizard.slot=slot.value;step++;nextStep()">Weiter</button>`
-}
-
-if(step==5){
-wizardDiv.innerHTML=`
-<h3>Holder</h3>
-<div class="selector">
-<div class="sel" onclick="pickHold(this,'Spannzange')">Spannzange</div>
-<div class="sel" onclick="pickHold(this,'Reduzierhülse')">Reduzier</div>
-</div>`
-}
-
-if(step==6){
-wizardDiv.innerHTML=`
-<h3>D Größe</h3>
-<input id=dval>
-<button onclick="wizard.d=dval.value;step++;nextStep()">Weiter</button>`
-}
-
-if(step==7){
-wizardDiv.innerHTML=`
-<h3>Revolver unten?</h3>
-<button onclick="wizard.rev=true;finish()">JA</button>
-<button class="secondary" onclick="wizard.rev=false;finish()">Nein</button>`
-}
-
-}
-
-function pickType(el,val){
-document.querySelectorAll(".sel").forEach(x=>x.classList.remove("active"))
-el.classList.add("active")
-wizard.type=val
-step++
-setTimeout(nextStep,200)
-}
-
-function pickFach(el,val){
-document.querySelectorAll(".sel").forEach(x=>x.classList.remove("active"))
-el.classList.add("active")
-wizard.fach=val
-step++
-setTimeout(nextStep,200)
-}
-
-function pickHold(el,val){
-document.querySelectorAll(".sel").forEach(x=>x.classList.remove("active"))
-el.classList.add("active")
-wizard.holder=val
-step++
-setTimeout(nextStep,200)
-}
-
-function finish(){
-wizard.note=
-(wizard.type=="SONDER"?"SONDER | ":"")+
-"FACH "+wizard.fach+
-" | SLOT "+wizard.slot+
-" | "+wizard.holder+" D"+wizard.d
-
-db[current].tools.push(wizard)
+function addTool(){
+let id=prompt("ID")
+if(!id)return
+let name=prompt("Name")
+let note=prompt("Bemerkung")
+db[current].tools.push({id,name,note})
 save()
-wizardDiv.classList.add("hidden")
-project.classList.remove("hidden")
 renderTools()
 }
 
@@ -287,7 +109,6 @@ alert("JSON kopiert")
 }
 
 renderHome()
-
 </script>
 </body>
 </html>
