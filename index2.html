@@ -3,98 +3,90 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>QS CORE</title>
+<title>QS PRO</title>
 
 <style>
 body{
 margin:0;
-font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto;
-background:#0f1115;
-color:#fff;
+font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto;
+background:#f4f6fb;
+color:#111;
 }
-.view{display:none;height:100vh;flex-direction:column}
-.view.active{display:flex}
 
 .nav{
 height:60px;
 display:flex;
 align-items:center;
 justify-content:space-between;
-padding:0 15px;
-background:#151922;
-border-bottom:1px solid #222;
+padding:0 18px;
+background:#fff;
+border-bottom:1px solid #e3e6ef;
 font-weight:700;
 }
 
 .btn{
-background:#2d74ff;
-border:none;
+background:#2b6cff;
 color:#fff;
+border:none;
 padding:10px 16px;
 border-radius:12px;
 font-weight:700;
 }
 
 .list{
-flex:1;
-overflow:auto;
-padding:15px;
+padding:18px;
 }
 
 .card{
-background:#1b2030;
-padding:15px;
+background:#fff;
+padding:16px;
 border-radius:16px;
 margin-bottom:12px;
+box-shadow:0 4px 12px rgba(0,0,0,.06);
+}
+
+.tool{
+background:#fff;
+padding:14px;
+border-radius:14px;
+margin-bottom:10px;
+box-shadow:0 2px 8px rgba(0,0,0,.05);
 cursor:pointer;
 }
 
-.card small{opacity:.5}
+.small{font-size:12px;color:#666}
 
 .overlay{
 position:fixed;
 inset:0;
-background:#000a;
+background:#0005;
 display:none;
-align-items:center;
-justify-content:center;
-z-index:10;
+align-items:flex-end;
+z-index:20;
 }
 
-.modal{
-background:#141824;
+.sheet{
+background:#fff;
 width:100%;
-max-width:420px;
-border-radius:20px;
+border-radius:22px 22px 0 0;
 padding:20px;
-animation:pop .2s ease;
+max-height:85vh;
+overflow:auto;
 }
 
-@keyframes pop{from{transform:scale(.9);opacity:0}to{transform:scale(1);opacity:1}}
-
-input,textarea,select{
+input,select{
 width:100%;
 padding:14px;
 margin-bottom:12px;
-background:#0f1320;
-border:1px solid #222;
-color:#fff;
 border-radius:12px;
+border:1px solid #e2e6f0;
 font-size:16px;
 }
 
-.stepTitle{
-font-size:20px;
-margin-bottom:15px;
+.title{
 font-weight:800;
-}
-
-.tool{
-background:#1a1f2d;
-padding:14px;
-border-radius:14px;
+font-size:18px;
 margin-bottom:10px;
-cursor:grab;
 }
 
 .bar{
@@ -105,33 +97,22 @@ margin-bottom:12px;
 
 .bar button{flex:1}
 
-.badge{
-display:inline-block;
-background:#000;
-padding:2px 8px;
-border-radius:6px;
-font-size:10px;
-margin-bottom:6px;
-}
+.dragging{opacity:.4}
 </style>
 </head>
-
 <body>
 
-<!-- HOME -->
-<div id="home" class="view active">
 <div class="nav">
-<div>QS CORE</div>
-<button class="btn" onclick="openProjectModal()">NEU</button>
-</div>
-<div id="projectList" class="list"></div>
+<div>QS PRO</div>
+<button class="btn" onclick="openProjectSheet()">NEU</button>
 </div>
 
-<!-- PROJECT -->
-<div id="project" class="view">
+<div id="projects" class="list"></div>
+
+<div id="toolsView" style="display:none">
 <div class="nav">
-<button onclick="goHome()">←</button>
-<div id="projectTitle"></div>
+<button onclick="back()">←</button>
+<div id="ptitle"></div>
 <div>
 <button onclick="exportJSON()">JSON</button>
 <button onclick="printPDF()">PDF</button>
@@ -140,88 +121,56 @@ margin-bottom:6px;
 
 <div class="list">
 <div class="bar">
-<button class="btn" onclick="wizardStart()">+ Werkzeug</button>
+<button class="btn" onclick="startWizard()">+ Werkzeug</button>
 <button class="btn" onclick="importJSON()">Import</button>
 </div>
-<div id="toolList"></div>
+<div id="tools"></div>
 </div>
 </div>
 
-<!-- PROJECT MODAL -->
-<div id="projModal" class="overlay">
-<div class="modal">
-<div class="stepTitle">Projekt</div>
-<input id="pnum" placeholder="Nummer">
-<input id="pname" placeholder="Name">
-<button class="btn" onclick="saveProject()">Speichern</button>
-</div>
-</div>
-
-<!-- WIZARD -->
-<div id="wiz" class="overlay">
-<div class="modal" id="wizBox"></div>
+<div id="sheet" class="overlay">
+<div class="sheet" id="sheetContent"></div>
 </div>
 
 <script>
-
-let db=JSON.parse(localStorage.qs||"[]")
+let db=JSON.parse(localStorage.qspro||"[]")
 let cur=null
-let step=0
-let tool={}
+let editIndex=null
 
-function saveDB(){localStorage.qs=JSON.stringify(db)}
-
-function goHome(){
-cur=null
-show("home")
-renderProjects()
-}
-
-function show(id){
-document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"))
-document.getElementById(id).classList.add("active")
-}
+function save(){localStorage.qspro=JSON.stringify(db)}
 
 function renderProjects(){
-projectList.innerHTML=db.map((p,i)=>`
+projects.innerHTML=db.map((p,i)=>`
 <div class=card onclick="openProject(${i})">
-<small>${p.name}</small>
-<div>${p.num}</div>
+<b>${p.num}</b><br>
+<span class=small>${p.name}</span>
 </div>`).join("")
 }
 
 function openProject(i){
 cur=i
-projectTitle.innerText=db[i].num
-show("project")
+toolsView.style.display="block"
+projects.style.display="none"
+ptitle.innerText=db[i].num
 renderTools()
 }
 
-function openProjectModal(){projModal.style.display="flex"}
-
-function saveProject(){
-db.push({
-num:pnum.value,
-name:pname.value,
-tools:[]
-})
-saveDB()
-projModal.style.display="none"
-renderProjects()
+function back(){
+toolsView.style.display="none"
+projects.style.display="block"
 }
 
 function renderTools(){
-let list=db[cur].tools
-toolList.innerHTML=list.map((t,i)=>`
+tools.innerHTML=db[cur].tools.map((t,i)=>`
 <div class=tool draggable=true
-ondragstart="drag=${i}"
+ondragstart="drag=${i};event.target.classList.add('dragging')"
+ondragend="event.target.classList.remove('dragging')"
 ondragover="event.preventDefault()"
 ondrop="drop(${i})"
 onclick="editTool(${i})">
 
-${t.rev?`<div class=badge>REV START</div>`:""}
 <b>${t.id}</b> ${t.name}
-<br><small>${t.loc}</small>
+<div class=small>${t.loc}</div>
 
 </div>`).join("")
 }
@@ -231,108 +180,138 @@ function drop(i){
 let arr=db[cur].tools
 let x=arr.splice(drag,1)[0]
 arr.splice(i,0,x)
-saveDB()
+save()
 renderTools()
 }
 
-function wizardStart(){
-step=0
-tool={}
-wiz.style.display="flex"
-nextStep()
+function openSheet(html){
+sheet.style.display="flex"
+sheetContent.innerHTML=html
 }
 
-function nextStep(){
+function closeSheet(){sheet.style.display="none"}
 
+function openProjectSheet(){
+openSheet(`
+<div class=title>Projekt</div>
+<input id=n placeholder="Nummer">
+<input id=nm placeholder="Name">
+<button class=btn onclick="createProject()">Speichern</button>
+`)
+}
+
+function createProject(){
+db.push({num:n.value,name:nm.value,tools:[]})
+save()
+closeSheet()
+renderProjects()
+}
+
+function startWizard(){
+let t={}
+let step=0
+
+function next(){
 const steps=[
 
 ()=>`
-<div class=stepTitle>ID</div>
-<input id=s>
-<button class=btn onclick="tool.id=s.value;nextStep()">Weiter</button>
-`,
+<div class=title>ID</div>
+<input id=v>
+<button class=btn onclick="t.id=v.value;next()">Weiter</button>`,
 
 ()=>`
-<div class=stepTitle>Name</div>
-<input id=s>
-<button class=btn onclick="tool.name=s.value;nextStep()">Weiter</button>
-`,
+<div class=title>Name</div>
+<input id=v>
+<button class=btn onclick="t.name=v.value;next()">Weiter</button>`,
 
 ()=>`
-<div class=stepTitle>Typ</div>
-<select id=s>
-<option>Standard</option>
-<option>Sonder</option>
-</select>
-<button class=btn onclick="tool.type=s.value;nextStep()">Weiter</button>
-`,
+<div class=title>Fach</div>
+<select id=v>${"ABCDEFG".split("").map(x=>`<option>${x}</option>`).join("")}</select>
+<button class=btn onclick="t.f=v.value;next()">Weiter</button>`,
 
 ()=>`
-<div class=stepTitle>Fach</div>
-<select id=s>
-${"ABCDEFG".split("").map(x=>`<option>${x}</option>`).join("")}
-</select>
-<button class=btn onclick="tool.fach=s.value;nextStep()">Weiter</button>
-`,
+<div class=title>Slot</div>
+<input id=v type=number>
+<button class=btn onclick="t.s=v.value;next()">Weiter</button>`,
 
 ()=>`
-<div class=stepTitle>Slot</div>
-<input id=s type=number>
-<button class=btn onclick="tool.slot=s.value;nextStep()">Weiter</button>
-`,
+<div class=title>Spannzange D</div>
+<input id=v type=number>
+<button class=btn onclick="t.sp=v.value;next()">Weiter</button>`,
 
 ()=>`
-<div class=stepTitle>Spannzange D</div>
-<input id=s type=number>
-<button class=btn onclick="tool.sp=s.value;nextStep()">Weiter</button>
-`,
-
-()=>`
-<div class=stepTitle>Reduzierhülse D</div>
-<input id=s type=number>
-<button class=btn onclick="tool.red=s.value;nextStep()">Weiter</button>
-`,
-
-()=>`
-<div class=stepTitle>Revolver Start?</div>
-<select id=s>
-<option>Nein</option>
-<option>Ja</option>
-</select>
-<button class=btn onclick="finishTool(s.value)">Fertig</button>
-`
+<div class=title>Reduzierhülse D</div>
+<input id=v type=number>
+<button class=btn onclick="finish(v.value)">Fertig</button>`
 ]
 
-wizBox.innerHTML=steps[step++]()
+sheetContent.innerHTML=steps[step++]()
 }
 
-function finishTool(v){
-tool.rev=v=="Ja"
-tool.loc=`Fach ${tool.fach}${tool.slot} | SZ D${tool.sp} | RH D${tool.red}`
-db[cur].tools.push(tool)
-saveDB()
-wiz.style.display="none"
+function finish(r){
+t.loc=`Fach ${t.f}${t.s} | SZ D${t.sp} | RH D${r}`
+db[cur].tools.push(t)
+save()
+closeSheet()
 renderTools()
 }
 
+openSheet("")
+next()
+}
+
 function editTool(i){
+editIndex=i
 let t=db[cur].tools[i]
-wizardStart()
-tool=t
-step=1
+openSheet(`
+<div class=title>Werkzeug</div>
+<input id=id value="${t.id}">
+<input id=name value="${t.name}">
+<input id=loc value="${t.loc}">
+<div class=bar>
+<button class=btn onclick="saveEdit()">Speichern</button>
+<button class=btn style="background:#ff3b3b" onclick="del()">Löschen</button>
+</div>
+`)
+}
+
+function saveEdit(){
+let t=db[cur].tools[editIndex]
+t.id=id.value
+t.name=name.value
+t.loc=loc.value
+save()
+closeSheet()
+renderTools()
+}
+
+function del(){
+db[cur].tools.splice(editIndex,1)
+save()
+closeSheet()
+renderTools()
 }
 
 function exportJSON(){
-let data=JSON.stringify(db,null,2)
-navigator.clipboard.writeText(data)
-alert("JSON kopiert")
+let blob=new Blob([JSON.stringify(db,null,2)],{type:"application/json"})
+let a=document.createElement("a")
+a.href=URL.createObjectURL(blob)
+a.download="tools.json"
+a.click()
 }
 
 function importJSON(){
-let txt=prompt("JSON einfügen")
-if(!txt)return
-db=JSON.parse(txt)
-saveDB()
+openSheet(`
+<div class=title>JSON Import</div>
+<textarea id=imp style="width:100%;height:200px"></textarea>
+<button class=btn onclick="loadJSON()">Import</button>
+`)
+}
+
+function loadJSON(){
+db=JSON.parse(imp.value)
+save()
+closeSheet()
 renderProjects()
 }
 
@@ -341,7 +320,6 @@ window.print()
 }
 
 renderProjects()
-
 </script>
 </body>
 </html>
