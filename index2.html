@@ -2,164 +2,184 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>QS TOOL</title>
 
 <style>
-body{margin:0;font-family:-apple-system;background:#f2f2f7}
-header{height:60px;background:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 16px;font-weight:700;border-bottom:1px solid #ddd}
-.main{padding:16px}
-.card{background:#fff;border-radius:18px;padding:16px;margin-bottom:12px}
-.btn{background:#007aff;color:#fff;padding:14px;border-radius:14px;text-align:center;font-weight:700;margin-bottom:12px}
-.btn.gray{background:#e5e5ea;color:#000}
-.overlay{position:fixed;inset:0;background:#0007;display:none;align-items:flex-end}
-.sheet{background:#fff;width:100%;border-radius:24px 24px 0 0;max-height:92%;overflow:auto}
-.head{padding:16px;text-align:center;font-weight:800;border-bottom:1px solid #eee}
-.pad{padding:16px}
-input,textarea{width:100%;padding:14px;border:none;border-radius:12px;background:#f2f2f7;margin-bottom:12px;font-size:16px}
-.sec{background:#f2f2f7;border-radius:14px;margin-bottom:10px}
-.sec h4{margin:0;padding:14px;font-size:14px}
-.grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;padding:12px}
-.sel{background:#fff;padding:12px;border-radius:10px;text-align:center;font-weight:700;border:2px solid transparent}
-.sel.active{border:2px solid #007aff;color:#007aff}
-.tool{background:#fff;border-radius:16px;padding:14px;margin-bottom:10px}
-.small{font-size:12px;color:#666}
+body{margin:0;font-family:system-ui;background:#f2f2f7}
+.top{display:flex;justify-content:space-between;padding:14px;background:#fff;font-weight:700}
+.btn{background:#007aff;color:#fff;border:none;padding:10px 14px;border-radius:10px}
+.list{padding:12px}
+.card{background:#fff;padding:14px;border-radius:14px;margin-bottom:10px}
+.tool{background:#fff;margin:10px;padding:14px;border-radius:14px;cursor:grab}
+.modal{position:fixed;inset:0;background:#fff;z-index:99;display:none;flex-direction:column}
+.head{padding:14px;font-weight:800;border-bottom:1px solid #ddd}
+.sec{padding:14px;border-bottom:1px solid #eee}
+.grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:10px}
+.sel{padding:12px;background:#eee;border-radius:10px;text-align:center;font-weight:700}
+.sel.active{background:#000;color:#fff}
+input{width:100%;padding:12px;border-radius:10px;border:1px solid #ddd;margin-top:8px}
+.footer{padding:14px}
 </style>
 </head>
 <body>
 
-<header>
-<span>PROJECTS</span>
-<button onclick="openProj()">＋</button>
-</header>
-
-<div class="main" id="app"></div>
-
-<!-- PROJECT -->
-<div class="overlay" id="projModal">
-<div class="sheet">
-<div class="head">Projekt</div>
-<div class="pad">
-<input id="pname" placeholder="Name">
-<input id="pnum" placeholder="Nummer">
-<div class="btn" onclick="createProject()">Speichern</div>
-<div class="btn gray" onclick="projModal.style.display='none'">Abbrechen</div>
-</div>
-</div>
+<div class="top">
+<div>PROJECTS</div>
+<button class="btn" onclick="newProject()">NEU</button>
 </div>
 
-<!-- TOOL -->
-<div class="overlay" id="toolModal">
-<div class="sheet">
-<div class="head">Tool</div>
-<div class="pad">
+<div id="projects" class="list"></div>
 
-<input id="tid" placeholder="T0101">
-<input id="tnm" placeholder="Name">
-
-<div class="sec"><h4>Typ</h4><div id="type" class="grid"></div></div>
-<div class="sec"><h4>Fach</h4><div id="fach" class="grid"></div></div>
-<div class="sec"><h4>Nummer</h4><div id="num" class="grid"></div></div>
-<div class="sec"><h4>Spannzange</h4><div id="spann" class="grid"></div></div>
-<div class="sec"><h4>Reduzier</h4><div id="red" class="grid"></div></div>
-
-<textarea id="tbem" placeholder="Extra"></textarea>
-
-<div class="btn" onclick="saveTool()">Speichern</div>
-<div class="btn gray" onclick="closeTool()">Abbrechen</div>
-
+<div id="toolsView" style="display:none">
+<div class="top">
+<button class="btn" onclick="back()">←</button>
+<div id="title"></div>
+<div>
+<button class="btn" onclick="addTool()">+</button>
+<button class="btn" onclick="exportJSON()">JSON</button>
 </div>
 </div>
+<div id="tools"></div>
 </div>
 
-<!-- BULK -->
-<div class="overlay" id="bulkModal">
-<div class="sheet">
-<div class="head">Bulk Import</div>
-<div class="pad">
-<textarea id="bulkText" placeholder="T0101 BOHRER D10&#10;T0202 FRAESER D6"></textarea>
-<div class="btn" onclick="bulkAdd()">Import</div>
-<div class="btn gray" onclick="bulkModal.style.display='none'">Cancel</div>
+<div id="modal" class="modal">
+
+<div class="head">Werkzeug</div>
+
+<div class="sec">
+ID
+<input id="tid">
+Name
+<input id="tnm">
 </div>
+
+<div class="sec">
+Fach
+<div id="fach" class="grid"></div>
 </div>
+
+<div class="sec">
+Position
+<div id="slot" class="grid"></div>
+</div>
+
+<div class="sec">
+Spannzange
+<div id="sp" class="grid"></div>
+</div>
+
+<div class="sec">
+Reduzierhülse
+<div id="red" class="grid"></div>
+</div>
+
+<div class="sec">
+Bemerkung
+<input id="bem">
+</div>
+
+<div class="sec">
+<button class="btn" id="rev">REVOLVER START</button>
+</div>
+
+<div class="footer">
+<button class="btn" style="width:100%" onclick="saveTool()">Speichern</button>
+</div>
+
 </div>
 
 <script>
-const KEY="QSFINAL"
-let db=JSON.parse(localStorage.getItem(KEY)||"[]")
-let cur=null,edit=null
+let db=JSON.parse(localStorage.qs||"[]")
+let cur=null
+let edit=null
+let rev=false
 
-const app=document.getElementById("app")
-function save(){localStorage.setItem(KEY,JSON.stringify(db))}
+const q=id=>document.getElementById(id)
 
-function render(){
-app.innerHTML=""
-db.forEach((p,i)=>{
-app.innerHTML+=`
-<div class="card" onclick="openProject(${i})">
-<div>${p.name}</div>
-<b>${p.num}</b>
-</div>`
-})
+function saveDB(){localStorage.qs=JSON.stringify(db)}
+
+function renderProjects(){
+q("projects").innerHTML=db.map((p,i)=>`
+<div class=card onclick="openProject(${i})">
+${p.num} — ${p.name}
+</div>`).join("")
 }
 
-function openProj(){projModal.style.display="flex"}
-
-function createProject(){
-if(!pname.value||!pnum.value)return
-db.push({name:pname.value,num:pnum.value,tools:[]})
-save()
-projModal.style.display="none"
-render()
+function newProject(){
+let n=prompt("Nummer")
+if(!n)return
+db.push({num:n,name:"PROJECT",tools:[]})
+saveDB()
+renderProjects()
 }
 
 function openProject(i){
 cur=i
-app.innerHTML=`
-<div class="btn" onclick="openTool()">+ Tool</div>
-<div class="btn" onclick="bulkModal.style.display='flex'">Bulk Input</div>
-<div class="btn gray" onclick="exportJSON()">Export JSON</div>
-<div class="btn gray" onclick="printPDF()">PDF</div>
-<div id="list"></div>
-<div class="btn gray" onclick="render()">← Back</div>`
+q("projects").style.display="none"
+q("toolsView").style.display="block"
+q("title").innerText=db[i].num
 renderTools()
 }
 
+function back(){
+q("projects").style.display="block"
+q("toolsView").style.display="none"
+}
+
 function renderTools(){
-const l=document.getElementById("list")
-l.innerHTML=""
-db[cur].tools.forEach((t,i)=>{
-l.innerHTML+=`
-<div class="tool" draggable="true" ondragstart="drag(${i})" ondrop="drop(${i})" ondragover="event.preventDefault()" onclick="editTool(${i})">
-<div class="small">${t.id}</div>
-<b>${t.nm}</b>
-<div class="small">${t.bem||""}</div>
-</div>`
-})
+q("tools").innerHTML=db[cur].tools.map((t,i)=>`
+<div class=tool draggable=true
+ondragstart="drag=${i}"
+ondrop="drop(${i})"
+ondragover="event.preventDefault()"
+onclick="editTool(${i})">
+<b>${t.id}</b><br>${t.nm}<br>${t.bem||""}
+</div>`).join("")
 }
 
-let dragIndex=null
-function drag(i){dragIndex=i}
+let drag=null
 function drop(i){
-let arr=db[cur].tools
-let el=arr.splice(dragIndex,1)[0]
-arr.splice(i,0,el)
-save();renderTools()
+let a=db[cur].tools
+let x=a.splice(drag,1)[0]
+a.splice(i,0,x)
+saveDB()
+renderTools()
 }
 
-function openTool(){edit=null;toolModal.style.display="flex";reset()}
-function closeTool(){toolModal.style.display="none"}
+function addTool(){
+edit=null
+openModal()
+}
 
 function editTool(i){
-edit=i;openTool()
+edit=i
 let t=db[cur].tools[i]
-tid.value=t.id;tnm.value=t.nm;tbem.value=t.bem
+openModal(t)
 }
 
-let type,fach,num,spann,red
+function openModal(t={}){
+q("modal").style.display="flex"
+q("tid").value=t.id||""
+q("tnm").value=t.nm||""
+q("bem").value=t.bem||""
+rev=t.rev||false
+renderSelectors()
+}
+
+function renderSelectors(){
+
+grid("fach",["A","B","C","D","E","F","G"],v=>sel.f=v)
+grid("slot",[...Array(25)].map((_,i)=>i+1),v=>sel.s=v)
+grid("sp",[...Array(25)].map((_,i)=>"D"+(i+1)),v=>sel.sp=v)
+grid("red",[...Array(25)].map((_,i)=>"D"+(i+1)),v=>sel.r=v)
+
+}
+
+let sel={}
 
 function grid(id,arr,cb){
-const el=document.getElementById(id)
+let el=q(id)
 el.innerHTML=""
 arr.forEach(v=>{
 let d=document.createElement("div")
@@ -169,76 +189,45 @@ d.onclick=()=>{
 [...el.children].forEach(x=>x.classList.remove("active"))
 d.classList.add("active")
 cb(v)
+
+setTimeout(()=>{
+let sec=el.parentElement
+sec.style.display="none"
+let n=sec.nextElementSibling
+if(n)n.style.display="block"
+},120)
 }
 el.appendChild(d)
 })
 }
 
-function reset(){
-grid("type",["STANDARD","SONDER"],v=>type=v)
-grid("fach",["A","B","C","D","E","F","G"],v=>fach=v)
-grid("num",[...Array(25).keys()].map(x=>x+1),v=>num=v)
-grid("spann",[...Array(25).keys()].map(x=>"D"+(x+1)),v=>spann=v)
-grid("red",[...Array(25).keys()].map(x=>"D"+(x+1)),v=>red=v)
-tid.value="";tnm.value="";tbem.value=""
+q("rev").onclick=()=>{
+rev=!rev
+q("rev").style.background=rev?"#000":"#007aff"
 }
 
 function saveTool(){
-let bem=[]
-if(fach&&num)bem.push("FACH "+fach+num)
-if(spann)bem.push("SPANNZANGE "+spann)
-if(red)bem.push("REDUZIER "+red)
-if(tbem.value)bem.push(tbem.value)
 
-let t={id:tid.value.toUpperCase(),nm:tnm.value.toUpperCase(),bem:bem.join(" | ")}
+let t={
+id:q("tid").value.toUpperCase(),
+nm:q("tnm").value.toUpperCase(),
+bem:`Fach ${sel.f||""}${sel.s||""} | ${sel.sp||""} | ${sel.r||""} ${q("bem").value}`,
+rev:rev
+}
 
 if(edit===null)db[cur].tools.push(t)
 else db[cur].tools[edit]=t
 
-save()
-closeTool()
+saveDB()
+q("modal").style.display="none"
 renderTools()
 }
 
-/* PARSER */
-function parseLine(line){
-let parts=line.trim().split(/\s+/)
-if(parts.length<2)return null
-return{
-id:parts[0],
-nm:parts.slice(1).join(" "),
-bem:""
-}
-}
-
-/* BULK */
-function bulkAdd(){
-let lines=bulkText.value.split("\n")
-lines.forEach(l=>{
-let t=parseLine(l)
-if(t)db[cur].tools.push(t)
-})
-save()
-bulkModal.style.display="none"
-renderTools()
-}
-
-/* EXPORT */
 function exportJSON(){
-const data=JSON.stringify(db[cur],null,2)
-navigator.clipboard.writeText(data)
-alert("JSON copied")
+alert(JSON.stringify(db[cur]))
 }
 
-/* PDF */
-function printPDF(){
-let p=db[cur]
-let w=window.open()
-w.document.write("<pre>"+JSON.stringify(p,null,2)+"</pre>")
-w.print()
-}
-
-render()
+renderProjects()
 </script>
 </body>
 </html>
