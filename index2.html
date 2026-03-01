@@ -2,232 +2,292 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>QS TOOL</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QS TOOL CORE</title>
 
 <style>
-body{margin:0;font-family:system-ui;background:#f2f2f7}
-.top{display:flex;justify-content:space-between;padding:14px;background:#fff;font-weight:700}
-.btn{background:#007aff;color:#fff;border:none;padding:10px 14px;border-radius:10px}
-.list{padding:12px}
-.card{background:#fff;padding:14px;border-radius:14px;margin-bottom:10px}
-.tool{background:#fff;margin:10px;padding:14px;border-radius:14px;cursor:grab}
-.modal{position:fixed;inset:0;background:#fff;z-index:99;display:none;flex-direction:column}
-.head{padding:14px;font-weight:800;border-bottom:1px solid #ddd}
-.sec{padding:14px;border-bottom:1px solid #eee}
-.grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:10px}
-.sel{padding:12px;background:#eee;border-radius:10px;text-align:center;font-weight:700}
-.sel.active{background:#000;color:#fff}
-input{width:100%;padding:12px;border-radius:10px;border:1px solid #ddd;margin-top:8px}
-.footer{padding:14px}
+body{
+margin:0;
+font-family:system-ui;
+background:#111;
+color:#fff;
+}
+header{
+padding:18px;
+font-weight:800;
+font-size:18px;
+border-bottom:1px solid #222;
+display:flex;
+justify-content:space-between;
+align-items:center;
+}
+button{
+background:#fff;
+color:#000;
+border:none;
+padding:12px 16px;
+font-weight:700;
+border-radius:10px;
+}
+button.secondary{
+background:#222;
+color:#fff;
+}
+.container{
+padding:16px;
+}
+.card{
+background:#1a1a1a;
+padding:16px;
+border-radius:14px;
+margin-bottom:12px;
+}
+input,textarea{
+width:100%;
+padding:14px;
+background:#000;
+border:1px solid #333;
+border-radius:10px;
+color:#fff;
+font-size:16px;
+margin-top:6px;
+}
+label{
+font-size:12px;
+opacity:.6;
+}
+.tool{
+padding:14px;
+border-bottom:1px solid #222;
+}
+.row{
+display:flex;
+gap:10px;
+}
+.hidden{
+display:none;
+}
+.selector{
+display:grid;
+grid-template-columns:repeat(5,1fr);
+gap:8px;
+margin-top:10px;
+}
+.sel{
+background:#000;
+padding:12px;
+text-align:center;
+border-radius:10px;
+border:1px solid #333;
+}
+.sel.active{
+background:#fff;
+color:#000;
+}
 </style>
 </head>
 <body>
 
-<div class="top">
-<div>PROJECTS</div>
-<button class="btn" onclick="newProject()">NEU</button>
+<header>
+<div>QS TOOL CORE</div>
+<button onclick="newProject()">NEU</button>
+</header>
+
+<div id="home" class="container"></div>
+
+<div id="project" class="container hidden">
+<button class="secondary" onclick="back()">← zurück</button>
+<h2 id="pTitle"></h2>
+
+<div id="toolList"></div>
+
+<button onclick="startWizard()">+ Werkzeug</button>
+<button class="secondary" onclick="exportJSON()">Export JSON</button>
 </div>
 
-<div id="projects" class="list"></div>
-
-<div id="toolsView" style="display:none">
-<div class="top">
-<button class="btn" onclick="back()">←</button>
-<div id="title"></div>
-<div>
-<button class="btn" onclick="addTool()">+</button>
-<button class="btn" onclick="exportJSON()">JSON</button>
-</div>
-</div>
-<div id="tools"></div>
-</div>
-
-<div id="modal" class="modal">
-
-<div class="head">Werkzeug</div>
-
-<div class="sec">
-ID
-<input id="tid">
-Name
-<input id="tnm">
-</div>
-
-<div class="sec">
-Fach
-<div id="fach" class="grid"></div>
-</div>
-
-<div class="sec">
-Position
-<div id="slot" class="grid"></div>
-</div>
-
-<div class="sec">
-Spannzange
-<div id="sp" class="grid"></div>
-</div>
-
-<div class="sec">
-Reduzierhülse
-<div id="red" class="grid"></div>
-</div>
-
-<div class="sec">
-Bemerkung
-<input id="bem">
-</div>
-
-<div class="sec">
-<button class="btn" id="rev">REVOLVER START</button>
-</div>
-
-<div class="footer">
-<button class="btn" style="width:100%" onclick="saveTool()">Speichern</button>
-</div>
-
-</div>
+<div id="wizard" class="container hidden"></div>
 
 <script>
-let db=JSON.parse(localStorage.qs||"[]")
-let cur=null
-let edit=null
-let rev=false
 
-const q=id=>document.getElementById(id)
+const KEY="qs-db-v7"
+let db=JSON.parse(localStorage.getItem(KEY)||"[]")
+let current=null
+let wizard={}
+let step=0
 
-function saveDB(){localStorage.qs=JSON.stringify(db)}
+function save(){localStorage.setItem(KEY,JSON.stringify(db))}
 
-function renderProjects(){
-q("projects").innerHTML=db.map((p,i)=>`
-<div class=card onclick="openProject(${i})">
-${p.num} — ${p.name}
-</div>`).join("")
+function renderHome(){
+home.innerHTML=""
+db.forEach((p,i)=>{
+let d=document.createElement("div")
+d.className="card"
+d.innerHTML="<b>"+p.num+"</b><br>"+p.name
+d.onclick=()=>openProject(i)
+home.appendChild(d)
+})
 }
 
 function newProject(){
-let n=prompt("Nummer")
-if(!n)return
-db.push({num:n,name:"PROJECT",tools:[]})
-saveDB()
-renderProjects()
+let num=prompt("Nummer")
+if(!num)return
+let name=prompt("Name")
+db.push({num,name,tools:[]})
+save()
+renderHome()
 }
 
 function openProject(i){
-cur=i
-q("projects").style.display="none"
-q("toolsView").style.display="block"
-q("title").innerText=db[i].num
+current=i
+home.classList.add("hidden")
+project.classList.remove("hidden")
+pTitle.innerText=db[i].num+" — "+db[i].name
 renderTools()
 }
 
 function back(){
-q("projects").style.display="block"
-q("toolsView").style.display="none"
+project.classList.add("hidden")
+wizardDiv.classList.add("hidden")
+home.classList.remove("hidden")
 }
 
 function renderTools(){
-q("tools").innerHTML=db[cur].tools.map((t,i)=>`
-<div class=tool draggable=true
-ondragstart="drag=${i}"
-ondrop="drop(${i})"
-ondragover="event.preventDefault()"
-onclick="editTool(${i})">
-<b>${t.id}</b><br>${t.nm}<br>${t.bem||""}
-</div>`).join("")
-}
-
-let drag=null
-function drop(i){
-let a=db[cur].tools
-let x=a.splice(drag,1)[0]
-a.splice(i,0,x)
-saveDB()
-renderTools()
-}
-
-function addTool(){
-edit=null
-openModal()
-}
-
-function editTool(i){
-edit=i
-let t=db[cur].tools[i]
-openModal(t)
-}
-
-function openModal(t={}){
-q("modal").style.display="flex"
-q("tid").value=t.id||""
-q("tnm").value=t.nm||""
-q("bem").value=t.bem||""
-rev=t.rev||false
-renderSelectors()
-}
-
-function renderSelectors(){
-
-grid("fach",["A","B","C","D","E","F","G"],v=>sel.f=v)
-grid("slot",[...Array(25)].map((_,i)=>i+1),v=>sel.s=v)
-grid("sp",[...Array(25)].map((_,i)=>"D"+(i+1)),v=>sel.sp=v)
-grid("red",[...Array(25)].map((_,i)=>"D"+(i+1)),v=>sel.r=v)
-
-}
-
-let sel={}
-
-function grid(id,arr,cb){
-let el=q(id)
-el.innerHTML=""
-arr.forEach(v=>{
+toolList.innerHTML=""
+db[current].tools.forEach((t,i)=>{
 let d=document.createElement("div")
-d.className="sel"
-d.textContent=v
-d.onclick=()=>{
-[...el.children].forEach(x=>x.classList.remove("active"))
-d.classList.add("active")
-cb(v)
-
-setTimeout(()=>{
-let sec=el.parentElement
-sec.style.display="none"
-let n=sec.nextElementSibling
-if(n)n.style.display="block"
-},120)
-}
-el.appendChild(d)
+d.className="tool"
+d.innerHTML=
+"<b>"+t.id+"</b> "+t.name+
+"<br><small>"+(t.note||"")+"</small>"
+d.onclick=()=>editTool(i)
+toolList.appendChild(d)
 })
 }
 
-q("rev").onclick=()=>{
-rev=!rev
-q("rev").style.background=rev?"#000":"#007aff"
+function startWizard(){
+wizard={}
+step=0
+wizardDiv.classList.remove("hidden")
+project.classList.add("hidden")
+nextStep()
 }
 
-function saveTool(){
+function nextStep(){
 
-let t={
-id:q("tid").value.toUpperCase(),
-nm:q("tnm").value.toUpperCase(),
-bem:`Fach ${sel.f||""}${sel.s||""} | ${sel.sp||""} | ${sel.r||""} ${q("bem").value}`,
-rev:rev
+if(step==0){
+wizardDiv.innerHTML=`
+<h3>ID</h3>
+<input id=id>
+<button onclick="wizard.id=id.value;step++;nextStep()">Weiter</button>`
 }
 
-if(edit===null)db[cur].tools.push(t)
-else db[cur].tools[edit]=t
+if(step==1){
+wizardDiv.innerHTML=`
+<h3>Name</h3>
+<input id=name>
+<button onclick="wizard.name=name.value;step++;nextStep()">Weiter</button>`
+}
 
-saveDB()
-q("modal").style.display="none"
+if(step==2){
+wizardDiv.innerHTML=`
+<h3>Typ</h3>
+<div class="selector">
+<div class="sel" onclick="pickType(this,'STD')">STD</div>
+<div class="sel" onclick="pickType(this,'SONDER')">SONDER</div>
+</div>`
+}
+
+if(step==3){
+wizardDiv.innerHTML=`
+<h3>Fach</h3>
+<div class="selector">
+${"ABCDEFG".split("").map(l=>`<div class=sel onclick="pickFach(this,'${l}')">${l}</div>`).join("")}
+</div>`
+}
+
+if(step==4){
+wizardDiv.innerHTML=`
+<h3>Slot</h3>
+<input id=slot type=number>
+<button onclick="wizard.slot=slot.value;step++;nextStep()">Weiter</button>`
+}
+
+if(step==5){
+wizardDiv.innerHTML=`
+<h3>Holder</h3>
+<div class="selector">
+<div class="sel" onclick="pickHold(this,'Spannzange')">Spannzange</div>
+<div class="sel" onclick="pickHold(this,'Reduzierhülse')">Reduzier</div>
+</div>`
+}
+
+if(step==6){
+wizardDiv.innerHTML=`
+<h3>D Größe</h3>
+<input id=dval>
+<button onclick="wizard.d=dval.value;step++;nextStep()">Weiter</button>`
+}
+
+if(step==7){
+wizardDiv.innerHTML=`
+<h3>Revolver unten?</h3>
+<button onclick="wizard.rev=true;finish()">JA</button>
+<button class="secondary" onclick="wizard.rev=false;finish()">Nein</button>`
+}
+
+}
+
+function pickType(el,val){
+document.querySelectorAll(".sel").forEach(x=>x.classList.remove("active"))
+el.classList.add("active")
+wizard.type=val
+step++
+setTimeout(nextStep,200)
+}
+
+function pickFach(el,val){
+document.querySelectorAll(".sel").forEach(x=>x.classList.remove("active"))
+el.classList.add("active")
+wizard.fach=val
+step++
+setTimeout(nextStep,200)
+}
+
+function pickHold(el,val){
+document.querySelectorAll(".sel").forEach(x=>x.classList.remove("active"))
+el.classList.add("active")
+wizard.holder=val
+step++
+setTimeout(nextStep,200)
+}
+
+function finish(){
+wizard.note=
+(wizard.type=="SONDER"?"SONDER | ":"")+
+"FACH "+wizard.fach+
+" | SLOT "+wizard.slot+
+" | "+wizard.holder+" D"+wizard.d
+
+db[current].tools.push(wizard)
+save()
+wizardDiv.classList.add("hidden")
+project.classList.remove("hidden")
 renderTools()
 }
 
-function exportJSON(){
-alert(JSON.stringify(db[cur]))
+function editTool(i){
+let t=db[current].tools[i]
+let n=prompt("Bemerkung",t.note)
+if(n!==null){t.note=n;save();renderTools()}
 }
 
-renderProjects()
+function exportJSON(){
+navigator.clipboard.writeText(JSON.stringify(db[current]))
+alert("JSON kopiert")
+}
+
+renderHome()
+
 </script>
 </body>
 </html>
