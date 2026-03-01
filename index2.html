@@ -30,11 +30,25 @@ input,textarea{width:100%;padding:12px;margin-bottom:10px;border-radius:10px;bor
 
 <header>
 <span>PROJECTS</span>
-<button onclick="newProject()">＋</button>
+<button onclick="openProjectModal()">＋</button>
 </header>
 
 <div class="main" id="app"></div>
 
+<!-- PROJECT MODAL -->
+<div class="overlay" id="projModal">
+<div class="modal">
+<div class="modal-head">Neues Projekt</div>
+<div class="modal-body">
+<input id="pname" placeholder="Name">
+<input id="pnum" placeholder="Nummer">
+<div class="bigbtn primary" onclick="createProject()">Erstellen</div>
+<div class="bigbtn secondary" onclick="closeProjectModal()">Abbrechen</div>
+</div>
+</div>
+</div>
+
+<!-- TOOL MODAL -->
 <div class="overlay" id="toolModal">
 <div class="modal">
 <div class="modal-head">Tool</div>
@@ -67,14 +81,13 @@ input,textarea{width:100%;padding:12px;margin-bottom:10px;border-radius:10px;bor
 </div>
 
 <script>
-const KEY="QSDBV6"
+const KEY="QSDBV7"
 let db=JSON.parse(localStorage.getItem(KEY)||"[]")
 let cur=null
 let edit=null
 
-const app=document.getElementById("app")
-
 function saveDB(){localStorage.setItem(KEY,JSON.stringify(db))}
+const app=document.getElementById("app")
 
 function renderProjects(){
 app.innerHTML=""
@@ -87,12 +100,16 @@ app.innerHTML+=`
 })
 }
 
-function newProject(){
-const n=prompt("Name")
-if(!n)return
-const num=prompt("Nummer")
+function openProjectModal(){projModal.style.display="flex"}
+function closeProjectModal(){projModal.style.display="none"}
+
+function createProject(){
+const n=pname.value.trim()
+const num=pnum.value.trim()
+if(!n||!num)return alert("Name + Nummer eingeben")
 db.push({name:n,num:num,tools:[]})
 saveDB()
+closeProjectModal()
 renderProjects()
 }
 
@@ -125,9 +142,7 @@ toolModal.style.display="flex"
 resetSelections()
 }
 
-function closeModal(){
-toolModal.style.display="none"
-}
+function closeModal(){toolModal.style.display="none"}
 
 function editTool(i){
 edit=i
@@ -143,9 +158,7 @@ typeBtn.classList.toggle("active")
 typeBtn.textContent=typeBtn.classList.contains("active")?"SONDER":"STANDARD"
 }
 
-function toggleRev(){
-revBtn.classList.toggle("active")
-}
+function toggleRev(){revBtn.classList.toggle("active")}
 
 let fachL=null,fachN=null,spann=null,red=null
 
@@ -162,24 +175,16 @@ el.appendChild(d)
 
 function initGrids(){
 grid(fachLetters,["A","B","C","D","E","F","G"],(v,d)=>{
-fachL=v
-[...fachLetters.children].forEach(x=>x.classList.remove("active"))
-d.classList.add("active")
+fachL=v;[...fachLetters.children].forEach(x=>x.classList.remove("active"));d.classList.add("active")
 })
 grid(fachNums,[...Array(25).keys()].map(x=>x+1),(v,d)=>{
-fachN=v
-[...fachNums.children].forEach(x=>x.classList.remove("active"))
-d.classList.add("active")
+fachN=v;[...fachNums.children].forEach(x=>x.classList.remove("active"));d.classList.add("active")
 })
 grid(spannGrid,[...Array(25).keys()].map(x=>"D"+(x+1)),(v,d)=>{
-spann=v
-[...spannGrid.children].forEach(x=>x.classList.remove("active"))
-d.classList.add("active")
+spann=v;[...spannGrid.children].forEach(x=>x.classList.remove("active"));d.classList.add("active")
 })
 grid(redGrid,[...Array(25).keys()].map(x=>"D"+(x+1)),(v,d)=>{
-red=v
-[...redGrid.children].forEach(x=>x.classList.remove("active"))
-d.classList.add("active")
+red=v;[...redGrid.children].forEach(x=>x.classList.remove("active"));d.classList.add("active")
 })
 }
 
