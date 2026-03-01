@@ -10,7 +10,7 @@ body{margin:0;font-family:-apple-system;background:#f2f2f7}
 header{height:60px;background:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 16px;font-weight:700;border-bottom:1px solid #ddd}
 .main{padding:16px}
 .card{background:#fff;border-radius:18px;padding:16px;margin-bottom:12px}
-.btn{background:#007aff;color:#fff;padding:14px;border-radius:14px;text-align:center;font-weight:700;margin-bottom:14px}
+.btn{background:#007aff;color:#fff;padding:14px;border-radius:14px;text-align:center;font-weight:700;margin-bottom:12px}
 .btn.gray{background:#e5e5ea;color:#000}
 .overlay{position:fixed;inset:0;background:#0007;display:none;align-items:flex-end}
 .sheet{background:#fff;width:100%;border-radius:24px 24px 0 0;max-height:92%;overflow:auto}
@@ -72,6 +72,18 @@ input,textarea{width:100%;padding:14px;border:none;border-radius:12px;background
 </div>
 </div>
 
+<!-- BULK -->
+<div class="overlay" id="bulkModal">
+<div class="sheet">
+<div class="head">Bulk Import</div>
+<div class="pad">
+<textarea id="bulkText" placeholder="T0101 BOHRER D10&#10;T0202 FRAESER D6"></textarea>
+<div class="btn" onclick="bulkAdd()">Import</div>
+<div class="btn gray" onclick="bulkModal.style.display='none'">Cancel</div>
+</div>
+</div>
+</div>
+
 <script>
 const KEY="QSFINAL"
 let db=JSON.parse(localStorage.getItem(KEY)||"[]")
@@ -104,8 +116,9 @@ render()
 function openProject(i){
 cur=i
 app.innerHTML=`
-<div class="btn" onclick="openTool()">+ Werkzeug</div>
-<div class="btn gray" onclick="exportJSON()">JSON Export</div>
+<div class="btn" onclick="openTool()">+ Tool</div>
+<div class="btn" onclick="bulkModal.style.display='flex'">Bulk Input</div>
+<div class="btn gray" onclick="exportJSON()">Export JSON</div>
 <div class="btn gray" onclick="printPDF()">PDF</div>
 <div id="list"></div>
 <div class="btn gray" onclick="render()">← Back</div>`
@@ -187,12 +200,37 @@ closeTool()
 renderTools()
 }
 
+/* PARSER */
+function parseLine(line){
+let parts=line.trim().split(/\s+/)
+if(parts.length<2)return null
+return{
+id:parts[0],
+nm:parts.slice(1).join(" "),
+bem:""
+}
+}
+
+/* BULK */
+function bulkAdd(){
+let lines=bulkText.value.split("\n")
+lines.forEach(l=>{
+let t=parseLine(l)
+if(t)db[cur].tools.push(t)
+})
+save()
+bulkModal.style.display="none"
+renderTools()
+}
+
+/* EXPORT */
 function exportJSON(){
 const data=JSON.stringify(db[cur],null,2)
 navigator.clipboard.writeText(data)
-alert("JSON kopiert")
+alert("JSON copied")
 }
 
+/* PDF */
 function printPDF(){
 let p=db[cur]
 let w=window.open()
