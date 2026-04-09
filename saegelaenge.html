@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NAKAMURA | MASTER TOOL</title>
+    <title>NAKAMURA | MASTER TOOL V6</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
     <style>
         :root { --bg: #F2F2F7; --card: #FFFFFF; --accent: #007AFF; --sub: #8E8E93; --text: #000000; --ok: #34C759; --danger: #FF3B30; }
@@ -53,11 +53,11 @@
     <div id="mode-std">
         <div class="card">
             <div style="display:flex; gap:10px;">
-                <div class="field" style="flex:1"><label>Fertigteil-Länge</label><input type="number" id="std-l" value="175" oninput="calcStd()"></div>
+                <div class="field" style="flex:1"><label>Teil-Länge</label><input type="number" id="std-l" value="175" oninput="calcStd()"></div>
                 <div class="field" style="flex:1"><label>Schnitt (Z)</label><input type="number" id="std-z" value="5" oninput="calcStd()"></div>
             </div>
             <div style="height:10px"></div>
-            <div class="field"><label>Min. Reststück (mm)</label><input type="number" id="std-r" value="50" oninput="calcStd()"></div>
+            <div class="field"><label>Min. Reststück (mm)</label><input type="number" id="std-r" value="35" oninput="calcStd()"></div>
         </div>
         <div id="strategy-list"></div>
     </div>
@@ -99,21 +99,24 @@ function calcStd() {
     if (unit <= 0) return;
 
     let results = [];
-    // Считаем от 1 детали и пока не превысим лимит 1115 (+2мм погрешность)
-    let c = 1;
-    while (true) {
-        let len = (c * unit) + rMin;
-        if (len > 1117) break; 
-        results.push({ count: c, total: len });
-        c++;
+    // Проверяем до тех пор, пока общая длина не превысит абсолютный предел станка
+    for (let c = 1; c <= 50; c++) {
+        let currentTotal = (c * unit) + rMin;
+        if (currentTotal > 1117) break; // Жесткий стоп на 1115 + запас 2мм
+        results.push({ count: c, total: currentTotal });
     }
 
-    // Список на уменьшение (самые длинные вверху)
+    // Реверс, чтобы самые длинные (выгодные) были сверху
     results.reverse().forEach(res => {
         const div = document.createElement('div');
-        div.className = 'strategy-item' + (res.total >= 1110 && res.total <= 1115 ? ' best' : '');
+        // Подсвечиваем зону идеала (1110-1115)
+        const isBest = res.total >= 1105 && res.total <= 1116;
+        div.className = 'strategy-item' + (isBest ? ' best' : '');
         div.innerHTML = `
-            <div class="info-main"><span>Schnittlänge</span><b>${res.total.toFixed(1)} mm</b></div>
+            <div class="info-main">
+                <span>Schnittlänge</span>
+                <b>${res.total.toFixed(1)} mm</b>
+            </div>
             <div class="parts-count">${res.count}<small> Stk</small></div>
         `;
         container.appendChild(div);
@@ -125,8 +128,9 @@ function calcDrill() {
     const unit = parseFloat(document.getElementById('unit').value) || 0;
     const s12 = parseFloat(document.getElementById('drill-slider').value);
     const rMin = 50;
+    
     const s3 = raw - (s12 * 2);
-    const c3 = Math.floor((s3 - rMin) / unit);
+    const c3 = Math.floor((s3 - rMin) / (unit > 0 ? unit : 1));
     const rest3 = s3 - (c3 * (unit > 0 ? unit : 1));
 
     document.getElementById('disp-s12').innerText = s12.toFixed(1);
