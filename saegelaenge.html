@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NAKAMURA | MANUAL MM</title>
+    <title>NAKAMURA | SLIDER CONTROL</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
     <style>
         :root { --bg: #F2F2F7; --card: #FFFFFF; --accent: #007AFF; --danger: #FF3B30; --sub: #8E8E93; --text: #000000; --ok: #34C759; }
@@ -19,24 +19,42 @@
         .card { background: var(--card); padding: 18px; border-radius: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 12px; }
         .card-title { font-size: 9px; font-weight: 900; color: var(--sub); text-transform: uppercase; margin-bottom: 10px; }
 
-        .input-row { display: flex; gap: 8px; margin-bottom: 10px; }
-        .field { flex: 1; display: flex; flex-direction: column; min-width: 0; }
-        .field label { font-size: 8px; font-weight: 800; color: var(--sub); text-transform: uppercase; margin-bottom: 4px; }
-        .field input { width: 100%; background: var(--bg); border: none; border-radius: 10px; padding: 10px 4px; color: var(--text); font-size: 15px; font-weight: 900; outline: none; text-align: center; }
+        .field label { font-size: 8px; font-weight: 800; color: var(--sub); text-transform: uppercase; margin-bottom: 4px; display: block; }
+        .field input { width: 100%; background: var(--bg); border: none; border-radius: 10px; padding: 12px 4px; color: var(--text); font-size: 16px; font-weight: 900; outline: none; text-align: center; box-sizing: border-box; margin-bottom: 10px; }
 
-        /* Manual MM Controls */
-        .mm-ctrl { display: flex; flex-direction: column; align-items: center; gap: 10px; background: var(--bg); border-radius: 15px; padding: 15px; }
-        .val-display { font-size: 32px; font-weight: 900; color: var(--accent); letter-spacing: -1px; }
-        .btn-group { display: flex; gap: 8px; width: 100%; }
-        .ctrl-btn { flex: 1; padding: 12px 0; background: var(--card); border: 1px solid #ddd; border-radius: 10px; font-size: 14px; font-weight: 800; cursor: pointer; transition: 0.1s; }
-        .ctrl-btn:active { background: var(--accent); color: white; border-color: var(--accent); }
-        .big-btn { background: var(--text); color: white; border: none; font-size: 20px; }
+        /* Slider Engine */
+        .slider-box { padding: 15px 0; text-align: center; }
+        .val-display { font-size: 42px; font-weight: 900; color: var(--accent); letter-spacing: -2px; margin-bottom: 15px; }
+        
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 12px;
+            background: #E5E5EA;
+            border-radius: 6px;
+            outline: none;
+            margin: 20px 0;
+        }
+
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 28px;
+            height: 28px;
+            background: var(--text);
+            border-radius: 50%;
+            cursor: pointer;
+            border: 4px solid var(--accent);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+        }
+
+        .fine-tune { display: flex; gap: 8px; }
+        .tune-btn { flex: 1; padding: 12px; background: var(--bg); border: none; border-radius: 10px; font-weight: 900; font-size: 14px; cursor: pointer; }
+        .tune-btn:active { background: #ddd; }
 
         .res-line { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--bg); font-weight: 700; font-size: 15px; }
         .res-line b { color: var(--text); }
-        .res-line span i { font-style: normal; font-size: 10px; color: var(--sub); text-transform: uppercase; margin-left: 4px; }
         
-        .status-box { padding: 12px; border-radius: 12px; font-size: 11px; font-weight: 900; text-align: center; margin-top: 10px; }
+        .status-box { padding: 12px; border-radius: 12px; font-size: 11px; font-weight: 900; text-align: center; margin-top: 10px; text-transform: uppercase; }
         .ok { background: rgba(52, 199, 89, 0.1); color: var(--ok); border: 1px solid var(--ok); }
         .err { background: rgba(255, 59, 48, 0.1); color: var(--danger); border: 1px solid var(--danger); }
     </style>
@@ -47,27 +65,28 @@
     <header>
         <a href="index.html" class="btn-back">Zurück</a>
         <h1>NAKA<span>MURA</span></h1>
-        <p>Schnittlänge Manual (mm)</p>
+        <p>Schnitt-Slider Control</p>
     </header>
 
     <div class="card">
-        <div class="input-row">
-            <div class="field"><label>Teil+Z</label><input type="number" id="unit" value="151" oninput="update()"></div>
-            <div class="field"><label>Rest Min</label><input type="number" id="rMin" value="50" oninput="update()"></div>
-            <div class="field"><label>Rohmaterial</label><input type="number" id="raw" value="3085" oninput="update()"></div>
+        <div class="field">
+            <label>Rohmaterial Gesamtlänge (mm)</label>
+            <input type="number" id="raw" value="3085" oninput="updateRange()">
+        </div>
+        <div style="display:flex; gap:10px;">
+            <div class="field" style="flex:1"><label>Teil+Z</label><input type="number" id="unit" value="151" oninput="updateRange()"></div>
+            <div class="field" style="flex:1"><label>Min Rest</label><input type="number" id="rMin" value="50" oninput="updateRange()"></div>
         </div>
     </div>
 
     <div class="card">
-        <div class="card-title">Manuelle Einstellung S1 & S2 (mm)</div>
-        <div class="mm-ctrl">
+        <div class="card-title">Manuelle Korrektur S1 & S2</div>
+        <div class="slider-box">
             <div class="val-display" id="display-s12">0.0</div>
-            
-            <div class="btn-group">
-                <button class="ctrl-btn big-btn" onclick="step(-1)">−</button>
-                <button class="ctrl-btn" onclick="step(-0.1)">− 0.1</button>
-                <button class="ctrl-btn" onclick="step(0.1)">+ 0.1</button>
-                <button class="ctrl-btn big-btn" onclick="step(1)">+</button>
+            <input type="range" id="s12-slider" min="100" max="1150" step="0.1" oninput="syncSlider()">
+            <div class="fine-tune">
+                <button class="tune-btn" onclick="step(-0.1)">- 0.1</button>
+                <button class="tune-btn" onclick="step(0.1)">+ 0.1</button>
             </div>
         </div>
     </div>
@@ -76,25 +95,34 @@
         <div class="res-line"><span>S1 / S2 Teile:</span> <b id="out-c1">0</b></div>
         <div class="res-line"><span>S3 Länge:</span> <b id="out-s3">0.0</b></div>
         <div class="res-line"><span>S3 Teile:</span> <b id="out-c3">0</b></div>
-        <div class="res-line"><span>End-Reststück:</span> <b id="out-rest" style="color:var(--accent)">0.0</b></div>
+        <div class="res-line"><span>End-Rest S3:</span> <b id="out-rest" style="color:var(--accent)">0.0</b></div>
         
         <div id="status" class="status-box"></div>
     </div>
 </div>
 
 <script>
-let currentS12 = 0;
+const slider = document.getElementById('s12-slider');
+let valS12 = 0;
 
-function init() {
+function updateRange() {
     const unit = parseFloat(document.getElementById('unit').value) || 0;
     const rMin = parseFloat(document.getElementById('rMin').value) || 50;
-    // Начальная точка — максимально возможный пруток
-    currentS12 = Math.floor((1150 - rMin) / unit) * unit + rMin;
+    
+    // Начальное значение: максимально выгодное
+    valS12 = Math.floor((1150 - rMin) / unit) * unit + rMin;
+    slider.value = valS12;
     update();
 }
 
-function step(val) {
-    currentS12 += val;
+function syncSlider() {
+    valS12 = parseFloat(slider.value);
+    update();
+}
+
+function step(s) {
+    valS12 += s;
+    slider.value = valS12;
     update();
 }
 
@@ -105,12 +133,12 @@ function update() {
     const limit = 1150;
     const rMax = 80;
 
-    const s3 = raw - (currentS12 * 2);
-    const c1 = Math.floor((currentS12 - rMin) / unit);
+    const s3 = raw - (valS12 * 2);
+    const c1 = Math.floor((valS12 - rMin) / unit);
     const c3 = Math.floor((s3 - rMin) / unit);
     const rest3 = s3 - (unit * Math.max(0, c3));
 
-    document.getElementById('display-s12').innerText = currentS12.toFixed(1);
+    document.getElementById('display-s12').innerText = valS12.toFixed(1);
     document.getElementById('out-c1').innerText = c1 > 0 ? c1 : 0;
     document.getElementById('out-s3').innerText = s3.toFixed(1) + " mm";
     document.getElementById('out-c3').innerText = c3 > 0 ? c3 : 0;
@@ -118,18 +146,18 @@ function update() {
 
     const stat = document.getElementById('status');
     let isError = false;
-    let msg = "Einstellung OK";
+    let msg = "Konfiguration OK";
 
-    if (currentS12 > limit || s3 > limit) { isError = true; msg = "Limit > 1150mm!"; }
-    if (s3 < (unit + rMin)) { isError = true; msg = "S3 zu kurz!"; }
-    if (rest3 > rMax) { isError = true; msg = `Rest S3 zu groß (>80)`; }
-    if (rest3 < rMin) { isError = true; msg = "Rest S3 zu kurz! (Wasser)"; }
+    if (valS12 > limit || s3 > limit) { isError = true; msg = "Limit überschritten (>1150)"; }
+    else if (s3 < (unit + rMin)) { isError = true; msg = "S3 zu kurz für Teile"; }
+    else if (rest3 > rMax) { isError = true; msg = `Rest S3 zu groß (${rest3.toFixed(1)})`; }
+    else if (rest3 < rMin) { isError = true; msg = "Rest S3 zu kurz! (Wasser)"; }
 
     stat.className = "status-box " + (isError ? "err" : "ok");
     stat.innerText = msg;
 }
 
-window.onload = init;
+window.onload = updateRange;
 </script>
 </body>
 </html>
