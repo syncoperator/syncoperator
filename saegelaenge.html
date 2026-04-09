@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NAKAMURA PRO V7</title>
+    <title>NAKAMURA PRO MAX</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
         :root { --bg: #F2F2F7; --card: #FFFFFF; --accent: #007AFF; --sub: #8E8E93; --text: #000000; --ok: #34C759; --err: #FF3B30; }
         body { margin: 0; font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); display: flex; justify-content: center; }
-        .container { width: 100%; max-width: 400px; padding: 16px; box-sizing: border-box; }
+        .container { width: 100%; max-width: 400px; padding: 16px; box-sizing: border-box; padding-bottom: 100px; }
         
         header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid var(--text); padding-bottom: 12px; }
         header h1 { margin: 0; font-size: 26px; font-weight: 900; text-transform: uppercase; letter-spacing: -1px; }
@@ -23,18 +23,15 @@
         .field input { width: 100%; border: none; background: var(--bg); padding: 14px; border-radius: 12px; font-size: 18px; font-weight: 900; text-align: center; box-sizing: border-box; outline: none; }
 
         .item { background: var(--card); border-radius: 16px; padding: 16px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; border: 2px solid transparent; }
-        .item.highlight { border-color: var(--accent); background: #F0F7FF; }
+        .item.highlight { border-color: var(--ok); background: #F2FFF5; }
         .item b { font-size: 20px; font-weight: 900; }
         .item span { font-size: 9px; font-weight: 800; color: var(--sub); text-transform: uppercase; display: block; }
-        .count-badge { background: var(--accent); color: white; padding: 6px 12px; border-radius: 10px; font-size: 18px; font-weight: 900; min-width: 30px; text-align: center; }
+        .count-badge { background: var(--text); color: white; padding: 6px 12px; border-radius: 10px; font-size: 18px; font-weight: 900; min-width: 35px; text-align: center; }
 
         .big-val { font-size: 54px; font-weight: 900; color: var(--accent); text-align: center; letter-spacing: -3px; margin: 10px 0; }
         input[type=range] { -webkit-appearance: none; width: 100%; height: 10px; background: #E5E5EA; border-radius: 5px; margin: 20px 0; outline: none; }
         input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 32px; height: 32px; background: var(--text); border-radius: 50%; border: 4px solid var(--accent); cursor: pointer; }
-        .stat-line { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--bg); font-weight: 700; }
-        .status-msg { padding: 12px; border-radius: 12px; text-align: center; font-size: 11px; font-weight: 900; text-transform: uppercase; margin-top: 15px; border: 1px solid transparent; }
-        .ok { background: rgba(52, 199, 89, 0.1); color: var(--ok); border-color: var(--ok); }
-        .err { background: rgba(255, 59, 48, 0.1); color: var(--err); border-color: var(--err); }
+        
         .hidden { display: none; }
     </style>
 </head>
@@ -51,7 +48,7 @@
     <div id="m-std">
         <div class="card">
             <div style="display:flex; gap:10px;">
-                <div class="field" style="flex:1"><label>Fertigteil (mm)</label><input type="number" id="in-l" value="175" oninput="runStd()"></div>
+                <div class="field" style="flex:1"><label>Fertigteil</label><input type="number" id="in-l" value="175" oninput="runStd()"></div>
                 <div class="field" style="flex:1"><label>Schnitt Z</label><input type="number" id="in-z" value="5" oninput="runStd()"></div>
             </div>
             <div class="field" style="margin-top:10px;"><label>Min. Reststück (mm)</label><input type="number" id="in-r" value="50" oninput="runStd()"></div>
@@ -62,16 +59,14 @@
     <div id="m-drill" class="hidden">
         <div class="card">
             <div style="display:flex; gap:10px;">
-                <div class="field" style="flex:1.5"><label>Rohmaterial</label><input type="number" id="dr-raw" value="3045" oninput="runDrill()"></div>
-                <div class="field" style="flex:1"><label>Teil+Z</label><input type="number" id="dr-u" value="151" oninput="runDrill()"></div>
+                <div class="field" style="flex:1.5"><label>Rohmaterial</label><input type="number" id="dr-raw" value="3085" oninput="runDrill()"></div>
+                <div class="field" style="flex:1"><label>Teil+Z</label><input type="number" id="dr-u" value="146" oninput="runDrill()"></div>
             </div>
         </div>
         <div class="card">
-            <div class="big-val" id="dr-disp">0.0</div>
-            <input type="range" id="dr-sl" min="300" max="1117" step="0.1" oninput="runDrill()">
-            <div class="stat-line"><span>S3 Länge:</span> <span id="dr-s3">0.0</span></div>
-            <div class="stat-line"><span>End-Rest S3:</span> <span id="dr-rest" style="color:var(--accent)">0.0</span></div>
-            <div id="dr-stat" class="status-msg"></div>
+            <div class="big-val" id="dr-disp">1072.0</div>
+            <input type="range" id="dr-sl" min="300" max="1500" step="0.1" value="1072" oninput="runDrill()">
+            <div id="dr-results"></div>
         </div>
     </div>
 </div>
@@ -88,34 +83,27 @@ function setMode(m) {
 function runStd() {
     const l = parseFloat(document.getElementById('in-l').value) || 0;
     const z = parseFloat(document.getElementById('in-z').value) || 0;
-    const rMin = parseFloat(document.getElementById('in-r').value) || 0;
+    const r = parseFloat(document.getElementById('in-r').value) || 0;
     const unit = l + z;
     const list = document.getElementById('std-list');
     list.innerHTML = '';
+    
     if(unit <= 0) return;
 
     let res = [];
-    // Считаем варианты. Лимит 1115 +-2 мм.
-    for(let c=1; c<=50; c++) {
-        let currentTotal = (c * unit) + rMin;
-        
-        // Если длина с твоим остатком превышает 1117, пробуем уменьшить остаток до минимума, 
-        // чтобы впихнуть максимум деталей в 1115мм
-        if (currentTotal > 1117) {
-            let tightTotal = (c * unit);
-            if (tightTotal <= 1115) {
-                res.push({c, total: 1115.0, rReal: (1115 - tightTotal)});
-            }
-            break;
-        }
-        res.push({c, total: currentTotal, rReal: rMin});
+    // Лимит поднят до 3100мм
+    for(let c = 1; c <= 100; c++) {
+        let total = (c * unit) + r;
+        if (total > 3105) break; 
+        res.push({c, total});
     }
 
     res.reverse().forEach(item => {
         const div = document.createElement('div');
-        const isBest = item.total >= 1110 && item.total <= 1117;
-        div.className = 'item' + (isBest ? ' highlight' : '');
-        div.innerHTML = `<div><span>Schnittlänge (Rest: ${item.rReal.toFixed(1)})</span><b>${item.total.toFixed(1)}</b></div><div class="count-badge">${item.c}</div>`;
+        // Подсветка зоны 1110-1115 или около 3000
+        const isOpt = (item.total >= 1110 && item.total <= 1115) || item.total > 3000;
+        div.className = 'item' + (isOpt ? ' highlight' : '');
+        div.innerHTML = `<div><span>Schnittlänge</span><b>${item.total.toFixed(1)}</b></div><div class="count-badge">${item.c}</div>`;
         list.appendChild(div);
     });
 }
@@ -124,18 +112,22 @@ function runDrill() {
     const raw = parseFloat(document.getElementById('dr-raw').value) || 0;
     const unit = parseFloat(document.getElementById('dr-u').value) || 0;
     const s12 = parseFloat(document.getElementById('dr-sl').value);
-    const s3 = raw - (s12 * 2);
-    const c3 = Math.floor((s3 - 50) / (unit > 0 ? unit : 1));
-    const rest3 = s3 - (c3 * (unit > 0 ? unit : 1));
-
+    
     document.getElementById('dr-disp').innerText = s12.toFixed(1);
-    document.getElementById('dr-s3').innerText = s3.toFixed(1) + " mm";
-    document.getElementById('dr-rest').innerText = rest3.toFixed(1) + " mm";
+    
+    const s3 = raw - (s12 * 2);
+    const c12 = Math.floor(s12 / (unit || 1));
+    const c3 = Math.floor((s3 - 30) / (unit || 1));
+    const rest3 = s3 - (c3 * (unit || 1));
 
-    const stat = document.getElementById('dr-stat');
-    const err = s12 > 1117 || s3 > 1117 || rest3 < 30;
-    stat.className = "status-msg " + (err ? "err" : "ok");
-    stat.innerText = err ? "Limit Warnung!" : "Konfiguration OK";
+    document.getElementById('dr-results').innerHTML = `
+        <div style="font-size:13px; font-weight:700; line-height:1.8;">
+            <div style="display:flex; justify-content:space-between;">S1 / S2 Teile: <span>${c12}</span></div>
+            <div style="display:flex; justify-content:space-between;">S3 Länge: <span>${s3.toFixed(1)} mm</span></div>
+            <div style="display:flex; justify-content:space-between;">S3 Teile: <span>${c3}</span></div>
+            <div style="display:flex; justify-content:space-between; color:var(--accent);">End-Rest S3: <span>${rest3.toFixed(1)} mm</span></div>
+        </div>
+    `;
 }
 
 window.onload = runStd;
