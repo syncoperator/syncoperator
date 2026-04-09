@@ -22,7 +22,6 @@
         .field label { font-size: 8px; font-weight: 800; color: var(--sub); text-transform: uppercase; margin-bottom: 4px; display: block; }
         .field input { width: 100%; background: var(--bg); border: none; border-radius: 10px; padding: 12px; color: var(--text); font-size: 16px; font-weight: 900; outline: none; text-align: center; box-sizing: border-box; }
 
-        /* Mode Standard: Список стратегий */
         .strategy-item { background: var(--card); padding: 14px 18px; border-radius: 18px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.03); border: 2px solid transparent; }
         .strategy-item.best { border-color: var(--accent); background: #f0f7ff; }
         .info-main b { font-size: 20px; font-weight: 900; display: block; }
@@ -30,7 +29,6 @@
         .parts-count { font-size: 22px; font-weight: 900; color: var(--accent); text-align: right; }
         .parts-count small { font-size: 10px; color: var(--sub); }
 
-        /* Mode Durchbohren: Slider */
         .val-display { font-size: 48px; font-weight: 900; color: var(--accent); letter-spacing: -2px; text-align: center; margin: 10px 0; }
         input[type=range] { -webkit-appearance: none; width: 100%; height: 12px; background: #E5E5EA; border-radius: 6px; outline: none; margin: 15px 0; }
         input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 30px; height: 30px; background: var(--text); border-radius: 50%; border: 4px solid var(--accent); }
@@ -55,7 +53,7 @@
     <div id="mode-std">
         <div class="card">
             <div style="display:flex; gap:10px;">
-                <div class="field" style="flex:1"><label>Teil-Länge</label><input type="number" id="std-l" value="146" oninput="calcStd()"></div>
+                <div class="field" style="flex:1"><label>Fertigteil-Länge</label><input type="number" id="std-l" value="175" oninput="calcStd()"></div>
                 <div class="field" style="flex:1"><label>Schnitt (Z)</label><input type="number" id="std-z" value="5" oninput="calcStd()"></div>
             </div>
             <div style="height:10px"></div>
@@ -98,13 +96,19 @@ function calcStd() {
     const container = document.getElementById('strategy-list');
     container.innerHTML = '';
 
+    if (unit <= 0) return;
+
     let results = [];
-    for (let c = 1; c <= 25; c++) {
+    // Считаем от 1 детали и пока не превысим лимит 1115 (+2мм погрешность)
+    let c = 1;
+    while (true) {
         let len = (c * unit) + rMin;
-        if (len <= 1117) results.push({ count: c, total: len });
+        if (len > 1117) break; 
+        results.push({ count: c, total: len });
+        c++;
     }
 
-    // Сортировка НАОБОРОТ (от большего к меньшему)
+    // Список на уменьшение (самые длинные вверху)
     results.reverse().forEach(res => {
         const div = document.createElement('div');
         div.className = 'strategy-item' + (res.total >= 1110 && res.total <= 1115 ? ' best' : '');
@@ -121,10 +125,9 @@ function calcDrill() {
     const unit = parseFloat(document.getElementById('unit').value) || 0;
     const s12 = parseFloat(document.getElementById('drill-slider').value);
     const rMin = 50;
-    
     const s3 = raw - (s12 * 2);
     const c3 = Math.floor((s3 - rMin) / unit);
-    const rest3 = s3 - (c3 * unit);
+    const rest3 = s3 - (c3 * (unit > 0 ? unit : 1));
 
     document.getElementById('disp-s12').innerText = s12.toFixed(1);
     document.getElementById('drill-s3').innerText = s3.toFixed(1) + " mm";
