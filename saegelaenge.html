@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>QS CENTRAL PREMIUM</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root { --bg:#F2F2F7; --card:#FFF; --accent:#007AFF; --sub:#8E8E93; --danger:#FF3B30; }
+        body { margin:0; font-family:'Inter',sans-serif; background:var(--bg); color:#000; overflow:hidden; }
+        .view { display:none; flex-direction:column; height:100vh; width:100%; position:fixed; top:0; left:0; z-index:10; }
+        .view.active { display:flex; }
+        
+        /* Tabs Styling */
+        .tab-bar { display:flex; background:#E5E5EA; padding:4px; border-radius:12px; margin:10px 16px; }
+        .tab-btn { flex:1; padding:8px; border:none; border-radius:9px; font-weight:800; font-size:13px; cursor:pointer; background:none; color:var(--sub); }
+        .tab-btn.active { background:#fff; color:#000; box-shadow:0 2px 4px rgba(0,0,0,0.1); }
+
+        .nav-bar { height:64px; display:flex; align-items:center; justify-content:space-between; padding:0 20px; background:rgba(255,255,255,0.8); backdrop-filter:blur(20px); border-bottom:0.5px solid #D1D1D6; z-index:20; }
+        .nav-title { font-weight:900; font-size:17px; }
+        .nav-title span { color:var(--accent); }
+        .btn-plus { background:var(--accent); color:#fff; border:none; padding:8px 16px; border-radius:10px; font-weight:800; cursor:pointer; }
+        .nav-btn { background:none; border:none; color:var(--accent); font-size:17px; font-weight:600; cursor:pointer; min-width:44px; }
+        
+        .content-scroll { flex:1; overflow-y:auto; padding:0 16px 180px; -webkit-overflow-scrolling:touch; }
+        .list-item { background:var(--card); padding:18px; border-radius:16px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; box-shadow:0 2px 8px rgba(0,0,0,0.04); cursor:pointer; }
+        
+        /* Calc UI */
+        .calc-card { background:#fff; padding:20px; border-radius:16px; margin-bottom:15px; box-shadow:0 2px 8px rgba(0,0,0,0.04); }
+        .calc-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-bottom:15px; }
+        .calc-res-item { display:flex; justify-content:space-between; padding:12px; border-bottom:1px solid #F2F2F7; font-weight:700; }
+        .calc-res-item:last-child { border:none; }
+        .calc-res-item b { color:var(--accent); font-size:18px; }
+        .best-fit { background:#F2F2F7; border-radius:10px; color: #000; }
+
+        .field label { display:block; font-size:10px; font-weight:800; color:var(--sub); text-transform:uppercase; margin-bottom:4px; }
+        .field input { width:100%; padding:12px; background:#F2F2F7; border:none; border-radius:10px; font-size:16px; font-weight:700; box-sizing:border-box; }
+        
+        #print-container { display:none; }
+        @media print { body{background:#fff; overflow:visible;} .view, .overlay{display:none!important;} #print-container{display:block!important;} }
+    </style>
+</head>
+<body>
+
+    <div id="v-home" class="view active">
+        <div class="nav-bar">
+            <h1 class="nav-title">QS <span>CENTRAL</span></h1>
+            <button class="btn-plus" onclick="modalP()">+ NEU</button>
+        </div>
+        
+        <div class="tab-bar">
+            <button class="tab-btn active" onclick="switchMainTab('projects')">PROJEKTE</button>
+            <button class="tab-btn" onclick="switchMainTab('ssa')">SÄGELÄNGE</button>
+        </div>
+
+        <div id="sec-projects" class="content-scroll">
+            <div id="list-p"></div>
+        </div>
+
+        <div id="sec-ssa" class="content-scroll" style="display:none;">
+            <div class="calc-card">
+                <div class="calc-grid">
+                    <div class="field"><label>Fertigteil</label><input type="number" id="ssa-len" value="146" oninput="calcSSA()"></div>
+                    <div class="field"><label>Zugabe (+)</label><input type="number" id="ssa-zug" value="5" oninput="calcSSA()"></div>
+                    <div class="field"><label>Reststück</label><input type="number" id="ssa-rest" value="50" oninput="calcSSA()"></div>
+                </div>
+                <div style="font-size:12px; font-weight:800; color:var(--sub); margin-bottom:10px;">BERECHNETE STANGENLÄNGEN</div>
+                <div id="ssa-results"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="v-det" class="view">
+        <div class="nav-bar">
+            <button class="nav-btn" onclick="goHome()">←</button>
+            <div style="text-align:center; flex:1;">
+                <span id="h-nam" style="display:block; font-size:10px; color:var(--sub); font-weight:700;">NAME</span>
+                <b id="h-num" style="font-size:18px; font-weight:900;">000000</b>
+            </div>
+            <button class="nav-btn" onclick="makePDF()">PDF</button>
+        </div>
+        <div id="list-t" class="content-scroll" style="padding-top:16px;"></div>
+    </div>
+
+    <div id="print-container"></div>
+
+    <script>
+        const DB_KEY = 'QS_PREMIUM_FINAL_2026';
+        let db = JSON.parse(localStorage.getItem(DB_KEY)) || [];
+        let currentIdx = null;
+
+        const el = (id) => document.getElementById(id);
+
+        function switchMainTab(tab) {
+            const btns = document.querySelectorAll('.tab-btn');
+            btns.forEach(b => b.classList.remove('active'));
+            if(tab === 'projects') {
+                btns[0].classList.add('active');
+                el('sec-projects').style.display = 'block';
+                el('sec-ssa').style.display = 'none';
+            } else {
+                btns[1].classList.add('active');
+                el('sec-projects').style.display = 'none';
+                el('sec-ssa').style.display = 'block';
+                calcSSA();
+            }
+        }
+
+        function calcSSA() {
+            const l = parseFloat(el('ssa-len').value) || 0;
+            const z = parseFloat(el('ssa-zug').value) || 0;
+            const r = parseFloat(el('ssa-rest').value) || 0;
+            const resDiv = el('ssa-results');
+            
+            if(l <= 0) { resDiv.innerHTML = ''; return; }
+            
+            const unit = l + z;
+            const baseCount = Math.round(1000 / unit);
+            
+            let html = '';
+            // Генерируем сетку: от -3 до +3 деталей от базового количества
+            for(let i = -3; i <= 3; i++) {
+                const count = baseCount + i;
+                if(count <= 0) continue;
+                const total = (unit * count) + r;
+                const isBest = count === baseCount;
+                
+                html += `
+                <div class="calc-res-item ${isBest ? 'best-fit' : ''}">
+                    <span>${count} Stk.</span>
+                    <b>${total.toFixed(1)} mm</b>
+                </div>`;
+            }
+            resDiv.innerHTML = html;
+        }
+
+        function renderList() {
+            el('list-p').innerHTML = db.map((p, i) => `
+                <div class="list-item" onclick="openProject(${i})">
+                    <div><small>${p.name}</small><b>${p.num}</b></div>
+                </div>`).join('') + '<div style="height:100px"></div>';
+        }
+
+        function openProject(i) {
+            currentIdx = i; el('v-home').classList.remove('active'); el('v-det').classList.add('active');
+            el('h-num').innerText = db[i].num; el('h-nam').innerText = db[i].name; renderTools();
+        }
+
+        function goHome() { el('v-home').classList.add('active'); el('v-det').classList.remove('active'); renderList(); }
+
+        // ... Вся остальная логика (renderTools, makePDF) остается из твоего рабочего кода ...
+        // Для краткости я не дублирую здесь весь код модалок, но в твоем файле они должны быть.
+
+        window.onload = () => { renderList(); calcSSA(); };
+
+        // Примечание: При сборке финального файла просто вставь этот скрипт и стили Tabs 
+        // в твой текущий рабочий код.
+    </script>
+</body>
+</html>
