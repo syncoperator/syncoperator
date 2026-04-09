@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SSA AUTO | NAKAMURA</title>
+    <title>SSA SMART BALANCE</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
     <style>
         :root { --bg: #F2F2F7; --card: #FFFFFF; --accent: #007AFF; --danger: #FF3B30; --sub: #8E8E93; --text: #000000; --ok: #34C759; }
@@ -16,8 +16,8 @@
         header h1 span { color: var(--accent); }
         header p { margin: 4px 0 0; color: var(--sub); font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; }
 
-        .card { background: var(--card); padding: 20px; border-radius: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 20px; }
-        .card-title { font-size: 10px; font-weight: 900; color: var(--sub); text-transform: uppercase; margin-bottom: 15px; letter-spacing: 1px; }
+        .card { background: var(--card); padding: 20px; border-radius: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 16px; }
+        .card-title { font-size: 10px; font-weight: 900; color: var(--sub); text-transform: uppercase; margin-bottom: 12px; letter-spacing: 1px; }
 
         .input-row { display: flex; gap: 10px; margin-bottom: 15px; }
         .field { flex: 1; display: flex; flex-direction: column; min-width: 0; }
@@ -25,15 +25,16 @@
         .field input { width: 100%; background: var(--bg); border: 2px solid transparent; border-radius: 12px; padding: 12px 5px; color: var(--text); font-size: 16px; font-weight: 900; outline: none; text-align: center; box-sizing: border-box; }
         .field input:focus { border-color: var(--accent); background: #fff; }
 
-        .split-item { border-left: 4px solid var(--accent); padding-left: 15px; margin-bottom: 10px; }
-        .split-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--bg); font-weight: 700; font-size: 16px; }
+        .res-box { border-left: 4px solid var(--accent); padding-left: 15px; }
+        .split-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--bg); font-weight: 700; font-size: 16px; }
+        .split-row i { font-style: normal; font-size: 12px; color: var(--sub); }
         .split-row b { color: var(--accent); }
         
-        .status-bar { display: flex; justify-content: space-between; padding: 12px; border-radius: 12px; font-size: 12px; font-weight: 800; margin-top: 10px; }
+        .status-badge { display: flex; justify-content: space-between; padding: 12px; border-radius: 12px; font-size: 11px; font-weight: 900; margin-top: 15px; text-transform: uppercase; }
         .status-ok { background: rgba(52, 199, 89, 0.1); color: var(--ok); }
         .status-err { background: rgba(255, 59, 48, 0.1); color: var(--danger); }
 
-        .info-tag { font-size: 10px; color: var(--sub); margin-top: 5px; text-align: center; font-weight: 600; }
+        .rest-val { font-size: 10px; font-weight: 800; margin-top: 6px; text-align: right; }
     </style>
 </head>
 <body>
@@ -42,104 +43,97 @@
     <header>
         <a href="index.html" class="btn-back">Hub</a>
         <h1>NAKA<span>MURA</span></h1>
-        <p>Auto-Schnitt распределение</p>
+        <p>Smart Auto-Schnitt (2+1)</p>
     </header>
 
     <div class="card">
-        <div class="card-title">Werkstück Parameter</div>
+        <div class="card-title">Parameter</div>
         <div class="input-row">
-            <div class="field"><label>Fertigteil</label><input type="number" id="l" value="146" oninput="autoCalc()"></div>
-            <div class="field"><label>Zugabe</label><input type="number" id="z" value="5" oninput="autoCalc()"></div>
-            <div class="field"><label>Rest Min</label><input type="number" id="r" value="50" oninput="autoCalc()"></div>
+            <div class="field"><label>Teil</label><input type="number" id="l" value="146" oninput="solve()"></div>
+            <div class="field"><label>Schnitt</label><input type="number" id="z" value="5" oninput="solve()"></div>
+            <div class="field"><label>Rest Min</label><input type="number" id="r" value="50" oninput="solve()"></div>
+        </div>
+        <div class="field">
+            <label>Rohmaterial Gesamtlänge</label>
+            <input type="number" id="raw" value="3085" oninput="solve()" style="background:var(--bg); font-size:22px;">
         </div>
     </div>
 
     <div class="card">
-        <div class="card-title">Rohmaterial (Total)</div>
-        <div class="field" style="margin-bottom:20px;">
-            <label>Länge (z.B. 3085 или 3000)</label>
-            <input type="number" id="raw" value="3085" oninput="autoCalc()" style="background: #F2F2F7; font-size: 24px; padding: 15px;">
-        </div>
-        
-        <div id="result-area">
-            </div>
+        <div class="card-title">Berechnete Aufteilung</div>
+        <div id="results" class="res-box"></div>
+        <div id="status" class="status-badge"></div>
     </div>
-
-    <div class="info-tag">ALGORITHMUS: AUTO-BALANCE 2+1 (MAX 1150mm)</div>
 </div>
 
 <script>
-function autoCalc() {
+function solve() {
     const L = parseFloat(document.getElementById('l').value) || 0;
     const Z = parseFloat(document.getElementById('z').value) || 0;
     const rMin = parseFloat(document.getElementById('r').value) || 50;
-    const rawLen = parseFloat(document.getElementById('raw').value) || 0;
-    const rMax = 80;
-    const limit = 1150;
-
-    if (L <= 0 || rawLen <= 0) return;
+    const raw = parseFloat(document.getElementById('raw').value) || 0;
     const unit = L + Z;
+    const limit = 1150;
+    const rMax = 80;
 
-    // ШАГ 1: Находим базовое количество деталей для первых двух прутков
-    // Начинаем с самого эффективного (ближе к 1150)
-    let countPerBar = Math.floor((limit - rMin) / unit);
-    let s1 = (unit * countPerBar) + rMin;
-    let s2 = s1;
-    let s3 = rawLen - (s1 + s2);
+    if (L <= 0 || raw <= 0) return;
 
-    // ШАГ 2: Умная корректировка
-    // Если в третьем куске остаток > 80мм, пробуем "растянуть" s1 и s2 
-    // чтобы забрать излишек, НО не превышая 1150мм
-    let s3Count = Math.floor((s3 - rMin) / unit);
-    let s3Rest = s3 - (unit * s3Count);
+    // Находим максимально возможное количество деталей в одной палке
+    let maxTeile = Math.floor((limit - rMin) / unit);
+    
+    let bestFound = false;
+    let finalS1 = 0, finalS2 = 0, finalS3 = 0, t1 = 0, t3 = 0;
 
-    if (s3Rest > rMax) {
-        // Пробуем добавить по 1 детали к s1 и s2 если это возможно
-        if (((unit * (countPerBar + 1)) + rMin) <= limit) {
-             countPerBar++;
-             s1 = (unit * countPerBar) + rMin;
-             s2 = s1;
-             s3 = rawLen - (s1 + s2);
-             s3Count = Math.floor((s3 - rMin) / unit);
-             s3Rest = s3 - (unit * s3Count);
+    // ЦИКЛ ПОИСКА: Пробуем от макс. количества деталей вниз
+    for (let c = maxTeile; c >= 1; c--) {
+        let sTest = (unit * c) + rMin;
+        let s3Test = raw - (sTest * 2);
+        
+        // Проверяем S3
+        let c3 = Math.floor((s3Test - rMin) / unit);
+        let rest3 = s3Test - (unit * c3);
+
+        // Условие успеха: S3 в лимитах и его Reststück тоже в лимитах
+        if (s3Test <= limit && s3Test >= (unit + rMin) && rest3 >= rMin && rest3 <= rMax) {
+            finalS1 = sTest;
+            finalS2 = sTest;
+            finalS3 = s3Test;
+            t1 = c;
+            t3 = c3;
+            bestFound = true;
+            break; // Нашли лучший (самый длинный из подходящих) вариант
         }
     }
 
-    // ШАГ 3: Финальная проверка на ошибки
-    let isError = false;
-    let msg = "RESTSTÜCK OK (50-80mm)";
-    
-    if (s3 > limit) { isError = true; msg = "S3 ZU LANG (>1150mm)"; }
-    if (s3Rest > rMax) { isError = true; msg = `REST S3 ZU GROSS (${s3Rest.toFixed(1)}mm)`; }
-    if (s3Rest < rMin) { isError = true; msg = "REST S3 ZU KURZ! WASSERGEFAHR!"; }
-    if (s1 > limit) { isError = true; msg = "S1/S2 LIMIT ÜBERSCHRITTEN"; }
+    const resDiv = document.getElementById('results');
+    const statDiv = document.getElementById('status');
 
-    // Вывод
-    const out = document.getElementById('result-area');
-    out.innerHTML = `
-        <div class="split-item">
-            <div class="split-row"><span>Schnitt 1 (S1):</span> <b>${s1.toFixed(1)} mm</b></div>
-            <div class="split-row"><span>Schnitt 2 (S2):</span> <b>${s2.toFixed(1)} mm</b></div>
-            <div class="split-row"><span>Schnitt 3 (S3):</span> <b>${s3.toFixed(1)} mm</b></div>
-        </div>
+    if (bestFound) {
+        let r3 = finalS3 - (unit * t3);
+        resDiv.innerHTML = `
+            <div class="split-row"><span>Schnitt 1:</span> <b>${finalS1.toFixed(1)} <i>(${t1} T.)</i></b></div>
+            <div class="split-row"><span>Schnitt 2:</span> <b>${finalS2.toFixed(1)} <i>(${t1} T.)</i></b></div>
+            <div class="split-row"><span>Schnitt 3:</span> <b>${finalS3.toFixed(1)} <i>(${t3} T.)</i></b></div>
+            <div class="rest-val" style="color:var(--ok)">REST S3: ${r3.toFixed(1)} mm (OK)</div>
+        `;
+        statDiv.className = "status-badge status-ok";
+        statDiv.innerHTML = `<span>Status:</span> <span>Optimal gefunden</span>`;
+    } else {
+        // Если ничего не подошло идеально, показываем грубый расчет
+        let s1Safe = (unit * maxTeile) + rMin;
+        let s3Err = raw - (s1Safe * 2);
+        let r3Err = s3Err - (unit * Math.floor((s3Err-rMin)/unit));
         
-        <div class="split-row" style="border:none; font-size:12px; margin-top:10px;">
-            <span>Teile: ${countPerBar} + ${countPerBar} + ${s3Count}</span>
-            <span>Total: ${countPerBar * 2 + s3Count} Stk.</span>
-        </div>
-
-        <div class="status-bar ${isError ? 'status-err' : 'status-ok'}">
-            <span>STATUS:</span>
-            <span>${msg}</span>
-        </div>
-        
-        <div style="text-align:right; font-size:10px; font-weight:800; margin-top:5px; color:${isError ? 'var(--danger)' : 'var(--ok)'}">
-            End-Rest: ${s3Rest.toFixed(1)} mm
-        </div>
-    `;
+        resDiv.innerHTML = `
+            <div class="split-row"><span>S1 & S2:</span> <span>${s1Safe.toFixed(1)}</span></div>
+            <div class="split-row"><span>S3:</span> <span class="status-bad">${s3Err.toFixed(1)}</span></div>
+            <div class="rest-val" style="color:var(--danger)">REST S3: ${r3Err.toFixed(1)} mm</div>
+        `;
+        statDiv.className = "status-badge status-err";
+        statDiv.innerHTML = `<span>Status:</span> <span>Keine Lösung</span>`;
+    }
 }
-
-window.onload = autoCalc;
+window.onload = solve;
 </script>
 
 </body>
