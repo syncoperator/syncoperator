@@ -3,141 +3,94 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NAKAMURA | STRATEGY PRO</title>
+    <title>NAKAMURA | SCHNITTLISTE</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
     <style>
-        :root { --bg: #F2F2F7; --card: #FFFFFF; --accent: #007AFF; --danger: #FF3B30; --sub: #8E8E93; --text: #000000; --ok: #34C759; }
-        body { margin: 0; padding: 0; font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); display: flex; justify-content: center; }
-        .container { width: 100%; max-width: 400px; padding: 16px; box-sizing: border-box; padding-bottom: 100px; }
+        :root { --bg: #F2F2F7; --card: #FFFFFF; --accent: #007AFF; --sub: #8E8E93; --text: #000000; }
+        body { margin: 0; padding: 16px; font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); }
+        .container { max-width: 400px; margin: 0 auto; padding-bottom: 50px; }
         
-        header { margin-bottom: 20px; border-bottom: 2px solid var(--text); padding-bottom: 12px; position: relative; text-align: center; }
-        header h1 { margin: 0; font-size: 24px; font-weight: 900; text-transform: uppercase; letter-spacing: -1px; }
-        header h1 span { color: var(--accent); }
-
-        .tabs { display: flex; gap: 5px; margin-bottom: 20px; background: #E5E5EA; padding: 4px; border-radius: 12px; }
-        .tab { flex: 1; padding: 12px; border: none; border-radius: 9px; font-size: 11px; font-weight: 800; cursor: pointer; text-transform: uppercase; color: var(--sub); }
-        .tab.active { background: var(--card); color: var(--text); box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-
         .card { background: var(--card); padding: 20px; border-radius: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 12px; }
         .field label { font-size: 9px; font-weight: 800; color: var(--sub); text-transform: uppercase; margin-bottom: 6px; display: block; }
         .field input { width: 100%; background: var(--bg); border: none; border-radius: 12px; padding: 14px; color: var(--text); font-size: 18px; font-weight: 900; outline: none; text-align: center; box-sizing: border-box; }
 
-        .result-box { text-align: center; padding: 10px 0; }
-        .res-big { font-size: 42px; font-weight: 900; color: var(--accent); letter-spacing: -2px; line-height: 1; margin: 10px 0; }
-        .res-label { font-size: 10px; font-weight: 800; color: var(--sub); text-transform: uppercase; }
+        h2 { font-size: 11px; font-weight: 900; text-transform: uppercase; color: var(--sub); margin: 20px 0 10px 5px; }
 
-        .res-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
-        .res-item { background: var(--bg); padding: 12px; border-radius: 15px; text-align: center; }
-        .res-item small { display: block; font-size: 8px; font-weight: 800; color: var(--sub); text-transform: uppercase; margin-bottom: 4px; }
-        .res-item b { font-size: 16px; font-weight: 900; }
+        /* Список стратегий */
+        .strategy-list { display: flex; flex-direction: column; gap: 8px; }
+        .strategy-item { 
+            background: var(--card); 
+            padding: 16px; 
+            border-radius: 18px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center;
+            border: 2px solid transparent;
+            transition: 0.2s;
+        }
+        .strategy-item.best { border-color: var(--accent); background: #f0f7ff; }
+        
+        .info-main { display: flex; flex-direction: column; }
+        .info-main b { font-size: 20px; font-weight: 900; color: var(--text); }
+        .info-main span { font-size: 10px; font-weight: 800; color: var(--sub); text-transform: uppercase; }
 
-        .status-box { padding: 14px; border-radius: 14px; font-size: 11px; font-weight: 900; text-align: center; margin-top: 15px; text-transform: uppercase; border: 2px solid transparent; }
-        .ok { background: rgba(52, 199, 89, 0.1); color: var(--ok); border-color: var(--ok); }
-        .hidden { display: none; }
+        .info-side { text-align: right; }
+        .parts-count { font-size: 24px; font-weight: 900; color: var(--accent); }
+        .rest-val { font-size: 10px; font-weight: 800; color: #34C759; display: block; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <header><h1>NAKA<span>MURA</span></h1></header>
-
-    <div class="tabs">
-        <button class="tab active" onclick="switchMode('std')">Standard</button>
-        <button class="tab" onclick="switchMode('drill')">Durchbohren</button>
+    <div class="card">
+        <div style="display:flex; gap:10px;">
+            <div class="field" style="flex:1"><label>Teil-Länge</label><input type="number" id="l" value="146" oninput="generateList()"></div>
+            <div class="field" style="flex:1"><label>Schnitt (Z)</label><input type="number" id="z" value="5" oninput="generateList()"></div>
+        </div>
+        <div style="height:10px"></div>
+        <div class="field"><label>Min. Reststück (mm)</label><input type="number" id="r" value="50" oninput="generateList()"></div>
     </div>
 
-    <div id="mode-std">
-        <div class="card">
-            <div class="field"><label>Fertigteillänge (mm)</label><input type="number" id="std-l" value="146" oninput="calcStd()"></div>
-            <div style="height:10px"></div>
-            <div class="field"><label>Schnittbreite (Z)</label><input type="number" id="std-z" value="5" oninput="calcStd()"></div>
-        </div>
-
-        <div class="card result-box">
-            <div class="res-label">Empfohlene Schnittlänge</div>
-            <div class="res-big" id="std-res-len">0.0</div>
-            <div class="res-label" id="std-res-parts">0 Teile pro Schnitt</div>
-            
-            <div class="res-grid">
-                <div class="res-item"><small>Reststück</small><b id="std-res-rest">0.0 mm</b></div>
-                <div class="res-item"><small>Max. Limit</small><b>1115 mm</b></div>
-            </div>
-        </div>
-    </div>
-
-    <div id="mode-drill" class="hidden">
-        <div class="card">
-            <div style="display:flex; gap:10px;">
-                <div class="field" style="flex:1.5"><label>Rohmaterial</label><input type="number" id="raw" value="3045" oninput="calcDrill()"></div>
-                <div class="field" style="flex:1"><label>Teil+Z</label><input type="number" id="unit" value="151" oninput="calcDrill()"></div>
-            </div>
-        </div>
-        <div class="card result-box">
-            <div class="res-label">Manuelle S1 / S2 Länge</div>
-            <div class="res-big" id="disp-s12">0.0</div>
-            <input type="range" id="drill-slider" min="500" max="1117" step="0.5" oninput="calcDrill()">
-            <div class="res-grid">
-                <div class="res-item"><small>S3 Länge</small><b id="drill-s3">0.0</b></div>
-                <div class="res-item"><small>End-Rest S3</small><b id="drill-rest" style="color:var(--accent)">0.0</b></div>
-            </div>
-            <div id="drill-status" class="status-box"></div>
-        </div>
-    </div>
+    <h2>Mögliche Schnitt-Strategien (до 1115мм)</h2>
+    <div id="list" class="strategy-list"></div>
 </div>
 
 <script>
-function switchMode(mode) {
-    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-    document.getElementById('mode-std').classList.add('hidden');
-    document.getElementById('mode-drill').classList.add('hidden');
+function generateList() {
+    const l = parseFloat(document.getElementById('l').value) || 0;
+    const z = parseFloat(document.getElementById('z').value) || 0;
+    const rMin = parseFloat(document.getElementById('r').value) || 0;
+    const unit = l + z;
+    const listContainer = document.getElementById('list');
     
-    if(mode === 'std') {
-        document.getElementById('mode-std').classList.remove('hidden');
-        document.querySelector('.tab:nth-child(1)').classList.add('active');
-        calcStd();
-    } else {
-        document.getElementById('mode-drill').classList.remove('hidden');
-        document.querySelector('.tab:nth-child(2)').classList.add('active');
-        calcDrill();
+    listContainer.innerHTML = '';
+    
+    if(unit <= 0) return;
+
+    // Считаем варианты от 1 до максимума, который лезет в 1115мм
+    for (let count = 1; count <= 20; count++) {
+        let totalLen = (count * unit) + rMin;
+        
+        if (totalLen > 1117) break; // Лимит 1115 + 2мм запас
+
+        const item = document.createElement('div');
+        item.className = 'strategy-item' + (totalLen >= 1110 && totalLen <= 1115 ? ' best' : '');
+        
+        item.innerHTML = `
+            <div class="info-main">
+                <span>Schnittlänge</span>
+                <b>${totalLen.toFixed(1)} mm</b>
+            </div>
+            <div class="info-side">
+                <div class="parts-count">${count} <small style="font-size:12px">Stk</small></div>
+                <span class="rest-val">Rest: ${rMin}mm</span>
+            </div>
+        `;
+        listContainer.appendChild(item);
     }
 }
 
-function calcStd() {
-    const l = parseFloat(document.getElementById('std-l').value) || 0;
-    const z = parseFloat(document.getElementById('std-z').value) || 0;
-    const unit = l + z;
-    const limit = 1115;
-    const minRest = 50;
-
-    // Логика: находим сколько деталей влезет в 1115 с учетом минимального остатка
-    let count = Math.floor((limit - minRest) / unit);
-    let bestLen = (count * unit) + minRest;
-
-    document.getElementById('std-res-len').innerText = bestLen.toFixed(1);
-    document.getElementById('std-res-parts').innerText = count + " Teile à " + unit.toFixed(1) + " mm";
-    document.getElementById('std-res-rest').innerText = minRest.toFixed(1) + " mm";
-}
-
-function calcDrill() {
-    const raw = parseFloat(document.getElementById('raw').value) || 0;
-    const unit = parseFloat(document.getElementById('unit').value) || 0;
-    const s12 = parseFloat(document.getElementById('drill-slider').value);
-    const rMin = 50;
-    
-    const s3 = raw - (s12 * 2);
-    const c3 = Math.floor((s3 - rMin) / unit);
-    const rest3 = s3 - (c3 * unit);
-
-    document.getElementById('disp-s12').innerText = s12.toFixed(1);
-    document.getElementById('drill-s3').innerText = s3.toFixed(1) + " mm";
-    document.getElementById('drill-rest').innerText = rest3.toFixed(1) + " mm";
-
-    const stat = document.getElementById('drill-status');
-    stat.className = "status-box " + (s12 > 1115 || s3 > 1115 || rest3 < rMin ? "err" : "ok");
-    stat.innerText = (s12 > 1115 || s3 > 1115 || rest3 < rMin) ? "Achtung: Limit!" : "Konfiguration OK";
-}
-
-window.onload = calcStd;
+window.onload = generateList;
 </script>
 </body>
 </html>
