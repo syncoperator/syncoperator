@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NAKAMURA PRO MAX</title>
+    <title>NAKAMURA PRO V8</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
-        :root { --bg: #F2F2F7; --card: #FFFFFF; --accent: #007AFF; --sub: #8E8E93; --text: #000000; --ok: #34C759; --err: #FF3B30; }
+        :root { --bg: #F2F2F7; --card: #FFFFFF; --accent: #007AFF; --sub: #8E8E93; --text: #000000; --ok: #34C759; }
         body { margin: 0; font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); display: flex; justify-content: center; }
         .container { width: 100%; max-width: 400px; padding: 16px; box-sizing: border-box; padding-bottom: 100px; }
         
@@ -15,7 +15,7 @@
         header h1 span { color: var(--accent); }
 
         .tabs { display: flex; gap: 6px; background: #E5E5EA; padding: 4px; border-radius: 14px; margin-bottom: 15px; }
-        .tab { flex: 1; border: none; padding: 12px; border-radius: 10px; font-size: 11px; font-weight: 800; text-transform: uppercase; cursor: pointer; color: var(--sub); transition: 0.2s; }
+        .tab { flex: 1; border: none; padding: 12px; border-radius: 10px; font-size: 11px; font-weight: 800; text-transform: uppercase; cursor: pointer; color: var(--sub); }
         .tab.active { background: var(--card); color: var(--text); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
 
         .card { background: var(--card); border-radius: 20px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 12px; }
@@ -23,6 +23,7 @@
         .field input { width: 100%; border: none; background: var(--bg); padding: 14px; border-radius: 12px; font-size: 18px; font-weight: 900; text-align: center; box-sizing: border-box; outline: none; }
 
         .item { background: var(--card); border-radius: 16px; padding: 16px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; border: 2px solid transparent; }
+        /* Подсветка для нового лимита 1150 +-20 */
         .item.highlight { border-color: var(--ok); background: #F2FFF5; }
         .item b { font-size: 20px; font-weight: 900; }
         .item span { font-size: 9px; font-weight: 800; color: var(--sub); text-transform: uppercase; display: block; }
@@ -60,12 +61,12 @@
         <div class="card">
             <div style="display:flex; gap:10px;">
                 <div class="field" style="flex:1.5"><label>Rohmaterial</label><input type="number" id="dr-raw" value="3085" oninput="runDrill()"></div>
-                <div class="field" style="flex:1"><label>Teil+Z</label><input type="number" id="dr-u" value="146" oninput="runDrill()"></div>
+                <div class="field" style="flex:1"><label>Teil+Z</label><input type="number" id="dr-u" value="180" oninput="runDrill()"></div>
             </div>
         </div>
         <div class="card">
-            <div class="big-val" id="dr-disp">1072.0</div>
-            <input type="range" id="dr-sl" min="300" max="1500" step="0.1" value="1072" oninput="runDrill()">
+            <div class="big-val" id="dr-disp">1150.0</div>
+            <input type="range" id="dr-sl" min="300" max="1500" step="0.5" value="1150" oninput="runDrill()">
             <div id="dr-results"></div>
         </div>
     </div>
@@ -91,7 +92,7 @@ function runStd() {
     if(unit <= 0) return;
 
     let res = [];
-    // Лимит поднят до 3100мм
+    // Считаем до победного (3100мм), но подсветим нужную тебе зону
     for(let c = 1; c <= 100; c++) {
         let total = (c * unit) + r;
         if (total > 3105) break; 
@@ -100,8 +101,8 @@ function runStd() {
 
     res.reverse().forEach(item => {
         const div = document.createElement('div');
-        // Подсветка зоны 1110-1115 или около 3000
-        const isOpt = (item.total >= 1110 && item.total <= 1115) || item.total > 3000;
+        // Твой новый лимит 1150 +-20 (от 1130 до 1170)
+        const isOpt = item.total >= 1130 && item.total <= 1170;
         div.className = 'item' + (isOpt ? ' highlight' : '');
         div.innerHTML = `<div><span>Schnittlänge</span><b>${item.total.toFixed(1)}</b></div><div class="count-badge">${item.c}</div>`;
         list.appendChild(div);
@@ -122,10 +123,11 @@ function runDrill() {
 
     document.getElementById('dr-results').innerHTML = `
         <div style="font-size:13px; font-weight:700; line-height:1.8;">
-            <div style="display:flex; justify-content:space-between;">S1 / S2 Teile: <span>${c12}</span></div>
+            <div style="display:flex; justify-content:space-between; color:${s12 > 1170 ? 'red' : 'inherit'}">S1/S2 (Schnitt): <span>${s12.toFixed(1)} mm</span></div>
             <div style="display:flex; justify-content:space-between;">S3 Länge: <span>${s3.toFixed(1)} mm</span></div>
-            <div style="display:flex; justify-content:space-between;">S3 Teile: <span>${c3}</span></div>
-            <div style="display:flex; justify-content:space-between; color:var(--accent);">End-Rest S3: <span>${rest3.toFixed(1)} mm</span></div>
+            <div style="display:flex; justify-content:space-between; border-top:1px solid #eee; margin-top:5px;">Teile in S1+S2: <span>${c12 * 2}</span></div>
+            <div style="display:flex; justify-content:space-between;">Teile in S3: <span>${c3}</span></div>
+            <div style="display:flex; justify-content:space-between; color:var(--accent); font-weight:900;">Rest S3: <span>${rest3.toFixed(1)} mm</span></div>
         </div>
     `;
 }
