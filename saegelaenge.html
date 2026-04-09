@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SSA SMART BALANCE</title>
+    <title>SSA FIX | NAKAMURA</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
     <style>
         :root { --bg: #F2F2F7; --card: #FFFFFF; --accent: #007AFF; --danger: #FF3B30; --sub: #8E8E93; --text: #000000; --ok: #34C759; }
@@ -17,7 +17,7 @@
         header p { margin: 4px 0 0; color: var(--sub); font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; }
 
         .card { background: var(--card); padding: 20px; border-radius: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 16px; }
-        .card-title { font-size: 10px; font-weight: 900; color: var(--sub); text-transform: uppercase; margin-bottom: 12px; letter-spacing: 1px; }
+        .card-title { font-size: 10px; font-weight: 900; color: var(--sub); text-transform: uppercase; margin-bottom: 12px; }
 
         .input-row { display: flex; gap: 10px; margin-bottom: 15px; }
         .field { flex: 1; display: flex; flex-direction: column; min-width: 0; }
@@ -25,16 +25,16 @@
         .field input { width: 100%; background: var(--bg); border: 2px solid transparent; border-radius: 12px; padding: 12px 5px; color: var(--text); font-size: 16px; font-weight: 900; outline: none; text-align: center; box-sizing: border-box; }
         .field input:focus { border-color: var(--accent); background: #fff; }
 
-        .res-box { border-left: 4px solid var(--accent); padding-left: 15px; }
-        .split-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--bg); font-weight: 700; font-size: 16px; }
-        .split-row i { font-style: normal; font-size: 12px; color: var(--sub); }
-        .split-row b { color: var(--accent); }
-        
-        .status-badge { display: flex; justify-content: space-between; padding: 12px; border-radius: 12px; font-size: 11px; font-weight: 900; margin-top: 15px; text-transform: uppercase; }
-        .status-ok { background: rgba(52, 199, 89, 0.1); color: var(--ok); }
-        .status-err { background: rgba(255, 59, 48, 0.1); color: var(--danger); }
+        .res-line { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--bg); font-weight: 700; }
+        .res-line:last-child { border: none; }
+        .res-line b { color: var(--accent); font-size: 18px; }
+        .res-line i { font-style: normal; font-size: 12px; color: var(--sub); }
 
-        .rest-val { font-size: 10px; font-weight: 800; margin-top: 6px; text-align: right; }
+        .badge { padding: 10px; border-radius: 12px; font-size: 11px; font-weight: 900; text-align: center; margin-top: 10px; text-transform: uppercase; }
+        .ok { background: rgba(52, 199, 89, 0.1); color: var(--ok); }
+        .err { background: rgba(255, 59, 48, 0.1); color: var(--danger); }
+        
+        .footer-info { font-size: 10px; color: var(--sub); text-align: center; margin-top: 20px; font-weight: 600; }
     </style>
 </head>
 <body>
@@ -43,7 +43,7 @@
     <header>
         <a href="index.html" class="btn-back">Hub</a>
         <h1>NAKA<span>MURA</span></h1>
-        <p>Smart Auto-Schnitt (2+1)</p>
+        <p>Sägelänge Optimizer</p>
     </header>
 
     <div class="card">
@@ -54,16 +54,18 @@
             <div class="field"><label>Rest Min</label><input type="number" id="r" value="50" oninput="solve()"></div>
         </div>
         <div class="field">
-            <label>Rohmaterial Gesamtlänge</label>
+            <label>Rohmaterial Länge</label>
             <input type="number" id="raw" value="3085" oninput="solve()" style="background:var(--bg); font-size:22px;">
         </div>
     </div>
 
-    <div class="card">
-        <div class="card-title">Berechnete Aufteilung</div>
-        <div id="results" class="res-box"></div>
-        <div id="status" class="status-badge"></div>
+    <div class="card" id="output-card" style="display:none;">
+        <div class="card-title">Sägeplan</div>
+        <div id="results"></div>
+        <div id="status-badge"></div>
     </div>
+
+    <div class="footer-info">AUTO-BALANCE: MAX 1150mm | REST 50-80mm</div>
 </div>
 
 <script>
@@ -73,68 +75,62 @@ function solve() {
     const rMin = parseFloat(document.getElementById('r').value) || 50;
     const raw = parseFloat(document.getElementById('raw').value) || 0;
     const unit = L + Z;
-    const limit = 1150;
+    const maxL = 1150;
     const rMax = 80;
 
-    if (L <= 0 || raw <= 0) return;
+    if (L <= 0 || raw <= 0) { document.getElementById('output-card').style.display = 'none'; return; }
+    document.getElementById('output-card').style.display = 'block';
 
-    // Находим максимально возможное количество деталей в одной палке
-    let maxTeile = Math.floor((limit - rMin) / unit);
+    let found = false;
+    let res = { s1:0, s2:0, s3:0, c1:0, c3:0, rest3:0 };
+
+    // Пробуем разные комбинации количества деталей для первых двух прутков
+    let startC = Math.floor((maxL - rMin) / unit);
     
-    let bestFound = false;
-    let finalS1 = 0, finalS2 = 0, finalS3 = 0, t1 = 0, t3 = 0;
-
-    // ЦИКЛ ПОИСКА: Пробуем от макс. количества деталей вниз
-    for (let c = maxTeile; c >= 1; c--) {
-        let sTest = (unit * c) + rMin;
-        let s3Test = raw - (sTest * 2);
+    for (let c = startC; c >= 1; c--) {
+        let s12 = (unit * c) + rMin;
+        let s3 = raw - (s12 * 2);
         
-        // Проверяем S3
-        let c3 = Math.floor((s3Test - rMin) / unit);
-        let rest3 = s3Test - (unit * c3);
-
-        // Условие успеха: S3 в лимитах и его Reststück тоже в лимитах
-        if (s3Test <= limit && s3Test >= (unit + rMin) && rest3 >= rMin && rest3 <= rMax) {
-            finalS1 = sTest;
-            finalS2 = sTest;
-            finalS3 = s3Test;
-            t1 = c;
-            t3 = c3;
-            bestFound = true;
-            break; // Нашли лучший (самый длинный из подходящих) вариант
+        if (s3 <= maxL && s3 >= (unit + rMin)) {
+            let c3 = Math.floor((s3 - rMin) / unit);
+            let rest3 = s3 - (unit * c3);
+            
+            if (rest3 >= rMin && rest3 <= rMax) {
+                res = { s1:s12, s2:s12, s3:s3, c1:c, c3:c3, rest3:rest3 };
+                found = true;
+                break;
+            }
         }
     }
 
     const resDiv = document.getElementById('results');
-    const statDiv = document.getElementById('status');
+    const badge = document.getElementById('status-badge');
 
-    if (bestFound) {
-        let r3 = finalS3 - (unit * t3);
+    if (found) {
         resDiv.innerHTML = `
-            <div class="split-row"><span>Schnitt 1:</span> <b>${finalS1.toFixed(1)} <i>(${t1} T.)</i></b></div>
-            <div class="split-row"><span>Schnitt 2:</span> <b>${finalS2.toFixed(1)} <i>(${t1} T.)</i></b></div>
-            <div class="split-row"><span>Schnitt 3:</span> <b>${finalS3.toFixed(1)} <i>(${t3} T.)</i></b></div>
-            <div class="rest-val" style="color:var(--ok)">REST S3: ${r3.toFixed(1)} mm (OK)</div>
+            <div class="res-line"><span>S1 (2x):</span> <b>${res.s1.toFixed(1)} <i>(${res.c1} T.)</i></b></div>
+            <div class="res-line"><span>S3 (Rest):</span> <b>${res.s3.toFixed(1)} <i>(${res.c3} T.)</i></b></div>
+            <div class="res-line"><span>End-Reststück:</span> <b style="color:var(--ok)">${res.rest3.toFixed(1)} mm</b></div>
         `;
-        statDiv.className = "status-badge status-ok";
-        statDiv.innerHTML = `<span>Status:</span> <span>Optimal gefunden</span>`;
+        badge.className = "badge ok";
+        badge.innerText = "Schnittplan Optimal";
     } else {
-        // Если ничего не подошло идеально, показываем грубый расчет
-        let s1Safe = (unit * maxTeile) + rMin;
-        let s3Err = raw - (s1Safe * 2);
-        let r3Err = s3Err - (unit * Math.floor((s3Err-rMin)/unit));
-        
+        // Если 2+1 не лезет, считаем просто по максимуму
+        let fallbackC = Math.floor((maxL - rMin) / unit);
+        let fs1 = (unit * fallbackC) + rMin;
+        let fs3 = raw - (fs1 * 2);
+        let fr3 = fs3 - (unit * Math.floor((fs3 - rMin)/unit));
+
         resDiv.innerHTML = `
-            <div class="split-row"><span>S1 & S2:</span> <span>${s1Safe.toFixed(1)}</span></div>
-            <div class="split-row"><span>S3:</span> <span class="status-bad">${s3Err.toFixed(1)}</span></div>
-            <div class="rest-val" style="color:var(--danger)">REST S3: ${r3Err.toFixed(1)} mm</div>
+            <div class="res-line"><span>S1/S2:</span> <b>${fs1.toFixed(1)}</b></div>
+            <div class="res-line"><span>S3:</span> <b style="color:var(--danger)">${fs3.toFixed(1)}</b></div>
+            <div class="res-line"><span>Rest S3:</span> <b>${fr3.toFixed(1)}</b></div>
         `;
-        statDiv.className = "status-badge status-err";
-        statDiv.innerHTML = `<span>Status:</span> <span>Keine Lösung</span>`;
+        badge.className = "badge err";
+        badge.innerText = "Achtung: Manuell prüfen!";
     }
 }
 window.onload = solve;
 </script>
-
 </body>
 </html>
