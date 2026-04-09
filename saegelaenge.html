@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NAKAMURA | TOTAL CONTROL</title>
+    <title>NAKAMURA | 1115 LIMIT</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
     <style>
         :root { --bg: #F2F2F7; --card: #FFFFFF; --accent: #007AFF; --danger: #FF3B30; --sub: #8E8E93; --text: #000000; --ok: #34C759; }
@@ -33,6 +33,7 @@
 
         .status-box { padding: 14px; border-radius: 14px; font-size: 11px; font-weight: 900; text-align: center; margin-top: 15px; text-transform: uppercase; border: 2px solid transparent; }
         .ok { background: rgba(52, 199, 89, 0.1); color: var(--ok); border-color: var(--ok); }
+        .warn { background: rgba(255, 149, 0, 0.1); color: #FF9500; border-color: #FF9500; }
         .err { background: rgba(255, 59, 48, 0.1); color: var(--danger); border-color: var(--danger); }
         
         .btn-reset { width: 100%; padding: 12px; background: var(--text); color: white; border: none; border-radius: 12px; font-weight: 800; font-size: 11px; cursor: pointer; text-transform: uppercase; margin-top: 10px; }
@@ -43,7 +44,7 @@
 <div class="container">
     <header>
         <h1>NAKA<span>MURA</span></h1>
-        <p>Pro-Schnitt Optimizer</p>
+        <p>Limit: 1115mm ±2</p>
     </header>
 
     <div class="card">
@@ -51,7 +52,7 @@
             <div class="field" style="flex:1.5"><label>Rohmaterial</label><input type="number" id="raw" value="3045" oninput="init()"></div>
             <div class="field" style="flex:1"><label>Teil + Z</label><input type="number" id="unit" value="151" oninput="init()"></div>
         </div>
-        <div class="field"><label>Min. Reststück (Soll)</label><input type="number" id="rMin" value="50" oninput="init()"></div>
+        <div class="field"><label>Min. Rest (Soll)</label><input type="number" id="rMin" value="50" oninput="init()"></div>
     </div>
 
     <div class="card">
@@ -59,8 +60,8 @@
             <i style="font-size: 9px; font-weight: 900; color: var(--sub); text-transform: uppercase;">Länge S1 & S2 (mm)</i>
             <div class="val-display" id="display-s12">0.0</div>
             <div class="val-sub" id="display-info">0 Teile</div>
-            <input type="range" id="len-slider" min="500" max="1150" step="1" oninput="calculate()">
-            <button class="btn-reset" onclick="init()">Auto-Reset</button>
+            <input type="range" id="len-slider" min="300" max="1117" step="0.5" oninput="calculate()">
+            <button class="btn-reset" onclick="init()">Auto-Optimieren</button>
         </div>
     </div>
 
@@ -70,7 +71,7 @@
             <div class="res-item"><i>S3 Teile</i><b id="out-c3">0</b></div>
         </div>
         <div class="res-item" style="margin-top:10px; width:100%; box-sizing:border-box;">
-            <i>End-Rest S3 (Wasser-Check)</i>
+            <i>End-Rest S3</i>
             <b id="out-rest" style="color:var(--accent); font-size:22px;">0.0 mm</b>
         </div>
         <div id="status" class="status-box"></div>
@@ -84,19 +85,16 @@ function init() {
     const raw = parseFloat(document.getElementById('raw').value) || 0;
     const unit = parseFloat(document.getElementById('unit').value) || 0;
     const rMin = parseFloat(document.getElementById('rMin').value) || 50;
+    const limit = 1115;
     
-    // Авто-поиск лучшего старта
-    let bestS = (Math.floor((1150 - rMin) / unit) * unit) + rMin;
+    // Авто-поиск идеала под лимит 1115
+    let bestS = (Math.floor((limit - rMin) / unit) * unit) + rMin;
     
-    // Проверка, чтобы S3 не был слишком длинным
-    for (let s = bestS; s >= 500; s -= 1) {
-        let s3 = raw - (s * 2);
-        if (s3 <= 1150) {
-            bestS = s;
-            break;
-        }
+    // Проверка, чтобы S3 не улетел за 1115
+    while (raw - (bestS * 2) > limit && bestS < limit + 2) {
+        bestS += 1;
     }
-
+    
     slider.value = bestS;
     calculate();
 }
@@ -105,22 +103,16 @@ function calculate() {
     const raw = parseFloat(document.getElementById('raw').value) || 0;
     const unit = parseFloat(document.getElementById('unit').value) || 0;
     const rMin = parseFloat(document.getElementById('rMin').value) || 50;
+    const limit = 1115;
     const s12 = parseFloat(slider.value);
 
-    // 1. Считаем S3
     const s3 = raw - (s12 * 2);
-    
-    // 2. Считаем детали в S1/S2 (информативно)
     const c12 = Math.floor((s12 - rMin) / unit);
     const rest12 = s12 - (c12 * unit);
 
-    // 3. Считаем детали в S3 (самое важное)
-    // Мы берем длину S3 и смотрим, сколько ЦЕЛЫХ деталей unit в нее влезет
     const c3 = Math.floor((s3 - rMin) / unit);
-    // Остаток — это то, что реально останется после выреза всех деталей из S3
     const rest3 = s3 - (c3 * unit);
 
-    // Обновление экрана
     document.getElementById('display-s12').innerText = s12.toFixed(1);
     document.getElementById('display-info').innerText = c12 + " Teile (Rest " + rest12.toFixed(1) + "mm)";
     
@@ -128,17 +120,26 @@ function calculate() {
     document.getElementById('out-c3').innerText = c3 + " T.";
     document.getElementById('out-rest').innerText = rest3.toFixed(1) + " mm";
 
-    // Логика статуса
     const stat = document.getElementById('status');
-    let isError = false;
+    let type = "ok";
     let msg = "Konfiguration OK";
 
-    if (s3 > 1150) { isError = true; msg = "S3 zu lang (>1150)!"; }
-    else if (rest3 < rMin) { isError = true; msg = "S3 Rest zu klein (Wasser!)"; }
-    else if (rest3 > 85) { isError = true; msg = "S3 Rest zu groß (>85)"; }
-    else if (s12 > 1150) { isError = true; msg = "S1/S2 zu lang!"; }
+    // Логика проверки лимитов 1115 +-2
+    if (s12 > 1117 || s3 > 1117) {
+        type = "err";
+        msg = "KRITISCH: Limit > 1117mm!";
+    } else if (s12 > 1115 || s3 > 1115) {
+        type = "warn";
+        msg = "Grenzwert (1115mm+)";
+    } else if (rest3 < rMin) {
+        type = "err";
+        msg = "S3 Rest zu klein (Wasser!)";
+    } else if (rest3 > 90) {
+        type = "warn";
+        msg = "Rest S3 etwas groß";
+    }
 
-    stat.className = "status-box " + (isError ? "err" : "ok");
+    stat.className = "status-box " + type;
     stat.innerText = msg;
 }
 
