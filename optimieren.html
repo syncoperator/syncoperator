@@ -18,20 +18,17 @@
         body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; margin: 0; padding: 20px; display: flex; justify-content: center; }
         .container { width: 100%; max-width: 500px; }
 
-        /* HEADER */
         header { margin-bottom: 20px; border-left: 4px solid var(--text); padding-left: 15px; }
         header h1 { margin: 0; font-size: 24px; font-weight: 800; text-transform: uppercase; }
 
-        /* TABS */
         .tabs { display: flex; background: #e5e5ea; padding: 4px; border-radius: 12px; margin-bottom: 20px; }
-        .tab-btn { flex: 1; padding: 10px; border: none; border-radius: 9px; font-weight: 700; font-size: 13px; cursor: pointer; transition: 0.2s; color: #86868b; }
+        .tab-btn { flex: 1; padding: 10px; border: none; border-radius: 9px; font-weight: 700; font-size: 13px; cursor: pointer; color: #86868b; }
         .tab-btn.active { background: #fff; color: var(--text); box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
 
         .section { background: var(--card); border-radius: 12px; padding: 18px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
         .label { display: block; font-size: 10px; font-weight: 700; color: #86868b; text-transform: uppercase; margin-bottom: 6px; }
         select, input { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 15px; font-weight: 600; background: #fff; outline: none; box-sizing: border-box; }
 
-        /* RESULTS */
         .result-card { background: var(--card); border-radius: 14px; padding: 20px; border: 1px solid var(--border); }
         .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 15px; }
         .val-card { display: flex; flex-direction: column; align-items: center; padding: 10px 2px; border-radius: 10px; background: var(--bg); border: 1px solid transparent; }
@@ -40,7 +37,7 @@
         .v-m { font-size: 16px; font-weight: 800; }
         .v-u { font-size: 9px; color: #86868b; }
 
-        .aufmass-box { background: #fff3cd; border: 1px solid #ffeeba; padding: 12px; border-radius: 8px; text-align: center; margin-top: 10px; font-weight: 700; font-size: 14px; }
+        .aufmass-box { background: #fff3cd; border: 1px solid #ffeeba; padding: 12px; border-radius: 8px; text-align: center; margin-top: 10px; font-weight: 700; font-size: 14px; color: #856404; }
         .code-box { background: #1d1d1f; color: #34c759; padding: 15px; border-radius: 10px; font-family: monospace; text-align: center; margin-top: 15px; font-size: 14px; }
         
         .hidden { display: none !important; }
@@ -62,7 +59,7 @@
             <option value="1.4104">1.4104 (X14CrMoS17)</option>
             <option value="1.4112">1.4112 (X90CrMoV18)</option>
             <option value="2.0966">2.0966 (Bronze)</option>
-            <option value="ms58">MS58 (Messing)</option>
+            <option value="ms58">Messing (MS58)</option>
         </select>
         <div style="margin-top:10px">
             <label class="label">Ø Durchmesser</label>
@@ -76,8 +73,13 @@
             <option value="drehen_schrupp">Drehen Schruppen</option>
             <option value="drehen_fertig">Drehen Fertigdrehen</option>
             <option value="innen_schrupp">Innen Schruppen</option>
-            <option value="bohren_hm">Bohren HM</option>
-            <option value="stechen">Stechen</option>
+            <option value="innen_fertig">Innen Fertigdrehen</option>
+            <option value="stechen">Nut stechen</option>
+            <option value="frasen">Fräsen / 6-Kant</option>
+            <option value="bohren_hm">Bohren HM Spiral</option>
+            <option value="bohren_wp">WP-Bohrer / Drehbohrer</option>
+            <option value="gewinde_dreh">Gewinde drehen</option>
+            <option value="gewinde_bohr">Gewinde bohren</option>
             <option value="abstechen">Abstechen</option>
         </select>
     </div>
@@ -114,7 +116,7 @@
             <div class="val-card"><span class="v-l">MAX</span><span id="f-max" class="v-m">0</span><span class="v-u">mm/U</span></div>
         </div>
 
-        <div id="aufmass-div" class="aufmass-box">Aufmaß: 0.50 mm (Seite)</div>
+        <div id="aufmass-div" class="aufmass-box hidden">Aufmaß: 0.50 mm (Seite)</div>
         <div id="out-code" class="code-box">G-- S---- M3</div>
     </div>
 </div>
@@ -130,11 +132,16 @@ const materials = {
 
 const operations = {
     "drehen_schrupp": { g: "G96", v_m: 1.0, f_r: [0.20, 0.28, 0.40] },
-    "drehen_fertig":  { g: "G96", v_m: 1.2, f_r: [0.08, 0.12, 0.16] },
-    "innen_schrupp":  { g: "G96", v_m: 0.8, f_r: [0.15, 0.22, 0.30] },
-    "bohren_hm":      { g: "G97", v_m: 0.4, f_r: [0.12, 0.16, 0.22] },
-    "stechen":        { g: "G96", v_m: 0.6, f_r: [0.06, 0.10, 0.14] },
-    "abstechen":      { g: "G97", v_m: 0.4, f_r: [0.05, 0.08, 0.12] }
+    "drehen_fertig":  { g: "G96", v_m: 1.25, f_r: [0.08, 0.12, 0.16] },
+    "innen_schrupp":  { g: "G96", v_m: 0.85, f_r: [0.15, 0.22, 0.30] },
+    "innen_fertig":   { g: "G96", v_m: 1.05, f_r: [0.05, 0.09, 0.12] },
+    "stechen":        { g: "G96", v_m: 0.65, f_r: [0.06, 0.10, 0.14] },
+    "frasen":         { g: "G97", v_m: 0.75, f_r: [0.12, 0.18, 0.25] },
+    "bohren_hm":      { g: "G97", v_m: 0.45, f_r: [0.12, 0.16, 0.22] },
+    "bohren_wp":      { g: "G97", v_m: 0.55, f_r: [0.10, 0.14, 0.18] },
+    "gewinde_dreh":   { g: "G97", v_m: 0.30, f_r: [1.5, 1.5, 1.5] },
+    "gewinde_bohr":   { g: "G97", v_m: 0.15, f_r: [1.25, 1.25, 1.25] },
+    "abstechen":      { g: "G97", v_m: 0.45, f_r: [0.05, 0.08, 0.12] }
 };
 
 function switchTab(t) {
@@ -142,6 +149,7 @@ function switchTab(t) {
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.innerText.toLowerCase().includes(t)));
     document.getElementById('tab-std').classList.toggle('hidden', t !== 'std');
     document.getElementById('tab-qual').classList.toggle('hidden', t !== 'qual');
+    document.getElementById('aufmass-div').classList.toggle('hidden', t !== 'qual');
     calc();
 }
 
@@ -155,25 +163,23 @@ function calc() {
         vcArr = m.vc.map(v => Math.round(v * o.v_m));
         fArr = o.f_r.map(f => (f * m.f).toFixed(2));
         gCode = o.g;
-        aufmass = m.auf;
     } else {
-        // QUALITY MODE (Rz расчет)
         const rz = parseFloat(document.getElementById('rz').value) || 6.3;
         const r = parseFloat(document.getElementById('rad').value);
-        // Формула подачи: f = sqrt(8 * R * Rz / 1000)
-        const fCalc = Math.sqrt(8 * r * rz / 1000).toFixed(2);
+        // Расчет подачи исходя из Rz и Радиуса: f = sqrt(Rz * R * 8 / 1000)
+        const fCalc = Math.sqrt(rz * r * 8 / 1000).toFixed(2);
         
-        vcArr = m.vc.map(v => Math.round(v * 1.2)); // Режим чистовой
-        fArr = [(fCalc*0.8).toFixed(2), fCalc, (fCalc*1.2).toFixed(2)];
+        vcArr = m.vc.map(v => Math.round(v * 1.15)); 
+        fArr = [(fCalc*0.85).toFixed(2), fCalc, (fCalc*1.15).toFixed(2)];
         gCode = "G96";
-        aufmass = (r * 0.5).toFixed(2); // Рекомендованный припуск ~0.5 от радиуса
+        // Припуск: минимум 2х радиуса для стабильности, но не меньше базы материала
+        aufmass = Math.max(m.auf, (r * 0.7)).toFixed(2);
+        document.getElementById('aufmass-div').innerText = `Empf. Aufmaß: ${aufmass} mm (Seite)`;
     }
 
-    // Update UI
     document.getElementById('f-min').innerText = fArr[0];
     document.getElementById('f-rec').innerText = fArr[1];
     document.getElementById('f-max').innerText = fArr[2];
-    document.getElementById('aufmass-div').innerText = `Empf. Aufmaß: ${aufmass} mm (Seite)`;
 
     if (gCode === "G96") {
         ["u1","u2","u3"].forEach(id => document.getElementById(id).innerText = "m/min");
