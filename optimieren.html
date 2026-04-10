@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>CNC Optimizer</title>
+    <title>Optimizer</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -12,7 +12,7 @@
             --accent: #007aff;
             --text: #1d1d1f;
             --border: #d2d2d7;
-            --success: #34c759;
+            --rec-bg: #e1f0ff;
         }
 
         body {
@@ -27,33 +27,23 @@
 
         .container {
             width: 100%;
-            max-width: 480px;
+            max-width: 500px;
         }
 
-        /* HEADER СТИЛЬ SYNC */
         header {
-            margin-bottom: 30px;
-            text-align: left;
-            border-left: 4px solid var(--accent);
+            margin-bottom: 25px;
+            border-left: 4px solid var(--text);
             padding-left: 15px;
         }
 
         header h1 {
             margin: 0;
-            font-size: 24px;
+            font-size: 26px;
             font-weight: 800;
-            letter-spacing: -0.5px;
-        }
-
-        header p {
-            margin: 5px 0 0;
-            font-size: 13px;
-            color: #86868b;
+            letter-spacing: -1px;
             text-transform: uppercase;
-            font-weight: 600;
         }
 
-        /* INPUT SECTIONS */
         .section {
             background: var(--card);
             border-radius: 12px;
@@ -78,86 +68,70 @@
             border-radius: 8px;
             font-size: 16px;
             font-weight: 600;
-            color: var(--text);
             background: #fff;
             outline: none;
-            box-sizing: border-box;
         }
 
-        select:focus { border-color: var(--accent); }
-
-        /* RESULT TABLE СТИЛЬ */
+        /* ТАБЛИЦА РЕЗУЛЬТАТОВ */
         .result-card {
             background: var(--card);
-            border-radius: 12px;
+            border-radius: 14px;
             padding: 20px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
             border: 1px solid var(--border);
         }
 
         .res-header {
             display: flex;
             justify-content: space-between;
-            align-items: center;
             margin-bottom: 20px;
             padding-bottom: 10px;
             border-bottom: 1px solid var(--bg);
         }
 
-        .res-title { font-weight: 800; font-size: 18px; }
-        .g-pill { 
-            background: var(--text); 
-            color: #fff; 
-            padding: 4px 10px; 
-            border-radius: 6px; 
-            font-size: 12px; 
-            font-weight: 700;
-        }
+        .res-title { font-weight: 800; font-size: 18px; text-transform: uppercase; }
+        .mode-tag { font-family: monospace; font-weight: 800; background: #eee; padding: 2px 8px; border-radius: 4px; }
 
-        .data-row {
+        .grid-row {
             display: grid;
             grid-template-columns: 1fr 1fr 1fr;
             gap: 10px;
             margin-bottom: 20px;
-            text-align: center;
         }
 
-        .data-box {
+        .val-card {
             display: flex;
             flex-direction: column;
-            padding: 10px 5px;
-            border-radius: 8px;
+            align-items: center;
+            padding: 12px 5px;
+            border-radius: 10px;
             background: var(--bg);
         }
 
-        .data-box.featured {
-            background: #e1f0ff;
-            border: 1px solid var(--accent);
+        .val-card.rec {
+            background: var(--rec-bg);
+            border: 1.5px solid var(--accent);
         }
 
-        .d-label { font-size: 9px; font-weight: 700; color: #86868b; margin-bottom: 4px; }
-        .d-val { font-size: 16px; font-weight: 800; }
-        .d-unit { font-size: 10px; color: #86868b; }
+        .v-label { font-size: 9px; font-weight: 700; color: #86868b; margin-bottom: 4px; }
+        .v-main { font-size: 17px; font-weight: 800; }
+        .v-unit { font-size: 10px; color: #86868b; margin-top: 2px; }
 
-        .full-label {
+        .group-title {
             font-size: 12px;
             font-weight: 800;
             margin-bottom: 10px;
-            color: var(--text);
-            display: flex;
-            align-items: center;
-            gap: 5px;
+            display: block;
         }
 
-        .fanuc-box {
+        .code-box {
             background: #1d1d1f;
             color: #34c759;
             padding: 15px;
-            border-radius: 8px;
-            font-family: 'SF Mono', monospace;
-            font-size: 14px;
+            border-radius: 10px;
+            font-family: monospace;
             text-align: center;
-            margin-top: 10px;
+            font-size: 15px;
+            letter-spacing: 1px;
         }
     </style>
 </head>
@@ -165,22 +139,21 @@
 
 <div class="container">
     <header>
-        <h1>CNC Guide</h1>
-        <p>Fanuc Optimization Hub</p>
+        <h1>Optimizer</h1>
     </header>
 
     <div class="section">
-        <label class="label">Werkstoff</label>
+        <label class="label">Material</label>
         <select id="mat" onchange="calc()">
             <option value="1.4104">1.4104 (X14CrMoS17)</option>
             <option value="1.4112">1.4112 (X90CrMoV18)</option>
-            <option value="2.0966">2.0966 (Bronze)</option>
-            <option value="ms58">Messing (MS58)</option>
+            <option value="2.0966">2.0966 (CuAl10Ni5Fe4)</option>
+            <option value="ms58">MS58 (Messing)</option>
         </select>
     </div>
 
     <div class="section">
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+        <div style="display: grid; grid-template-columns: 1fr 1.2fr; gap: 15px;">
             <div>
                 <label class="label">Ø Durchmesser</label>
                 <input type="number" id="dia" value="20" oninput="calc()">
@@ -188,11 +161,17 @@
             <div>
                 <label class="label">Verfahren</label>
                 <select id="op" onchange="calc()">
-                    <option value="schrupp">Schruppen</option>
-                    <option value="schlicht">Schlichten</option>
-                    <option value="stechen">Stechen</option>
-                    <option value="bohren">Bohren HM</option>
-                    <option value="wp_bohr">WP-Bohrer</option>
+                    <option value="drehen_schrupp">Drehen Schruppen</option>
+                    <option value="drehen_fertig">Drehen Fertigdrehen</option>
+                    <option value="innen_schrupp">Innen Schruppen</option>
+                    <option value="innen_fertig">Innen Fertigdrehen</option>
+                    <option value="stechen">Nut stechen</option>
+                    <option value="frasen">Fräsen / 6-Kant</option>
+                    <option value="bohren_hm">Bohren HM Spiral</option>
+                    <option value="bohren_wp">WP-Bohrer / Drehbohrer</option>
+                    <option value="gewinde_dreh">Gewinde drehen</option>
+                    <option value="gewinde_bohr">Gewinde bohren</option>
+                    <option value="abstechen">Abstechen</option>
                 </select>
             </div>
         </div>
@@ -200,76 +179,77 @@
 
     <div class="result-card">
         <div class="res-header">
-            <span id="res-name" class="res-title">---</span>
-            <span id="res-g" class="g-pill">G--</span>
+            <span id="out-name" class="res-title">---</span>
+            <span id="out-mode" class="mode-tag">G--</span>
         </div>
 
-        <div class="full-label">Schnittgeschwindigkeit / Drehzahl</div>
-        <div class="data-row">
-            <div class="data-box"><span class="d-label">MIN</span><span id="s-min" class="d-val">0</span><span id="u-1" class="d-unit">m/min</span></div>
-            <div class="data-box featured"><span class="d-label">REC</span><span id="s-rec" class="d-val">0</span><span id="u-2" class="d-unit">m/min</span></div>
-            <div class="data-box"><span class="d-label">MAX</span><span id="s-max" class="d-val">0</span><span id="u-3" class="d-unit">m/min</span></div>
+        <span class="group-title">Schnittgeschwindigkeit / Drehzahl</span>
+        <div class="grid-row">
+            <div class="val-card"><span class="v-label">MIN</span><span id="s-min" class="v-main">0</span><span id="u1" class="v-unit">m/min</span></div>
+            <div class="val-card rec"><span class="v-label">REC</span><span id="s-rec" class="v-main">0</span><span id="u2" class="v-unit">m/min</span></div>
+            <div class="val-card"><span class="v-label">MAX</span><span id="s-max" class="v-main">0</span><span id="u3" class="v-unit">m/min</span></div>
         </div>
 
-        <div class="full-label">Vorschub (f)</div>
-        <div class="data-row">
-            <div class="data-box"><span class="d-label">MIN</span><span id="f-min" class="d-val">0</span><span class="d-unit">mm/U</span></div>
-            <div class="data-box featured"><span class="d-label">REC</span><span id="f-rec" class="d-val">0</span><span class="d-unit">mm/U</span></div>
-            <div class="data-box"><span class="d-label">MAX</span><span id="f-max" class="d-val">0</span><span class="d-unit">mm/U</span></div>
+        <span class="group-title">Vorschub (f)</span>
+        <div class="grid-row">
+            <div class="val-card"><span class="v-label">MIN</span><span id="f-min" class="v-main">0</span><span class="v-unit">mm/U</span></div>
+            <div class="val-card rec"><span class="v-label">REC</span><span id="f-rec" class="v-main">0</span><span class="v-unit">mm/U</span></div>
+            <div class="val-card"><span class="v-label">MAX</span><span id="f-max" class="v-main">0</span><span class="v-unit">mm/U</span></div>
         </div>
 
-        <div class="label" style="text-align: center; margin-bottom: 5px;">Fanuc Output</div>
-        <div id="fanuc-code" class="fanuc-box">G-- S---- M3</div>
+        <div id="out-code" class="code-box">G-- S---- M3</div>
     </div>
 </div>
 
 <script>
-const db = {
-    "1.4104": { vc: [140, 165, 190], f: 1.0 },
-    "1.4112": { vc: [80, 100, 125], f: 0.8 },
-    "2.0966": { vc: [110, 130, 155], f: 0.9 },
-    "ms58":   { vc: [220, 260, 310], f: 1.2 }
+const materials = {
+    "1.4104": { vc: [140, 165, 195], f: 1.0 },
+    "1.4112": { vc: [80, 105, 130], f: 0.8 },
+    "2.0966": { vc: [110, 135, 160], f: 0.9 },
+    "ms58":   { vc: [230, 275, 320], f: 1.2 }
 };
 
-const ops = {
-    "schrupp": { n: "Schruppen", g: "G96", v_m: 1.0, f_range: [0.18, 0.25, 0.35] },
-    "schlicht": { n: "Schlichten", g: "G96", v_m: 1.2, f_range: [0.06, 0.10, 0.14] },
-    "stechen": { n: "Stechen", g: "G96", v_m: 0.6, f_range: [0.05, 0.08, 0.12] },
-    "bohren": { n: "Bohren HM", g: "G97", v_m: 0.4, f_range: [0.10, 0.15, 0.22] },
-    "wp_bohr": { n: "WP-Bohrer", g: "G97", v_m: 0.5, f_range: [0.08, 0.12, 0.18] }
+const operations = {
+    "drehen_schrupp": { n: "Drehen Schruppen", g: "G96", v_m: 1.0, f_r: [0.20, 0.28, 0.40] },
+    "drehen_fertig":  { n: "Drehen Fertig", g: "G96", v_m: 1.25, f_r: [0.08, 0.12, 0.16] },
+    "innen_schrupp":  { n: "Innen Schruppen", g: "G96", v_m: 0.85, f_r: [0.15, 0.22, 0.30] },
+    "innen_fertig":   { n: "Innen Fertig", g: "G96", v_m: 1.05, f_r: [0.05, 0.09, 0.12] },
+    "stechen":        { n: "Nut stechen", g: "G96", v_m: 0.65, f_r: [0.06, 0.10, 0.14] },
+    "frasen":         { n: "Fräsen 6-Kant", g: "G97", v_m: 0.75, f_r: [0.12, 0.18, 0.25] },
+    "bohren_hm":      { n: "Bohren HM", g: "G97", v_m: 0.45, f_r: [0.12, 0.16, 0.22] },
+    "bohren_wp":      { n: "WP-Bohrer", g: "G97", v_m: 0.55, f_r: [0.10, 0.14, 0.18] },
+    "gewinde_dreh":   { n: "Gewinde drehen", g: "G97", v_m: 0.30, f_r: [1.5, 1.5, 1.5] },
+    "gewinde_bohr":   { n: "Gewinde bohren", g: "G97", v_m: 0.15, f_r: [1.25, 1.25, 1.25] },
+    "abstechen":      { n: "Abstechen", g: "G97", v_m: 0.45, f_r: [0.05, 0.08, 0.12] }
 };
 
 function calc() {
-    const m = db[document.getElementById('mat').value];
-    const o = ops[document.getElementById('op').value];
+    const m = materials[document.getElementById('mat').value];
+    const o = operations[document.getElementById('op').value];
     const dia = parseFloat(document.getElementById('dia').value) || 1;
 
-    // Расчет Скоростей
     const vcArr = m.vc.map(v => Math.round(v * o.v_m));
-    // Расчет Подач
-    const fArr = o.f_range.map(f => (f * m.f).toFixed(2));
+    const fArr = o.f_r.map(f => (f * m.f).toFixed(2));
 
-    document.getElementById('res-name').innerText = o.n;
-    document.getElementById('res-g').innerText = o.g;
-    
-    // Вывод Подач
+    document.getElementById('out-name').innerText = o.n;
+    document.getElementById('out-mode').innerText = o.g;
     document.getElementById('f-min').innerText = fArr[0];
     document.getElementById('f-rec').innerText = fArr[1];
     document.getElementById('f-max').innerText = fArr[2];
 
     if (o.g === "G96") {
-        document.querySelectorAll('[id^="u-"]').forEach(el => el.innerText = "m/min");
+        ["u1","u2","u3"].forEach(id => document.getElementById(id).innerText = "m/min");
         document.getElementById('s-min').innerText = vcArr[0];
         document.getElementById('s-rec').innerText = vcArr[1];
         document.getElementById('s-max').innerText = vcArr[2];
-        document.getElementById('fanuc-code').innerText = `G96 S${vcArr[1]} M3 (MAX S3000)`;
+        document.getElementById('out-code').innerText = `G96 S${vcArr[1]} M3 (MAX S3000)`;
     } else {
-        document.querySelectorAll('[id^="u-"]').forEach(el => el.innerText = "U/min");
+        ["u1","u2","u3"].forEach(id => document.getElementById(id).innerText = "U/min");
         const rpmArr = vcArr.map(v => Math.round((v * 1000) / (Math.PI * dia)));
         document.getElementById('s-min').innerText = rpmArr[0];
         document.getElementById('s-rec').innerText = rpmArr[1];
         document.getElementById('s-max').innerText = rpmArr[2];
-        document.getElementById('fanuc-code').innerText = `G97 S${rpmArr[1]} M3`;
+        document.getElementById('out-code').innerText = `G97 S${rpmArr[1]} M3`;
     }
 }
 
