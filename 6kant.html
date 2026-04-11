@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Nakamura G112 Master</title>
+    <title>G112 Safety Master</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -12,47 +12,50 @@
             --accent: #ff9500;
             --text: #1d1d1f;
             --border: #d2d2d7;
+            --safety: #34c759;
         }
         body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; margin: 0; padding: 10px; display: flex; justify-content: center; }
         .container { width: 100%; max-width: 440px; }
 
-        /* HEADER & TABS */
-        .main-tabs { display: flex; background: #e5e5ea; padding: 3px; border-radius: 12px; margin-bottom: 8px; }
-        .tab-btn { flex: 1; padding: 8px; border: none; border-radius: 10px; font-weight: 800; font-size: 10px; cursor: pointer; color: #86868b; }
-        .tab-btn.active { background: #fff; color: var(--accent); box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        /* GROSSER SENSOR (БОЛЬШОЙ ДАТЧИК) */
+        .visual-card { background: #1c1c1e; border-radius: 24px; padding: 20px; margin-bottom: 12px; border: 1px solid #333; position: relative; }
+        .canvas-area { width: 100%; height: 200px; position: relative; display: flex; align-items: center; justify-content: center; border-bottom: 1px solid #333; margin-bottom: 15px; }
+        
+        .hex-shape { position: relative; width: 140px; height: 140px; border: 2px solid rgba(255,149,0,0.3); clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%); background: rgba(255,149,0,0.05); }
+        .safety-circle { position: absolute; width: 180px; height: 180px; border: 1px dashed var(--safety); border-radius: 50%; }
+        
+        .dot { position: absolute; width: 12px; height: 12px; background: #ff3b30; border-radius: 50%; box-shadow: 0 0 15px #ff3b30; transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 10; margin: -6px 0 0 -6px; }
+        .label-overlay { text-align: center; }
+        .p-name { color: #fff; font-size: 14px; font-weight: 800; text-transform: uppercase; }
+        .p-coords { color: var(--accent); font-size: 22px; font-weight: 800; font-family: monospace; }
 
-        /* SENSOR / VISUALIZER */
-        .sensor-card { background: #1c1c1e; border-radius: 18px; padding: 15px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; border: 1px solid #333; }
-        .visual-hex { position: relative; width: 85px; height: 85px; border: 1px dashed #444; clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%); background: rgba(255,149,0,0.05); }
-        .dot { position: absolute; width: 10px; height: 10px; background: #ff3b30; border-radius: 50%; box-shadow: 0 0 12px #ff3b30; transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); margin: -5px 0 0 -5px; }
+        /* INPUTS */
+        .section { background: var(--card); border-radius: 18px; padding: 15px; margin-bottom: 10px; border: 1px solid var(--border); box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .label { display: block; font-size: 10px; font-weight: 800; color: #86868b; text-transform: uppercase; margin-bottom: 5px; }
+        select, input { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 10px; font-size: 16px; font-weight: 700; outline: none; box-sizing: border-box; }
 
-        /* SETTINGS GRID */
-        .section { background: var(--card); border-radius: 16px; padding: 12px; margin-bottom: 10px; border: 1px solid var(--border); }
-        .label { display: block; font-size: 9px; font-weight: 800; color: #86868b; text-transform: uppercase; margin-bottom: 4px; }
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-        select, input { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 15px; font-weight: 700; background: #fff; outline: none; box-sizing: border-box; }
-
-        /* CODE OUTPUT */
-        .code-box { background: #000; border-radius: 18px; padding: 15px; border: 1px solid #333; font-family: 'SF Mono', monospace; font-size: 13px; line-height: 1.6; color: #34c759; }
-        .line { border-bottom: 1px solid #1a1a1a; padding: 4px 0; display: flex; justify-content: space-between; cursor: pointer; }
+        /* CODE AREA */
+        .code-box { background: #000; border-radius: 20px; padding: 18px; border: 1px solid #333; }
+        .line { font-family: 'SF Mono', monospace; font-size: 13px; line-height: 1.8; color: #34c759; border-bottom: 1px solid #1a1a1a; padding: 4px 0; cursor: pointer; transition: 0.2s; }
         .line:hover { background: #111; }
+        .line.safety { color: var(--safety); border-left: 3px solid var(--safety); padding-left: 8px; }
         .hl { color: var(--accent); font-weight: bold; }
-        .comment { color: #636366; font-size: 11px; }
+        .comm { color: #636366; font-size: 11px; margin-left: 5px; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div class="main-tabs">
-        <button id="m-axial" class="tab-btn active" onclick="setMode('axial')">AXIAL (STIRN)</button>
-        <button id="m-radial" class="tab-btn" onclick="setMode('radial')">RADIAL (MANTEL)</button>
-    </div>
-
-    <div class="sensor-card">
-        <div class="visual-hex"><div id="dot" class="dot"></div></div>
-        <div style="text-align: right;">
-            <div id="p-label" style="color: #fff; font-size: 14px; font-weight: 800;">STARTPUNKT</div>
-            <div id="p-coords" style="color: var(--accent); font-size: 18px; font-weight: 800; font-variant-numeric: tabular-nums;">X... C...</div>
+    <div class="visual-card">
+        <div class="canvas-area">
+            <div class="safety-circle"></div>
+            <div class="hex-shape"></div>
+            <div id="dot" class="dot"></div>
+        </div>
+        <div class="label-overlay">
+            <div id="p-label" class="p-name">VORPOSITIONIEREN</div>
+            <div id="p-coords" class="p-coords">X... C...</div>
         </div>
     </div>
 
@@ -66,39 +69,33 @@
                 </select>
             </div>
             <div>
-                <label class="label">SW (Größe)</label>
+                <label class="label">SW (Schlüsselweite)</label>
                 <input type="number" id="sw" value="19" oninput="calc()">
             </div>
         </div>
-        <div class="grid" style="margin-top: 8px;">
+        <div class="grid" style="margin-top: 10px;">
             <div>
                 <label class="label">Fräser Ø</label>
                 <input type="number" id="fdia" value="10" oninput="calc()">
             </div>
             <div>
-                <label class="label">Sicherheit</label>
-                <input type="number" id="safe" value="2" oninput="calc()">
+                <label class="label">Sicherheit (S)</label>
+                <input type="number" id="safe" value="5" oninput="calc()">
             </div>
         </div>
     </div>
 
     <div class="code-box">
-        <div class="line" style="color:#86868b">G112 (POLAR EIN / XY-MODE)</div>
+        <div id="p0-line" class="line safety" onclick="moveDot(-1)"></div>
+        <div class="line" style="color:#86868b; cursor:default;">G112 (POLAR EIN)</div>
         <div id="code-list"></div>
-        <div class="line" style="color:#86868b">G113 (POLAR AUS)</div>
+        <div class="line" style="color:#86868b; cursor:default;">G113 (POLAR AUS)</div>
     </div>
 </div>
 
 <script>
-let toolMode = 'axial';
 let points = [];
-
-function setMode(m) {
-    toolMode = m;
-    document.getElementById('m-axial').classList.toggle('active', m === 'axial');
-    document.getElementById('m-radial').classList.toggle('active', m === 'radial');
-    calc();
-}
+let vPos = {x: 0, c: 0};
 
 function calc() {
     const sw = parseFloat(document.getElementById('sw').value) || 0;
@@ -106,22 +103,27 @@ function calc() {
     const type = document.getElementById('type').value;
     const s = parseFloat(document.getElementById('safe').value) || 0;
 
-    // Radius Berechnung (Außen: SW+Fräser, Innen: SW-Fräser)
     const r_eff = (type === 'aussen') ? (sw + f) / 2 : (sw - f) / 2;
     const side = r_eff * Math.tan(30 * Math.PI / 180);
 
+    // Vorpositionierung: SW + Fräser + 2*Sicherheit
+    vPos.x = (sw + f + (s * 2));
+    vPos.c = 0;
+
     points = [
-        {x: r_eff * 2, c: -side, n: "START"},
-        {x: r_eff * 2, c: side, n: "P2"},
-        {x: r_eff, c: side * 2, n: "P3"},
-        {x: -r_eff, c: side, n: "P4"},
-        {x: -r_eff * 2, c: -side, n: "P5"},
-        {x: -r_eff, c: -side * 2, n: "P6"},
-        {x: r_eff, c: -side, n: "ENDE"}
+        {x: r_eff * 2, c: -side, n: "ANFAHREN P1"},
+        {x: r_eff * 2, c: side, n: "PUNKT 2"},
+        {x: r_eff, c: side * 2, n: "PUNKT 3"},
+        {x: -r_eff, c: side, n: "PUNKT 4"},
+        {x: -r_eff * 2, c: -side, n: "PUNKT 5"},
+        {x: -r_eff, c: -side * 2, n: "PUNKT 6"},
+        {x: r_eff, c: -side, n: "ENDE (P7)"}
     ];
 
+    document.getElementById('p0-line').innerHTML = `G0 <span class="hl">X${vPos.x.toFixed(3)}</span> C0.0 <span class="comm">(VORPOS.)</span>`;
+    
     renderCode();
-    updateVisual(0);
+    moveDot(-1);
 }
 
 function renderCode() {
@@ -130,26 +132,31 @@ function renderCode() {
     points.forEach((p, i) => {
         const div = document.createElement('div');
         div.className = 'line';
-        div.onclick = () => updateVisual(i);
-        const cmd = (i === 0) ? 'G0' : 'G1';
-        div.innerHTML = `<span>${cmd} X${p.x.toFixed(3)} C${p.c.toFixed(3)}</span><span class="hl">P${i+1}</span>`;
+        div.onclick = () => moveDot(i);
+        div.innerHTML = `G1 <span class="hl">X${p.x.toFixed(3)}</span> C${p.c.toFixed(3)} <span class="comm">P${i+1}</span>`;
         container.appendChild(div);
     });
 }
 
-function updateVisual(i) {
+function moveDot(i) {
     const dot = document.getElementById('dot');
-    const p = points[i];
-    // Mapping Points to Hex-Polygon
-    const map = [
-        {t: '25%', l: '100%'}, {t: '75%', l: '100%'}, {t: '100%', l: '50%'},
-        {t: '75%', l: '0%'}, {t: '25%', l: '0%'}, {t: '0%', l: '50%'}, {t: '25%', l: '100%'}
-    ];
-    dot.style.top = map[i].t;
-    dot.style.left = map[i].l;
+    let target;
     
-    document.getElementById('p-label').innerText = p.n;
-    document.getElementById('p-coords').innerText = `X${p.x.toFixed(3)} C${p.c.toFixed(3)}`;
+    if (i === -1) {
+        // Vorpositionierung (справа от шестигранника)
+        target = {t: '50%', l: '95%', n: 'VORPOSITIONIEREN', x: vPos.x, c: vPos.c};
+    } else {
+        const map = [
+            {t: '25%', l: '85%'}, {t: '75%', l: '85%'}, {t: '100%', l: '50%'},
+            {t: '75%', l: '15%'}, {t: '25%', l: '15%'}, {t: '0%', l: '50%'}, {t: '25%', l: '85%'}
+        ];
+        target = {...map[i], n: points[i].n, x: points[i].x, c: points[i].c};
+    }
+
+    dot.style.top = target.t;
+    dot.style.left = target.l;
+    document.getElementById('p-label').innerText = target.n;
+    document.getElementById('p-coords').innerText = `X${target.x.toFixed(3)} C${target.c.toFixed(3)}`;
 }
 
 calc();
