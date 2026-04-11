@@ -3,107 +3,80 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Nakamura Angle Calc</title>
+    <title>Nakamura Manual R-Comp</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
-        :root { --bg: #f5f5f7; --card: #ffffff; --accent: #5856d6; --text: #1d1d1f; --border: #d2d2d7; }
+        :root { --bg: #f5f5f7; --card: #ffffff; --accent: #ff2d55; --text: #1d1d1f; --border: #d2d2d7; }
         body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; margin: 0; padding: 15px; display: flex; justify-content: center; }
-        .container { width: 100%; max-width: 500px; }
+        .container { width: 100%; max-width: 500px; padding-bottom: 40px; }
         header { margin-bottom: 20px; border-left: 5px solid var(--accent); padding-left: 15px; }
         header h1 { margin: 0; font-size: 20px; font-weight: 800; text-transform: uppercase; }
         
-        .section { background: var(--card); border-radius: 14px; padding: 18px; margin-bottom: 12px; border: 1px solid var(--border); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .section { background: var(--card); border-radius: 14px; padding: 18px; margin-bottom: 12px; border: 1px solid var(--border); box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
         .label { display: block; font-size: 10px; font-weight: 700; color: #86868b; text-transform: uppercase; margin-bottom: 8px; }
         
         .input-group { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
-        input, select { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 10px; font-size: 16px; font-weight: 600; outline: none; box-sizing: border-box; background: #fff; }
+        input { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 10px; font-size: 16px; font-weight: 600; outline: none; box-sizing: border-box; }
         
-        .visual-hint { background: #1c1c1e; color: #fff; border-radius: 12px; padding: 15px; margin-top: 10px; position: relative; overflow: hidden; }
-        .angle-circle { width: 60px; height: 60px; border: 2px dashed #444; border-radius: 50%; margin: 0 auto 10px; position: relative; }
-        .angle-line { position: absolute; width: 50%; height: 3px; background: var(--accent); top: 50%; left: 50%; transform-origin: left center; }
+        .r-warning { background: #fff3f3; border: 1px solid #ffcccc; color: #d32f2f; padding: 10px; border-radius: 8px; font-size: 12px; font-weight: 600; margin-bottom: 15px; text-align: center; }
         
-        .code-box { background: #2c2c2e; color: #34c759; padding: 15px; border-radius: 10px; font-family: 'SF Mono', monospace; font-size: 14px; line-height: 1.5; border: 1px solid #3d3d3f; }
-        .highlight { color: #ff9500; font-weight: bold; }
+        .code-box { background: #1c1c1e; color: #34c759; padding: 20px; border-radius: 12px; font-family: 'SF Mono', monospace; font-size: 14px; line-height: 1.6; border: 1px solid #333; }
+        .hl-z { color: #ff2d55; font-weight: bold; }
+        .hl-a { color: #5856d6; font-weight: bold; }
     </style>
 </head>
 <body>
 <div class="container">
-    <header><h1>Fanuc ,A Calculator</h1></header>
+    <header><h1>Nakamura R-Comp (No G41)</h1></header>
 
     <div class="section">
-        <div class="input-group">
+        <label class="label">Wendeplattenradius (R)</label>
+        <input type="number" id="w_rad" value="0.4" step="0.2" oninput="calc()">
+        
+        <div class="input-group" style="margin-top:15px">
             <div>
-                <label class="label">Ziel X (Ø)</label>
-                <input type="number" id="tx" value="32" oninput="update()">
+                <label class="label">Fase / Konus Länge</label>
+                <input type="number" id="f_len" value="1.5" oninput="calc()">
             </div>
             <div>
-                <label class="label">Ziel Z</label>
-                <input type="number" id="tz" value="-1.5" oninput="update()">
-            </div>
-        </div>
-
-        <div class="input-group">
-            <div>
-                <label class="label">Winkel (Relativ)</label>
-                <input type="number" id="ang_rel" value="45" oninput="update()">
-            </div>
-            <div>
-                <label class="label">Richtung</label>
-                <select id="dir" onchange="update()">
-                    <option value="135">Fase (135°)</option>
-                    <option value="215">Konus (180+X°)</option>
-                    <option value="custom">Frei Eingabe</option>
-                </select>
+                <label class="label">Winkel (A)</label>
+                <input type="number" id="f_ang" value="45" oninput="calc()">
             </div>
         </div>
-
-        <label class="label">Verrundung (,R)</label>
-        <input type="number" id="rad" value="0.9" step="0.1" oninput="update()">
     </div>
 
-    <div class="visual-hint">
-        <div class="angle-circle">
-            <div id="line" class="angle-line"></div>
-        </div>
-        <div style="text-align: center; font-size: 11px; color: #86868b;">Nakamura Coordinate System (Upper Turret)</div>
+    <div class="r-warning">
+        ACHTUNG: Berechnung OHNE G41/G42 Korrektur!
     </div>
 
     <div class="section" style="background: #1c1c1e;">
-        <label class="label" style="color: #34c759;">Generated NC-Block</label>
+        <label class="label" style="color: #86868b;">Manueller NC-Code (Korrigiert)</label>
         <div id="out" class="code-box">
-            G1 X32.0 Z-1.5 <span class="highlight">,A135</span> ,R0.9 F0.1
-        </div>
+            </div>
     </div>
 </div>
 
 <script>
-function update() {
-    const tx = parseFloat(document.getElementById('tx').value) || 0;
-    const tz = parseFloat(document.getElementById('tz').value) || 0;
-    const rel = parseFloat(document.getElementById('ang_rel').value) || 0;
-    const rad = parseFloat(document.getElementById('rad').value) || 0;
-    const dirType = document.getElementById('dir').value;
+function calc() {
+    const r = parseFloat(document.getElementById('w_rad').value) || 0;
+    const fl = parseFloat(document.getElementById('f_len').value) || 0;
+    const fa = parseFloat(document.getElementById('f_ang').value) || 0;
     
-    let fanucAngle;
-    if (dirType === '135') {
-        fanucAngle = 90 + rel; // 45° Fase = 135°
-    } else if (dirType === '215') {
-        fanucAngle = 180 + rel; // 35° Konus = 215°
-    } else {
-        fanucAngle = rel;
-    }
+    // Для фаски 45 градусов без G41:
+    // Z-старт должен быть Z(R)
+    // Z-конечное = -(Länge + R)
+    const zStart = r.toFixed(3);
+    const zEnd = (fl + r).toFixed(3);
+    const angle = 90 + fa; // Для наружной фаски ,A135
 
-    // Update Line Visualization
-    document.getElementById('line').style.transform = `rotate(-${fanucAngle}deg)`;
-    
-    // Output String
-    let code = `G1 X${tx.toFixed(3)} Z${tz.toFixed(3)} <span class="highlight">,A${fanucAngle}</span>`;
-    if (rad > 0) code += ` ,R${rad.toFixed(2)}`;
-    code += ` F0.1`;
-    
-    document.getElementById('out').innerHTML = code;
+    let html = `G0 X... <span class="hl-z">Z${zStart}</span> (R-Start)<br>`;
+    html += `G1 Z0 F0.2<br>`;
+    html += `G1 X... <span class="hl-z">Z-${zEnd}</span> <span class="hl-a">,A${angle}</span> F0.1<br>`;
+    html += `G1 Z...`;
+
+    document.getElementById('out').innerHTML = html;
 }
-update();
+calc();
 </script>
 </body>
 </html>
