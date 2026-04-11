@@ -3,59 +3,107 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Trigo-Rechner</title>
+    <title>Nakamura Angle Calc</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
         :root { --bg: #f5f5f7; --card: #ffffff; --accent: #5856d6; --text: #1d1d1f; --border: #d2d2d7; }
         body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; margin: 0; padding: 15px; display: flex; justify-content: center; }
         .container { width: 100%; max-width: 500px; }
         header { margin-bottom: 20px; border-left: 5px solid var(--accent); padding-left: 15px; }
-        header h1 { margin: 0; font-size: 22px; font-weight: 800; text-transform: uppercase; }
-        .section { background: var(--card); border-radius: 14px; padding: 18px; margin-bottom: 12px; border: 1px solid var(--border); }
+        header h1 { margin: 0; font-size: 20px; font-weight: 800; text-transform: uppercase; }
+        
+        .section { background: var(--card); border-radius: 14px; padding: 18px; margin-bottom: 12px; border: 1px solid var(--border); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
         .label { display: block; font-size: 10px; font-weight: 700; color: #86868b; text-transform: uppercase; margin-bottom: 8px; }
-        input { width: 100%; padding: 14px; border: 1px solid var(--border); border-radius: 10px; font-size: 16px; font-weight: 600; outline: none; box-sizing: border-box; }
-        .result-box { background: #f2f2f7; border-radius: 12px; padding: 20px; text-align: center; border: 1.5px solid var(--accent); }
-        .res-val { font-size: 28px; font-weight: 800; color: var(--accent); }
+        
+        .input-group { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+        input, select { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 10px; font-size: 16px; font-weight: 600; outline: none; box-sizing: border-box; background: #fff; }
+        
+        .visual-hint { background: #1c1c1e; color: #fff; border-radius: 12px; padding: 15px; margin-top: 10px; position: relative; overflow: hidden; }
+        .angle-circle { width: 60px; height: 60px; border: 2px dashed #444; border-radius: 50%; margin: 0 auto 10px; position: relative; }
+        .angle-line { position: absolute; width: 50%; height: 3px; background: var(--accent); top: 50%; left: 50%; transform-origin: left center; }
+        
+        .code-box { background: #2c2c2e; color: #34c759; padding: 15px; border-radius: 10px; font-family: 'SF Mono', monospace; font-size: 14px; line-height: 1.5; border: 1px solid #3d3d3f; }
+        .highlight { color: #ff9500; font-weight: bold; }
     </style>
 </head>
 <body>
 <div class="container">
-    <header><h1>Trigo-Rechner</h1></header>
+    <header><h1>Fanuc ,A Calculator</h1></header>
+
     <div class="section">
-        <label class="label">Start Ø (X)</label>
-        <input type="number" id="start_x" value="20" oninput="trig()">
-        <div style="margin-top:15px">
-            <label class="label">Winkel (Grad °)</label>
-            <input type="number" id="angle" value="45" oninput="trig()">
+        <div class="input-group">
+            <div>
+                <label class="label">Ziel X (Ø)</label>
+                <input type="number" id="tx" value="32" oninput="update()">
+            </div>
+            <div>
+                <label class="label">Ziel Z</label>
+                <input type="number" id="tz" value="-1.5" oninput="update()">
+            </div>
         </div>
-        <div style="margin-top:15px">
-            <label class="label">Länge (Z-Weg)</label>
-            <input type="number" id="len_z" value="2" oninput="trig()">
+
+        <div class="input-group">
+            <div>
+                <label class="label">Winkel (Relativ)</label>
+                <input type="number" id="ang_rel" value="45" oninput="update()">
+            </div>
+            <div>
+                <label class="label">Richtung</label>
+                <select id="dir" onchange="update()">
+                    <option value="135">Fase (135°)</option>
+                    <option value="215">Konus (180+X°)</option>
+                    <option value="custom">Frei Eingabe</option>
+                </select>
+            </div>
         </div>
+
+        <label class="label">Verrundung (,R)</label>
+        <input type="number" id="rad" value="0.9" step="0.1" oninput="update()">
     </div>
-    <div class="result-box">
-        <label class="label" style="color: var(--accent)">End Ø (X) Ergebnis</label>
-        <div id="res_x" class="res-val">24.00</div>
-        <div style="margin-top:10px; font-size: 13px; font-weight: 600; color: #1d1d1f">
-            Programmzeile: <br>
-            <span id="code_out" style="font-family: monospace; background: #fff; padding: 4px 8px; border-radius: 4px;">G1 X24.0 Z-2.0</span>
+
+    <div class="visual-hint">
+        <div class="angle-circle">
+            <div id="line" class="angle-line"></div>
+        </div>
+        <div style="text-align: center; font-size: 11px; color: #86868b;">Nakamura Coordinate System (Upper Turret)</div>
+    </div>
+
+    <div class="section" style="background: #1c1c1e;">
+        <label class="label" style="color: #34c759;">Generated NC-Block</label>
+        <div id="out" class="code-box">
+            G1 X32.0 Z-1.5 <span class="highlight">,A135</span> ,R0.9 F0.1
         </div>
     </div>
 </div>
+
 <script>
-function trig() {
-    const sx = parseFloat(document.getElementById('start_x').value) || 0;
-    const ang = parseFloat(document.getElementById('angle').value) || 0;
-    const z = parseFloat(document.getElementById('len_z').value) || 0;
+function update() {
+    const tx = parseFloat(document.getElementById('tx').value) || 0;
+    const tz = parseFloat(document.getElementById('tz').value) || 0;
+    const rel = parseFloat(document.getElementById('ang_rel').value) || 0;
+    const rad = parseFloat(document.getElementById('rad').value) || 0;
+    const dirType = document.getElementById('dir').value;
     
-    // X_end = X_start + (2 * Z * tan(Winkel))
-    const rad = ang * (Math.PI / 180);
-    const ex = sx + (2 * z * Math.tan(rad));
+    let fanucAngle;
+    if (dirType === '135') {
+        fanucAngle = 90 + rel; // 45° Fase = 135°
+    } else if (dirType === '215') {
+        fanucAngle = 180 + rel; // 35° Konus = 215°
+    } else {
+        fanucAngle = rel;
+    }
+
+    // Update Line Visualization
+    document.getElementById('line').style.transform = `rotate(-${fanucAngle}deg)`;
     
-    document.getElementById('res_x').innerText = ex.toFixed(3);
-    document.getElementById('code_out').innerText = `G1 X${ex.toFixed(3)} Z-${z.toFixed(2)}`;
+    // Output String
+    let code = `G1 X${tx.toFixed(3)} Z${tz.toFixed(3)} <span class="highlight">,A${fanucAngle}</span>`;
+    if (rad > 0) code += ` ,R${rad.toFixed(2)}`;
+    code += ` F0.1`;
+    
+    document.getElementById('out').innerHTML = code;
 }
-trig();
+update();
 </script>
 </body>
 </html>
