@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mehrkant Rechner</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #f5f5f7;
+            --card: #ffffff;
+            --accent: #5856d6;
+            --text: #1d1d1f;
+            --border: #d2d2d7;
+        }
+        body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; margin: 0; padding: 12px; display: flex; justify-content: center; }
+        .container { width: 100%; max-width: 420px; }
+
+        header { margin-bottom: 15px; border-left: 5px solid var(--accent); padding-left: 12px; }
+        header h1 { margin: 0; font-size: 20px; font-weight: 800; text-transform: uppercase; }
+
+        .tabs { display: flex; background: #e5e5ea; padding: 4px; border-radius: 12px; margin-bottom: 12px; }
+        .tab-btn { flex: 1; padding: 10px; border: none; border-radius: 9px; font-weight: 800; font-size: 11px; cursor: pointer; color: #86868b; transition: 0.2s; }
+        .tab-btn.active { background: #fff; color: var(--accent); box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+
+        .visual-area { background: #1c1c1e; border-radius: 18px; padding: 20px; text-align: center; margin-bottom: 12px; border: 1px solid #333; height: 120px; display: flex; align-items: center; justify-content: center; position: relative; }
+        .shape { border: 2px solid var(--accent); position: relative; transition: 0.3s; }
+        .circle-bg { position: absolute; border: 1px dashed #444; border-radius: 50%; width: 100px; height: 100px; }
+
+        .section { background: var(--card); border-radius: 16px; padding: 15px; margin-bottom: 12px; border: 1px solid var(--border); box-shadow: 0 2px 5px rgba(0,0,0,0.03); }
+        .label { display: block; font-size: 10px; font-weight: 800; color: #86868b; text-transform: uppercase; margin-bottom: 6px; }
+        
+        input { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 10px; font-size: 18px; font-weight: 700; background: #fff; outline: none; box-sizing: border-box; text-align: center; }
+
+        .res-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .res-card { background: #f2f2f7; padding: 12px; border-radius: 12px; text-align: center; border: 1px solid var(--border); }
+        .res-val { font-size: 20px; font-weight: 800; color: var(--accent); display: block; }
+        .res-label { font-size: 9px; font-weight: 700; color: #86868b; text-transform: uppercase; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header><h1>Mehrkant-Rechner</h1></header>
+
+    <div class="tabs">
+        <button id="t6" class="tab-btn active" onclick="setMode(6)">6-KANT (HEX)</button>
+        <button id="t4" class="tab-btn" onclick="setMode(4)">4-KANT (SQU)</button>
+    </div>
+
+    <div class="visual-area">
+        <div class="circle-bg"></div>
+        <div id="shape-draw" class="shape"></div>
+    </div>
+
+    <div class="section">
+        <label id="input-label" class="label">Schlüsselweite (SW)</label>
+        <input type="number" id="sw-input" value="19" oninput="calc()">
+    </div>
+
+    <div class="res-grid">
+        <div class="res-card">
+            <span class="res-label">Eckmaß (Ø d)</span>
+            <span id="res-eck" class="res-val">21.94</span>
+        </div>
+        <div class="res-card">
+            <span class="res-label">Radius (R)</span>
+            <span id="res-rad" class="res-val">10.97</span>
+        </div>
+    </div>
+
+    <div class="section" style="margin-top:12px; background: #1c1c1e; color: #fff;">
+        <label class="label" style="color: #86868b;">Info für Programmierung</label>
+        <div style="font-size: 13px; line-height: 1.5; font-family: monospace;">
+            Min. Rohmaterial Ø: <span id="info-dia" style="color: var(--accent); font-weight: bold;">21.94</span><br>
+            Frästiefe pro Seite: <span id="info-depth" style="color: #34c759; font-weight: bold;">1.47</span>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentMode = 6; // 6-Kant или 4-Kant
+
+function setMode(m) {
+    currentMode = m;
+    document.getElementById('t6').classList.toggle('active', m === 6);
+    document.getElementById('t4').classList.toggle('active', m === 4);
+    
+    const shape = document.getElementById('shape-draw');
+    if (m === 6) {
+        shape.style.width = '80px';
+        shape.style.height = '80px';
+        shape.style.clipPath = 'polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%)';
+    } else {
+        shape.style.width = '70px';
+        shape.style.height = '70px';
+        shape.style.clipPath = 'none';
+        shape.style.borderRadius = '0';
+    }
+    calc();
+}
+
+function calc() {
+    const sw = parseFloat(document.getElementById('sw-input').value) || 0;
+    let eck, depth;
+
+    if (currentMode === 6) {
+        // Eckmaß 6-Kant = SW / cos(30°) oder SW * 1.1547
+        eck = sw * 1.1547005;
+        depth = (eck - sw) / 2;
+    } else {
+        // Eckmaß 4-Kant = SW * sqrt(2) или SW * 1.4142
+        eck = sw * 1.4142135;
+        depth = (eck - sw) / 2;
+    }
+
+    document.getElementById('res-eck').innerText = eck.toFixed(2);
+    document.getElementById('res-rad').innerText = (eck / 2).toFixed(2);
+    document.getElementById('info-dia').innerText = eck.toFixed(2) + " mm";
+    document.getElementById('info-depth').innerText = depth.toFixed(2) + " mm";
+}
+
+// Init
+setMode(6);
+</script>
+</body>
+</html>
