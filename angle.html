@@ -3,37 +3,38 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Nakamura Direction Pro</title>
+    <title>Nakamura Angle Master</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
         :root { --bg: #f5f5f7; --card: #ffffff; --accent: #007aff; --text: #1d1d1f; --border: #d2d2d7; }
         body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; margin: 0; padding: 15px; display: flex; justify-content: center; }
         .container { width: 100%; max-width: 500px; padding-bottom: 40px; }
         
-        .tabs { display: flex; background: #e5e5ea; padding: 4px; border-radius: 12px; margin-bottom: 15px; }
-        .tab-btn { flex: 1; padding: 10px; border: none; border-radius: 9px; font-weight: 700; font-size: 12px; cursor: pointer; color: #86868b; transition: 0.2s; }
+        .tabs { display: flex; background: #e5e5ea; padding: 4px; border-radius: 12px; margin-bottom: 12px; }
+        .tab-btn { flex: 1; padding: 10px; border: none; border-radius: 9px; font-weight: 700; font-size: 11px; cursor: pointer; color: #86868b; transition: 0.2s; }
         .tab-btn.active { background: #fff; color: var(--text); box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .tab-btn.active.links { color: #ff3b30; } /* Red for Links */
-        .tab-btn.active.rechts { color: #007aff; } /* Blue for Rechts */
+        .tab-btn.active.links { color: #ff3b30; }
+        .tab-btn.active.rechts { color: #007aff; }
 
-        .section { background: var(--card); border-radius: 14px; padding: 18px; margin-bottom: 12px; border: 1px solid var(--border); }
-        .label { display: block; font-size: 10px; font-weight: 700; color: #86868b; text-transform: uppercase; margin-bottom: 8px; }
+        .section { background: var(--card); border-radius: 14px; padding: 18px; margin-bottom: 10px; border: 1px solid var(--border); }
+        .label { display: block; font-size: 10px; font-weight: 700; color: #86868b; text-transform: uppercase; margin-bottom: 6px; }
         
         input, select { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 10px; font-size: 16px; font-weight: 600; outline: none; box-sizing: border-box; background: #fff; }
 
-        .sensor-container { background: #1c1c1e; border-radius: 14px; padding: 20px; text-align: center; margin-bottom: 12px; }
+        .sensor-container { background: #1c1c1e; border-radius: 14px; padding: 20px; text-align: center; margin-bottom: 10px; }
         .angle-display { position: relative; width: 80px; height: 80px; border: 2px solid #3a3a3c; border-radius: 50%; margin: 0 auto 10px; }
-        .angle-arrow { position: absolute; width: 50%; height: 4px; background: var(--accent); top: 50%; left: 50%; transform-origin: left center; border-radius: 2px; }
+        .angle-arrow { position: absolute; width: 50%; height: 4px; background: var(--accent); top: 50%; left: 50%; transform-origin: left center; border-radius: 2px; box-shadow: 0 0 8px var(--accent); }
         
-        .code-box { background: #000; color: #34c759; padding: 20px; border-radius: 12px; font-family: 'SF Mono', monospace; font-size: 13px; line-height: 1.6; border: 1px solid #333; }
-        .hl-z { color: #ff9500; font-weight: bold; }
+        .code-box { background: #000; color: #34c759; padding: 18px; border-radius: 12px; font-family: 'SF Mono', monospace; font-size: 13px; line-height: 1.5; border: 1px solid #333; }
+        .hl-z { color: #ff9500; }
+        .hl-a { color: #5856d6; }
     </style>
 </head>
 <body>
 <div class="container">
     <div class="tabs">
-        <button id="btn-links" class="tab-btn active links" onclick="setSide('links')">LINKS (Main Spindle)</button>
-        <button id="btn-rechts" class="tab-btn rechts" onclick="setSide('rechts')">RECHTS (Sub Spindle)</button>
+        <button id="btn-l" class="tab-btn active links" onclick="setSide('links')">LINKS (Sp1)</button>
+        <button id="btn-r" class="tab-btn rechts" onclick="setSide('rechts')">RECHTS (Sp2)</button>
     </div>
 
     <div class="sensor-container">
@@ -42,9 +43,17 @@
     </div>
 
     <div class="section">
+        <label class="label">Bewegung / Richtung (X)</label>
+        <select id="dir_x" onchange="calc()">
+            <option value="up">X+ (Nach Außen / Наверх)</option>
+            <option value="down">X- (Nach Innen / Вниз)</option>
+        </select>
+    </div>
+
+    <div class="section">
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
             <div>
-                <label class="label">Platten Radius (R)</label>
+                <label class="label">Platten R</label>
                 <input type="number" id="p_rad" value="0.4" step="0.2" oninput="calc()">
             </div>
             <div>
@@ -52,20 +61,20 @@
                 <input type="number" id="w_rad" value="0.9" step="0.1" oninput="calc()">
             </div>
         </div>
-        <div style="margin-top:15px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+        <div style="margin-top:10px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
             <div>
                 <label class="label">Winkel (A)</label>
                 <input type="number" id="ang_rel" value="45" oninput="calc()">
             </div>
             <div>
                 <label class="label">Ziel X (Ø)</label>
-                <input type="number" id="tx" value="32" oninput="calc()">
+                <input type="number" id="tx" value="20" oninput="calc()">
             </div>
         </div>
     </div>
 
     <div class="section" style="background: #1c1c1e;">
-        <label class="label" style="color: #86868b;">Manual G-Code</label>
+        <label class="label" style="color: #86868b;">Manual G-Code (No G41/G42)</label>
         <div id="out" class="code-box"></div>
     </div>
 </div>
@@ -75,8 +84,8 @@ let side = 'links';
 
 function setSide(s) {
     side = s;
-    document.getElementById('btn-links').classList.toggle('active', s === 'links');
-    document.getElementById('btn-rechts').classList.toggle('active', s === 'rechts');
+    document.getElementById('btn-l').classList.toggle('active', s === 'links');
+    document.getElementById('btn-r').classList.toggle('active', s === 'rechts');
     calc();
 }
 
@@ -85,19 +94,28 @@ function calc() {
     const wr = parseFloat(document.getElementById('w_rad').value) || 0;
     const arel = parseFloat(document.getElementById('ang_rel').value) || 0;
     const tx = parseFloat(document.getElementById('tx').value) || 0;
+    const dirX = document.getElementById('dir_x').value;
     
     let fanucAngle, zStart, zDir;
 
     if (side === 'links') {
-        // Главный шпиндель: Z- идет влево. Фаска наружу = 135°
-        fanucAngle = 90 + arel;
-        zStart = pr.toFixed(3); // Подход справа
         zDir = "-";
+        if (dirX === 'up') {
+            fanucAngle = 90 + arel; // Fase nach Außen: 135°
+            zStart = pr.toFixed(3); 
+        } else {
+            fanucAngle = 270 - arel; // Fase nach Innen: 225°
+            zStart = pr.toFixed(3);
+        }
     } else {
-        // Контршпиндель: Z+ идет вправо. Фаска наружу = 45° (или 315°)
-        fanucAngle = 90 - arel; 
-        zStart = "-" + pr.toFixed(3); // Подход слева
         zDir = "";
+        if (dirX === 'up') {
+            fanucAngle = 90 - arel; // Fase nach Außen Sp2: 45°
+            zStart = "-" + pr.toFixed(3);
+        } else {
+            fanucAngle = 270 + arel; // Fase nach Innen Sp2: 315°
+            zStart = "-" + pr.toFixed(3);
+        }
     }
 
     document.getElementById('arrow').style.transform = `rotate(-${fanucAngle}deg)`;
@@ -105,9 +123,9 @@ function calc() {
 
     const finalR = (wr + pr).toFixed(3);
     
-    let html = `G0 X... <b class="hl-z">Z${zStart}</b><br>`;
+    let html = `G0 X... <b class="hl-z">Z${zStart}</b> (R-Start)<br>`;
     html += `G1 Z0 F0.2<br>`;
-    html += `G1 X${tx.toFixed(3)} <b style="color:#5856d6">,A${fanucAngle}</b> <b style="color:#ff3b30">,R${finalR}</b> F0.1<br>`;
+    html += `G1 X${tx.toFixed(3)} <b class="hl-a">,A${fanucAngle}</b> <b style="color:#ff3b30">,R${finalR}</b> F0.1<br>`;
     html += `G1 Z${zDir}...`;
 
     document.getElementById('out').innerHTML = html;
