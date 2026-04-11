@@ -3,36 +3,53 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Fanuc G112 Helper</title>
+    <title>G112 Hex-Master</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
         :root { --bg: #f5f5f7; --card: #ffffff; --accent: #ff9500; --text: #1d1d1f; --border: #d2d2d7; }
-        body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; margin: 0; padding: 12px; display: flex; justify-content: center; }
+        body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; margin: 0; padding: 10px; display: flex; justify-content: center; }
         .container { width: 100%; max-width: 420px; }
-        
-        header { margin-bottom: 15px; border-left: 5px solid var(--accent); padding-left: 12px; }
-        header h1 { margin: 0; font-size: 20px; font-weight: 800; text-transform: uppercase; }
 
-        .section { background: var(--card); border-radius: 16px; padding: 15px; margin-bottom: 12px; border: 1px solid var(--border); box-shadow: 0 2px 5px rgba(0,0,0,0.03); }
-        .label { display: block; font-size: 10px; font-weight: 800; color: #86868b; text-transform: uppercase; margin-bottom: 6px; }
-        
+        header { margin-bottom: 12px; border-left: 5px solid var(--accent); padding-left: 12px; }
+        header h1 { margin: 0; font-size: 18px; font-weight: 800; text-transform: uppercase; }
+
+        /* SENSOR AREA */
+        .sensor-box { background: #1c1c1e; border-radius: 16px; padding: 15px; display: flex; align-items: center; justify-content: space-around; margin-bottom: 12px; border: 1px solid #333; }
+        .visual-hex { position: relative; width: 80px; height: 80px; border: 2px dashed #444; clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%); background: rgba(255,149,0,0.1); }
+        .point-indicator { position: absolute; width: 8px; height: 8px; background: #ff3b30; border-radius: 50%; box-shadow: 0 0 10px #ff3b30; transition: 0.3s; }
+
+        /* INPUTS */
+        .section { background: var(--card); border-radius: 14px; padding: 15px; margin-bottom: 12px; border: 1px solid var(--border); }
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        input { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 10px; font-size: 16px; font-weight: 700; background: #fff; outline: none; box-sizing: border-box; }
+        .label { display: block; font-size: 9px; font-weight: 800; color: #86868b; text-transform: uppercase; margin-bottom: 4px; }
+        input { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 16px; font-weight: 700; outline: none; box-sizing: border-box; }
 
-        .code-container { background: #000; border-radius: 18px; padding: 15px; border: 1px solid #333; }
-        .code-line { font-family: 'SF Mono', monospace; font-size: 13px; line-height: 1.6; color: #34c759; border-bottom: 1px solid #1a1a1a; padding: 4px 0; }
-        .hl { color: var(--accent); font-weight: bold; }
-        .comment { color: #636366; font-size: 11px; }
+        /* G-CODE BOX */
+        .code-box { background: #000; border-radius: 16px; padding: 15px; border: 1px solid #333; font-family: 'SF Mono', monospace; font-size: 12px; line-height: 1.5; color: #34c759; }
+        .line { border-bottom: 1px solid #1a1a1a; padding: 3px 0; display: flex; justify-content: space-between; cursor: pointer; }
+        .line:hover { background: #111; }
+        .hl { color: var(--accent); }
     </style>
 </head>
 <body>
+
 <div class="container">
-    <header><h1>G112 Polar-Helper</h1></header>
+    <header><h1>G112 Hex-Fräsen</h1></header>
+
+    <div class="sensor-box">
+        <div class="visual-hex">
+            <div id="dot" class="point-indicator" style="top:0; left:50%;"></div>
+        </div>
+        <div style="text-align: right;">
+            <div id="pos-name" style="color: #fff; font-size: 16px; font-weight: 800;">START</div>
+            <div id="pos-val" style="color: var(--accent); font-size: 12px; font-family: monospace;">X... C...</div>
+        </div>
+    </div>
 
     <div class="section">
         <div class="grid">
             <div>
-                <label class="label">Schlüsselweite (SW)</label>
+                <label class="label">SW (Schlüsselweite)</label>
                 <input type="number" id="sw" value="19" oninput="calc()">
             </div>
             <div>
@@ -40,37 +57,61 @@
                 <input type="number" id="fdia" value="10" oninput="calc()">
             </div>
         </div>
-        <div style="margin-top:12px">
-            <label class="label">Sicherheitsabstand (R)</label>
-            <input type="number" id="safe" value="2.0" oninput="calc()">
-        </div>
     </div>
 
-    <div class="code-container">
-        <div class="code-line">G112 <span class="comment">(POLAR EIN)</span></div>
-        <div class="code-line" id="l1"></div>
-        <div class="code-line" id="l2"></div>
-        <div class="code-line" id="l3"></div>
-        <div class="code-line">G113 <span class="comment">(POLAR AUS)</span></div>
+    <div class="code-box">
+        <div class="line" style="color:#86868b">G112 (POLAR EIN)</div>
+        <div class="line" onclick="moveDot(0)"><span>G0 X<span id="x0"></span> C<span id="c0"></span></span><span class="hl">P1</span></div>
+        <div class="line" onclick="moveDot(1)"><span>G1 X<span id="x1"></span> C<span id="c1"></span></span><span class="hl">P2</span></div>
+        <div class="line" onclick="moveDot(2)"><span>G1 X<span id="x2"></span> C<span id="c2"></span></span><span class="hl">P3</span></div>
+        <div class="line" onclick="moveDot(3)"><span>G1 X<span id="x3"></span> C<span id="c3"></span></span><span class="hl">P4</span></div>
+        <div class="line" onclick="moveDot(4)"><span>G1 X<span id="x4"></span> C<span id="c4"></span></span><span class="hl">P5</span></div>
+        <div class="line" onclick="moveDot(5)"><span>G1 X<span id="x5"></span> C<span id="c5"></span></span><span class="hl">P6</span></div>
+        <div class="line" onclick="moveDot(6)"><span>G1 X<span id="x6"></span> C<span id="c6"></span></span><span class="hl">P7</span></div>
+        <div class="line" style="color:#86868b">G113 (POLAR AUS)</div>
     </div>
 </div>
 
 <script>
+let pts = [];
+
 function calc() {
     const sw = parseFloat(document.getElementById('sw').value) || 0;
-    const fdia = parseFloat(document.getElementById('fdia').value) || 0;
-    const safe = parseFloat(document.getElementById('safe').value) || 0;
+    const f = parseFloat(document.getElementById('fdia').value) || 0;
+    
+    const r_eff = (sw + f) / 2; // Эффективный радиус (центр фрезы)
+    const side = r_eff * Math.tan(30 * Math.PI / 180); // Половина стороны шестигранника
 
-    // Расчет для фрезеровки одной грани (лыски) в G112
-    // X в G112 - это диаметр, C - это радиус (как Y)
-    const xStart = (sw + fdia + (safe * 2)).toFixed(3);
-    const xFinal = sw.toFixed(3);
-    const cPos = (sw / 2).toFixed(3);
+    // Точки: X - диаметр (*2), C - радиус (Y)
+    pts = [
+        {x: (r_eff * 2), c: -side}, // P1 (Start)
+        {x: (r_eff * 2), c: side},  // P2
+        {x: r_eff, c: side * 2},    // P3
+        {x: -r_eff, c: side},       // P4
+        {x: -r_eff * 2, c: -side},  // P5
+        {x: -r_eff, c: -side * 2},  // P6
+        {x: r_eff, c: -side}        // P7 (Schluss)
+    ];
 
-    document.getElementById('l1').innerHTML = `G0 <span class="hl">X${xStart}</span> C0.0`;
-    document.getElementById('l2').innerHTML = `G1 <span class="hl">X${xFinal}</span> F0.1`;
-    document.getElementById('l3').innerHTML = `G1 C${cPos} F0.15 <span class="comment">(Y-BEWEGUNG)</span>`;
+    pts.forEach((p, i) => {
+        document.getElementById(`x${i}`).innerText = p.x.toFixed(3);
+        document.getElementById(`c${i}`).innerText = p.c.toFixed(3);
+    });
+    moveDot(0);
 }
+
+function moveDot(i) {
+    const dot = document.getElementById('dot');
+    const positions = [
+        {t: '20%', l: '75%'}, {t: '80%', l: '75%'}, {t: '100%', l: '50%'},
+        {t: '80%', l: '25%'}, {t: '20%', l: '25%'}, {t: '0%', l: '50%'}, {t: '20%', l: '75%'}
+    ];
+    dot.style.top = positions[i].t;
+    dot.style.left = positions[i].l;
+    document.getElementById('pos-name').innerText = "PUNKT " + (i + 1);
+    document.getElementById('pos-val').innerText = `X${pts[i].x.toFixed(3)} C${pts[i].c.toFixed(3)}`;
+}
+
 calc();
 </script>
 </body>
