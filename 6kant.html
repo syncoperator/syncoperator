@@ -3,73 +3,73 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>G112 Safety Master</title>
+    <title>G112 Tool Master</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --bg: #f5f5f7;
-            --card: #ffffff;
-            --accent: #ff9500;
-            --text: #1d1d1f;
-            --border: #d2d2d7;
-            --safety: #34c759;
-        }
+        :root { --bg: #f5f5f7; --card: #ffffff; --accent: #ff9500; --text: #1d1d1f; --border: #d2d2d7; --safety: #34c759; }
         body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; margin: 0; padding: 10px; display: flex; justify-content: center; }
         .container { width: 100%; max-width: 440px; }
 
-        /* GROSSER SENSOR (БОЛЬШОЙ ДАТЧИК) */
-        .visual-card { background: #1c1c1e; border-radius: 24px; padding: 20px; margin-bottom: 12px; border: 1px solid #333; position: relative; }
-        .canvas-area { width: 100%; height: 200px; position: relative; display: flex; align-items: center; justify-content: center; border-bottom: 1px solid #333; margin-bottom: 15px; }
-        
-        .hex-shape { position: relative; width: 140px; height: 140px; border: 2px solid rgba(255,149,0,0.3); clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%); background: rgba(255,149,0,0.05); }
-        .safety-circle { position: absolute; width: 180px; height: 180px; border: 1px dashed var(--safety); border-radius: 50%; }
-        
-        .dot { position: absolute; width: 12px; height: 12px; background: #ff3b30; border-radius: 50%; box-shadow: 0 0 15px #ff3b30; transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 10; margin: -6px 0 0 -6px; }
-        .label-overlay { text-align: center; }
-        .p-name { color: #fff; font-size: 14px; font-weight: 800; text-transform: uppercase; }
-        .p-coords { color: var(--accent); font-size: 22px; font-weight: 800; font-family: monospace; }
+        /* TABS */
+        .tabs { display: flex; background: #e5e5ea; padding: 4px; border-radius: 12px; margin-bottom: 10px; }
+        .tab-btn { flex: 1; padding: 10px; border: none; border-radius: 9px; font-weight: 800; font-size: 11px; cursor: pointer; color: #86868b; }
+        .tab-btn.active { background: #fff; color: var(--accent); box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
 
-        /* INPUTS */
-        .section { background: var(--card); border-radius: 18px; padding: 15px; margin-bottom: 10px; border: 1px solid var(--border); box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        /* DYNAMISCHER SENSOR */
+        .visual-card { background: #1c1c1e; border-radius: 24px; padding: 20px; margin-bottom: 12px; border: 1px solid #333; position: relative; overflow: hidden; }
+        .canvas { width: 100%; height: 180px; position: relative; display: flex; align-items: center; justify-content: center; border-bottom: 1px solid #333; margin-bottom: 15px; }
+        
+        /* Werkzeug Grafik */
+        .tool-gfx { position: absolute; width: 40px; height: 60px; background: #555; border-radius: 4px; border: 2px solid #888; transition: 0.5s; z-index: 5; opacity: 0.6; }
+        .tool-axial { top: 10px; left: 50%; transform: translateX(-50%); height: 40px; border-bottom: 4px solid var(--accent); }
+        .tool-radial { right: 10px; top: 50%; transform: translateY(-50%); width: 40px; border-left: 4px solid var(--accent); }
+
+        .hex-shape { position: relative; width: 120px; height: 120px; border: 2px solid rgba(255,149,0,0.3); clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%); background: rgba(255,149,0,0.05); }
+        .dot { position: absolute; width: 14px; height: 14px; background: #ff3b30; border-radius: 50%; box-shadow: 0 0 15px #ff3b30; transition: 0.4s; z-index: 10; margin: -7px 0 0 -7px; }
+
+        .section { background: var(--card); border-radius: 18px; padding: 15px; margin-bottom: 10px; border: 1px solid var(--border); }
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .label { display: block; font-size: 10px; font-weight: 800; color: #86868b; text-transform: uppercase; margin-bottom: 5px; }
-        select, input { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 10px; font-size: 16px; font-weight: 700; outline: none; box-sizing: border-box; }
+        select, input { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 10px; font-size: 16px; font-weight: 700; background: #fff; outline: none; box-sizing: border-box; }
 
-        /* CODE AREA */
         .code-box { background: #000; border-radius: 20px; padding: 18px; border: 1px solid #333; }
-        .line { font-family: 'SF Mono', monospace; font-size: 13px; line-height: 1.8; color: #34c759; border-bottom: 1px solid #1a1a1a; padding: 4px 0; cursor: pointer; transition: 0.2s; }
-        .line:hover { background: #111; }
-        .line.safety { color: var(--safety); border-left: 3px solid var(--safety); padding-left: 8px; }
+        .line { font-family: 'SF Mono', monospace; font-size: 13px; line-height: 1.8; color: #34c759; border-bottom: 1px solid #1a1a1a; padding: 4px 0; cursor: pointer; }
+        .line.safety { color: var(--safety); border-left: 4px solid var(--safety); padding-left: 10px; margin-bottom: 5px; }
         .hl { color: var(--accent); font-weight: bold; }
-        .comm { color: #636366; font-size: 11px; margin-left: 5px; }
+        .comm { color: #636366; font-size: 11px; }
     </style>
 </head>
 <body>
 
 <div class="container">
+    <div class="tabs">
+        <button id="tab-a" class="tab-btn active" onclick="setTool('axial')">AXIAL (STIRN)</button>
+        <button id="tab-r" class="tab-btn" onclick="setTool('radial')">RADIAL (MANTEL)</button>
+    </div>
+
     <div class="visual-card">
-        <div class="canvas-area">
-            <div class="safety-circle"></div>
+        <div class="canvas">
+            <div id="tool-view" class="tool-gfx tool-axial"></div>
             <div class="hex-shape"></div>
             <div id="dot" class="dot"></div>
         </div>
-        <div class="label-overlay">
-            <div id="p-label" class="p-name">VORPOSITIONIEREN</div>
-            <div id="p-coords" class="p-coords">X... C...</div>
+        <div style="text-align: center;">
+            <div id="p-name" style="color: #fff; font-size: 12px; font-weight: 800;">VORPOSITIONIEREN</div>
+            <div id="p-coords" style="color: var(--accent); font-size: 24px; font-weight: 800; font-family: monospace;">X... C...</div>
         </div>
     </div>
 
     <div class="section">
         <div class="grid">
             <div>
-                <label class="label">Typ</label>
+                <label class="label">Bearbeitung</label>
                 <select id="type" onchange="calc()">
                     <option value="aussen">AUSSEN</option>
                     <option value="innen">INNEN</option>
                 </select>
             </div>
             <div>
-                <label class="label">SW (Schlüsselweite)</label>
+                <label class="label">SW (Größe)</label>
                 <input type="number" id="sw" value="19" oninput="calc()">
             </div>
         </div>
@@ -79,23 +79,31 @@
                 <input type="number" id="fdia" value="10" oninput="calc()">
             </div>
             <div>
-                <label class="label">Sicherheit (S)</label>
+                <label class="label">Sicherheit</label>
                 <input type="number" id="safe" value="5" oninput="calc()">
             </div>
         </div>
     </div>
 
     <div class="code-box">
-        <div id="p0-line" class="line safety" onclick="moveDot(-1)"></div>
-        <div class="line" style="color:#86868b; cursor:default;">G112 (POLAR EIN)</div>
-        <div id="code-list"></div>
+        <div id="l0" class="line safety" onclick="move(0)"></div>
+        <div class="line" style="color:#86868b; cursor:default;">G112 (POLAR AN)</div>
+        <div id="codes"></div>
         <div class="line" style="color:#86868b; cursor:default;">G113 (POLAR AUS)</div>
     </div>
 </div>
 
 <script>
+let mode = 'axial';
 let points = [];
-let vPos = {x: 0, c: 0};
+
+function setTool(t) {
+    mode = t;
+    document.getElementById('tab-a').classList.toggle('active', t === 'axial');
+    document.getElementById('tab-r').classList.toggle('active', t === 'radial');
+    document.getElementById('tool-view').className = `tool-gfx tool-${t}`;
+    calc();
+}
 
 function calc() {
     const sw = parseFloat(document.getElementById('sw').value) || 0;
@@ -106,57 +114,55 @@ function calc() {
     const r_eff = (type === 'aussen') ? (sw + f) / 2 : (sw - f) / 2;
     const side = r_eff * Math.tan(30 * Math.PI / 180);
 
-    // Vorpositionierung: SW + Fräser + 2*Sicherheit
-    vPos.x = (sw + f + (s * 2));
-    vPos.c = 0;
+    // P0 LOGIK: Außen = Vorne weg, Innen = In die Mitte (X0)
+    const p0x = (type === 'aussen') ? (sw + f + (s * 2)) : 0;
+    const p0c = 0;
 
     points = [
-        {x: r_eff * 2, c: -side, n: "ANFAHREN P1"},
-        {x: r_eff * 2, c: side, n: "PUNKT 2"},
-        {x: r_eff, c: side * 2, n: "PUNKT 3"},
-        {x: -r_eff, c: side, n: "PUNKT 4"},
-        {x: -r_eff * 2, c: -side, n: "PUNKT 5"},
-        {x: -r_eff, c: -side * 2, n: "PUNKT 6"},
+        {x: p0x, c: p0c, n: "VORPOSITIONIEREN", isSafe: true},
+        {x: r_eff * 2, c: -side, n: "P1 ANFAHREN"},
+        {x: r_eff * 2, c: side, n: "P2"},
+        {x: r_eff, c: side * 2, n: "P3"},
+        {x: -r_eff, c: side, n: "P4"},
+        {x: -r_eff * 2, c: -side, n: "P5"},
+        {x: -r_eff, c: -side * 2, n: "P6"},
         {x: r_eff, c: -side, n: "ENDE (P7)"}
     ];
 
-    document.getElementById('p0-line').innerHTML = `G0 <span class="hl">X${vPos.x.toFixed(3)}</span> C0.0 <span class="comm">(VORPOS.)</span>`;
+    document.getElementById('l0').innerHTML = `G0 <span class="hl">X${p0x.toFixed(3)}</span> C0.0 <span class="comm">(VORPOS. ${type.toUpperCase()})</span>`;
     
-    renderCode();
-    moveDot(-1);
-}
-
-function renderCode() {
-    const container = document.getElementById('code-list');
+    const container = document.getElementById('codes');
     container.innerHTML = '';
-    points.forEach((p, i) => {
+    points.slice(1).forEach((p, i) => {
         const div = document.createElement('div');
         div.className = 'line';
-        div.onclick = () => moveDot(i);
+        div.onclick = () => move(i + 1);
         div.innerHTML = `G1 <span class="hl">X${p.x.toFixed(3)}</span> C${p.c.toFixed(3)} <span class="comm">P${i+1}</span>`;
         container.appendChild(div);
     });
+    move(0);
 }
 
-function moveDot(i) {
+function move(i) {
     const dot = document.getElementById('dot');
-    let target;
-    
-    if (i === -1) {
-        // Vorpositionierung (справа от шестигранника)
-        target = {t: '50%', l: '95%', n: 'VORPOSITIONIEREN', x: vPos.x, c: vPos.c};
+    const p = points[i];
+    let t, l;
+
+    if (p.isSafe) {
+        // P0 Position im Sensor
+        t = '50%';
+        l = (p.x === 0) ? '50%' : '90%'; // Mitte für Innen, Rechts für Außen
     } else {
         const map = [
-            {t: '25%', l: '85%'}, {t: '75%', l: '85%'}, {t: '100%', l: '50%'},
-            {t: '75%', l: '15%'}, {t: '25%', l: '15%'}, {t: '0%', l: '50%'}, {t: '25%', l: '85%'}
+            null, {t:'25%', l:'85%'}, {t:'75%', l:'85%'}, {t:'100%', l:'50%'},
+            {t:'75%', l:'15%'}, {t:'25%', l:'15%'}, {t:'0%', l:'50%'}, {t:'25%', l:'85%'}
         ];
-        target = {...map[i], n: points[i].n, x: points[i].x, c: points[i].c};
+        t = map[i].t; l = map[i].l;
     }
 
-    dot.style.top = target.t;
-    dot.style.left = target.l;
-    document.getElementById('p-label').innerText = target.n;
-    document.getElementById('p-coords').innerText = `X${target.x.toFixed(3)} C${target.c.toFixed(3)}`;
+    dot.style.top = t; dot.style.left = l;
+    document.getElementById('p-name').innerText = p.n;
+    document.getElementById('p-coords').innerText = `X${p.x.toFixed(3)} C${p.c.toFixed(3)}`;
 }
 
 calc();
