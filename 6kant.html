@@ -3,29 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>G112 Tool Master</title>
+    <title>G112 Scale Master</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
         :root { --bg: #f5f5f7; --card: #ffffff; --accent: #ff9500; --text: #1d1d1f; --border: #d2d2d7; --safety: #34c759; }
         body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; margin: 0; padding: 10px; display: flex; justify-content: center; }
         .container { width: 100%; max-width: 440px; }
 
-        /* TABS */
         .tabs { display: flex; background: #e5e5ea; padding: 4px; border-radius: 12px; margin-bottom: 10px; }
         .tab-btn { flex: 1; padding: 10px; border: none; border-radius: 9px; font-weight: 800; font-size: 11px; cursor: pointer; color: #86868b; }
         .tab-btn.active { background: #fff; color: var(--accent); box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
 
         /* DYNAMISCHER SENSOR */
-        .visual-card { background: #1c1c1e; border-radius: 24px; padding: 20px; margin-bottom: 12px; border: 1px solid #333; position: relative; overflow: hidden; }
-        .canvas { width: 100%; height: 180px; position: relative; display: flex; align-items: center; justify-content: center; border-bottom: 1px solid #333; margin-bottom: 15px; }
+        .visual-card { background: #1c1c1e; border-radius: 24px; padding: 20px; margin-bottom: 12px; border: 1px solid #333; position: relative; }
+        .canvas { width: 100%; height: 220px; position: relative; display: flex; align-items: center; justify-content: center; border-bottom: 1px solid #333; margin-bottom: 15px; }
         
-        /* Werkzeug Grafik */
-        .tool-gfx { position: absolute; width: 40px; height: 60px; background: #555; border-radius: 4px; border: 2px solid #888; transition: 0.5s; z-index: 5; opacity: 0.6; }
-        .tool-axial { top: 10px; left: 50%; transform: translateX(-50%); height: 40px; border-bottom: 4px solid var(--accent); }
-        .tool-radial { right: 10px; top: 50%; transform: translateY(-50%); width: 40px; border-left: 4px solid var(--accent); }
-
-        .hex-shape { position: relative; width: 120px; height: 120px; border: 2px solid rgba(255,149,0,0.3); clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%); background: rgba(255,149,0,0.05); }
-        .dot { position: absolute; width: 14px; height: 14px; background: #ff3b30; border-radius: 50%; box-shadow: 0 0 15px #ff3b30; transition: 0.4s; z-index: 10; margin: -7px 0 0 -7px; }
+        /* Werkstück (Fest auf SW skaliert) */
+        .hex-workpiece { position: absolute; background: rgba(255,149,0,0.2); border: 2px solid var(--accent); clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%); transition: 0.3s; z-index: 1; }
+        
+        /* Werkzeugweg (Dynamisch SW + Fräser) */
+        .tool-path { position: absolute; border: 1px dashed rgba(255,255,255,0.2); clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%); transition: 0.3s; z-index: 2; }
+        
+        .dot { position: absolute; width: 12px; height: 12px; background: #ff3b30; border-radius: 50%; box-shadow: 0 0 15px #ff3b30; transition: 0.4s; z-index: 10; margin: -6px 0 0 -6px; }
 
         .section { background: var(--card); border-radius: 18px; padding: 15px; margin-bottom: 10px; border: 1px solid var(--border); }
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
@@ -48,13 +47,13 @@
     </div>
 
     <div class="visual-card">
-        <div class="canvas">
-            <div id="tool-view" class="tool-gfx tool-axial"></div>
-            <div class="hex-shape"></div>
+        <div class="canvas" id="canvas-area">
+            <div id="hex-wp" class="hex-workpiece"></div>
+            <div id="hex-path" class="tool-path"></div>
             <div id="dot" class="dot"></div>
         </div>
         <div style="text-align: center;">
-            <div id="p-name" style="color: #fff; font-size: 12px; font-weight: 800;">VORPOSITIONIEREN</div>
+            <div id="p-name" style="color: #fff; font-size: 12px; font-weight: 800; text-transform: uppercase;">VORPOSITIONIEREN</div>
             <div id="p-coords" style="color: var(--accent); font-size: 24px; font-weight: 800; font-family: monospace;">X... C...</div>
         </div>
     </div>
@@ -94,14 +93,13 @@
 </div>
 
 <script>
-let mode = 'axial';
+let toolMode = 'axial';
 let points = [];
 
 function setTool(t) {
-    mode = t;
+    toolMode = t;
     document.getElementById('tab-a').classList.toggle('active', t === 'axial');
     document.getElementById('tab-r').classList.toggle('active', t === 'radial');
-    document.getElementById('tool-view').className = `tool-gfx tool-${t}`;
     calc();
 }
 
@@ -111,15 +109,27 @@ function calc() {
     const type = document.getElementById('type').value;
     const s = parseFloat(document.getElementById('safe').value) || 0;
 
+    const r_wp = sw / 2; 
     const r_eff = (type === 'aussen') ? (sw + f) / 2 : (sw - f) / 2;
     const side = r_eff * Math.tan(30 * Math.PI / 180);
 
-    // P0 LOGIK: Außen = Vorne weg, Innen = In die Mitte (X0)
     const p0x = (type === 'aussen') ? (sw + f + (s * 2)) : 0;
-    const p0c = 0;
+    
+    // SKALIERUNG FÜR SENSOR
+    const scale = 150 / (sw + f + s*2); // Dynamischer Zoom
+    const wp_px = sw * scale;
+    const path_px = (r_eff * 2) * scale;
+
+    const hexWp = document.getElementById('hex-wp');
+    hexWp.style.width = wp_px + 'px';
+    hexWp.style.height = wp_px + 'px';
+
+    const hexPath = document.getElementById('hex-path');
+    hexPath.style.width = path_px + 'px';
+    hexPath.style.height = path_px + 'px';
 
     points = [
-        {x: p0x, c: p0c, n: "VORPOSITIONIEREN", isSafe: true},
+        {x: p0x, c: 0, n: "VORPOSITIONIEREN", scale: scale},
         {x: r_eff * 2, c: -side, n: "P1 ANFAHREN"},
         {x: r_eff * 2, c: side, n: "P2"},
         {x: r_eff, c: side * 2, n: "P3"},
@@ -129,7 +139,7 @@ function calc() {
         {x: r_eff, c: -side, n: "ENDE (P7)"}
     ];
 
-    document.getElementById('l0').innerHTML = `G0 <span class="hl">X${p0x.toFixed(3)}</span> C0.0 <span class="comm">(VORPOS. ${type.toUpperCase()})</span>`;
+    document.getElementById('l0').innerHTML = `G0 <span class="hl">X${p0x.toFixed(3)}</span> C0.0 <span class="comm">(VORPOS.)</span>`;
     
     const container = document.getElementById('codes');
     container.innerHTML = '';
@@ -146,21 +156,23 @@ function calc() {
 function move(i) {
     const dot = document.getElementById('dot');
     const p = points[i];
-    let t, l;
+    const s = p.scale || points[1].scale;
 
-    if (p.isSafe) {
-        // P0 Position im Sensor
-        t = '50%';
-        l = (p.x === 0) ? '50%' : '90%'; // Mitte für Innen, Rechts für Außen
-    } else {
-        const map = [
-            null, {t:'25%', l:'85%'}, {t:'75%', l:'85%'}, {t:'100%', l:'50%'},
-            {t:'75%', l:'15%'}, {t:'25%', l:'15%'}, {t:'0%', l:'50%'}, {t:'25%', l:'85%'}
-        ];
-        t = map[i].t; l = map[i].l;
-    }
+    // Koordinaten in Pixel umrechnen für den Sensor (Zentrum ist 50%/50%)
+    // C ist Y-Achse, X ist X-Achse (aber X im Code ist Durchmesser!)
+    const posX = 50 + ((p.x / 2) * s / 2); // Einfache Darstellung
+    const posY = 50 + (p.c * s / 2);
 
-    dot.style.top = t; dot.style.left = l;
+    // Da CSS Top/Left vom Rand misst:
+    const map = [
+        {t: '50%', l: (p.x === 0 ? '50%' : '92%')}, // P0
+        {t: '35%', l: '80%'}, {t: '65%', l: '80%'}, {t: '85%', l: '50%'},
+        {t: '65%', l: '20%'}, {t: '35%', l: '20%'}, {t: '15%', l: '50%'}, {t: '35%', l: '80%'}
+    ];
+
+    dot.style.top = map[i].t;
+    dot.style.left = map[i].l;
+    
     document.getElementById('p-name').innerText = p.n;
     document.getElementById('p-coords').innerText = `X${p.x.toFixed(3)} C${p.c.toFixed(3)}`;
 }
