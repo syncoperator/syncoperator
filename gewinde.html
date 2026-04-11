@@ -1,1 +1,77 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Gewinde-Assistent</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root { --bg: #f5f5f7; --card: #ffffff; --accent: #ff9500; --text: #1d1d1f; --border: #d2d2d7; }
+        body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; margin: 0; padding: 15px; display: flex; justify-content: center; }
+        .container { width: 100%; max-width: 500px; }
+        header { margin-bottom: 20px; border-left: 5px solid var(--accent); padding-left: 15px; }
+        header h1 { margin: 0; font-size: 22px; font-weight: 800; text-transform: uppercase; }
+        .section { background: var(--card); border-radius: 14px; padding: 20px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border: 1px solid var(--border); }
+        .label { display: block; font-size: 10px; font-weight: 700; color: #86868b; text-transform: uppercase; margin-bottom: 8px; }
+        select, input { width: 100%; padding: 14px; border: 1px solid var(--border); border-radius: 10px; font-size: 16px; font-weight: 600; background: #fff; outline: none; box-sizing: border-box; }
+        .result-card { background: #1c1c1e; color: #fff; border-radius: 16px; padding: 20px; margin-top: 15px; }
+        .res-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #333; }
+        .res-row:last-child { border: none; }
+        .val { font-weight: 800; color: var(--accent); font-size: 18px; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <header><h1>Gewinde-Assistent</h1></header>
+    <div class="section">
+        <label class="label">Gewindetyp</label>
+        <select id="type" onchange="calc()">
+            <option value="m_regal">M - Metrisch (Regel)</option>
+            <option value="m_fein">M - Metrisch (Fein)</option>
+            <option value="g_pipe">G - Rohrgewinde (BSP)</option>
+        </select>
+        <div style="margin-top:15px">
+            <label class="label">Nennmaß (z.B. 10 für M10)</label>
+            <input type="number" id="nenn" value="10" oninput="calc()">
+        </div>
+        <div id="pitch_div" style="margin-top:15px">
+            <label class="label">Steigung (P)</label>
+            <input type="number" id="pitch" value="1.5" step="0.1" oninput="calc()">
+        </div>
+    </div>
+    <div class="result-card">
+        <div class="res-row"><span>Kernloch Ø (Innen)</span><span id="v-kern" class="val">8.50</span></div>
+        <div class="res-row"><span>Bolzen Ø (Außen)</span><span id="v-bolzen" class="val">9.85</span></div>
+        <div class="res-row"><span>Schnitttiefe (ap)</span><span id="v-depth" class="val">0.92</span></div>
+        <div style="margin-top:15px; font-size: 11px; color: #86868b; text-align: center;">
+            Empfohlene Zustellungen (G76): <br><b>8 - 12 Durchgänge</b>
+        </div>
+    </div>
+</div>
+<script>
+function calc() {
+    const type = document.getElementById('type').value;
+    const n = parseFloat(document.getElementById('nenn').value) || 0;
+    let p = parseFloat(document.getElementById('pitch').value) || 0;
+    
+    // Авто-подбор шага для основной метрической резьбы
+    if (type === 'm_regal') {
+        const standardSteps = {3:0.5, 4:0.7, 5:0.8, 6:1.0, 8:1.25, 10:1.5, 12:1.75, 16:2.0, 20:2.5};
+        if (standardSteps[n]) {
+            p = standardSteps[n];
+            document.getElementById('pitch').value = p;
+        }
+    }
 
+    const kern = (n - p).toFixed(2);
+    const bolzen = (n - (0.1 * p)).toFixed(2);
+    const depth = (0.6134 * p).toFixed(2);
+
+    document.getElementById('v-kern').innerText = kern + " mm";
+    document.getElementById('v-bolzen').innerText = bolzen + " mm";
+    document.getElementById('v-depth').innerText = depth + " mm";
+}
+calc();
+</script>
+</body>
+</html>
