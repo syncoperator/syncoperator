@@ -8,7 +8,7 @@
     <style>
         :root { --bg: #f2f2f7; --card: #1c1c1e; --accent: #ff9500; --safety: #34c759; --error: #ff3b30; }
         body { background: var(--bg); font-family: 'Inter', sans-serif; margin: 0; padding: 10px; display: flex; justify-content: center; }
-        .container { width: 100%; max-width: 440px; padding-bottom: 40px; }
+        .container { width: 100%; max-width: 440px; padding-bottom: 60px; }
 
         .tabs { display: flex; background: #e5e5ea; padding: 4px; border-radius: 12px; margin-bottom: 8px; gap: 4px; }
         .tab-btn { flex: 1; padding: 10px 5px; border: none; border-radius: 9px; font-weight: 800; font-size: 10px; color: #86868b; text-transform: uppercase; cursor: pointer; }
@@ -19,7 +19,7 @@
         svg { width: 100%; height: 100%; overflow: visible; }
         .line-wp { fill: rgba(255,149,0,0.1); stroke: var(--accent); stroke-width: 1.5; }
         .line-path { fill: none; stroke: rgba(255,255,255,0.2); stroke-width: 1; stroke-dasharray: 4; }
-        .tool-circle { fill: rgba(255, 59, 48, 0.2); stroke: #ff3b30; stroke-width: 1; transition: all 0.3s cubic-bezier(0.1, 0.7, 0.1, 1); }
+        .tool-circle { fill: rgba(255, 59, 48, 0.2); stroke: #ff3b30; stroke-width: 1; transition: all 0.3s cubic-bezier(0.1, 0.7, 0.1, 1); pointer-events: none; }
         .warning-msg { color: var(--error); font-size: 11px; font-weight: 800; text-align: center; margin-top: 5px; display: none; }
 
         .info { text-align: center; margin-top: 10px; border-top: 1px solid #333; padding-top: 8px; }
@@ -31,9 +31,10 @@
         input, select { width: 100%; padding: 10px; border: 1px solid #d2d2d7; border-radius: 10px; font-size: 14px; font-weight: 700; outline: none; box-sizing: border-box; }
 
         .code-box { background: #000; border-radius: 20px; padding: 15px; border: 1px solid #333; }
-        .line { font-family: 'SF Mono', monospace; font-size: 11px; color: #34c759; padding: 3px 0; border-bottom: 1px solid #222; }
+        .line { font-family: 'SF Mono', monospace; font-size: 12px; color: #34c759; padding: 6px 0; border-bottom: 1px solid #222; cursor: pointer; }
+        .line:active { background: #1a1a1a; }
         .hl { color: var(--accent); font-weight: bold; }
-        .comment { color: #555; }
+        .comment { color: #555; font-size: 10px; pointer-events: none; }
     </style>
 </head>
 <body>
@@ -86,23 +87,9 @@
                 <label class="label">fz mm</label>
                 <input type="number" id="fz" value="0.05" oninput="calc()">
             </div>
-            <div>
-                <label class="label">Z-Tiefe</label>
-                <input type="number" id="ztief" value="-10" oninput="calc()">
-            </div>
-        </div>
-        <div class="grid-3" style="margin-top: 10px;">
             <div style="background: #f9f9f9; padding: 5px; border-radius: 8px; text-align: center;">
-                <label class="label">S (U/min)</label>
-                <div id="res-s" style="font-weight: 800; color: #1d1d1f;">0</div>
-            </div>
-            <div style="background: #f9f9f9; padding: 5px; border-radius: 8px; text-align: center;">
-                <label class="label">F (mm/min)</label>
-                <div id="res-f" style="font-weight: 800; color: #1d1d1f;">0</div>
-            </div>
-            <div>
-                <label class="label">T-Nr.</label>
-                <input type="text" id="tnr" value="0101" oninput="calc()">
+                <label class="label">F (min)</label>
+                <div id="res-f" style="font-weight: 800; color: #1d1d1f; font-size: 14px;">0</div>
             </div>
         </div>
     </div>
@@ -141,24 +128,19 @@ function calc() {
     const bearb = document.getElementById('bearb').value;
     const vc = parseFloat(document.getElementById('vc').value) || 0;
     const fz = parseFloat(document.getElementById('fz').value) || 0;
-    const safe = 5;
 
-    // Режимы
     const s_val = Math.round((vc * 1000) / (Math.PI * f_dia)) || 0;
-    const f_val = Math.round(s_val * fz * 3) || 0; // 3 зуба как стандарт
-    document.getElementById('res-s').innerText = s_val;
+    const f_val = Math.round(s_val * fz * 3) || 0;
     document.getElementById('res-f').innerText = f_val;
 
-    // Геометрия
     const r_wp = sw / 2;
     let r_calc = (currentMode === 'G112') ? (sw + f_dia) / 2 : sw / 2;
     if (bearb === 'innen' && currentMode === 'G112') r_calc = (sw - f_dia) / 2;
 
-    // Коллизия
     const warn = document.getElementById('collision-warn');
     warn.style.display = (bearb === 'innen' && f_dia >= sw) ? 'block' : 'none';
 
-    const p0x = (bearb === 'aussen') ? (sw + f_dia + (safe * 2)) : 0;
+    const p0x = (bearb === 'aussen') ? (sw + f_dia + 10) : 0;
     zoom = 85 / Math.max(p0x/2 || 5, (r_calc + f_dia/2) * 1.2);
 
     const wpPts = getHexPoints(r_wp);
@@ -169,43 +151,58 @@ function calc() {
     document.getElementById('tool-vis').setAttribute('r', (f_dia / 2) * zoom);
 
     points = [{x: p0x, y: 0}, ...pathPts.map(p => ({x: p.x * 2, y: p.y})), {x: pathPts[0].x * 2, y: pathPts[0].y}];
-    renderCode(s_val, f_val);
+    renderCode(f_val);
 }
 
-function renderCode(s, f) {
-    const t = document.getElementById('tnr').value;
-    const z = document.getElementById('ztief').value;
+function renderCode(f) {
     const ax = (currentMode === 'Y-AXIS') ? 'Y' : 'C';
-    let out = `<div class="line">T${t} M3 S${s}</div><div class="line">G0 G54 X${points[0].x.toFixed(3)} ${ax}0.0 M8</div>`;
-    out += `<div class="line">G43 Z5.0 H${t.substring(0,2)}</div>`;
-    out += `<div class="line">G1 Z${z} F1000</div>`;
+    const output = document.getElementById('code-output');
+    output.innerHTML = '';
+
+    const addLine = (text, idx) => {
+        const div = document.createElement('div');
+        div.className = 'line';
+        if (text.includes('(')) div.className += ' comment';
+        div.innerHTML = text;
+        if (idx !== null) div.onclick = () => move(idx);
+        output.appendChild(div);
+    };
+
+    addLine(`G0 <span class="hl">X${points[0].x.toFixed(3)}</span> ${ax}0.0`, 0);
 
     if (currentMode === 'G112') {
-        out += `<div class="line hl">G112</div>`;
-        points.slice(1).forEach(p => out += `<div class="line">G1 X${p.x.toFixed(3)} C${p.y.toFixed(3)} F${f}</div>`);
-        out += `<div class="line hl">G113</div>`;
+        addLine('(G112 START)', null);
+        points.slice(1).forEach((p, i) => {
+            addLine(`G1 <span class="hl">X${p.x.toFixed(3)}</span> C${p.y.toFixed(3)} F${f}`, i + 1);
+        });
+        addLine('(G112 END)', null);
     } else if (currentMode === 'G112Comp') {
-        out += `<div class="line hl">G112</div>`;
-        out += `<div class="line">G1 <span class="hl">G41</span> X${points[1].x.toFixed(3)} C${points[1].y.toFixed(3)} F${f}</div>`;
-        points.slice(2).forEach(p => out += `<div class="line">X${p.x.toFixed(3)} C${p.y.toFixed(3)}</div>`);
-        out += `<div class="line">G40 X${points[0].x.toFixed(3)} C0.0</div>`;
-        out += `<div class="line hl">G113</div>`;
+        addLine('(G112 START)', null);
+        addLine(`G1 <span class="hl">G41</span> X${points[1].x.toFixed(3)} C${points[1].y.toFixed(3)} F${f}`, 1);
+        points.slice(2).forEach((p, i) => {
+            addLine(`X${p.x.toFixed(3)} C${p.y.toFixed(3)}`, i + 2);
+        });
+        addLine(`G40 X${points[0].x.toFixed(3)} C0.0`, 0);
+        addLine('(G112 END)', null);
     } else {
-        out += `<div class="line">G1 <span class="hl">G41</span> X${points[1].x.toFixed(3)} Y${points[1].y.toFixed(3)} F${f}</div>`;
-        points.slice(2).forEach(p => out += `<div class="line">X${p.x.toFixed(3)} Y${p.y.toFixed(3)}</div>`);
-        out += `<div class="line">G40 X${points[0].x.toFixed(3)} Y0.0</div>`;
+        addLine(`G1 <span class="hl">G41</span> X${points[1].x.toFixed(3)} Y${points[1].y.toFixed(3)} F${f}`, 1);
+        points.slice(2).forEach((p, i) => {
+            addLine(`X${p.x.toFixed(3)} Y${p.y.toFixed(3)}`, i + 2);
+        });
+        addLine(`G40 X${points[0].x.toFixed(3)} Y0.0`, 0);
     }
-    out += `<div class="line">G0 Z100.0 M9</div><div class="line">M30</div>`;
-    document.getElementById('code-output').innerHTML = out;
-    move(1);
+    
+    move(0);
 }
 
 function move(i) {
     const p = points[i];
     const dot = document.getElementById('tool-vis');
+    const axLabel = (currentMode === 'Y-AXIS' ? 'Y' : 'C');
+    
     dot.setAttribute('cx', (p.x / 2) * zoom);
     dot.setAttribute('cy', -p.y * zoom);
-    document.getElementById('p-coords').innerText = `X${p.x.toFixed(3)} ${(currentMode === 'Y-AXIS' ? 'Y' : 'C')}${p.y.toFixed(3)}`;
+    document.getElementById('p-coords').innerText = `X${p.x.toFixed(3)} ${axLabel}${p.y.toFixed(3)}`;
 }
 
 calc();
