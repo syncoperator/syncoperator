@@ -3,41 +3,40 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Nakamura G112 Pro Fix</title>
+    <title>G112 SVG Master</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
-        :root { --bg: #f2f2f7; --card: #1c1c1e; --accent: #ff9500; --text: #1d1d1f; --border: #d2d2d7; --safety: #34c759; }
-        body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; margin: 0; padding: 10px; display: flex; justify-content: center; }
+        :root { --bg: #f2f2f7; --card: #1c1c1e; --accent: #ff9500; --safety: #34c759; }
+        body { background: var(--bg); font-family: 'Inter', sans-serif; margin: 0; padding: 10px; display: flex; justify-content: center; }
         .container { width: 100%; max-width: 440px; }
 
+        /* ТАБЫ */
         .tabs { display: flex; background: #e5e5ea; padding: 4px; border-radius: 12px; margin-bottom: 10px; }
-        .tab-btn { flex: 1; padding: 10px; border: none; border-radius: 9px; font-weight: 800; font-size: 11px; cursor: pointer; color: #86868b; text-transform: uppercase; }
+        .tab-btn { flex: 1; padding: 10px; border: none; border-radius: 9px; font-weight: 800; font-size: 11px; color: #86868b; text-transform: uppercase; cursor: pointer; }
         .tab-btn.active { background: #fff; color: var(--accent); box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
 
-        /* VISUALIZER 1:1 LOGIC */
-        .visual-card { background: var(--card); border-radius: 24px; padding: 20px; margin-bottom: 12px; border: 1px solid #333; position: relative; }
-        .canvas { width: 100%; height: 240px; position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden; border-bottom: 1px solid #333; margin-bottom: 15px; }
+        /* SVG SENSOR */
+        .visual-card { background: var(--card); border-radius: 24px; padding: 15px; border: 1px solid #333; margin-bottom: 12px; }
+        .svg-container { width: 100%; height: 250px; display: flex; align-items: center; justify-content: center; position: relative; }
+        svg { width: 100%; height: 100%; overflow: visible; }
         
-        /* Werkstück (Orange) */
-        #hex-wp { position: absolute; background: rgba(255,149,0,0.25); border: 2px solid var(--accent); clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%); transition: 0.3s; z-index: 2; }
-        
-        /* Fräserpfad (Gestrichelt) */
-        #hex-path { position: absolute; border: 1.5px dashed rgba(255,255,255,0.3); clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%); transition: 0.3s; z-index: 1; }
-        
-        /* Fräser (Roter Punkt) */
-        #dot { position: absolute; width: 14px; height: 14px; background: #ff3b30; border-radius: 50%; box-shadow: 0 0 15px #ff3b30; transition: 0.4s cubic-bezier(0.1, 0.7, 0.1, 1); z-index: 10; margin: -7px 0 0 -7px; left: 50%; top: 50%; }
+        .line-wp { fill: rgba(255,149,0,0.1); stroke: var(--accent); stroke-width: 1.5; }
+        .line-path { fill: none; stroke: rgba(255,255,255,0.3); stroke-width: 1; stroke-dasharray: 4; }
+        .tool-dot { fill: #ff3b30; stroke: #fff; stroke-width: 1; filter: drop-shadow(0 0 5px #ff3b30); transition: all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1); }
 
-        .info-display { text-align: center; padding-bottom: 5px; }
-        .p-name { color: #86868b; font-size: 11px; font-weight: 800; text-transform: uppercase; }
+        .info { text-align: center; margin-top: 10px; border-top: 1px solid #333; padding-top: 10px; }
+        .p-name { color: #86868b; font-size: 11px; font-weight: 800; }
         .p-coords { color: var(--accent); font-size: 28px; font-weight: 800; font-family: monospace; }
 
-        .section { background: #fff; border-radius: 18px; padding: 15px; margin-bottom: 10px; border: 1px solid var(--border); }
+        /* INPUTS */
+        .section { background: #fff; border-radius: 18px; padding: 15px; margin-bottom: 10px; border: 1px solid #d2d2d7; }
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .label { display: block; font-size: 10px; font-weight: 800; color: #86868b; text-transform: uppercase; margin-bottom: 5px; }
-        input, select { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 10px; font-size: 16px; font-weight: 700; outline: none; box-sizing: border-box; }
+        input, select { width: 100%; padding: 12px; border: 1px solid #d2d2d7; border-radius: 10px; font-size: 16px; font-weight: 700; outline: none; box-sizing: border-box; }
 
+        /* CODE */
         .code-box { background: #000; border-radius: 20px; padding: 15px; border: 1px solid #333; }
-        .line { font-family: 'SF Mono', monospace; font-size: 13px; line-height: 1.8; color: #34c759; border-bottom: 1px solid #222; padding: 4px 0; cursor: pointer; }
+        .line { font-family: 'SF Mono', monospace; font-size: 13px; color: #34c759; padding: 5px 0; border-bottom: 1px solid #222; cursor: pointer; }
         .line.safety { color: var(--safety); border-left: 4px solid var(--safety); padding-left: 10px; }
         .hl { color: var(--accent); font-weight: bold; }
     </style>
@@ -51,14 +50,21 @@
     </div>
 
     <div class="visual-card">
-        <div class="canvas">
-            <div id="hex-wp"></div>
-            <div id="hex-path"></div>
-            <div id="dot"></div>
+        <div class="svg-container">
+            <svg id="svg-field" viewBox="-100 -100 200 200">
+                <line x1="-100" y1="0" x2="100" y2="0" stroke="#222" stroke-width="0.5" />
+                <line x1="0" y1="-100" x2="0" y2="100" stroke="#222" stroke-width="0.5" />
+                
+                <polygon id="wp-poly" class="line-wp" points="" />
+                
+                <polygon id="path-poly" class="line-path" points="" />
+                
+                <circle id="tool-dot" class="tool-dot" cx="0" cy="0" r="5" />
+            </svg>
         </div>
-        <div class="info-display">
-            <div id="p-name" class="p-name">P2</div>
-            <div id="p-coords" class="p-coords">X29.000 C8.372</div>
+        <div class="info">
+            <div id="p-name" class="p-name">VORPOSITIONIEREN</div>
+            <div id="p-coords" class="p-coords">X0.000 C0.000</div>
         </div>
     </div>
 
@@ -69,7 +75,7 @@
                 <select id="type" onchange="calc()"><option value="aussen">AUSSEN</option><option value="innen">INNEN</option></select>
             </div>
             <div>
-                <label class="label">SW (Größe)</label>
+                <label class="label">SW (Размер)</label>
                 <input type="number" id="sw" value="19" oninput="calc()">
             </div>
         </div>
@@ -85,79 +91,83 @@
         </div>
     </div>
 
-    <div class="code-box">
-        <div id="l0" class="line safety" onclick="move(0)"></div>
-        <div id="codes"></div>
-    </div>
+    <div class="code-box" id="code-output"></div>
 </div>
 
 <script>
 let points = [];
 let zoom = 1;
 
+function getHexPoints(radius) {
+    let pts = [];
+    for (let i = 0; i < 6; i++) {
+        let angle = (i * 60 - 30) * Math.PI / 180;
+        pts.push({
+            x: radius * Math.cos(angle) / Math.cos(30 * Math.PI / 180), 
+            y: radius * Math.sin(angle) / Math.cos(30 * Math.PI / 180)
+        });
+    }
+    // В Nakamura/Fanuc G112: 6-гранный профиль ориентирован так, что грани параллельны осям.
+    // Пересчитаем точки для правильной ориентации SW
+    const r_corner = radius / Math.cos(30 * Math.PI / 180);
+    return [
+        {x: radius, y: -radius * Math.tan(30*Math.PI/180)}, // P1
+        {x: radius, y: radius * Math.tan(30*Math.PI/180)},  // P2
+        {x: 0, y: r_corner},                               // P3
+        {x: -radius, y: radius * Math.tan(30*Math.PI/180)}, // P4
+        {x: -radius, y: -radius * Math.tan(30*Math.PI/180)},// P5
+        {x: 0, y: -r_corner}                               // P6
+    ];
+}
+
 function calc() {
     const sw = parseFloat(document.getElementById('sw').value) || 1;
     const f = parseFloat(document.getElementById('fdia').value) || 0;
     const s = parseFloat(document.getElementById('safe').value) || 0;
     
+    const r_wp = sw / 2;
     const r_eff = (sw + f) / 2;
-    const side = r_eff * Math.tan(30 * Math.PI / 180);
     const p0x = sw + f + (s * 2);
 
-    // Масштабирование: берем макс. габарит и вписываем в 240px
-    const maxDim = Math.max(p0x, r_eff * 2.3); 
-    zoom = 200 / maxDim;
+    // Масштаб для SVG (viewBox -100 to 100)
+    zoom = 85 / Math.max(p0x/2, r_eff * 1.2);
 
-    // Отрисовка заготовки (Orange)
-    const wp = document.getElementById('hex-wp');
-    const wpSize = sw * zoom;
-    wp.style.width = wpSize + 'px';
-    wp.style.height = wpSize + 'px';
+    const wpPoints = getHexPoints(r_wp);
+    const pathPoints = getHexPoints(r_eff);
 
-    // Отрисовка пути (Пунктир)
-    const path = document.getElementById('hex-path');
-    const pathSize = (r_eff * 2) * zoom;
-    path.style.width = pathSize + 'px';
-    path.style.height = pathSize + 'px';
+    // Отрисовка в SVG
+    document.getElementById('wp-poly').setAttribute('points', wpPoints.map(p => `${p.x * zoom},${-p.y * zoom}`).join(' '));
+    document.getElementById('path-poly').setAttribute('points', pathPoints.map(p => `${p.x * zoom},${-p.y * zoom}`).join(' '));
 
     points = [
-        {x: p0x, c: 0, n: "VORPOSITIONIEREN", isP0: true},
-        {x: r_eff * 2, c: -side, n: "P1 ANFAHREN"},
-        {x: r_eff * 2, c: side, n: "P2"},
-        {x: r_eff, c: side * 2, n: "P3"},
-        {x: -r_eff, c: side, n: "P4"},
-        {x: -r_eff * 2, c: -side, n: "P5"},
-        {x: -r_eff, c: -side * 2, n: "P6"},
-        {x: r_eff, c: -side, n: "P7 ENDE"}
+        {x: p0x, c: 0, n: "VORPOSITIONIEREN", isSafe: true},
+        ...pathPoints.map((p, i) => ({x: p.x * 2, c: p.y, n: `PUNKT ${i+1}`})),
+        {x: pathPoints[0].x * 2, c: pathPoints[0].y, n: "ENDE (P7)"}
     ];
 
-    document.getElementById('l0').innerHTML = `G0 <span class="hl">X${p0x.toFixed(3)}</span> C0.0 <span style="font-size:10px; color:#666">(VORPOS)</span>`;
-    
-    const codes = document.getElementById('codes');
-    codes.innerHTML = '<div class="line" style="color:#666">G112 (POLAR AN)</div>';
+    // Код
+    let html = `<div class="line safety" onclick="move(0)">G0 <span class="hl">X${p0x.toFixed(3)}</span> C0.0</div>`;
+    html += `<div class="line" style="color:#666">G112 (POLAR AN)</div>`;
     points.slice(1).forEach((p, i) => {
-        const div = document.createElement('div');
-        div.className = 'line';
-        div.onclick = () => move(i + 1);
-        div.innerHTML = `G1 <span class="hl">X${p.x.toFixed(3)}</span> C${p.c.toFixed(3)} <span style="font-size:10px; color:#666">P${i+1}</span>`;
-        codes.appendChild(div);
+        html += `<div class="line" onclick="move(${i+1})">G1 <span class="hl">X${p.x.toFixed(3)}</span> C${p.c.toFixed(3)}</div>`;
     });
-    codes.innerHTML += '<div class="line" style="color:#666">G113 (POLAR AUS)</div>';
-    
-    move(2); // По умолчанию показываем P2 как на скрине
+    html += `<div class="line" style="color:#666">G113 (POLAR AUS)</div>`;
+    document.getElementById('code-output').innerHTML = html;
+
+    move(2); // Показать P2
 }
 
 function move(i) {
-    const dot = document.getElementById('dot');
     const p = points[i];
-
-    // Координаты: C в радиусах (Y), X в диаметрах (поэтому X/2 для графики)
-    // В вебе Y идет вниз, поэтому инвертируем C
-    const offsetX = (p.x / 2) * zoom;
-    const offsetY = -p.c * zoom;
-
-    dot.style.transform = `translate(${offsetX}px, ${offsetY}px)`;
+    const dot = document.getElementById('tool-dot');
     
+    // В SVG: x = (X_diam / 2) * zoom, y = -C * zoom
+    const drawX = (p.x / 2) * zoom;
+    const drawY = -p.c * zoom;
+
+    dot.setAttribute('cx', drawX);
+    dot.setAttribute('cy', drawY);
+
     document.getElementById('p-name').innerText = p.n;
     document.getElementById('p-coords').innerText = `X${p.x.toFixed(3)} C${p.c.toFixed(3)}`;
 }
