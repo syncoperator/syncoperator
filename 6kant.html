@@ -3,36 +3,50 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>G112 Scale Master</title>
+    <title>G112 Scale Master (True Fix)</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
-        :root { --bg: #f5f5f7; --card: #ffffff; --accent: #ff9500; --text: #1d1d1f; --border: #d2d2d7; --safety: #34c759; }
+        /* Grundfarben und Layout (wie in deiner Handy-Ansicht) */
+        :root { --bg: #f2f2f7; --card: #ffffff; --accent: #ff9500; --text: #1d1d1f; --border: #d2d2d7; --safety: #34c759; }
         body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; margin: 0; padding: 10px; display: flex; justify-content: center; }
         .container { width: 100%; max-width: 440px; }
 
+        /* TABS OBEN */
         .tabs { display: flex; background: #e5e5ea; padding: 4px; border-radius: 12px; margin-bottom: 10px; }
-        .tab-btn { flex: 1; padding: 10px; border: none; border-radius: 9px; font-weight: 800; font-size: 11px; cursor: pointer; color: #86868b; }
+        .tab-btn { flex: 1; padding: 10px; border: none; border-radius: 9px; font-weight: 800; font-size: 11px; cursor: pointer; color: #86868b; text-transform: uppercase; }
         .tab-btn.active { background: #fff; color: var(--accent); box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
 
-        /* DYNAMISCHER SENSOR */
-        .visual-card { background: #1c1c1e; border-radius: 24px; padding: 20px; margin-bottom: 12px; border: 1px solid #333; position: relative; }
-        .canvas { width: 100%; height: 220px; position: relative; display: flex; align-items: center; justify-content: center; border-bottom: 1px solid #333; margin-bottom: 15px; }
+        /* DYNAMISCHE VISUALISIERUNG (FIX) */
+        .visual-card { background: #1c1c1e; border-radius: 24px; padding: 15px; margin-bottom: 12px; border: 1px solid #333; position: relative; }
         
-        /* Werkstück (Fest auf SW skaliert) */
-        .hex-workpiece { position: absolute; background: rgba(255,149,0,0.2); border: 2px solid var(--accent); clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%); transition: 0.3s; z-index: 1; }
+        /* Die Canvas-Fläche in der Mitte */
+        .canvas-container { width: 100%; height: 220px; position: relative; border-bottom: 1px solid #333; margin-bottom: 15px; overflow: hidden; }
         
-        /* Werkzeugweg (Dynamisch SW + Fräser) */
-        .tool-path { position: absolute; border: 1px dashed rgba(255,255,255,0.2); clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%); transition: 0.3s; z-index: 2; }
-        
-        .dot { position: absolute; width: 12px; height: 12px; background: #ff3b30; border-radius: 50%; box-shadow: 0 0 15px #ff3b30; transition: 0.4s; z-index: 10; margin: -6px 0 0 -6px; }
+        /* Das Werkstück (Sechskant, SW) */
+        .workpiece-container { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); transition: all 0.3s; z-index: 1; }
+        .hex-wp { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,149,0,0.2); border: 2px solid var(--accent); clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%); }
 
-        .section { background: var(--card); border-radius: 18px; padding: 15px; margin-bottom: 10px; border: 1px solid var(--border); }
+        /* Der Fräserweg (SW + Radius) */
+        .path-container { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); transition: all 0.3s; z-index: 2; }
+        .hex-path { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 1.5px dashed rgba(255,255,255,0.4); clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%); }
+        
+        /* Das Werkzeug (Roter Punkt) */
+        .dot { position: absolute; width: 12px; height: 12px; background: #ff3b30; border-radius: 50%; box-shadow: 0 0 15px #ff3b30; transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 10; margin: -6px 0 0 -6px; top: 50%; left: 50%; transform: translate(-50%, -50%);}
+
+        /* INFOS UNTER DEM BILD */
+        .point-name { color: #86868b; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
+        .point-coords { color: var(--accent); font-size: 26px; font-weight: 800; font-family: monospace; font-variant-numeric: tabular-nums; }
+
+        /* INPUT FELDER (EINGABE) */
+        .section { background: var(--card); border-radius: 18px; padding: 15px; margin-bottom: 10px; border: 1px solid var(--border); box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .label { display: block; font-size: 10px; font-weight: 800; color: #86868b; text-transform: uppercase; margin-bottom: 5px; }
         select, input { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 10px; font-size: 16px; font-weight: 700; background: #fff; outline: none; box-sizing: border-box; }
 
+        /* CODE BOX (AUSGABE) */
         .code-box { background: #000; border-radius: 20px; padding: 18px; border: 1px solid #333; }
-        .line { font-family: 'SF Mono', monospace; font-size: 13px; line-height: 1.8; color: #34c759; border-bottom: 1px solid #1a1a1a; padding: 4px 0; cursor: pointer; }
+        .line { font-family: 'SF Mono', monospace; font-size: 13px; line-height: 1.8; color: #34c759; border-bottom: 1px solid #1a1a1a; padding: 4px 0; cursor: pointer; transition: 0.1s; }
+        .line:hover { background: #111; }
         .line.safety { color: var(--safety); border-left: 4px solid var(--safety); padding-left: 10px; margin-bottom: 5px; }
         .hl { color: var(--accent); font-weight: bold; }
         .comm { color: #636366; font-size: 11px; }
@@ -42,19 +56,19 @@
 
 <div class="container">
     <div class="tabs">
-        <button id="tab-a" class="tab-btn active" onclick="setTool('axial')">AXIAL (STIRN)</button>
-        <button id="tab-r" class="tab-btn" onclick="setTool('radial')">RADIAL (MANTEL)</button>
+        <button id="tab-a" class="tab-btn active">AXIAL (STIRN)</button>
+        <button id="tab-r" class="tab-btn">RADIAL (MANTEL)</button>
     </div>
 
     <div class="visual-card">
-        <div class="canvas" id="canvas-area">
-            <div id="hex-wp" class="hex-workpiece"></div>
-            <div id="hex-path" class="tool-path"></div>
+        <div class="canvas-container" id="canvas">
+            <div id="hex-wp-cont" class="workpiece-container"><div class="hex-wp"></div></div>
+            <div id="hex-path-cont" class="path-container"><div class="hex-path"></div></div>
             <div id="dot" class="dot"></div>
         </div>
         <div style="text-align: center;">
-            <div id="p-name" style="color: #fff; font-size: 12px; font-weight: 800; text-transform: uppercase;">VORPOSITIONIEREN</div>
-            <div id="p-coords" style="color: var(--accent); font-size: 24px; font-weight: 800; font-family: monospace;">X... C...</div>
+            <div id="p-name" class="point-name">P2</div>
+            <div id="p-coords" class="point-coords">X29.000 C8.372</div>
         </div>
     </div>
 
@@ -93,43 +107,45 @@
 </div>
 
 <script>
-let toolMode = 'axial';
 let points = [];
-
-function setTool(t) {
-    toolMode = t;
-    document.getElementById('tab-a').classList.toggle('active', t === 'axial');
-    document.getElementById('tab-r').classList.toggle('active', t === 'radial');
-    calc();
-}
 
 function calc() {
     const sw = parseFloat(document.getElementById('sw').value) || 0;
     const f = parseFloat(document.getElementById('fdia').value) || 0;
-    const type = document.getElementById('type').value;
     const s = parseFloat(document.getElementById('safe').value) || 0;
 
-    const r_wp = sw / 2; 
-    const r_eff = (type === 'aussen') ? (sw + f) / 2 : (sw - f) / 2;
+    // Radius Berechnung (Außen)
+    const r_wp = sw / 2; // Werkstückradius (Ecke)
+    const r_eff = (sw + f) / 2; // Effektiver Radius (Fräsermitte)
     const side = r_eff * Math.tan(30 * Math.PI / 180);
 
-    const p0x = (type === 'aussen') ? (sw + f + (s * 2)) : 0;
-    
-    // SKALIERUNG FÜR SENSOR
-    const scale = 150 / (sw + f + s*2); // Dynamischer Zoom
-    const wp_px = sw * scale;
-    const path_px = (r_eff * 2) * scale;
+    // P0 LOGIK
+    const p0x = sw + f + (s * 2);
+    const p0c = 0;
 
-    const hexWp = document.getElementById('hex-wp');
+    // SKALIERUNG FÜR SENSOR (DYNAMISCHER ZOOM)
+    // Wir wollen, dass der Sechskant bei SW19 etwa 60% des Canvas einnimmt.
+    const canvasHeight = 220;
+    const canvasWidth = document.getElementById('canvas').offsetWidth;
+    const maxVal = Math.max(sw + f + s*2, (r_eff*2)*1.1547 + s); // Größter Wert in X oder Diagonale
+    const targetHeight = canvasHeight * 0.7; // 70% Höhe
+    const zoomScale = targetHeight / maxVal; 
+
+    const wp_px = sw * zoomScale;
+    const path_px = (r_eff * 2) * zoomScale;
+
+    // Werkstück skalieren
+    const hexWp = document.getElementById('hex-wp-cont');
     hexWp.style.width = wp_px + 'px';
     hexWp.style.height = wp_px + 'px';
 
-    const hexPath = document.getElementById('hex-path');
+    // Werkzeugpfad skalieren (SW+Fräser)
+    const hexPath = document.getElementById('hex-path-cont');
     hexPath.style.width = path_px + 'px';
     hexPath.style.height = path_px + 'px';
 
     points = [
-        {x: p0x, c: 0, n: "VORPOSITIONIEREN", scale: scale},
+        {x: p0x, c: p0c, n: "VORPOSITIONIEREN", isSafe: true, scale: zoomScale},
         {x: r_eff * 2, c: -side, n: "P1 ANFAHREN"},
         {x: r_eff * 2, c: side, n: "P2"},
         {x: r_eff, c: side * 2, n: "P3"},
@@ -150,28 +166,31 @@ function calc() {
         div.innerHTML = `G1 <span class="hl">X${p.x.toFixed(3)}</span> C${p.c.toFixed(3)} <span class="comm">P${i+1}</span>`;
         container.appendChild(div);
     });
-    move(0);
+    // Nach Berechnung standardmäßig auf P2 gehen, wie im Screenshot
+    move(2);
 }
 
 function move(i) {
     const dot = document.getElementById('dot');
     const p = points[i];
-    const s = p.scale || points[1].scale;
+    const s = points[0].scale; 
 
-    // Koordinaten in Pixel umrechnen für den Sensor (Zentrum ist 50%/50%)
-    // C ist Y-Achse, X ist X-Achse (aber X im Code ist Durchmesser!)
-    const posX = 50 + ((p.x / 2) * s / 2); // Einfache Darstellung
-    const posY = 50 + (p.c * s / 2);
+    // Koordinaten in Pixel für den Sensor (Zentrum ist 0,0)
+    // C ist Y-Achse, X im Code ist Durchmesser -> (X/2) ist Radius
+    let px_off_x = (p.x / 2) * s;
+    let px_off_y = -p.c * s; // C ist nach unten negativ? Nein, nach oben negativ?
+    // Fanuc G112: X ist Durchmesser, C ist Radius (Y). C0 ist 3 Uhr. C positiv geht nach oben (Gegen den Uhrzeigersinn).
+    // In CSS: Y positiv geht nach UNTEN. Also müssen wir C invertieren.
+    px_off_y = -p.c * s;
 
-    // Da CSS Top/Left vom Rand misst:
-    const map = [
-        {t: '50%', l: (p.x === 0 ? '50%' : '92%')}, // P0
-        {t: '35%', l: '80%'}, {t: '65%', l: '80%'}, {t: '85%', l: '50%'},
-        {t: '65%', l: '20%'}, {t: '35%', l: '20%'}, {t: '15%', l: '50%'}, {t: '35%', l: '80%'}
-    ];
+    // Wenn es P0 ist, steht er ganz rechts außen
+    if (p.isSafe) {
+        px_off_x = (r_eff*2)*s*0.9; // Fast am rechten Rand
+        px_off_y = 0;
+    }
 
-    dot.style.top = map[i].t;
-    dot.style.left = map[i].l;
+    // Transform Translate vom Zentrum (translate(-50%, -50%) ist schon im CSS)
+    dot.style.transform = `translate(calc(-50% + ${px_off_x}px), calc(-50% + ${px_off_y}px))`;
     
     document.getElementById('p-name').innerText = p.n;
     document.getElementById('p-coords').innerText = `X${p.x.toFixed(3)} C${p.c.toFixed(3)}`;
