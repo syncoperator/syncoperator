@@ -15,6 +15,7 @@
             --border: #E5E5EA;
             --danger: #FF3B30;
             --blue: #007AFF;
+            --orange: #FF9500;
         }
 
         body { 
@@ -38,9 +39,11 @@
         .full-width { grid-column: span 2; }
 
         .tool-list { display: flex; flex-direction: column; gap: 10px; }
-        .tool-card { background: var(--card-bg); border: 2.5px solid var(--border); border-radius: 20px; padding: 15px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; }
+        .tool-card { background: var(--card-bg); border: 2.5px solid var(--border); border-radius: 20px; padding: 15px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; position: relative; overflow: hidden;}
+        .tool-card.rev-unten { border-left: 6px solid var(--orange); }
         .tool-info b { font-size: 18px; display: block; }
         .tool-info span { font-size: 11px; color: var(--text-sub); font-weight: 800; }
+        .rev-badge { position: absolute; top: 10px; right: 40px; font-size: 9px; background: var(--orange); color: white; padding: 2px 6px; border-radius: 6px; font-weight: 900;}
 
         .btn { width: 100%; padding: 16px; border-radius: 16px; font-weight: 900; font-size: 13px; text-transform: uppercase; border: none; cursor: pointer; margin-bottom: 10px; display: flex; align-items: center; justify-content: center; gap: 10px; transition: 0.2s; }
         .btn svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
@@ -55,13 +58,16 @@
         .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(8px); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 20px; }
         .modal-overlay.active { display: flex; }
         .modal-card { background: var(--card-bg); width: 100%; max-width: 420px; border-radius: 28px; padding: 25px; box-sizing: border-box; box-shadow: 0 20px 40px rgba(0,0,0,0.2); }
-        .modal-card h2 { margin-top: 0; font-size: 20px; font-weight: 900; text-align: center; text-transform: uppercase; letter-spacing: -0.5px; }
+        .modal-card h2 { margin-top: 0; font-size: 20px; font-weight: 900; text-align: center; text-transform: uppercase; }
         
         .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
         .btn-save { flex: 2; background: var(--accent); color: #FFF; border-radius: 14px; padding: 14px; font-weight: 800; border: none; cursor: pointer; }
         .btn-cancel { flex: 1; background: #E5E5EA; border-radius: 14px; font-weight: 800; border: none; cursor: pointer; }
 
         .data-area { width: 100%; height: 180px; background: #f2f2f7; border-radius: 12px; border: 2px solid var(--border); padding: 12px; font-family: monospace; font-size: 13px; margin-top: 10px; resize: none; box-sizing: border-box; outline: none; color: #000; }
+        
+        .toggle-group { display: flex; align-items: center; justify-content: space-between; background: var(--bg); padding: 12px; border-radius: 12px; margin-top: 5px;}
+        .toggle-group label { font-size: 12px; font-weight: 800; color: var(--text-sub); }
     </style>
 </head>
 <body>
@@ -82,19 +88,19 @@
         Werkzeug hinzufügen
     </button>
 
-    <div class="section-title">DATEI & ТЕКСТ MANAGER</div>
-    <button class="btn btn-primary" onclick="openCopyModal()">
+    <div class="section-title">JSON & FILE MANAGER</div>
+    <button class="btn btn-primary" onclick="copyJSON()">
         <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-        Text kopieren
+        JSON KOPIEREN
     </button>
     <div class="meta-grid">
         <button class="btn btn-blue" onclick="downloadJSON()">
             <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-            Save JSON
+            SAVE FILE
         </button>
         <button class="btn btn-sub" onclick="openImportModal()">
-            <svg viewBox="0 0 24 24"><polyline points="16 16 12 12 8 16"></polyline><line x1="12" y1="12" x2="12" y2="21"></line><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"></path><polyline points="16 16 12 12 8 16"></polyline></svg>
-            Import
+            <svg viewBox="0 0 24 24"><polyline points="16 16 12 12 8 16"></polyline><line x1="12" y1="12" x2="12" y2="21"></line></svg>
+            IMPORT
         </button>
     </div>
 </div>
@@ -107,32 +113,22 @@
             <div class="input-group full-width"><label>BESCHREIBUNG</label><input type="text" id="m-nm"></div>
             <div class="input-group"><label>Ø / TOL</label><input type="text" id="m-dia"></div>
             <div class="input-group"><label>BEMERKUNG</label><input type="text" id="m-bem"></div>
+            <div class="toggle-group full-width">
+                <label>REVOLVER UNTEN (REV ⬇️)</label>
+                <input type="checkbox" id="m-rev-unten" style="width: 20px; height: 20px; cursor: pointer;">
+            </div>
         </div>
         <div class="modal-actions">
-            <button class="btn-cancel" onclick="deleteCurrentTool()" style="color:var(--danger); display:flex; align-items:center; justify-content:center; gap:5px;">
-                <svg viewBox="0 0 24 24" style="width:14px; height:14px;"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                LÖSCHEN
-            </button>
+            <button class="btn-cancel" onclick="deleteCurrentTool()" style="color:var(--danger);">LÖSCHEN</button>
             <button class="btn-save" onclick="saveTool()">OK</button>
-        </div>
-    </div>
-</div>
-
-<div class="modal-overlay" id="copy-modal">
-    <div class="modal-card">
-        <h2>KOPIEREN</h2>
-        <textarea class="data-area" id="copy-area" readonly></textarea>
-        <div class="modal-actions">
-            <button class="btn-cancel" onclick="closeModals()">Schließen</button>
-            <button class="btn-save" onclick="copyAction()">Kopieren</button>
         </div>
     </div>
 </div>
 
 <div class="modal-overlay" id="import-modal">
     <div class="modal-card">
-        <h2>JSON IMPORT</h2>
-        <textarea class="data-area" id="import-area" placeholder='JSON Code hier einfügen...'></textarea>
+        <h2>IMPORT JSON</h2>
+        <textarea class="data-area" id="import-area" placeholder='JSON Code здесь...'></textarea>
         <div class="modal-actions">
             <button class="btn-cancel" onclick="closeModals()">Abbrechen</button>
             <button class="btn-save" onclick="processImport()">Laden</button>
@@ -162,11 +158,12 @@ function renderMeta() {
 function renderTools() {
     const list = document.getElementById('tool-list');
     list.innerHTML = job.tools.map((t, i) => `
-        <div class="tool-card" onclick="openEditModal(${i})">
+        <div class="tool-card ${t.revUnten ? 'rev-unten' : ''}" onclick="openEditModal(${i})">
             <div class="tool-info">
                 <span>${t.id}</span>
                 <b>${t.nm}</b>
             </div>
+            ${t.revUnten ? '<div class="rev-badge">REV ⬇️</div>' : ''}
             <svg viewBox="0 0 24 24" style="width:18px; height:18px; stroke:var(--blue); fill:none; stroke-width:3;"><polyline points="9 18 15 12 9 6"></polyline></svg>
         </div>
     `).join('');
@@ -179,23 +176,31 @@ function openEditModal(i) {
     document.getElementById('m-nm').value = t.nm;
     document.getElementById('m-dia').value = t.dia || '';
     document.getElementById('m-bem').value = t.bem || '';
+    document.getElementById('m-rev-unten').checked = t.revUnten || false;
     document.getElementById('edit-modal').classList.add('active');
 }
 
-function openCopyModal() {
-    let txt = `AUFTRAG: ${job.num}\nNAME: ${job.name}\nMAT: ${job.mat}\n\nTOOLS:\n`;
-    job.tools.forEach(t => {
-        txt += `${t.id} | ${t.nm} ${t.dia ? '| Ø'+t.dia : ''} ${t.bem ? '('+t.bem+')' : ''}\n`;
-    });
-    document.getElementById('copy-area').value = txt;
-    document.getElementById('copy-modal').classList.add('active');
+function saveTool() {
+    job.tools[editingIdx] = {
+        id: document.getElementById('m-id').value.toUpperCase(),
+        nm: document.getElementById('m-nm').value.toUpperCase(),
+        dia: document.getElementById('m-dia').value,
+        bem: document.getElementById('m-bem').value,
+        revUnten: document.getElementById('m-rev-unten').checked
+    };
+    renderTools(); closeModals();
 }
 
-function copyAction() {
-    const area = document.getElementById('copy-area');
-    area.select();
-    document.execCommand('copy');
-    closeModals();
+function copyJSON() {
+    const jsonStr = JSON.stringify([job], null, 2);
+    navigator.clipboard.writeText(jsonStr).then(() => {
+        alert("JSON скопирован в буфер!");
+    });
+}
+
+function addNewTool() {
+    job.tools.push({id:"T0000", nm:"NEU", dia:"", bem:"", revUnten: false});
+    renderTools(); openEditModal(job.tools.length - 1);
 }
 
 function openImportModal() {
@@ -207,26 +212,11 @@ function closeModals() {
     document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('active'));
 }
 
-function saveTool() {
-    job.tools[editingIdx] = {
-        id: document.getElementById('m-id').value.toUpperCase(),
-        nm: document.getElementById('m-nm').value.toUpperCase(),
-        dia: document.getElementById('m-dia').value,
-        bem: document.getElementById('m-bem').value
-    };
-    renderTools(); closeModals();
-}
-
 function deleteCurrentTool() {
     if(confirm('Löschen?')) {
         job.tools.splice(editingIdx, 1);
         renderTools(); closeModals();
     }
-}
-
-function addNewTool() {
-    job.tools.push({id:"T0000", nm:"NEU", dia:"", bem:""});
-    renderTools(); openEditModal(job.tools.length - 1);
 }
 
 function downloadJSON() {
@@ -243,7 +233,7 @@ function processImport() {
         const parsed = JSON.parse(document.getElementById('import-area').value);
         job = Array.isArray(parsed) ? parsed[0] : parsed;
         init(); closeModals();
-    } catch(e) { alert("Error!"); }
+    } catch(e) { alert("Error JSON!"); }
 }
 
 init();
