@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>NAKAMURA JSON EDITOR</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #F5F5F7;
+            --card-bg: #FFFFFF;
+            --accent: #1D1D1F;
+            --text-main: #1D1D1F;
+            --text-sub: #86868B;
+            --border: #E5E5EA;
+            --danger: #FF3B30;
+        }
+
+        body { 
+            margin: 0; 
+            font-family: 'Inter', sans-serif; 
+            background: var(--bg);
+            color: var(--text-main); 
+            display: flex; 
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        .app-container { 
+            width: 100%; 
+            max-width: 500px; 
+            padding: 40px 20px 100px 20px; /* Большой padding-bottom */
+            box-sizing: border-box;
+        }
+
+        /* HEADER */
+        header { text-align: center; margin-bottom: 30px; }
+        header h1 { margin: 0; font-size: 32px; font-weight: 900; letter-spacing: -1px; }
+        header h1 span { color: var(--text-sub); }
+        .header-line { width: 40px; height: 4px; background: var(--accent); margin: 10px auto 0; border-radius: 2px; }
+
+        /* JOB META DATA */
+        .meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 25px; }
+        .input-group { background: var(--card-bg); padding: 12px; border-radius: 16px; border: 2px solid var(--border); }
+        .input-group label { display: block; font-size: 10px; font-weight: 800; color: var(--text-sub); text-transform: uppercase; margin-bottom: 4px; }
+        .input-group input { width: 100%; border: none; outline: none; font-size: 14px; font-weight: 700; color: var(--text-main); background: transparent; padding: 0; box-sizing: border-box; }
+        .full-width { grid-column: span 2; }
+
+        /* TOOL LIST */
+        .section-title { font-size: 12px; font-weight: 900; color: var(--text-sub); text-transform: uppercase; margin-bottom: 10px; letter-spacing: 1px; }
+        .tool-list { display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px; }
+        
+        /* СТИЛЬ КАРТОЧКИ ИНСТРУМЕНТА (SI RULE) */
+        .tool-card { 
+            background: var(--card-bg); 
+            border: 2px solid var(--border); 
+            border-radius: 20px; 
+            padding: 18px; 
+            text-align: center; 
+            cursor: grab; 
+            transition: all 0.2s;
+            position: relative;
+        }
+        .tool-card:active { cursor: grabbing; transform: scale(0.98); border-color: var(--accent); }
+        .tool-card.drag-over { border-color: var(--accent); border-style: dashed; }
+        
+        .t-nr { font-size: 12px; font-weight: 900; color: var(--text-sub); text-transform: uppercase; margin-bottom: 6px; letter-spacing: 1px; }
+        .desc { font-size: 18px; font-weight: 900; color: var(--text-main); letter-spacing: -0.5px; }
+
+        /* BUTTONS */
+        .btn { width: 100%; padding: 16px; border-radius: 16px; font-weight: 900; font-size: 14px; text-transform: uppercase; border: none; cursor: pointer; transition: 0.2s; letter-spacing: 0.5px; }
+        .btn-add { background: var(--card-bg); color: var(--text-main); border: 2px dashed var(--border); margin-bottom: 30px; }
+        .btn-add:active { background: var(--border); }
+        .btn-export { background: var(--accent); color: #FFF; margin-bottom: 10px; }
+        .btn-import { background: #E5E5EA; color: var(--text-main); }
+        
+        /* MODAL */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); backdrop-filter: blur(5px); display: none; align-items: center; justify-content: center; z-index: 100; opacity: 0; transition: opacity 0.3s; }
+        .modal-overlay.active { display: flex; opacity: 1; }
+        .modal-card { background: var(--card-bg); width: 90%; max-width: 400px; border-radius: 24px; padding: 25px; box-sizing: border-box; transform: translateY(20px); transition: transform 0.3s; }
+        .modal-overlay.active .modal-card { transform: translateY(0); }
+        .modal-card h2 { margin: 0 0 20px 0; font-size: 20px; font-weight: 900; letter-spacing: -0.5px; text-align: center; }
+        
+        .modal-grid { display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px; }
+        .check-group { display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 700; }
+        
+        .modal-actions { display: flex; gap: 10px; }
+        .btn-save { flex: 2; background: var(--accent); color: #FFF; border-radius: 12px; padding: 14px; font-weight: 800; border: none; cursor: pointer; }
+        .btn-delete { flex: 1; background: #FFF; color: var(--danger); border: 2px solid var(--danger); border-radius: 12px; font-weight: 800; cursor: pointer; }
+        
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <header>
+        <h1>JSON <span>EDITOR</span></h1>
+        <div class="header-line"></div>
+    </header>
+
+    <div class="section-title">AUFTRAGSDATEN</div>
+    <div class="meta-grid" id="meta-container">
+        </div>
+
+    <div class="section-title">WERKZEUGLISTE</div>
+    <div class="tool-list" id="tool-list">
+        </div>
+
+    <button class="btn btn-add" onclick="addNewTool()">+ Werkzeug hinzufügen</button>
+    <button class="btn btn-export" onclick="exportData()">Export JSON (Copy)</button>
+    <button class="btn btn-import" onclick="importData()">Import JSON</button>
+</div>
+
+<div class="modal-overlay" id="edit-modal">
+    <div class="modal-card">
+        <h2 id="modal-title">WERKZEUG EDITIEREN</h2>
+        <div class="modal-grid">
+            <div class="input-group"><label>T-NUMMER</label><input type="text" id="m-id" placeholder="T0101"></div>
+            <div class="input-group"><label>BESCHREIBUNG</label><input type="text" id="m-nm" placeholder="KOPIERST..."></div>
+            <div class="input-group"><label>DURCHMESSER / INFO</label><input type="text" id="m-dia"></div>
+            <div class="input-group"><label>BEMERKUNG</label><input type="text" id="m-bem"></div>
+            <div class="check-group"><input type="checkbox" id="m-rev"> <label for="m-rev" style="margin:0; font-size: 12px;">REVOLVER (Rev)</label></div>
+            <div class="check-group"><input type="checkbox" id="m-sonder"> <label for="m-sonder" style="margin:0; font-size: 12px;">SONDERWERKZEUG</label></div>
+        </div>
+        <div class="modal-actions">
+            <button class="btn-delete" id="btn-del-tool">LÖSCHEN</button>
+            <button class="btn-save" onclick="saveTool()">SPEICHERN</button>
+        </div>
+    </div>
+</div>
+
+<script>
+// Стартовый JSON (взят из твоего промпта)
+let currentData = [{"num":"231598","name":"BUCHSE","lzf":"4Min 25Sek","sag":"1010MM","stt":"70","stn":"50","mat":"F75 D36","abs":"","grf":"25-31","tools":[{"id":"T0101","nm":"KOPIERST.R0.8 VBMT G54","dia":"","bem":"FACH B","rev":false,"isSonder":false},{"id":"T0202","nm":"KOPIERST.R0.4 G54","dia":"","bem":"FACH B","rev":false,"isSonder":false},{"id":"T0303","nm":"STECHST.3MM G54","dia":"","bem":"FACH B","rev":false,"isSonder":false},{"id":"T1010","nm":"WP-BO D19.5 G54","dia":"","bem":"","rev":false,"isSonder":true},{"id":"T0707","nm":"DREHBOHRER D18 G54","dia":"","bem":"AUSSPNLANGE: 67MM ","rev":false,"isSonder":true},{"id":"T0808","nm":"FLACHBO MIT SPITZE D8.5 G54","dia":"D8.5","bem":"AUSSPNL.87MM","rev":false,"isSonder":true},{"id":"T0909","nm":"BOHRST.D16 107 GRAD G54","dia":"","bem":"AUSSPNLAENGE: 62MM","rev":false,"isSonder":true},{"id":"T1111","nm":"HORNBOHRSTAHL D12 G54","dia":"","bem":"AUSSPNLAENGE: 62MM","rev":false,"isSonder":true},{"id":"T1212","nm":"FORMBO D8 KTB RADIAL G54","dia":"","bem":"AUSSPNLAENGE: 38MM","rev":false,"isSonder":true},{"id":"T0505","nm":"FORMBO D3.5 KTB RADIAL G54","dia":"","bem":"AUSSPNLAENGE: 24MM","rev":false,"isSonder":true},{"id":"T0606","nm":"FORMBO D4 KTB RADIAL G54","dia":"","bem":"AUSSPNLAENGE: 37.2MM","rev":false,"isSonder":true},{"id":"T1216","nm":"STANGENANSCHLAG G54","dia":"","bem":"NACHSCHUBLANGE 500","rev":true,"isSonder":false},{"id":"T0101","nm":"KOPIERST. NEGATIV R0.4 G55","dia":"","bem":"FACH B","rev":false,"isSonder":false},{"id":"T0707","nm":"DREHBOHRER D12 G55","dia":"Fach c","bem":"FACH C | AUSSPNLAENGE: 30MM","rev":false,"isSonder":false},{"id":"T1212","nm":"BOHST. D6 MHC 20-6 G55","dia":"","bem":"","rev":false,"isSonder":false},{"id":"T0303","nm":"FORMBO D1.5 G55","dia":"","bem":"","rev":false,"isSonder":true},{"id":"T0404","nm":"FRAESER D11.4 AXIALG55","dia":"","bem":"","rev":false,"isSonder":true},{"id":"T0909","nm":"FRAESER D12 MIT KNB AXIAL G55","dia":"","bem":"","rev":false,"isSonder":true},{"id":"T0808","nm":"KUGELFRAESER D8 AXIAL G54","dia":"","bem":"AUSSPANLÄNGE: 41MM","rev":false,"isSonder":true},{"id":"T0606","nm":"KUGELFRAESER D16 AXIAL G54","dia":"","bem":"AUSSPANLÄNGE: 29MM","rev":false,"isSonder":true},{"id":"T1010","nm":"ABSTECHSTAHL 3MM RECHTS","dia":"","bem":"FACH B","rev":false,"isSonder":false}]}];
+
+let job = currentData[0];
+let editingIndex = null;
+
+// INIT
+function init() {
+    renderMeta();
+    renderTools();
+}
+
+// RENDER META (Шапка)
+function renderMeta() {
+    const container = document.getElementById('meta-container');
+    container.innerHTML = `
+        <div class="input-group full-width"><label>TEILENUMMER</label><input type="text" id="job-num" value="${job.num}" onchange="updateMeta('num', this.value)"></div>
+        <div class="input-group full-width"><label>BENENNUNG</label><input type="text" id="job-name" value="${job.name}" onchange="updateMeta('name', this.value)"></div>
+        <div class="input-group"><label>LAUFZEIT</label><input type="text" value="${job.lzf}" onchange="updateMeta('lzf', this.value)"></div>
+        <div class="input-group"><label>MATERIAL</label><input type="text" value="${job.mat}" onchange="updateMeta('mat', this.value)"></div>
+        <div class="input-group"><label>SÄGELÄNGE</label><input type="text" value="${job.sag}" onchange="updateMeta('sag', this.value)"></div>
+        <div class="input-group"><label>STÜCKZAHL</label><input type="text" value="${job.stn}" onchange="updateMeta('stn', this.value)"></div>
+    `;
+}
+
+function updateMeta(key, value) {
+    job[key] = value;
+}
+
+// RENDER TOOLS (Список с Drag & Drop)
+function renderTools() {
+    const list = document.getElementById('tool-list');
+    list.innerHTML = '';
+    
+    job.tools.forEach((t, index) => {
+        const card = document.createElement('div');
+        card.className = 'tool-card';
+        card.draggable = true;
+        card.dataset.index = index;
+        
+        card.innerHTML = `
+            <div class="t-nr">${t.id}</div>
+            <div class="desc">${t.nm}</div>
+        `;
+        
+        // Клик для редактирования
+        card.onclick = () => openModal(index);
+        
+        // Drag & Drop Events
+        card.addEventListener('dragstart', handleDragStart);
+        card.addEventListener('dragover', handleDragOver);
+        card.addEventListener('dragleave', handleDragLeave);
+        card.addEventListener('drop', handleDrop);
+        card.addEventListener('dragend', handleDragEnd);
+
+        list.appendChild(card);
+    });
+}
+
+// DRAG & DROP LOGIC
+let draggedIndex = null;
+
+function handleDragStart(e) {
+    draggedIndex = parseInt(this.dataset.index);
+    setTimeout(() => this.style.opacity = '0.5', 0);
+}
+
+function handleDragOver(e) {
+    e.preventDefault();
+    this.classList.add('drag-over');
+}
+
+function handleDragLeave(e) {
+    this.classList.remove('drag-over');
+}
+
+function handleDrop(e) {
+    e.preventDefault();
+    this.classList.remove('drag-over');
+    
+    const targetIndex = parseInt(this.dataset.index);
+    if (draggedIndex === targetIndex) return;
+    
+    // Меняем порядок в массиве
+    const item = job.tools.splice(draggedIndex, 1)[0];
+    job.tools.splice(targetIndex, 0, item);
+    
+    renderTools();
+}
+
+function handleDragEnd(e) {
+    this.style.opacity = '1';
+    document.querySelectorAll('.tool-card').forEach(c => c.classList.remove('drag-over'));
+}
+
+// MODAL LOGIC (Редактирование)
+function openModal(index) {
+    editingIndex = index;
+    const t = job.tools[index];
+    
+    document.getElementById('m-id').value = t.id;
+    document.getElementById('m-nm').value = t.nm;
+    document.getElementById('m-dia').value = t.dia || '';
+    document.getElementById('m-bem').value = t.bem || '';
+    document.getElementById('m-rev').checked = t.rev;
+    document.getElementById('m-sonder').checked = t.isSonder;
+    
+    const delBtn = document.getElementById('btn-del-tool');
+    delBtn.onclick = () => { deleteTool(index); closeModal(); };
+    
+    document.getElementById('edit-modal').classList.add('active');
+}
+
+function closeModal() {
+    document.getElementById('edit-modal').classList.remove('active');
+}
+
+function saveTool() {
+    if (editingIndex !== null) {
+        job.tools[editingIndex] = {
+            id: document.getElementById('m-id').value,
+            nm: document.getElementById('m-nm').value,
+            dia: document.getElementById('m-dia').value,
+            bem: document.getElementById('m-bem').value,
+            rev: document.getElementById('m-rev').checked,
+            isSonder: document.getElementById('m-sonder').checked
+        };
+        renderTools();
+        closeModal();
+    }
+}
+
+function deleteTool(index) {
+    if(confirm('Möchten Sie dieses Werkzeug wirklich löschen?')) {
+        job.tools.splice(index, 1);
+        renderTools();
+    }
+}
+
+function addNewTool() {
+    job.tools.push({
+        id: "T0000",
+        nm: "NEUES WERKZEUG",
+        dia: "",
+        bem: "",
+        rev: false,
+        isSonder: false
+    });
+    renderTools();
+    // Сразу открываем редактор для нового инструмента
+    openModal(job.tools.length - 1);
+}
+
+// EXPORT / IMPORT
+function exportData() {
+    const jsonStr = JSON.stringify([job], null, 0); // Без отступов для компактности, или поставь 2
+    navigator.clipboard.writeText(jsonStr).then(() => {
+        alert("JSON in die Zwischenablage kopiert!\n(Скопировано в буфер обмена)");
+    }).catch(err => {
+        alert("Fehler beim Kopieren. Hier ist der Code:\n" + jsonStr);
+    });
+}
+
+function importData() {
+    const input = prompt("Füge den JSON-Code hier ein:\n(Вставь JSON код сюда)");
+    if (input) {
+        try {
+            const parsed = JSON.parse(input);
+            if (Array.isArray(parsed) && parsed[0].tools) {
+                currentData = parsed;
+                job = currentData[0];
+                init();
+                alert("Erfolgreich geladen!");
+            } else {
+                alert("Falsches JSON-Format!");
+            }
+        } catch (e) {
+            alert("Fehlerhafter JSON-Code.");
+        }
+    }
+}
+
+// Закрытие модалки по клику вне окна
+document.getElementById('edit-modal').addEventListener('click', function(e) {
+    if (e.target === this) closeModal();
+});
+
+// Запуск
+init();
+</script>
+
+</body>
+</html>
