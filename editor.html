@@ -40,7 +40,7 @@
         .field label { display:block; font-size:11px; font-weight:700; color:var(--sub); text-transform:uppercase; margin-bottom:4px; }
         .field input, textarea { width:100%; padding:12px; background:#F2F2F7; border:none; border-radius:10px; font-size:16px; font-weight:600; box-sizing:border-box; font-family:inherit; }
 
-        /* ИСПРАВЛЕННЫЙ БЛОК ПЕЧАТИ */
+        /* PRINT CONFIGURATION */
         #print-container { display:none; }
         @media print { 
             @page { size: A4; margin: 0; }
@@ -229,6 +229,7 @@
 
         function makePDF() {
             const p = db[currentIdx];
+            
             const getHead = () => `
                 <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:10px; min-height:100px;">
                     <div>
@@ -243,8 +244,6 @@
                         <div style="display:flex; justify-content:space-between;"><span>STÜCKZAHL</span><span>${p.stt} / ${p.stn}</span></div>
                     </div>
                 </div><div style="border-bottom:7px solid #000; margin-bottom:12px;"></div>`;
-
-            const getFoot = () => `<div style="margin-top:auto;"></div>`;
 
             const tableHead = `
                 <div style="display:flex; font-size:11px; font-weight:900; text-transform:uppercase; margin-bottom:5px; padding:0 2px;">
@@ -268,27 +267,26 @@
                 </div>`;
 
             let oben = [], unten = [], reached = false;
-            (p.tools || []).forEach(t => { if(t.rev) reached = true; if(reached) unten.push(t); else oben.push(t); });
+            (p.tools || []).forEach(t => { 
+                if(t.rev) reached = true; 
+                if(reached) unten.push(t); else oben.push(t); 
+            });
 
-            // Обертка с box-sizing: border-box решает проблему "поползшей" рамки
-            const wrapStart = `<div style="width:210mm; height:297mm; padding:10mm; background:#fff; font-family:sans-serif; box-sizing:border-box; page-break-after:always;">
-                                <div style="border:1.5px solid #000; padding:25px; height:100%; display:flex; flex-direction:column; box-sizing:border-box;">`;
-            const wrapEnd = `</div></div>`;
-
-            let html = wrapStart + getHead() + `
+            // Конфигурация страниц PDF с принудительным box-sizing
+            const wrapStart = (title) => `
+                <div style="width:210mm; height:297mm; padding:10mm; background:#fff; font-family:sans-serif; box-sizing:border-box; page-break-after:always;">
+                    <div style="border:1.5px solid #000; padding:25px; height:100%; display:flex; flex-direction:column; box-sizing:border-box;">
+                        ${getHead()}
                         <div style="flex:1;">
-                            <div style="font-size:22px; font-weight:900; margin-bottom:8px; letter-spacing:-0.5px;">REVOLVER OBEN</div>
-                            ${tableHead}
-                            ${oben.map(getRow).join('')}
-                        </div>` + getFoot() + wrapEnd;
+                            <div style="font-size:22px; font-weight:900; margin-bottom:8px; letter-spacing:-0.5px;">${title}</div>
+                            ${tableHead}`;
+
+            const wrapEnd = `</div></div></div>`;
+
+            let html = wrapStart("REVOLVER OBEN") + oben.map(getRow).join('') + wrapEnd;
             
             if(unten.length > 0) {
-                html += wrapStart.replace('page-break-after:always;', '') + getHead() + `
-                        <div style="flex:1;">
-                            <div style="font-size:22px; font-weight:900; margin-bottom:8px; letter-spacing:-0.5px;">REVOLVER UNTEN</div>
-                            ${tableHead}
-                            ${unten.map(getRow).join('')}
-                        </div>` + getFoot() + wrapEnd;
+                html += wrapStart("REVOLVER UNTEN").replace('page-break-after:always;', '') + unten.map(getRow).join('') + wrapEnd;
             }
             
             el('print-container').innerHTML = html; 
