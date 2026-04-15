@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NAKAMURA JSON EDITOR</title>
+    <title>NAKAMURA EDITOR PRO</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -16,11 +16,12 @@
             --danger: #FF3B30;
             --blue: #007AFF;
             --orange: #FF9500;
+            --green: #34C759;
         }
 
         body { 
             margin: 0; font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text-main); 
-            display: flex; justify-content: center; min-height: 100vh;
+            display: flex; justify-content: center; min-height: 100vh; overflow-x: hidden;
         }
 
         .app-container { width: 100%; max-width: 500px; padding: 40px 20px 120px 20px; box-sizing: border-box; }
@@ -28,25 +29,29 @@
         header { text-align: center; margin-bottom: 30px; }
         header h1 { margin: 0; font-size: 32px; font-weight: 900; letter-spacing: -1px; }
         header h1 span { color: var(--text-sub); }
-        .header-line { width: 40px; height: 4px; background: var(--accent); margin: 10px auto 0; border-radius: 2px; }
 
         .section-title { font-size: 11px; font-weight: 900; color: var(--text-sub); text-transform: uppercase; margin: 30px 0 10px 0; letter-spacing: 1px; }
         
+        /* INPUTS */
         .meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
-        .input-group { background: var(--card-bg); padding: 12px; border-radius: 16px; border: 2.5px solid var(--border); }
+        .input-group { background: var(--card-bg); padding: 12px; border-radius: 16px; border: 2.5px solid var(--border); transition: 0.2s; }
+        .input-group:focus-within { border-color: var(--accent); }
         .input-group label { display: block; font-size: 10px; font-weight: 800; color: var(--text-sub); text-transform: uppercase; margin-bottom: 4px; }
         .input-group input { width: 100%; border: none; outline: none; font-size: 15px; font-weight: 700; color: var(--text-main); background: transparent; padding: 0; box-sizing: border-box; }
         .full-width { grid-column: span 2; }
 
+        /* TOOL LIST */
         .tool-list { display: flex; flex-direction: column; gap: 10px; }
-        .tool-card { background: var(--card-bg); border: 2.5px solid var(--border); border-radius: 20px; padding: 15px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; position: relative; transition: 0.2s; }
+        .tool-card { background: var(--card-bg); border: 2.5px solid var(--border); border-radius: 20px; padding: 15px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; position: relative; }
         .tool-card.rev-active { border-left: 6px solid var(--orange); }
         .tool-info b { font-size: 18px; display: block; }
-        .tool-info span { font-size: 11px; color: var(--text-sub); font-weight: 800; }
+        .tool-info span { font-size: 11px; color: var(--text-sub); font-weight: 800; display: flex; align-items: center; gap: 5px; }
         
-        .badge-rev { background: var(--orange); color: #fff; font-size: 9px; font-weight: 900; padding: 2px 6px; border-radius: 6px; margin-left: 8px; vertical-align: middle; }
+        .badge-rev { background: var(--orange); color: #fff; font-size: 9px; padding: 2px 6px; border-radius: 6px; }
 
-        .btn { width: 100%; padding: 16px; border-radius: 16px; font-weight: 900; font-size: 13px; text-transform: uppercase; border: none; cursor: pointer; margin-bottom: 10px; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        /* BUTTONS */
+        .btn { width: 100%; padding: 16px; border-radius: 16px; font-weight: 900; font-size: 13px; text-transform: uppercase; border: none; cursor: pointer; margin-bottom: 10px; display: flex; align-items: center; justify-content: center; gap: 10px; transition: transform 0.1s; }
+        .btn:active { transform: scale(0.97); }
         .btn svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
         
         .btn-add { background: #fff; color: var(--text-main); border: 2px dashed var(--border); }
@@ -54,27 +59,33 @@
         .btn-blue { background: var(--blue); color: #fff; }
         .btn-sub { background: #E5E5EA; color: var(--text-main); }
 
-        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(8px); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 20px; }
+        /* MODALS */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(10px); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 20px; }
         .modal-overlay.active { display: flex; }
-        .modal-card { background: var(--card-bg); width: 100%; max-width: 420px; border-radius: 28px; padding: 25px; box-sizing: border-box; }
+        .modal-card { background: var(--card-bg); width: 100%; max-width: 420px; border-radius: 30px; padding: 25px; box-sizing: border-box; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); }
         
         .toggle-row { display: flex; align-items: center; justify-content: space-between; background: var(--bg); padding: 15px; border-radius: 16px; margin-top: 10px; cursor: pointer; }
         .toggle-row label { font-size: 12px; font-weight: 800; cursor: pointer; }
-        .toggle-row input { width: 20px; height: 20px; accent-color: var(--orange); }
+        .toggle-row input { width: 22px; height: 22px; accent-color: var(--orange); cursor: pointer; }
 
-        .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
-        .btn-save { flex: 2; background: var(--accent); color: #FFF; border-radius: 14px; padding: 14px; font-weight: 800; border: none; }
-        .btn-cancel { flex: 1; background: #E5E5EA; border-radius: 14px; font-weight: 800; border: none; }
-        
-        .data-area { width: 100%; height: 180px; background: #f2f2f7; border-radius: 12px; border: 2px solid var(--border); padding: 12px; font-family: monospace; font-size: 13px; margin-top: 10px; resize: none; box-sizing: border-box; outline: none; }
+        .modal-actions { display: grid; grid-template-columns: 1fr 2fr; gap: 10px; margin-top: 25px; }
+        .btn-save { background: var(--accent); color: #FFF; border-radius: 16px; padding: 14px; font-weight: 800; border: none; cursor: pointer; }
+        .btn-cancel { background: #E5E5EA; border-radius: 16px; font-weight: 800; border: none; cursor: pointer; }
+
+        .data-area { width: 100%; height: 180px; background: #f2f2f7; border-radius: 14px; border: 2px solid var(--border); padding: 12px; font-family: monospace; font-size: 13px; margin-top: 10px; resize: none; box-sizing: border-box; outline: none; }
+
+        /* CUSTOM TOAST NOTIFICATION */
+        #toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(100px); background: var(--accent); color: #fff; padding: 12px 24px; border-radius: 25px; font-size: 14px; font-weight: 700; transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 2000; opacity: 0; }
+        #toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
     </style>
 </head>
 <body>
 
+<div id="toast">Success!</div>
+
 <div class="app-container">
     <header>
-        <h1>JSON <span>EDITOR</span></h1>
-        <div class="header-line"></div>
+        <h1>NAKAMURA <span>PRO</span></h1>
     </header>
 
     <div class="section-title">AUFTRAGSDATEN</div>
@@ -84,10 +95,10 @@
     <div id="tool-list" class="tool-list" style="margin-bottom: 15px;"></div>
     <button class="btn btn-add" onclick="addNewTool()">
         <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-        Werkzeug hinzufügen
+        Hinzufügen
     </button>
 
-    <div class="section-title">MANAGEMENT</div>
+    <div class="section-title">DATEN MANAGEMENT</div>
     <button class="btn btn-primary" onclick="copyJSON()">
         <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
         JSON KOPIEREN
@@ -95,7 +106,7 @@
     <div class="meta-grid">
         <button class="btn btn-blue" onclick="downloadJSON()">
             <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-            SAVE FILE
+            SPEICHERN
         </button>
         <button class="btn btn-sub" onclick="openImportModal()">
             <svg viewBox="0 0 24 24"><polyline points="16 16 12 12 8 16"></polyline><line x1="12" y1="12" x2="12" y2="21"></line></svg>
@@ -106,14 +117,14 @@
 
 <div class="modal-overlay" id="edit-modal">
     <div class="modal-card">
-        <h2 style="text-align:center; font-weight:900;">WERKZEUG EDIT</h2>
+        <h2 style="text-align:center; font-weight:900; margin-bottom:20px;">WERKZEUG EDIT</h2>
         <div class="meta-grid">
             <div class="input-group full-width"><label>T-NR</label><input type="text" id="m-id"></div>
             <div class="input-group full-width"><label>BESCHREIBUNG</label><input type="text" id="m-nm"></div>
             <div class="input-group"><label>Ø / TOL</label><input type="text" id="m-dia"></div>
             <div class="input-group"><label>BEMERKUNG</label><input type="text" id="m-bem"></div>
             <div class="full-width toggle-row" onclick="document.getElementById('m-rev').click()">
-                <label>REVOLVER UNTEN (REV UNTEN)</label>
+                <label>REVOLVER UNTEN (REV ⬇️)</label>
                 <input type="checkbox" id="m-rev" onclick="event.stopPropagation()">
             </div>
         </div>
@@ -129,8 +140,19 @@
         <h2 style="text-align:center; font-weight:900;">JSON IMPORT</h2>
         <textarea class="data-area" id="import-area" placeholder="JSON Code здесь..."></textarea>
         <div class="modal-actions">
-            <button class="btn-cancel" onclick="closeModals()">CLOSE</button>
-            <button class="btn-save" onclick="processImport()">IMPORT</button>
+            <button class="btn-cancel" onclick="closeModals()">CANCEL</button>
+            <button class="btn-save" onclick="processImport()">LADEN</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="confirm-modal">
+    <div class="modal-card" style="text-align:center;">
+        <h2 style="color:var(--danger);">LÖSCHEN?</h2>
+        <p>Dieses Werkzeug wird unwiderruflich entfernt.</p>
+        <div class="modal-actions">
+            <button class="btn-cancel" onclick="closeModals()">NEIN</button>
+            <button class="btn-save" style="background:var(--danger);" onclick="confirmDelete()">JA, LÖSCHEN</button>
         </div>
     </div>
 </div>
@@ -138,6 +160,13 @@
 <script>
 let job = {"num":"231598","name":"BUCHSE","lzf":"4Min 25Sek","sag":"1010MM","mat":"F75 D36","tools":[]};
 let editingIdx = null;
+
+function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.innerText = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2000);
+}
 
 function init() {
     renderMeta();
@@ -187,46 +216,51 @@ function saveTool() {
         revUnten: document.getElementById('m-rev').checked
     };
     renderTools(); closeModals();
+    showToast("Gespeichert");
+}
+
+function deleteCurrentTool() {
+    document.getElementById('confirm-modal').classList.add('active');
+}
+
+function confirmDelete() {
+    job.tools.splice(editingIdx, 1);
+    renderTools(); closeModals();
+    showToast("Gelöscht");
 }
 
 function copyJSON() {
-    // Копируем чистый объект без лишних символов
-    const cleanJob = JSON.parse(JSON.stringify(job));
-    const jsonStr = JSON.stringify([cleanJob], null, 2);
-    navigator.clipboard.writeText(jsonStr).then(() => {
-        alert("JSON COPIED!");
-    });
+    const jsonStr = JSON.stringify([job], null, 2);
+    navigator.clipboard.writeText(jsonStr).then(() => showToast("JSON COPIED!"));
+}
+
+function openImportModal() {
+    document.getElementById('import-area').value = '';
+    document.getElementById('import-modal').classList.add('active');
+}
+
+function processImport() {
+    try {
+        const parsed = JSON.parse(document.getElementById('import-area').value);
+        job = Array.isArray(parsed) ? parsed[0] : parsed;
+        init(); closeModals();
+        showToast("Importiert!");
+    } catch(e) { showToast("Error JSON!"); }
 }
 
 function downloadJSON() {
-    const jsonStr = JSON.stringify([job], null, 2);
-    const blob = new Blob([jsonStr], {type: "application/json"});
+    const blob = new Blob([JSON.stringify([job], null, 2)], {type: "application/json"});
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
     a.download = `Job_${job.num || 'data'}.json`;
     a.click();
-}
-
-function processImport() {
-    try {
-        const raw = document.getElementById('import-area').value;
-        const parsed = JSON.parse(raw);
-        job = Array.isArray(parsed) ? parsed[0] : parsed;
-        init(); closeModals();
-    } catch(e) { alert("JSON ERROR!"); }
+    showToast("File Saved");
 }
 
 function addNewTool() {
     job.tools.push({id:"T0000", nm:"NEU", dia:"", bem:"", revUnten: false});
     renderTools(); openEditModal(job.tools.length - 1);
-}
-
-function deleteCurrentTool() {
-    if(confirm('Delete?')) {
-        job.tools.splice(editingIdx, 1);
-        renderTools(); closeModals();
-    }
 }
 
 function closeModals() {
