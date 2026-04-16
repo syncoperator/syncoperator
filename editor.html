@@ -16,19 +16,18 @@
         header h1 { text-align: center; font-size: 24px; font-weight: 900; text-transform: uppercase; margin-bottom: 20px; letter-spacing: -1px; }
         .section-title { font-size: 10px; font-weight: 900; color: var(--text-sub); text-transform: uppercase; margin: 25px 0 10px 0; letter-spacing: 1px; }
         
-        /* GRID FOR META FIELDS */
         .meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-        .input-group { background: var(--card-bg); padding: 10px 14px; border-radius: 14px; border: 2.5px solid var(--border); transition: 0.2s; }
+        .input-group { background: var(--card-bg); padding: 10px 14px; border-radius: 14px; border: 2.5px solid var(--border); transition: 0.2s; position: relative; }
         .input-group:focus-within { border-color: var(--accent); }
         .input-group label { display: block; font-size: 8px; font-weight: 900; color: var(--text-sub); text-transform: uppercase; margin-bottom: 4px; }
         .input-group input { width: 100%; border: none; outline: none; font-size: 15px; font-weight: 700; background: transparent; color: var(--text-main); padding: 0; }
         .full-width { grid-column: span 2; }
 
-        /* CHIPS */
-        .chip-container { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
-        .chip { background: var(--blue); color: white; padding: 6px 12px; border-radius: 10px; font-size: 11px; font-weight: 800; cursor: pointer; text-transform: uppercase; }
+        /* SMART CHIPS */
+        .chip-container { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; min-height: 20px; }
+        .chip { background: var(--blue); color: white; padding: 6px 12px; border-radius: 10px; font-size: 11px; font-weight: 800; cursor: pointer; text-transform: uppercase; transition: 0.2s; }
+        .chip:active { transform: scale(0.95); opacity: 0.8; }
 
-        /* TOOL CARDS */
         .tool-card { background: var(--card-bg); border: 2.5px solid var(--border); border-radius: 20px; margin-bottom: 10px; position: relative; overflow: hidden; }
         .tool-card.rev-active { border-left: 8px solid var(--orange); }
         .tool-main-row { display: flex; align-items: center; padding: 15px; }
@@ -39,12 +38,10 @@
         .move-btn svg { width: 20px; height: 20px; stroke-width: 3; stroke: currentColor; fill: none; }
         .tool-footer { background: #F9F9FB; padding: 10px 15px; border-top: 1px solid var(--border); font-size: 12px; display: flex; gap: 10px; }
 
-        /* BUTTONS */
         .btn { width: 100%; padding: 16px; border-radius: 18px; font-weight: 900; border: none; cursor: pointer; margin-bottom: 8px; display: flex; align-items: center; justify-content: center; gap: 10px; text-transform: uppercase; font-size: 12px; }
         .btn-add { background: #fff; border: 2.5px dashed var(--border); }
         .btn-primary { background: var(--accent); color: #fff; }
 
-        /* MODALS */
         .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(10px); display: none; align-items: flex-start; justify-content: center; z-index: 1000; padding: 20px; overflow-y: auto; }
         .modal-overlay.active { display: flex; }
         .modal-card { background: var(--card-bg); width: 100%; max-width: 400px; border-radius: 28px; padding: 24px; margin-top: 40px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
@@ -64,8 +61,7 @@
     <header><h1>NAKAMURA <span>EDITOR</span></h1></header>
 
     <div class="section-title">AUFTRAGSDATEN</div>
-    <div id="meta-container" class="meta-grid">
-        </div>
+    <div id="meta-container" class="meta-grid"></div>
 
     <div class="section-title">WERKZEUGLISTE</div>
     <div id="tool-list"></div>
@@ -85,16 +81,16 @@
             <div class="input-group"><label>T-NR</label><input type="text" id="m-id"></div>
             <div class="input-group">
                 <label>BESCHREIBUNG</label>
-                <input type="text" id="m-nm" oninput="showChips('nm', this.value)">
+                <input type="text" id="m-nm" oninput="showChips('nm', this.value)" onfocus="showChips('nm', this.value)">
                 <div id="nm-chips" class="chip-container"></div>
             </div>
             <div class="input-group">
                 <label>BEMERKUNG</label>
-                <input type="text" id="m-bem" oninput="showChips('bem', this.value)">
+                <input type="text" id="m-bem" oninput="showChips('bem', this.value)" onfocus="showChips('bem', this.value)">
                 <div id="bem-chips" class="chip-container"></div>
             </div>
             <div class="input-group"><label>Ø / TOLERANZ</label><input type="text" id="m-dia"></div>
-            <label style="display:flex; justify-content:space-between; align-items:center; padding:10px; background:var(--bg); border-radius:12px; font-size:12px; font-weight:800;">
+            <label style="display:flex; justify-content:space-between; align-items:center; padding:10px; background:var(--bg); border-radius:12px; font-size:12px; font-weight:800; cursor:pointer;">
                 REV UNTEN <input type="checkbox" id="m-rev" style="width:20px; height:20px;">
             </label>
         </div>
@@ -116,10 +112,9 @@
 </div>
 
 <script>
-// "МОЗГИ"
-let smartMap = JSON.parse(localStorage.getItem('naka_v6_brain')) || { nm: [], bem: [], pairs: {} };
+// "МОЗГИ" - инициализация
+let smartMap = JSON.parse(localStorage.getItem('naka_v7_brain')) || { nm: [], bem: [], pairs: {} };
 
-// ДАННЫЕ (с автозагрузкой последнего состояния)
 let job = JSON.parse(localStorage.getItem('naka_last_job')) || {
     num: "", name: "", lzf: "", saege: "", stT: "", stN: "", mat: "", abst: "", greif: "", tools: []
 };
@@ -132,14 +127,10 @@ function saveState() {
 
 function renderMeta() {
     const fields = [
-        {id: 'num', label: 'TEILENUMMER', full: true},
-        {id: 'name', label: 'BENENNUNG', full: true},
-        {id: 'lzf', label: 'LAUFZEIT'},
-        {id: 'saege', label: 'SÄGELÄНGE'},
-        {id: 'stT', label: 'STÜCK T'},
-        {id: 'stN', label: 'STÜCK N'},
-        {id: 'mat', label: 'MATERIAL'},
-        {id: 'abst', label: 'ABSTAND'},
+        {id: 'num', label: 'TEILENUMMER', full: true}, {id: 'name', label: 'BENENNUNG', full: true},
+        {id: 'lzf', label: 'LAUFZEIT'}, {id: 'saege', label: 'SÄGELÄNGE'},
+        {id: 'stT', label: 'STÜCK T'}, {id: 'stN', label: 'STÜCK N'},
+        {id: 'mat', label: 'MATERIAL'}, {id: 'abst', label: 'ABSTAND'},
         {id: 'greif', label: 'GREIFBACKEN', full: true}
     ];
     document.getElementById('meta-container').innerHTML = fields.map(f => `
@@ -175,35 +166,57 @@ function renderTools() {
     `).join('');
 }
 
+// УЛУЧШЕННЫЙ ПОКАЗ ЧИПОВ
 function showChips(type, val) {
     const container = document.getElementById(type + '-chips');
     container.innerHTML = '';
-    if (!val) return;
-    const matches = smartMap[type].filter(i => i.includes(val.toUpperCase())).slice(0, 3);
+    
+    let list = smartMap[type] || [];
+    let matches = [];
+
+    if (!val) {
+        // Если поле пустое, показываем последние 3 добавленных
+        matches = list.slice(-3).reverse();
+    } else {
+        // Если что-то введено, фильтруем
+        matches = list.filter(i => i.includes(val.toUpperCase())).slice(0, 3);
+    }
+
     matches.forEach(m => {
-        const chip = document.createElement('div'); chip.className = 'chip'; chip.innerText = m;
+        const chip = document.createElement('div');
+        chip.className = 'chip';
+        chip.innerText = m;
         chip.onclick = () => {
             document.getElementById('m-' + type).value = m;
             container.innerHTML = '';
-            if (type === 'nm' && smartMap.pairs[m]) document.getElementById('m-bem').value = smartMap.pairs[m];
+            // Если выбрали название, проверяем есть ли пара для примечания
+            if (type === 'nm' && smartMap.pairs[m]) {
+                document.getElementById('m-bem').value = smartMap.pairs[m];
+            }
         };
         container.appendChild(chip);
     });
 }
 
 function saveTool() {
-    const nm = document.getElementById('m-nm').value.toUpperCase();
-    const bem = document.getElementById('m-bem').value.toUpperCase();
+    const nm = document.getElementById('m-nm').value.toUpperCase().trim();
+    const bem = document.getElementById('m-bem').value.toUpperCase().trim();
+    
     if (nm) {
+        // Добавляем в базу имен, если еще нет
         if (!smartMap.nm.includes(nm)) smartMap.nm.push(nm);
         if (bem) {
+            // Добавляем в базу примечаний, если еще нет
             if (!smartMap.bem.includes(bem)) smartMap.bem.push(bem);
+            // Сохраняем связку
             smartMap.pairs[nm] = bem;
         }
-        localStorage.setItem('naka_v6_brain', JSON.stringify(smartMap));
+        // Сохраняем "мозги" в LocalStorage
+        localStorage.setItem('naka_v7_brain', JSON.stringify(smartMap));
     }
+
     job.tools[editingIdx] = {
-        id: document.getElementById('m-id').value.toUpperCase() || 'T0000',
+        id: document.getElementById('m-id').value.toUpperCase() || 'T0101',
         nm: nm, dia: document.getElementById('m-dia').value,
         bem: bem, revUnten: document.getElementById('m-rev').checked
     };
@@ -217,6 +230,7 @@ function openEditModal(i) {
     document.getElementById('m-dia').value = t.dia || '';
     document.getElementById('m-bem').value = t.bem || '';
     document.getElementById('m-rev').checked = !!t.revUnten;
+    // Очищаем чипы при открытии, они появятся при фокусе
     document.getElementById('nm-chips').innerHTML = '';
     document.getElementById('bem-chips').innerHTML = '';
     document.getElementById('edit-modal').classList.add('active');
@@ -241,13 +255,15 @@ function copyJSON() {
     const text = JSON.stringify([job], null, 2);
     const textArea = document.createElement("textarea");
     textArea.value = text;
+    textArea.style.position = "fixed"; // Избегаем прокрутки
     document.body.appendChild(textArea);
+    textArea.focus();
     textArea.select();
     try {
         document.execCommand('copy');
         showToast("JSON KOPIERT!");
     } catch (err) {
-        console.error('Copy failed', err);
+        alert("Copy Error");
     }
     document.body.removeChild(textArea);
 }
