@@ -3,40 +3,40 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NAKAMURA PRO EDITOR</title>
+    <title>NAKAMURA SMARTBOX PRO</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
         :root {
             --bg: #F5F5F7; --card-bg: #FFFFFF; --accent: #1D1D1F; --text-main: #1D1D1F;
-            --text-sub: #86868B; --border: #E5E5EA; --blue: #007AFF; --orange: #FF9500;
+            --text-sub: #86868B; --border: #E5E5EA; --blue: #007AFF; --orange: #FF9500; --danger: #FF3B30;
         }
         body { margin: 0; font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text-main); display: flex; justify-content: center; }
-        .app-container { width: 100%; max-width: 500px; padding: 20px 20px 100px 20px; box-sizing: border-box; }
+        .app-container { width: 100%; max-width: 500px; padding: 20px 20px 120px 20px; box-sizing: border-box; }
         
-        header h1 { text-align: center; font-size: 24px; font-weight: 900; text-transform: uppercase; margin-bottom: 20px; }
-        .section-title { font-size: 10px; font-weight: 900; color: var(--text-sub); text-transform: uppercase; margin: 20px 0 10px 0; }
+        header h1 { text-align: center; font-size: 24px; font-weight: 900; text-transform: uppercase; margin-bottom: 20px; letter-spacing: -1px; }
+        .section-title { font-size: 10px; font-weight: 900; color: var(--text-sub); text-transform: uppercase; margin: 25px 0 10px 0; letter-spacing: 1px; }
         
-        .input-stack { display: flex; flex-direction: column; gap: 8px; }
-        .input-group { background: var(--card-bg); padding: 12px 16px; border-radius: 16px; border: 2.5px solid var(--border); }
-        .input-group label { display: block; font-size: 9px; font-weight: 900; color: var(--text-sub); text-transform: uppercase; margin-bottom: 4px; }
-        .input-group input { width: 100%; border: none; outline: none; font-size: 16px; font-weight: 700; background: transparent; color: var(--text-main); }
+        /* GRID FOR META FIELDS */
+        .meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .input-group { background: var(--card-bg); padding: 10px 14px; border-radius: 14px; border: 2.5px solid var(--border); transition: 0.2s; }
+        .input-group:focus-within { border-color: var(--accent); }
+        .input-group label { display: block; font-size: 8px; font-weight: 900; color: var(--text-sub); text-transform: uppercase; margin-bottom: 4px; }
+        .input-group input { width: 100%; border: none; outline: none; font-size: 15px; font-weight: 700; background: transparent; color: var(--text-main); padding: 0; }
+        .full-width { grid-column: span 2; }
 
+        /* CHIPS */
         .chip-container { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
         .chip { background: var(--blue); color: white; padding: 6px 12px; border-radius: 10px; font-size: 11px; font-weight: 800; cursor: pointer; text-transform: uppercase; }
 
-        /* TOOL CARDS WITH REORDERING */
+        /* TOOL CARDS */
         .tool-card { background: var(--card-bg); border: 2.5px solid var(--border); border-radius: 20px; margin-bottom: 10px; position: relative; overflow: hidden; }
         .tool-card.rev-active { border-left: 8px solid var(--orange); }
-        
         .tool-main-row { display: flex; align-items: center; padding: 15px; }
         .tool-info { flex: 1; cursor: pointer; }
         .t-name { font-size: 17px; font-weight: 800; text-transform: uppercase; }
-
         .reorder-controls { display: flex; flex-direction: column; gap: 10px; padding-left: 15px; border-left: 1px solid var(--border); }
-        .move-btn { background: none; border: none; padding: 5px; cursor: pointer; color: var(--text-sub); display: flex; align-items: center; justify-content: center; }
-        .move-btn svg { width: 20px; height: 20px; stroke-width: 3; }
-        .move-btn:disabled { opacity: 0.1; cursor: default; }
-
+        .move-btn { background: none; border: none; padding: 5px; cursor: pointer; color: var(--text-sub); }
+        .move-btn svg { width: 20px; height: 20px; stroke-width: 3; stroke: currentColor; fill: none; }
         .tool-footer { background: #F9F9FB; padding: 10px 15px; border-top: 1px solid var(--border); font-size: 12px; display: flex; gap: 10px; }
 
         /* BUTTONS */
@@ -44,15 +44,13 @@
         .btn-add { background: #fff; border: 2.5px dashed var(--border); }
         .btn-primary { background: var(--accent); color: #fff; }
 
-        /* MODAL */
+        /* MODALS */
         .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(10px); display: none; align-items: flex-start; justify-content: center; z-index: 1000; padding: 20px; overflow-y: auto; }
         .modal-overlay.active { display: flex; }
-        .modal-card { background: var(--card-bg); width: 100%; max-width: 400px; border-radius: 28px; padding: 24px; margin-top: 40px; }
-        
-        .rev-toggle { display: flex; align-items: center; justify-content: space-between; padding: 14px 0; margin-top: 10px; border-top: 1px solid var(--border); font-size: 13px; font-weight: 800; }
-        .modal-actions { display: grid; grid-template-columns: 1fr 2fr; gap: 12px; margin-top: 15px; }
-        .btn-save { background: var(--accent); color: #fff; border-radius: 16px; font-weight: 800; padding: 16px; border: none; }
-        .btn-cancel { background: #F2F2F7; color: var(--danger); border-radius: 16px; font-weight: 800; padding: 16px; border: none; }
+        .modal-card { background: var(--card-bg); width: 100%; max-width: 400px; border-radius: 28px; padding: 24px; margin-top: 40px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+        .modal-actions { display: grid; grid-template-columns: 1fr 2fr; gap: 12px; margin-top: 20px; }
+        .btn-save { background: var(--accent); color: #fff; border-radius: 16px; font-weight: 800; border: none; padding: 16px; }
+        .btn-cancel { background: #F2F2F7; color: var(--danger); border-radius: 16px; font-weight: 800; border: none; padding: 16px; }
 
         #toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(100px); background: var(--accent); color: #fff; padding: 12px 24px; border-radius: 30px; font-size: 13px; font-weight: 700; transition: 0.3s; z-index: 2000; opacity: 0; }
         #toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
@@ -63,9 +61,11 @@
 <div id="toast">Info</div>
 
 <div class="app-container">
-    <header><h1>NAKAMURA <span>PRO</span></h1></header>
-    <div class="section-title">AUFTRAG</div>
-    <div id="meta-container" class="input-stack" style="margin-bottom: 20px;"></div>
+    <header><h1>NAKAMURA <span>EDITOR</span></h1></header>
+
+    <div class="section-title">AUFTRAGSDATEN</div>
+    <div id="meta-container" class="meta-grid">
+        </div>
 
     <div class="section-title">WERKZEUGLISTE</div>
     <div id="tool-list"></div>
@@ -81,7 +81,7 @@
 
 <div class="modal-overlay" id="edit-modal">
     <div class="modal-card">
-        <div class="input-stack">
+        <div style="display:flex; flex-direction:column; gap:10px;">
             <div class="input-group"><label>T-NR</label><input type="text" id="m-id"></div>
             <div class="input-group">
                 <label>BESCHREIBUNG</label>
@@ -94,7 +94,9 @@
                 <div id="bem-chips" class="chip-container"></div>
             </div>
             <div class="input-group"><label>Ø / TOLERANZ</label><input type="text" id="m-dia"></div>
-            <label class="rev-toggle">REV UNTEN <input type="checkbox" id="m-rev"></label>
+            <label style="display:flex; justify-content:space-between; align-items:center; padding:10px; background:var(--bg); border-radius:12px; font-size:12px; font-weight:800;">
+                REV UNTEN <input type="checkbox" id="m-rev" style="width:20px; height:20px;">
+            </label>
         </div>
         <div class="modal-actions">
             <button class="btn-cancel" onclick="deleteTool()">DEL</button>
@@ -114,22 +116,38 @@
 </div>
 
 <script>
-let smartMap = JSON.parse(localStorage.getItem('naka_v5_brain')) || {
-    nm: ['KOPIERSTAHL', 'BOHRER', 'ABSTECHSTAHL'],
-    bem: ['FACH B2', 'KÜHLUNG'],
-    pairs: {}
+// "МОЗГИ"
+let smartMap = JSON.parse(localStorage.getItem('naka_v6_brain')) || { nm: [], bem: [], pairs: {} };
+
+// ДАННЫЕ (с автозагрузкой последнего состояния)
+let job = JSON.parse(localStorage.getItem('naka_last_job')) || {
+    num: "", name: "", lzf: "", saege: "", stT: "", stN: "", mat: "", abst: "", greif: "", tools: []
 };
 
-let job = {"num":"231598","name":"BUCHSE","tools":[]};
 let editingIdx = null;
 
-function moveTool(index, direction) {
-    const newIndex = index + direction;
-    if (newIndex < 0 || newIndex >= job.tools.length) return;
-    const temp = job.tools[index];
-    job.tools[index] = job.tools[newIndex];
-    job.tools[newIndex] = temp;
-    renderTools();
+function saveState() {
+    localStorage.setItem('naka_last_job', JSON.stringify(job));
+}
+
+function renderMeta() {
+    const fields = [
+        {id: 'num', label: 'TEILENUMMER', full: true},
+        {id: 'name', label: 'BENENNUNG', full: true},
+        {id: 'lzf', label: 'LAUFZEIT'},
+        {id: 'saege', label: 'SÄGELÄНGE'},
+        {id: 'stT', label: 'STÜCK T'},
+        {id: 'stN', label: 'STÜCK N'},
+        {id: 'mat', label: 'MATERIAL'},
+        {id: 'abst', label: 'ABSTAND'},
+        {id: 'greif', label: 'GREIFBACKEN', full: true}
+    ];
+    document.getElementById('meta-container').innerHTML = fields.map(f => `
+        <div class="input-group ${f.full ? 'full-width' : ''}">
+            <label>${f.label}</label>
+            <input type="text" value="${job[f.id] || ''}" oninput="job.${f.id}=this.value; saveState();">
+        </div>
+    `).join('');
 }
 
 function renderTools() {
@@ -139,14 +157,14 @@ function renderTools() {
             <div class="tool-main-row">
                 <div class="tool-info" onclick="openEditModal(${i})">
                     <span style="font-size:10px; font-weight:900; color:var(--text-sub);">${t.id}</span>
-                    <div class="t-name">${t.nm || '---'}</div>
+                    <div class="t-name">${t.nm || 'LEER'}</div>
                 </div>
                 <div class="reorder-controls">
-                    <button class="move-btn" onclick="moveTool(${i}, -1)" ${i === 0 ? 'disabled' : ''}>
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="18 15 12 9 6 15"></polyline></svg>
+                    <button class="move-btn" onclick="moveTool(${i}, -1)" ${i === 0 ? 'style="opacity:0"' : ''}>
+                        <svg viewBox="0 0 24 24"><polyline points="18 15 12 9 6 15"></polyline></svg>
                     </button>
-                    <button class="move-btn" onclick="moveTool(${i}, 1)" ${i === job.tools.length - 1 ? 'disabled' : ''}>
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                    <button class="move-btn" onclick="moveTool(${i}, 1)" ${i === job.tools.length - 1 ? 'style="opacity:0"' : ''}>
+                        <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"></polyline></svg>
                     </button>
                 </div>
             </div>
@@ -182,14 +200,14 @@ function saveTool() {
             if (!smartMap.bem.includes(bem)) smartMap.bem.push(bem);
             smartMap.pairs[nm] = bem;
         }
-        localStorage.setItem('naka_v5_brain', JSON.stringify(smartMap));
+        localStorage.setItem('naka_v6_brain', JSON.stringify(smartMap));
     }
     job.tools[editingIdx] = {
         id: document.getElementById('m-id').value.toUpperCase() || 'T0000',
         nm: nm, dia: document.getElementById('m-dia').value,
         bem: bem, revUnten: document.getElementById('m-rev').checked
     };
-    renderTools(); closeModals();
+    renderTools(); saveState(); closeModals();
 }
 
 function openEditModal(i) {
@@ -200,36 +218,52 @@ function openEditModal(i) {
     document.getElementById('m-bem').value = t.bem || '';
     document.getElementById('m-rev').checked = !!t.revUnten;
     document.getElementById('nm-chips').innerHTML = '';
+    document.getElementById('bem-chips').innerHTML = '';
     document.getElementById('edit-modal').classList.add('active');
 }
 
-function renderMeta() {
-    document.getElementById('meta-container').innerHTML = `
-        <div class="input-group"><label>TEILENUMMER</label><input type="text" value="${job.num}" oninput="job.num=this.value"></div>
-        <div class="input-group"><label>BENENNUNG</label><input type="text" value="${job.name}" oninput="job.name=this.value"></div>
-    `;
+function moveTool(index, dir) {
+    const target = index + dir;
+    [job.tools[index], job.tools[target]] = [job.tools[target], job.tools[index]];
+    renderTools(); saveState();
 }
 
 function addNewTool() {
-    job.tools.push({id:"T0000", nm:"", dia:"", bem:"", revUnten: false});
+    job.tools.push({id:"T0101", nm:"", dia:"", bem:"", revUnten: false});
     renderTools(); openEditModal(job.tools.length - 1);
 }
 
-function deleteTool() { job.tools.splice(editingIdx, 1); renderTools(); closeModals(); }
+function deleteTool() { job.tools.splice(editingIdx, 1); renderTools(); saveState(); closeModals(); }
 function closeModals() { document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('active')); }
 function showToast(m) { const t = document.getElementById('toast'); t.innerText = m; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2000); }
-function copyJSON() { navigator.clipboard.writeText(JSON.stringify([job], null, 2)).then(() => showToast("JSON COPIED")); }
+
+function copyJSON() {
+    const text = JSON.stringify([job], null, 2);
+    const textArea = document.createElement("textarea");
+    textArea.value = text;
+    document.body.appendChild(textArea);
+    textArea.select();
+    try {
+        document.execCommand('copy');
+        showToast("JSON KOPIERT!");
+    } catch (err) {
+        console.error('Copy failed', err);
+    }
+    document.body.removeChild(textArea);
+}
+
 function downloadJSON() { 
     const blob = new Blob([JSON.stringify([job], null, 2)], {type: "application/json"});
-    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `Job_${job.num}.json`; a.click();
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `Job_${job.num || 'data'}.json`; a.click();
 }
+
 function openImportModal() { document.getElementById('import-modal').classList.add('active'); }
 function processImport() {
     try {
         const val = JSON.parse(document.getElementById('import-area').value);
         job = Array.isArray(val) ? val[0] : val;
-        renderMeta(); renderTools(); closeModals(); showToast("Imported");
-    } catch(e) { alert("Error"); }
+        renderMeta(); renderTools(); saveState(); closeModals(); showToast("Imported");
+    } catch(e) { alert("JSON Error"); }
 }
 
 renderMeta(); renderTools();
