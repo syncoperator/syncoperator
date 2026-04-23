@@ -3,272 +3,231 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NAKAMURA SMART-EDITOR PRO</title>
+    <title>CNC Optimizer Premium Light</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg: #F5F5F7; --card-bg: #FFFFFF; --accent: #1D1D1F; --text-main: #1D1D1F;
-            --text-sub: #86868B; --border: #E5E5EA; --blue: #007AFF; --orange: #FF9500; --danger: #FF3B30;
+            --bg: #f5f5f7; --card: #ffffff; --accent: #007aff; --text: #1d1d1f; 
+            --border: #d2d2d7; --rec-bg: #e7f3ff; --green: #34c759;
         }
-        body { margin: 0; font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text-main); display: flex; justify-content: center; }
-        .app-container { width: 100%; max-width: 500px; padding: 20px 20px 140px 20px; box-sizing: border-box; }
+        body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; margin: 0; padding: 15px; display: flex; justify-content: center; }
+        .container { width: 100%; max-width: 480px; padding-bottom: 60px; }
         
-        header h1 { text-align: center; font-size: 24px; font-weight: 900; text-transform: uppercase; margin-bottom: 20px; letter-spacing: -1px; }
-        .section-title { font-size: 10px; font-weight: 900; color: var(--text-sub); text-transform: uppercase; margin: 25px 0 10px 0; letter-spacing: 1px; }
+        header { margin-bottom: 25px; text-align: center; }
+        header h1 { margin: 0; font-size: 24px; font-weight: 900; text-transform: uppercase; letter-spacing: -0.5px; color: var(--text); }
+        header span { color: var(--accent); }
+
+        .tabs { display: flex; background: #e3e3e8; padding: 4px; border-radius: 12px; margin-bottom: 15px; }
+        .tab-btn { flex: 1; padding: 12px; border: none; border-radius: 9px; font-weight: 800; font-size: 13px; cursor: pointer; color: #86868b; transition: 0.2s; background: none; }
+        .tab-btn.active { background: #fff; color: var(--text); box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+
+        .section { background: var(--card); border-radius: 18px; padding: 20px; margin-bottom: 12px; border: 1px solid var(--border); box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+        .label { display: block; font-size: 10px; font-weight: 800; color: #86868b; text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.5px; }
         
-        .meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-        .input-group { background: var(--card-bg); padding: 10px 14px; border-radius: 14px; border: 2.5px solid var(--border); transition: 0.2s; position: relative; }
-        .input-group:focus-within { border-color: var(--accent); }
-        .input-group label { display: block; font-size: 8px; font-weight: 900; color: var(--text-sub); text-transform: uppercase; margin-bottom: 4px; }
-        .input-group input, .input-group select { width: 100%; border: none; outline: none; font-size: 15px; font-weight: 700; background: transparent; color: var(--text-main); padding: 0; }
-        .full-width { grid-column: span 2; }
+        select, input { 
+            width: 100%; padding: 14px; border: 1.5px solid var(--border); border-radius: 12px; 
+            font-size: 16px; font-weight: 700; background: #fff; outline: none; box-sizing: border-box; transition: 0.2s;
+        }
+        select:focus, input:focus { border-color: var(--accent); }
 
-        .chip-container { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
-        .chip { background: var(--blue); color: white; padding: 6px 12px; border-radius: 10px; font-size: 11px; font-weight: 800; cursor: pointer; text-transform: uppercase; }
-
-        .tool-card { background: var(--card-bg); border: 2.5px solid var(--border); border-radius: 20px; margin-bottom: 10px; position: relative; overflow: hidden; }
-        .tool-card.rev-active { border-left: 8px solid var(--orange); }
-        .tool-main-row { display: flex; align-items: center; padding: 15px; }
-        .tool-info { flex: 1; cursor: pointer; }
-        .t-name { font-size: 17px; font-weight: 800; text-transform: uppercase; }
-        .reorder-controls { display: flex; flex-direction: column; gap: 10px; padding-left: 15px; border-left: 1px solid var(--border); }
-        .move-btn { background: none; border: none; padding: 5px; cursor: pointer; color: var(--text-sub); }
-        .move-btn svg { width: 20px; height: 20px; stroke-width: 3; stroke: currentColor; fill: none; }
-        .tool-footer { background: #F9F9FB; padding: 10px 15px; border-top: 1px solid var(--border); font-size: 12px; display: flex; gap: 10px; }
-
-        .btn { width: 100%; padding: 16px; border-radius: 18px; font-weight: 900; border: none; cursor: pointer; margin-bottom: 8px; display: flex; align-items: center; justify-content: center; gap: 10px; text-transform: uppercase; font-size: 12px; }
-        .btn-add { background: #fff; border: 2.5px dashed var(--border); }
-        .btn-primary { background: var(--accent); color: #fff; }
-
-        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(10px); display: none; align-items: flex-start; justify-content: center; z-index: 1000; padding: 20px; overflow-y: auto; }
-        .modal-overlay.active { display: flex; }
-        .modal-card { background: var(--card-bg); width: 100%; max-width: 400px; border-radius: 28px; padding: 24px; margin-top: 40px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
+        .geo-card { display: flex; align-items: center; justify-content: space-between; padding: 12px; background: #fbfbfd; border-radius: 12px; border: 1px dashed var(--border); margin-top: 10px; }
+        .geo-card span { font-size: 13px; font-weight: 700; color: #48484a; }
         
-        #toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(100px); background: var(--accent); color: #fff; padding: 12px 24px; border-radius: 30px; font-size: 13px; font-weight: 700; transition: 0.3s; z-index: 2000; opacity: 0; }
-        #toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+        .switch { position: relative; display: inline-block; width: 42px; height: 24px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #d1d1d6; transition: .3s; border-radius: 24px; }
+        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .3s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--accent); }
+        input:checked + .slider:before { transform: translateX(18px); }
+
+        .result-card { background: var(--card); border-radius: 20px; padding: 22px; border: 1px solid var(--border); box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
+        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+        .val-card { display: flex; flex-direction: column; align-items: center; padding: 14px 2px; border-radius: 14px; background: #f5f5f7; border: 1px solid transparent; }
+        .val-card.rec { background: var(--rec-bg); border: 1.5px solid var(--accent); }
+        .v-l { font-size: 9px; font-weight: 800; color: #86868b; margin-bottom: 4px; text-transform: uppercase; }
+        .v-m { font-size: 19px; font-weight: 900; color: var(--text); }
+        .v-u { font-size: 10px; font-weight: 700; color: #86868b; margin-top: 2px; }
+
+        .aufmass-label { font-size: 13px; font-weight: 900; color: #1a7f37; text-align: center; background: #ecfdf3; padding: 14px; border-radius: 12px; margin-top: 12px; border: 1px solid #ccebd7; }
+        .code-box { background: #1c1c1e; color: var(--green); padding: 18px; border-radius: 14px; font-family: 'SF Mono', monospace; text-align: center; margin-top: 15px; font-size: 15px; font-weight: 600; border: 1px solid #38383a; }
+        .hidden { display: none !important; }
     </style>
 </head>
 <body>
 
-<div id="toast">Info</div>
+<div class="container">
+    <header><h1>CNC <span>OPTIMIZER</span></h1></header>
 
-<div class="app-container">
-    <header><h1>NAKAMURA <span>PRO</span></h1></header>
-
-    <div class="section-title">AUFTRAGSDATEN</div>
-    <div id="meta-container" class="meta-grid"></div>
-
-    <div class="section-title">WERKSTOFF (MATERIAL)</div>
-    <div class="meta-grid">
-        <div class="input-group full-width">
-            <label>MATERIALAUSWAHL</label>
-            <select id="mat-select" onchange="updateMat()">
-                <option value="1.4104">1.4104 (X14CrMoS17)</option>
-                <option value="1.4112">1.4112 (X90CrMoV18)</option>
-                <option value="1.4301">1.4301 (V2A)</option>
-                <option value="1.4404">1.4404 (V4A)</option>
-                <option value="1.4571">1.4571 (V4A Ti)</option>
-                <option value="CuAl10Ni5Fe4">CuAl10Ni5Fe4 (F75)</option>
-                <option value="2.0966">2.0966 (Bronze)</option>
-                <option value="ms58">MS58 (Messing)</option>
-            </select>
-        </div>
+    <div class="tabs">
+        <button id="t-std-btn" class="tab-btn active" onclick="setTab('std')">STANDARD</button>
+        <button id="t-qual-btn" class="tab-btn" onclick="setTab('qual')">QUALITY (RZ)</button>
     </div>
 
-    <div class="section-title">WERKZEUGLISTE</div>
-    <div id="tool-list"></div>
-    <button class="btn btn-add" onclick="addNewTool()">HINZUFÜGEN</button>
+    <div class="section">
+        <label class="label">Material (Werkstoff)</label>
+        <select id="mat" onchange="run()">
+            <option value="1.4104">1.4104 (X14CrMoS17)</option>
+            <option value="1.4301">1.4301 (V2A)</option>
+            <option value="1.4404">1.4404 (V4A)</option>
+            <option value="1.4112">1.4112 (X90CrMoV18)</option>
+            <option value="F75">CuAl10Ni5Fe4 (F75)</option>
+            <option value="2.0966">2.0966 (Bronze)</option>
+            <option value="ms58">MS58 (Messing)</option>
+        </select>
 
-    <div class="section-title">MANAGEMENT</div>
-    <button class="btn btn-primary" onclick="copyJSON()">JSON KOPIEREN</button>
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-        <button class="btn" style="background:var(--blue); color:#fff" onclick="downloadJSON()">SAVE FILE</button>
-        <button class="btn" style="background:#E5E5EA; color:var(--text-main)" onclick="openImportModal()">IMPORT</button>
-    </div>
-    <div style="height: 60px;"></div> </div>
-
-<div class="modal-overlay" id="edit-modal">
-    <div class="modal-card">
-        <div style="display:flex; flex-direction:column; gap:10px;">
-            <div class="input-group"><label>T-NR (T0101)</label><input type="text" id="m-id"></div>
-            <div class="input-group">
-                <label>BESCHREIBUNG</label>
-                <input type="text" id="m-nm" oninput="showChips('nm', this.value)" onfocus="showChips('nm', this.value)">
-                <div id="nm-chips" class="chip-container"></div>
-            </div>
-            <div class="input-group">
-                <label>BEMERKUNG</label>
-                <input type="text" id="m-bem" oninput="showChips('bem', this.value)" onfocus="showChips('bem', this.value)">
-                <div id="bem-chips" class="chip-container"></div>
-            </div>
-            <div class="input-group"><label>Ø / TOLERANZ</label><input type="text" id="m-dia"></div>
-            <label style="display:flex; justify-content:space-between; align-items:center; padding:12px; background:var(--bg); border-radius:14px; font-size:12px; font-weight:800; cursor:pointer;">
-                REVOLVER UNTEN <input type="checkbox" id="m-rev" style="width:22px; height:22px;">
+        <div class="geo-card">
+            <span>Instabil / Vibration / Dünn</span>
+            <label class="switch">
+                <input type="checkbox" id="instabil" onchange="run()">
+                <span class="slider"></span>
             </label>
         </div>
-        <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 12px; margin-top: 20px;">
-            <button class="btn" style="background:#F2F2F7; color:var(--danger)" onclick="deleteTool()">DEL</button>
-            <button class="btn" style="background:var(--accent); color:#fff" onclick="saveTool()">OK</button>
+    </div>
+
+    <div id="tab-std" class="section">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div>
+                <label class="label">Ø Durchm. (mm)</label>
+                <input type="number" id="dia" value="20" oninput="run()">
+            </div>
+            <div>
+                <label class="label">Verfahren</label>
+                <select id="op" onchange="run()">
+                    <option value="dr_schrupp">Schruppen</option>
+                    <option value="dr_fertig">Schlichten</option>
+                    <option value="in_schrupp">Innen Schruppen</option>
+                    <option value="in_fertig">Innen Schlichten</option>
+                    <option value="stechen">Einstechen</option>
+                    <option value="bohren_hm">Bohren HM</option>
+                    <option value="bohren_wp">Bohrer WP</option>
+                    <option value="abstechen">Abstechen</option>
+                </select>
+            </div>
         </div>
     </div>
-</div>
 
-<div class="modal-overlay" id="import-modal">
-    <div class="modal-card">
-        <textarea id="import-area" style="width:100%; height:150px; border-radius:16px; padding:12px; border:2px solid var(--border); font-family:monospace;"></textarea>
-        <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 12px; margin-top: 20px;">
-            <button class="btn" onclick="closeModals()">ZU</button>
-            <button class="btn btn-primary" onclick="processImport()">LOAD</button>
+    <div id="tab-qual" class="section hidden">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div>
+                <label class="label">Soll Rz (µm)</label>
+                <input type="number" id="rz" value="6.3" step="0.1" oninput="run()">
+            </div>
+            <div>
+                <label class="label">Radius r (mm)</label>
+                <select id="rad" onchange="run()">
+                    <option value="0.1">0.1 mm</option>
+                    <option value="0.2">0.2 mm</option>
+                    <option value="0.4" selected>0.4 mm</option>
+                    <option value="0.8">0.8 mm</option>
+                </select>
+            </div>
         </div>
+    </div>
+
+    <div class="result-card">
+        <label class="label" style="text-align:center; margin-bottom:12px">Berechnete Schnittdaten</label>
+        
+        <div class="grid-3">
+            <div class="val-card"><span class="v-l">MIN</span><span id="s-min" class="v-m">0</span><span class="v-u" id="u-s1">m/min</span></div>
+            <div class="val-card rec"><span class="v-l">REC</span><span id="s-rec" class="v-m">0</span><span class="v-u" id="u-s2">m/min</span></div>
+            <div class="val-card"><span class="v-l">MAX</span><span id="s-max" class="v-m">0</span><span class="v-u" id="u-s3">m/min</span></div>
+        </div>
+
+        <div class="grid-3">
+            <div class="val-card"><span class="v-l">MIN</span><span id="f-min" class="v-m">0</span><span class="v-u">mm/U</span></div>
+            <div class="val-card rec"><span class="v-l">REC</span><span id="f-rec" class="v-m">0</span><span class="v-u">mm/U</span></div>
+            <div class="val-card"><span class="v-l">MAX</span><span id="f-max" class="v-m">0</span><span class="v-u">mm/U</span></div>
+        </div>
+
+        <div id="aufmass-box" class="aufmass-label hidden">Empf. Aufmaß: Ø 0.00 mm</div>
+        <div id="code-box" class="code-box">G-- S---- M3</div>
     </div>
 </div>
 
 <script>
+let activeTab = 'std';
 const db = {
-    "1.4104": { vc: [140, 175, 210], f: 1.0 },
-    "1.4112": { vc: [80, 105, 130], f: 0.75 },
-    "1.4301": { vc: [100, 130, 160], f: 0.85 },
-    "1.4404": { vc: [90, 120, 150], f: 0.8 },
-    "1.4571": { vc: [90, 115, 145], f: 0.8 },
-    "CuAl10Ni5Fe4": { vc: [80, 110, 140], f: 0.85 }, // Новая бронза
-    "2.0966": { vc: [110, 135, 160], f: 0.9 },
-    "ms58":   { vc: [250, 320, 400], f: 1.3 }
+    "1.4104": { vc: [140, 175, 215], f: 1.0, auf_d: 0.4 },
+    "1.4301": { vc: [100, 135, 165], f: 0.85, auf_d: 0.5 },
+    "1.4404": { vc: [95, 125, 155], f: 0.8, auf_d: 0.5 },
+    "1.4112": { vc: [80, 105, 135], f: 0.75, auf_d: 0.6 },
+    "F75":    { vc: [80, 115, 145], f: 0.85, auf_d: 0.5 },
+    "2.0966": { vc: [110, 140, 170], f: 0.9, auf_d: 0.4 },
+    "ms58":   { vc: [240, 310, 400], f: 1.2, auf_d: 0.3 }
 };
 
-let smartMap = JSON.parse(localStorage.getItem('naka_v_final_brain')) || { nm: [], bem: [], pairs: {} };
-let job = JSON.parse(localStorage.getItem('naka_last_job')) || {
-    num: "", name: "", lzf: "", sag: "", stt: "", stn: "", mat: "1.4104", abs: "", grf: "", tools: []
+const ops = {
+    "dr_schrupp": { g: "G96", vm: 1.0, fr: [0.22, 0.32, 0.45] },
+    "dr_fertig":  { g: "G96", vm: 1.25, fr: [0.08, 0.12, 0.18] },
+    "in_schrupp": { g: "G96", vm: 0.85, fr: [0.15, 0.22, 0.30] },
+    "in_fertig":  { g: "G96", vm: 1.05, fr: [0.06, 0.10, 0.14] },
+    "stechen":    { g: "G96", vm: 0.65, fr: [0.07, 0.11, 0.15] },
+    "bohren_hm":  { g: "G97", vm: 0.45, fr: [0.12, 0.18, 0.25] },
+    "bohren_wp":  { g: "G97", vm: 0.60, fr: [0.08, 0.14, 0.20] },
+    "abstechen":  { g: "G97", vm: 0.50, fr: [0.06, 0.09, 0.13] }
 };
 
-let editingIdx = null;
-
-function saveState() { localStorage.setItem('naka_last_job', JSON.stringify(job)); }
-
-function renderMeta() {
-    const fields = [
-        {id: 'num', label: 'TEILENUMMER', full: true},
-        {id: 'name', label: 'BENENNUNG', full: true},
-        {id: 'lzf', label: 'LAUFZEIT'},
-        {id: 'sag', label: 'SÄGELÄNGE'},
-        {id: 'stt', label: 'STÜCK T'},
-        {id: 'stn', label: 'STÜCK N'},
-        {id: 'abs', label: 'ABSTAND'},
-        {id: 'grf', label: 'GREIFBACKEN'}
-    ];
-    document.getElementById('meta-container').innerHTML = fields.map(f => `
-        <div class="input-group ${f.full ? 'full-width' : ''}">
-            <label>${f.label}</label>
-            <input type="text" value="${job[f.id] || ''}" oninput="job['${f.id}']=this.value; saveState();">
-        </div>
-    `).join('');
-    document.getElementById('mat-select').value = job.mat || "1.4104";
+function setTab(t) {
+    activeTab = t;
+    document.getElementById('t-std-btn').classList.toggle('active', t === 'std');
+    document.getElementById('t-qual-btn').classList.toggle('active', t === 'qual');
+    document.getElementById('tab-std').classList.toggle('hidden', t !== 'std');
+    document.getElementById('tab-qual').classList.toggle('hidden', t !== 'qual');
+    document.getElementById('aufmass-box').classList.toggle('hidden', t !== 'qual');
+    run();
 }
 
-function updateMat() {
-    job.mat = document.getElementById('mat-select').value;
-    saveState();
-    showToast("Material: " + job.mat);
-}
+function run() {
+    const m = db[document.getElementById('mat').value];
+    const dia = parseFloat(document.getElementById('dia').value) || 1;
+    const isInstabil = document.getElementById('instabil').checked;
+    
+    let vcArr, fArr, gCode, auf_d;
+    const vMult = isInstabil ? 0.65 : 1.0;
+    const fMult = isInstabil ? 0.75 : 1.0;
 
-function renderTools() {
-    const list = document.getElementById('tool-list');
-    list.innerHTML = job.tools.map((t, i) => `
-        <div class="tool-card ${t.revUnten ? 'rev-active' : ''}">
-            <div class="tool-main-row">
-                <div class="tool-info" onclick="openEditModal(${i})">
-                    <span style="font-size:10px; font-weight:900; color:var(--text-sub);">${t.id}</span>
-                    <div class="t-name">${t.nm || 'LEER'}</div>
-                </div>
-                <div class="reorder-controls">
-                    <button class="move-btn" onclick="moveTool(${i}, -1)" ${i === 0 ? 'style="opacity:0"' : ''}>
-                        <svg viewBox="0 0 24 24"><polyline points="18 15 12 9 6 15"></polyline></svg>
-                    </button>
-                    <button class="move-btn" onclick="moveTool(${i}, 1)" ${i === job.tools.length - 1 ? 'style="opacity:0"' : ''}>
-                        <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"></polyline></svg>
-                    </button>
-                </div>
-            </div>
-            <div class="tool-footer" ${!t.bem && !t.dia ? 'style="display:none"' : ''}>
-                ${t.dia ? `<b>Ø</b> ${t.dia}` : ''} ${t.bem ? `<span>|</span> ${t.bem}` : ''}
-            </div>
-        </div>
-    `).join('');
-}
-
-function showChips(type, val) {
-    const container = document.getElementById(type + '-chips');
-    container.innerHTML = '';
-    let list = (smartMap[type] || []).slice(-3).reverse();
-    if (val) list = smartMap[type].filter(i => i.includes(val.toUpperCase())).slice(0, 3);
-    list.forEach(m => {
-        const chip = document.createElement('div'); chip.className = 'chip'; chip.innerText = m;
-        chip.onclick = () => {
-            document.getElementById('m-' + type).value = m;
-            container.innerHTML = '';
-            if (type === 'nm' && smartMap.pairs[m]) document.getElementById('m-bem').value = smartMap.pairs[m];
-        };
-        container.appendChild(chip);
-    });
-}
-
-function saveTool() {
-    const nm = document.getElementById('m-nm').value.toUpperCase().trim();
-    const bem = document.getElementById('m-bem').value.toUpperCase().trim();
-    if (nm) {
-        if (!smartMap.nm.includes(nm)) smartMap.nm.push(nm);
-        if (bem) {
-            if (!smartMap.bem.includes(bem)) smartMap.bem.push(bem);
-            smartMap.pairs[nm] = bem;
-        }
-        localStorage.setItem('naka_v_final_brain', JSON.stringify(smartMap));
+    if (activeTab === 'std') {
+        const o = ops[document.getElementById('op').value];
+        vcArr = m.vc.map(v => Math.round(v * o.vm * vMult));
+        fArr = o.fr.map(f => (f * m.f * fMult).toFixed(2));
+        gCode = o.g;
+    } else {
+        const rz = parseFloat(document.getElementById('rz').value) || 6.3;
+        const r = parseFloat(document.getElementById('rad').value);
+        // f = sqrt( (Rz * r) / 125 )
+        const fCalc = Math.sqrt((rz * r) / 125);
+        
+        vcArr = m.vc.map(v => Math.round(v * 1.2 * vMult));
+        fArr = [(fCalc*0.75).toFixed(2), fCalc.toFixed(2), (fCalc*1.25).toFixed(2)];
+        gCode = "G96";
+        
+        auf_d = Math.max(m.auf_d, (r * 1.3)).toFixed(2);
+        if (isInstabil) auf_d = (auf_d * 0.7).toFixed(2);
+        document.getElementById('aufmass-box').innerText = `PASSUNG AUFMASS: Ø ${auf_d} mm`;
     }
-    job.tools[editingIdx] = {
-        id: document.getElementById('m-id').value.toUpperCase() || 'T0101',
-        nm: nm, dia: document.getElementById('m-dia').value,
-        bem: bem, revUnten: document.getElementById('m-rev').checked
-    };
-    renderTools(); saveState(); closeModals();
+
+    document.getElementById('f-min').innerText = fArr[0];
+    document.getElementById('f-rec').innerText = fArr[1];
+    document.getElementById('f-max').innerText = fArr[2];
+
+    if (gCode === "G96") {
+        [1,2,3].forEach(i => document.getElementById('u-s'+i).innerText = "m/min");
+        document.getElementById('s-min').innerText = vcArr[0];
+        document.getElementById('s-rec').innerText = vcArr[1];
+        document.getElementById('s-max').innerText = vcArr[2];
+        document.getElementById('code-box').innerText = `G50 S3500\nG96 S${vcArr[1]} M3`;
+    } else {
+        [1,2,3].forEach(i => document.getElementById('u-s'+i).innerText = "U/min");
+        const rpmArr = vcArr.map(v => Math.round((v * 1000) / (Math.PI * dia)));
+        document.getElementById('s-min').innerText = rpmArr[0];
+        document.getElementById('s-rec').innerText = rpmArr[1];
+        document.getElementById('s-max').innerText = rpmArr[2];
+        document.getElementById('code-box').innerText = `G97 S${rpmArr[1]} M3`;
+    }
 }
 
-function openEditModal(i) {
-    editingIdx = i; const t = job.tools[i];
-    document.getElementById('m-id').value = t.id;
-    document.getElementById('m-nm').value = t.nm;
-    document.getElementById('m-dia').value = t.dia || '';
-    document.getElementById('m-bem').value = t.bem || '';
-    document.getElementById('m-rev').checked = !!t.revUnten;
-    document.getElementById('edit-modal').classList.add('active');
-}
-
-function moveTool(i, d) { [job.tools[i], job.tools[i+d]] = [job.tools[i+d], job.tools[i]]; renderTools(); saveState(); }
-function addNewTool() { job.tools.push({id:"T0101", nm:"", dia:"", bem:"", revUnten: false}); renderTools(); openEditModal(job.tools.length - 1); }
-function deleteTool() { job.tools.splice(editingIdx, 1); renderTools(); saveState(); closeModals(); }
-function closeModals() { document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('active')); }
-function showToast(m) { const t = document.getElementById('toast'); t.innerText = m; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2000); }
-
-function copyJSON() {
-    const area = document.createElement("textarea");
-    area.value = JSON.stringify([job], null, 2);
-    document.body.appendChild(area); area.select();
-    document.execCommand('copy'); document.body.removeChild(area);
-    showToast("JSON KOPIERT!");
-}
-
-function downloadJSON() { 
-    const blob = new Blob([JSON.stringify([job], null, 2)], {type: "application/json"});
-    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `Job_${job.num || 'data'}.json`; a.click();
-}
-
-function openImportModal() { document.getElementById('import-modal').classList.add('active'); }
-function processImport() {
-    try {
-        const val = JSON.parse(document.getElementById('import-area').value);
-        job = Array.isArray(val) ? val[0] : val;
-        renderMeta(); renderTools(); saveState(); closeModals(); showToast("Imported");
-    } catch(e) { alert("JSON Error"); }
-}
-
-renderMeta(); renderTools();
+run();
 </script>
+
 </body>
 </html>
