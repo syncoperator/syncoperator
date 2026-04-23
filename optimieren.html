@@ -1,107 +1,153 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CNC Optimizer v2</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>CNC Optimizer Ultra High-Speed</title>
 
-<style>
-body { font-family: Inter, sans-serif; background:#f5f5f7; padding:15px; }
-.container { max-width:480px; margin:auto; }
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
 
-.section { background:#fff; padding:15px; border-radius:15px; margin-bottom:10px; }
+    <style>
+        :root {
+            --bg: #f5f5f7; --card: #ffffff; --accent: #007aff; --text: #1d1d1f;
+            --border: #d2d2d7; --rec-bg: #e7f3ff;
+        }
 
-label { font-size:12px; font-weight:700; display:block; margin-top:10px; }
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: Inter, sans-serif;
+            margin: 0;
+            padding: 15px;
+            display: flex;
+            justify-content: center;
+        }
 
-input, select { width:100%; padding:10px; margin-top:5px; border-radius:10px; border:1px solid #ccc; }
+        .container { width: 100%; max-width: 480px; }
 
-.result { background:#fff; padding:15px; border-radius:15px; }
+        header { text-align:center; margin-bottom:20px; }
+        header h1 { font-weight:900; margin:0; }
 
-.grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; text-align:center; }
+        .tabs { display:flex; background:#e3e3e8; padding:4px; border-radius:12px; margin-bottom:15px; }
+        .tab-btn {
+            flex:1; padding:12px; border:0; border-radius:10px;
+            font-weight:800; background:none; cursor:pointer;
+        }
+        .tab-btn.active { background:#fff; }
 
-.box { background:#f2f2f2; padding:10px; border-radius:10px; }
+        .section {
+            background: var(--card);
+            padding:15px;
+            border-radius:15px;
+            margin-bottom:10px;
+        }
 
-.code { background:#111; color:#0f0; padding:10px; border-radius:10px; margin-top:10px; font-family:monospace; }
-</style>
+        label { font-size:11px; font-weight:800; display:block; margin-top:10px; }
+
+        input, select {
+            width:100%;
+            padding:12px;
+            margin-top:5px;
+            border-radius:10px;
+            border:1px solid var(--border);
+            font-weight:700;
+        }
+
+        .result {
+            background:#fff;
+            padding:15px;
+            border-radius:15px;
+        }
+
+        .grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; text-align:center; }
+
+        .box { background:#f2f2f2; padding:10px; border-radius:10px; }
+
+        .code {
+            background:#111;
+            color:#0f0;
+            padding:10px;
+            border-radius:10px;
+            margin-top:10px;
+            font-family:monospace;
+        }
+    </style>
 </head>
 
 <body>
 
 <div class="container">
 
+<header>
+    <h1>ULTRA OPTIMIZER</h1>
+</header>
+
+<div class="tabs">
+    <button id="t-std-btn" class="tab-btn active" onclick="setTab('std')">STANDARD</button>
+    <button id="t-qual-btn" class="tab-btn" onclick="setTab('qual')">QUALITY</button>
+</div>
+
 <div class="section">
-<label>Material</label>
-<select id="mat">
-<option value="1.4104">1.4104</option>
-<option value="1.4301">1.4301</option>
-<option value="1.4404">1.4404</option>
-<option value="ms58">MS58</option>
-</select>
+    <label>Material</label>
+    <select id="mat" onchange="run()">
+        <option value="1.4104">1.4104</option>
+        <option value="1.4301">1.4301</option>
+        <option value="1.4404">1.4404</option>
+        <option value="ms58">MS58</option>
+    </select>
 
-<label>Operation</label>
-<select id="op">
-<option value="turn_rough">Schruppen</option>
-<option value="turn_finish">Schlichten</option>
-<option value="boring">Bohren</option>
-</select>
+    <label>Operation</label>
+    <select id="op" onchange="run()">
+        <option value="dr_schrupp">Schruppen</option>
+        <option value="dr_fertig">Schlichten</option>
+        <option value="in_schrupp">Innen Schruppen</option>
+        <option value="in_fertig">Innen Schlichten</option>
+        <option value="bohren_hm">Bohren</option>
+    </select>
 
-<label>Diameter (mm)</label>
-<input id="dia" type="number" value="20">
+    <label>Diameter</label>
+    <input id="dia" type="number" value="20" oninput="run()">
 
-<label>Rz (µm)</label>
-<input id="rz" type="number" value="6.3">
+    <label>Rz</label>
+    <input id="rz" type="number" value="6.3" step="0.1" oninput="run()">
 
-<label>Tool Radius (mm)</label>
-<select id="rad">
-<option value="0.2">0.2</option>
-<option value="0.4" selected>0.4</option>
-<option value="0.8">0.8</option>
-</select>
+    <label>Tool Radius</label>
+    <select id="rad" onchange="run()">
+        <option value="0.2">0.2</option>
+        <option value="0.4" selected>0.4</option>
+        <option value="0.8">0.8</option>
+    </select>
 
-<label>
-<input type="checkbox" id="inst"> Instabil
-</label>
+    <label>
+        <input type="checkbox" id="instabil" onchange="run()"> Instabil
+    </label>
 </div>
 
 <div class="result">
-<div class="grid">
-<div class="box">
-<div>MIN Vc</div>
-<div id="v1">0</div>
-</div>
-<div class="box">
-<div>REC Vc</div>
-<div id="v2">0</div>
-</div>
-<div class="box">
-<div>MAX Vc</div>
-<div id="v3">0</div>
-</div>
-</div>
 
-<br>
+    <div class="grid">
+        <div class="box"><div>MIN Vc</div><div id="v1">0</div></div>
+        <div class="box"><div>REC Vc</div><div id="v2">0</div></div>
+        <div class="box"><div>MAX Vc</div><div id="v3">0</div></div>
+    </div>
 
-<div class="grid">
-<div class="box">
-<div>MIN f</div>
-<div id="f1">0</div>
-</div>
-<div class="box">
-<div>REC f</div>
-<div id="f2">0</div>
-</div>
-<div class="box">
-<div>MAX f</div>
-<div id="f3">0</div>
-</div>
-</div>
+    <br>
 
-<div class="code" id="code"></div>
+    <div class="grid">
+        <div class="box"><div>MIN f</div><div id="f1">0</div></div>
+        <div class="box"><div>REC f</div><div id="f2">0</div></div>
+        <div class="box"><div>MAX f</div><div id="f3">0</div></div>
+    </div>
+
+    <div class="code" id="code"></div>
+
 </div>
 
 </div>
 
 <script>
+
+let tab = 'std';
 
 const db = {
 "1.4104": { vc:[150,190,240], f:1.0 },
@@ -111,15 +157,24 @@ const db = {
 };
 
 const ops = {
-turn_rough: { vm:1.0, fr:[0.25,0.35,0.50], g:"G96" },
-turn_finish:{ vm:1.3, fr:[0.08,0.12,0.18], g:"G96" },
-boring:     { vm:0.5, fr:[0.12,0.20,0.28], g:"G97" }
+dr_schrupp:{ vm:1.0, fr:[0.25,0.35,0.50], g:"G96" },
+dr_fertig:{ vm:1.3, fr:[0.08,0.12,0.18], g:"G96" },
+in_schrupp:{ vm:0.85, fr:[0.15,0.25,0.35], g:"G96" },
+in_fertig:{ vm:1.1, fr:[0.06,0.10,0.14], g:"G96" },
+bohren_hm:{ vm:0.5, fr:[0.12,0.20,0.28], g:"G97" }
 };
 
 function clamp(a,b,c){ return Math.max(a,Math.min(b,c)); }
 
 function feedFromRz(rz,r){
-return Math.sqrt((rz*r)/125);
+    return Math.sqrt((rz*r)/125);
+}
+
+function setTab(t){
+    tab = t;
+    document.getElementById('t-std-btn').classList.toggle('active',t==='std');
+    document.getElementById('t-qual-btn').classList.toggle('active',t==='qual');
+    run();
 }
 
 function run(){
@@ -130,8 +185,7 @@ const o = ops[op.value];
 const dia = +dia.value;
 const rz = +rz.value;
 const r = +rad.value;
-
-const inst = inst.checked;
+const inst = instabil.checked;
 
 const vMult = inst ? 0.6 : 1;
 const fMult = inst ? 0.7 : 1;
@@ -142,23 +196,23 @@ const vc = m.vc.map(v => Math.round(v * o.vm * vMult));
 // BASE FEED
 const fBase = o.fr.map(f => f * m.f * fMult);
 
-// RZ LIMIT
+// RZ LIMIT (ключевая логика)
 const fRz = feedFromRz(rz,r);
 
-// DIA FACTOR
-const df = clamp(0.7, Math.sqrt(dia/20), 1.25);
+// diameter influence
+const diaFactor = clamp(0.7, Math.sqrt(dia/20), 1.25);
 
 // FINAL FEED
 const f = fBase.map(x =>
-clamp(0.02, Math.min(x, fRz*df), 1.5).toFixed(2)
+    clamp(0.02, Math.min(x, fRz * diaFactor), 1.5).toFixed(2)
 );
 
-// OUTPUT Vc
+// OUTPUT SPEED
 v1.innerText = vc[0];
 v2.innerText = vc[1];
 v3.innerText = vc[2];
 
-// OUTPUT F
+// OUTPUT FEED
 f1.innerText = f[0];
 f2.innerText = f[1];
 f3.innerText = f[2];
@@ -172,10 +226,6 @@ code.innerText = `G97 S${rpm[1]} M3`;
 }
 
 }
-
-document.querySelectorAll("input,select").forEach(e=>{
-e.addEventListener("input",run);
-});
 
 run();
 
