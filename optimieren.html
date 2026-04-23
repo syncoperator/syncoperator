@@ -1,232 +1,184 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>CNC Optimizer Premium Light</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --bg: #f5f5f7; --card: #ffffff; --accent: #007aff; --text: #1d1d1f; 
-            --border: #d2d2d7; --rec-bg: #e7f3ff; --green: #34c759;
-        }
-        body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; margin: 0; padding: 15px; display: flex; justify-content: center; }
-        .container { width: 100%; max-width: 480px; padding-bottom: 60px; }
-        
-        header { margin-bottom: 25px; text-align: center; }
-        header h1 { margin: 0; font-size: 24px; font-weight: 900; text-transform: uppercase; letter-spacing: -0.5px; color: var(--text); }
-        header span { color: var(--accent); }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CNC Optimizer v2</title>
 
-        .tabs { display: flex; background: #e3e3e8; padding: 4px; border-radius: 12px; margin-bottom: 15px; }
-        .tab-btn { flex: 1; padding: 12px; border: none; border-radius: 9px; font-weight: 800; font-size: 13px; cursor: pointer; color: #86868b; transition: 0.2s; background: none; }
-        .tab-btn.active { background: #fff; color: var(--text); box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+<style>
+body { font-family: Inter, sans-serif; background:#f5f5f7; padding:15px; }
+.container { max-width:480px; margin:auto; }
 
-        .section { background: var(--card); border-radius: 18px; padding: 20px; margin-bottom: 12px; border: 1px solid var(--border); box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
-        .label { display: block; font-size: 10px; font-weight: 800; color: #86868b; text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.5px; }
-        
-        select, input { 
-            width: 100%; padding: 14px; border: 1.5px solid var(--border); border-radius: 12px; 
-            font-size: 16px; font-weight: 700; background: #fff; outline: none; box-sizing: border-box; transition: 0.2s;
-        }
-        select:focus, input:focus { border-color: var(--accent); }
+.section { background:#fff; padding:15px; border-radius:15px; margin-bottom:10px; }
 
-        .geo-card { display: flex; align-items: center; justify-content: space-between; padding: 12px; background: #fbfbfd; border-radius: 12px; border: 1px dashed var(--border); margin-top: 10px; }
-        .geo-card span { font-size: 13px; font-weight: 700; color: #48484a; }
-        
-        .switch { position: relative; display: inline-block; width: 42px; height: 24px; }
-        .switch input { opacity: 0; width: 0; height: 0; }
-        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #d1d1d6; transition: .3s; border-radius: 24px; }
-        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .3s; border-radius: 50%; }
-        input:checked + .slider { background-color: var(--accent); }
-        input:checked + .slider:before { transform: translateX(18px); }
+label { font-size:12px; font-weight:700; display:block; margin-top:10px; }
 
-        .result-card { background: var(--card); border-radius: 20px; padding: 22px; border: 1px solid var(--border); box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
-        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 15px; }
-        .val-card { display: flex; flex-direction: column; align-items: center; padding: 14px 2px; border-radius: 14px; background: #f5f5f7; border: 1px solid transparent; }
-        .val-card.rec { background: var(--rec-bg); border: 1.5px solid var(--accent); }
-        .v-l { font-size: 9px; font-weight: 800; color: #86868b; margin-bottom: 4px; text-transform: uppercase; }
-        .v-m { font-size: 19px; font-weight: 900; color: var(--text); }
-        .v-u { font-size: 10px; font-weight: 700; color: #86868b; margin-top: 2px; }
+input, select { width:100%; padding:10px; margin-top:5px; border-radius:10px; border:1px solid #ccc; }
 
-        .aufmass-label { font-size: 13px; font-weight: 900; color: #1a7f37; text-align: center; background: #ecfdf3; padding: 14px; border-radius: 12px; margin-top: 12px; border: 1px solid #ccebd7; }
-        .code-box { background: #1c1c1e; color: var(--green); padding: 18px; border-radius: 14px; font-family: 'SF Mono', monospace; text-align: center; margin-top: 15px; font-size: 15px; font-weight: 600; border: 1px solid #38383a; }
-        .hidden { display: none !important; }
-    </style>
+.result { background:#fff; padding:15px; border-radius:15px; }
+
+.grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; text-align:center; }
+
+.box { background:#f2f2f2; padding:10px; border-radius:10px; }
+
+.code { background:#111; color:#0f0; padding:10px; border-radius:10px; margin-top:10px; font-family:monospace; }
+</style>
 </head>
+
 <body>
 
 <div class="container">
-    <header><h1>CNC <span>OPTIMIZER</span></h1></header>
 
-    <div class="tabs">
-        <button id="t-std-btn" class="tab-btn active" onclick="setTab('std')">STANDARD</button>
-        <button id="t-qual-btn" class="tab-btn" onclick="setTab('qual')">QUALITY (RZ)</button>
-    </div>
+<div class="section">
+<label>Material</label>
+<select id="mat">
+<option value="1.4104">1.4104</option>
+<option value="1.4301">1.4301</option>
+<option value="1.4404">1.4404</option>
+<option value="ms58">MS58</option>
+</select>
 
-    <div class="section">
-        <label class="label">Material (Werkstoff)</label>
-        <select id="mat" onchange="run()">
-            <option value="1.4104">1.4104 (X14CrMoS17)</option>
-            <option value="1.4301">1.4301 (V2A)</option>
-            <option value="1.4404">1.4404 (V4A)</option>
-            <option value="1.4112">1.4112 (X90CrMoV18)</option>
-            <option value="F75">CuAl10Ni5Fe4 (F75)</option>
-            <option value="2.0966">2.0966 (Bronze)</option>
-            <option value="ms58">MS58 (Messing)</option>
-        </select>
+<label>Operation</label>
+<select id="op">
+<option value="turn_rough">Schruppen</option>
+<option value="turn_finish">Schlichten</option>
+<option value="boring">Bohren</option>
+</select>
 
-        <div class="geo-card">
-            <span>Instabil / Vibration / Dünn</span>
-            <label class="switch">
-                <input type="checkbox" id="instabil" onchange="run()">
-                <span class="slider"></span>
-            </label>
-        </div>
-    </div>
+<label>Diameter (mm)</label>
+<input id="dia" type="number" value="20">
 
-    <div id="tab-std" class="section">
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-            <div>
-                <label class="label">Ø Durchm. (mm)</label>
-                <input type="number" id="dia" value="20" oninput="run()">
-            </div>
-            <div>
-                <label class="label">Verfahren</label>
-                <select id="op" onchange="run()">
-                    <option value="dr_schrupp">Schruppen</option>
-                    <option value="dr_fertig">Schlichten</option>
-                    <option value="in_schrupp">Innen Schruppen</option>
-                    <option value="in_fertig">Innen Schlichten</option>
-                    <option value="stechen">Einstechen</option>
-                    <option value="bohren_hm">Bohren HM</option>
-                    <option value="bohren_wp">Bohrer WP</option>
-                    <option value="abstechen">Abstechen</option>
-                </select>
-            </div>
-        </div>
-    </div>
+<label>Rz (µm)</label>
+<input id="rz" type="number" value="6.3">
 
-    <div id="tab-qual" class="section hidden">
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-            <div>
-                <label class="label">Soll Rz (µm)</label>
-                <input type="number" id="rz" value="6.3" step="0.1" oninput="run()">
-            </div>
-            <div>
-                <label class="label">Radius r (mm)</label>
-                <select id="rad" onchange="run()">
-                    <option value="0.1">0.1 mm</option>
-                    <option value="0.2">0.2 mm</option>
-                    <option value="0.4" selected>0.4 mm</option>
-                    <option value="0.8">0.8 mm</option>
-                </select>
-            </div>
-        </div>
-    </div>
+<label>Tool Radius (mm)</label>
+<select id="rad">
+<option value="0.2">0.2</option>
+<option value="0.4" selected>0.4</option>
+<option value="0.8">0.8</option>
+</select>
 
-    <div class="result-card">
-        <label class="label" style="text-align:center; margin-bottom:12px">Berechnete Schnittdaten</label>
-        
-        <div class="grid-3">
-            <div class="val-card"><span class="v-l">MIN</span><span id="s-min" class="v-m">0</span><span class="v-u" id="u-s1">m/min</span></div>
-            <div class="val-card rec"><span class="v-l">REC</span><span id="s-rec" class="v-m">0</span><span class="v-u" id="u-s2">m/min</span></div>
-            <div class="val-card"><span class="v-l">MAX</span><span id="s-max" class="v-m">0</span><span class="v-u" id="u-s3">m/min</span></div>
-        </div>
+<label>
+<input type="checkbox" id="inst"> Instabil
+</label>
+</div>
 
-        <div class="grid-3">
-            <div class="val-card"><span class="v-l">MIN</span><span id="f-min" class="v-m">0</span><span class="v-u">mm/U</span></div>
-            <div class="val-card rec"><span class="v-l">REC</span><span id="f-rec" class="v-m">0</span><span class="v-u">mm/U</span></div>
-            <div class="val-card"><span class="v-l">MAX</span><span id="f-max" class="v-m">0</span><span class="v-u">mm/U</span></div>
-        </div>
+<div class="result">
+<div class="grid">
+<div class="box">
+<div>MIN Vc</div>
+<div id="v1">0</div>
+</div>
+<div class="box">
+<div>REC Vc</div>
+<div id="v2">0</div>
+</div>
+<div class="box">
+<div>MAX Vc</div>
+<div id="v3">0</div>
+</div>
+</div>
 
-        <div id="aufmass-box" class="aufmass-label hidden">Empf. Aufmaß: Ø 0.00 mm</div>
-        <div id="code-box" class="code-box">G-- S---- M3</div>
-    </div>
+<br>
+
+<div class="grid">
+<div class="box">
+<div>MIN f</div>
+<div id="f1">0</div>
+</div>
+<div class="box">
+<div>REC f</div>
+<div id="f2">0</div>
+</div>
+<div class="box">
+<div>MAX f</div>
+<div id="f3">0</div>
+</div>
+</div>
+
+<div class="code" id="code"></div>
+</div>
+
 </div>
 
 <script>
-let activeTab = 'std';
+
 const db = {
-    "1.4104": { vc: [140, 175, 215], f: 1.0, auf_d: 0.4 },
-    "1.4301": { vc: [100, 135, 165], f: 0.85, auf_d: 0.5 },
-    "1.4404": { vc: [95, 125, 155], f: 0.8, auf_d: 0.5 },
-    "1.4112": { vc: [80, 105, 135], f: 0.75, auf_d: 0.6 },
-    "F75":    { vc: [80, 115, 145], f: 0.85, auf_d: 0.5 },
-    "2.0966": { vc: [110, 140, 170], f: 0.9, auf_d: 0.4 },
-    "ms58":   { vc: [240, 310, 400], f: 1.2, auf_d: 0.3 }
+"1.4104": { vc:[150,190,240], f:1.0 },
+"1.4301": { vc:[110,145,180], f:0.85 },
+"1.4404": { vc:[100,135,170], f:0.8 },
+"ms58":   { vc:[250,350,450], f:1.2 }
 };
 
 const ops = {
-    "dr_schrupp": { g: "G96", vm: 1.0, fr: [0.22, 0.32, 0.45] },
-    "dr_fertig":  { g: "G96", vm: 1.25, fr: [0.08, 0.12, 0.18] },
-    "in_schrupp": { g: "G96", vm: 0.85, fr: [0.15, 0.22, 0.30] },
-    "in_fertig":  { g: "G96", vm: 1.05, fr: [0.06, 0.10, 0.14] },
-    "stechen":    { g: "G96", vm: 0.65, fr: [0.07, 0.11, 0.15] },
-    "bohren_hm":  { g: "G97", vm: 0.45, fr: [0.12, 0.18, 0.25] },
-    "bohren_wp":  { g: "G97", vm: 0.60, fr: [0.08, 0.14, 0.20] },
-    "abstechen":  { g: "G97", vm: 0.50, fr: [0.06, 0.09, 0.13] }
+turn_rough: { vm:1.0, fr:[0.25,0.35,0.50], g:"G96" },
+turn_finish:{ vm:1.3, fr:[0.08,0.12,0.18], g:"G96" },
+boring:     { vm:0.5, fr:[0.12,0.20,0.28], g:"G97" }
 };
 
-function setTab(t) {
-    activeTab = t;
-    document.getElementById('t-std-btn').classList.toggle('active', t === 'std');
-    document.getElementById('t-qual-btn').classList.toggle('active', t === 'qual');
-    document.getElementById('tab-std').classList.toggle('hidden', t !== 'std');
-    document.getElementById('tab-qual').classList.toggle('hidden', t !== 'qual');
-    document.getElementById('aufmass-box').classList.toggle('hidden', t !== 'qual');
-    run();
+function clamp(a,b,c){ return Math.max(a,Math.min(b,c)); }
+
+function feedFromRz(rz,r){
+return Math.sqrt((rz*r)/125);
 }
 
-function run() {
-    const m = db[document.getElementById('mat').value];
-    const dia = parseFloat(document.getElementById('dia').value) || 1;
-    const isInstabil = document.getElementById('instabil').checked;
-    
-    let vcArr, fArr, gCode, auf_d;
-    const vMult = isInstabil ? 0.65 : 1.0;
-    const fMult = isInstabil ? 0.75 : 1.0;
+function run(){
 
-    if (activeTab === 'std') {
-        const o = ops[document.getElementById('op').value];
-        vcArr = m.vc.map(v => Math.round(v * o.vm * vMult));
-        fArr = o.fr.map(f => (f * m.f * fMult).toFixed(2));
-        gCode = o.g;
-    } else {
-        const rz = parseFloat(document.getElementById('rz').value) || 6.3;
-        const r = parseFloat(document.getElementById('rad').value);
-        // f = sqrt( (Rz * r) / 125 )
-        const fCalc = Math.sqrt((rz * r) / 125);
-        
-        vcArr = m.vc.map(v => Math.round(v * 1.2 * vMult));
-        fArr = [(fCalc*0.75).toFixed(2), fCalc.toFixed(2), (fCalc*1.25).toFixed(2)];
-        gCode = "G96";
-        
-        auf_d = Math.max(m.auf_d, (r * 1.3)).toFixed(2);
-        if (isInstabil) auf_d = (auf_d * 0.7).toFixed(2);
-        document.getElementById('aufmass-box').innerText = `PASSUNG AUFMASS: Ø ${auf_d} mm`;
-    }
+const m = db[mat.value];
+const o = ops[op.value];
 
-    document.getElementById('f-min').innerText = fArr[0];
-    document.getElementById('f-rec').innerText = fArr[1];
-    document.getElementById('f-max').innerText = fArr[2];
+const dia = +dia.value;
+const rz = +rz.value;
+const r = +rad.value;
 
-    if (gCode === "G96") {
-        [1,2,3].forEach(i => document.getElementById('u-s'+i).innerText = "m/min");
-        document.getElementById('s-min').innerText = vcArr[0];
-        document.getElementById('s-rec').innerText = vcArr[1];
-        document.getElementById('s-max').innerText = vcArr[2];
-        document.getElementById('code-box').innerText = `G50 S3500\nG96 S${vcArr[1]} M3`;
-    } else {
-        [1,2,3].forEach(i => document.getElementById('u-s'+i).innerText = "U/min");
-        const rpmArr = vcArr.map(v => Math.round((v * 1000) / (Math.PI * dia)));
-        document.getElementById('s-min').innerText = rpmArr[0];
-        document.getElementById('s-rec').innerText = rpmArr[1];
-        document.getElementById('s-max').innerText = rpmArr[2];
-        document.getElementById('code-box').innerText = `G97 S${rpmArr[1]} M3`;
-    }
+const inst = inst.checked;
+
+const vMult = inst ? 0.6 : 1;
+const fMult = inst ? 0.7 : 1;
+
+// SPEED
+const vc = m.vc.map(v => Math.round(v * o.vm * vMult));
+
+// BASE FEED
+const fBase = o.fr.map(f => f * m.f * fMult);
+
+// RZ LIMIT
+const fRz = feedFromRz(rz,r);
+
+// DIA FACTOR
+const df = clamp(0.7, Math.sqrt(dia/20), 1.25);
+
+// FINAL FEED
+const f = fBase.map(x =>
+clamp(0.02, Math.min(x, fRz*df), 1.5).toFixed(2)
+);
+
+// OUTPUT Vc
+v1.innerText = vc[0];
+v2.innerText = vc[1];
+v3.innerText = vc[2];
+
+// OUTPUT F
+f1.innerText = f[0];
+f2.innerText = f[1];
+f3.innerText = f[2];
+
+// CODE
+if(o.g==="G96"){
+code.innerHTML = `G50 S5000<br>G96 S${vc[1]} M3`;
+}else{
+const rpm = vc.map(v => Math.round((v*1000)/(Math.PI*dia)));
+code.innerText = `G97 S${rpm[1]} M3`;
 }
+
+}
+
+document.querySelectorAll("input,select").forEach(e=>{
+e.addEventListener("input",run);
+});
 
 run();
+
 </script>
 
 </body>
