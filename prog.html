@@ -3,220 +3,199 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>CNC PRO SIMULATOR</title>
+    <title>CNC SMART SIMULATOR</title>
     <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@500&family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
         :root {
             --bg: #f2f2f7; --card: #ffffff; --accent: #007aff; --text: #1c1c1e;
-            --border: #d1d1d6; --comment: #8e8e93;
-            --x-col: #ff2d55; --z-col: #007aff; --y-col: #5856d6;
-            --c-col: #ff9500; --b-col: #af52de; --a-col: #55efc4;
-            --g-col: #d70015; --m-col: #8e8e93;
+            --border: #d1d1d6; --x-col: #ff2d55; --z-col: #007aff;
         }
 
-        body, html { 
-            margin: 0; padding: 0; height: 100%; width: 100%;
-            background: var(--bg); font-family: 'Inter', sans-serif;
-            overflow: hidden; position: fixed;
-        }
+        body, html { margin: 0; padding: 0; height: 100%; background: var(--bg); font-family: 'Inter', sans-serif; overflow: hidden; }
 
         .app { display: flex; flex-direction: column; height: 100vh; }
 
-        /* Панель датчиков (DRO) */
-        .sensor-panel {
-            display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px;
-            padding: 10px; background: #1c1c1e; color: #fff;
-            border-bottom: 2px solid var(--accent);
+        /* Визуализатор контура */
+        .visualizer-container {
+            width: 100%; height: 180px; background: #1c1c1e; position: relative;
+            border-bottom: 2px solid var(--accent); overflow: hidden;
+        }
+        #cncCanvas { width: 100%; height: 100%; display: block; }
+        
+        .canvas-labels {
+            position: absolute; top: 5px; left: 10px; color: #fff; 
+            font-size: 10px; font-family: monospace; pointer-events: none;
         }
 
-        .sensor { display: flex; flex-direction: column; align-items: center; border: 1px solid #3a3a3c; padding: 5px; border-radius: 6px; }
-        .s-label { font-size: 9px; font-weight: 800; color: #8e8e93; margin-bottom: 2px; }
-        .s-value { font-family: 'Fira Code', monospace; font-size: 16px; font-weight: 700; }
-        .val-x { color: var(--x-col); } .val-z { color: var(--z-col); } .val-y { color: var(--y-col); }
-        .val-c { color: var(--c-col); } .val-b { color: var(--b-col); } .val-a { color: var(--a-col); }
-
-        header {
-            padding: 12px 16px; background: #fff;
-            border-bottom: 0.5px solid var(--border);
-            display: flex; justify-content: space-between; align-items: center;
+        /* Датчики */
+        .dro-bar {
+            display: flex; background: #2c2c2e; padding: 8px; gap: 10px;
+            border-bottom: 1px solid #3a3a3c;
         }
+        .dro-item { flex: 1; text-align: center; background: #1c1c1e; border-radius: 6px; padding: 4px; }
+        .dro-l { font-size: 8px; color: #8e8e93; display: block; }
+        .dro-v { font-family: 'Fira Code', monospace; font-size: 14px; font-weight: 700; }
 
-        .main-editor { flex: 1; display: flex; overflow: hidden; position: relative; background: #fff; }
-
-        #line-numbers {
-            width: 35px; padding: 15px 5px; text-align: right;
-            font-family: 'Fira Code', monospace; font-size: 13px;
-            color: #c7c7cc; background: #fafafa; border-right: 1px solid var(--border);
-            line-height: 1.5; pointer-events: none;
+        /* Редактор */
+        .editor-container { flex: 1; display: flex; position: relative; background: #fff; overflow: hidden; }
+        #line-nums {
+            width: 35px; padding: 15px 5px; text-align: right; font-family: 'Fira Code', monospace;
+            font-size: 12px; color: #aeaeb2; background: #f9f9f9; border-right: 1px solid var(--border);
         }
-
-        .scroll-container { flex: 1; overflow: auto; position: relative; }
-
-        #code-input, #code-render {
+        .scroll-area { flex: 1; position: relative; overflow: auto; }
+        #code-input, #code-view {
             width: 100%; min-height: 100%; padding: 15px; box-sizing: border-box;
             font-family: 'Fira Code', monospace; font-size: 14px; line-height: 1.5;
-            white-space: pre; position: absolute; top: 0; left: 0;
-            border: none; outline: none; margin: 0;
+            white-space: pre; position: absolute; top: 0; left: 0; border: none; outline: none;
         }
+        #code-input { color: transparent; background: transparent; z-index: 2; caret-color: #000; -webkit-text-fill-color: transparent; }
+        #code-view { z-index: 1; pointer-events: none; color: #1c1c1e; }
 
-        #code-input {
-            color: transparent; caret-color: var(--text); background: transparent;
-            z-index: 2; -webkit-text-fill-color: transparent;
-        }
+        /* Подсветка */
+        .c-x { color: var(--x-col); font-weight: bold; }
+        .c-z { color: var(--z-col); font-weight: bold; }
+        .c-g { color: #d70015; font-weight: bold; }
+        .c-comment { color: #8e8e93; font-style: italic; background: #f2f2f7; }
 
-        #code-render { z-index: 1; pointer-events: none; }
-
-        /* Цвета синтаксиса */
-        .c-x { color: var(--x-col); font-weight: 800; }
-        .c-z { color: var(--z-col); font-weight: 800; }
-        .c-y { color: var(--y-col); font-weight: 800; }
-        .c-c { color: var(--c-col); font-weight: 800; }
-        .c-b { color: var(--b-col); font-weight: 800; }
-        .c-a { color: var(--a-col); font-weight: 800; }
-        .c-g { color: var(--g-col); font-weight: 800; }
-        .c-comment { color: var(--comment); background: #f2f2f7; border-radius: 3px; }
-
-        .kb-helper {
-            padding: 10px; background: #d1d3d9; display: grid;
-            grid-template-columns: repeat(5, 1fr); gap: 6px;
-        }
-
-        .kb-btn {
-            height: 40px; background: #fff; border-radius: 8px; border: none;
-            font-weight: 900; box-shadow: 0 2px 0 rgba(0,0,0,0.2);
-            font-size: 14px; color: var(--text);
-        }
-        
-        .kb-btn:active { transform: translateY(2px); box-shadow: none; }
+        /* Клавиатура */
+        .kb { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; padding: 8px; background: #d1d3d9; }
+        .kb-btn { height: 40px; border-radius: 6px; border: none; background: #fff; font-weight: 900; font-size: 13px; box-shadow: 0 1px 0 #999; }
+        .kb-btn:active { background: #e0e0e0; box-shadow: none; }
     </style>
 </head>
 <body>
 
 <div class="app">
-    <div class="sensor-panel">
-        <div class="sensor"><span class="s-label">X-AXIS</span><span id="dro-x" class="s-value val-x">0.000</span></div>
-        <div class="sensor"><span class="s-label">Z-AXIS</span><span id="dro-z" class="s-value val-z">0.000</span></div>
-        <div class="sensor"><span class="s-label">Y-AXIS</span><span id="dro-y" class="s-value val-y">0.000</span></div>
-        <div class="sensor"><span class="s-label">C-AXIS</span><span id="dro-c" class="s-value val-c">0.000</span></div>
-        <div class="sensor"><span class="s-label">B-AXIS</span><span id="dro-b" class="s-value val-b">0.000</span></div>
-        <div class="sensor"><span class="s-label">A-AXIS</span><span id="dro-a" class="s-value val-a">0.000</span></div>
+    <div class="visualizer-container">
+        <div class="canvas-labels">SIMULATION VIEW (XZ)</div>
+        <canvas id="cncCanvas"></canvas>
     </div>
 
-    <header>
-        <div style="font-weight:900; font-size:14px;">CNC<span>SIM</span> PRO</div>
-        <div style="display:flex; gap:8px;">
-            <button class="kb-btn" style="width:70px; height:30px; font-size:10px;" onclick="downloadFile()">EXPORT</button>
-        </div>
-    </header>
+    <div class="dro-bar">
+        <div class="dro-item"><span class="dro-l">X-POS</span><span id="v-x" class="dro-v" style="color:var(--x-col)">0.000</span></div>
+        <div class="dro-item"><span class="dro-l">Z-POS</span><span id="v-z" class="dro-v" style="color:var(--z-col)">0.000</span></div>
+        <div class="dro-item"><span class="dro-l">LINE</span><span id="v-line" class="dro-v" style="color:#fff">1</span></div>
+    </div>
 
-    <div class="main-editor">
-        <div id="line-numbers">1</div>
-        <div class="scroll-container" onscroll="syncScroll()">
-            <div id="code-render"></div>
-            <textarea id="code-input" spellcheck="false" 
-                oninput="updateEditor()" 
-                onkeyup="trackPosition()" 
-                onclick="trackPosition()"
-                onscroll="syncScroll()"></textarea>
+    <div class="editor-container">
+        <div id="line-nums">1</div>
+        <div class="scroll-area" onscroll="syncScroll(this)">
+            <div id="code-view"></div>
+            <textarea id="code-input" spellcheck="false" oninput="process()" onclick="process()" onkeyup="process()"></textarea>
         </div>
     </div>
 
-    <div class="kb-helper">
-        <button class="kb-btn" onclick="insert('X')">X</button>
-        <button class="kb-btn" onclick="insert('Z')">Z</button>
-        <button class="kb-btn" onclick="insert('Y')">Y</button>
-        <button class="kb-btn" onclick="insert('C')">C</button>
-        <button class="kb-btn" onclick="insert('G')">G</button>
-        <button class="kb-btn" onclick="insert('M')">M</button>
-        <button class="kb-btn" onclick="insert('.')">.</button>
-        <button class="kb-btn" onclick="insert('-')">-</button>
-        <button class="kb-btn" onclick="insert('F')">F</button>
-        <button class="kb-btn" style="background:#ff3b30; color:#fff;" onclick="backspace()">⌫</button>
+    <div class="kb">
+        <button class="kb-btn" onclick="add('X')">X</button>
+        <button class="kb-btn" onclick="add('Z')">Z</button>
+        <button class="kb-btn" onclick="add('G1 ')">G1</button>
+        <button class="kb-btn" onclick="add('G0 ')">G0</button>
+        <button class="kb-btn" onclick="add('.')">.</button>
+        <button class="kb-btn" style="background:#ff3b30; color:#fff;" onclick="bs()">⌫</button>
     </div>
 </div>
 
 <script>
     const input = document.getElementById('code-input');
-    const render = document.getElementById('code-render');
-    const lnum = document.getElementById('line-numbers');
+    const view = document.getElementById('code-view');
+    const lnum = document.getElementById('line-nums');
+    const canvas = document.getElementById('cncCanvas');
+    const ctx = canvas.getContext('2d');
 
-    function updateEditor() {
-        let val = input.value;
+    function process() {
+        updateUI();
+        drawSim();
+    }
+
+    function updateUI() {
+        const val = input.value;
         const lines = val.split('\n');
         lnum.innerHTML = lines.map((_, i) => i + 1).join('<br>');
-
-        let html = val
+        
+        // Подсветка
+        view.innerHTML = val
             .replace(/&/g, "&amp;").replace(/</g, "&lt;")
             .replace(/\((.*?)\)/g, '<span class="c-comment">($1)</span>')
             .replace(/(G\d+)/gi, '<span class="c-g">$1</span>')
             .replace(/(X-?\d*\.?\d+)/gi, '<span class="c-x">$1</span>')
-            .replace(/(Z-?\d*\.?\d+)/gi, '<span class="c-z">$1</span>')
-            .replace(/(Y-?\d*\.?\d+)/gi, '<span class="c-y">$1</span>')
-            .replace(/(C-?\d*\.?\d+)/gi, '<span class="c-c">$1</span>')
-            .replace(/(B-?\d*\.?\d+)/gi, '<span class="c-b">$1</span>')
-            .replace(/(A-?\d*\.?\d+)/gi, '<span class="c-a">$1</span>');
+            .replace(/(Z-?\d*\.?\d+)/gi, '<span class="c-z">$1</span>');
 
-        render.innerHTML = html + "\n";
-    }
-
-    // Симулятор датчиков: вытягиваем значения из текущей строки
-    function trackPosition() {
-        const text = input.value;
+        // DRO (текущая строка)
         const cursor = input.selectionStart;
-        const lines = text.substring(0, cursor).split('\n');
-        const currentLineText = text.split('\n')[lines.length - 1];
-
-        updateDRO('X', currentLineText, 'dro-x');
-        updateDRO('Z', currentLineText, 'dro-z');
-        updateDRO('Y', currentLineText, 'dro-y');
-        updateDRO('C', currentLineText, 'dro-c');
-        updateDRO('B', currentLineText, 'dro-b');
-        updateDRO('A', currentLineText, 'dro-a');
+        const curLineIdx = val.substring(0, cursor).split('\n').length - 1;
+        document.getElementById('v-line').innerText = curLineIdx + 1;
+        
+        const lineText = lines[curLineIdx];
+        const mx = lineText.match(/X(-?\d*\.?\d+)/i);
+        const mz = lineText.match(/Z(-?\d*\.?\d+)/i);
+        if(mx) document.getElementById('v-x').innerText = parseFloat(mx[1]).toFixed(3);
+        if(mz) document.getElementById('v-z').innerText = parseFloat(mz[1]).toFixed(3);
     }
 
-    function updateDRO(axis, line, elementId) {
-        const regex = new RegExp(`${axis}(-?\\d*\\.?\\d+)`, 'i');
-        const match = line.match(regex);
-        if (match) {
-            document.getElementById(elementId).innerText = parseFloat(match[1]).toFixed(3);
-        }
+    function drawSim() {
+        canvas.width = canvas.offsetWidth;
+        canvas.height = canvas.offsetHeight;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        const lines = input.value.split('\n');
+        let curX = 0, curZ = 0;
+        let scale = 2; // Масштаб
+        let offX = canvas.width / 2;
+        let offZ = canvas.height / 2;
+
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.strokeStyle = '#3a3a3c'; // Сетка
+        ctx.moveTo(0, offZ); ctx.lineTo(canvas.width, offZ);
+        ctx.moveTo(offX, 0); ctx.lineTo(offX, canvas.height);
+        ctx.stroke();
+
+        ctx.translate(offX, offZ);
+
+        lines.forEach(line => {
+            const mx = line.match(/X(-?\d*\.?\d+)/i);
+            const mz = line.match(/Z(-?\d*\.?\d+)/i);
+            const isG0 = /G0/i.test(line);
+
+            let newX = mx ? parseFloat(mx[1]) : curX;
+            let newZ = mz ? parseFloat(mz[1]) : curZ;
+
+            ctx.beginPath();
+            ctx.strokeStyle = isG0 ? '#ff3b30' : '#007aff';
+            // В токарной графике: Z - это горизонталь, X - вертикаль (диаметр)
+            ctx.moveTo(curZ * scale, -curX * scale);
+            ctx.lineTo(newZ * scale, -newX * scale);
+            ctx.stroke();
+
+            curX = newX; curZ = newZ;
+        });
     }
 
-    function syncScroll() {
-        render.scrollTop = input.scrollTop;
-        lnum.scrollTop = input.scrollTop;
+    function syncScroll(el) {
+        view.scrollTop = el.scrollTop;
+        lnum.scrollTop = el.scrollTop;
     }
 
-    function insert(t) {
-        const start = input.selectionStart;
-        const end = input.selectionEnd;
-        input.value = input.value.substring(0, start) + t + input.value.substring(end);
-        input.selectionStart = input.selectionEnd = start + t.length;
-        updateEditor();
-        trackPosition();
+    function add(t) {
+        const s = input.selectionStart;
+        input.value = input.value.substring(0, s) + t + input.value.substring(input.selectionEnd);
+        input.selectionStart = input.selectionEnd = s + t.length;
+        process();
         input.focus();
     }
 
-    function backspace() {
-        const start = input.selectionStart;
-        if (start > 0) {
-            input.value = input.value.substring(0, start - 1) + input.value.substring(start);
-            input.selectionStart = input.selectionEnd = start - 1;
-            updateEditor();
+    function bs() {
+        const s = input.selectionStart;
+        if(s > 0) {
+            input.value = input.value.substring(0, s-1) + input.value.substring(s);
+            input.selectionStart = input.selectionEnd = s-1;
+            process();
         }
     }
 
-    function downloadFile() {
-        const blob = new Blob([input.value], {type: 'text/plain'});
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob); a.download = 'SIM_PROG.NC'; a.click();
-    }
-
-    [span_0](start_span)[span_1](start_span)// Стартовый пример[span_0](end_span)[span_1](end_span)
-    input.value = "(START SIMULATION)\nN1 G54 M41\nG0 X120.5 Z2.0 C0\nG1 Z-25.0 F0.2\nG1 X45.32 Z-50.0\nM30";
-    updateEditor();
-    trackPosition();
+    // Пример контура (Schlichten)
+    input.value = "G0 X0 Z2\nG1 Z0 F0.2\nG1 X20 Z0\nG1 X24 Z-2\nG1 Z-30\nG1 X40 Z-50\nG0 X100 Z100";
+    process();
 </script>
-
 </body>
 </html>
