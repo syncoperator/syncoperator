@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CNC Code Studio - Light Premium</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #f8f9fa;
+            --card-bg: #ffffff;
+            --text-main: #1d1d1f;
+            --accent: #007aff;
+            --border: #d2d2d7;
+            --comment: #86868b;
+            --gcode: #d70015; /* Красный для G-команд */
+            --mcode: #af52de; /* Фиолетовый для M-команд */
+            --coord: #0071e3; /* Синий для X, Z, Y */
+            --param: #64d2ff; /* Голубой для параметров */
+            --feed: #34c759;  /* Зеленый для подач F/S */
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .editor-container {
+            width: 100%;
+            max-width: 900px;
+            background: var(--card-bg);
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+            border: 1px solid var(--border);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            height: 90vh;
+        }
+
+        /* Toolbar */
+        .toolbar {
+            padding: 15px 20px;
+            background: #fff;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .toolbar h2 {
+            margin: 0;
+            font-size: 16px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: white;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .btn:hover { background: #f5f5f7; border-color: var(--accent); }
+        .btn.primary { background: var(--accent); color: white; border: none; }
+
+        /* Code Area */
+        .code-area {
+            display: flex;
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .line-numbers {
+            padding: 15px 10px;
+            background: #f5f5f7;
+            border-right: 1px solid var(--border);
+            text-align: right;
+            font-family: 'Fira Code', monospace;
+            font-size: 14px;
+            color: #aeaeb2;
+            user-select: none;
+            min-width: 40px;
+        }
+
+        #editor {
+            flex: 1;
+            padding: 15px;
+            font-family: 'Fira Code', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            outline: none;
+            white-space: pre;
+            overflow-y: auto;
+            tab-size: 4;
+            color: var(--text-main);
+        }
+
+        /* Syntax Highlighting */
+        .cnc-comment { color: var(--comment); font-style: italic; }
+        .cnc-g { color: var(--gcode); font-weight: bold; }
+        .cnc-m { color: var(--mcode); font-weight: bold; }
+        .cnc-xyz { color: var(--coord); }
+        .cnc-fs { color: var(--feed); font-weight: 600; }
+        .cnc-block { color: #f56300; font-weight: bold; } /* N1, N2... */
+
+        /* Footer */
+        .footer {
+            padding: 10px 20px;
+            background: #f5f5f7;
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--comment);
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+        }
+    </style>
+</head>
+<body>
+
+<div class="editor-container">
+    <div class="toolbar">
+        <div>
+            <span style="font-size: 10px; color: var(--accent); display: block; font-weight: 800;">T-01 CNC VIEW</span>
+            <h2>Editor <span>Premium</span></h2>
+        </div>
+        <div class="btn-group">
+            <button class="btn" onclick="exportData()">JSON Export</button>
+            <button class="btn primary" onclick="saveCode()">Save NC</button>
+        </div>
+    </div>
+
+    <div class="code-area">
+        <div class="line-numbers" id="line-numbers">1</div>
+        <div id="editor" contenteditable="true" spellcheck="false" oninput="handleInput()"></div>
+    </div>
+
+    <div class="footer">
+        <span>MODE: G-CODE LATHE</span>
+        <span id="char-count">0 Chars</span>
+    </div>
+</div>
+
+<script>
+    const editor = document.getElementById('editor');
+    const lineNumbers = document.getElementById('line-numbers');
+    const charCount = document.getElementById('char-count');
+
+    // Пример программы из вашего запроса
+    const initialCode = `% 
+O1407(PK231850RO)
+(G54-HAUPTSPINDEL) 
+G50 S3500 
+N1 G54 M41 
+G0 G99 T0101 M765 
+G96 S180 M3
+M8 
+G0 X50 Z2
+G1 Z.1 F.2 
+G1 X0 F.12 
+G28 U0 W0
+M30
+%`;
+
+    function highlight(text) {
+        // Комментарии (в скобках)
+        text = text.replace(/\((.*?)\)/g, '<span class="cnc-comment">($1)</span>');
+        // G-коды
+        text = text.replace(/(G\d+)/gi, '<span class="cnc-g">$1</span>');
+        // M-коды
+        text = text.replace(/(M\d+)/gi, '<span class="cnc-m">$1</span>');
+        // Координаты X, Z, Y, U, W, R, A
+        text = text.replace(/([XYZUVWRA][-]?\d*\.?\d+)/gi, '<span class="cnc-xyz">$1</span>');
+        // Подача и обороты F, S
+        text = text.replace(/([FS]\d*\.?\d+)/gi, '<span class="cnc-fs">$1</span>');
+        // Номера блоков N
+        text = text.replace(/(N\d+)/gi, '<span class="cnc-block">$1</span>');
+        
+        return text;
+    }
+
+    function handleInput() {
+        const text = editor.innerText;
+        updateLineNumbers(text);
+        updateStats(text);
+        
+        // Сохраняем позицию курсора (упрощенно для стабильности)
+        const selection = window.getSelection();
+        const range = selection.getRangeAt(0);
+        const offset = range.startOffset;
+
+        // В реальном сложном редакторе здесь используется Diffing, 
+        // для легкого модуля применяем подсветку при вставке или паузе
+    }
+
+    function updateLineNumbers(text) {
+        const lines = text.split('\n').length;
+        let numbers = '';
+        for (let i = 1; i <= lines; i++) {
+            numbers += i + '<br>';
+        }
+        lineNumbers.innerHTML = numbers;
+    }
+
+    function updateStats(text) {
+        charCount.innerText = text.length + ' Chars';
+    }
+
+    function saveCode() {
+        alert('Programm gespeichert!');
+    }
+
+    function exportData() {
+        const data = {
+            filename: "231850RO.O",
+            content: editor.innerText,
+            timestamp: new Date().toISOString()
+        };
+        console.log("JSON Export:", data);
+        alert("JSON в консоли");
+    }
+
+    // Инициализация
+    editor.innerText = initialCode;
+    editor.innerHTML = highlight(editor.innerText);
+    updateLineNumbers(editor.innerText);
+    updateStats(editor.innerText);
+
+</script>
+
+</body>
+</html>
