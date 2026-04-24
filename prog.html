@@ -3,207 +3,193 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>CNC PRO ULTIMATE</title>
+    <title>CNC ELITE STUDIO</title>
     <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@500&family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
         :root {
             --bg: #f2f2f7; --card: #ffffff; --accent: #007aff; --text: #1c1c1e;
-            --border: #d1d1d6; --x-col: #ff2d55; --z-col: #007aff; --g-col: #d70015;
+            --border: #d1d1d6; --x-col: #ff2d55; --z-col: #007aff;
         }
         body, html { margin: 0; padding: 0; height: 100%; background: var(--bg); font-family: 'Inter', sans-serif; overflow: hidden; }
         .app { display: flex; flex-direction: column; height: 100vh; }
 
-        /* Визуализатор */
-        .visualizer {
-            width: 100%; height: 200px; background: #1c1c1e; position: relative;
-            border-bottom: 2px solid var(--accent);
-        }
+        /* Симулятор */
+        .vis-header { height: 180px; background: #000; position: relative; border-bottom: 2px solid var(--accent); }
         #cncCanvas { width: 100%; height: 100%; }
-        .canvas-info { position: absolute; top: 8px; left: 10px; color: #55efc4; font: 10px monospace; pointer-events: none; }
+        
+        /* DRO Панель */
+        .dro { display: flex; background: #1c1c1e; padding: 6px; gap: 4px; border-bottom: 1px solid #333; }
+        .dro-unit { flex: 1; background: #2c2c2e; border-radius: 6px; padding: 4px; text-align: center; }
+        .dro-l { font-size: 8px; color: #8e8e93; display: block; font-weight: 800; }
+        .dro-v { font-family: 'Fira Code', monospace; font-size: 14px; font-weight: 700; color: #fff; }
 
-        /* Датчики */
-        .dro-grid {
-            display: grid; grid-template-columns: repeat(3, 1fr); background: #2c2c2e; padding: 6px; gap: 6px;
-        }
-        .dro-box { background: #1c1c1e; border-radius: 8px; padding: 5px; text-align: center; border: 1px solid #3a3a3c; }
-        .dro-l { font-size: 9px; color: #8e8e93; display: block; font-weight: 800; }
-        .dro-v { font-family: 'Fira Code', monospace; font-size: 15px; font-weight: 700; }
-
-        /* Редактор */
+        /* Интерфейс */
         header { padding: 10px 15px; background: #fff; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); }
-        .editor-container { flex: 1; display: flex; position: relative; background: #fff; overflow: hidden; }
-        #line-nums { width: 35px; padding: 15px 5px; text-align: right; font-family: 'Fira Code', monospace; font-size: 12px; color: #aeaeb2; background: #f9f9f9; border-right: 1px solid var(--border); overflow: hidden; }
-        .scroll-area { flex: 1; position: relative; overflow: auto; }
-        #code-input, #code-view { width: 100%; min-height: 100%; padding: 15px; box-sizing: border-box; font-family: 'Fira Code', monospace; font-size: 14px; line-height: 1.5; white-space: pre; position: absolute; top: 0; left: 0; border: none; outline: none; margin: 0; }
-        #code-input { color: transparent; background: transparent; z-index: 2; caret-color: #000; -webkit-text-fill-color: transparent; }
-        #code-view { z-index: 1; pointer-events: none; color: #1c1c1e; }
+        .btn-top { padding: 6px 12px; border-radius: 8px; border: 1px solid var(--border); background: #fff; font-size: 11px; font-weight: 800; cursor: pointer; }
+        
+        .editor-box { flex: 1; display: flex; position: relative; background: #fff; overflow: hidden; }
+        #line-nums { width: 35px; padding: 15px 5px; text-align: right; font-family: 'Fira Code', monospace; font-size: 12px; color: #aeaeb2; background: #f9f9f9; border-right: 1px solid var(--border); }
+        
+        .scroll-v { flex: 1; position: relative; overflow: auto; }
+        #code-in, #code-out { width: 100%; min-height: 100%; padding: 15px; box-sizing: border-box; font-family: 'Fira Code', monospace; font-size: 14px; line-height: 1.5; white-space: pre; position: absolute; top: 0; left: 0; border: none; outline: none; margin: 0; }
+        #code-in { color: transparent; background: transparent; z-index: 2; caret-color: #000; -webkit-text-fill-color: transparent; }
+        #code-out { z-index: 1; pointer-events: none; }
 
-        /* Цвета */
-        .c-x { color: var(--x-col); font-weight: bold; }
-        .c-z { color: var(--z-col); font-weight: bold; }
-        .c-g { color: var(--g-col); font-weight: bold; }
-        .c-comment { color: #8e8e93; font-style: italic; background: #f2f2f7; }
+        /* Подсветка */
+        .x-val { color: var(--x-col); font-weight: 900; }
+        .z-val { color: var(--z-col); font-weight: 900; }
+        .g-cmd { color: #d70015; font-weight: 900; }
+        .comment { color: #8e8e93; font-style: italic; background: #f4f4f4; }
 
-        /* Панель кнопок */
-        .kb { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; padding: 10px; background: #d1d3d9; }
-        .kb-btn { height: 42px; border-radius: 8px; border: none; background: #fff; font-weight: 900; font-size: 14px; box-shadow: 0 2px 0 #999; }
-        .kb-btn:active { transform: translateY(2px); box-shadow: none; }
+        /* Клавиатура */
+        .kb { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; padding: 8px; background: #d1d3d9; }
+        .kb-btn { height: 40px; border-radius: 6px; border: none; background: #fff; font-weight: 900; box-shadow: 0 1px 0 #999; }
     </style>
 </head>
 <body>
 
 <div class="app">
-    <div class="visualizer">
-        <div class="canvas-info">AUTO-SCALE XZ VIEW</div>
+    <div class="vis-header">
         <canvas id="cncCanvas"></canvas>
     </div>
 
-    <div class="dro-grid">
-        <div class="dro-box"><span class="dro-l">X-ACTUAL</span><span id="v-x" class="dro-v" style="color:var(--x-col)">0.000</span></div>
-        <div class="dro-box"><span class="dro-l">Z-ACTUAL</span><span id="v-z" class="dro-v" style="color:var(--z-col)">0.000</span></div>
-        <div class="dro-box"><span class="dro-l">N-BLOCK</span><span id="v-line" class="dro-v" style="color:#fff">1</span></div>
+    <div class="dro">
+        <div class="dro-unit"><span class="dro-l">X-AXIS</span><span id="dx" class="dro-v">0.000</span></div>
+        <div class="dro-unit"><span class="dro-l">Z-AXIS</span><span id="dz" class="dro-v">0.000</span></div>
+        <div class="dro-unit"><span class="dro-l">BLOCK</span><span id="dl" class="dro-v">0</span></div>
     </div>
 
     <header>
-        <div style="font-weight:900; letter-spacing:-0.5px;">CNC<span>STUDIO</span></div>
-        <div style="display:flex; gap:8px;">
-            <button class="kb-btn" style="width:60px; height:30px; font-size:10px;" onclick="clearEditor()">CLEAR</button>
-            <button class="kb-btn" style="width:60px; height:30px; font-size:10px; background:var(--accent); color:#fff;" onclick="exportNC()">SAVE</button>
+        <div style="font-weight:900;">CNC<span>STUDIO</span></div>
+        <div style="display:flex; gap:6px;">
+            <input type="file" id="fileInp" hidden onchange="handleFile(this)">
+            <button class="btn-top" onclick="document.getElementById('fileInp').click()">ОТКРЫТЬ</button>
+            <button class="btn-top" style="background:var(--accent); color:#fff; border:none;" onclick="saveNC()">СОХРАНИТЬ</button>
         </div>
     </header>
 
-    <div class="editor-container">
+    <div class="editor-box">
         <div id="line-nums">1</div>
-        <div class="scroll-area" id="scroller" onscroll="sync()">
-            <div id="code-view"></div>
-            <textarea id="code-input" spellcheck="false" oninput="run()" onclick="run()" onkeyup="run()"></textarea>
+        <div class="scroll-v" id="scr" onscroll="sync()">
+            <div id="code-out"></div>
+            <textarea id="code-in" spellcheck="false" oninput="run()" onclick="run()" onkeyup="run()"></textarea>
         </div>
     </div>
 
     <div class="kb">
-        <button class="kb-btn" onclick="ins('X')">X</button>
-        <button class="kb-btn" onclick="ins('Z')">Z</button>
-        <button class="kb-btn" onclick="ins('G1 ')">G1</button>
-        <button class="kb-btn" onclick="ins('G0 ')">G0</button>
-        <button class="kb-btn" onclick="ins('.')">.</button>
-        <button class="kb-btn" style="background:#ff3b30; color:#fff;" onclick="back()">⌫</button>
+        <button class="kb-btn" onclick="add('X')">X</button>
+        <button class="kb-btn" onclick="add('Z')">Z</button>
+        <button class="kb-btn" onclick="add('G1 ')">G1</button>
+        <button class="kb-btn" onclick="add('G0 ')">G0</button>
+        <button class="kb-btn" onclick="add('.')">.</button>
+        <button class="kb-btn" style="background:#ff3b30; color:#fff;" onclick="del()">⌫</button>
     </div>
 </div>
 
 <script>
-    const input = document.getElementById('code-input');
-    const view = document.getElementById('code-view');
-    const lnum = document.getElementById('line-nums');
-    const canvas = document.getElementById('cncCanvas');
-    const ctx = canvas.getContext('2d');
+    const inp = document.getElementById('code-in');
+    const out = document.getElementById('code-out');
+    const lns = document.getElementById('line-nums');
+    const cvs = document.getElementById('cncCanvas');
+    const ctx = cvs.getContext('2d');
 
     function run() {
-        const val = input.value;
-        const lines = val.split('\n');
+        const text = inp.value;
+        const lines = text.split('\n');
         
-        // 1. Нумерация
-        lnum.innerHTML = lines.map((_, i) => i + 1).join('<br>');
+        // Линии и подсветка
+        lns.innerHTML = lines.map((_, i) => i + 1).join('<br>');
+        out.innerHTML = text.replace(/&/g, "&amp;").replace(/</g, "&lt;")
+            .replace(/\((.*?)\)/g, '<span class="comment">($1)</span>')
+            .replace(/(G\d+)/gi, '<span class="g-cmd">$1</span>')
+            .replace(/(X-?\d*\.?\d+)/gi, '<span class="x-val">$1</span>')
+            .replace(/(Z-?\d*\.?\d+)/gi, '<span class="z-val">$1</span>');
 
-        // 2. Подсветка
-        view.innerHTML = val
-            .replace(/&/g, "&amp;").replace(/</g, "&lt;")
-            .replace(/\((.*?)\)/g, '<span class="c-comment">($1)</span>')
-            .replace(/(G\d+)/gi, '<span class="c-g">$1</span>')
-            .replace(/(X-?\d*\.?\d+)/gi, '<span class="c-x">$1</span>')
-            .replace(/(Z-?\d*\.?\d+)/gi, '<span class="c-z">$1</span>');
-
-        // 3. DRO
-        const cursor = input.selectionStart;
-        const curIdx = val.substring(0, cursor).split('\n').length - 1;
-        document.getElementById('v-line').innerText = curIdx + 1;
+        // DRO
+        const cur = inp.selectionStart;
+        const lineIdx = text.substring(0, cur).split('\n').length - 1;
+        document.getElementById('dl').innerText = lineIdx + 1;
         
-        const line = lines[curIdx] || "";
+        const line = lines[lineIdx] || "";
         const mx = line.match(/X(-?\d*\.?\d+)/i);
         const mz = line.match(/Z(-?\d*\.?\d+)/i);
-        if(mx) document.getElementById('v-x').innerText = parseFloat(mx[1]).toFixed(3);
-        if(mz) document.getElementById('v-z').innerText = parseFloat(mz[1]).toFixed(3);
+        if(mx) document.getElementById('dx').innerText = parseFloat(mx[1]).toFixed(3);
+        if(mz) document.getElementById('dz').innerText = parseFloat(mz[1]).toFixed(3);
 
-        // 4. Отрисовка
         draw();
     }
 
     function draw() {
-        canvas.width = canvas.offsetWidth;
-        canvas.height = canvas.offsetHeight;
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        cvs.width = cvs.offsetWidth; cvs.height = cvs.offsetHeight;
+        ctx.clearRect(0,0,cvs.width,cvs.height);
+        
+        const lines = inp.value.split('\n');
+        let cx = 0, cz = 0, scale = 2.5;
+        let ox = cvs.width * 0.8, oy = cvs.height / 2;
 
-        const lines = input.value.split('\n');
-        let curX = 0, curZ = 0;
-        let scale = 3; 
-        let centerX = canvas.width * 0.7; // Смещаем вправо для токарки
-        let centerY = canvas.height / 2;
+        ctx.strokeStyle = '#222'; ctx.beginPath();
+        ctx.moveTo(0, oy); ctx.lineTo(cvs.width, oy);
+        ctx.moveTo(ox, 0); ctx.lineTo(ox, cvs.height); ctx.stroke();
 
-        ctx.strokeStyle = '#3a3a3c';
-        ctx.beginPath();
-        ctx.moveTo(0, centerY); ctx.lineTo(canvas.width, centerY); // Z
-        ctx.moveTo(centerX, 0); ctx.lineTo(centerX, canvas.height); // X
-        ctx.stroke();
-
-        ctx.save();
-        ctx.translate(centerX, centerY);
-
+        ctx.save(); ctx.translate(ox, oy);
         lines.forEach(l => {
             const mx = l.match(/X(-?\d*\.?\d+)/i);
             const mz = l.match(/Z(-?\d*\.?\d+)/i);
-            const isG0 = /G0/i.test(l);
-
-            if (mx || mz) {
-                let nX = mx ? parseFloat(mx[1]) : curX;
-                let nZ = mz ? parseFloat(mz[1]) : curZ;
-
+            const g0 = /G0/i.test(l);
+            if(mx || mz) {
+                let nx = mx ? parseFloat(mx[1]) : cx;
+                let nz = mz ? parseFloat(mz[1]) : cz;
                 ctx.beginPath();
                 ctx.lineWidth = 2;
-                ctx.strokeStyle = isG0 ? '#ff3b30' : '#007aff';
-                
-                // Z влево (минус), X вверх/вниз (диаметр)
-                ctx.moveTo(curZ * scale, -curX * scale / 2);
-                ctx.lineTo(nZ * scale, -nX * scale / 2);
+                ctx.strokeStyle = g0 ? '#ff3b30' : '#007aff';
+                ctx.moveTo(cz * scale, -cx * scale / 2);
+                ctx.lineTo(nz * scale, -nx * scale / 2);
                 ctx.stroke();
-
-                curX = nX; curZ = nZ;
+                cx = nx; cz = nz;
             }
         });
         ctx.restore();
     }
 
+    function handleFile(input) {
+        const file = input.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            inp.value = e.target.result;
+            run();
+        };
+        reader.readAsText(file);
+    }
+
     function sync() {
-        const s = document.getElementById('scroller');
-        view.scrollTop = s.scrollTop;
-        lnum.scrollTop = s.scrollTop;
+        const s = document.getElementById('scr');
+        out.scrollTop = s.scrollTop; lns.scrollTop = s.scrollTop;
     }
 
-    function ins(t) {
-        const s = input.selectionStart;
-        input.value = input.value.substring(0, s) + t + input.value.substring(input.selectionEnd);
-        input.selectionStart = input.selectionEnd = s + t.length;
-        run();
-        input.focus();
+    function add(t) {
+        const s = inp.selectionStart;
+        inp.value = inp.value.substring(0,s) + t + inp.value.substring(inp.selectionEnd);
+        inp.selectionStart = inp.selectionEnd = s + t.length;
+        run(); inp.focus();
     }
 
-    function back() {
-        const s = input.selectionStart;
-        if(s > 0) {
-            input.value = input.value.substring(0, s-1) + input.value.substring(s);
-            input.selectionStart = input.selectionEnd = s-1;
+    function del() {
+        const s = inp.selectionStart;
+        if(s>0) {
+            inp.value = inp.value.substring(0,s-1) + inp.value.substring(s);
+            inp.selectionStart = inp.selectionEnd = s-1;
             run();
         }
     }
 
-    function clearEditor() { if(confirm('Clear all?')) { input.value=''; run(); } }
-
-    function exportNC() {
-        const b = new Blob([input.value], {type:'text/plain'});
+    function saveNC() {
+        const blob = new Blob([inp.value], {type:'text/plain'});
         const a = document.createElement('a');
-        a.href = URL.createObjectURL(b); a.download='PROG.NC'; a.click();
+        a.href = URL.createObjectURL(blob); a.download='PROG.NC'; a.click();
     }
 
-    // Старт
-    input.value = "G0 X40 Z5\nG1 Z0 F0.2\nG1 X-1\nG0 X36 Z1\nG1 Z-20 F0.15\nG1 X40 Z-22\nG0 X100 Z100";
+    inp.value = "G0 X50 Z5\nG1 Z0 F.2\nG1 X-1\nG0 X45 Z1\nG1 Z-20\nG1 X50 Z-22\nG0 X100 Z100";
     run();
 </script>
 </body>
