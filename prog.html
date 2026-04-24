@@ -3,247 +3,206 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CNC Code Studio - Light Premium</title>
+    <title>CNC Studio Pro — Light Premium</title>
     <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg: #f8f9fa;
-            --card-bg: #ffffff;
-            --text-main: #1d1d1f;
-            --accent: #007aff;
-            --border: #d2d2d7;
-            --comment: #86868b;
-            --gcode: #d70015; /* Красный для G-команд */
-            --mcode: #af52de; /* Фиолетовый для M-команд */
-            --coord: #0071e3; /* Синий для X, Z, Y */
-            --param: #64d2ff; /* Голубой для параметров */
-            --feed: #34c759;  /* Зеленый для подач F/S */
+            --bg: #f5f5f7; --card: #ffffff; --accent: #007aff; --text: #1d1d1f; 
+            --border: #d2d2d7; --comment: #8e8e93; --gcode: #ff3b30; 
+            --mcode: #af52de; --coord: #007aff; --feed: #34c759;
         }
 
-        body {
-            background-color: var(--bg);
-            color: var(--text-main);
-            font-family: 'Inter', sans-serif;
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            justify-content: center;
+        body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; margin: 0; padding: 20px; height: 100vh; overflow: hidden; }
+
+        .app-container {
+            display: flex; flex-direction: column; height: calc(100vh - 40px);
+            background: var(--card); border-radius: 24px; border: 1px solid var(--border);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.08); overflow: hidden;
         }
 
-        .editor-container {
-            width: 100%;
-            max-width: 900px;
-            background: var(--card-bg);
-            border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
-            border: 1px solid var(--border);
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            height: 90vh;
+        /* Header & Search */
+        .top-bar {
+            padding: 15px 25px; border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: space-between; gap: 20px;
         }
 
-        /* Toolbar */
-        .toolbar {
-            padding: 15px 20px;
-            background: #fff;
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+        .search-wrapper { position: relative; flex: 1; max-width: 400px; }
+        .search-input {
+            width: 100%; padding: 10px 15px 10px 35px; border-radius: 10px;
+            border: 1px solid var(--border); background: #f5f5f7; font-size: 14px; outline: none;
+        }
+        .search-input:focus { border-color: var(--accent); background: #fff; }
+        .search-icon { position: absolute; left: 12px; top: 11px; opacity: 0.4; }
+
+        .btn-group { display: flex; gap: 10px; }
+        .btn-main {
+            padding: 10px 20px; border-radius: 12px; border: none; font-weight: 700;
+            font-size: 13px; cursor: pointer; transition: 0.2s; display: flex; align-items: center; gap: 8px;
+        }
+        .btn-load { background: #e8e8ed; color: var(--text); }
+        .btn-save { background: var(--accent); color: white; }
+        .btn-main:hover { opacity: 0.8; transform: translateY(-1px); }
+
+        /* Main Workspace */
+        .workspace { display: flex; flex: 1; overflow: hidden; position: relative; }
+        
+        #line-numbers {
+            padding: 20px 10px; background: #fbfbfd; border-right: 1px solid var(--border);
+            text-align: right; color: #aeaeb2; font-family: 'Fira Code', monospace;
+            font-size: 14px; line-height: 1.6; min-width: 45px; user-select: none;
         }
 
-        .toolbar h2 {
-            margin: 0;
-            font-size: 16px;
-            font-weight: 900;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .btn-group {
-            display: flex;
-            gap: 8px;
-        }
-
-        .btn {
-            padding: 8px 16px;
-            border-radius: 8px;
-            border: 1px solid var(--border);
-            background: white;
-            font-size: 12px;
-            font-weight: 700;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-
-        .btn:hover { background: #f5f5f7; border-color: var(--accent); }
-        .btn.primary { background: var(--accent); color: white; border: none; }
-
-        /* Code Area */
-        .code-area {
-            display: flex;
-            flex: 1;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .line-numbers {
-            padding: 15px 10px;
-            background: #f5f5f7;
-            border-right: 1px solid var(--border);
-            text-align: right;
-            font-family: 'Fira Code', monospace;
-            font-size: 14px;
-            color: #aeaeb2;
-            user-select: none;
-            min-width: 40px;
-        }
-
+        .editor-wrapper { flex: 1; overflow: auto; position: relative; background: #fff; }
+        
         #editor {
-            flex: 1;
-            padding: 15px;
-            font-family: 'Fira Code', monospace;
-            font-size: 14px;
-            line-height: 1.6;
-            outline: none;
-            white-space: pre;
-            overflow-y: auto;
-            tab-size: 4;
-            color: var(--text-main);
+            width: 100%; min-height: 100%; padding: 20px; box-sizing: border-box;
+            font-family: 'Fira Code', monospace; font-size: 15px; line-height: 1.6;
+            white-space: pre; outline: none; color: transparent; caret-color: var(--text);
+            position: absolute; top: 0; left: 0; z-index: 2;
         }
 
-        /* Syntax Highlighting */
-        .cnc-comment { color: var(--comment); font-style: italic; }
+        #highlight-layer {
+            width: 100%; padding: 20px; box-sizing: border-box;
+            font-family: 'Fira Code', monospace; font-size: 15px; line-height: 1.6;
+            white-space: pre-wrap; word-break: break-all; pointer-events: none;
+            position: absolute; top: 0; left: 0; z-index: 1; color: var(--text);
+        }
+
+        /* Syntax Colors */
         .cnc-g { color: var(--gcode); font-weight: bold; }
         .cnc-m { color: var(--mcode); font-weight: bold; }
         .cnc-xyz { color: var(--coord); }
         .cnc-fs { color: var(--feed); font-weight: 600; }
-        .cnc-block { color: #f56300; font-weight: bold; } /* N1, N2... */
+        .cnc-comment { color: var(--comment); font-style: italic; background: #f2f2f7; border-radius: 4px; }
+        .cnc-search-match { background: #fff100; color: #000; border-radius: 2px; }
 
-        /* Footer */
-        .footer {
-            padding: 10px 20px;
-            background: #f5f5f7;
-            font-size: 11px;
-            font-weight: 700;
-            color: var(--comment);
-            border-top: 1px solid var(--border);
-            display: flex;
-            justify-content: space-between;
+        /* Drag & Drop Overlay */
+        #drop-zone {
+            position: absolute; inset: 0; background: rgba(0,122,255,0.1);
+            border: 3px dashed var(--accent); z-index: 100; display: none;
+            align-items: center; justify-content: center; backdrop-filter: blur(4px);
         }
     </style>
 </head>
 <body>
 
-<div class="editor-container">
-    <div class="toolbar">
+<div class="app-container">
+    <div id="drop-zone"><h2>Drop NC File here</h2></div>
+    
+    <div class="top-bar">
         <div>
-            <span style="font-size: 10px; color: var(--accent); display: block; font-weight: 800;">T-01 CNC VIEW</span>
-            <h2>Editor <span>Premium</span></h2>
+            <h1 style="margin:0; font-size:18px; font-weight:900;">CNC<span>.STUDIO</span></h1>
+            <span id="filename-display" style="font-size:11px; font-weight:700; color:var(--comment);">new_program.nc</span>
         </div>
+
+        <div class="search-wrapper">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="search-input" class="search-input" placeholder="Quick search (G0, M3, X...)" oninput="runHighlight()">
+        </div>
+
         <div class="btn-group">
-            <button class="btn" onclick="exportData()">JSON Export</button>
-            <button class="btn primary" onclick="saveCode()">Save NC</button>
+            <input type="file" id="file-input" hidden onchange="loadFile(event)">
+            <button class="btn-main btn-load" onclick="document.getElementById('file-input').click()">Open File</button>
+            <button class="btn-main btn-save" onclick="saveFile()">Save NC</button>
         </div>
     </div>
 
-    <div class="code-area">
-        <div class="line-numbers" id="line-numbers">1</div>
-        <div id="editor" contenteditable="true" spellcheck="false" oninput="handleInput()"></div>
+    <div class="workspace">
+        <div id="line-numbers"></div>
+        <div class="editor-wrapper">
+            <div id="highlight-layer"></div>
+            <div id="editor" contenteditable="true" spellcheck="false" oninput="runHighlight()" onscroll="syncScroll()"></div>
+        </div>
     </div>
 
-    <div class="footer">
-        <span>MODE: G-CODE LATHE</span>
-        <span id="char-count">0 Chars</span>
+    <div style="padding: 10px 25px; border-top: 1px solid var(--border); font-size: 11px; display: flex; justify-content: space-between; font-weight: 700; color: var(--comment);">
+        <div id="stats">Lines: 0 | Chars: 0</div>
+        <div>PREMIUM LIGHT ENGINE v2.0</div>
     </div>
 </div>
 
 <script>
     const editor = document.getElementById('editor');
+    const highlightLayer = document.getElementById('highlight-layer');
     const lineNumbers = document.getElementById('line-numbers');
-    const charCount = document.getElementById('char-count');
+    const searchInput = document.getElementById('search-input');
 
-    // Пример программы из вашего запроса
-    const initialCode = `% 
-O1407(PK231850RO)
-(G54-HAUPTSPINDEL) 
-G50 S3500 
-N1 G54 M41 
-G0 G99 T0101 M765 
-G96 S180 M3
-M8 
-G0 X50 Z2
-G1 Z.1 F.2 
-G1 X0 F.12 
-G28 U0 W0
-M30
-%`;
+    // Темы подсветки
+    function runHighlight() {
+        let content = editor.innerText;
+        const searchVal = searchInput.value;
 
-    function highlight(text) {
-        // Комментарии (в скобках)
-        text = text.replace(/\((.*?)\)/g, '<span class="cnc-comment">($1)</span>');
-        // G-коды
-        text = text.replace(/(G\d+)/gi, '<span class="cnc-g">$1</span>');
-        // M-коды
-        text = text.replace(/(M\d+)/gi, '<span class="cnc-m">$1</span>');
-        // Координаты X, Z, Y, U, W, R, A
-        text = text.replace(/([XYZUVWRA][-]?\d*\.?\d+)/gi, '<span class="cnc-xyz">$1</span>');
-        // Подача и обороты F, S
-        text = text.replace(/([FS]\d*\.?\d+)/gi, '<span class="cnc-fs">$1</span>');
-        // Номера блоков N
-        text = text.replace(/(N\d+)/gi, '<span class="cnc-block">$1</span>');
+        // Обновляем статистику
+        const lines = content.split('\n');
+        document.getElementById('stats').innerText = `Lines: ${lines.length} | Chars: ${content.length}`;
         
-        return text;
-    }
+        // Номера строк
+        lineNumbers.innerHTML = lines.map((_, i) => i + 1).join('<br>');
 
-    function handleInput() {
-        const text = editor.innerText;
-        updateLineNumbers(text);
-        updateStats(text);
-        
-        // Сохраняем позицию курсора (упрощенно для стабильности)
-        const selection = window.getSelection();
-        const range = selection.getRangeAt(0);
-        const offset = range.startOffset;
+        // Подсветка синтаксиса
+        let html = content
+            .replace(/&/g, "&amp;").replace(/</g, "&lt;")
+            .replace(/\((.*?)\)/g, '<span class="cnc-comment">($1)</span>')
+            .replace(/(G\d+)/gi, '<span class="cnc-g">$1</span>')
+            .replace(/(M\d+)/gi, '<span class="cnc-m">$1</span>')
+            .replace(/([XYZUVWRA][-]?\d*\.?\d+)/gi, '<span class="cnc-xyz">$1</span>')
+            .replace(/([FS]\d*\.?\d+)/gi, '<span class="cnc-fs">$1</span>');
 
-        // В реальном сложном редакторе здесь используется Diffing, 
-        // для легкого модуля применяем подсветку при вставке или паузе
-    }
-
-    function updateLineNumbers(text) {
-        const lines = text.split('\n').length;
-        let numbers = '';
-        for (let i = 1; i <= lines; i++) {
-            numbers += i + '<br>';
+        // Подсветка поиска
+        if (searchVal && searchVal.length > 0) {
+            const re = new RegExp(`(${searchVal})`, "gi");
+            html = html.replace(re, '<span class="cnc-search-match">$1</span>');
         }
-        lineNumbers.innerHTML = numbers;
+
+        highlightLayer.innerHTML = html + "\n";
     }
 
-    function updateStats(text) {
-        charCount.innerText = text.length + ' Chars';
+    function syncScroll() {
+        highlightLayer.scrollTop = editor.scrollTop;
+        highlightLayer.scrollLeft = editor.scrollLeft;
+        lineNumbers.scrollTop = editor.scrollTop;
     }
 
-    function saveCode() {
-        alert('Programm gespeichert!');
+    // Загрузка файла
+    function loadFile(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        readFile(file);
     }
 
-    function exportData() {
-        const data = {
-            filename: "231850RO.O",
-            content: editor.innerText,
-            timestamp: new Date().toISOString()
+    function readFile(file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            editor.innerText = e.target.result;
+            document.getElementById('filename-display').innerText = file.name.toUpperCase();
+            runHighlight();
         };
-        console.log("JSON Export:", data);
-        alert("JSON в консоли");
+        reader.readAsText(file);
     }
 
-    // Инициализация
-    editor.innerText = initialCode;
-    editor.innerHTML = highlight(editor.innerText);
-    updateLineNumbers(editor.innerText);
-    updateStats(editor.innerText);
+    // Сохранение файла
+    function saveFile() {
+        const text = editor.innerText;
+        const blob = new Blob([text], { type: 'text/plain' });
+        const anchor = document.createElement('a');
+        anchor.download = document.getElementById('filename-display').innerText || 'program.nc';
+        anchor.href = window.URL.createObjectURL(blob);
+        anchor.click();
+    }
 
+    // Drag and Drop логика
+    const dropZone = document.getElementById('drop-zone');
+    window.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.style.display = 'flex'; });
+    dropZone.addEventListener('dragleave', () => { dropZone.style.display = 'none'; });
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.style.display = 'none';
+        const file = e.dataTransfer.files[0];
+        if (file) readFile(file);
+    });
+
+    // Инициализация при загрузке
+    window.onload = runHighlight;
 </script>
 
 </body>
