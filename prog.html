@@ -3,268 +3,198 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>CNC Expert IDE</title>
+    <title>CNC ULTIMATE v7</title>
     <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg: #f5f5f7; --card: #ffffff; --accent: #007aff; --text: #1d1d1f;
-            --border: #d2d2d7; --x-col: #ff2d55; --z-col: #007aff; --a-col: #5856d6;
+            --bg: #f5f5f7; --accent: #007aff; --text: #1d1d1f; --border: #d2d2d7;
+            --x-col: #ff2d55; --z-col: #007aff; --a-col: #5856d6;
         }
-
         body, html { margin: 0; padding: 0; height: 100%; background: var(--bg); font-family: 'Inter', sans-serif; overflow: hidden; }
-
-        /* App Layout */
-        .app-shell { display: flex; flex-direction: column; height: 100vh; }
-
-        header { 
-            padding: 12px 20px; background: #fff; border-bottom: 1px solid var(--border);
-            display: flex; justify-content: space-between; align-items: center; z-index: 100;
-        }
-
-        .logo { font-weight: 900; font-size: 18px; letter-spacing: -0.5px; }
-        .logo span { color: var(--accent); }
-
-        /* DRO & Stats */
-        .status-bar {
-            display: flex; background: #1c1c1e; color: #fff; padding: 10px 20px; gap: 20px;
-            font-family: 'Fira Code', monospace; font-size: 12px;
-        }
-        .status-item span { color: #8e8e93; font-weight: 800; margin-right: 5px; }
-
-        /* Main Editor Area */
-        .workspace { flex: 1; display: flex; overflow: hidden; background: #fff; position: relative; }
         
-        #line-numbers {
-            width: 45px; padding: 20px 5px; text-align: right; background: #fbfbfd;
-            border-right: 1px solid var(--border); color: #aeaeb2; font-size: 13px; line-height: 1.6;
-        }
+        /* Layout */
+        .app { display: flex; flex-direction: column; height: 100vh; }
+        header { padding: 10px 15px; background: #fff; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); }
+        
+        .dro { display: grid; grid-template-columns: repeat(4, 1fr); background: #1c1c1e; padding: 8px; gap: 5px; }
+        .dro-item { background: #2c2c2e; border-radius: 6px; padding: 4px; text-align: center; }
+        .dro-l { font-size: 8px; color: #8e8e93; display: block; font-weight: 800; }
+        .dro-v { font-family: 'Fira Code', monospace; font-size: 13px; color: #fff; }
 
-        .editor-container { flex: 1; position: relative; overflow: hidden; }
-        #code-input, #code-view {
-            width: 100%; min-height: 100%; padding: 20px; box-sizing: border-box;
-            font-family: 'Fira Code', monospace; font-size: 15px; line-height: 1.6;
-            white-space: pre; position: absolute; top: 0; left: 0; border: none; outline: none;
-        }
-        #code-input { color: transparent; background: transparent; z-index: 2; caret-color: #000; }
-        #code-view { z-index: 1; pointer-events: none; color: var(--text); }
+        /* Editor */
+        .editor-zone { flex: 1; display: flex; position: relative; background: #fff; overflow: hidden; }
+        #line-nums { width: 35px; padding: 15px 5px; text-align: right; font-size: 12px; color: #aeaeb2; background: #f9f9f9; border-right: 1px solid var(--border); line-height: 1.6; }
+        .scroll-v { flex: 1; position: relative; overflow: auto; }
+        #code-in, #code-out { width: 100%; min-height: 100%; padding: 15px; box-sizing: border-box; font-family: 'Fira Code', monospace; font-size: 14px; line-height: 1.6; white-space: pre; position: absolute; top: 0; left: 0; border: none; outline: none; }
+        #code-in { color: transparent; background: transparent; z-index: 2; caret-color: #000; }
+        #code-out { z-index: 1; pointer-events: none; }
 
-        /* Highlighting */
+        /* Colors */
         .c-g { color: #d70015; font-weight: 700; }
         .c-x { color: var(--x-col); font-weight: 700; }
         .c-z { color: var(--z-col); font-weight: 700; }
         .c-a { color: var(--a-col); font-weight: 700; }
-        .c-t { color: #af52de; font-weight: 700; background: #f2f2f7; border-radius: 4px; padding: 0 2px; }
-        .c-comm { color: #8e8e93; font-style: italic; border-bottom: 1px dashed #d2d2d7; }
+        .c-t { color: #af52de; font-weight: 800; border-bottom: 2px solid #af52de; }
+        .c-comm { color: #8e8e93; font-style: italic; }
 
-        /* Floating Simulation Button */
-        .sim-trigger {
-            position: absolute; bottom: 30px; right: 30px; width: 60px; height: 60px;
-            background: var(--accent); border-radius: 50%; display: flex; align-items: center;
-            justify-content: center; box-shadow: 0 10px 25px rgba(0,122,255,0.4);
-            z-index: 10; border: none; cursor: pointer; color: white;
-        }
-
-        /* Fullscreen Modal */
-        .modal {
-            position: fixed; inset: 0; background: #000; z-index: 1000;
-            display: none; flex-direction: column;
-        }
-        .modal-header {
-            padding: 15px 20px; background: #1c1c1e; border-bottom: 1px solid #333;
-            display: flex; justify-content: space-between; align-items: center; color: white;
-        }
-
-        .modal-body { flex: 1; display: flex; flex-direction: column; position: relative; }
-        #sim-canvas { width: 100%; height: 100%; }
-
-        /* Tool Manager in Modal */
-        .tool-manager {
-            position: absolute; top: 20px; left: 20px; background: rgba(28,28,30,0.9);
-            border-radius: 12px; padding: 15px; border: 1px solid #444; max-height: 70%;
-            overflow-y: auto; width: 200px; backdrop-filter: blur(10px);
-        }
-        .tool-item {
-            display: flex; align-items: center; gap: 10px; margin-bottom: 10px;
-            color: #fff; font-size: 12px; cursor: pointer;
-        }
-        .tool-item input { accent-color: var(--accent); }
-
-        .btn {
-            padding: 10px 20px; border-radius: 10px; border: none; font-weight: 700; cursor: pointer;
-        }
-        .btn-close { background: #ff3b30; color: white; }
+        /* Modal Simulation */
+        .modal { position: fixed; inset: 0; background: #000; z-index: 1000; display: none; flex-direction: column; }
+        .modal-h { padding: 15px; background: #1c1c1e; display: flex; justify-content: space-between; color: #fff; align-items: center; }
+        .modal-b { flex: 1; position: relative; overflow: hidden; }
+        #sim-canvas { width: 100%; height: 100%; touch-action: none; }
+        
+        .tool-list { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.8); padding: 10px; border-radius: 8px; border: 1px solid #444; max-height: 80%; overflow-y: auto; color: white; font-size: 12px; }
+        .t-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+        
+        .fab { position: absolute; bottom: 25px; right: 25px; width: 56px; height: 56px; background: var(--accent); border-radius: 28px; border: none; color: white; font-size: 24px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); z-index: 10; }
+        .btn-top { padding: 6px 12px; border-radius: 6px; border: 1px solid var(--border); font-size: 12px; font-weight: 700; background: #fff; }
     </style>
 </head>
 <body>
 
-<div class="app-shell">
+<div class="app">
     <header>
-        <div class="logo">CNC<span>PRO</span> IDE</div>
-        <div style="display:flex; gap:10px;">
-            <input type="file" id="fLoader" hidden onchange="loadFile(this)">
-            <button class="btn" style="background:#e8e8ed;" onclick="document.getElementById('fLoader').click()">ОТКРЫТЬ</button>
-            <button class="btn" style="background:var(--accent); color:white;" onclick="saveNC()">СОХРАНИТЬ</button>
+        <div style="font-weight:900;">CNC<span>STUDIO</span></div>
+        <div style="display:flex; gap:8px;">
+            <button class="btn-top" onclick="clearData()">ОЧИСТИТЬ</button>
+            <button class="btn-top" style="background:var(--accent); color:#fff; border:none;" onclick="saveToFile()">СОХРАНИТЬ</button>
         </div>
     </header>
 
-    <div class="status-bar">
-        <div class="status-item"><span>X:</span><b id="dro-x">0.000</b></div>
-        <div class="status-item"><span>Z:</span><b id="dro-z">0.000</b></div>
-        <div class="status-item"><span>A:</span><b id="dro-a">0.000</b></div>
-        <div class="status-item"><span>TOOL:</span><b id="dro-t">T0000</b></div>
+    <div class="dro">
+        <div class="dro-item"><span class="dro-l">X-POS</span><span id="dx" class="dro-v">0.000</span></div>
+        <div class="dro-item"><span class="dro-l">Z-POS</span><span id="dz" class="dro-v">0.000</span></div>
+        <div class="dro-item"><span class="dro-l">A-ANG</span><span id="da" class="dro-v">0.000</span></div>
+        <div class="dro-item"><span class="dro-l">ACTIVE T</span><span id="dt" class="dro-v">T0000</span></div>
     </div>
 
-    <div class="workspace">
-        <div id="line-numbers">1</div>
-        <div class="editor-container" onscroll="syncScroll(this)">
-            <div id="code-view"></div>
-            <textarea id="code-input" spellcheck="false" oninput="onInput()" onkeyup="trackPosition()" onclick="trackPosition()"></textarea>
+    <div class="editor-zone">
+        <div id="line-nums">1</div>
+        <div class="scroll-v" id="scr" onscroll="sync()">
+            <div id="code-out"></div>
+            <textarea id="code-in" spellcheck="false" oninput="update()" onkeyup="track()" onclick="track()"></textarea>
         </div>
-        <button class="sim-trigger" onclick="openSim()">📈</button>
+        <button class="fab" onclick="showSim()">📈</button>
     </div>
 </div>
 
-<div id="sim-modal" class="modal">
-    <div class="modal-header">
-        <div style="font-weight:900;">СИМУЛЯЦИЯ КОНТУРА (XZ)</div>
-        <button class="btn btn-close" onclick="closeSim()">ЗАКРЫТЬ</button>
+<div id="modal" class="modal">
+    <div class="modal-h">
+        <span style="font-weight:900;">СИМУЛЯТОР ТРАЕКТОРИЙ</span>
+        <button onclick="closeSim()" style="background:#ff3b30; color:#fff; border:none; padding:8px 15px; border-radius:6px; font-weight:700;">ЗАКРЫТЬ</button>
     </div>
-    <div class="modal-body">
+    <div class="modal-b">
         <canvas id="sim-canvas"></canvas>
-        <div class="tool-manager" id="tool-list">
-            </div>
+        <div class="tool-list" id="t-list"></div>
     </div>
 </div>
 
 <script>
-    const input = document.getElementById('code-input');
-    const view = document.getElementById('code-view');
-    const lnum = document.getElementById('line-numbers');
-    const canvas = document.getElementById('sim-canvas');
-    const ctx = canvas.getContext('2d');
+    const inp = document.getElementById('code-in');
+    const out = document.getElementById('code-out');
+    const lns = document.getElementById('line-nums');
+    const cvs = document.getElementById('sim-canvas');
+    const ctx = cvs.getContext('2d');
 
-    let toolsData = []; // Хранит траектории по инструментам
-    let visibleTools = {}; // Какие инструменты включены в симе
+    let trajectories = {}; 
+    let tVisibility = {};
 
-    // 1. Инициализация (Загрузка из localStorage)
     window.onload = () => {
-        const saved = localStorage.getItem('cnc_code');
-        if (saved) {
-            input.value = saved;
-            onInput();
-        } else {
-            input.value = "(START PROGRAM)\nN1 T0101 (AUSSEN)\nG0 X50 Z2\nG1 Z-20 F0.2\nG1 X60\nG0 X100 Z100\n\nN2 T0202 (BOHRER)\nG0 X0 Z2\nG1 Z-15 F0.1\nG0 Z100";
-            onInput();
-        }
+        const saved = localStorage.getItem('cnc_v7_data');
+        if (saved) { inp.value = saved; } 
+        else { inp.value = "N1 T0101 (AUSSEN)\nG0 X50 Z2 A0\nG1 Z-25 F0.2\nG1 X60\nG0 X100 Z100\n\nN2 T0202 (BOHRER)\nG0 X0 Z2\nG1 Z-15 F0.1\nG0 Z100"; }
+        update();
     };
 
-    function onInput() {
-        const val = input.value;
-        localStorage.setItem('cnc_code', val); // Сохраняем при каждом вводе
+    function update() {
+        const val = inp.value;
+        localStorage.setItem('cnc_v7_data', val);
         
         const lines = val.split('\n');
-        lnum.innerHTML = lines.map((_, i) => i + 1).join('<br>');
-
-        view.innerHTML = val.replace(/&/g, "&amp;").replace(/</g, "&lt;")
+        lns.innerHTML = lines.map((_, i) => i + 1).join('<br>');
+        
+        out.innerHTML = val.replace(/&/g, "&amp;").replace(/</g, "&lt;")
             .replace(/\((.*?)\)/g, '<span class="c-comm">($1)</span>')
             .replace(/(G\d+)/gi, '<span class="c-g">$1</span>')
             .replace(/(T\d+)/gi, '<span class="c-t">$1</span>')
             .replace(/(X-?\d*\.?\d+)/gi, '<span class="c-x">$1</span>')
             .replace(/(Z-?\d*\.?\d+)/gi, '<span class="c-z">$1</span>')
             .replace(/(A-?\d*\.?\d+)/gi, '<span class="c-a">$1</span>');
-            
-        parseTools();
+        
+        parseProgram();
     }
 
-    // 2. Парсинг инструментов и траекторий
-    function parseTools() {
-        const lines = input.value.split('\n');
-        toolsData = [];
-        let currentTool = "T0000";
-        let currentToolName = "UNKNOWN";
-        let cx = 0, cz = 0, ca = 0;
+    function parseProgram() {
+        const lines = inp.value.split('\n');
+        trajectories = {};
+        let currentT = "T0000";
+        let cx = 0, cz = 0;
 
-        lines.forEach(line => {
-            const tMatch = line.match(/T(\d+)/i);
-            const nMatch = line.match(/\((.*?)\)/);
-            if (tMatch) {
-                currentTool = "T" + tMatch[1];
-                currentToolName = nMatch ? nMatch[1] : "TOOL " + tMatch[1];
+        lines.forEach(l => {
+            const tMatch = l.match(/T(\d+)/i);
+            const nMatch = l.match(/\((.*?)\)/);
+            if(tMatch) {
+                currentT = "T" + tMatch[1];
+                if(!trajectories[currentT]) {
+                    trajectories[currentT] = { name: nMatch ? nMatch[1] : currentT, paths: [] };
+                    if(!(currentT in tVisibility)) tVisibility[currentT] = true;
+                }
             }
 
-            const mx = line.match(/X(-?\d*\.?\d+)/i);
-            const mz = line.match(/Z(-?\d*\.?\d+)/i);
-            const ma = line.match(/A(-?\d*\.?\d+)/i);
-            const isG0 = /G0/i.test(line);
+            const mx = l.match(/X(-?\d*\.?\d+)/i);
+            const mz = l.match(/Z(-?\d*\.?\d+)/i);
+            const g0 = /G0/i.test(l);
 
-            if (mx || mz || ma) {
+            if(mx || mz) {
                 let nx = mx ? parseFloat(mx[1]) : cx;
                 let nz = mz ? parseFloat(mz[1]) : cz;
+                if(!trajectories[currentT]) trajectories[currentT] = { name: "INIT", paths: [] };
                 
-                if (!toolsData[currentTool]) {
-                    toolsData[currentTool] = { name: currentToolName, paths: [] };
-                    if (!(currentTool in visibleTools)) visibleTools[currentTool] = true;
-                }
-
-                toolsData[currentTool].paths.push({ x1: cx, z1: cz, x2: nx, z2: nz, fast: isG0 });
+                trajectories[currentT].paths.push({ x1:cx, z1:cz, x2:nx, z2:nz, rapid: g0 });
                 cx = nx; cz = nz;
             }
         });
     }
 
-    // 3. Симулятор
-    function openSim() {
-        document.getElementById('sim-modal').style.display = 'flex';
-        renderToolList();
-        drawSim();
+    function showSim() {
+        document.getElementById('modal').style.display = 'flex';
+        renderTList();
+        setTimeout(draw, 50); // Даем время на отрисовку модалки
     }
 
-    function closeSim() {
-        document.getElementById('sim-modal').style.display = 'none';
-    }
+    function closeSim() { document.getElementById('modal').style.display = 'none'; }
 
-    function renderToolList() {
-        const container = document.getElementById('tool-list');
-        container.innerHTML = '<div style="color:var(--accent); font-weight:900; margin-bottom:10px; font-size:10px;">СЛОИ ИНСТРУМЕНТОВ</div>';
-        
-        for (let tId in toolsData) {
-            const div = document.createElement('div');
-            div.className = 'tool-item';
-            div.innerHTML = `
-                <input type="checkbox" ${visibleTools[tId] ? 'checked' : ''} onchange="toggleTool('${tId}')">
-                <span>${tId} - ${toolsData[tId].name}</span>
-            `;
-            container.appendChild(div);
+    function renderTList() {
+        const list = document.getElementById('t-list');
+        list.innerHTML = '<b style="color:#007aff; font-size:10px;">ИНСТРУМЕНТЫ:</b><br><br>';
+        for(let id in trajectories) {
+            const row = document.createElement('div');
+            row.className = 't-row';
+            row.innerHTML = `<input type="checkbox" ${tVisibility[id]?'checked':''} onchange="tToggle('${id}')"> <span>${id}</span>`;
+            list.appendChild(row);
         }
     }
 
-    function toggleTool(id) {
-        visibleTools[id] = !visibleTools[id];
-        drawSim();
-    }
+    function tToggle(id) { tVisibility[id] = !tVisibility[id]; draw(); }
 
-    function drawSim() {
-        canvas.width = canvas.offsetWidth;
-        canvas.height = canvas.offsetHeight;
-        ctx.clearRect(0,0,canvas.width,canvas.height);
+    function draw() {
+        cvs.width = cvs.offsetWidth; cvs.height = cvs.offsetHeight;
+        ctx.clearRect(0,0,cvs.width,cvs.height);
+        
+        let scale = 3.5, ox = cvs.width * 0.8, oy = cvs.height / 2;
+        
+        // Оси
+        ctx.strokeStyle = '#333'; ctx.beginPath();
+        ctx.moveTo(0, oy); ctx.lineTo(cvs.width, oy);
+        ctx.moveTo(ox, 0); ctx.lineTo(ox, cvs.height); ctx.stroke();
 
-        let scale = 4;
-        let ox = canvas.width * 0.8, oy = canvas.height / 2;
-
-        ctx.strokeStyle = '#333';
-        ctx.beginPath(); ctx.moveTo(0, oy); ctx.lineTo(canvas.width, oy); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(ox, 0); ctx.lineTo(ox, canvas.height); ctx.stroke();
-
-        ctx.save();
-        ctx.translate(ox, oy);
-
-        for (let tId in toolsData) {
-            if (!visibleTools[tId]) continue;
-
-            toolsData[tId].paths.forEach(p => {
+        ctx.save(); ctx.translate(ox, oy);
+        for(let id in trajectories) {
+            if(!tVisibility[id]) continue;
+            trajectories[id].paths.forEach(p => {
                 ctx.beginPath();
-                ctx.lineWidth = p.fast ? 1 : 2;
-                ctx.strokeStyle = p.fast ? '#ff3b30' : '#007aff';
+                ctx.lineWidth = p.rapid ? 1 : 2;
+                ctx.strokeStyle = p.rapid ? '#ff3b30' : '#007aff';
                 ctx.moveTo(p.z1 * scale, -p.x1 * scale / 2);
                 ctx.lineTo(p.z2 * scale, -p.x2 * scale / 2);
                 ctx.stroke();
@@ -273,47 +203,32 @@
         ctx.restore();
     }
 
-    // 4. Вспомогательные функции
-    function trackPosition() {
-        const lines = input.value.substring(0, input.selectionStart).split('\n');
-        const curLineText = input.value.split('\n')[lines.length - 1];
+    function track() {
+        const text = inp.value;
+        const cur = inp.selectionStart;
+        const lines = text.substring(0, cur).split('\n');
+        const line = lines[lines.length-1];
         
-        const mx = curLineText.match(/X(-?\d*\.?\d+)/i);
-        const mz = curLineText.match(/Z(-?\d*\.?\d+)/i);
-        const ma = curLineText.match(/A(-?\d*\.?\d+)/i);
+        const mx = line.match(/X(-?\d*\.?\d+)/i);
+        const mz = line.match(/Z(-?\d*\.?\d+)/i);
+        const ma = line.match(/A(-?\d*\.?\d+)/i);
+        if(mx) document.getElementById('dx').innerText = parseFloat(mx[1]).toFixed(3);
+        if(mz) document.getElementById('dz').innerText = parseFloat(mz[1]).toFixed(3);
+        if(ma) document.getElementById('da').innerText = parseFloat(ma[1]).toFixed(3);
         
-        if(mx) document.getElementById('dro-x').innerText = parseFloat(mx[1]).toFixed(3);
-        if(mz) document.getElementById('dro-z').innerText = parseFloat(mz[1]).toFixed(3);
-        if(ma) document.getElementById('dro-a').innerText = parseFloat(ma[1]).toFixed(3);
-
-        // Ищем T назад
-        for(let i = lines.length-1; i >= 0; i--){
-            const t = input.value.split('\n')[i].match(/T(\d+)/i);
-            if(t) { document.getElementById('dro-t').innerText = "T"+t[1]; break; }
+        for(let i=lines.length-1; i>=0; i--) {
+            const t = text.split('\n')[i].match(/T(\d+)/i);
+            if(t) { document.getElementById('dt').innerText = "T"+t[1]; break; }
         }
     }
 
-    function syncScroll(el) {
-        view.scrollTop = el.scrollTop;
-        lnum.scrollTop = el.scrollTop;
-    }
-
-    function saveNC() {
-        const b = new Blob([input.value], {type:'text/plain'});
+    function sync() { out.scrollTop = document.getElementById('scr').scrollTop; lns.scrollTop = document.getElementById('scr').scrollTop; }
+    function clearData() { if(confirm('Удалить всё?')) { inp.value=''; update(); } }
+    function saveToFile() {
+        const b = new Blob([inp.value], {type:'text/plain'});
         const a = document.createElement('a');
-        a.href = URL.createObjectURL(b); a.download='PROJECT_FIXED.NC'; a.click();
-    }
-
-    function loadFile(input) {
-        const file = input.files[0];
-        const reader = new FileReader();
-        reader.onload = (e) => { 
-            input.value = e.target.result; 
-            onInput(); 
-        };
-        reader.readAsText(file);
+        a.href = URL.createObjectURL(b); a.download='PROGRAM.NC'; a.click();
     }
 </script>
-
 </body>
 </html>
