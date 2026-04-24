@@ -2,207 +2,220 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CNC Studio Pro — Light Premium</title>
-    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>CNC ELITE EDITOR</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@500&family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg: #f5f5f7; --card: #ffffff; --accent: #007aff; --text: #1d1d1f; 
-            --border: #d2d2d7; --comment: #8e8e93; --gcode: #ff3b30; 
-            --mcode: #af52de; --coord: #007aff; --feed: #34c759;
+            --bg: #f2f2f7; --card: #ffffff; --accent: #007aff; --text: #1c1c1e;
+            --border: #d1d1d6; --comment: #8e8e93;
+            /* Оси */
+            --x-col: #ff2d55; --z-col: #007aff; --y-col: #5856d6;
+            --c-col: #ff9500; --b-col: #af52de; --a-col: #55efc4;
+            --g-col: #d70015; --m-col: #8e8e93; --f-col: #34c759;
         }
 
-        body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; margin: 0; padding: 20px; height: 100vh; overflow: hidden; }
-
-        .app-container {
-            display: flex; flex-direction: column; height: calc(100vh - 40px);
-            background: var(--card); border-radius: 24px; border: 1px solid var(--border);
-            box-shadow: 0 20px 40px rgba(0,0,0,0.08); overflow: hidden;
+        body, html { 
+            margin: 0; padding: 0; height: 100%; width: 100%;
+            background: var(--bg); font-family: 'Inter', sans-serif;
+            overflow: hidden; position: fixed;
         }
 
-        /* Header & Search */
-        .top-bar {
-            padding: 15px 25px; border-bottom: 1px solid var(--border);
-            display: flex; align-items: center; justify-content: space-between; gap: 20px;
+        .app {
+            display: flex; flex-direction: column; height: 100vh;
         }
 
-        .search-wrapper { position: relative; flex: 1; max-width: 400px; }
-        .search-input {
-            width: 100%; padding: 10px 15px 10px 35px; border-radius: 10px;
-            border: 1px solid var(--border); background: #f5f5f7; font-size: 14px; outline: none;
+        /* Top Header */
+        header {
+            padding: 12px 16px; background: rgba(255,255,255,0.8);
+            backdrop-filter: blur(10px); border-bottom: 0.5px solid var(--border);
+            display: flex; justify-content: space-between; align-items: center; z-index: 10;
         }
-        .search-input:focus { border-color: var(--accent); background: #fff; }
-        .search-icon { position: absolute; left: 12px; top: 11px; opacity: 0.4; }
 
-        .btn-group { display: flex; gap: 10px; }
-        .btn-main {
-            padding: 10px 20px; border-radius: 12px; border: none; font-weight: 700;
-            font-size: 13px; cursor: pointer; transition: 0.2s; display: flex; align-items: center; gap: 8px;
+        .title { font-weight: 900; font-size: 16px; letter-spacing: -0.5px; }
+        .title span { color: var(--accent); }
+
+        /* Toolbar */
+        .tools {
+            display: flex; gap: 8px; padding: 8px 16px; background: #fff;
+            overflow-x: auto; white-space: nowrap; border-bottom: 0.5px solid var(--border);
         }
-        .btn-load { background: #e8e8ed; color: var(--text); }
-        .btn-save { background: var(--accent); color: white; }
-        .btn-main:hover { opacity: 0.8; transform: translateY(-1px); }
 
-        /* Main Workspace */
-        .workspace { display: flex; flex: 1; overflow: hidden; position: relative; }
-        
+        .tool-btn {
+            padding: 8px 14px; border-radius: 10px; border: none;
+            background: var(--bg); font-weight: 700; font-size: 12px; color: var(--text);
+        }
+
+        .btn-primary { background: var(--accent); color: #fff; }
+
+        /* Editor Area */
+        .main-editor {
+            flex: 1; display: flex; overflow: hidden; position: relative; background: #fff;
+        }
+
         #line-numbers {
-            padding: 20px 10px; background: #fbfbfd; border-right: 1px solid var(--border);
-            text-align: right; color: #aeaeb2; font-family: 'Fira Code', monospace;
-            font-size: 14px; line-height: 1.6; min-width: 45px; user-select: none;
+            width: 35px; padding: 15px 5px; text-align: right;
+            font-family: 'Fira Code', monospace; font-size: 13px;
+            color: #c7c7cc; background: #fafafa; border-right: 0.5px solid var(--border);
+            line-height: 1.5; pointer-events: none;
         }
 
-        .editor-wrapper { flex: 1; overflow: auto; position: relative; background: #fff; }
-        
-        #editor {
-            width: 100%; min-height: 100%; padding: 20px; box-sizing: border-box;
-            font-family: 'Fira Code', monospace; font-size: 15px; line-height: 1.6;
-            white-space: pre; outline: none; color: transparent; caret-color: var(--text);
-            position: absolute; top: 0; left: 0; z-index: 2;
+        .scroll-container {
+            flex: 1; overflow: auto; position: relative; -webkit-overflow-scrolling: touch;
         }
 
-        #highlight-layer {
-            width: 100%; padding: 20px; box-sizing: border-box;
-            font-family: 'Fira Code', monospace; font-size: 15px; line-height: 1.6;
-            white-space: pre-wrap; word-break: break-all; pointer-events: none;
-            position: absolute; top: 0; left: 0; z-index: 1; color: var(--text);
+        #code-input, #code-render {
+            width: 100%; min-height: 100%; padding: 15px; box-sizing: border-box;
+            font-family: 'Fira Code', monospace; font-size: 14px; line-height: 1.5;
+            white-space: pre; word-wrap: normal; position: absolute; top: 0; left: 0;
+            border: none; outline: none; margin: 0;
         }
 
-        /* Syntax Colors */
-        .cnc-g { color: var(--gcode); font-weight: bold; }
-        .cnc-m { color: var(--mcode); font-weight: bold; }
-        .cnc-xyz { color: var(--coord); }
-        .cnc-fs { color: var(--feed); font-weight: 600; }
-        .cnc-comment { color: var(--comment); font-style: italic; background: #f2f2f7; border-radius: 4px; }
-        .cnc-search-match { background: #fff100; color: #000; border-radius: 2px; }
+        #code-input {
+            color: transparent; caret-color: var(--text); background: transparent;
+            z-index: 2; -webkit-text-fill-color: transparent;
+        }
 
-        /* Drag & Drop Overlay */
-        #drop-zone {
-            position: absolute; inset: 0; background: rgba(0,122,255,0.1);
-            border: 3px dashed var(--accent); z-index: 100; display: none;
-            align-items: center; justify-content: center; backdrop-filter: blur(4px);
+        #code-render { z-index: 1; white-space: pre; pointer-events: none; }
+
+        /* Syntax Highlighting */
+        .c-comment { color: var(--comment); font-style: italic; }
+        .c-g { color: var(--g-col); font-weight: 700; }
+        .c-m { color: var(--m-col); font-weight: 700; }
+        .c-x { color: var(--x-col); font-weight: 700; }
+        .c-z { color: var(--z-col); font-weight: 700; }
+        .c-y { color: var(--y-col); font-weight: 700; }
+        .c-c { color: var(--c-col); font-weight: 700; }
+        .c-b { color: var(--b-col); font-weight: 700; }
+        .c-a { color: var(--a-col); font-weight: 700; }
+        .c-fs { color: var(--f-col); font-weight: 700; }
+
+        /* Keyboard Helper (Mobile) */
+        .kb-helper {
+            padding: 8px; background: #d1d3d9; display: flex; gap: 5px;
+            overflow-x: auto; border-top: 0.5px solid var(--border);
+        }
+
+        .kb-btn {
+            flex: 1; min-width: 40px; height: 35px; background: #fff;
+            border-radius: 5px; border: none; font-weight: 700;
+            box-shadow: 0 1px 0 rgba(0,0,0,0.3); display: flex; 
+            align-items: center; justify-content: center;
         }
     </style>
 </head>
 <body>
 
-<div class="app-container">
-    <div id="drop-zone"><h2>Drop NC File here</h2></div>
-    
-    <div class="top-bar">
-        <div>
-            <h1 style="margin:0; font-size:18px; font-weight:900;">CNC<span>.STUDIO</span></h1>
-            <span id="filename-display" style="font-size:11px; font-weight:700; color:var(--comment);">new_program.nc</span>
+<div class="app">
+    <header>
+        <div class="title">CNC<span>ELITE</span></div>
+        <div style="display:flex; gap:10px;">
+            <input type="file" id="file-up" hidden onchange="openFile(event)">
+            <button class="tool-btn" onclick="document.getElementById('file-up').click()">OPEN</button>
+            <button class="tool-btn btn-primary" onclick="downloadFile()">SAVE</button>
         </div>
+    </header>
 
-        <div class="search-wrapper">
-            <span class="search-icon">🔍</span>
-            <input type="text" id="search-input" class="search-input" placeholder="Quick search (G0, M3, X...)" oninput="runHighlight()">
-        </div>
+    <div class="tools">
+        <button class="tool-btn" onclick="insertText('G0 X0 Z0')">G0 HOME</button>
+        <button class="tool-btn" onclick="insertText('M30')">END</button>
+        <button class="tool-btn" onclick="clearAll()">CLEAR</button>
+    </div>
 
-        <div class="btn-group">
-            <input type="file" id="file-input" hidden onchange="loadFile(event)">
-            <button class="btn-main btn-load" onclick="document.getElementById('file-input').click()">Open File</button>
-            <button class="btn-main btn-save" onclick="saveFile()">Save NC</button>
+    <div class="main-editor">
+        <div id="line-numbers">1</div>
+        <div class="scroll-container" id="scroll-sync" onscroll="syncScroll()">
+            <div id="code-render"></div>
+            <textarea id="code-input" spellcheck="false" oninput="updateEditor()" onkeydown="handleTab(event)"></textarea>
         </div>
     </div>
 
-    <div class="workspace">
-        <div id="line-numbers"></div>
-        <div class="editor-wrapper">
-            <div id="highlight-layer"></div>
-            <div id="editor" contenteditable="true" spellcheck="false" oninput="runHighlight()" onscroll="syncScroll()"></div>
-        </div>
-    </div>
-
-    <div style="padding: 10px 25px; border-top: 1px solid var(--border); font-size: 11px; display: flex; justify-content: space-between; font-weight: 700; color: var(--comment);">
-        <div id="stats">Lines: 0 | Chars: 0</div>
-        <div>PREMIUM LIGHT ENGINE v2.0</div>
+    <div class="kb-helper">
+        <button class="kb-btn" onclick="insertText('X')">X</button>
+        <button class="kb-btn" onclick="insertText('Z')">Z</button>
+        <button class="kb-btn" onclick="insertText('Y')">Y</button>
+        <button class="kb-btn" onclick="insertText('C')">C</button>
+        <button class="kb-btn" onclick="insertText('G')">G</button>
+        <button class="kb-btn" onclick="insertText('M')">M</button>
+        <button class="kb-btn" onclick="insertText('F')">F</button>
+        <button class="kb-btn" onclick="insertText('S')">S</button>
+        <button class="kb-btn" onclick="insertText('.')">.</button>
+        <button class="kb-btn" onclick="insertText('-')">-</button>
     </div>
 </div>
 
 <script>
-    const editor = document.getElementById('editor');
-    const highlightLayer = document.getElementById('highlight-layer');
-    const lineNumbers = document.getElementById('line-numbers');
-    const searchInput = document.getElementById('search-input');
+    const input = document.getElementById('code-input');
+    const render = document.getElementById('code-render');
+    const lnum = document.getElementById('line-numbers');
 
-    // Темы подсветки
-    function runHighlight() {
-        let content = editor.innerText;
-        const searchVal = searchInput.value;
-
-        // Обновляем статистику
-        const lines = content.split('\n');
-        document.getElementById('stats').innerText = `Lines: ${lines.length} | Chars: ${content.length}`;
+    function updateEditor() {
+        let val = input.value;
         
-        // Номера строк
-        lineNumbers.innerHTML = lines.map((_, i) => i + 1).join('<br>');
+        // Линии
+        const lines = val.split('\n');
+        lnum.innerHTML = lines.map((_, i) => i + 1).join('<br>');
 
-        // Подсветка синтаксиса
-        let html = content
+        // Подсветка (каждая ось — свой цвет)
+        let html = val
             .replace(/&/g, "&amp;").replace(/</g, "&lt;")
-            .replace(/\((.*?)\)/g, '<span class="cnc-comment">($1)</span>')
-            .replace(/(G\d+)/gi, '<span class="cnc-g">$1</span>')
-            .replace(/(M\d+)/gi, '<span class="cnc-m">$1</span>')
-            .replace(/([XYZUVWRA][-]?\d*\.?\d+)/gi, '<span class="cnc-xyz">$1</span>')
-            .replace(/([FS]\d*\.?\d+)/gi, '<span class="cnc-fs">$1</span>');
+            .replace(/\((.*?)\)/g, '<span class="c-comment">($1)</span>')
+            .replace(/(G\d+)/gi, '<span class="c-g">$1</span>')
+            .replace(/(M\d+)/gi, '<span class="c-m">$1</span>')
+            .replace(/(X-?\d*\.?\d+)/gi, '<span class="c-x">$1</span>')
+            .replace(/(Z-?\d*\.?\d+)/gi, '<span class="c-z">$1</span>')
+            .replace(/(Y-?\d*\.?\d+)/gi, '<span class="c-y">$1</span>')
+            .replace(/(C-?\d*\.?\d+)/gi, '<span class="c-c">$1</span>')
+            .replace(/(B-?\d*\.?\d+)/gi, '<span class="c-b">$1</span>')
+            .replace(/(A-?\d*\.?\d+)/gi, '<span class="c-a">$1</span>')
+            .replace(/([FS]\d*\.?\d+)/gi, '<span class="c-fs">$1</span>');
 
-        // Подсветка поиска
-        if (searchVal && searchVal.length > 0) {
-            const re = new RegExp(`(${searchVal})`, "gi");
-            html = html.replace(re, '<span class="cnc-search-match">$1</span>');
-        }
-
-        highlightLayer.innerHTML = html + "\n";
+        render.innerHTML = html + "\n";
     }
 
     function syncScroll() {
-        highlightLayer.scrollTop = editor.scrollTop;
-        highlightLayer.scrollLeft = editor.scrollLeft;
-        lineNumbers.scrollTop = editor.scrollTop;
+        const scroller = document.getElementById('scroll-sync');
+        lnum.scrollTop = scroller.scrollTop;
     }
 
-    // Загрузка файла
-    function loadFile(e) {
+    function insertText(text) {
+        const start = input.selectionStart;
+        const end = input.selectionEnd;
+        input.value = input.value.substring(0, start) + text + input.value.substring(end);
+        input.selectionStart = input.selectionEnd = start + text.length;
+        updateEditor();
+        input.focus();
+    }
+
+    function handleTab(e) {
+        if (e.key === 'Tab') {
+            e.preventDefault();
+            insertText('  ');
+        }
+    }
+
+    function openFile(e) {
         const file = e.target.files[0];
-        if (!file) return;
-        readFile(file);
-    }
-
-    function readFile(file) {
         const reader = new FileReader();
-        reader.onload = (e) => {
-            editor.innerText = e.target.result;
-            document.getElementById('filename-display').innerText = file.name.toUpperCase();
-            runHighlight();
+        reader.onload = (ev) => {
+            input.value = ev.target.result;
+            updateEditor();
         };
         reader.readAsText(file);
     }
 
-    // Сохранение файла
-    function saveFile() {
-        const text = editor.innerText;
-        const blob = new Blob([text], { type: 'text/plain' });
-        const anchor = document.createElement('a');
-        anchor.download = document.getElementById('filename-display').innerText || 'program.nc';
-        anchor.href = window.URL.createObjectURL(blob);
-        anchor.click();
+    function downloadFile() {
+        const blob = new Blob([input.value], {type: 'text/plain'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = 'PROGRAM.NC'; a.click();
     }
 
-    // Drag and Drop логика
-    const dropZone = document.getElementById('drop-zone');
-    window.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.style.display = 'flex'; });
-    dropZone.addEventListener('dragleave', () => { dropZone.style.display = 'none'; });
-    dropZone.addEventListener('drop', (e) => {
-        e.preventDefault();
-        dropZone.style.display = 'none';
-        const file = e.dataTransfer.files[0];
-        if (file) readFile(file);
-    });
+    function clearAll() { if(confirm('Удалить всё?')) { input.value = ''; updateEditor(); } }
 
-    // Инициализация при загрузке
-    window.onload = runHighlight;
+    // Пример программы при старте
+    input.value = "O1407(PK231850RO)\nG50 S3500\nN1 G54 M41\nG0 X50.0 Z2.0 M8\nG1 Z0.1 F0.2\nG1 X0.0 F0.12\nG28 U0 W0\nM30";
+    updateEditor();
 </script>
 
 </body>
