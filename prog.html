@@ -3,146 +3,144 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>CNC PRO ULTIMATE</title>
+    <title>CNC ULTIMATE v10</title>
     <style>
         :root {
-            --bg: #f2f2f7; --accent: #007aff; --text: #1c1c1e; --border: #d1d1d6;
-            --x-col: #ff2d55; --z-col: #007aff; --a-col: #5856d6; --t-col: #af52de;
+            --bg: #efeff4; --accent: #007aff; --text: #000; --border: #c6c6c8;
+            --x-col: #ff2d55; --z-col: #007aff; --t-col: #af52de;
         }
 
-        body, html { margin: 0; padding: 0; height: 100%; background: var(--bg); font-family: -apple-system, sans-serif; overflow: hidden; }
+        body, html { margin: 0; padding: 0; height: 100%; background: var(--bg); font-family: -apple-system, system-ui, sans-serif; overflow: hidden; }
 
-        .app-shell { display: flex; flex-direction: column; height: 100vh; }
+        .app { display: flex; flex-direction: column; height: 100vh; position: relative; }
 
-        /* Шапка с кнопками */
         header { 
             padding: 10px 15px; background: #fff; border-bottom: 1px solid var(--border);
-            display: flex; justify-content: space-between; align-items: center;
+            display: flex; justify-content: space-between; align-items: center; height: 50px; box-sizing: border-box;
         }
-        .btn-group { display: flex; gap: 8px; }
-        .btn { padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); background: #fff; font-size: 11px; font-weight: 700; }
-        .btn-blue { background: var(--accent); color: #fff; border: none; }
 
         /* Зона редактора */
-        .main-editor { flex: 1; display: flex; position: relative; background: #fff; overflow: hidden; }
-        #ln-nums { width: 35px; padding: 15px 5px; text-align: right; color: #aeaeb2; font-size: 12px; font-family: monospace; border-right: 1px solid var(--border); background: #f9f9f9; }
-        .scroll-v { flex: 1; position: relative; overflow: auto; }
+        .editor-container { flex: 1; display: flex; position: relative; background: #fff; overflow: hidden; }
+        #line-nums { width: 35px; padding: 15px 5px; text-align: right; color: #8e8e93; font-family: monospace; font-size: 12px; background: #f9f9f9; border-right: 1px solid var(--border); line-height: 1.5; }
+        .editor-scroll { flex: 1; position: relative; overflow: auto; -webkit-overflow-scrolling: touch; }
         
-        #code-in, #code-out { 
+        #code-input, #code-render {
             width: 100%; min-height: 100%; padding: 15px; box-sizing: border-box;
             font-family: 'SF Mono', 'Fira Code', monospace; font-size: 14px; line-height: 1.5;
             white-space: pre; position: absolute; top: 0; left: 0; border: none; outline: none; margin: 0;
         }
-        #code-in { color: transparent; background: transparent; z-index: 2; caret-color: #000; }
-        #code-out { z-index: 1; pointer-events: none; color: #333; }
+        #code-input { color: transparent; background: transparent; z-index: 2; caret-color: #000; }
+        #code-render { z-index: 1; pointer-events: none; color: #333; }
 
-        /* Цвета подсветки */
-        .c-g { color: #d70015; font-weight: 700; }
-        .c-x { color: var(--x-col); font-weight: 700; }
-        .c-z { color: var(--z-col); font-weight: 700; }
-        .c-a { color: var(--a-col); font-weight: 700; }
+        /* Подсветка */
+        .c-g { color: #d70015; font-weight: bold; }
+        .c-x { color: var(--x-col); font-weight: bold; }
+        .c-z { color: var(--z-col); font-weight: bold; }
         .c-t { color: var(--t-col); font-weight: 800; background: rgba(175, 82, 222, 0.1); border-radius: 3px; }
-        .c-comment { color: #8e8e93; font-style: italic; background: #f4f4f4; }
+        .c-com { color: #8e8e93; font-style: italic; background: #f4f4f4; }
 
-        /* Модалка симуляции */
-        .sim-modal { 
-            position: fixed; inset: 0; background: #000; z-index: 1000; 
-            display: none; flex-direction: column; 
+        /* Кнопка открытия симулятора */
+        .btn-sim {
+            position: absolute; bottom: 20px; right: 20px; width: 65px; height: 65px;
+            background: var(--accent); border-radius: 50%; border: none; color: #fff;
+            font-size: 28px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); z-index: 100;
+            display: flex; align-items: center; justify-content: center;
         }
-        .sim-header { padding: 15px; background: #1c1c1e; display: flex; justify-content: space-between; color: #fff; align-items: center; border-bottom: 1px solid #333; }
-        .sim-body { flex: 1; position: relative; display: flex; }
+
+        /* МОДАЛЬНОЕ ОКНО (Принудительное) */
+        #modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #000; z-index: 9999; display: none; flex-direction: column;
+        }
+        .mod-header { padding: 15px; background: #1c1c1e; display: flex; justify-content: space-between; color: #fff; border-bottom: 1px solid #333; }
+        .mod-content { flex: 1; display: flex; position: relative; overflow: hidden; }
         
-        #sim-canvas { flex: 1; height: 100%; touch-action: none; }
+        #sim-canvas { flex: 1; background: #000; width: 100%; height: 100%; }
 
-        /* Список инструментов в симе */
-        .tool-panel { 
-            width: 180px; background: rgba(28,28,30,0.95); border-right: 1px solid #333; 
-            padding: 15px; color: #fff; overflow-y: auto; font-size: 11px;
+        /* Панель инструментов внутри модалки */
+        .mod-sidebar {
+            width: 150px; background: rgba(30,30,30,0.9); border-right: 1px solid #444;
+            padding: 10px; color: #fff; overflow-y: auto; font-size: 11px;
         }
-        .tool-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; padding: 5px; border-radius: 6px; background: #2c2c2e; }
-        .tool-row input { width: 18px; height: 18px; accent-color: var(--accent); }
+        .tool-check { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; padding: 8px; background: #333; border-radius: 6px; }
+        .tool-check input { width: 20px; height: 20px; }
 
-        /* Кнопка запуска сима */
-        .fab-sim { 
-            position: absolute; bottom: 20px; right: 20px; width: 60px; height: 60px; 
-            background: var(--accent); border-radius: 50%; border: none; 
-            color: white; font-size: 24px; box-shadow: 0 8px 20px rgba(0,0,0,0.2); z-index: 10;
-        }
+        .btn { padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); font-weight: bold; font-size: 12px; cursor: pointer; }
+        .btn-red { background: #ff3b30; color: #fff; border: none; }
     </style>
 </head>
 <body>
 
-<div class="app-shell">
+<div class="app">
     <header>
-        <div style="font-weight:900;">CNC <span style="color:var(--accent)">PRO</span></div>
-        <div class="btn-group">
-            <input type="file" id="fInp" hidden onchange="openFile(this)">
-            <button class="btn" onclick="document.getElementById('fInp').click()">ОТКРЫТЬ</button>
-            <button class="btn btn-blue" onclick="saveFile()">СОХРАНИТЬ</button>
+        <div style="font-weight:900; letter-spacing:-0.5px;">CNC <span style="color:var(--accent)">PRO</span></div>
+        <div style="display:flex; gap:8px;">
+            <button class="btn" onclick="document.getElementById('f').click()">ОТКРЫТЬ</button>
+            <input type="file" id="f" hidden onchange="loadFile(this)">
+            <button class="btn" onclick="saveFile()">СОХРАНИТЬ</button>
         </div>
     </header>
 
-    <div class="main-editor">
-        <div id="ln-nums">1</div>
-        <div class="scroll-v" id="scr" onscroll="sync()">
-            <div id="code-out"></div>
-            <textarea id="code-in" spellcheck="false" oninput="render()" onkeyup="render()" onscroll="sync()"></textarea>
+    <div class="editor-container">
+        <div id="line-nums">1</div>
+        <div class="editor-scroll" id="scroll-sync" onscroll="sync()">
+            <div id="code-render"></div>
+            <textarea id="code-input" spellcheck="false" oninput="run()" onkeyup="run()" onscroll="sync()"></textarea>
         </div>
-        <button class="fab-sim" onclick="toggleModal(true)">📈</button>
+        <button class="btn-sim" onclick="openModal()">📈</button>
     </div>
 </div>
 
-<div id="sim-modal" class="sim-modal">
-    <div class="sim-header">
-        <div style="font-weight:bold;">FULLPATH SIMULATION</div>
-        <button class="btn" style="background:#ff3b30; color:#fff; border:none;" onclick="toggleModal(false)">ЗАКРЫТЬ</button>
+<div id="modal-overlay">
+    <div class="mod-header">
+        <div style="font-weight:bold;">СИМУЛЯЦИЯ (XZ)</div>
+        <button class="btn btn-red" onclick="closeModal()">ЗАКРЫТЬ</button>
     </div>
-    <div class="sim-body">
-        <div class="tool-panel" id="t-panel">
+    <div class="mod-content">
+        <div class="mod-sidebar" id="sidebar">
             </div>
         <canvas id="sim-canvas"></canvas>
     </div>
 </div>
 
 <script>
-    const input = document.getElementById('code-in');
-    const output = document.getElementById('code-out');
-    const nums = document.getElementById('ln-nums');
+    const input = document.getElementById('code-input');
+    const renderDiv = document.getElementById('code-render');
+    const lineDiv = document.getElementById('line-nums');
     const canvas = document.getElementById('sim-canvas');
     const ctx = canvas.getContext('2d');
 
-    let trajectoryData = {}; // Данные по слоям
-    let activeTools = {};    // Состояние выключателей
+    let trajectoryData = {}; 
+    let toolVisible = {};
 
-    // Загрузка
+    // Загрузка данных
     window.onload = () => {
-        const saved = localStorage.getItem('cnc_v9_save');
+        const saved = localStorage.getItem('cnc_v10_storage');
         if (saved) input.value = saved;
         else input.value = "O1407(PK231850RO)\nN1 T0101 (KOPIERST)\nG0 X50. Z2.\nG1 Z-25. F.2\nG1 X60.\nG0 X100. Z100.\n\nN2 T0606 (BOHRER)\nG0 X12.3 Z2.\nG1 Z-53.1 F5.\nG1 X16. F.1";
-        render();
+        run();
     };
 
-    function render() {
-        const text = input.value;
-        localStorage.setItem('cnc_v9_save', text);
+    function run() {
+        const val = input.value;
+        localStorage.setItem('cnc_v10_storage', val);
 
-        // 1. Подсветка (CSS классы)
-        output.innerHTML = text.replace(/&/g, "&amp;").replace(/</g, "&lt;")
-            .replace(/\((.*?)\)/g, '<span class="c-comment">($1)</span>')
+        // 1. Подсветка текста
+        renderDiv.innerHTML = val.replace(/&/g, "&amp;").replace(/</g, "&lt;")
+            .replace(/\((.*?)\)/g, '<span class="c-com">($1)</span>')
             .replace(/(G\d+)/gi, '<span class="c-g">$1</span>')
             .replace(/(T\d+)/gi, '<span class="c-t">$1</span>')
             .replace(/(X-?\d*\.?\d+)/gi, '<span class="c-x">$1</span>')
-            .replace(/(Z-?\d*\.?\d+)/gi, '<span class="c-z">$1</span>')
-            .replace(/(A-?\d*\.?\d+)/gi, '<span class="c-a">$1</span>');
+            .replace(/(Z-?\d*\.?\d+)/gi, '<span class="c-z">$1</span>');
 
-        // 2. Линейки
-        const lines = text.split('\n');
-        nums.innerHTML = lines.map((_, i) => i + 1).join('<br>');
+        // 2. Линейка
+        const lines = val.split('\n');
+        lineDiv.innerHTML = lines.map((_, i) => i + 1).join('<br>');
 
-        parseForSimulation(lines);
+        parseLines(lines);
     }
 
-    function parseForSimulation(lines) {
+    function parseLines(lines) {
         trajectoryData = {};
         let currentT = "T0000";
         let cx = 0, cz = 0;
@@ -150,15 +148,13 @@
         lines.forEach(line => {
             const tMatch = line.match(/T(\d+)/i);
             const nMatch = line.match(/\((.*?)\)/);
-            
             if(tMatch) {
                 currentT = "T" + tMatch[1];
                 if(!trajectoryData[currentT]) {
                     trajectoryData[currentT] = { name: nMatch ? nMatch[1] : currentT, paths: [] };
-                    if(!(currentT in activeTools)) activeTools[currentT] = true;
+                    if(!(currentT in toolVisible)) toolVisible[currentT] = true;
                 }
             }
-
             const mx = line.match(/X(-?\d*\.?\d+)/i);
             const mz = line.match(/Z(-?\d*\.?\d+)/i);
             const isG0 = /G0/i.test(line);
@@ -167,63 +163,58 @@
                 let nx = mx ? parseFloat(mx[1]) : cx;
                 let nz = mz ? parseFloat(mz[1]) : cz;
                 if(!trajectoryData[currentT]) trajectoryData[currentT] = { name: "INIT", paths: [] };
-                
-                trajectoryData[currentT].paths.push({x1: cx, z1: cz, x2: nx, z2: nz, rapid: isG0});
+                trajectoryData[currentT].paths.push({x1: cx, z1: cz, x2: nx, z2: nz, fast: isG0});
                 cx = nx; cz = nz;
             }
         });
     }
 
-    function toggleModal(show) {
-        document.getElementById('sim-modal').style.display = show ? 'flex' : 'none';
-        if(show) {
-            updateToolUI();
-            drawSimulation();
+    function openModal() {
+        document.getElementById('modal-overlay').style.display = 'flex';
+        updateSidebar();
+        draw();
+    }
+
+    function closeModal() {
+        document.getElementById('modal-overlay').style.display = 'none';
+    }
+
+    function updateSidebar() {
+        const side = document.getElementById('sidebar');
+        side.innerHTML = '<b style="color:var(--accent)">СЛОИ T:</b><br><br>';
+        for(let t in trajectoryData) {
+            const d = document.createElement('div');
+            d.className = 'tool-check';
+            d.innerHTML = `<span style="overflow:hidden">${t}</span> <input type="checkbox" ${toolVisible[t]?'checked':''} onchange="toggleT('${t}')">`;
+            side.appendChild(d);
         }
     }
 
-    function updateToolUI() {
-        const panel = document.getElementById('t-panel');
-        panel.innerHTML = '<b style="color:var(--accent)">ИНСТРУМЕНТЫ</b><br><br>';
-        
-        for(let id in trajectoryData) {
-            const div = document.createElement('div');
-            div.className = 'tool-row';
-            div.innerHTML = `
-                <span style="overflow:hidden; white-space:nowrap; text-overflow:ellipsis; width:100px;">${id} ${trajectoryData[id].name}</span>
-                <input type="checkbox" ${activeTools[id] ? 'checked' : ''} onchange="toggleLayer('${id}')">
-            `;
-            panel.appendChild(div);
-        }
+    function toggleT(t) {
+        toolVisible[t] = !toolVisible[t];
+        draw();
     }
 
-    function toggleLayer(id) {
-        activeTools[id] = !activeTools[id];
-        drawSimulation();
-    }
-
-    function drawSimulation() {
+    function draw() {
         canvas.width = canvas.offsetWidth;
         canvas.height = canvas.offsetHeight;
         ctx.clearRect(0,0,canvas.width,canvas.height);
 
-        let scale = 3.5, ox = canvas.width * 0.85, oy = canvas.height / 2;
-        
-        // Оси
-        ctx.strokeStyle = '#333';
-        ctx.beginPath(); ctx.moveTo(0, oy); ctx.lineTo(canvas.width, oy); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(ox, 0); ctx.lineTo(ox, canvas.height); ctx.stroke();
-
+        let scale = 3, ox = canvas.width * 0.8, oy = canvas.height / 2;
         ctx.save();
         ctx.translate(ox, oy);
         
-        for(let id in trajectoryData) {
-            if(!activeTools[id]) continue;
+        // Оси
+        ctx.strokeStyle = '#222';
+        ctx.beginPath(); ctx.moveTo(-canvas.width, 0); ctx.lineTo(canvas.width, 0); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(0, -canvas.height); ctx.lineTo(0, canvas.height); ctx.stroke();
 
-            trajectoryData[id].paths.forEach(p => {
+        for(let t in trajectoryData) {
+            if(!toolVisible[t]) continue;
+            trajectoryData[t].paths.forEach(p => {
                 ctx.beginPath();
-                ctx.lineWidth = p.rapid ? 1 : 2.5;
-                ctx.strokeStyle = p.rapid ? '#ff3b30' : '#007aff';
+                ctx.lineWidth = p.fast ? 1 : 2;
+                ctx.strokeStyle = p.fast ? '#ff3b30' : '#007aff';
                 ctx.moveTo(p.z1 * scale, -p.x1 * scale / 2);
                 ctx.lineTo(p.z2 * scale, -p.x2 * scale / 2);
                 ctx.stroke();
@@ -233,22 +224,22 @@
     }
 
     function sync() {
-        const s = document.getElementById('scr');
-        output.scrollTop = s.scrollTop;
-        nums.scrollTop = s.scrollTop;
+        const s = document.getElementById('scroll-sync');
+        renderDiv.scrollTop = s.scrollTop;
+        lineDiv.scrollTop = s.scrollTop;
     }
 
-    function openFile(input) {
-        const file = input.files[0];
-        const reader = new FileReader();
-        reader.onload = (e) => { input.value = e.target.result; render(); };
-        reader.readAsText(file);
+    function loadFile(input) {
+        const f = input.files[0];
+        const r = new FileReader();
+        r.onload = (e) => { document.getElementById('code-input').value = e.target.result; run(); };
+        r.readAsText(f);
     }
 
     function saveFile() {
         const b = new Blob([input.value], {type:'text/plain'});
         const a = document.createElement('a');
-        a.href = URL.createObjectURL(b); a.download='PROJECT.O'; a.click();
+        a.href = URL.createObjectURL(b); a.download='PROGRAM.O'; a.click();
     }
 </script>
 </body>
