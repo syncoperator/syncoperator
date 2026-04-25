@@ -3,171 +3,137 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>CNC EXPERT v11</title>
+    <title>CNC 3D PRO v12</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <style>
-        :root {
-            --bg: #f2f2f7; --accent: #007aff; --border: #c6c6c8;
-            --x-col: #ff2d55; --z-col: #007aff; --t-col: #af52de;
-        }
-
-        body, html { 
-            margin: 0; padding: 0; height: 100%; width: 100%;
-            background: var(--bg); font-family: -apple-system, system-ui, sans-serif; 
-            overflow: hidden; position: fixed; /* Предотвращает системный резиновый скролл */
-        }
-
-        .app-wrapper { display: flex; flex-direction: column; height: 100vh; width: 100vw; }
-
-        header { 
-            height: 50px; background: #fff; border-bottom: 1px solid var(--border);
-            display: flex; justify-content: space-between; align-items: center; padding: 0 15px; flex-shrink: 0;
-        }
-
-        /* ЕДИНЫЙ КОНТЕЙНЕР ДЛЯ СКРОЛЛА */
-        .editor-viewport { 
-            flex: 1; position: relative; overflow: auto; background: #fff; 
-            display: flex; align-items: flex-start; -webkit-overflow-scrolling: touch;
-        }
-
-        #line-nums { 
-            width: 40px; padding: 15px 5px; text-align: right; color: #8e8e93; 
-            font-family: 'Courier New', monospace; font-size: 13px; background: #f9f9f9; 
-            border-right: 1px solid var(--border); sticky; left: 0; z-index: 10; line-height: 1.5;
-        }
-
-        .code-container { position: relative; flex: 1; min-width: 1000px; /* Чтобы не сжимался код */ }
-
-        #code-input, #code-render {
-            width: 100%; min-height: 100%; padding: 15px; box-sizing: border-box;
-            font-family: 'SF Mono', 'Fira Code', monospace; font-size: 14px; line-height: 1.5;
-            white-space: pre; position: absolute; top: 0; left: 0; border: none; outline: none; margin: 0;
-            overflow: hidden; /* Скролл идет через родителя */
-        }
-        #code-input { color: transparent; background: transparent; z-index: 2; caret-color: #000; }
-        #code-render { z-index: 1; pointer-events: none; color: #333; }
+        :root { --bg: #f2f2f7; --accent: #007aff; --border: #c6c6c8; }
+        body, html { margin: 0; padding: 0; height: 100%; width: 100%; background: var(--bg); font-family: sans-serif; overflow: hidden; position: fixed; }
+        
+        .app { display: flex; flex-direction: column; height: 100vh; }
+        header { height: 50px; background: #fff; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; padding: 0 15px; flex-shrink: 0; }
+        
+        /* Эдитор */
+        .editor-box { flex: 1; position: relative; overflow: auto; background: #fff; display: flex; -webkit-overflow-scrolling: touch; }
+        #ln { width: 40px; padding: 15px 5px; text-align: right; color: #8e8e93; font-family: monospace; font-size: 13px; border-right: 1px solid var(--border); line-height: 1.5; background: #f9f9f9; }
+        .code-wrap { position: relative; flex: 1; min-width: 800px; }
+        #code-in, #code-out { width: 100%; min-height: 100%; padding: 15px; box-sizing: border-box; font-family: 'SF Mono', monospace; font-size: 14px; line-height: 1.5; white-space: pre; position: absolute; top: 0; left: 0; border: none; outline: none; }
+        #code-in { color: transparent; background: transparent; z-index: 2; caret-color: #000; }
+        #code-out { z-index: 1; pointer-events: none; color: #333; }
 
         /* Подсветка */
         .c-g { color: #d70015; font-weight: bold; }
-        .c-x { color: var(--x-col); font-weight: bold; }
-        .c-z { color: var(--z-col); font-weight: bold; }
-        .c-t { color: var(--t-col); font-weight: 800; background: rgba(175, 82, 222, 0.1); border-radius: 3px; }
+        .c-x { color: #ff2d55; font-weight: bold; }
+        .c-z { color: #007aff; font-weight: bold; }
+        .c-t { color: #af52de; font-weight: bold; background: rgba(175,82,222,0.1); }
         .c-com { color: #8e8e93; font-style: italic; }
 
-        /* МОДАЛКА */
-        #sim-overlay {
-            position: fixed; inset: 0; background: #000; z-index: 99999; 
-            display: none; flex-direction: column;
-        }
-        .sim-nav { height: 50px; background: #1c1c1e; display: flex; justify-content: space-between; align-items: center; padding: 0 15px; color: #fff; }
-        .sim-main { flex: 1; display: flex; position: relative; overflow: hidden; }
+        /* Модалка 3D */
+        #sim-view { position: fixed; inset: 0; background: #000; z-index: 9999; display: none; flex-direction: column; }
+        .sim-top { height: 50px; background: #1c1c1e; display: flex; justify-content: space-between; align-items: center; padding: 0 15px; color: #fff; }
+        .sim-layout { flex: 1; display: flex; overflow: hidden; }
+        #container3d { flex: 1; background: #000; }
         
-        #sim-canvas { flex: 1; background: #000; touch-action: none; width: 100%; height: 100%; }
-        .sim-side { width: 160px; background: rgba(30,30,30,0.9); border-right: 1px solid #444; padding: 10px; overflow-y: auto; color: #fff; font-size: 10px; }
-
-        .t-btn { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; padding: 10px; background: #333; border-radius: 6px; }
-        .t-btn input { width: 18px; height: 18px; }
-
-        .fab { 
-            position: absolute; bottom: 30px; right: 30px; width: 60px; height: 60px; 
-            background: var(--accent); border-radius: 50%; color: #fff; border: none; 
-            font-size: 24px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); z-index: 50;
-        }
-        .btn { padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border); font-size: 12px; font-weight: 600; }
+        .sim-ui { width: 200px; background: rgba(30,30,30,0.9); padding: 15px; overflow-y: auto; color: #fff; font-size: 11px; }
+        .ui-row { margin-bottom: 15px; padding: 10px; background: #333; border-radius: 8px; }
+        .btn { padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border); font-weight: 600; cursor: pointer; }
+        .fab { position: absolute; bottom: 30px; right: 30px; width: 65px; height: 65px; background: var(--accent); border-radius: 50%; color: #fff; border: none; font-size: 24px; z-index: 100; box-shadow: 0 5px 20px rgba(0,0,0,0.3); }
     </style>
 </head>
 <body>
 
-<div class="app-wrapper">
+<div class="app">
     <header>
-        <div style="font-weight:900;">CNC PRO <small>v11</small></div>
-        <div style="display:flex; gap:10px;">
-            <button class="btn" onclick="document.getElementById('fileIn').click()">OPEN</button>
+        <div style="font-weight:900;">CNC <span style="color:var(--accent)">3D PRO</span></div>
+        <div>
+            <button class="btn" onclick="document.getElementById('fileIn').click()">ОТКРЫТЬ</button>
             <input type="file" id="fileIn" hidden onchange="handleFile(this)">
-            <button class="btn" style="background:var(--accent); color:#fff; border:none;" onclick="saveFile()">SAVE</button>
+            <button class="btn" style="background:var(--accent); color:#fff; border:none;" onclick="saveFile()">СОХРАНИТЬ</button>
         </div>
     </header>
 
-    <div class="editor-viewport" id="master-scroll">
-        <div id="line-nums">1</div>
-        <div class="code-container">
-            <div id="code-render"></div>
-            <textarea id="code-input" spellcheck="false" oninput="onInput()"></textarea>
+    <div class="editor-box" id="scroll-root">
+        <div id="ln">1</div>
+        <div class="code-wrap">
+            <div id="code-out"></div>
+            <textarea id="code-in" spellcheck="false" oninput="update()"></textarea>
         </div>
     </div>
-    
-    <button class="fab" onclick="openModal()">📈</button>
+    <button class="fab" onclick="open3D()">🧊</button>
 </div>
 
-<div id="sim-overlay">
-    <div class="sim-nav">
-        <span>СЛОИ ТРАЕКТОРИЙ</span>
-        <button class="btn" style="background:#ff3b30; color:#fff; border:none;" onclick="closeModal()">ЗАКРЫТЬ</button>
+<div id="sim-view">
+    <div class="sim-top">
+        <span style="font-size:12px;">3D ВИЗУАЛИЗАЦИЯ</span>
+        <button class="btn" style="background:#ff3b30; color:#fff; border:none;" onclick="close3D()">ЗАКРЫТЬ</button>
     </div>
-    <div class="sim-main">
-        <div class="sim-side" id="t-list"></div>
-        <canvas id="sim-canvas"></canvas>
+    <div class="sim-layout">
+        <div class="sim-ui">
+            <div class="ui-row">
+                <label style="display:flex; align-items:center; gap:10px; color:#ff3b30;">
+                    <input type="checkbox" id="hideG0" onchange="draw3D()" checked> СКРЫТЬ G0
+                </label>
+            </div>
+            <div id="t-list-3d"></div>
+        </div>
+        <div id="container3d"></div>
     </div>
 </div>
 
 <script>
-    const input = document.getElementById('code-input');
-    const render = document.getElementById('code-render');
-    const lines = document.getElementById('line-nums');
-    const canvas = document.getElementById('sim-canvas');
-    const ctx = canvas.getContext('2d');
+    const input = document.getElementById('code-in');
+    const output = document.getElementById('code-out');
+    const lineBox = document.getElementById('ln');
+    
+    let toolsData = {}; 
+    let activeTools = {};
 
-    let tools = {}; 
-    let toolsActive = {};
+    // 3D Переменные
+    let scene, camera, renderer, controls, mainGroup;
 
     window.onload = () => {
-        const saved = localStorage.getItem('cnc_v11_code');
-        if (saved) input.value = saved;
-        else input.value = "O1407 (PK231850RO)\nN1 T0101 (KOPIERST)\nG0 X50. Z2.\nG1 Z-25. F.2\nG0 X100.\n\nN2 T0606 (BOHRER)\nG0 X12. Z2.\nG1 Z-50. F5.";
-        onInput();
+        const saved = localStorage.getItem('cnc_3d_v12');
+        input.value = saved || "O1407(TEST)\nN1 T0101 (KOPIERST)\nG0 X50 Z2\nG1 Z-25 F.2\nG1 X60\nG0 X100 Z100\n\nN2 T0606 (BOHRER)\nG0 X0 Z2\nG1 Z-40 F.1\nG0 Z100";
+        update();
+        init3D();
     };
 
-    function onInput() {
+    function update() {
         const val = input.value;
-        localStorage.setItem('cnc_v11_code', val);
+        localStorage.setItem('cnc_3d_v12', val);
 
-        // 1. Подсветка
-        render.innerHTML = val.replace(/&/g, "&amp;").replace(/</g, "&lt;")
+        output.innerHTML = val.replace(/&/g, "&amp;").replace(/</g, "&lt;")
             .replace(/\((.*?)\)/g, '<span class="c-com">($1)</span>')
             .replace(/(G\d+)/gi, '<span class="c-g">$1</span>')
             .replace(/(T\d+)/gi, '<span class="c-t">$1</span>')
             .replace(/(X-?\d*\.?\d+)/gi, '<span class="c-x">$1</span>')
             .replace(/(Z-?\d*\.?\d+)/gi, '<span class="c-z">$1</span>');
 
-        // 2. Линейка и высота контейнера
-        const lineCount = val.split('\n').length;
-        lines.innerHTML = Array.from({length: lineCount}, (_, i) => i + 1).join('<br>');
+        const lines = val.split('\n');
+        lineBox.innerHTML = lines.map((_, i) => i + 1).join('<br>');
         
-        // Авто-подстройка высоты для скролла
-        const newHeight = Math.max(window.innerHeight, lineCount * 21 + 100);
-        input.style.height = render.style.height = newHeight + "px";
-
-        parseTools();
+        // Высота для скролла
+        const h = Math.max(window.innerHeight, lines.length * 21 + 100);
+        input.style.height = output.style.height = h + "px';
+        
+        parseTools(lines);
     }
 
-    function parseTools() {
-        const codeLines = input.value.split('\n');
-        tools = {};
+    function parseTools(lines) {
+        toolsData = {};
         let curT = "T0000";
         let cx = 0, cz = 0;
 
-        codeLines.forEach(line => {
-            const tMatch = line.match(/T(\d+)/i);
-            const nMatch = line.match(/\((.*?)\)/);
-            
-            if(tMatch) {
-                curT = "T" + tMatch[1];
-                if(!tools[curT]) {
-                    // Берём название из текущей строки или следующей
-                    tools[curT] = { name: nMatch ? nMatch[1] : curT, paths: [] };
-                    if(!(curT in toolsActive)) toolsActive[curT] = true;
+        lines.forEach(line => {
+            const tm = line.match(/T(\d+)/i);
+            const nm = line.match(/\((.*?)\)/);
+            if(tm) {
+                curT = "T" + tm[1];
+                if(!toolsData[curT]) {
+                    toolsData[curT] = { name: nm ? nm[1] : curT, paths: [] };
+                    if(!(curT in activeTools)) activeTools[curT] = true;
                 }
             }
-
             const mx = line.match(/X(-?\d*\.?\d+)/i);
             const mz = line.match(/Z(-?\d*\.?\d+)/i);
             const isG0 = /G0/i.test(line);
@@ -175,76 +141,104 @@
             if(mx || mz) {
                 let nx = mx ? parseFloat(mx[1]) : cx;
                 let nz = mz ? parseFloat(mz[1]) : cz;
-                if(!tools[curT]) tools[curT] = { name: "START", paths: [] };
-                tools[curT].paths.push({x1: cx, z1: cz, x2: nx, z2: nz, g0: isG0});
+                if(!toolsData[curT]) toolsData[curT] = { name: "INIT", paths: [] };
+                toolsData[curT].paths.push({x1:cx, z1:cz, x2:nx, z2:nz, g0: isG0});
                 cx = nx; cz = nz;
             }
         });
     }
 
-    function openModal() {
-        document.getElementById('sim-overlay').style.display = 'flex';
-        updateSidebar();
-        setTimeout(draw, 100);
+    function init3D() {
+        const container = document.getElementById('container3d');
+        scene = new THREE.Scene();
+        camera = new THREE.PerspectiveCamera(45, container.offsetWidth/container.offsetHeight, 1, 5000);
+        camera.position.set(100, 100, 200);
+
+        renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(container.offsetWidth, container.offsetHeight);
+        container.appendChild(renderer.domElement);
+
+        controls = new THREE.OrbitControls(camera, renderer.domElement);
+        mainGroup = new THREE.Group();
+        scene.add(mainGroup);
+
+        // Свет и сетка
+        scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+        const grid = new THREE.GridHelper(200, 20, 0x333333, 0x111111);
+        grid.rotation.x = Math.PI/2;
+        scene.add(grid);
+
+        function animate() { requestAnimationFrame(animate); renderer.render(scene, camera); }
+        animate();
     }
 
-    function closeModal() { document.getElementById('sim-overlay').style.display = 'none'; }
+    function open3D() {
+        document.getElementById('sim-view').style.display = 'flex';
+        updateUI();
+        draw3D();
+        // Исправляем размер при открытии
+        const container = document.getElementById('container3d');
+        camera.aspect = container.offsetWidth / container.offsetHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(container.offsetWidth, container.offsetHeight);
+    }
 
-    function updateSidebar() {
-        const side = document.getElementById('t-list');
-        side.innerHTML = '<b style="color:var(--accent)">ИНСТРУМЕНТЫ</b><br><br>';
-        for(let t in tools) {
-            const row = document.createElement('div');
-            row.className = 't-btn';
-            row.innerHTML = `<input type="checkbox" ${toolsActive[t]?'checked':''} onchange="toggleT('${t}')"> <span style="font-size:9px">${t}<br>${tools[t].name}</span>`;
-            side.appendChild(row);
+    function close3D() { document.getElementById('sim-view').style.display = 'none'; }
+
+    function updateUI() {
+        const list = document.getElementById('t-list-3d');
+        list.innerHTML = '<b style="color:var(--accent)">ИНСТРУМЕНТЫ:</b><br><br>';
+        for(let t in toolsData) {
+            const div = document.createElement('div');
+            div.className = 'ui-row';
+            div.innerHTML = `<input type="checkbox" ${activeTools[t]?'checked':''} onchange="toggleT('${t}')"> <b>${t}</b><br><small>${toolsData[t].name}</small>`;
+            list.appendChild(div);
         }
     }
 
-    function toggleT(t) { toolsActive[t] = !toolsActive[t]; draw(); }
+    function toggleT(t) { activeTools[t] = !activeTools[t]; draw3D(); }
 
-    function draw() {
-        canvas.width = canvas.offsetWidth;
-        canvas.height = canvas.offsetHeight;
-        ctx.clearRect(0,0,canvas.width,canvas.height);
+    function draw3D() {
+        while(mainGroup.children.length > 0) mainGroup.remove(mainGroup.children[0]);
+        
+        const hideG0 = document.getElementById('hideG0').checked;
+        const scale = 1;
 
-        let scale = 3, ox = canvas.width * 0.8, oy = canvas.height / 2;
-        ctx.save();
-        ctx.translate(ox, oy);
+        for(let t in toolsData) {
+            if(!activeTools[t]) continue;
+            
+            const points = [];
+            const colors = [];
 
-        // Сетка
-        ctx.strokeStyle = '#222';
-        ctx.beginPath(); ctx.moveTo(-canvas.width,0); ctx.lineTo(100,0); ctx.stroke();
-
-        for(let t in tools) {
-            if(!toolsActive[t]) continue;
-            tools[t].paths.forEach(p => {
-                ctx.beginPath();
-                ctx.lineWidth = p.g0 ? 1 : 2;
-                ctx.strokeStyle = p.g0 ? '#ff3b30' : '#007aff';
-                ctx.moveTo(p.z1 * scale, -p.x1 * scale / 2);
-                ctx.lineTo(p.z2 * scale, -p.x2 * scale / 2);
-                ctx.stroke();
+            toolsData[t].paths.forEach(p => {
+                if(hideG0 && p.g0) return;
+                
+                const mat = new THREE.LineBasicMaterial({ color: p.g0 ? 0xff3b30 : 0x007aff, linewidth: p.g0 ? 1 : 2 });
+                const geometry = new THREE.BufferGeometry().setFromPoints([
+                    new THREE.Vector3(p.z1, p.x1/2, 0),
+                    new THREE.Vector3(p.z2, p.x2/2, 0)
+                ]);
+                const line = new THREE.Line(geometry, mat);
+                mainGroup.add(line);
             });
         }
-        ctx.restore();
     }
 
     function handleFile(input) {
         const file = input.files[0];
-        const reader = new FileReader();
-        reader.onload = (e) => { 
-            document.getElementById('code-input').value = e.target.result; 
-            onInput(); 
-            document.getElementById('master-scroll').scrollTop = 0;
+        const r = new FileReader();
+        r.onload = (e) => { 
+            document.getElementById('code-in').value = e.target.result; 
+            update();
+            document.getElementById('scroll-root').scrollTop = 0;
         };
-        reader.readAsText(file);
+        r.readAsText(file);
     }
 
     function saveFile() {
-        const blob = new Blob([input.value], {type:'text/plain'});
+        const b = new Blob([input.value], {type:'text/plain'});
         const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob); a.download='PROGRAM.O'; a.click();
+        a.href = URL.createObjectURL(b); a.download='PROJECT_3D.O'; a.click();
     }
 </script>
 </body>
