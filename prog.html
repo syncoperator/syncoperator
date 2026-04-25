@@ -3,228 +3,200 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>CNC PRO v14</title>
+    <title>CNC CAM SOLID v15</title>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <style>
-        :root { --accent: #007aff; --bg: #f2f2f7; }
-        body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; background: #000; font-family: -apple-system, sans-serif; }
+        :root { --accent: #007aff; }
+        body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; background: #1a1a1a; font-family: sans-serif; }
         
-        .ui-layer { position: absolute; inset: 0; display: flex; flex-direction: column; z-index: 10; pointer-events: none; }
-        header { pointer-events: auto; background: rgba(255,255,255,0.9); backdrop-filter: blur(10px); height: 50px; display: flex; align-items: center; justify-content: space-between; padding: 0 15px; border-bottom: 1px solid #ccc; }
+        /* UI Layers */
+        .ui-overlay { position: absolute; inset: 0; display: flex; flex-direction: column; z-index: 10; pointer-events: none; }
+        header { pointer-events: auto; background: rgba(255,255,255,0.9); height: 50px; display: flex; align-items: center; justify-content: space-between; padding: 0 15px; border-bottom: 1px solid #ccc; }
         
-        .editor-container { flex: 1; display: flex; overflow: hidden; pointer-events: auto; background: #fff; }
-        #ln-box { width: 40px; background: #f0f0f0; border-right: 1px solid #ccc; padding: 15px 5px; text-align: right; font-family: monospace; font-size: 12px; color: #888; overflow: hidden; }
+        .editor-zone { flex: 1; display: flex; overflow: hidden; pointer-events: auto; background: #fff; transition: 0.3s; }
+        #ln-area { width: 40px; background: #f0f0f0; border-right: 1px solid #ccc; padding: 15px 5px; text-align: right; font-family: monospace; font-size: 12px; color: #888; }
         .edit-wrap { flex: 1; position: relative; overflow: auto; }
-        #main-input, #main-render { position: absolute; top: 0; left: 0; width: 100%; min-height: 100%; padding: 15px; font-family: 'SF Mono', monospace; font-size: 14px; line-height: 1.5; white-space: pre; border: none; outline: none; }
-        #main-input { color: transparent; background: transparent; z-index: 2; caret-color: #000; }
-        #main-render { z-index: 1; pointer-events: none; }
+        #code-in, #code-out { position: absolute; top: 0; left: 0; width: 100%; min-height: 100%; padding: 15px; font-family: 'SF Mono', monospace; font-size: 14px; line-height: 1.5; white-space: pre; border: none; outline: none; }
+        #code-in { color: transparent; background: transparent; z-index: 2; caret-color: #000; }
+        #code-out { z-index: 1; pointer-events: none; }
 
-        /* 3D Сцена */
-        #cnc-3d-view { position: fixed; inset: 0; z-index: 5; display: none; background: #000; }
+        /* 3D View */
+        #viewport-3d { position: fixed; inset: 0; z-index: 5; background: radial-gradient(circle, #333 0%, #000 100%); }
         
-        /* Панель инструментов */
-        .tool-panel { position: absolute; left: 10px; top: 60px; width: 160px; background: rgba(0,0,0,0.7); color: #fff; border-radius: 12px; padding: 10px; pointer-events: auto; z-index: 20; font-size: 11px; }
-        .t-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; padding: 5px; background: rgba(255,255,255,0.1); border-radius: 6px; }
+        .cam-panel { position: absolute; left: 10px; top: 60px; width: 180px; background: rgba(0,0,0,0.8); color: #fff; border-radius: 8px; padding: 12px; pointer-events: auto; z-index: 20; display: none; }
         
-        .btn { pointer-events: auto; padding: 8px 12px; border-radius: 6px; border: 1px solid #ccc; background: #fff; font-weight: bold; font-size: 12px; }
-        .btn-blue { background: var(--accent); color: #fff; border: none; }
-        .fab { position: absolute; bottom: 30px; right: 30px; width: 60px; height: 60px; background: var(--accent); border-radius: 50%; color: #fff; font-size: 24px; z-index: 100; pointer-events: auto; border: none; box-shadow: 0 5px 15px rgba(0,0,0,0.4); }
+        .btn { pointer-events: auto; padding: 8px 12px; border-radius: 6px; border: 1px solid #ccc; background: #fff; font-weight: bold; cursor: pointer; }
+        .fab { position: absolute; bottom: 30px; right: 30px; width: 65px; height: 65px; background: var(--accent); border-radius: 50%; color: #fff; font-size: 24px; z-index: 100; pointer-events: auto; border: none; box-shadow: 0 5px 20px rgba(0,0,0,0.5); }
         
-        /* Подсветка */
-        .g { color: #ff3b30; font-weight: bold; }
+        /* Syntax */
+        .g { color: #d70015; font-weight: bold; }
         .x { color: #ff2d55; }
         .z { color: #007aff; }
-        .t { color: #af52de; background: rgba(175,82,222,0.1); }
     </style>
 </head>
 <body>
 
-<div id="cnc-3d-view"></div>
+<div id="viewport-3d"></div>
 
-<div class="ui-layer">
+<div class="ui-overlay">
     <header>
-        <b style="font-size:18px">CNC <span style="color:var(--accent)">ULTRA</span></b>
+        <b>CNC <span style="color:var(--accent)">SOLID CAM</span></b>
         <div style="display:flex; gap:8px;">
-            <button class="btn" onclick="document.getElementById('fileIn').click()">ФАЙЛ</button>
-            <input type="file" id="fileIn" hidden onchange="loadFile(this)">
-            <button class="btn btn-blue" onclick="saveFile()">💾</button>
+            <button class="btn" onclick="document.getElementById('file').click()">LOAD</button>
+            <input type="file" id="file" hidden onchange="openFile(this)">
+            <button class="btn" style="background:var(--accent); color:#fff;" onclick="saveFile()">SAVE</button>
         </div>
     </header>
 
-    <div class="editor-container">
-        <div id="ln-box">1</div>
-        <div class="edit-wrap" id="scroll-sync" onscroll="sync()">
-            <div id="main-render"></div>
-            <textarea id="main-input" spellcheck="false" oninput="process()"></textarea>
+    <div class="editor-zone" id="editor">
+        <div id="ln-area">1</div>
+        <div class="edit-wrap" id="scr" onscroll="sync()">
+            <div id="code-out"></div>
+            <textarea id="code-in" spellcheck="false" oninput="run()"></textarea>
         </div>
     </div>
 </div>
 
-<div class="tool-panel" id="t-ui" style="display:none">
-    <label style="display:flex; align-items:center; gap:8px; margin-bottom:10px; color:#ff3b30">
-        <input type="checkbox" id="hideG0" onchange="draw3D()" checked> СКРЫТЬ G0
+<div class="cam-panel" id="ui-3d">
+    <div style="font-size:11px; margin-bottom:10px; color:var(--accent)">CAD/CAM МОДЕЛЬ</div>
+    <label style="display:block; margin-bottom:10px;">
+        <input type="checkbox" id="showWire" onchange="toggleWire()"> СЕТКА (WIRE)
     </label>
-    <div id="t-list-container"></div>
+    <button class="btn" style="width:100%; font-size:10px;" onclick="resetCamera()">СБРОС КАМЕРЫ</button>
 </div>
 
-<button class="fab" id="view-btn" onclick="toggleView()">🧊</button>
+<button class="fab" id="mode-btn" onclick="toggleMode()">🧊</button>
 
 <script>
-    const input = document.getElementById('main-input');
-    const render = document.getElementById('main-render');
-    const ln = document.getElementById('ln-box');
-    const scroller = document.getElementById('scroll-sync');
+    const input = document.getElementById('code-in');
+    const output = document.getElementById('code-out');
+    const ln = document.getElementById('ln-area');
     
     let is3D = false;
-    let scene, camera, renderer, controls, meshGroup;
-    let tools = {};
-    let activeTools = {};
+    let scene, camera, renderer, controls, solidMesh, pathLines;
 
     window.onload = () => {
-        input.value = localStorage.getItem('cnc_code_v14') || "O1407 (PK231850RO)\nN1 T0101 (KOPIERST)\nG0 X50. Z2.\nG1 Z-25. F.2\nG1 X60.\nG0 X100. Z100.\n\nN2 T0606 (BOHRER)\nG0 X0 Z2.\nG1 Z-40. F0.1\nG0 Z100.";
-        process();
+        input.value = localStorage.getItem('cnc_solid_v15') || "O1407\nN1 T0101\nG0 X40 Z2\nG1 Z-20 F.2\nG1 X50 Z-30\nG1 Z-50\nG1 X60\nG0 X100 Z100";
+        run();
         init3D();
     };
 
-    function process() {
+    function run() {
         const val = input.value;
-        localStorage.setItem('cnc_code_v14', val);
+        localStorage.setItem('cnc_solid_v15', val);
         
-        // Подсветка
-        render.innerHTML = val.replace(/&/g, "&amp;").replace(/</g, "&lt;")
-            .replace(/\((.*?)\)/g, '<span style="color:#8e8e93">($1)</span>')
+        output.innerHTML = val.replace(/&/g, "&amp;").replace(/</g, "&lt;")
             .replace(/(G\d+)/gi, '<span class="g">$1</span>')
-            .replace(/(T\d+)/gi, '<span class="t">$1</span>')
             .replace(/(X-?\d*\.?\d+)/gi, '<span class="x">$1</span>')
             .replace(/(Z-?\d*\.?\d+)/gi, '<span class="z">$1</span>');
 
         const lines = val.split('\n');
         ln.innerHTML = lines.map((_, i) => i + 1).join('<br>');
-        
-        // Масштабирование высоты
-        const h = Math.max(scroller.offsetHeight, lines.length * 21 + 100);
-        input.style.height = render.style.height = h + 'px';
-        
-        parseNC(lines);
-    }
-
-    function parseNC(lines) {
-        tools = {};
-        let curT = "T0000";
-        let cx = 0, cz = 0;
-
-        lines.forEach(line => {
-            const tm = line.match(/T(\d+)/i);
-            const nm = line.match(/\((.*?)\)/);
-            if(tm) {
-                curT = "T" + tm[1];
-                if(!tools[curT]) {
-                    tools[curT] = { name: nm ? nm[1] : curT, paths: [] };
-                    if(!(curT in activeTools)) activeTools[curT] = true;
-                }
-            }
-            const mx = line.match(/X(-?\d*\.?\d+)/i);
-            const mz = line.match(/Z(-?\d*\.?\d+)/i);
-            const g0 = /G0/i.test(line);
-
-            if(mx || mz) {
-                let nx = mx ? parseFloat(mx[1]) : cx;
-                let nz = mz ? parseFloat(mz[1]) : cz;
-                if(!tools[curT]) tools[curT] = { name: "INIT", paths: [] };
-                tools[curT].paths.push({x1:cx, z1:cz, x2:nx, z2:nz, isG0: g0});
-                cx = nx; cz = nz;
-            }
-        });
+        input.style.height = output.style.height = Math.max(500, lines.length * 21 + 100) + 'px';
     }
 
     function init3D() {
-        const view = document.getElementById('cnc-3d-view');
+        const container = document.getElementById('viewport-3d');
         scene = new THREE.Scene();
-        camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 5000);
-        camera.position.set(100, 100, 200);
+        camera = new THREE.PerspectiveCamera(45, window.innerWidth/window.innerHeight, 0.1, 1000);
+        camera.position.set(80, 50, 80);
 
-        renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        view.appendChild(renderer.domElement);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        container.appendChild(renderer.domElement);
 
         controls = new THREE.OrbitControls(camera, renderer.domElement);
-        meshGroup = new THREE.Group();
-        scene.add(meshGroup);
+        
+        // Освещение как в CAD
+        const sun = new THREE.DirectionalLight(0xffffff, 1);
+        sun.position.set(10, 20, 10);
+        scene.add(sun);
+        scene.add(new THREE.AmbientLight(0x404040, 2));
 
-        scene.add(new THREE.AmbientLight(0xffffff, 1));
-        const grid = new THREE.GridHelper(200, 20, 0x444444, 0x222222);
-        grid.rotation.x = Math.PI / 2;
+        const grid = new THREE.GridHelper(200, 20, 0x555555, 0x222222);
+        grid.rotation.x = Math.PI/2;
         scene.add(grid);
 
         function animate() { requestAnimationFrame(animate); renderer.render(scene, camera); }
         animate();
     }
 
-    function toggleView() {
+    function toggleMode() {
         is3D = !is3D;
-        document.getElementById('cnc-3d-view').style.display = is3D ? 'block' : 'none';
-        document.getElementById('t-ui').style.display = is3D ? 'block' : 'none';
-        document.querySelector('.editor-container').style.visibility = is3D ? 'hidden' : 'visible';
-        document.getElementById('view-btn').innerText = is3D ? '📝' : '🧊';
-        if(is3D) {
-            updateToolList();
-            draw3D();
-        }
+        document.getElementById('editor').style.opacity = is3D ? "0" : "1";
+        document.getElementById('editor').style.pointerEvents = is3D ? "none" : "auto";
+        document.getElementById('ui-3d').style.display = is3D ? "block" : "none";
+        document.getElementById('mode-btn').innerText = is3D ? "📝" : "🧊";
+        if(is3D) buildSolid();
     }
 
-    function updateToolList() {
-        const container = document.getElementById('t-list-container');
-        container.innerHTML = "";
-        for(let t in tools) {
-            const div = document.createElement('div');
-            div.className = 't-row';
-            div.innerHTML = `<input type="checkbox" ${activeTools[t]?'checked':''} onchange="toggleT('${t}')"> <b>${t}</b><br><small>${tools[t].name}</small>`;
-            container.appendChild(div);
-        }
+    function buildSolid() {
+        if(solidMesh) scene.remove(solidMesh);
+        if(pathLines) scene.remove(pathLines);
+
+        const lines = input.value.split('\n');
+        let points = [];
+        let cx = 0, cz = 0;
+
+        // Собираем точки контура
+        lines.forEach(l => {
+            const mx = l.match(/X(-?\d*\.?\d+)/i);
+            const mz = l.match(/Z(-?\d*\.?\d+)/i);
+            if(mx) cx = parseFloat(mx[1]);
+            if(mz) cz = parseFloat(mz[1]);
+            if(mx || mz) points.push(new THREE.Vector2(cx / 2, cz)); // Делим X на 2 (радиус)
+        });
+
+        if(points.length < 2) return;
+
+        // Создаем тело вращения (Lathe)
+        const geometry = new THREE.LatheGeometry(points, 32);
+        const material = new THREE.MeshPhongMaterial({ 
+            color: 0x999999, 
+            specular: 0x222222, 
+            shininess: 100, 
+            side: THREE.DoubleSide,
+            flatShading: false 
+        });
+        
+        solidMesh = new THREE.Mesh(geometry, material);
+        solidMesh.rotation.x = -Math.PI / 2; // Кладем на ось Z
+        scene.add(solidMesh);
     }
 
-    function toggleT(t) { activeTools[t] = !activeTools[t]; draw3D(); }
-
-    function draw3D() {
-        while(meshGroup.children.length > 0) meshGroup.remove(meshGroup.children[0]);
-        const hideG0 = document.getElementById('hideG0').checked;
-
-        for(let t in tools) {
-            if(!activeTools[t]) continue;
-            tools[t].paths.forEach(p => {
-                if(hideG0 && p.isG0) return;
-                
-                // Создаем "Трубки" для визуального объема
-                const curve = new THREE.LineCurve3(
-                    new THREE.Vector3(p.z1, p.x1/2, 0),
-                    new THREE.Vector3(p.z2, p.x2/2, 0)
-                );
-                const geometry = new THREE.TubeGeometry(curve, 1, p.isG0 ? 0.2 : 0.6, 6, false);
-                const material = new THREE.MeshBasicMaterial({ color: p.isG0 ? 0xff3b30 : 0x007aff });
-                meshGroup.add(new THREE.Mesh(geometry, material));
-            });
-        }
+    function toggleWire() {
+        if(solidMesh) solidMesh.material.wireframe = document.getElementById('showWire').checked;
     }
 
-    function sync() { render.scrollTop = scroller.scrollTop; ln.scrollTop = scroller.scrollTop; }
+    function resetCamera() {
+        controls.reset();
+        camera.position.set(80, 50, 80);
+    }
 
-    function loadFile(inputEl) {
-        const file = inputEl.files[0];
-        const r = new FileReader();
-        r.onload = (e) => {
-            input.value = e.target.result;
-            process();
-            scroller.scrollTop = 0;
-        };
-        r.readAsText(file);
+    function sync() { 
+        output.scrollTop = document.getElementById('scr').scrollTop; 
+        ln.scrollTop = document.getElementById('scr').scrollTop; 
+    }
+
+    function openFile(inputEl) {
+        const reader = new FileReader();
+        reader.onload = (e) => { input.value = e.target.result; run(); };
+        reader.readAsText(inputEl.files[0]);
     }
 
     function saveFile() {
         const b = new Blob([input.value], {type:'text/plain'});
         const a = document.createElement('a');
-        a.href = URL.createObjectURL(b); a.download='PROGRAM.O'; a.click();
+        a.href = URL.createObjectURL(b); a.download='CAD_MODEL.O'; a.click();
     }
+
+    window.onresize = () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    };
 </script>
 </body>
 </html>
