@@ -3,213 +3,252 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>CNC EXPERT STUDIO</title>
+    <title>CNC PRO ULTIMATE</title>
     <style>
         :root {
-            --bg: #f2f2f7; --panel: #ffffff; --accent: #007aff; --text: #1c1c1e;
-            --border: #d1d1d6; --x-axis: #ff2d55; --z-axis: #007aff;
+            --bg: #f2f2f7; --accent: #007aff; --text: #1c1c1e; --border: #d1d1d6;
+            --x-col: #ff2d55; --z-col: #007aff; --a-col: #5856d6; --t-col: #af52de;
         }
 
-        body, html { margin: 0; padding: 0; height: 100%; background: var(--bg); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; overflow: hidden; }
+        body, html { margin: 0; padding: 0; height: 100%; background: var(--bg); font-family: -apple-system, sans-serif; overflow: hidden; }
 
-        .app-container { display: flex; flex-direction: column; height: 100vh; }
+        .app-shell { display: flex; flex-direction: column; height: 100vh; }
 
-        /* HEADER: Функции управления */
+        /* Шапка с кнопками */
         header { 
-            padding: 10px 15px; background: var(--panel); border-bottom: 1px solid var(--border);
+            padding: 10px 15px; background: #fff; border-bottom: 1px solid var(--border);
             display: flex; justify-content: space-between; align-items: center;
         }
-        .file-ops { display: flex; gap: 8px; }
-        .btn { 
-            padding: 8px 14px; border-radius: 8px; border: 1px solid var(--border); 
-            background: #fff; font-size: 12px; font-weight: 600; cursor: pointer;
-        }
-        .btn-primary { background: var(--accent); color: #fff; border: none; }
+        .btn-group { display: flex; gap: 8px; }
+        .btn { padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); background: #fff; font-size: 11px; font-weight: 700; }
+        .btn-blue { background: var(--accent); color: #fff; border: none; }
 
-        /* VIEWPORT: Графика */
-        .viewport { height: 200px; background: #000; position: relative; border-bottom: 2px solid var(--accent); }
-        #cncCanvas { width: 100%; height: 100%; display: block; }
-        .layer-control {
-            position: absolute; top: 10px; right: 10px; background: rgba(28,28,30,0.8);
-            padding: 8px; border-radius: 8px; color: #fff; font-size: 10px; backdrop-filter: blur(5px);
-        }
-
-        /* DRO: Датчики */
-        .dro-bar { 
-            display: grid; grid-template-columns: repeat(4, 1fr); background: #1c1c1e; 
-            padding: 6px; gap: 4px; border-bottom: 1px solid #333;
-        }
-        .dro-unit { background: #2c2c2e; padding: 4px; border-radius: 6px; text-align: center; }
-        .label { font-size: 9px; color: #8e8e93; display: block; }
-        .num { font-family: "SF Mono", monospace; font-size: 14px; color: #fff; font-weight: bold; }
-
-        /* EDITOR: Текст */
-        .editor-zone { flex: 1; display: flex; position: relative; background: #fff; overflow: hidden; }
+        /* Зона редактора */
+        .main-editor { flex: 1; display: flex; position: relative; background: #fff; overflow: hidden; }
         #ln-nums { width: 35px; padding: 15px 5px; text-align: right; color: #aeaeb2; font-size: 12px; font-family: monospace; border-right: 1px solid var(--border); background: #f9f9f9; }
         .scroll-v { flex: 1; position: relative; overflow: auto; }
-        #code-area { 
+        
+        #code-in, #code-out { 
             width: 100%; min-height: 100%; padding: 15px; box-sizing: border-box;
-            font-family: "SF Mono", "Fira Code", monospace; font-size: 14px; line-height: 1.5;
-            border: none; outline: none; resize: none; white-space: pre;
+            font-family: 'SF Mono', 'Fira Code', monospace; font-size: 14px; line-height: 1.5;
+            white-space: pre; position: absolute; top: 0; left: 0; border: none; outline: none; margin: 0;
         }
+        #code-in { color: transparent; background: transparent; z-index: 2; caret-color: #000; }
+        #code-out { z-index: 1; pointer-events: none; color: #333; }
 
-        /* Скрытый инпут файла */
-        #hiddenFileInput { display: none; }
+        /* Цвета подсветки */
+        .c-g { color: #d70015; font-weight: 700; }
+        .c-x { color: var(--x-col); font-weight: 700; }
+        .c-z { color: var(--z-col); font-weight: 700; }
+        .c-a { color: var(--a-col); font-weight: 700; }
+        .c-t { color: var(--t-col); font-weight: 800; background: rgba(175, 82, 222, 0.1); border-radius: 3px; }
+        .c-comment { color: #8e8e93; font-style: italic; background: #f4f4f4; }
+
+        /* Модалка симуляции */
+        .sim-modal { 
+            position: fixed; inset: 0; background: #000; z-index: 1000; 
+            display: none; flex-direction: column; 
+        }
+        .sim-header { padding: 15px; background: #1c1c1e; display: flex; justify-content: space-between; color: #fff; align-items: center; border-bottom: 1px solid #333; }
+        .sim-body { flex: 1; position: relative; display: flex; }
+        
+        #sim-canvas { flex: 1; height: 100%; touch-action: none; }
+
+        /* Список инструментов в симе */
+        .tool-panel { 
+            width: 180px; background: rgba(28,28,30,0.95); border-right: 1px solid #333; 
+            padding: 15px; color: #fff; overflow-y: auto; font-size: 11px;
+        }
+        .tool-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; padding: 5px; border-radius: 6px; background: #2c2c2e; }
+        .tool-row input { width: 18px; height: 18px; accent-color: var(--accent); }
+
+        /* Кнопка запуска сима */
+        .fab-sim { 
+            position: absolute; bottom: 20px; right: 20px; width: 60px; height: 60px; 
+            background: var(--accent); border-radius: 50%; border: none; 
+            color: white; font-size: 24px; box-shadow: 0 8px 20px rgba(0,0,0,0.2); z-index: 10;
+        }
     </style>
 </head>
 <body>
 
-<div class="app-container">
+<div class="app-shell">
     <header>
-        <div style="font-weight: 800; font-size: 16px;">CNC <span style="color:var(--accent)">STUDIO</span></div>
-        <div class="file-ops">
-            <input type="file" id="hiddenFileInput" onchange="importFile(this)">
-            <button class="btn" onclick="document.getElementById('hiddenFileInput').click()">ОТКРЫТЬ</button>
-            <button class="btn" onclick="clearAll()">ОЧИСТИТЬ</button>
-            <button class="btn btn-primary" onclick="exportFile()">СОХРАНИТЬ .O</button>
+        <div style="font-weight:900;">CNC <span style="color:var(--accent)">PRO</span></div>
+        <div class="btn-group">
+            <input type="file" id="fInp" hidden onchange="openFile(this)">
+            <button class="btn" onclick="document.getElementById('fInp').click()">ОТКРЫТЬ</button>
+            <button class="btn btn-blue" onclick="saveFile()">СОХРАНИТЬ</button>
         </div>
     </header>
 
-    <div class="viewport">
-        <canvas id="cncCanvas"></canvas>
-        <div class="layer-control" id="toolLegend">LAYER: AUTO</div>
-    </div>
-
-    <div class="dro-bar">
-        <div class="dro-unit"><span class="label">X (DIA)</span><span id="vX" class="num" style="color:var(--x-axis)">0.000</span></div>
-        <div class="dro-unit"><span class="label">Z (LEN)</span><span id="vZ" class="num" style="color:var(--z-axis)">0.000</span></div>
-        <div class="dro-unit"><span class="label">A (ROT)</span><span id="vA" class="num">0.000</span></div>
-        <div class="dro-unit"><span class="label">TOOL</span><span id="vT" class="num" style="color:#af52de">T0000</span></div>
-    </div>
-
-    <div class="editor-zone">
+    <div class="main-editor">
         <div id="ln-nums">1</div>
-        <div class="scroll-v" id="scr" onscroll="syncScroll()">
-            <textarea id="code-area" spellcheck="false" oninput="process()" onkeyup="trackPos()" onclick="trackPos()"></textarea>
+        <div class="scroll-v" id="scr" onscroll="sync()">
+            <div id="code-out"></div>
+            <textarea id="code-in" spellcheck="false" oninput="render()" onkeyup="render()" onscroll="sync()"></textarea>
         </div>
+        <button class="fab-sim" onclick="toggleModal(true)">📈</button>
+    </div>
+</div>
+
+<div id="sim-modal" class="sim-modal">
+    <div class="sim-header">
+        <div style="font-weight:bold;">FULLPATH SIMULATION</div>
+        <button class="btn" style="background:#ff3b30; color:#fff; border:none;" onclick="toggleModal(false)">ЗАКРЫТЬ</button>
+    </div>
+    <div class="sim-body">
+        <div class="tool-panel" id="t-panel">
+            </div>
+        <canvas id="sim-canvas"></canvas>
     </div>
 </div>
 
 <script>
-    const area = document.getElementById('code-area');
-    const canvas = document.getElementById('cncCanvas');
+    const input = document.getElementById('code-in');
+    const output = document.getElementById('code-out');
+    const nums = document.getElementById('ln-nums');
+    const canvas = document.getElementById('sim-canvas');
     const ctx = canvas.getContext('2d');
 
-    // Восстановление данных
+    let trajectoryData = {}; // Данные по слоям
+    let activeTools = {};    // Состояние выключателей
+
+    // Загрузка
     window.onload = () => {
-        const saved = localStorage.getItem('cnc_expert_v8');
-        if (saved) area.value = saved;
-        else area.value = "% \nO1407(PK231850RO)\nN1 T0101 (KOPIERST)\nG0 X50. Z2.\nG1 Z-25. F.2\nG1 X60.\nG0 X100. Z100.\nN2 T0606 (BOHRER)\nG0 X0 Z2.\nG1 Z-15. F0.1\nG0 Z100.";
-        process();
+        const saved = localStorage.getItem('cnc_v9_save');
+        if (saved) input.value = saved;
+        else input.value = "O1407(PK231850RO)\nN1 T0101 (KOPIERST)\nG0 X50. Z2.\nG1 Z-25. F.2\nG1 X60.\nG0 X100. Z100.\n\nN2 T0606 (BOHRER)\nG0 X12.3 Z2.\nG1 Z-53.1 F5.\nG1 X16. F.1";
+        render();
     };
 
-    function process() {
-        localStorage.setItem('cnc_expert_v8', area.value);
-        const lines = area.value.split('\n');
-        document.getElementById('ln-nums').innerHTML = lines.map((_, i) => i + 1).join('<br>');
-        draw();
+    function render() {
+        const text = input.value;
+        localStorage.setItem('cnc_v9_save', text);
+
+        // 1. Подсветка (CSS классы)
+        output.innerHTML = text.replace(/&/g, "&amp;").replace(/</g, "&lt;")
+            .replace(/\((.*?)\)/g, '<span class="c-comment">($1)</span>')
+            .replace(/(G\d+)/gi, '<span class="c-g">$1</span>')
+            .replace(/(T\d+)/gi, '<span class="c-t">$1</span>')
+            .replace(/(X-?\d*\.?\d+)/gi, '<span class="c-x">$1</span>')
+            .replace(/(Z-?\d*\.?\d+)/gi, '<span class="c-z">$1</span>')
+            .replace(/(A-?\d*\.?\d+)/gi, '<span class="c-a">$1</span>');
+
+        // 2. Линейки
+        const lines = text.split('\n');
+        nums.innerHTML = lines.map((_, i) => i + 1).join('<br>');
+
+        parseForSimulation(lines);
     }
 
-    function draw() {
-        canvas.width = canvas.offsetWidth;
-        canvas.height = canvas.offsetHeight;
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-        const lines = area.value.split('\n');
+    function parseForSimulation(lines) {
+        trajectoryData = {};
+        let currentT = "T0000";
         let cx = 0, cz = 0;
-        let points = [];
 
-        // Парсинг
-        lines.forEach(l => {
-            const mx = l.match(/X(-?\d*\.?\d+)/i);
-            const mz = l.match(/Z(-?\d*\.?\d+)/i);
-            const g0 = /G0/i.test(l);
+        lines.forEach(line => {
+            const tMatch = line.match(/T(\d+)/i);
+            const nMatch = line.match(/\((.*?)\)/);
+            
+            if(tMatch) {
+                currentT = "T" + tMatch[1];
+                if(!trajectoryData[currentT]) {
+                    trajectoryData[currentT] = { name: nMatch ? nMatch[1] : currentT, paths: [] };
+                    if(!(currentT in activeTools)) activeTools[currentT] = true;
+                }
+            }
+
+            const mx = line.match(/X(-?\d*\.?\d+)/i);
+            const mz = line.match(/Z(-?\d*\.?\d+)/i);
+            const isG0 = /G0/i.test(line);
+
             if(mx || mz) {
                 let nx = mx ? parseFloat(mx[1]) : cx;
                 let nz = mz ? parseFloat(mz[1]) : cz;
-                points.push({x1: cx, z1: cz, x2: nx, z2: nz, fast: g0});
+                if(!trajectoryData[currentT]) trajectoryData[currentT] = { name: "INIT", paths: [] };
+                
+                trajectoryData[currentT].paths.push({x1: cx, z1: cz, x2: nx, z2: nz, rapid: isG0});
                 cx = nx; cz = nz;
             }
         });
+    }
 
-        if (points.length === 0) return;
+    function toggleModal(show) {
+        document.getElementById('sim-modal').style.display = show ? 'flex' : 'none';
+        if(show) {
+            updateToolUI();
+            drawSimulation();
+        }
+    }
 
-        // Авто-масштаб
-        const allZ = points.flatMap(p => [p.z1, p.z2]);
-        const minZ = Math.min(...allZ) - 5;
-        const maxZ = Math.max(...allZ) + 5;
-        const scale = canvas.width / (maxZ - minZ || 1) * 0.8;
+    function updateToolUI() {
+        const panel = document.getElementById('t-panel');
+        panel.innerHTML = '<b style="color:var(--accent)">ИНСТРУМЕНТЫ</b><br><br>';
         
-        const ox = canvas.width * 0.85;
-        const oy = canvas.height / 2;
+        for(let id in trajectoryData) {
+            const div = document.createElement('div');
+            div.className = 'tool-row';
+            div.innerHTML = `
+                <span style="overflow:hidden; white-space:nowrap; text-overflow:ellipsis; width:100px;">${id} ${trajectoryData[id].name}</span>
+                <input type="checkbox" ${activeTools[id] ? 'checked' : ''} onchange="toggleLayer('${id}')">
+            `;
+            panel.appendChild(div);
+        }
+    }
+
+    function toggleLayer(id) {
+        activeTools[id] = !activeTools[id];
+        drawSimulation();
+    }
+
+    function drawSimulation() {
+        canvas.width = canvas.offsetWidth;
+        canvas.height = canvas.offsetHeight;
+        ctx.clearRect(0,0,canvas.width,canvas.height);
+
+        let scale = 3.5, ox = canvas.width * 0.85, oy = canvas.height / 2;
+        
+        // Оси
+        ctx.strokeStyle = '#333';
+        ctx.beginPath(); ctx.moveTo(0, oy); ctx.lineTo(canvas.width, oy); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(ox, 0); ctx.lineTo(ox, canvas.height); ctx.stroke();
 
         ctx.save();
         ctx.translate(ox, oy);
         
-        // Ось Z
-        ctx.strokeStyle = '#222';
-        ctx.beginPath(); ctx.moveTo(-canvas.width, 0); ctx.lineTo(100, 0); ctx.stroke();
+        for(let id in trajectoryData) {
+            if(!activeTools[id]) continue;
 
-        points.forEach(p => {
-            ctx.beginPath();
-            ctx.lineWidth = p.fast ? 1 : 2;
-            ctx.strokeStyle = p.fast ? '#ff3b30' : '#007aff';
-            ctx.moveTo(p.z1 * scale, -p.x1 * scale / 2);
-            ctx.lineTo(p.z2 * scale, -p.x2 * scale / 2);
-            ctx.stroke();
-        });
+            trajectoryData[id].paths.forEach(p => {
+                ctx.beginPath();
+                ctx.lineWidth = p.rapid ? 1 : 2.5;
+                ctx.strokeStyle = p.rapid ? '#ff3b30' : '#007aff';
+                ctx.moveTo(p.z1 * scale, -p.x1 * scale / 2);
+                ctx.lineTo(p.z2 * scale, -p.x2 * scale / 2);
+                ctx.stroke();
+            });
+        }
         ctx.restore();
     }
 
-    function trackPos() {
-        const text = area.value;
-        const pos = area.selectionStart;
-        const linesBefore = text.substring(0, pos).split('\n');
-        const curLine = linesBefore[linesBefore.length - 1];
-
-        const mx = curLine.match(/X(-?\d*\.?\d+)/i);
-        const mz = curLine.match(/Z(-?\d*\.?\d+)/i);
-        const ma = curLine.match(/A(-?\d*\.?\d+)/i);
-
-        if(mx) document.getElementById('vX').innerText = parseFloat(mx[1]).toFixed(3);
-        if(mz) document.getElementById('vZ').innerText = parseFloat(mz[1]).toFixed(3);
-        if(ma) document.getElementById('vA').innerText = parseFloat(ma[1]).toFixed(3);
-
-        // Поиск инструмента вверх по коду
-        for(let i = linesBefore.length - 1; i >= 0; i--) {
-            const t = text.split('\n')[i].match(/T(\d+)/i);
-            if(t) { 
-                document.getElementById('vT').innerText = "T" + t[1]; 
-                const comm = text.split('\n')[i].match(/\((.*?)\)/);
-                document.getElementById('toolLegend').innerText = comm ? comm[1] : "T" + t[1];
-                break; 
-            }
-        }
+    function sync() {
+        const s = document.getElementById('scr');
+        output.scrollTop = s.scrollTop;
+        nums.scrollTop = s.scrollTop;
     }
 
-    function importFile(input) {
+    function openFile(input) {
         const file = input.files[0];
         const reader = new FileReader();
-        reader.onload = (e) => {
-            area.value = e.target.result;
-            process();
-        };
+        reader.onload = (e) => { input.value = e.target.result; render(); };
         reader.readAsText(file);
     }
 
-    function exportFile() {
-        const blob = new Blob([area.value], {type: 'text/plain'});
+    function saveFile() {
+        const b = new Blob([input.value], {type:'text/plain'});
         const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = 'PROGRAM.O';
-        a.click();
-    }
-
-    function clearAll() {
-        if(confirm('Удалить программу?')) {
-            area.value = '';
-            process();
-        }
+        a.href = URL.createObjectURL(b); a.download='PROJECT.O'; a.click();
     }
 </script>
 </body>
