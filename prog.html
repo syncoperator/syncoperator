@@ -3,239 +3,189 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ShopTurn Siemens v20</title>
+    <title>ShopTurn Full v21</title>
     <style>
         :root { 
-            --siemens-blue: #003a5a; 
-            --siemens-light: #005f87;
-            --siemens-orange: #eb7800;
-            --panel-bg: #e6e6e6;
-            --screen-bg: #000000;
+            --s-blue: #003a5a; --s-light: #005f87; --s-orange: #eb7800;
+            --s-gray: #e6e6e6; --s-dark: #333;
+        }
+        body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; background: #000; font-family: sans-serif; }
+
+        .cnc-grid {
+            display: grid;
+            grid-template-columns: 1fr 100px;
+            grid-template-rows: 30px 1fr 1fr 60px;
+            height: 100vh;
         }
 
-        body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; background: var(--panel-bg); font-family: 'Segoe UI', sans-serif; }
-
-        /* Интерфейс Siemens */
-        .app-container { display: flex; flex-direction: column; height: 100vh; }
-
-        /* Верхняя статусная строка */
-        .status-bar { 
-            height: 35px; background: var(--siemens-blue); color: #fff; 
-            display: flex; justify-content: space-between; align-items: center; 
-            padding: 0 15px; font-size: 13px; font-weight: bold;
+        /* 1. Header */
+        .cnc-header { 
+            grid-column: 1 / 3; background: var(--s-blue); color: #fff;
+            display: flex; align-items: center; padding: 0 10px; font-size: 12px; font-weight: bold;
         }
 
-        /* Основной экран симуляции */
-        #display-section { 
-            flex: 2; background: var(--screen-bg); position: relative; 
-            border: 4px solid #333; margin: 5px; box-shadow: inset 0 0 20px rgba(0,255,0,0.1);
+        /* 2. Simulation Screen */
+        .cnc-screen { 
+            background: #000; position: relative; border: 2px solid #555; overflow: hidden;
         }
-        canvas { width: 100%; height: 100%; touch-action: none; }
-
-        /* DRO Панель (Координаты) */
-        .dro-panel {
-            position: absolute; top: 10px; right: 10px; 
-            background: rgba(40, 40, 40, 0.9); border: 1px solid var(--siemens-light);
-            padding: 10px; border-radius: 4px; color: #00ff00; font-family: monospace;
-            min-width: 120px; z-index: 50;
-        }
-        .dro-row { display: flex; justify-content: space-between; font-size: 16px; margin-bottom: 2px; }
-
-        /* Редактор программ (Нижняя часть) */
-        .editor-section { 
-            flex: 1.5; background: #fff; display: flex; flex-direction: column; 
-            border-top: 2px solid var(--siemens-blue);
-        }
-
-        .tool-header {
-            background: var(--siemens-light); color: #fff; height: 30px;
-            display: flex; align-items: center; padding: 0 15px; font-size: 12px;
-        }
-
-        .code-wrap { flex: 1; display: flex; overflow: hidden; }
-        #line-nums { width: 35px; background: #f0f0f0; border-right: 1px solid #ccc; text-align: right; padding: 10px 5px; color: #999; font-size: 12px; }
-        .input-wrap { flex: 1; position: relative; overflow-y: auto; }
+        canvas { width: 100%; height: 100%; }
         
-        #editor, #highlighter {
-            position: absolute; top: 0; left: 0; width: 100%; min-height: 100%;
-            padding: 10px; font-family: 'Consolas', monospace; font-size: 15px;
-            line-height: 1.5; white-space: pre; border: none; outline: none; margin: 0;
+        .cnc-dro {
+            position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.8);
+            border: 1px solid var(--s-light); padding: 8px; color: #00ff00; font-family: monospace;
         }
-        #editor { color: transparent; background: transparent; z-index: 2; caret-color: black; }
-        #highlighter { z-index: 1; color: #333; }
 
-        /* Кнопки Softkeys (Боковые) */
-        .softkeys { 
-            height: 60px; background: #333; display: flex; gap: 2px; padding: 2px;
+        /* 3. Program Editor */
+        .cnc-editor { 
+            background: #fff; display: flex; overflow: hidden; border-top: 2px solid var(--s-blue);
         }
-        .softkey { 
-            flex: 1; background: #555; color: #fff; border: none; 
-            font-size: 10px; font-weight: bold; text-transform: uppercase;
-            display: flex; align-items: center; justify-content: center; text-align: center;
+        #ln { width: 30px; background: #ddd; text-align: right; padding: 10px 5px; font-size: 11px; color: #666; }
+        .edit-wrap { flex: 1; position: relative; overflow-y: auto; }
+        #input, #syntax {
+            position: absolute; inset: 0; padding: 10px; font-family: monospace; font-size: 14px;
+            line-height: 1.4; white-space: pre; border: none; outline: none;
         }
-        .softkey:active { background: var(--siemens-orange); }
+        #input { color: transparent; background: transparent; z-index: 2; caret-color: #000; }
+        #syntax { z-index: 1; color: #333; }
 
-        /* Подсветка G-кода */
-        .g-work { color: var(--siemens-orange); font-weight: bold; }
-        .g-fast { color: #888; }
-        .axis-x { color: #d32f2f; }
-        .axis-z { color: #1976d2; }
-        .tool-call { color: #7b1fa2; font-weight: bold; background: #f3e5f5; }
+        /* 4. Vertical Softkeys (Правая панель) */
+        .v-keys { 
+            grid-row: 2 / 4; grid-column: 2; background: #444; 
+            display: flex; flex-direction: column; gap: 2px; padding: 2px;
+        }
+        .v-key { 
+            flex: 1; background: #666; color: #fff; border: none; font-size: 10px; 
+            text-transform: uppercase; font-weight: bold; cursor: pointer;
+        }
+        .v-key:active { background: var(--s-orange); }
+
+        /* 5. Horizontal Softkeys (Нижняя панель) */
+        .h-keys { 
+            grid-column: 1 / 3; background: #222; display: flex; gap: 2px; padding: 2px;
+        }
+        .h-key { 
+            flex: 1; background: #555; color: #fff; border: none; font-size: 10px; font-weight: bold;
+        }
+
+        /* Syntax colors */
+        .c-g { color: var(--s-orange); font-weight: bold; }
+        .c-x { color: #d32f2f; }
+        .c-z { color: #1976d2; }
+        .c-t { color: #7b1fa2; background: #f0f0f0; }
     </style>
 </head>
 <body>
 
-<div class="app-container">
-    <div class="status-bar">
-        <span>RUNNING: MPF0_PIECE1</span>
-        <span id="cycle-time">T: 00:01:24</span>
+<div class="cnc-grid">
+    <div class="cnc-header">SKP_01.MPF | CHANNEL 1 | JOG MODE</div>
+
+    <div class="cnc-screen">
+        <canvas id="cvs"></canvas>
+        <div class="cnc-dro" id="dro">X: 0.000<br>Z: 0.000</div>
     </div>
 
-    <div id="display-section">
-        <div class="dro-panel">
-            <div class="dro-row"><span>X</span><span id="dro-x">0.000</span></div>
-            <div class="dro-row"><span>Z</span><span id="dro-z">0.000</span></div>
-            <div style="color:#aaa; font-size:10px; margin-top:5px;">ACTIVE: <span id="dro-t">T1</span></div>
+    <div class="v-keys">
+        <button class="v-key" onclick="setMode('contour')">Контур</button>
+        <button class="v-key" onclick="setMode('drill')">Сверление</button>
+        <button class="v-key" onclick="setMode('turn')">Точение</button>
+        <button class="v-key" onclick="zoom(1.2)">Zoom +</button>
+        <button class="v-key" onclick="zoom(0.8)">Zoom -</button>
+        <button class="v-key" style="background:#888" onclick="resetV()">Reset</button>
+    </div>
+
+    <div class="cnc-editor">
+        <div id="ln">1</div>
+        <div class="edit-wrap" id="scr" onscroll="sync()">
+            <div id="syntax"></div>
+            <textarea id="input" spellcheck="false" oninput="render()"></textarea>
         </div>
-        <canvas id="screen"></canvas>
     </div>
 
-    <div class="editor-section">
-        <div class="tool-header">PROGRAM MANAGER | NC/WKS/MY_PARTS</div>
-        <div class="code-wrap">
-            <div id="line-nums">1</div>
-            <div class="input-wrap" id="scroll-sync" onscroll="sync()">
-                <div id="highlighter"></div>
-                <textarea id="editor" spellcheck="false" oninput="runAll()"></textarea>
-            </div>
-        </div>
-    </div>
-
-    <div class="softkeys">
-        <button class="softkey" onclick="zoom(1.2)">Zoom +</button>
-        <button class="softkey" onclick="zoom(0.8)">Zoom -</button>
-        <button class="softkey" onclick="resetView()">Центр</button>
-        <button class="softkey" onclick="document.getElementById('editor').value=''; runAll()">Очистить</button>
-        <button class="softkey" style="background:var(--siemens-orange)" onclick="saveFile()">Save .MPF</button>
+    <div class="h-keys">
+        <button class="h-key">PROGRAM</button>
+        <button class="h-key">OFFSET</button>
+        <button class="h-key">PROGRAM MANAGER</button>
+        <button class="h-key">DIAGNOSIS</button>
+        <button class="h-key" style="background:var(--s-orange)" onclick="saveFile()">💾 SAVE</button>
     </div>
 </div>
 
 <script>
-    const editor = document.getElementById('editor');
-    const high = document.getElementById('highlighter');
-    const lines = document.getElementById('line-nums');
-    const canvas = document.getElementById('screen');
-    const ctx = canvas.getContext('2d');
+    const inp = document.getElementById('input');
+    const syn = document.getElementById('syntax');
+    const lns = document.getElementById('ln');
+    const cvs = document.getElementById('cvs');
+    const ctx = cvs.getContext('2d');
 
-    let scale = 4;
-    let offsetX = 0, offsetZ = 0;
-    const toolColors = ['#eb7800', '#00ff00', '#007aff', '#ff2d55', '#af52de'];
+    let scale = 5, offX = 0, offZ = 0;
+    const colors = ['#eb7800', '#00ff00', '#00bfff', '#ff00ff'];
 
     window.onload = () => {
-        editor.value = "G54\nT1 D1 (ROUGHING)\nG0 X65 Z2\nG1 Z0 F.2\nG1 X40 Z-20\nG1 Z-45\nG1 X60\nG0 X100 Z5\n\nT2 D1 (FINISHING)\nG0 X42 Z-20\nG1 Z-45\nG1 X62\nG0 X100 Z100";
-        initCanvas();
-        runAll();
+        inp.value = "G54\nT1 D1\nG0 X60 Z2\nG1 Z-30 F.2\nG1 X80 Z-50\nG0 X120 Z100\n\nT2 D1\nG0 X40 Z-20\nG1 X0\nG0 X100 Z100";
+        init(); render();
     };
 
-    function runAll() {
-        const val = editor.value;
-        localStorage.setItem('shopturn_v20_code', val);
-        
-        // Подсветка синтаксиса
-        high.innerHTML = val.replace(/&/g, "&amp;").replace(/</g, "&lt;")
-            .replace(/(G0\s|G00)/gi, '<span class="g-fast">$1</span>')
-            .replace(/(G1\s|G01|G2|G3)/gi, '<span class="g-work">$1</span>')
-            .replace(/(X-?\d*\.?\d+)/gi, '<span class="axis-x">$1</span>')
-            .replace(/(Z-?\d*\.?\d+)/gi, '<span class="axis-z">$1</span>')
-            .replace(/(T\d+)/gi, '<span class="tool-call">$1</span>');
-
-        // Номера строк
-        const arr = val.split('\n');
-        lines.innerHTML = arr.map((_, i) => i + 1).join('<br>');
-        editor.style.height = high.style.height = Math.max(200, arr.length * 23) + 'px';
-
-        drawSimulation(arr);
+    function init() {
+        cvs.width = cvs.offsetWidth; cvs.height = cvs.offsetHeight;
+        offX = cvs.height * 0.7; offZ = cvs.width * 0.8;
     }
 
-    function initCanvas() {
-        canvas.width = canvas.offsetWidth;
-        canvas.height = canvas.offsetHeight;
-        offsetX = canvas.height * 0.7; // Ось X (центр)
-        offsetZ = canvas.width * 0.8;  // Ноль детали Z
+    function render() {
+        const val = inp.value;
+        syn.innerHTML = val.replace(/&/g, "&amp;").replace(/</g, "&lt;")
+            .replace(/(G0\d?|G00)/gi, '<span style="color:#888">$1</span>')
+            .replace(/(G1\d?|G01|G2|G3)/gi, '<span class="c-g">$1</span>')
+            .replace(/(X-?\d*\.?\d+)/gi, '<span class="c-x">$1</span>')
+            .replace(/(Z-?\d*\.?\d+)/gi, '<span class="c-z">$1</span>')
+            .replace(/(T\d+)/gi, '<span class="c-t">$1</span>');
+
+        const rows = val.split('\n');
+        lns.innerHTML = rows.map((_,i)=>i+1).join('<br>');
+        inp.style.height = syn.style.height = Math.max(200, rows.length * 20) + 'px';
+        draw(rows);
     }
 
-    function drawSimulation(program) {
-        ctx.fillStyle = '#000';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
+    function draw(prog) {
+        ctx.fillStyle = '#000'; ctx.fillRect(0,0,cvs.width,cvs.height);
         
-        // Сетка Siemens
-        ctx.strokeStyle = '#1a1a1a';
-        ctx.lineWidth = 1;
-        for(let i=0; i<canvas.width; i+=40) { ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i,canvas.height); ctx.stroke(); }
-        for(let i=0; i<canvas.height; i+=40) { ctx.beginPath(); ctx.moveTo(0,i); ctx.lineTo(canvas.width,i); ctx.stroke(); }
+        // Grid
+        ctx.strokeStyle = '#222'; ctx.lineWidth = 1;
+        for(let i=0;i<cvs.width;i+=40){ctx.beginPath();ctx.moveTo(i,0);ctx.lineTo(i,cvs.height);ctx.stroke();}
+        for(let i=0;i<cvs.height;i+=40){ctx.beginPath();ctx.moveTo(0,i);ctx.lineTo(cvs.width,i);ctx.stroke();}
 
-        // Осевые линии
-        ctx.strokeStyle = '#333';
-        ctx.setLineDash([5, 5]);
-        ctx.beginPath(); ctx.moveTo(0, offsetX); ctx.lineTo(canvas.width, offsetX); ctx.stroke(); // Z
-        ctx.beginPath(); ctx.moveTo(offsetZ, 0); ctx.lineTo(offsetZ, canvas.height); ctx.stroke(); // X
-        ctx.setLineDash([]);
-
-        let curX = 0, curZ = 0, tIdx = 0;
-
-        program.forEach(line => {
-            const tm = line.match(/T(\d+)/i);
-            if(tm) tIdx = parseInt(tm[1]) % toolColors.length;
-
+        let cX = 0, cZ = 0, t = 0;
+        prog.forEach(line => {
+            const tm = line.match(/T(\d+)/i); if(tm) t = parseInt(tm[1]) % colors.length;
             const mx = line.match(/X(-?\d*\.?\d+)/i);
             const mz = line.match(/Z(-?\d*\.?\d+)/i);
             const isG0 = /G0/i.test(line);
 
             if(mx || mz) {
-                let nX = mx ? parseFloat(mx[1]) : curX;
-                let nZ = mz ? parseFloat(mz[1]) : curZ;
-
+                let nX = mx ? parseFloat(mx[1]) : cX;
+                let nZ = mz ? parseFloat(mz[1]) : cZ;
                 ctx.beginPath();
                 ctx.lineWidth = isG0 ? 1 : 3;
-                ctx.strokeStyle = isG0 ? '#555' : toolColors[tIdx];
-                if(isG0) ctx.setLineDash([4, 4]); else ctx.setLineDash([]);
-
-                // Масштабирование: ShopTurn вид (Z горизонтально, X вертикально)
-                let z1 = offsetZ + (curZ * scale);
-                let x1 = offsetX - (curX / 2 * scale);
-                let z2 = offsetZ + (nZ * scale);
-                let x2 = offsetX - (nX / 2 * scale);
-
-                ctx.moveTo(z1, x1);
-                ctx.lineTo(z2, x2);
+                ctx.strokeStyle = isG0 ? '#555' : colors[t];
+                ctx.setLineDash(isG0 ? [4,4] : []);
+                ctx.moveTo(offZ + cZ*scale, offX - (cX/2)*scale);
+                ctx.lineTo(offZ + nZ*scale, offX - (nX/2)*scale);
                 ctx.stroke();
-
-                curX = nX; curZ = nZ;
+                cX = nX; cZ = nZ;
             }
         });
-
-        document.getElementById('dro-x').innerText = curX.toFixed(3);
-        document.getElementById('dro-z').innerText = curZ.toFixed(3);
-        document.getElementById('dro-t').innerText = 'T' + tIdx;
+        document.getElementById('dro').innerHTML = `X: ${cX.toFixed(3)}<br>Z: ${cZ.toFixed(3)}`;
     }
 
-    function sync() {
-        const s = document.getElementById('scroll-sync');
-        high.scrollTop = lines.scrollTop = s.scrollTop;
-    }
-
-    function zoom(f) { scale *= f; runAll(); }
-    function resetView() { scale = 4; initCanvas(); runAll(); }
-
+    function setMode(m) { alert('Режим ' + m + ' активирован. Вставьте цикл в код.'); }
+    function zoom(f) { scale *= f; render(); }
+    function resetV() { scale = 5; init(); render(); }
+    function sync() { syn.scrollTop = lns.scrollTop = document.getElementById('scr').scrollTop; }
     function saveFile() {
-        const blob = new Blob([editor.value], {type: 'text/plain'});
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = 'PART_1.MPF';
-        a.click();
+        const b = new Blob([inp.value], {type:'text/plain'});
+        const a = document.createElement('a'); a.href = URL.createObjectURL(b);
+        a.download = 'WORK.MPF'; a.click();
     }
-
-    window.onresize = () => { initCanvas(); runAll(); };
+    window.onresize = () => { init(); render(); };
 </script>
 </body>
 </html>
