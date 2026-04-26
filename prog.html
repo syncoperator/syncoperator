@@ -3,239 +3,223 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>CNC Premium Editor v24</title>
+    <title>CNC Industrial Premium v25</title>
     <style>
         :root {
             --accent: #007aff;
-            --bg: #ffffff;
-            --text: #1d1d1f;
+            --bg-glass: rgba(255, 255, 255, 0.85);
             --border: #d2d2d7;
-            --secondary: #f5f5f7;
+            --text-main: #1d1d1f;
+            --text-sec: #86868b;
         }
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body, html { margin: 0; padding: 0; height: 100%; background: var(--bg); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: var(--text); overflow: hidden; }
 
-        .app-shell { display: flex; flex-direction: column; height: 100vh; }
+        * { box-sizing: border-box; -webkit-font-smoothing: antialiased; }
+        body, html { margin: 0; padding: 0; height: 100%; background: #f5f5f7; font-family: -apple-system, sans-serif; overflow: hidden; }
 
-        /* HEADER: SEARCH & TOOLS */
-        .premium-header {
-            padding: 10px 15px; background: var(--bg); border-bottom: 1px solid var(--border);
-            display: flex; flex-direction: column; gap: 10px; z-index: 100;
+        .workspace { display: flex; flex-direction: column; height: 100vh; }
+
+        /* HEADER CONTROL */
+        .glass-header {
+            background: var(--bg-glass); backdrop-filter: blur(20px);
+            height: 55px; border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; padding: 0 20px; gap: 15px; z-index: 1000;
         }
-        .search-group { display: flex; gap: 8px; align-items: center; }
-        .input-premium {
-            flex: 1; border: 1px solid var(--border); background: var(--secondary);
-            padding: 8px 12px; border-radius: 8px; font-size: 14px; outline: none; transition: 0.2s;
-        }
-        .input-premium:focus { border-color: var(--accent); background: #fff; box-shadow: 0 0 0 3px rgba(0,122,255,0.1); }
 
-        /* EDITOR AREA */
-        .main-editor { flex: 1; display: flex; overflow: hidden; position: relative; }
+        .search-field {
+            flex: 1; height: 36px; background: rgba(0,0,0,0.05);
+            border: 1px solid transparent; border-radius: 8px;
+            padding: 0 12px; font-size: 14px; outline: none; transition: 0.3s;
+        }
+        .search-field:focus { border-color: var(--accent); background: #fff; box-shadow: 0 0 10px rgba(0,122,255,0.2); }
+
+        /* EDITOR CORE */
+        .editor-box { flex: 1; display: flex; position: relative; background: #fff; overflow: hidden; }
+        
         .line-numbers {
-            width: 45px; background: var(--secondary); color: #86868b;
-            text-align: right; padding: 20px 8px; font-family: "SF Mono", Menlo, monospace; font-size: 13px; border-right: 1px solid var(--border);
+            width: 50px; background: #fbfbfd; border-right: 1px solid #efefef;
+            padding: 20px 10px; font-family: "SF Mono", monospace; font-size: 13px;
+            color: #ccc; text-align: right; user-select: none;
         }
-        .editor-scroll { flex: 1; position: relative; overflow: auto; padding-bottom: 120px; } /* padding to avoid overlap */
-        #code-input, #code-layer {
-            position: absolute; top: 0; left: 0; width: 100%; min-height: 100%;
-            padding: 20px; font-family: "SF Mono", "Fira Code", monospace; font-size: 15px;
+
+        .scroll-container { flex: 1; position: relative; overflow: auto; }
+        
+        #input, #visual {
+            position: absolute; inset: 0; padding: 20px;
+            font-family: "SF Mono", "Fira Code", monospace; font-size: 16px;
             line-height: 1.6; white-space: pre; border: none; outline: none; margin: 0;
         }
-        #code-input { color: transparent; background: transparent; z-index: 2; caret-color: var(--accent); resize: none; }
-        #code-layer { z-index: 1; pointer-events: none; }
+        #input { color: transparent; background: transparent; z-index: 2; caret-color: var(--accent); resize: none; }
+        #visual { z-index: 1; color: var(--text-main); }
 
-        /* PULL-UP TOOLS PANEL */
-        .tools-drawer {
-            position: fixed; bottom: 60px; left: 50%; transform: translateX(-50%);
-            width: 95%; max-width: 600px; background: rgba(255,255,255,0.95);
-            backdrop-filter: blur(20px); border: 1px solid var(--border);
-            border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.1);
-            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            z-index: 200; overflow: hidden; max-height: 40vh; display: flex; flex-direction: column;
+        /* TOOLS OVERLAY (MODERN VIEW) */
+        #tools-overlay {
+            position: absolute; inset: 0; background: rgba(255,255,255,0.7);
+            backdrop-filter: blur(10px); z-index: 500; display: none;
+            padding: 60px 20px; align-items: start; justify-content: center; overflow-y: auto;
         }
-        .tools-drawer.collapsed { transform: translateX(-50%) translateY(calc(100% + 10px)); }
-        .drawer-handle { width: 40px; height: 4px; background: var(--border); border-radius: 2px; margin: 10px auto; cursor: pointer; }
-        .tools-list { overflow-y: auto; padding: 0 15px 15px; }
+        .tools-grid {
+            width: 100%; max-width: 800px; display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px;
+        }
         .tool-card {
-            padding: 12px; border-bottom: 1px solid var(--secondary); cursor: pointer;
-            display: flex; flex-direction: column;
+            background: #fff; border: 1px solid var(--border); border-radius: 14px;
+            padding: 20px; cursor: pointer; transition: 0.3s;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
         }
-        .tool-card:last-child { border-bottom: none; }
-        .t-nr { font-size: 10px; color: var(--accent); text-transform: uppercase; font-weight: 600; margin-bottom: 4px; }
-        .t-name { font-size: 16px; font-weight: 700; color: var(--text); }
+        .tool-card:hover { transform: translateY(-3px); border-color: var(--accent); box-shadow: 0 10px 25px rgba(0,122,255,0.15); }
+        .t-id { font-size: 10px; font-weight: 800; color: var(--accent); text-transform: uppercase; margin-bottom: 5px; }
+        .t-desc { font-size: 17px; font-weight: 600; color: #000; }
 
-        /* FOOTER ACTION BAR */
-        .footer-bar {
-            height: 60px; background: var(--bg); border-top: 1px solid var(--border);
-            display: flex; padding: 0 15px; align-items: center; gap: 10px; justify-content: space-between;
+        /* FOOTER ACTIONS */
+        .glass-footer {
+            height: 65px; background: var(--bg-glass); backdrop-filter: blur(20px);
+            border-top: 1px solid var(--border); display: flex; align-items: center;
+            padding: 0 20px; gap: 12px;
         }
-        .btn-premium {
-            background: var(--secondary); border: none; color: var(--text);
-            padding: 10px 16px; border-radius: 10px; font-size: 13px; font-weight: 600;
-            cursor: pointer; transition: 0.2s;
+
+        .btn-action {
+            height: 40px; padding: 0 20px; border-radius: 10px; border: 1px solid var(--border);
+            background: #fff; color: var(--text-main); font-weight: 600; font-size: 13px;
+            cursor: pointer; transition: 0.2s; display: flex; align-items: center; gap: 8px;
         }
-        .btn-premium.active { background: var(--accent); color: #fff; }
-        .btn-premium:active { transform: scale(0.96); }
+        .btn-action:active { transform: scale(0.97); background: #f5f5f7; }
+        .btn-action.primary { background: var(--accent); color: #fff; border: none; }
 
         /* SYNTAX */
-        .g-code { color: #af52de; font-weight: bold; }
-        .x-coord { color: #ff3b30; }
-        .z-coord { color: #007aff; }
-        .t-call { color: #34c759; font-weight: bold; }
-        .comment { color: #8e8e93; font-style: italic; }
-        .match { background: rgba(255, 214, 0, 0.3); border-radius: 3px; }
+        .g { color: #8e8e93; font-weight: bold; }
+        .t { color: var(--accent); font-weight: 800; }
+        .x { color: #ff3b30; }
+        .z { color: #007aff; }
+        .c { color: #34c759; font-style: italic; }
+        .m { background: rgba(255, 214, 0, 0.3); border-radius: 2px; }
     </style>
 </head>
 <body>
 
-<div class="app-shell">
-    <header class="premium-header">
-        <div class="search-group">
-            <input type="text" id="findInput" class="input-premium" placeholder="Поиск (напр. X120)" oninput="render()">
-            <input type="text" id="replaceInput" class="input-premium" placeholder="Замена">
-            <button class="btn-premium" onclick="replaceText()">All</button>
-        </div>
+<div class="workspace">
+    <header class="glass-header">
+        <input type="text" id="find" class="search-field" placeholder="Поиск в коде..." oninput="update()">
+        <button class="btn-action" onclick="toggleTools()">
+            <span id="tools-label">СПИСОК ИНСТРУМЕНТОВ</span>
+        </button>
     </header>
 
-    <div class="main-editor">
-        <div class="line-numbers" id="lineNums">1</div>
-        <div class="editor-scroll" id="editorScroll" onscroll="syncScroll()">
-            <div id="code-layer"></div>
-            <textarea id="code-input" spellcheck="false" oninput="render()"></textarea>
+    <div class="editor-box">
+        <div class="line-numbers" id="line-nums">1</div>
+        <div class="scroll-container" id="scroller" onscroll="sync()">
+            <div id="visual"></div>
+            <textarea id="input" spellcheck="false" oninput="update()"></textarea>
+        </div>
+
+        <div id="tools-overlay" onclick="toggleTools()">
+            <div class="tools-grid" id="tools-container" onclick="event.stopPropagation()"></div>
         </div>
     </div>
 
-    <div id="drawer" class="tools-drawer collapsed">
-        <div class="drawer-handle" onclick="toggleTools()"></div>
-        <div style="padding: 0 15px 10px; font-size: 12px; font-weight: bold; color: #888;">LISTA INSTRUMENTELOR</div>
-        <div class="tools-list" id="toolsList"></div>
-    </div>
-
-    <footer class="footer-bar">
-        <div style="display:flex; gap:8px;">
-            <button class="btn-premium" onclick="toggleTools()" id="toolsBtn">TOOLS</button>
-            <button class="btn-premium" onclick="exportJSON()">JSON EXPORT</button>
-            <button class="btn-premium" onclick="importJSON()">IMPORT</button>
-        </div>
-        <button class="btn-premium active" onclick="saveNC()">SAVE MPF</button>
+    <footer class="glass-footer">
+        <button class="btn-action" onclick="exportJSON()">JSON EXPORT</button>
+        <button class="btn-action" onclick="importJSON()">IMPORT</button>
+        <div style="flex:1"></div>
+        <button class="btn-action primary" onclick="saveFile()">СОХРАНИТЬ MPF</button>
     </footer>
 </div>
 
 <script>
-    const input = document.getElementById('code-input');
-    const layer = document.getElementById('code-layer');
-    const lineNums = document.getElementById('lineNums');
-    const toolsList = document.getElementById('toolsList');
-    const drawer = document.getElementById('drawer');
+    const area = document.getElementById('input');
+    const vis = document.getElementById('visual');
+    const nums = document.getElementById('line-nums');
+    const toolGrid = document.getElementById('tools-container');
+    const overlay = document.getElementById('tools-overlay');
 
     window.onload = () => {
-        input.value = localStorage.getItem('cnc_premium_v24') || 
-        "G54\nT01 D1\n(ROUGHING OUTER)\nG0 X120. Z2.\nG1 Z-45. F0.2\nG1 X140.\nG0 X200. Z100.\n\nT03 D1\n(FINISHING FLANGE)\nG0 X120. Z-10.5\nG1 X125.05 F0.15\nG0 X200. Z200.";
-        render();
+        area.value = localStorage.getItem('cnc_v25_pro') || 
+        "O0025 (FLANGE_PROJECT)\nG54\nN10 T1 D1\n(ROUGH TURN EXTERNAL)\nG0 X120. Z2.\nG1 Z-35. F0.25\nG1 X140. Z-50.\nG0 X200. Z100.\n\nN20 T3 D1\n(FINISH SHOULDER)\nG0 X120. Z-20.\nG1 X115. F0.15\nG0 X200. Z200.";
+        update();
     };
 
-    function render() {
-        const val = input.value;
-        localStorage.setItem('cnc_premium_v24', val);
+    function update() {
+        const code = area.value;
+        localStorage.setItem('cnc_v25_pro', code);
 
-        // Syntax highlighting
-        let html = val.replace(/&/g, "&amp;").replace(/</g, "&lt;")
-            .replace(/\((.*?)\)/g, '<span class="comment">($1)</span>')
-            .replace(/(T\d+)/gi, '<span class="t-call">$1</span>')
-            .replace(/(G\d+)/gi, '<span class="g-code">$1</span>')
-            .replace(/(X-?\d*\.?\d*)/gi, '<span class="x-coord">$1</span>')
-            .replace(/(Z-?\d*\.?\d*)/gi, '<span class="z-coord">$1</span>');
+        // Highlight
+        let html = code.replace(/&/g, "&amp;").replace(/</g, "&lt;")
+            .replace(/\((.*?)\)/g, '<span class="c">($1)</span>')
+            .replace(/(T\d+)/gi, '<span class="t">$1</span>')
+            .replace(/(G\d+)/gi, '<span class="g">$1</span>')
+            .replace(/(X-?\d*\.?\d+)/gi, '<span class="x">$1</span>')
+            .replace(/(Z-?\d*\.?\d+)/gi, '<span class="z">$1</span>');
 
-        // Search highlight
-        const query = document.getElementById('findInput').value;
-        if(query) {
-            const re = new RegExp(`(${query})`, "gi");
-            html = html.replace(re, '<span class="match">$1</span>');
+        // Search
+        const search = document.getElementById('find').value;
+        if(search) {
+            const re = new RegExp(`(${search})`, "gi");
+            html = html.replace(re, '<span class="m">$1</span>');
         }
-        layer.innerHTML = html;
+        vis.innerHTML = html;
 
-        // Lines
-        const lines = val.split('\n');
-        lineNums.innerHTML = lines.map((_, i) => i + 1).join('<br>');
-        input.style.height = layer.style.height = Math.max(window.innerHeight, lines.length * 24 + 200) + 'px';
+        // Lines & Tools
+        const lines = code.split('\n');
+        nums.innerHTML = lines.map((_, i) => i + 1).join('<br>');
+        area.style.height = vis.style.height = Math.max(window.innerHeight, lines.length * 25.6 + 100) + 'px';
 
-        updateTools(lines);
+        buildToolList(lines);
     }
 
-    function updateTools(lines) {
-        toolsList.innerHTML = "";
+    function buildToolList(lines) {
+        toolGrid.innerHTML = "";
         lines.forEach((line, i) => {
-            const tMatch = line.match(/T(\d+)/i);
-            if(tMatch) {
-                // Ищем название в следующей строке, если там скобки
-                let name = "NO NAME";
-                if(lines[i+1] && lines[i+1].includes('(')) {
-                    const nMatch = lines[i+1].match(/\((.*?)\)/);
-                    if(nMatch) name = nMatch[1];
-                }
-                
+            const t = line.match(/T(\d+)/i);
+            if(t) {
+                // Логика: если в текущей или СЛЕДУЮЩЕЙ строке есть скобки - это имя
+                let desc = "БЕЗ ОПИСАНИЯ";
+                let searchRange = [lines[i], lines[i+1] || ""];
+                searchRange.forEach(s => {
+                    const m = s.match(/\((.*?)\)/);
+                    if(m) desc = m[1];
+                });
+
                 const card = document.createElement('div');
                 card.className = 'tool-card';
-                card.innerHTML = `<span class="t-nr">T-${tMatch[1]}</span><span class="t-name">${name}</span>`;
+                card.innerHTML = `<div class="t-id">ИНСТРУМЕНТ ${t[0]}</div><div class="t-desc">${desc}</div>`;
                 card.onclick = () => {
                     const pos = lines.slice(0, i).join('\n').length + (i > 0 ? 1 : 0);
-                    input.focus();
-                    input.setSelectionRange(pos, pos + line.length);
-                    document.getElementById('editorScroll').scrollTop = i * 24;
+                    area.focus();
+                    area.setSelectionRange(pos, pos + line.length);
+                    document.getElementById('scroller').scrollTop = i * 25.6 - 40;
                     toggleTools();
                 };
-                toolsList.appendChild(card);
+                toolGrid.appendChild(card);
             }
         });
     }
 
     function toggleTools() {
-        drawer.classList.toggle('collapsed');
-        document.getElementById('toolsBtn').classList.toggle('active');
+        const isVisible = overlay.style.display === 'flex';
+        overlay.style.display = isVisible ? 'none' : 'flex';
+        document.getElementById('tools-label').innerText = isVisible ? 'СПИСОК ИНСТРУМЕНТОВ' : 'ЗАКРЫТЬ СПИСОК';
     }
 
-    function replaceText() {
-        const find = document.getElementById('findInput').value;
-        const replace = document.getElementById('replaceInput').value;
-        if(!find) return;
-        input.value = input.value.split(find).join(replace);
-        render();
-    }
+    function sync() { vis.scrollTop = nums.scrollTop = document.getElementById('scroller').scrollTop; }
 
-    function syncScroll() {
-        layer.scrollTop = lineNums.scrollTop = document.getElementById('editorScroll').scrollTop;
-    }
-
-    function saveNC() {
-        const blob = new Blob([input.value], {type: 'text/plain'});
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = 'PREMIUM_PROG.MPF';
-        a.click();
+    function saveFile() {
+        const b = new Blob([area.value], {type:'text/plain'});
+        const a = document.createElement('a'); a.href = URL.createObjectURL(b);
+        a.download = 'PREMIUM_PROG.MPF'; a.click();
     }
 
     function exportJSON() {
-        const data = { code: input.value, timestamp: new Date() };
-        const blob = new Blob([JSON.stringify(data)], {type: 'application/json'});
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = 'config_export.json';
-        a.click();
+        const blob = new Blob([JSON.stringify({code: area.value, date: new Date()})], {type: 'application/json'});
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'backup.json'; a.click();
     }
 
     function importJSON() {
-        const inputF = document.createElement('input');
-        inputF.type = 'file';
-        inputF.onchange = e => {
-            const reader = new FileReader();
-            reader.onload = event => {
-                const data = JSON.parse(event.target.result);
-                input.value = data.code;
-                render();
-            };
-            reader.readAsText(e.target.files[0]);
+        const f = document.createElement('input'); f.type = 'file';
+        f.onchange = e => {
+            const r = new FileReader();
+            r.onload = ev => { area.value = JSON.parse(ev.target.result).code; update(); };
+            r.readAsText(e.target.files[0]);
         };
-        inputF.click();
+        f.click();
     }
 </script>
 </body>
