@@ -3,157 +3,185 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>CNC CAM DATA v18</title>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <title>CNC ShopTurn Style v19</title>
     <style>
-        :root { --accent: #007aff; --bg: #1c1c1e; }
-        body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; background: var(--bg); font-family: -apple-system, sans-serif; }
+        :root { --accent: #007aff; --bg: #f2f2f7; --cnc-bg: #1a1a1a; }
+        body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; background: var(--bg); font-family: sans-serif; }
         
-        header { background: #fff; height: 50px; display: flex; align-items: center; justify-content: space-between; padding: 0 15px; border-bottom: 1px solid #ccc; position: relative; z-index: 100; }
+        /* Верхняя панель */
+        header { background: #fff; height: 50px; display: flex; align-items: center; justify-content: space-between; padding: 0 15px; border-bottom: 1px solid #ccc; z-index: 100; position: relative; }
         
-        /* 3D Viewport */
-        #viewport { position: fixed; inset: 0; z-index: 5; background: #000; }
+        /* Окно ShopTurn (Симуляция) */
+        #shopturn-view { height: 45%; background: var(--cnc-bg); position: relative; overflow: hidden; border-bottom: 4px solid var(--accent); }
+        #canvas { width: 100%; height: 100%; touch-action: none; }
 
-        /* Панель управления */
-        .side-panel { position: absolute; left: 10px; top: 60px; width: 240px; background: rgba(28, 28, 30, 0.9); color: #fff; border-radius: 12px; padding: 15px; pointer-events: auto; z-index: 20; display: none; border: 1px solid #48484a; }
-        
-        .tool-config { background: #2c2c2e; padding: 8px; border-radius: 6px; margin-bottom: 10px; font-size: 11px; }
-        .tool-config input { width: 40px; background: #3a3a3c; border: none; color: #fff; text-align: center; border-radius: 4px; }
+        /* Редактор кода */
+        .editor-container { height: calc(55% - 50px); display: flex; background: #fff; }
+        #ln-box { width: 40px; background: #f0f0f0; border-right: 1px solid #ccc; padding: 10px 5px; text-align: right; color: #888; font-family: monospace; font-size: 13px; overflow: hidden; }
+        .edit-area { flex: 1; position: relative; overflow: auto; }
+        #code-in, #code-out { position: absolute; top: 0; left: 0; width: 100%; min-height: 100%; padding: 10px; font-family: 'SF Mono', monospace; font-size: 14px; line-height: 1.6; white-space: pre; border: none; outline: none; margin: 0; }
+        #code-in { color: transparent; background: transparent; z-index: 2; caret-color: #000; }
+        #code-out { z-index: 1; pointer-events: none; }
 
-        /* Индикатор размеров */
-        .dro { position: absolute; top: 60px; right: 10px; background: rgba(0,0,0,0.7); color: #00ff00; font-family: monospace; padding: 10px; border-radius: 8px; font-size: 14px; border: 1px solid #00ff00; pointer-events: none; z-index: 20; display: none; }
+        /* Данные ShopTurn (DRO) */
+        .info-panel { position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.6); color: #00ff00; padding: 8px; border-radius: 4px; font-family: monospace; font-size: 12px; pointer-events: none; }
+        .axis-labels { position: absolute; bottom: 10px; left: 10px; color: #fff; font-size: 10px; opacity: 0.6; }
 
-        /* Editor */
-        .editor-box { position: absolute; inset: 50px 0 0 0; background: #fff; z-index: 10; display: flex; }
-        #code-in { flex: 1; padding: 15px; font-family: monospace; font-size: 14px; border: none; outline: none; resize: none; }
+        /* Подсветка */
+        .g { color: #ff3b30; font-weight: bold; }
+        .x { color: #ff2d55; }
+        .z { color: #007aff; }
+        .t { color: #af52de; border-bottom: 1px solid #af52de; }
 
-        .btn { padding: 8px 12px; border-radius: 8px; border: 1px solid #d1d1d6; background: #fff; font-weight: 600; cursor: pointer; }
-        .fab { position: absolute; bottom: 30px; right: 30px; width: 60px; height: 60px; background: var(--accent); border-radius: 30px; color: #fff; border: none; font-size: 24px; z-index: 100; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
+        .btn { padding: 6px 12px; border-radius: 4px; border: 1px solid #ccc; background: #fff; font-weight: bold; cursor: pointer; }
     </style>
 </head>
 <body>
 
-<div id="viewport"></div>
-<div class="dro" id="dro">X: 0.000<br>Z: 0.000</div>
-
 <header>
-    <b>CNC <span style="color:var(--accent)">DATA PRO</span></b>
-    <button class="btn" style="background:var(--accent); color:#fff; border:none;" onclick="toggleView()">МОДЕЛЬ 🧊</button>
+    <b style="color:var(--accent)">SHOP<span style="color:#000">TURN</span> PRO</b>
+    <div style="display:flex; gap:8px;">
+        <button class="btn" onclick="document.getElementById('file-in').click()">OPEN</button>
+        <input type="file" id="file-in" hidden onchange="handleFile(this)">
+        <button class="btn" style="background:var(--accent); color:#fff; border:none;" onclick="saveNC()">SAVE</button>
+    </div>
 </header>
 
-<div class="editor-box" id="editor">
-    <textarea id="code-in" spellcheck="false" oninput="save()">O1407(CAM TEST)
-N1 T0101 (NARUZHNIY)
-G0 X60 Z2
-G1 Z-40 F.2
-G1 X80
-G0 X100 Z100
-
-N2 T0303 (REZHUSHCHIY)
-G0 X60 Z-20
-G1 X40 F.1
-G0 X100 Z100</textarea>
+<div id="shopturn-view">
+    <canvas id="canvas"></canvas>
+    <div class="info-panel" id="dro">X: 0.000<br>Z: 0.000<br>T: 0</div>
+    <div class="axis-labels">Z+ →<br>X+ ↑</div>
 </div>
 
-<div class="side-panel" id="ui-3d">
-    <div style="font-size:10px; color:var(--accent); margin-bottom:10px;">ДАННЫЕ ИНСТРУМЕНТОВ</div>
-    <div id="tools-setup"></div>
-    <hr style="opacity:0.2">
-    <label><input type="checkbox" id="showWire" onchange="build()"> СЕТКА</label>
+<div class="editor-container">
+    <div id="ln-box">1</div>
+    <div class="edit-area" id="scroller" onscroll="syncScroll()">
+        <div id="code-out"></div>
+        <textarea id="code-in" spellcheck="false" oninput="updateAll()"></textarea>
+    </div>
 </div>
 
 <script>
-    let scene, camera, renderer, controls, solid;
-    let toolSettings = {}; // Храним вылеты и радиусы
+    const input = document.getElementById('code-in');
+    const output = document.getElementById('code-out');
+    const ln = document.getElementById('ln-box');
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const dro = document.getElementById('dro');
+
+    let scale = 3;
+    let offsetZ = 50;
+    let offsetX = 100;
+
+    const colors = ['#007aff', '#ff9500', '#34c759', '#5856d6', '#af52de', '#ff2d55'];
 
     window.onload = () => {
-        const saved = localStorage.getItem('cnc_v18_code');
-        if(saved) document.getElementById('code-in').value = saved;
-        init3D();
+        input.value = localStorage.getItem('cnc_v19_st') || "O1407 (SHOP TURN TEST)\nN1 T0101 (NARUZH)\nG0 X60 Z5\nG1 Z0 F.2\nG1 X40 Z-20\nG1 Z-50\nG0 X100 Z100\n\nN2 T0202 (GROOVE)\nG0 X62 Z-30\nG1 X40 F.1\nG0 X100 Z100";
+        resize();
+        updateAll();
     };
 
-    function init3D() {
-        scene = new THREE.Scene();
-        camera = new THREE.PerspectiveCamera(45, window.innerWidth/window.innerHeight, 0.1, 1000);
-        camera.position.set(150, 100, 150);
-        renderer = new THREE.WebGLRenderer({ antialias: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        document.getElementById('viewport').appendChild(renderer.domElement);
-        controls = new THREE.OrbitControls(camera, renderer.domElement);
-        scene.add(new THREE.AmbientLight(0xffffff, 0.6));
-        const sun = new THREE.DirectionalLight(0xffffff, 1);
-        sun.position.set(50, 100, 50);
-        scene.add(sun);
-        const grid = new THREE.GridHelper(200, 20, 0x333333, 0x111111);
-        grid.rotation.x = Math.PI/2;
-        scene.add(grid);
-
-        function anim() { requestAnimationFrame(anim); renderer.render(scene, camera); }
-        anim();
-    }
-
-    function toggleView() {
-        const ed = document.getElementById('editor');
-        const ui = document.getElementById('ui-3d');
-        const dro = document.getElementById('dro');
-        const isVisible = ed.style.display === 'none';
-
-        ed.style.display = isVisible ? 'flex' : 'none';
-        ui.style.display = isVisible ? 'none' : 'block';
-        dro.style.display = isVisible ? 'none' : 'block';
+    function updateAll() {
+        const val = input.value;
+        localStorage.setItem('cnc_v19_st', val);
         
-        if(!isVisible) build();
+        // Подсветка кода
+        output.innerHTML = val.replace(/&/g, "&amp;").replace(/</g, "&lt;")
+            .replace(/(G\d+)/gi, '<span class="g">$1</span>')
+            .replace(/(T\d+)/gi, '<span class="t">$1</span>')
+            .replace(/(X-?\d*\.?\d+)/gi, '<span class="x">$1</span>')
+            .replace(/(Z-?\d*\.?\d+)/gi, '<span class="z">$1</span>');
+
+        const lines = val.split('\n');
+        ln.innerHTML = lines.map((_, i) => i + 1).join('<br>');
+        input.style.height = output.style.height = Math.max(300, lines.length * 22) + 'px';
+
+        drawShopTurn(lines);
     }
 
-    function build() {
-        if(solid) scene.remove(solid);
-        const code = document.getElementById('code-in').value;
-        const lines = code.split('\n');
-        let pts = [];
+    function drawShopTurn(lines) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // Сетка
+        ctx.strokeStyle = '#333';
+        ctx.lineWidth = 0.5;
+        for(let i=0; i<canvas.width; i+=20) { ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i,canvas.height); ctx.stroke(); }
+        for(let i=0; i<canvas.height; i+=20) { ctx.beginPath(); ctx.moveTo(0,i); ctx.lineTo(canvas.width,i); ctx.stroke(); }
+
+        // Центр (Z ось)
+        ctx.strokeStyle = '#555';
+        ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(0, canvas.height - offsetX); ctx.lineTo(canvas.width, canvas.height - offsetX); ctx.stroke();
+
         let curX = 0, curZ = 0;
-        let setupHtml = "";
+        let tIdx = 0;
 
-        lines.forEach(l => {
-            const tMatch = l.match(/T(\d+)/i);
-            if(tMatch) {
-                const tNum = tMatch[1];
-                if(!toolSettings[tNum]) toolSettings[tNum] = { r: 0.4, offX: 0 };
-                setupHtml += `
-                    <div class="tool-config">
-                        <b>T${tNum}</b> | R: <input type="number" step="0.1" value="${toolSettings[tNum].r}" onchange="toolSettings['${tNum}'].r=this.value; build()">
-                        X-Off: <input type="number" value="${toolSettings[tNum].offX}" onchange="toolSettings['${tNum}'].offX=this.value; build()">
-                    </div>`;
-            }
+        lines.forEach(line => {
+            const tMatch = line.match(/T(\d+)/i);
+            if(tMatch) tIdx = (parseInt(tMatch[1]) % colors.length);
 
-            const mx = l.match(/X(-?\d*\.?\d+)/i);
-            const mz = l.match(/Z(-?\d*\.?\d+)/i);
-            if(mx) curX = parseFloat(mx[1]);
-            if(mz) curZ = parseFloat(mz[1]);
-            
+            const mx = line.match(/X(-?\d*\.?\d+)/i);
+            const mz = line.match(/Z(-?\d*\.?\d+)/i);
+            const isG0 = /G0/i.test(line);
+
             if(mx || mz) {
-                pts.push(new THREE.Vector2(Math.abs(curX)/2, curZ));
+                let nextX = mx ? parseFloat(mx[1]) : curX;
+                let nextZ = mz ? parseFloat(mz[1]) : curZ;
+
+                ctx.beginPath();
+                ctx.strokeStyle = isG0 ? '#666' : colors[tIdx];
+                ctx.setLineDash(isG0 ? [5, 5] : []);
+                ctx.lineWidth = isG0 ? 1 : 2.5;
+
+                // Пересчет координат под экран (Z вправо, X вверх)
+                let x1 = offsetZ + (curZ * scale);
+                let y1 = canvas.height - offsetX - (curX / 2 * scale);
+                let x2 = offsetZ + (nextZ * scale);
+                let y2 = canvas.height - offsetX - (nextX / 2 * scale);
+
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(x2, y2);
+                ctx.stroke();
+
+                curX = nextX; curZ = nextZ;
             }
         });
 
-        document.getElementById('tools-setup').innerHTML = setupHtml || "Инструменты не найдены";
-        if(pts.length < 2) return;
-
-        pts.sort((a,b) => b.y - a.y);
-        const geo = new THREE.LatheGeometry(pts, 64);
-        const mat = new THREE.MeshStandardMaterial({ 
-            color: 0x999999, metalness: 0.8, roughness: 0.2, 
-            wireframe: document.getElementById('showWire').checked 
-        });
-        solid = new THREE.Mesh(geo, mat);
-        solid.rotation.x = -Math.PI/2;
-        scene.add(solid);
-
-        // Обновляем DRO (координаты последней точки)
-        document.getElementById('dro').innerHTML = `X: ${curX.toFixed(3)}<br>Z: ${curZ.toFixed(3)}`;
+        dro.innerHTML = `X: ${curX.toFixed(3)}<br>Z: ${curZ.toFixed(3)}<br>T: ${tIdx}`;
     }
 
-    function save() { localStorage.setItem('cnc_v18_code', document.getElementById('code-in').value); }
+    function resize() {
+        canvas.width = canvas.offsetWidth;
+        canvas.height = canvas.offsetHeight;
+        offsetX = canvas.height * 0.3; // Смещение оси X от низа
+        offsetZ = canvas.width * 0.8;  // Смещение оси Z (0 детали)
+        updateAll();
+    }
+
+    function syncScroll() { 
+        output.scrollTop = ln.scrollTop = document.getElementById('scroller').scrollTop; 
+    }
+
+    function handleFile(i) {
+        const r = new FileReader();
+        r.onload = (e) => { input.value = e.target.result; updateAll(); };
+        r.readAsText(i.files[0]);
+    }
+
+    function saveNC() {
+        const b = new Blob([input.value], {type:'text/plain'});
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(b); a.download='SHOP_TURN_PROG.O'; a.click();
+    }
+
+    window.onresize = resize;
+
+    // Зум и перемещение (простое касание)
+    canvas.addEventListener('wheel', (e) => {
+        scale -= e.deltaY * 0.01;
+        if(scale < 0.5) scale = 0.5;
+        updateAll();
+    });
 </script>
 </body>
 </html>
