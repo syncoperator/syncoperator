@@ -3,223 +3,215 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>CNC IDE Solid Premium</title>
+    <title>Carbon Precision IDE</title>
     <style>
         :root {
             --accent: #007aff;
             --bg: #ffffff;
-            --surface: #f2f2f7;
+            --side: #f8f8fa;
+            --border: #e5e5ea;
             --text: #1c1c1e;
-            --border: #d1d1d6;
         }
 
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body, html { 
-            margin: 0; padding: 0; height: 100%; 
-            background: var(--bg); font-family: -apple-system, system-ui, sans-serif; 
-            color: var(--text); overflow: hidden; 
+        * { box-sizing: border-box; -webkit-font-smoothing: antialiased; }
+        body, html { margin: 0; padding: 0; height: 100%; background: var(--bg); font-family: -apple-system, sans-serif; color: var(--text); overflow: hidden; }
+
+        /* ОСНОВНАЯ СЕТКА */
+        .app-grid {
+            display: grid;
+            grid-template-columns: 240px 1fr;
+            grid-template-rows: 50px 1fr 75px;
+            height: 100vh;
         }
 
-        .app-layout { 
-            display: flex; flex-direction: column; height: 100vh; 
-            padding-bottom: env(safe-area-inset-bottom); /* Поддержка iPhone */
-        }
-
-        /* HEADER: SEARCH */
+        /* HEADER */
         header {
-            padding: 10px 16px; border-bottom: 1px solid var(--border);
-            display: flex; gap: 10px; background: #fff; z-index: 10;
+            grid-column: 1 / 3; background: #fff; border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; padding: 0 15px; gap: 10px; z-index: 10;
         }
-        .search-input {
-            flex: 1; height: 38px; background: var(--surface);
-            border: 1px solid transparent; border-radius: 10px;
-            padding: 0 12px; font-size: 15px; outline: none;
+        .search-wrap { flex: 1; position: relative; }
+        .search-wrap input {
+            width: 100%; height: 32px; background: #efeff4; border: none; 
+            border-radius: 8px; padding: 0 35px 0 12px; font-size: 14px; outline: none;
         }
-        .search-input:focus { border-color: var(--accent); background: #fff; }
+        .search-wrap input:focus { background: #fff; box-shadow: 0 0 0 2px var(--accent); }
 
-        /* EDITOR: MAIN AREA */
-        .editor-container { 
-            flex: 1; display: flex; position: relative; overflow: hidden; 
-            background: #fff;
+        /* SIDEBAR: ИНСТРУМЕНТЫ */
+        aside {
+            background: var(--side); border-right: 1px solid var(--border);
+            display: flex; flex-direction: column; overflow: hidden;
         }
+        .side-head { 
+            padding: 15px; font-size: 10px; font-weight: 800; color: #8e8e93; 
+            text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid var(--border);
+        }
+        .tool-scroller { flex: 1; overflow-y: auto; padding: 10px; }
+        .tool-node {
+            padding: 12px; border-radius: 10px; background: #fff; margin-bottom: 8px;
+            border: 1px solid var(--border); cursor: pointer; transition: 0.2s;
+        }
+        .tool-node:active { transform: scale(0.97); background: var(--accent); border-color: var(--accent); }
+        .tool-node:active * { color: #fff !important; }
+        .tool-node b { display: block; font-size: 11px; color: var(--accent); margin-bottom: 2px; }
+        .tool-node span { font-size: 14px; font-weight: 600; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        /* EDITOR */
+        .editor-wrap { position: relative; overflow: hidden; background: #fff; }
         .gutter {
-            width: 45px; background: var(--surface); color: #aeaeb2;
-            text-align: right; padding: 20px 8px; font-family: "SF Mono", monospace;
-            font-size: 13px; border-right: 1px solid var(--border);
+            position: absolute; left: 0; top: 0; width: 45px; height: 100%;
+            background: #fbfbfd; border-right: 1px solid var(--border);
+            padding: 20px 0; text-align: center; font-family: monospace; font-size: 12px; color: #d1d1d6;
         }
-        .scroll-viewport { flex: 1; overflow: auto; position: relative; }
-        
-        #editor, #highlight {
-            position: absolute; top: 0; left: 0; width: 100%; min-height: 100%;
-            padding: 20px; font-family: "SF Mono", "Fira Code", monospace;
-            font-size: 16px; line-height: 1.6; white-space: pre; border: none; 
-            outline: none; margin: 0;
+        .main-scroll { position: absolute; left: 45px; right: 0; top: 0; bottom: 0; overflow: auto; }
+        #code, #view {
+            position: absolute; inset: 0; padding: 20px; font-family: "SF Mono", Menlo, monospace;
+            font-size: 15px; line-height: 1.6; white-space: pre; border: none; outline: none; margin: 0;
         }
-        #editor { color: transparent; background: transparent; z-index: 2; caret-color: var(--accent); resize: none; }
-        #highlight { z-index: 1; color: var(--text); pointer-events: none; }
+        #code { color: transparent; background: transparent; z-index: 2; caret-color: var(--accent); resize: none; width: 1000px; }
+        #view { z-index: 1; color: var(--text); pointer-events: none; }
 
-        /* OVERLAY: TOOL LIST */
-        .modal-overlay {
-            position: fixed; inset: 0; background: rgba(0,0,0,0.4);
-            backdrop-filter: blur(8px); z-index: 1000;
-            display: none; align-items: center; justify-content: center; padding: 20px;
-        }
-        .modal-content {
-            background: #fff; width: 100%; max-width: 400px; max-height: 70vh;
-            border-radius: 20px; overflow: hidden; display: flex; flex-direction: column;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
-        }
-        .modal-header { padding: 16px; border-bottom: 1px solid var(--border); font-weight: 700; text-align: center; }
-        .tool-scroll { flex: 1; overflow-y: auto; padding: 8px; }
-        .tool-card {
-            padding: 12px 16px; border-radius: 12px; margin-bottom: 4px;
-            cursor: pointer; transition: 0.2s; border: 1px solid transparent;
-        }
-        .tool-card:active { background: var(--surface); }
-        .tool-card b { color: var(--accent); font-size: 11px; text-transform: uppercase; display: block; }
-        .tool-card span { font-size: 16px; font-weight: 600; }
-
-        /* FOOTER: FIXED PANEL */
+        /* FOOTER */
         footer {
-            height: 70px; background: #fff; border-top: 1px solid var(--border);
-            display: flex; align-items: center; padding: 0 16px; gap: 10px;
-            z-index: 100;
+            grid-column: 1 / 3; background: #fff; border-top: 1px solid var(--border);
+            display: flex; align-items: center; padding: 0 15px 15px 15px; gap: 10px;
         }
-        .btn {
-            height: 44px; padding: 0 15px; border-radius: 12px;
-            background: var(--surface); border: none; color: var(--text);
-            font-size: 13px; font-weight: 600; cursor: pointer;
-            display: flex; align-items: center; justify-content: center; flex: 1;
+        .btn-ui {
+            height: 44px; flex: 1; background: #f2f2f7; border: none; border-radius: 12px;
+            color: var(--text); font-size: 13px; font-weight: 600; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; transition: 0.2s;
         }
-        .btn.primary { background: var(--accent); color: #fff; }
-        .btn:active { opacity: 0.7; transform: scale(0.98); }
+        .btn-ui.primary { background: var(--accent); color: #fff; }
+        .btn-ui:active { opacity: 0.6; }
 
-        /* SYNTAX COLORS */
-        .c-g { color: #af52de; font-weight: bold; }
-        .c-t { color: #34c759; font-weight: bold; border-bottom: 1px solid #34c759; }
-        .c-x { color: #ff3b30; }
-        .c-z { color: #007aff; }
-        .c-comm { color: #8e8e93; font-style: italic; }
-        .match { background: rgba(255, 214, 0, 0.3); border-radius: 4px; }
+        /* SYNTAX */
+        .g { color: #af52de; font-weight: bold; }
+        .t { color: #34c759; font-weight: bold; }
+        .x { color: #ff3b30; }
+        .z { color: #007aff; }
+        .c { color: #8e8e93; font-style: italic; }
+        .match { background: rgba(255, 214, 0, 0.4); border-radius: 3px; }
+
+        /* MOBILE OVERRIDE */
+        @media (max-width: 700px) {
+            .app-grid { grid-template-columns: 1fr; }
+            aside { display: none; } /* Скрываем боковую панель на узких экранах, вызовем её кнопкой */
+            .app-grid.show-tools aside { display: flex; position: fixed; inset: 50px 0 75px 0; z-index: 100; }
+        }
     </style>
 </head>
 <body>
 
-<div class="app-layout">
+<div class="app-grid" id="layout">
     <header>
-        <input type="text" id="find" class="search-input" placeholder="Поиск в программе..." oninput="refresh()">
-        <button class="btn" style="flex: 0; width: 44px;" onclick="document.getElementById('fileIn').click()">📂</button>
-        <input type="file" id="fileIn" hidden onchange="loadFile(this)">
+        <div class="search-wrap">
+            <input type="text" id="find" placeholder="Поиск кода или параметров..." oninput="render()">
+        </div>
+        <button class="btn-ui" style="flex:0; width:44px; height:32px; border-radius:8px;" onclick="document.getElementById('fin').click()">📂</button>
+        <input type="file" id="fin" hidden onchange="openFile(this)">
     </header>
 
-    <div class="editor-container">
-        <div class="gutter" id="line-nums">1</div>
-        <div class="scroll-viewport" id="viewport" onscroll="sync()">
-            <div id="highlight"></div>
-            <textarea id="editor" spellcheck="false" oninput="refresh()"></textarea>
+    <aside>
+        <div class="side-head">Инструменты в программе</div>
+        <div class="tool-scroller" id="t-list"></div>
+    </aside>
+
+    <div class="editor-wrap">
+        <div class="gutter" id="ln">1</div>
+        <div class="main-scroll" id="scroller" onscroll="sync()">
+            <div id="view"></div>
+            <textarea id="code" spellcheck="false" oninput="render()"></textarea>
         </div>
     </div>
 
     <footer>
-        <button class="btn" onclick="toggleTools()">ИНСТРУМЕНТЫ</button>
-        <button class="btn" onclick="exportJSON()">JSON</button>
-        <button class="btn primary" onclick="saveMPF()">СОХРАНИТЬ .MPF</button>
+        <button class="btn-ui" onclick="document.getElementById('layout').classList.toggle('show-tools')">TOOLS</button>
+        <button class="btn-ui" onclick="exportData()">JSON</button>
+        <button class="btn-ui primary" onclick="saveMPF()">SAVE .MPF</button>
     </footer>
 </div>
 
-<div class="modal-overlay" id="modal" onclick="toggleTools()">
-    <div class="modal-content" onclick="event.stopPropagation()">
-        <div class="modal-header">СПИСОК ИНСТРУМЕНТОВ</div>
-        <div class="tool-scroll" id="tool-list"></div>
-        <button class="btn" style="margin: 16px; background: var(--text); color: #fff;" onclick="toggleTools()">ЗАКРЫТЬ</button>
-    </div>
-</div>
-
 <script>
-    const ed = document.getElementById('editor');
-    const hi = document.getElementById('highlight');
-    const ln = document.getElementById('line-nums');
-    const tl = document.getElementById('tool-list');
+    const el = document.getElementById('code');
+    const vw = document.getElementById('view');
+    const ln = document.getElementById('ln');
+    const tl = document.getElementById('t-list');
 
     window.onload = () => {
-        ed.value = localStorage.getItem('cnc_solid_v27') || 
-        "O0027 (PREMIUM PROJECT)\nG54 G90\n\nN10 T1 D1\n(ЧЕРНОВОЕ ТОЧЕНИЕ)\nG0 X120. Z2.\nG1 Z-45. F.2\nG1 X140.\nG0 X200. Z200.\n\nN20 T3 D1\n(ЧИСТОВОЙ ТОРЕЦ)\nG0 X120. Z-10.\nG1 X110. F.15\nG0 X200. Z100.";
-        refresh();
+        el.value = localStorage.getItem('cnc_v28') || 
+        "O2800 (CARBON PROJECT)\nG54 G90\n\nN10 T1 D1\n(ROUGHING OUTER)\nG0 X120. Z2.\nG1 Z-45. F.25\nG1 X140.\nG0 X200. Z200.\n\nN20 T3 D1\n(FINISHING FACE)\nG0 X120. Z-10.\nG1 X110. F.15\nG0 X200. Z100.\n\nN30 T5 D1\n(THREADING M30)\nG0 X30. Z5.\nG1 Z-20. F1.5";
+        render();
     };
 
-    function refresh() {
-        const val = ed.value;
-        localStorage.setItem('cnc_solid_v27', val);
+    function render() {
+        const val = el.value;
+        localStorage.setItem('cnc_v28', val);
 
-        // 1. Syntax
-        let html = val.replace(/&/g, "&amp;").replace(/</g, "&lt;")
-            .replace(/\((.*?)\)/g, '<span class="c-comm">($1)</span>')
-            .replace(/(T\d+)/gi, '<span class="c-t">$1</span>')
-            .replace(/(G\d+)/gi, '<span class="c-g">$1</span>')
-            .replace(/(X-?\d*\.?\d*)/gi, '<span class="c-x">$1</span>')
-            .replace(/(Z-?\d*\.?\d*)/gi, '<span class="c-z">$1</span>');
+        // 1. Syntax & Search
+        let h = val.replace(/&/g, "&amp;").replace(/</g, "&lt;")
+            .replace(/\((.*?)\)/g, '<span class="c">($1)</span>')
+            .replace(/(T\d+)/gi, '<span class="t">$1</span>')
+            .replace(/(G\d+)/gi, '<span class="g">$1</span>')
+            .replace(/(X-?\d*\.?\d*)/gi, '<span class="x">$1</span>')
+            .replace(/(Z-?\d*\.?\d*)/gi, '<span class="z">$1</span>');
 
         const q = document.getElementById('find').value;
-        if(q) html = html.replace(new RegExp(`(${q})`, "gi"), '<span class="match">$1</span>');
-        
-        hi.innerHTML = html;
+        if(q) h = h.replace(new RegExp(`(${q})`, "gi"), '<span class="match">$1</span>');
+        vw.innerHTML = h;
 
-        // 2. Lines
+        // 2. Line numbers
         const rows = val.split('\n');
         ln.innerHTML = rows.map((_, i) => i + 1).join('<br>');
-        ed.style.height = hi.style.height = Math.max(window.innerHeight, rows.length * 25.6 + 200) + 'px';
+        el.style.height = vw.style.height = Math.max(window.innerHeight, rows.length * 24 + 300) + 'px';
 
-        // 3. Tools
-        updateToolList(rows);
+        // 3. Tool Scanner
+        updateTools(rows);
     }
 
-    function updateToolList(rows) {
+    function updateTools(rows) {
         tl.innerHTML = "";
         rows.forEach((line, i) => {
             const t = line.match(/T(\d+)/i);
             if(t) {
-                let name = "Без описания";
-                const look = [rows[i], rows[i+1] || ""];
-                look.forEach(s => { const m = s.match(/\((.*?)\)/); if(m) name = m[1]; });
+                let name = "NO NAME";
+                // Ищем в текущей и следующей строке описание в скобках
+                [rows[i], rows[i+1] || ""].forEach(s => {
+                    const m = s.match(/\((.*?)\)/);
+                    if(m) name = m[1];
+                });
 
-                const card = document.createElement('div');
-                card.className = 'tool-card';
-                card.innerHTML = `<b>Tool ${t[1]}</b><span>${name}</span>`;
-                card.onclick = () => {
+                const div = document.createElement('div');
+                div.className = 'tool-node';
+                div.innerHTML = `<b>TOOL ${t[1]}</b><span>${name}</span>`;
+                div.onclick = () => {
                     const pos = rows.slice(0, i).join('\n').length + (i > 0 ? 1 : 0);
-                    ed.focus();
-                    ed.setSelectionRange(pos, pos + line.length);
-                    document.getElementById('viewport').scrollTop = i * 25.6 - 60;
-                    toggleTools();
+                    el.focus();
+                    el.setSelectionRange(pos, pos + line.length);
+                    document.getElementById('scroller').scrollTop = i * 24 - 40;
+                    document.getElementById('layout').classList.remove('show-tools');
                 };
-                tl.appendChild(card);
+                tl.appendChild(div);
             }
         });
     }
 
-    function toggleTools() {
-        const m = document.getElementById('modal');
-        m.style.display = (m.style.display === 'flex') ? 'none' : 'flex';
-    }
+    function sync() { vw.scrollTop = ln.scrollTop = document.getElementById('scroller').scrollTop; }
 
-    function sync() { hi.scrollTop = ln.scrollTop = document.getElementById('viewport').scrollTop; }
-
-    function loadFile(input) {
+    function openFile(input) {
         const f = input.files[0];
         if(!f) return;
         const r = new FileReader();
-        r.onload = e => { ed.value = e.target.result; refresh(); };
+        r.onload = e => { el.value = e.target.result; render(); };
         r.readAsText(f);
     }
 
     function saveMPF() {
-        const b = new Blob([ed.value], {type:'text/plain'});
-        const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = 'CNC_PROG.MPF'; a.click();
+        const b = new Blob([el.value], {type:'text/plain'});
+        const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = 'PROG.MPF'; a.click();
     }
 
-    function exportJSON() {
-        const b = new Blob([JSON.stringify({code: ed.value, date: new Date()})], {type:'application/json'});
-        const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = 'export.json'; a.click();
+    function exportData() {
+        const b = new Blob([JSON.stringify({code: el.value, ts: new Date()})], {type:'application/json'});
+        const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = 'backup.json'; a.click();
     }
 </script>
 </body>
