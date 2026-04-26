@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>CNC Navigation Editor</title>
+    <title>CNC ShopTurn File Manager</title>
     <style>
         :root { 
             --s-blue: #003a5a; --s-light: #005f87; --s-orange: #eb7800;
@@ -12,208 +12,198 @@
         * { box-sizing: border-box; }
         body, html { margin: 0; padding: 0; height: 100%; background: var(--bg); font-family: 'Segoe UI', sans-serif; color: var(--text); overflow: hidden; }
 
-        .app { display: flex; flex-direction: column; height: 100vh; }
+        .app-grid { display: grid; grid-template-rows: 40px 1fr 50px; height: 100vh; }
 
-        /* Верхняя панель поиска */
-        .search-bar { 
-            background: #2d2d2d; padding: 10px; display: flex; gap: 8px; 
-            border-bottom: 1px solid #3c3c3c; flex-wrap: wrap;
-        }
-        .search-bar input { 
-            background: #3c3c3c; border: 1px solid #555; color: #fff; 
-            padding: 5px 10px; border-radius: 4px; font-size: 13px; outline: none;
-        }
-        .search-bar input:focus { border-color: var(--s-orange); }
+        /* Шапка с поиском */
+        .top-nav { background: #2d2d2d; display: flex; align-items: center; padding: 0 10px; gap: 10px; border-bottom: 1px solid #3c3c3c; }
+        .top-nav input { background: #3c3c3c; border: 1px solid #555; color: #fff; padding: 4px 8px; border-radius: 3px; font-size: 13px; flex: 1; }
 
-        /* Рабочая зона */
-        .main { flex: 1; display: flex; overflow: hidden; position: relative; }
+        /* Основной контент */
+        .content { display: flex; overflow: hidden; }
 
-        /* Список инструментов (Навигация) */
-        .tool-nav { 
-            width: 150px; background: #252526; border-right: 1px solid #3c3c3c; 
-            display: flex; flex-direction: column; overflow-y: auto;
-        }
-        .tool-item { 
-            padding: 10px; font-size: 12px; border-bottom: 1px solid #333; 
-            cursor: pointer; color: #aaa; transition: 0.2s;
-        }
-        .tool-item:hover { background: #2a2d2e; color: #fff; }
-        .tool-item b { color: var(--s-orange); display: block; margin-bottom: 3px; }
+        /* Боковая панель: Файлы и Навигация */
+        .sidebar { width: 180px; background: #252526; border-right: 1px solid #3c3c3c; display: flex; flex-direction: column; }
+        .side-head { padding: 10px; font-size: 10px; color: var(--s-orange); text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid #333; }
+        .file-list, .tool-list { flex: 1; overflow-y: auto; }
+        .item { padding: 8px 12px; font-size: 12px; cursor: pointer; border-bottom: 1px solid #2d2d2d; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .item:hover { background: #2a2d2e; }
+        .item.active { background: var(--s-light); color: #fff; }
+        .item b { color: var(--s-orange); }
 
         /* Редактор */
-        .editor-container { flex: 1; position: relative; display: flex; overflow: hidden; }
-        #ln-col { 
-            width: 40px; background: #1e1e1e; color: #858585; 
-            text-align: right; padding: 15px 5px; font-family: monospace; font-size: 14px; 
-        }
-        .edit-wrap { flex: 1; position: relative; overflow: auto; }
-        #editor, #highlight { 
-            position: absolute; top: 0; left: 0; width: 100%; min-height: 100%;
-            padding: 15px; font-family: 'Consolas', 'Courier New', monospace; 
-            font-size: 16px; line-height: 1.5; white-space: pre; border: none; outline: none;
-        }
-        #editor { color: transparent; background: transparent; z-index: 2; caret-color: #fff; resize: none; }
-        #highlight { z-index: 1; pointer-events: none; }
+        .editor-box { flex: 1; display: flex; overflow: hidden; position: relative; }
+        #ln { width: 35px; background: #1e1e1e; color: #777; text-align: right; padding: 15px 5px; font-family: monospace; font-size: 14px; border-right: 1px solid #333; }
+        .view-wrap { flex: 1; position: relative; overflow: auto; }
+        #edit, #layer { position: absolute; top:0; left:0; width:100%; min-height:100%; padding:15px; font-family: 'Consolas', monospace; font-size: 16px; line-height: 1.5; white-space: pre; border:none; outline:none; }
+        #edit { color: transparent; background: transparent; z-index: 2; caret-color: #fff; resize: none; }
+        #layer { z-index: 1; pointer-events: none; }
 
-        /* Футер */
-        .footer { 
-            background: var(--s-blue); height: 50px; display: flex; 
-            gap: 2px; padding: 2px; 
-        }
-        .f-btn { 
-            flex: 1; background: var(--s-light); border: none; color: #fff; 
-            font-size: 11px; font-weight: bold; text-transform: uppercase; cursor: pointer;
-        }
-        .f-btn:active { background: var(--s-orange); }
+        /* Нижние кнопки (Softkeys) */
+        .footer { background: #333; display: flex; gap: 2px; padding: 2px; }
+        .soft { flex: 1; background: #555; border: none; color: #fff; font-size: 10px; font-weight: bold; cursor: pointer; text-transform: uppercase; }
+        .soft:active { background: var(--s-orange); }
 
-        /* Цвета синтаксиса */
-        .g { color: #dcdcaa; } /* G-коды */
-        .t { color: #c586c0; font-weight: bold; } /* Инструмент */
-        .x { color: #ce9178; } /* X */
-        .z { color: #9cdcfe; } /* Z */
-        .comm { color: #6a9955; font-style: italic; } /* Комменты */
-        .match { background: rgba(255, 255, 0, 0.3); border-bottom: 2px solid orange; } /* Подсветка поиска */
+        /* Подсветка */
+        .g { color: #dcdcaa; } .t { color: #c586c0; font-weight: bold; }
+        .x { color: #ce9178; } .z { color: #9cdcfe; } .c { color: #6a9955; }
     </style>
 </head>
 <body>
 
-<div class="app">
-    <div class="search-bar">
-        <input type="text" id="find-inp" placeholder="Найти (X, Z, T...)" oninput="applySearch()">
-        <input type="text" id="replace-inp" placeholder="Заменить на...">
-        <button class="f-btn" style="flex:0; padding: 0 15px;" onclick="replaceText()">Заменить</button>
-        <div id="search-stat" style="font-size:12px; align-self:center; color:#888; margin-left:10px;"></div>
+<div class="app-grid">
+    <div class="top-nav">
+        <span style="color:var(--s-orange); font-weight:bold; font-size:14px;">ShopTurn</span>
+        <input type="text" id="find" placeholder="Поиск в коде..." oninput="updateView()">
+        <button onclick="document.getElementById('load-file').click()" style="background:var(--s-light); color:#fff; border:none; padding:5px 10px; border-radius:3px; cursor:pointer;">Открыть файл</button>
+        <input type="file" id="load-file" hidden onchange="importFile(this)">
     </div>
 
-    <div class="main">
-        <div class="tool-nav" id="tool-nav">
-            </div>
-        <div class="editor-container">
-            <div id="ln-col">1</div>
-            <div class="edit-wrap" id="scroll-box" onscroll="sync()">
-                <div id="highlight"></div>
-                <textarea id="editor" spellcheck="false" oninput="process()"></textarea>
+    <div class="content">
+        <div class="sidebar">
+            <div class="side-head">Инструменты</div>
+            <div id="tool-nav" class="tool-list"></div>
+            <div class="side-head">История файлов</div>
+            <div id="file-history" class="file-list"></div>
+        </div>
+
+        <div class="editor-box">
+            <div id="ln">1</div>
+            <div class="view-wrap" id="scroller" onscroll="sync()">
+                <div id="layer"></div>
+                <textarea id="edit" spellcheck="false" oninput="updateView()"></textarea>
             </div>
         </div>
     </div>
 
     <div class="footer">
-        <button class="f-btn" onclick="jumpTo('T')">След. Инструмент</button>
-        <button class="f-btn" onclick="document.getElementById('editor').focus()">Правка</button>
-        <button class="f-btn" onclick="saveFile()">💾 Сохранить</button>
-        <button class="f-btn" style="background:var(--s-orange)" onclick="toggleNav()">Навигация</button>
+        <button class="soft" onclick="newFile()">Новый</button>
+        <button class="soft" onclick="jumpTo('T')">След. T</button>
+        <button class="soft" onclick="replaceTool()">Замена T</button>
+        <button class="soft" onclick="saveFile()" style="background:var(--s-orange)">Сохранить</button>
     </div>
 </div>
 
 <script>
-    const ed = document.getElementById('editor');
-    const hi = document.getElementById('highlight');
-    const ln = document.getElementById('ln-col');
-    const nav = document.getElementById('tool-nav');
-    const findInp = document.getElementById('find-inp');
+    const edit = document.getElementById('edit');
+    const layer = document.getElementById('layer');
+    const ln = document.getElementById('ln');
+    const tNav = document.getElementById('tool-nav');
+    const fHist = document.getElementById('file-history');
+
+    let files = JSON.parse(localStorage.getItem('cnc_files') || '[]');
 
     window.onload = () => {
-        ed.value = localStorage.getItem('cnc_v22') || "O1001 (VAL)\nN5 T1 D1 (ROUGH)\nG0 X100 Z5\nG1 Z0 F.2\nG1 X40 Z-25\nG1 Z-50\nG0 X200 Z100\n\nN10 T2 D1 (FINISH)\nG0 X42 Z2\nG1 Z-50 F.1\nG1 X60\nG0 X200 Z200\n\nN15 T3 D1 (THREAD)";
-        process();
+        edit.value = localStorage.getItem('cnc_last_code') || "O1234\nT1 D1 (ROUGH)\nG0 X100 Z2\nG1 Z-50 F0.2\n\nT2 D1 (FINISH)\nG0 X50 Z2";
+        updateView();
+        updateFileHistory();
     };
 
-    function process() {
-        const text = ed.value;
-        localStorage.setItem('cnc_v22', text);
-        
-        // 1. Синтаксис
-        let html = text.replace(/&/g, "&amp;").replace(/</g, "&lt;")
-            .replace(/\((.*?)\)/g, '<span class="comm">($1)</span>')
+    function updateView() {
+        const code = edit.value;
+        localStorage.setItem('cnc_last_code', code);
+
+        // 1. Подсветка
+        let html = code.replace(/&/g, "&amp;").replace(/</g, "&lt;")
+            .replace(/\((.*?)\)/g, '<span class="c">($1)</span>')
             .replace(/(T\d+)/gi, '<span class="t">$1</span>')
             .replace(/(G\d+)/gi, '<span class="g">$1</span>')
             .replace(/(X-?\d*\.?\d+)/gi, '<span class="x">$1</span>')
             .replace(/(Z-?\d*\.?\d+)/gi, '<span class="z">$1</span>');
 
-        // 2. Поиск
-        const query = findInp.value;
-        if(query) {
-            const regex = new RegExp(`(${query})`, "gi");
-            html = html.replace(regex, '<span class="match">$1</span>');
+        // Поиск
+        const fVal = document.getElementById('find').value;
+        if(fVal) {
+            const re = new RegExp(`(${fVal})`, "gi");
+            html = html.replace(re, '<span style="background:rgba(235,120,0,0.4); outline:1px solid var(--s-orange)">$1</span>');
         }
-        
-        hi.innerHTML = html;
+        layer.innerHTML = html;
 
-        // 3. Номера строк и Навигация
-        const lines = text.split('\n');
+        // 2. Строки
+        const lines = code.split('\n');
         ln.innerHTML = lines.map((_, i) => i + 1).join('<br>');
-        ed.style.height = hi.style.height = Math.max(window.innerHeight - 150, lines.length * 24) + 'px';
+        edit.style.height = layer.style.height = Math.max(window.innerHeight - 100, lines.length * 24) + 'px';
 
-        updateNav(lines);
-    }
-
-    function updateNav(lines) {
-        nav.innerHTML = '<div style="padding:10px; font-size:10px; color:#555">ИНСТРУМЕНТЫ</div>';
-        lines.forEach((line, index) => {
-            const tMatch = line.match(/T(\d+)/i);
-            const comm = line.match(/\((.*?)\)/);
-            if(tMatch) {
-                const item = document.createElement('div');
-                item.className = 'tool-item';
-                item.innerHTML = `<b>${tMatch[0]}</b> ${comm ? comm[1] : ''}`;
-                item.onclick = () => scrollToLine(index);
-                nav.appendChild(item);
+        // 3. Обновление списка инструментов
+        tNav.innerHTML = "";
+        lines.forEach((l, i) => {
+            const m = l.match(/T(\d+)/i);
+            const c = l.match(/\((.*?)\)/);
+            if(m) {
+                const div = document.createElement('div');
+                div.className = 'item';
+                div.innerHTML = `<b>${m[0]}</b> ${c ? c[1] : ''}`;
+                div.onclick = () => {
+                    const pos = lines.slice(0, i).join('\n').length + (i > 0 ? 1 : 0);
+                    edit.focus();
+                    edit.setSelectionRange(pos, pos + l.length);
+                    document.getElementById('scroller').scrollTop = i * 24;
+                };
+                tNav.appendChild(div);
             }
         });
     }
 
-    function scrollToLine(idx) {
-        const lineHeight = 24; 
-        document.getElementById('scroll-box').scrollTop = idx * lineHeight;
-        ed.focus();
-        // Ставим курсор
-        const lines = ed.value.split('\n');
-        let pos = 0;
-        for(let i=0; i<idx; i++) pos += lines[i].length + 1;
-        ed.setSelectionRange(pos, pos + lines[idx].length);
+    function importFile(input) {
+        const file = input.files[0];
+        if(!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            edit.value = e.target.result;
+            // Добавляем в историю
+            if(!files.includes(file.name)) {
+                files.unshift(file.name);
+                if(files.length > 5) files.pop();
+                localStorage.setItem('cnc_files', JSON.stringify(files));
+            }
+            updateView();
+            updateFileHistory();
+        };
+        reader.readAsText(file);
     }
 
-    function applySearch() {
-        process();
-        const count = (hi.innerHTML.match(/class="match"/g) || []).length;
-        document.getElementById('search-stat').innerText = count ? `Найдено: ${count}` : "";
-    }
-
-    function replaceText() {
-        const find = findInp.value;
-        const replace = document.getElementById('replace-inp').value;
-        if(!find) return;
-        ed.value = ed.value.split(find).join(replace);
-        process();
-    }
-
-    function jumpTo(char) {
-        const text = ed.value;
-        const start = ed.selectionStart + 1;
-        const nextPos = text.toUpperCase().indexOf(char.toUpperCase(), start);
-        if(nextPos !== -1) {
-            ed.setSelectionRange(nextPos, nextPos + 2);
-            const line = text.substr(0, nextPos).split('\n').length - 1;
-            scrollToLine(line);
-        } else {
-            ed.setSelectionRange(0, 0); // В начало, если не нашли
-        }
-    }
-
-    function toggleNav() {
-        nav.style.display = nav.style.display === 'none' ? 'flex' : 'none';
+    function updateFileHistory() {
+        fHist.innerHTML = files.map(f => `<div class="item" style="color:#888">📄 ${f}</div>`).join('');
     }
 
     function sync() {
-        const s = document.getElementById('scroll-box');
-        hi.scrollTop = ln.scrollTop = s.scrollTop;
+        layer.scrollTop = ln.scrollTop = document.getElementById('scroller').scrollTop;
     }
 
     function saveFile() {
-        const blob = new Blob([ed.value], {type: 'text/plain'});
+        const blob = new Blob([edit.value], {type: 'text/plain'});
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
-        a.download = 'PROGRAM.MPF';
+        a.download = 'NEW_PROG.MPF';
         a.click();
+    }
+
+    function newFile() {
+        if(confirm("Создать новую программу? Текущий текст будет стерт.")) {
+            edit.value = "O0000\n\nT1 D1\nG0 X Z\n";
+            updateView();
+        }
+    }
+
+    function jumpTo(char) {
+        const text = edit.value.toUpperCase();
+        const start = edit.selectionStart + 1;
+        const pos = text.indexOf(char, start);
+        if(pos !== -1) {
+            edit.setSelectionRange(pos, pos + 2);
+            edit.focus();
+        } else {
+            edit.setSelectionRange(0, 0);
+            edit.focus();
+        }
+    }
+
+    function replaceTool() {
+        const oldT = prompt("Какой инструмент заменить? (например T1)");
+        const newT = prompt("На какой заменить? (например T5)");
+        if(oldT && newT) {
+            edit.value = edit.value.split(oldT).join(newT);
+            updateView();
+        }
     }
 </script>
 </body>
