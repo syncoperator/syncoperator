@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>CNC Pro v31</title>
+    <title>CNC Pro v32</title>
     <style>
         :root {
             --bg: #ffffff;
@@ -18,7 +18,6 @@
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         
-        /* Фикс высоты для мобилок */
         body, html { 
             margin: 0; padding: 0; 
             height: 100dvh; width: 100vw;
@@ -37,10 +36,8 @@
             background: #fff; flex-shrink: 0;
         }
 
-        /* Основной контент */
         main { flex: 1; position: relative; overflow: hidden; background: var(--surface); }
 
-        /* Список инструментов (Hub) */
         #hub {
             height: 100%; overflow-y: auto; padding: 15px;
             display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -52,7 +49,6 @@
             padding: 15px; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.05);
         }
 
-        /* Редактор */
         #editor-layer {
             position: absolute; inset: 0; background: #fff;
             display: none; flex-direction: column; z-index: 100;
@@ -74,7 +70,6 @@
             padding-top: 15px; text-align: center; font-size: 11px; color: #aeaeb2; z-index: 3;
         }
 
-        /* Нижняя панель - ВСЕГДА ВИДИМА */
         footer {
             height: 85px; background: #fff; border-top: 1px solid var(--border);
             display: flex; align-items: center; padding: 0 15px calc(env(safe-area-inset-bottom) + 5px) 15px;
@@ -88,7 +83,6 @@
         }
         .btn.primary { background: var(--accent); color: #fff; border: none; }
 
-        /* Подсветка */
         .t { color: var(--syn-t); font-weight: bold; }
         .g { color: var(--syn-g); }
         .x { color: var(--syn-coord); }
@@ -100,7 +94,7 @@
 
 <div class="app-wrapper">
     <header>
-        <b style="font-size: 13px;">WERKZEUG-MANAGER PRO</b>
+        <b style="font-size: 13px;">T-MANAGER PRO v32</b>
         <div style="flex:1"></div>
         <button class="btn" style="flex:0; width:40px; height:32px;" onclick="document.getElementById('f').click()">📂</button>
         <input type="file" id="f" hidden onchange="openFile(this)">
@@ -126,7 +120,7 @@
 
     <footer>
         <button class="btn" onclick="copyToolList()">LISTE KOPIEREN</button>
-        <button class="btn primary" onclick="exportO()">SPEICHERN .O</button>
+        <button class="btn primary" onclick="exportO()">SPEICHERN (.O)</button>
     </footer>
 </div>
 
@@ -137,19 +131,16 @@
     const hb = document.getElementById('hub');
 
     window.onload = () => {
-        el.value = localStorage.getItem('cnc_v31') || 
-        "O1234 (FERTIGUNG)\nG54 G90\n\nN10 T1 D1\n(SCHRUPPFRÄSER D20)\nG0 X100. Z5.\nG1 Z-20. F0.2\nG0 X200. Z200.\n\nN20 T3 D1\n(SCHLICHTER D10)\nG0 X50. Z2.\nG1 Z-15. F0.1\nG0 X200. Z200.";
+        el.value = localStorage.getItem('cnc_v32') || 
+        "O3200 (DIRECT_T_FORMAT)\nG54 G90\n\nN10 T0101\n(KOPIERST.R0.8 G54)\nG0 X100. Z5.\nG1 Z-20. F0.2\nG0 X200. Z200.\n\nN20 T0303\n(ABSTECH.2.5MM)\nG0 X50. Z2.\nG1 Z-15. F0.1\nG0 X200. Z200.";
         render();
     };
 
     function render() {
-        // Автоформат T0101
         let val = el.value.replace(/T(\d{1,2})(?!\d{2})/gi, (m, p1) => "T" + p1.padStart(2, '0') + p1.padStart(2, '0'));
         if (el.value !== val) el.value = val;
+        localStorage.setItem('cnc_v32', val);
 
-        localStorage.setItem('cnc_v31', val);
-
-        // Подсветка
         sx.innerHTML = val.replace(/&/g, "&amp;").replace(/</g, "&lt;")
             .replace(/\((.*?)\)/g, '<span class="c">($1)</span>')
             .replace(/(T\d{4})/gi, '<span class="t">$1</span>')
@@ -160,7 +151,6 @@
         const rows = val.split('\n');
         ln.innerHTML = rows.map((_, i) => i + 1).join('<br>');
         el.style.height = sx.style.height = Math.max(window.innerHeight, rows.length * 22.5 + 200) + 'px';
-
         buildHub(rows);
     }
 
@@ -169,17 +159,17 @@
         rows.forEach((line, i) => {
             const t = line.match(/T(\d{4})/i);
             if(t) {
-                let name = "KEINE INFO";
+                let desc = "";
                 [rows[i], rows[i+1] || ""].forEach(s => {
-                    const m = s.match(/\((.*?)\)/); if(m) name = m[1];
+                    const m = s.match(/\((.*?)\)/); if(m) desc = m[1];
                 });
 
                 const div = document.createElement('div');
                 div.className = 'tool-item';
-                div.innerHTML = `<b>WERKZEUG ${t[1]}</b><span>${name}</span>`;
+                div.innerHTML = `<b>T${t[1]}${desc ? ' ' + desc : ''}</b>`;
                 div.onclick = () => {
                     document.getElementById('editor-layer').style.display = 'flex';
-                    document.getElementById('cur-tool').innerText = "T" + t[1] + " - " + name;
+                    document.getElementById('cur-tool').innerText = "T" + t[1] + " " + desc;
                     const pos = rows.slice(0, i).join('\n').length + (i > 0 ? 1 : 0);
                     el.focus(); el.setSelectionRange(pos, pos + line.length);
                     document.getElementById('scr').scrollTop = i * 22.5 - 50;
@@ -191,15 +181,15 @@
 
     function copyToolList() {
         const rows = el.value.split('\n');
-        let out = "WERKZEUGLISTE:\n";
+        let out = "";
         rows.forEach((line, i) => {
             const t = line.match(/T(\d{4})/);
             if(t) {
-                let name = "";
+                let desc = "";
                 [rows[i], rows[i+1] || ""].forEach(s => {
-                    const m = s.match(/\((.*?)\)/); if(m) name = m[1];
+                    const m = s.match(/\((.*?)\)/); if(m) desc = m[1];
                 });
-                out += `${t[0]} - ${name}\n`;
+                out += `T${t[1]}${desc ? ' ' + desc : ''}\n`;
             }
         });
         navigator.clipboard.writeText(out.trim()).then(() => alert("Liste kopiert!"));
