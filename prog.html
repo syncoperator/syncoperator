@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>CNC Pro v32</title>
+    <title>CNC Pro v33</title>
     <style>
         :root {
             --bg: #ffffff;
@@ -11,9 +11,15 @@
             --accent: #007aff;
             --border: #d1d1d6;
             --text: #1c1c1e;
-            --syn-t: #34c759;
-            --syn-g: #af52de;
-            --syn-coord: #ff3b30;
+            /* Расширенная палитра подсветки */
+            --syn-t: #34c759;     /* Werkzeug - Grün */
+            --syn-g: #af52de;     /* G-Codes - Lila */
+            --syn-x: #ff3b30;     /* X-Achse - Rot */
+            --syn-z: #007aff;     /* Z-Achse - Blau */
+            --syn-f: #ff9500;     /* Vorschub - Orange/Gold */
+            --syn-angle: #ff2d55; /* Winkel (,A) - Pink/Rot */
+            --syn-rad: #5856d6;   /* Radius (,R) - Indigo */
+            --syn-c: #8e8e93;     /* Kommentar - Grau */
         }
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -25,10 +31,7 @@
             color: var(--text); overflow: hidden;
         }
 
-        .app-wrapper {
-            display: flex; flex-direction: column;
-            height: 100dvh; width: 100%;
-        }
+        .app-wrapper { display: flex; flex-direction: column; height: 100dvh; width: 100%; }
 
         header {
             height: 50px; border-bottom: 1px solid var(--border);
@@ -58,7 +61,7 @@
         
         #code, #syntax {
             position: absolute; inset: 0; padding: 15px 15px 15px 50px;
-            font-family: "SF Mono", monospace; font-size: 15px;
+            font-family: "SF Mono", "Fira Code", monospace; font-size: 15px;
             line-height: 1.5; white-space: pre; border: none; outline: none; margin: 0;
         }
         #code { color: transparent; background: transparent; z-index: 2; caret-color: var(--accent); resize: none; }
@@ -83,18 +86,22 @@
         }
         .btn.primary { background: var(--accent); color: #fff; border: none; }
 
-        .t { color: var(--syn-t); font-weight: bold; }
-        .g { color: var(--syn-g); }
-        .x { color: var(--syn-coord); }
-        .z { color: var(--accent); }
-        .c { color: #8e8e93; font-style: italic; }
+        /* Syntax Classes */
+        .t { color: var(--syn-t); font-weight: 800; border-bottom: 1px solid var(--syn-t); }
+        .g { color: var(--syn-g); font-weight: bold; }
+        .x { color: var(--syn-x); }
+        .z { color: var(--syn-z); }
+        .f { color: var(--syn-f); font-weight: bold; }
+        .a { color: var(--syn-angle); font-weight: bold; }
+        .r { color: var(--syn-rad); font-weight: bold; }
+        .c { color: var(--syn-c); font-style: italic; }
     </style>
 </head>
 <body>
 
 <div class="app-wrapper">
     <header>
-        <b style="font-size: 13px;">T-MANAGER PRO v32</b>
+        <b style="font-size: 13px;">CNC PRO v33 // DEUTSCH</b>
         <div style="flex:1"></div>
         <button class="btn" style="flex:0; width:40px; height:32px;" onclick="document.getElementById('f').click()">📂</button>
         <input type="file" id="f" hidden onchange="openFile(this)">
@@ -102,7 +109,6 @@
 
     <main>
         <div id="hub"></div>
-
         <div id="editor-layer">
             <div style="padding: 8px 15px; background: var(--surface); display:flex; justify-content: space-between; align-items: center;">
                 <small id="cur-tool" style="font-weight: 700; color: var(--accent);"></small>
@@ -131,22 +137,27 @@
     const hb = document.getElementById('hub');
 
     window.onload = () => {
-        el.value = localStorage.getItem('cnc_v32') || 
-        "O3200 (DIRECT_T_FORMAT)\nG54 G90\n\nN10 T0101\n(KOPIERST.R0.8 G54)\nG0 X100. Z5.\nG1 Z-20. F0.2\nG0 X200. Z200.\n\nN20 T0303\n(ABSTECH.2.5MM)\nG0 X50. Z2.\nG1 Z-15. F0.1\nG0 X200. Z200.";
+        el.value = localStorage.getItem('cnc_v33') || 
+        "O3300 (PRO_HIGHLIGHT)\nG54 G90\n\nN10 T0101\n(KOPIERST.R0.8 G54)\nG0 X120. Z2.\nG1 Z-45. F0.25\nG1 X130. ,A225, R.9 F.1\nG0 X200. Z200.";
         render();
     };
 
     function render() {
+        // T-Format Auto
         let val = el.value.replace(/T(\d{1,2})(?!\d{2})/gi, (m, p1) => "T" + p1.padStart(2, '0') + p1.padStart(2, '0'));
         if (el.value !== val) el.value = val;
-        localStorage.setItem('cnc_v32', val);
+        localStorage.setItem('cnc_v33', val);
 
+        // Advanced Regex Highlight
         sx.innerHTML = val.replace(/&/g, "&amp;").replace(/</g, "&lt;")
             .replace(/\((.*?)\)/g, '<span class="c">($1)</span>')
             .replace(/(T\d{4})/gi, '<span class="t">$1</span>')
             .replace(/(G\d+)/gi, '<span class="g">$1</span>')
             .replace(/(X-?\d*\.?\d*)/gi, '<span class="x">$1</span>')
-            .replace(/(Z-?\d*\.?\d*)/gi, '<span class="z">$1</span>');
+            .replace(/(Z-?\d*\.?\d*)/gi, '<span class="z">$1</span>')
+            .replace(/(F\d*\.?\d+)/gi, '<span class="f">$1</span>')
+            .replace(/(,A\d*\.?\d+)/gi, '<span class="a">$1</span>')
+            .replace(/(,R\d*\.?\d+|R\d*\.?\d+)/gi, '<span class="r">$1</span>');
 
         const rows = val.split('\n');
         ln.innerHTML = rows.map((_, i) => i + 1).join('<br>');
@@ -163,7 +174,6 @@
                 [rows[i], rows[i+1] || ""].forEach(s => {
                     const m = s.match(/\((.*?)\)/); if(m) desc = m[1];
                 });
-
                 const div = document.createElement('div');
                 div.className = 'tool-item';
                 div.innerHTML = `<b>T${t[1]}${desc ? ' ' + desc : ''}</b>`;
