@@ -3,189 +3,218 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ShopTurn Full v21</title>
+    <title>CNC Navigation Editor</title>
     <style>
         :root { 
             --s-blue: #003a5a; --s-light: #005f87; --s-orange: #eb7800;
-            --s-gray: #e6e6e6; --s-dark: #333;
+            --bg: #1e1e1e; --text: #d4d4d4;
         }
-        body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; background: #000; font-family: sans-serif; }
+        * { box-sizing: border-box; }
+        body, html { margin: 0; padding: 0; height: 100%; background: var(--bg); font-family: 'Segoe UI', sans-serif; color: var(--text); overflow: hidden; }
 
-        .cnc-grid {
-            display: grid;
-            grid-template-columns: 1fr 100px;
-            grid-template-rows: 30px 1fr 1fr 60px;
-            height: 100vh;
-        }
+        .app { display: flex; flex-direction: column; height: 100vh; }
 
-        /* 1. Header */
-        .cnc-header { 
-            grid-column: 1 / 3; background: var(--s-blue); color: #fff;
-            display: flex; align-items: center; padding: 0 10px; font-size: 12px; font-weight: bold;
+        /* Верхняя панель поиска */
+        .search-bar { 
+            background: #2d2d2d; padding: 10px; display: flex; gap: 8px; 
+            border-bottom: 1px solid #3c3c3c; flex-wrap: wrap;
         }
+        .search-bar input { 
+            background: #3c3c3c; border: 1px solid #555; color: #fff; 
+            padding: 5px 10px; border-radius: 4px; font-size: 13px; outline: none;
+        }
+        .search-bar input:focus { border-color: var(--s-orange); }
 
-        /* 2. Simulation Screen */
-        .cnc-screen { 
-            background: #000; position: relative; border: 2px solid #555; overflow: hidden;
-        }
-        canvas { width: 100%; height: 100%; }
-        
-        .cnc-dro {
-            position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.8);
-            border: 1px solid var(--s-light); padding: 8px; color: #00ff00; font-family: monospace;
-        }
+        /* Рабочая зона */
+        .main { flex: 1; display: flex; overflow: hidden; position: relative; }
 
-        /* 3. Program Editor */
-        .cnc-editor { 
-            background: #fff; display: flex; overflow: hidden; border-top: 2px solid var(--s-blue);
+        /* Список инструментов (Навигация) */
+        .tool-nav { 
+            width: 150px; background: #252526; border-right: 1px solid #3c3c3c; 
+            display: flex; flex-direction: column; overflow-y: auto;
         }
-        #ln { width: 30px; background: #ddd; text-align: right; padding: 10px 5px; font-size: 11px; color: #666; }
-        .edit-wrap { flex: 1; position: relative; overflow-y: auto; }
-        #input, #syntax {
-            position: absolute; inset: 0; padding: 10px; font-family: monospace; font-size: 14px;
-            line-height: 1.4; white-space: pre; border: none; outline: none;
+        .tool-item { 
+            padding: 10px; font-size: 12px; border-bottom: 1px solid #333; 
+            cursor: pointer; color: #aaa; transition: 0.2s;
         }
-        #input { color: transparent; background: transparent; z-index: 2; caret-color: #000; }
-        #syntax { z-index: 1; color: #333; }
+        .tool-item:hover { background: #2a2d2e; color: #fff; }
+        .tool-item b { color: var(--s-orange); display: block; margin-bottom: 3px; }
 
-        /* 4. Vertical Softkeys (Правая панель) */
-        .v-keys { 
-            grid-row: 2 / 4; grid-column: 2; background: #444; 
-            display: flex; flex-direction: column; gap: 2px; padding: 2px;
+        /* Редактор */
+        .editor-container { flex: 1; position: relative; display: flex; overflow: hidden; }
+        #ln-col { 
+            width: 40px; background: #1e1e1e; color: #858585; 
+            text-align: right; padding: 15px 5px; font-family: monospace; font-size: 14px; 
         }
-        .v-key { 
-            flex: 1; background: #666; color: #fff; border: none; font-size: 10px; 
-            text-transform: uppercase; font-weight: bold; cursor: pointer;
+        .edit-wrap { flex: 1; position: relative; overflow: auto; }
+        #editor, #highlight { 
+            position: absolute; top: 0; left: 0; width: 100%; min-height: 100%;
+            padding: 15px; font-family: 'Consolas', 'Courier New', monospace; 
+            font-size: 16px; line-height: 1.5; white-space: pre; border: none; outline: none;
         }
-        .v-key:active { background: var(--s-orange); }
+        #editor { color: transparent; background: transparent; z-index: 2; caret-color: #fff; resize: none; }
+        #highlight { z-index: 1; pointer-events: none; }
 
-        /* 5. Horizontal Softkeys (Нижняя панель) */
-        .h-keys { 
-            grid-column: 1 / 3; background: #222; display: flex; gap: 2px; padding: 2px;
+        /* Футер */
+        .footer { 
+            background: var(--s-blue); height: 50px; display: flex; 
+            gap: 2px; padding: 2px; 
         }
-        .h-key { 
-            flex: 1; background: #555; color: #fff; border: none; font-size: 10px; font-weight: bold;
+        .f-btn { 
+            flex: 1; background: var(--s-light); border: none; color: #fff; 
+            font-size: 11px; font-weight: bold; text-transform: uppercase; cursor: pointer;
         }
+        .f-btn:active { background: var(--s-orange); }
 
-        /* Syntax colors */
-        .c-g { color: var(--s-orange); font-weight: bold; }
-        .c-x { color: #d32f2f; }
-        .c-z { color: #1976d2; }
-        .c-t { color: #7b1fa2; background: #f0f0f0; }
+        /* Цвета синтаксиса */
+        .g { color: #dcdcaa; } /* G-коды */
+        .t { color: #c586c0; font-weight: bold; } /* Инструмент */
+        .x { color: #ce9178; } /* X */
+        .z { color: #9cdcfe; } /* Z */
+        .comm { color: #6a9955; font-style: italic; } /* Комменты */
+        .match { background: rgba(255, 255, 0, 0.3); border-bottom: 2px solid orange; } /* Подсветка поиска */
     </style>
 </head>
 <body>
 
-<div class="cnc-grid">
-    <div class="cnc-header">SKP_01.MPF | CHANNEL 1 | JOG MODE</div>
-
-    <div class="cnc-screen">
-        <canvas id="cvs"></canvas>
-        <div class="cnc-dro" id="dro">X: 0.000<br>Z: 0.000</div>
+<div class="app">
+    <div class="search-bar">
+        <input type="text" id="find-inp" placeholder="Найти (X, Z, T...)" oninput="applySearch()">
+        <input type="text" id="replace-inp" placeholder="Заменить на...">
+        <button class="f-btn" style="flex:0; padding: 0 15px;" onclick="replaceText()">Заменить</button>
+        <div id="search-stat" style="font-size:12px; align-self:center; color:#888; margin-left:10px;"></div>
     </div>
 
-    <div class="v-keys">
-        <button class="v-key" onclick="setMode('contour')">Контур</button>
-        <button class="v-key" onclick="setMode('drill')">Сверление</button>
-        <button class="v-key" onclick="setMode('turn')">Точение</button>
-        <button class="v-key" onclick="zoom(1.2)">Zoom +</button>
-        <button class="v-key" onclick="zoom(0.8)">Zoom -</button>
-        <button class="v-key" style="background:#888" onclick="resetV()">Reset</button>
-    </div>
-
-    <div class="cnc-editor">
-        <div id="ln">1</div>
-        <div class="edit-wrap" id="scr" onscroll="sync()">
-            <div id="syntax"></div>
-            <textarea id="input" spellcheck="false" oninput="render()"></textarea>
+    <div class="main">
+        <div class="tool-nav" id="tool-nav">
+            </div>
+        <div class="editor-container">
+            <div id="ln-col">1</div>
+            <div class="edit-wrap" id="scroll-box" onscroll="sync()">
+                <div id="highlight"></div>
+                <textarea id="editor" spellcheck="false" oninput="process()"></textarea>
+            </div>
         </div>
     </div>
 
-    <div class="h-keys">
-        <button class="h-key">PROGRAM</button>
-        <button class="h-key">OFFSET</button>
-        <button class="h-key">PROGRAM MANAGER</button>
-        <button class="h-key">DIAGNOSIS</button>
-        <button class="h-key" style="background:var(--s-orange)" onclick="saveFile()">💾 SAVE</button>
+    <div class="footer">
+        <button class="f-btn" onclick="jumpTo('T')">След. Инструмент</button>
+        <button class="f-btn" onclick="document.getElementById('editor').focus()">Правка</button>
+        <button class="f-btn" onclick="saveFile()">💾 Сохранить</button>
+        <button class="f-btn" style="background:var(--s-orange)" onclick="toggleNav()">Навигация</button>
     </div>
 </div>
 
 <script>
-    const inp = document.getElementById('input');
-    const syn = document.getElementById('syntax');
-    const lns = document.getElementById('ln');
-    const cvs = document.getElementById('cvs');
-    const ctx = cvs.getContext('2d');
-
-    let scale = 5, offX = 0, offZ = 0;
-    const colors = ['#eb7800', '#00ff00', '#00bfff', '#ff00ff'];
+    const ed = document.getElementById('editor');
+    const hi = document.getElementById('highlight');
+    const ln = document.getElementById('ln-col');
+    const nav = document.getElementById('tool-nav');
+    const findInp = document.getElementById('find-inp');
 
     window.onload = () => {
-        inp.value = "G54\nT1 D1\nG0 X60 Z2\nG1 Z-30 F.2\nG1 X80 Z-50\nG0 X120 Z100\n\nT2 D1\nG0 X40 Z-20\nG1 X0\nG0 X100 Z100";
-        init(); render();
+        ed.value = localStorage.getItem('cnc_v22') || "O1001 (VAL)\nN5 T1 D1 (ROUGH)\nG0 X100 Z5\nG1 Z0 F.2\nG1 X40 Z-25\nG1 Z-50\nG0 X200 Z100\n\nN10 T2 D1 (FINISH)\nG0 X42 Z2\nG1 Z-50 F.1\nG1 X60\nG0 X200 Z200\n\nN15 T3 D1 (THREAD)";
+        process();
     };
 
-    function init() {
-        cvs.width = cvs.offsetWidth; cvs.height = cvs.offsetHeight;
-        offX = cvs.height * 0.7; offZ = cvs.width * 0.8;
-    }
-
-    function render() {
-        const val = inp.value;
-        syn.innerHTML = val.replace(/&/g, "&amp;").replace(/</g, "&lt;")
-            .replace(/(G0\d?|G00)/gi, '<span style="color:#888">$1</span>')
-            .replace(/(G1\d?|G01|G2|G3)/gi, '<span class="c-g">$1</span>')
-            .replace(/(X-?\d*\.?\d+)/gi, '<span class="c-x">$1</span>')
-            .replace(/(Z-?\d*\.?\d+)/gi, '<span class="c-z">$1</span>')
-            .replace(/(T\d+)/gi, '<span class="c-t">$1</span>');
-
-        const rows = val.split('\n');
-        lns.innerHTML = rows.map((_,i)=>i+1).join('<br>');
-        inp.style.height = syn.style.height = Math.max(200, rows.length * 20) + 'px';
-        draw(rows);
-    }
-
-    function draw(prog) {
-        ctx.fillStyle = '#000'; ctx.fillRect(0,0,cvs.width,cvs.height);
+    function process() {
+        const text = ed.value;
+        localStorage.setItem('cnc_v22', text);
         
-        // Grid
-        ctx.strokeStyle = '#222'; ctx.lineWidth = 1;
-        for(let i=0;i<cvs.width;i+=40){ctx.beginPath();ctx.moveTo(i,0);ctx.lineTo(i,cvs.height);ctx.stroke();}
-        for(let i=0;i<cvs.height;i+=40){ctx.beginPath();ctx.moveTo(0,i);ctx.lineTo(cvs.width,i);ctx.stroke();}
+        // 1. Синтаксис
+        let html = text.replace(/&/g, "&amp;").replace(/</g, "&lt;")
+            .replace(/\((.*?)\)/g, '<span class="comm">($1)</span>')
+            .replace(/(T\d+)/gi, '<span class="t">$1</span>')
+            .replace(/(G\d+)/gi, '<span class="g">$1</span>')
+            .replace(/(X-?\d*\.?\d+)/gi, '<span class="x">$1</span>')
+            .replace(/(Z-?\d*\.?\d+)/gi, '<span class="z">$1</span>');
 
-        let cX = 0, cZ = 0, t = 0;
-        prog.forEach(line => {
-            const tm = line.match(/T(\d+)/i); if(tm) t = parseInt(tm[1]) % colors.length;
-            const mx = line.match(/X(-?\d*\.?\d+)/i);
-            const mz = line.match(/Z(-?\d*\.?\d+)/i);
-            const isG0 = /G0/i.test(line);
+        // 2. Поиск
+        const query = findInp.value;
+        if(query) {
+            const regex = new RegExp(`(${query})`, "gi");
+            html = html.replace(regex, '<span class="match">$1</span>');
+        }
+        
+        hi.innerHTML = html;
 
-            if(mx || mz) {
-                let nX = mx ? parseFloat(mx[1]) : cX;
-                let nZ = mz ? parseFloat(mz[1]) : cZ;
-                ctx.beginPath();
-                ctx.lineWidth = isG0 ? 1 : 3;
-                ctx.strokeStyle = isG0 ? '#555' : colors[t];
-                ctx.setLineDash(isG0 ? [4,4] : []);
-                ctx.moveTo(offZ + cZ*scale, offX - (cX/2)*scale);
-                ctx.lineTo(offZ + nZ*scale, offX - (nX/2)*scale);
-                ctx.stroke();
-                cX = nX; cZ = nZ;
+        // 3. Номера строк и Навигация
+        const lines = text.split('\n');
+        ln.innerHTML = lines.map((_, i) => i + 1).join('<br>');
+        ed.style.height = hi.style.height = Math.max(window.innerHeight - 150, lines.length * 24) + 'px';
+
+        updateNav(lines);
+    }
+
+    function updateNav(lines) {
+        nav.innerHTML = '<div style="padding:10px; font-size:10px; color:#555">ИНСТРУМЕНТЫ</div>';
+        lines.forEach((line, index) => {
+            const tMatch = line.match(/T(\d+)/i);
+            const comm = line.match(/\((.*?)\)/);
+            if(tMatch) {
+                const item = document.createElement('div');
+                item.className = 'tool-item';
+                item.innerHTML = `<b>${tMatch[0]}</b> ${comm ? comm[1] : ''}`;
+                item.onclick = () => scrollToLine(index);
+                nav.appendChild(item);
             }
         });
-        document.getElementById('dro').innerHTML = `X: ${cX.toFixed(3)}<br>Z: ${cZ.toFixed(3)}`;
     }
 
-    function setMode(m) { alert('Режим ' + m + ' активирован. Вставьте цикл в код.'); }
-    function zoom(f) { scale *= f; render(); }
-    function resetV() { scale = 5; init(); render(); }
-    function sync() { syn.scrollTop = lns.scrollTop = document.getElementById('scr').scrollTop; }
-    function saveFile() {
-        const b = new Blob([inp.value], {type:'text/plain'});
-        const a = document.createElement('a'); a.href = URL.createObjectURL(b);
-        a.download = 'WORK.MPF'; a.click();
+    function scrollToLine(idx) {
+        const lineHeight = 24; 
+        document.getElementById('scroll-box').scrollTop = idx * lineHeight;
+        ed.focus();
+        // Ставим курсор
+        const lines = ed.value.split('\n');
+        let pos = 0;
+        for(let i=0; i<idx; i++) pos += lines[i].length + 1;
+        ed.setSelectionRange(pos, pos + lines[idx].length);
     }
-    window.onresize = () => { init(); render(); };
+
+    function applySearch() {
+        process();
+        const count = (hi.innerHTML.match(/class="match"/g) || []).length;
+        document.getElementById('search-stat').innerText = count ? `Найдено: ${count}` : "";
+    }
+
+    function replaceText() {
+        const find = findInp.value;
+        const replace = document.getElementById('replace-inp').value;
+        if(!find) return;
+        ed.value = ed.value.split(find).join(replace);
+        process();
+    }
+
+    function jumpTo(char) {
+        const text = ed.value;
+        const start = ed.selectionStart + 1;
+        const nextPos = text.toUpperCase().indexOf(char.toUpperCase(), start);
+        if(nextPos !== -1) {
+            ed.setSelectionRange(nextPos, nextPos + 2);
+            const line = text.substr(0, nextPos).split('\n').length - 1;
+            scrollToLine(line);
+        } else {
+            ed.setSelectionRange(0, 0); // В начало, если не нашли
+        }
+    }
+
+    function toggleNav() {
+        nav.style.display = nav.style.display === 'none' ? 'flex' : 'none';
+    }
+
+    function sync() {
+        const s = document.getElementById('scroll-box');
+        hi.scrollTop = ln.scrollTop = s.scrollTop;
+    }
+
+    function saveFile() {
+        const blob = new Blob([ed.value], {type: 'text/plain'});
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'PROGRAM.MPF';
+        a.click();
+    }
 </script>
 </body>
 </html>
