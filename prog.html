@@ -3,223 +3,228 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>CNC Industrial Premium v25</title>
+    <title>CNC Professional IDE v26</title>
     <style>
         :root {
+            --bg: #ffffff;
+            --surface: #f9f9fb;
             --accent: #007aff;
-            --bg-glass: rgba(255, 255, 255, 0.85);
+            --text-p: #1d1d1f;
+            --text-s: #86868b;
             --border: #d2d2d7;
-            --text-main: #1d1d1f;
-            --text-sec: #86868b;
+            --code-g: #af52de;
+            --code-x: #ff3b30;
+            --code-z: #007aff;
+            --code-t: #34c759;
+            --code-c: #8e8e93;
         }
 
         * { box-sizing: border-box; -webkit-font-smoothing: antialiased; }
-        body, html { margin: 0; padding: 0; height: 100%; background: #f5f5f7; font-family: -apple-system, sans-serif; overflow: hidden; }
+        body, html { margin: 0; padding: 0; height: 100%; background: var(--bg); font-family: -apple-system, system-ui, sans-serif; color: var(--text-p); overflow: hidden; }
 
-        .workspace { display: flex; flex-direction: column; height: 100vh; }
+        .ide-container { display: grid; grid-template-rows: 50px 1fr 60px; height: 100vh; }
 
-        /* HEADER CONTROL */
-        .glass-header {
-            background: var(--bg-glass); backdrop-filter: blur(20px);
-            height: 55px; border-bottom: 1px solid var(--border);
-            display: flex; align-items: center; padding: 0 20px; gap: 15px; z-index: 1000;
+        /* HEADER: Navigation & Search */
+        header {
+            background: var(--bg); border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; padding: 0 15px; gap: 15px; z-index: 100;
         }
-
-        .search-field {
-            flex: 1; height: 36px; background: rgba(0,0,0,0.05);
-            border: 1px solid transparent; border-radius: 8px;
-            padding: 0 12px; font-size: 14px; outline: none; transition: 0.3s;
+        .search-box {
+            flex: 1; display: flex; background: var(--surface); border-radius: 8px; 
+            padding: 5px 12px; border: 1px solid transparent; transition: 0.2s;
         }
-        .search-field:focus { border-color: var(--accent); background: #fff; box-shadow: 0 0 10px rgba(0,122,255,0.2); }
+        .search-box:focus-within { border-color: var(--accent); background: #fff; box-shadow: 0 0 0 3px rgba(0,122,255,0.1); }
+        .search-box input { border: none; background: transparent; outline: none; width: 100%; font-size: 14px; }
 
-        /* EDITOR CORE */
-        .editor-box { flex: 1; display: flex; position: relative; background: #fff; overflow: hidden; }
+        /* MAIN CONTENT: Sidebar & Editor */
+        main { display: flex; overflow: hidden; position: relative; }
         
-        .line-numbers {
-            width: 50px; background: #fbfbfd; border-right: 1px solid #efefef;
-            padding: 20px 10px; font-family: "SF Mono", monospace; font-size: 13px;
-            color: #ccc; text-align: right; user-select: none;
+        /* Sidebar: Tool Inspector */
+        .sidebar {
+            width: 260px; background: var(--surface); border-right: 1px solid var(--border);
+            display: flex; flex-direction: column; transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
+        .sidebar.hidden { margin-left: -260px; }
+        .side-title { padding: 15px; font-size: 11px; font-weight: 700; color: var(--text-s); text-transform: uppercase; letter-spacing: 0.5px; }
+        .tool-list { flex: 1; overflow-y: auto; padding: 0 10px; }
+        .tool-entry {
+            padding: 12px; border-radius: 8px; margin-bottom: 5px; cursor: pointer;
+            border: 1px solid transparent; transition: 0.2s;
+        }
+        .tool-entry:hover { background: #fff; border-color: var(--border); }
+        .tool-entry b { color: var(--accent); font-size: 12px; display: block; }
+        .tool-entry span { font-size: 15px; font-weight: 600; }
 
-        .scroll-container { flex: 1; position: relative; overflow: auto; }
-        
-        #input, #visual {
-            position: absolute; inset: 0; padding: 20px;
-            font-family: "SF Mono", "Fira Code", monospace; font-size: 16px;
-            line-height: 1.6; white-space: pre; border: none; outline: none; margin: 0;
+        /* Editor Core */
+        .editor-stage { flex: 1; display: flex; position: relative; overflow: hidden; }
+        .line-col {
+            width: 45px; background: var(--surface); border-right: 1px solid var(--border);
+            padding: 20px 0; text-align: center; font-family: "SF Mono", monospace; font-size: 12px; color: #ccc;
+        }
+        .scroll-area { flex: 1; position: relative; overflow: auto; }
+        #input, #syntax {
+            position: absolute; inset: 0; padding: 20px; font-family: "SF Mono", "Fira Code", monospace;
+            font-size: 16px; line-height: 1.6; white-space: pre; border: none; outline: none; margin: 0;
         }
         #input { color: transparent; background: transparent; z-index: 2; caret-color: var(--accent); resize: none; }
-        #visual { z-index: 1; color: var(--text-main); }
+        #syntax { z-index: 1; color: var(--text-p); pointer-events: none; }
 
-        /* TOOLS OVERLAY (MODERN VIEW) */
-        #tools-overlay {
-            position: absolute; inset: 0; background: rgba(255,255,255,0.7);
-            backdrop-filter: blur(10px); z-index: 500; display: none;
-            padding: 60px 20px; align-items: start; justify-content: center; overflow-y: auto;
+        /* FOOTER: Controls */
+        footer {
+            background: var(--bg); border-top: 1px solid var(--border);
+            display: flex; align-items: center; padding: 0 15px; gap: 10px;
         }
-        .tools-grid {
-            width: 100%; max-width: 800px; display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px;
+        .btn {
+            height: 36px; padding: 0 15px; border-radius: 8px; border: 1px solid var(--border);
+            background: #fff; color: var(--text-p); font-size: 13px; font-weight: 600;
+            cursor: pointer; transition: 0.2s; display: flex; align-items: center; gap: 6px;
         }
-        .tool-card {
-            background: #fff; border: 1px solid var(--border); border-radius: 14px;
-            padding: 20px; cursor: pointer; transition: 0.3s;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-        }
-        .tool-card:hover { transform: translateY(-3px); border-color: var(--accent); box-shadow: 0 10px 25px rgba(0,122,255,0.15); }
-        .t-id { font-size: 10px; font-weight: 800; color: var(--accent); text-transform: uppercase; margin-bottom: 5px; }
-        .t-desc { font-size: 17px; font-weight: 600; color: #000; }
+        .btn:hover { background: var(--surface); border-color: var(--text-s); }
+        .btn.primary { background: var(--accent); color: #fff; border: none; }
+        .btn.primary:hover { opacity: 0.9; }
 
-        /* FOOTER ACTIONS */
-        .glass-footer {
-            height: 65px; background: var(--bg-glass); backdrop-filter: blur(20px);
-            border-top: 1px solid var(--border); display: flex; align-items: center;
-            padding: 0 20px; gap: 12px;
-        }
-
-        .btn-action {
-            height: 40px; padding: 0 20px; border-radius: 10px; border: 1px solid var(--border);
-            background: #fff; color: var(--text-main); font-weight: 600; font-size: 13px;
-            cursor: pointer; transition: 0.2s; display: flex; align-items: center; gap: 8px;
-        }
-        .btn-action:active { transform: scale(0.97); background: #f5f5f7; }
-        .btn-action.primary { background: var(--accent); color: #fff; border: none; }
-
-        /* SYNTAX */
-        .g { color: #8e8e93; font-weight: bold; }
-        .t { color: var(--accent); font-weight: 800; }
-        .x { color: #ff3b30; }
-        .z { color: #007aff; }
-        .c { color: #34c759; font-style: italic; }
-        .m { background: rgba(255, 214, 0, 0.3); border-radius: 2px; }
+        /* Syntax Overrides */
+        .g { color: var(--code-g); font-weight: bold; }
+        .t { color: var(--code-t); font-weight: bold; border-bottom: 1.5px solid var(--code-t); }
+        .x { color: var(--code-x); }
+        .z { color: var(--code-z); }
+        .comm { color: var(--code-c); font-style: italic; }
+        .find-match { background: rgba(255, 214, 0, 0.4); border-radius: 2px; box-shadow: 0 0 5px orange; }
     </style>
 </head>
 <body>
 
-<div class="workspace">
-    <header class="glass-header">
-        <input type="text" id="find" class="search-field" placeholder="Поиск в коде..." oninput="update()">
-        <button class="btn-action" onclick="toggleTools()">
-            <span id="tools-label">СПИСОК ИНСТРУМЕНТОВ</span>
-        </button>
+<div class="ide-container">
+    <header>
+        <button class="btn" onclick="toggleSidebar()">☰</button>
+        <div class="search-box">
+            <input type="text" id="findInput" placeholder="Поиск в коде..." oninput="refresh()">
+        </div>
+        <button class="btn" onclick="document.getElementById('fileIn').click()">OPEN FILE</button>
+        <input type="file" id="fileIn" hidden onchange="loadFile(this)">
     </header>
 
-    <div class="editor-box">
-        <div class="line-numbers" id="line-nums">1</div>
-        <div class="scroll-container" id="scroller" onscroll="sync()">
-            <div id="visual"></div>
-            <textarea id="input" spellcheck="false" oninput="update()"></textarea>
+    <main>
+        <div class="sidebar" id="sidebar">
+            <div class="side-title">Tool Inspector</div>
+            <div class="tool-list" id="toolList"></div>
         </div>
 
-        <div id="tools-overlay" onclick="toggleTools()">
-            <div class="tools-grid" id="tools-container" onclick="event.stopPropagation()"></div>
+        <div class="editor-stage">
+            <div class="line-col" id="lineNums">1</div>
+            <div class="scroll-area" id="scroller" onscroll="sync()">
+                <div id="syntax"></div>
+                <textarea id="input" spellcheck="false" oninput="refresh()"></textarea>
+            </div>
         </div>
-    </div>
+    </main>
 
-    <footer class="glass-footer">
-        <button class="btn-action" onclick="exportJSON()">JSON EXPORT</button>
-        <button class="btn-action" onclick="importJSON()">IMPORT</button>
+    <footer>
+        <button class="btn" onclick="exportData()">EXPORT JSON</button>
+        <button class="btn" onclick="importData()">IMPORT JSON</button>
         <div style="flex:1"></div>
-        <button class="btn-action primary" onclick="saveFile()">СОХРАНИТЬ MPF</button>
+        <button class="btn primary" onclick="saveMPF()">SAVE .MPF</button>
     </footer>
 </div>
 
 <script>
-    const area = document.getElementById('input');
-    const vis = document.getElementById('visual');
-    const nums = document.getElementById('line-nums');
-    const toolGrid = document.getElementById('tools-container');
-    const overlay = document.getElementById('tools-overlay');
+    const input = document.getElementById('input');
+    const syntax = document.getElementById('syntax');
+    const lines = document.getElementById('lineNums');
+    const tList = document.getElementById('toolList');
 
     window.onload = () => {
-        area.value = localStorage.getItem('cnc_v25_pro') || 
-        "O0025 (FLANGE_PROJECT)\nG54\nN10 T1 D1\n(ROUGH TURN EXTERNAL)\nG0 X120. Z2.\nG1 Z-35. F0.25\nG1 X140. Z-50.\nG0 X200. Z100.\n\nN20 T3 D1\n(FINISH SHOULDER)\nG0 X120. Z-20.\nG1 X115. F0.15\nG0 X200. Z200.";
-        update();
+        input.value = localStorage.getItem('cnc_v26_ide') || 
+        "O0026 (PROJECT ALPHA)\nG54 G90\n\nN10 T01 D1\n(ROUGHING OUTER CONTOUR)\nG0 X120. Z2.\nG1 Z-45. F.25\nG1 X140.\nG0 X200. Z200.\n\nN20 T02 D1\n(THREADING M30)\nG0 X30. Z5.\nG1 Z-20. F1.5\nG0 X200. Z200.";
+        refresh();
     };
 
-    function update() {
-        const code = area.value;
-        localStorage.setItem('cnc_v25_pro', code);
+    function refresh() {
+        const val = input.value;
+        localStorage.setItem('cnc_v26_ide', val);
 
-        // Highlight
-        let html = code.replace(/&/g, "&amp;").replace(/</g, "&lt;")
-            .replace(/\((.*?)\)/g, '<span class="c">($1)</span>')
+        // 1. Syntax highlighting
+        let html = val.replace(/&/g, "&amp;").replace(/</g, "&lt;")
+            .replace(/\((.*?)\)/g, '<span class="comm">($1)</span>')
             .replace(/(T\d+)/gi, '<span class="t">$1</span>')
             .replace(/(G\d+)/gi, '<span class="g">$1</span>')
-            .replace(/(X-?\d*\.?\d+)/gi, '<span class="x">$1</span>')
-            .replace(/(Z-?\d*\.?\d+)/gi, '<span class="z">$1</span>');
+            .replace(/(X-?\d*\.?\d*)/gi, '<span class="x">$1</span>')
+            .replace(/(Z-?\d*\.?\d*)/gi, '<span class="z">$1</span>');
 
-        // Search
-        const search = document.getElementById('find').value;
-        if(search) {
-            const re = new RegExp(`(${search})`, "gi");
-            html = html.replace(re, '<span class="m">$1</span>');
+        // Search logic
+        const q = document.getElementById('findInput').value;
+        if(q) {
+            const re = new RegExp(`(${q})`, "gi");
+            html = html.replace(re, '<span class="find-match">$1</span>');
         }
-        vis.innerHTML = html;
+        syntax.innerHTML = html;
 
-        // Lines & Tools
-        const lines = code.split('\n');
-        nums.innerHTML = lines.map((_, i) => i + 1).join('<br>');
-        area.style.height = vis.style.height = Math.max(window.innerHeight, lines.length * 25.6 + 100) + 'px';
+        // 2. Line numbers & Dynamic height
+        const rows = val.split('\n');
+        lines.innerHTML = rows.map((_, i) => i + 1).join('<br>');
+        input.style.height = syntax.style.height = Math.max(window.innerHeight, rows.length * 25.6 + 100) + 'px';
 
-        buildToolList(lines);
+        // 3. Smart Tool Inspection
+        updateInspector(rows);
     }
 
-    function buildToolList(lines) {
-        toolGrid.innerHTML = "";
-        lines.forEach((line, i) => {
+    function updateInspector(rows) {
+        tList.innerHTML = "";
+        rows.forEach((line, i) => {
             const t = line.match(/T(\d+)/i);
             if(t) {
-                // Логика: если в текущей или СЛЕДУЮЩЕЙ строке есть скобки - это имя
-                let desc = "БЕЗ ОПИСАНИЯ";
-                let searchRange = [lines[i], lines[i+1] || ""];
-                searchRange.forEach(s => {
-                    const m = s.match(/\((.*?)\)/);
-                    if(m) desc = m[1];
+                let name = "Unnamed Operation";
+                // Поиск названия в текущей или следующей строке в скобках
+                const lookahead = [rows[i], rows[i+1] || ""];
+                lookahead.forEach(str => {
+                    const m = str.match(/\((.*?)\)/);
+                    if(m) name = m[1];
                 });
 
-                const card = document.createElement('div');
-                card.className = 'tool-card';
-                card.innerHTML = `<div class="t-id">ИНСТРУМЕНТ ${t[0]}</div><div class="t-desc">${desc}</div>`;
-                card.onclick = () => {
-                    const pos = lines.slice(0, i).join('\n').length + (i > 0 ? 1 : 0);
-                    area.focus();
-                    area.setSelectionRange(pos, pos + line.length);
-                    document.getElementById('scroller').scrollTop = i * 25.6 - 40;
-                    toggleTools();
+                const div = document.createElement('div');
+                div.className = 'tool-entry';
+                div.innerHTML = `<b>TOOL ${t[0]}</b><span>${name}</span>`;
+                div.onclick = () => {
+                    const pos = rows.slice(0, i).join('\n').length + (i > 0 ? 1 : 0);
+                    input.focus();
+                    input.setSelectionRange(pos, pos + line.length);
+                    document.getElementById('scroller').scrollTop = i * 25.6 - 50;
                 };
-                toolGrid.appendChild(card);
+                tList.appendChild(div);
             }
         });
     }
 
-    function toggleTools() {
-        const isVisible = overlay.style.display === 'flex';
-        overlay.style.display = isVisible ? 'none' : 'flex';
-        document.getElementById('tools-label').innerText = isVisible ? 'СПИСОК ИНСТРУМЕНТОВ' : 'ЗАКРЫТЬ СПИСОК';
+    function toggleSidebar() { document.getElementById('sidebar').classList.toggle('hidden'); }
+    function sync() { syntax.scrollTop = lines.scrollTop = document.getElementById('scroller').scrollTop; }
+
+    function loadFile(inputEl) {
+        const file = inputEl.files[0];
+        if(!file) return;
+        const reader = new FileReader();
+        reader.onload = e => { input.value = e.target.result; refresh(); };
+        reader.readAsText(file);
     }
 
-    function sync() { vis.scrollTop = nums.scrollTop = document.getElementById('scroller').scrollTop; }
-
-    function saveFile() {
-        const b = new Blob([area.value], {type:'text/plain'});
-        const a = document.createElement('a'); a.href = URL.createObjectURL(b);
-        a.download = 'PREMIUM_PROG.MPF'; a.click();
+    function saveMPF() {
+        const b = new Blob([input.value], {type:'text/plain'});
+        const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = 'CNC_PROG.MPF'; a.click();
     }
 
-    function exportJSON() {
-        const blob = new Blob([JSON.stringify({code: area.value, date: new Date()})], {type: 'application/json'});
-        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'backup.json'; a.click();
+    function exportData() {
+        const data = { code: input.value, date: new Date().toISOString() };
+        const blob = new Blob([JSON.stringify(data)], {type: 'application/json'});
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'ide_session.json'; a.click();
     }
 
-    function importJSON() {
-        const f = document.createElement('input'); f.type = 'file';
-        f.onchange = e => {
+    function importData() {
+        const fi = document.createElement('input'); fi.type = 'file';
+        fi.onchange = e => {
             const r = new FileReader();
-            r.onload = ev => { area.value = JSON.parse(ev.target.result).code; update(); };
+            r.onload = ev => { input.value = JSON.parse(ev.target.result).code; refresh(); };
             r.readAsText(e.target.files[0]);
         };
-        f.click();
+        fi.click();
     }
 </script>
 </body>
