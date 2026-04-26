@@ -3,150 +3,89 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>CNC CAM LAYERS v17</title>
+    <title>CNC CAM DATA v18</title>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <style>
         :root { --accent: #007aff; --bg: #1c1c1e; }
         body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; background: var(--bg); font-family: -apple-system, sans-serif; }
         
-        /* UI */
-        .ui-base { position: absolute; inset: 0; display: flex; flex-direction: column; z-index: 10; pointer-events: none; }
-        header { pointer-events: auto; background: #fff; height: 50px; display: flex; align-items: center; justify-content: space-between; padding: 0 15px; border-bottom: 1px solid #ccc; }
+        header { background: #fff; height: 50px; display: flex; align-items: center; justify-content: space-between; padding: 0 15px; border-bottom: 1px solid #ccc; position: relative; z-index: 100; }
         
-        .editor { flex: 1; display: flex; overflow: hidden; pointer-events: auto; background: #fff; }
-        #ln { width: 40px; background: #f2f2f7; border-right: 1px solid #d1d1d6; padding: 15px 5px; text-align: right; font-family: monospace; font-size: 12px; color: #8e8e93; }
-        .edit-container { flex: 1; position: relative; overflow: auto; }
-        #code-in, #code-out { position: absolute; top: 0; left: 0; width: 100%; min-height: 100%; padding: 15px; font-family: 'SF Mono', monospace; font-size: 14px; line-height: 1.5; white-space: pre; border: none; outline: none; margin: 0; }
-        #code-in { color: transparent; background: transparent; z-index: 2; caret-color: #000; }
-        #code-out { z-index: 1; pointer-events: none; }
+        /* 3D Viewport */
+        #viewport { position: fixed; inset: 0; z-index: 5; background: #000; }
 
-        /* 3D */
-        #viewport { position: fixed; inset: 0; z-index: 5; background: radial-gradient(circle, #3a3a3c 0%, #000 100%); }
+        /* Панель управления */
+        .side-panel { position: absolute; left: 10px; top: 60px; width: 240px; background: rgba(28, 28, 30, 0.9); color: #fff; border-radius: 12px; padding: 15px; pointer-events: auto; z-index: 20; display: none; border: 1px solid #48484a; }
         
-        .panel { position: absolute; left: 10px; top: 60px; width: 200px; background: rgba(28, 28, 30, 0.95); color: #fff; border-radius: 12px; padding: 15px; pointer-events: auto; z-index: 20; display: none; border: 1px solid #48484a; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        .tool-row { display: flex; align-items: center; gap: 10px; background: #2c2c2e; margin-top: 8px; padding: 10px; border-radius: 8px; font-size: 12px; border: 1px solid #3a3a3c; }
-        .tool-row input { width: 18px; height: 18px; accent-color: var(--accent); }
+        .tool-config { background: #2c2c2e; padding: 8px; border-radius: 6px; margin-bottom: 10px; font-size: 11px; }
+        .tool-config input { width: 40px; background: #3a3a3c; border: none; color: #fff; text-align: center; border-radius: 4px; }
 
-        .btn { pointer-events: auto; padding: 8px 12px; border-radius: 8px; border: 1px solid #d1d1d6; background: #fff; font-weight: 600; cursor: pointer; font-size: 12px; }
-        .fab { position: absolute; bottom: 30px; right: 30px; width: 65px; height: 65px; background: var(--accent); border-radius: 50%; color: #fff; font-size: 24px; z-index: 100; pointer-events: auto; border: none; box-shadow: 0 8px 25px rgba(0,122,255,0.4); }
-        
-        .g { color: #ff3b30; font-weight: bold; }
-        .x { color: #ff2d55; }
-        .z { color: #007aff; }
-        .t { color: #af52de; font-weight: bold; }
+        /* Индикатор размеров */
+        .dro { position: absolute; top: 60px; right: 10px; background: rgba(0,0,0,0.7); color: #00ff00; font-family: monospace; padding: 10px; border-radius: 8px; font-size: 14px; border: 1px solid #00ff00; pointer-events: none; z-index: 20; display: none; }
+
+        /* Editor */
+        .editor-box { position: absolute; inset: 50px 0 0 0; background: #fff; z-index: 10; display: flex; }
+        #code-in { flex: 1; padding: 15px; font-family: monospace; font-size: 14px; border: none; outline: none; resize: none; }
+
+        .btn { padding: 8px 12px; border-radius: 8px; border: 1px solid #d1d1d6; background: #fff; font-weight: 600; cursor: pointer; }
+        .fab { position: absolute; bottom: 30px; right: 30px; width: 60px; height: 60px; background: var(--accent); border-radius: 30px; color: #fff; border: none; font-size: 24px; z-index: 100; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
     </style>
 </head>
 <body>
 
 <div id="viewport"></div>
+<div class="dro" id="dro">X: 0.000<br>Z: 0.000</div>
 
-<div class="ui-base">
-    <header>
-        <b style="letter-spacing: -0.5px;">CNC <span style="color:var(--accent)">SOLID v17</span></b>
-        <div style="display:flex; gap:8px;">
-            <button class="btn" onclick="document.getElementById('f').click()">LOAD</button>
-            <input type="file" id="f" hidden onchange="loadFile(this)">
-            <button class="btn" style="background:var(--accent); color:#fff; border:none;" onclick="saveFile()">SAVE</button>
-        </div>
-    </header>
+<header>
+    <b>CNC <span style="color:var(--accent)">DATA PRO</span></b>
+    <button class="btn" style="background:var(--accent); color:#fff; border:none;" onclick="toggleView()">МОДЕЛЬ 🧊</button>
+</header>
 
-    <div class="editor" id="editor-ui">
-        <div id="ln">1</div>
-        <div class="edit-container" id="scroller" onscroll="sync()">
-            <div id="code-out"></div>
-            <textarea id="code-in" spellcheck="false" oninput="update()"></textarea>
-        </div>
-    </div>
+<div class="editor-box" id="editor">
+    <textarea id="code-in" spellcheck="false" oninput="save()">O1407(CAM TEST)
+N1 T0101 (NARUZHNIY)
+G0 X60 Z2
+G1 Z-40 F.2
+G1 X80
+G0 X100 Z100
+
+N2 T0303 (REZHUSHCHIY)
+G0 X60 Z-20
+G1 X40 F.1
+G0 X100 Z100</textarea>
 </div>
 
-<div class="panel" id="cam-ui">
-    <div style="font-size: 10px; color: #8e8e93; text-transform: uppercase; margin-bottom: 5px;">Управление слоями</div>
-    <label style="display:flex; align-items:center; gap:8px; margin-bottom:12px; font-size:12px; color:#ff453a;">
-        <input type="checkbox" id="noG0" onchange="build3D()" checked> СКРЫТЬ G0
-    </label>
-    
-    <div id="tool-list-3d"></div>
-    <button class="btn" style="width:100%; margin-top:15px; background:#3a3a3c; color:#fff; border:none;" onclick="controls.reset()">СБРОС ВИДА</button>
+<div class="side-panel" id="ui-3d">
+    <div style="font-size:10px; color:var(--accent); margin-bottom:10px;">ДАННЫЕ ИНСТРУМЕНТОВ</div>
+    <div id="tools-setup"></div>
+    <hr style="opacity:0.2">
+    <label><input type="checkbox" id="showWire" onchange="build()"> СЕТКА</label>
 </div>
-
-<button class="fab" id="view-toggle" onclick="toggleMode()">🧊</button>
 
 <script>
-    const input = document.getElementById('code-in');
-    const output = document.getElementById('code-out');
-    const lineNumbers = document.getElementById('ln');
-    
-    let is3D = false;
-    let scene, camera, renderer, controls;
-    let toolData = {}; 
-    let activeTools = {}; // Храним состояние вкл/выкл для каждого T
-    let objects3D = []; // Список мешей на сцене
+    let scene, camera, renderer, controls, solid;
+    let toolSettings = {}; // Храним вылеты и радиусы
 
     window.onload = () => {
-        input.value = localStorage.getItem('cnc_v17_code') || "O1407\nN1 T0101 (ROUGH)\nG0 X40 Z2\nG1 Z-20 F.2\nG1 X50 Z-30\nG0 X100 Z100\n\nN2 T0202 (FINISH)\nG0 X50 Z-30\nG1 Z-50\nG1 X60\nG0 X100 Z100";
-        update();
-        initScene();
+        const saved = localStorage.getItem('cnc_v18_code');
+        if(saved) document.getElementById('code-in').value = saved;
+        init3D();
     };
 
-    function update() {
-        const val = input.value;
-        localStorage.setItem('cnc_v17_code', val);
-        output.innerHTML = val.replace(/&/g, "&amp;").replace(/</g, "&lt;")
-            .replace(/(G\d+)/gi, '<span class="g">$1</span>')
-            .replace(/(T\d+)/gi, '<span class="t">$1</span>')
-            .replace(/(X-?\d*\.?\d+)/gi, '<span class="x">$1</span>')
-            .replace(/(Z-?\d*\.?\d+)/gi, '<span class="z">$1</span>');
-
-        const lines = val.split('\n');
-        lineNumbers.innerHTML = lines.map((_, i) => i + 1).join('<br>');
-        input.style.height = output.style.height = Math.max(500, lines.length * 21 + 100) + 'px';
-        
-        parseGCode(lines);
-    }
-
-    function parseGCode(lines) {
-        toolData = {};
-        let curT = "T0000";
-        let curX = 0, curZ = 0;
-
-        lines.forEach(l => {
-            const tm = l.match(/T(\d+)/i);
-            const nm = l.match(/\((.*?)\)/);
-            if(tm) {
-                curT = "T" + tm[1];
-                if(!toolData[curT]) {
-                    toolData[curT] = { name: nm ? nm[1] : "TOOL "+curT, pts: [] };
-                    if (!(curT in activeTools)) activeTools[curT] = true;
-                }
-            }
-            const mx = l.match(/X(-?\d*\.?\d+)/i);
-            const mz = l.match(/Z(-?\d*\.?\d+)/i);
-            if(mx) curX = parseFloat(mx[1]);
-            if(mz) curZ = parseFloat(mz[1]);
-            
-            if((mx || mz) && toolData[curT]) {
-                toolData[curT].pts.push(new THREE.Vector2(Math.abs(curX)/2, curZ));
-            }
-        });
-    }
-
-    function initScene() {
+    function init3D() {
         scene = new THREE.Scene();
         camera = new THREE.PerspectiveCamera(45, window.innerWidth/window.innerHeight, 0.1, 1000);
-        camera.position.set(120, 80, 120);
-
+        camera.position.set(150, 100, 150);
         renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.getElementById('viewport').appendChild(renderer.domElement);
-
         controls = new THREE.OrbitControls(camera, renderer.domElement);
-        scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+        scene.add(new THREE.AmbientLight(0xffffff, 0.6));
         const sun = new THREE.DirectionalLight(0xffffff, 1);
-        sun.position.set(100, 200, 100);
+        sun.position.set(50, 100, 50);
         scene.add(sun);
-
-        const grid = new THREE.GridHelper(200, 20, 0x444446, 0x2c2c2e);
+        const grid = new THREE.GridHelper(200, 20, 0x333333, 0x111111);
         grid.rotation.x = Math.PI/2;
         scene.add(grid);
 
@@ -154,76 +93,67 @@
         anim();
     }
 
-    function toggleMode() {
-        is3D = !is3D;
-        document.getElementById('editor-ui').style.display = is3D ? "none" : "flex";
-        document.getElementById('cam-ui').style.display = is3D ? "block" : "none";
-        document.getElementById('view-toggle').innerText = is3D ? "📝" : "🧊";
-        if(is3D) build3D();
+    function toggleView() {
+        const ed = document.getElementById('editor');
+        const ui = document.getElementById('ui-3d');
+        const dro = document.getElementById('dro');
+        const isVisible = ed.style.display === 'none';
+
+        ed.style.display = isVisible ? 'flex' : 'none';
+        ui.style.display = isVisible ? 'none' : 'block';
+        dro.style.display = isVisible ? 'none' : 'block';
+        
+        if(!isVisible) build();
     }
 
-    function build3D() {
-        // Очистка старых объектов
-        objects3D.forEach(obj => scene.remove(obj));
-        objects3D = [];
+    function build() {
+        if(solid) scene.remove(solid);
+        const code = document.getElementById('code-in').value;
+        const lines = code.split('\n');
+        let pts = [];
+        let curX = 0, curZ = 0;
+        let setupHtml = "";
 
-        const listUI = document.getElementById('tool-list-3d');
-        listUI.innerHTML = "";
+        lines.forEach(l => {
+            const tMatch = l.match(/T(\d+)/i);
+            if(tMatch) {
+                const tNum = tMatch[1];
+                if(!toolSettings[tNum]) toolSettings[tNum] = { r: 0.4, offX: 0 };
+                setupHtml += `
+                    <div class="tool-config">
+                        <b>T${tNum}</b> | R: <input type="number" step="0.1" value="${toolSettings[tNum].r}" onchange="toolSettings['${tNum}'].r=this.value; build()">
+                        X-Off: <input type="number" value="${toolSettings[tNum].offX}" onchange="toolSettings['${tNum}'].offX=this.value; build()">
+                    </div>`;
+            }
 
-        for(let t in toolData) {
-            // Создаем UI переключатель
-            const row = document.createElement('div');
-            row.className = 'tool-row';
-            row.innerHTML = `<input type="checkbox" ${activeTools[t]?'checked':''} onchange="toggleTool('${t}')"> <div><b>${t}</b><br><small style="color:#8e8e93">${toolData[t].name}</small></div>`;
-            listUI.appendChild(row);
+            const mx = l.match(/X(-?\d*\.?\d+)/i);
+            const mz = l.match(/Z(-?\d*\.?\d+)/i);
+            if(mx) curX = parseFloat(mx[1]);
+            if(mz) curZ = parseFloat(mz[1]);
+            
+            if(mx || mz) {
+                pts.push(new THREE.Vector2(Math.abs(curX)/2, curZ));
+            }
+        });
 
-            if(!activeTools[t]) continue;
+        document.getElementById('tools-setup').innerHTML = setupHtml || "Инструменты не найдены";
+        if(pts.length < 2) return;
 
-            // Строим 3D часть для этого инструмента
-            let pts = [...toolData[t].pts];
-            if(pts.length < 2) continue;
+        pts.sort((a,b) => b.y - a.y);
+        const geo = new THREE.LatheGeometry(pts, 64);
+        const mat = new THREE.MeshStandardMaterial({ 
+            color: 0x999999, metalness: 0.8, roughness: 0.2, 
+            wireframe: document.getElementById('showWire').checked 
+        });
+        solid = new THREE.Mesh(geo, mat);
+        solid.rotation.x = -Math.PI/2;
+        scene.add(solid);
 
-            // Сортировка для правильного меша
-            pts.sort((a,b) => b.y - a.y);
-
-            const geo = new THREE.LatheGeometry(pts, 64);
-            const mat = new THREE.MeshStandardMaterial({ 
-                color: 0x8e8e93, 
-                metalness: 0.6, 
-                roughness: 0.4, 
-                side: THREE.DoubleSide 
-            });
-            const mesh = new THREE.Mesh(geo, mat);
-            mesh.rotation.x = -Math.PI/2;
-            scene.add(mesh);
-            objects3D.push(mesh);
-        }
+        // Обновляем DRO (координаты последней точки)
+        document.getElementById('dro').innerHTML = `X: ${curX.toFixed(3)}<br>Z: ${curZ.toFixed(3)}`;
     }
 
-    function toggleTool(t) {
-        activeTools[t] = !activeTools[t];
-        build3D();
-    }
-
-    function sync() { output.scrollTop = lineNumbers.scrollTop = document.getElementById('scroller').scrollTop; }
-    
-    function loadFile(i) {
-        const r = new FileReader();
-        r.onload = (e) => { input.value = e.target.result; update(); };
-        r.readAsText(i.files[0]);
-    }
-
-    function saveFile() {
-        const b = new Blob([input.value], {type:'text/plain'});
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(b); a.download='PROJECT_V17.O'; a.click();
-    }
-
-    window.onresize = () => {
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(window.innerWidth, window.innerHeight);
-    };
+    function save() { localStorage.setItem('cnc_v18_code', document.getElementById('code-in').value); }
 </script>
 </body>
 </html>
