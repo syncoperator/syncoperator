@@ -3,179 +3,218 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Nakamura Pro Mobile</title>
+    <title>Nakamura-Tome Pro App</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { background-color: #050b14; touch-action: manipulation; }
-        .siemens-blue { background-color: #006494; }
-        .canvas-bg { background-image: radial-gradient(#1e293b 1px, transparent 1px); background-size: 20px 20px; background-color: #020617; }
-        .tab-active { border-bottom: 4px solid #00f2ff; color: #00f2ff; }
-        input { font-size: 16px !important; } /* Предотвращает авто-зум в iOS */
+        body { background-color: #020617; color: white; user-select: none; -webkit-tap-highlight-color: transparent; }
+        .siemens-header { background: linear-gradient(90deg, #003a5d 0%, #006494 100%); border-bottom: 2px solid #00f2ff; }
+        .canvas-bg { background-image: radial-gradient(#1e293b 1px, transparent 1px); background-size: 30px 30px; background-color: #020617; }
+        .btn-action { background: #1e293b; border-bottom: 4px solid #0f172a; transition: all 0.1s; }
+        .btn-action:active { transform: translateY(2px); border-bottom-width: 1px; }
+        input { font-size: 18px !important; background: #0f172a !important; border: 1px solid #334155 !important; color: #22d3ee !important; padding: 12px !important; border-radius: 8px !important; }
+        .element-card { border-left: 4px solid #334155; transition: background 0.2s; }
+        .element-card.active { border-left-color: #00f2ff; background: #0f172a; }
     </style>
 </head>
-<body class="h-screen flex flex-col text-white overflow-hidden">
+<body class="h-screen flex flex-col overflow-hidden font-sans">
 
-    <header class="siemens-blue p-3 flex justify-between items-center shadow-lg shrink-0">
-        <div class="flex flex-col">
-            <span class="text-[10px] opacity-70">NAKAMURA-TOME</span>
-            <span class="font-bold text-sm tracking-widest text-cyan-300">CONTOUR VIZ</span>
+    <header class="siemens-header p-3 flex justify-between items-center shrink-0 shadow-2xl">
+        <div>
+            <h1 class="text-sm font-black tracking-widest text-white italic">NAKAMURA <span class="text-cyan-400">NTJ2</span></h1>
+            <p class="text-[10px] text-cyan-200/60 uppercase font-bold">Simulator v2.0 Professional</p>
         </div>
-        <button onclick="togglePasteModal()" class="bg-cyan-600 px-4 py-1.5 rounded-full text-xs font-bold uppercase shadow-lg">Вставить Код</button>
+        <button onclick="showImportModal()" class="bg-cyan-500 hover:bg-cyan-400 px-4 py-2 rounded-lg text-[10px] font-black shadow-lg uppercase">Импорт Кода</button>
     </header>
 
-    <div class="flex bg-slate-900 shrink-0 border-b border-white/10">
-        <button id="tab-btn-draw" onclick="switchTab('draw')" class="flex-1 p-3 text-xs font-bold tab-active">ГРАФИКА</button>
-        <button id="tab-btn-edit" onclick="switchTab('edit')" class="flex-1 p-3 text-xs font-bold text-slate-500">СПИСОК (G-CODE)</button>
-    </div>
+    <nav class="flex bg-slate-900 border-b border-white/5 shrink-0">
+        <button id="btn-tab-sim" onclick="setTab('sim')" class="flex-1 p-4 text-xs font-black tracking-widest border-b-4 border-cyan-400 text-cyan-400">СИМУЛЯЦИЯ</button>
+        <button id="btn-tab-list" onclick="setTab('list')" class="flex-1 p-4 text-xs font-black tracking-widest border-b-4 border-transparent text-slate-500">ЭЛЕМЕНТЫ</button>
+    </nav>
 
-    <main class="flex-1 relative overflow-hidden flex flex-col">
+    <main class="flex-1 relative overflow-hidden">
         
-        <div id="tab-draw" class="absolute inset-0 canvas-bg flex flex-col">
-            <div class="absolute top-4 left-4 z-10 space-y-2">
-                <div class="bg-black/80 border border-cyan-500/30 p-2 rounded text-[10px]">X: <span id="curX" class="text-cyan-400 font-mono">0.000</span></div>
-                <div class="bg-black/80 border border-cyan-500/30 p-2 rounded text-[10px]">Z: <span id="curZ" class="text-cyan-400 font-mono">0.000</span></div>
+        <div id="tab-sim" class="absolute inset-0 canvas-bg flex flex-col">
+            <div class="absolute top-4 left-4 z-10 flex flex-col gap-2">
+                <div class="bg-black/80 backdrop-blur-md border border-cyan-500/30 p-2 rounded-xl min-w-[100px]">
+                    <div class="text-[9px] text-slate-500 font-bold">X (DIAMETER)</div>
+                    <div id="droX" class="text-xl font-mono text-cyan-400">0.000</div>
+                </div>
+                <div class="bg-black/80 backdrop-blur-md border border-cyan-500/30 p-2 rounded-xl min-w-[100px]">
+                    <div class="text-[9px] text-slate-500 font-bold">Z (LENGTH)</div>
+                    <div id="droZ" class="text-xl font-mono text-cyan-400">0.000</div>
+                </div>
             </div>
-            <svg id="canvas" class="w-full h-full">
-                <g id="viewport" transform="translate(100, 200)">
-                    <line x1="-500" y1="0" x2="1000" y2="0" stroke="#1e293b" stroke-width="1" />
+
+            <svg id="canvas" class="w-full h-full touch-none">
+                <g id="viewport" transform="translate(150, 300)">
+                    <line x1="-1000" y1="0" x2="2000" y2="0" stroke="#334155" stroke-dasharray="4" />
                     <g id="path-group"></g>
-                    <circle id="marker" r="5" fill="#00f2ff" style="display:none" class="animate-pulse" />
+                    <g id="arc-group"></g>
+                    <circle id="tool-pointer" r="6" fill="#ff0055" class="animate-pulse" style="display:none" />
                 </g>
             </svg>
+
+            <div class="absolute bottom-6 left-6 flex flex-col gap-2">
+                <button onclick="adjustScale(1.2)" class="w-12 h-12 bg-slate-800 rounded-full border border-white/10 text-xl shadow-xl">+</button>
+                <button onclick="adjustScale(0.8)" class="w-12 h-12 bg-slate-800 rounded-full border border-white/10 text-xl shadow-xl">-</button>
+            </div>
         </div>
 
-        <div id="tab-edit" class="absolute inset-0 bg-slate-950 hidden flex flex-col p-2 overflow-y-auto">
-            <div id="elements-list" class="space-y-2 pb-24">
+        <div id="tab-list" class="absolute inset-0 bg-slate-950 hidden flex flex-col">
+            <div id="elements-container" class="flex-1 overflow-y-auto p-4 space-y-3 pb-32">
                 </div>
+            
+            <div class="p-4 bg-slate-900 border-t border-white/10 grid grid-cols-4 gap-2 shrink-0">
+                <button onclick="prepareNewElement('G1')" class="btn-action p-4 rounded-xl flex flex-col items-center">
+                    <span class="text-[10px] font-bold opacity-50">LINE</span>
+                    <span class="text-xl">⎯</span>
+                </button>
+                <button onclick="prepareNewElement('A')" class="btn-action p-4 rounded-xl flex flex-col items-center border-b-cyan-500">
+                    <span class="text-[10px] font-bold opacity-50">ANGLE</span>
+                    <span class="text-xl">∠</span>
+                </button>
+                <button onclick="prepareNewElement('R')" class="btn-action p-4 rounded-xl flex flex-col items-center border-b-orange-500">
+                    <span class="text-[10px] font-bold opacity-50">RAD</span>
+                    <span class="text-xl">∩</span>
+                </button>
+                <button onclick="resetAll()" class="btn-action p-4 rounded-xl bg-red-950/30 flex flex-col items-center border-b-red-600">
+                    <span class="text-[10px] font-bold opacity-50">RESET</span>
+                    <span class="text-xl">✕</span>
+                </button>
+            </div>
         </div>
     </main>
 
-    <div class="fixed bottom-4 left-1/2 -translate-x-1/2 flex gap-3 z-40 bg-black/50 p-2 rounded-2xl backdrop-blur-md border border-white/10">
-        <button onclick="openEditModal('G1')" class="bg-slate-700 w-12 h-12 rounded-xl flex items-center justify-center font-bold border-b-4 border-yellow-500">⎯</button>
-        <button onclick="openEditModal('Angle')" class="bg-slate-700 w-12 h-12 rounded-xl flex items-center justify-center font-bold border-b-4 border-cyan-500">∠</button>
-        <button onclick="openEditModal('Radius')" class="bg-slate-700 w-12 h-12 rounded-xl flex items-center justify-center font-bold border-b-4 border-orange-500">R</button>
-        <button onclick="clearContour()" class="bg-red-900 w-12 h-12 rounded-xl flex items-center justify-center font-bold">✕</button>
-    </div>
-
-    <div id="paste-modal" class="fixed inset-0 bg-black/95 z-[60] hidden flex flex-col p-4">
-        <h2 class="text-center font-bold mb-4">ВСТАВЬТЕ СВОЙ G-CODE</h2>
-        <textarea id="raw-gcode" class="flex-1 bg-gray-900 border border-gray-700 p-4 rounded text-green-400 font-mono text-sm outline-none" placeholder="Вставьте текст программы здесь..."></textarea>
-        <div class="flex gap-4 py-4">
-            <button onclick="togglePasteModal()" class="flex-1 bg-slate-800 p-4 rounded-xl font-bold">ОТМЕНА</button>
-            <button onclick="importCode()" class="flex-1 bg-cyan-600 p-4 rounded-xl font-bold">ИМПОРТ</button>
+    <div id="modal-edit" class="fixed inset-0 bg-black/95 z-[100] hidden flex flex-col">
+        <div class="siemens-header p-4 flex justify-between items-center shrink-0">
+            <h2 id="modal-title" class="text-sm font-bold uppercase tracking-widest">Параметры элемента</h2>
+            <button onclick="closeModal()" class="text-2xl">&times;</button>
+        </div>
+        <div class="flex-1 overflow-y-auto p-6 space-y-6">
+            <div class="grid grid-cols-2 gap-4">
+                <div class="flex flex-col gap-2">
+                    <label class="text-[10px] font-bold text-slate-400">X DIAMETER</label>
+                    <input id="inX" type="number" step="0.001" placeholder="0.000">
+                </div>
+                <div class="flex flex-col gap-2">
+                    <label class="text-[10px] font-bold text-slate-400">Z LENGTH</label>
+                    <input id="inZ" type="number" step="0.001" placeholder="0.000">
+                </div>
+            </div>
+            <div id="row-angle" class="flex flex-col gap-2">
+                <label class="text-[10px] font-bold text-cyan-400 tracking-widest">ANGLE ,A (180=L, 225=L-DOWN, 135=L-UP)</label>
+                <input id="inA" type="number" step="0.001" class="text-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.2)]">
+            </div>
+            <div class="flex flex-col gap-2 border-t border-white/5 pt-4">
+                <label class="text-[10px] font-bold text-orange-400 uppercase tracking-widest">RADIUS ,R (AUTO-BLEND)</label>
+                <input id="inR" type="number" step="0.001" class="text-orange-400">
+            </div>
+            <div class="pt-10">
+                <button onclick="saveElement()" class="w-full bg-cyan-600 py-5 rounded-2xl font-black text-white shadow-2xl active:scale-95 transition-transform uppercase">Применить</button>
+            </div>
         </div>
     </div>
 
-    <div id="edit-modal" class="fixed inset-0 bg-black/90 z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-slate-800 w-full max-w-sm rounded-2xl border border-cyan-500 overflow-hidden shadow-2xl">
-            <div id="modal-title" class="siemens-blue p-4 text-center font-bold text-sm uppercase">Элемент Контура</div>
-            <div class="p-6 space-y-6">
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="space-y-1">
-                        <label class="text-[10px] text-gray-400 font-bold uppercase">X (Диаметр)</label>
-                        <input id="mX" type="number" step="0.001" class="w-full bg-slate-950 p-4 rounded-xl text-xl border border-white/5 outline-none focus:border-cyan-500">
-                    </div>
-                    <div class="space-y-1">
-                        <label class="text-[10px] text-gray-400 font-bold uppercase">Z (Длина)</label>
-                        <input id="mZ" type="number" step="0.001" class="w-full bg-slate-950 p-4 rounded-xl text-xl border border-white/5 outline-none focus:border-cyan-500">
-                    </div>
-                </div>
-                <div id="angle-field" class="space-y-1">
-                    <label class="text-[10px] text-cyan-400 font-bold uppercase">Угол ,A (180=Влево, 225=Вниз)</label>
-                    <input id="mA" type="number" step="0.1" class="w-full bg-slate-950 p-4 rounded-xl text-xl text-cyan-400 border border-cyan-900 outline-none">
-                </div>
-                <div class="flex gap-3 pt-4">
-                    <button onclick="closeEditModal()" class="flex-1 bg-slate-700 p-4 rounded-xl font-bold">ОТМЕНА</button>
-                    <button onclick="saveElement()" class="flex-1 bg-cyan-600 p-4 rounded-xl font-bold uppercase">Сохранить</button>
-                </div>
-            </div>
+    <div id="modal-import" class="fixed inset-0 bg-black/95 z-[100] hidden flex flex-col p-6">
+        <h2 class="text-xl font-bold mb-4 text-cyan-400">ВСТАВИТЬ G-CODE</h2>
+        <textarea id="import-area" class="flex-1 bg-slate-900 border border-slate-700 rounded-xl p-4 font-mono text-green-400 outline-none" placeholder="G1 X32.3 ,R.9 ..."></textarea>
+        <div class="flex gap-4 py-6">
+            <button onclick="hideImportModal()" class="flex-1 p-5 bg-slate-800 rounded-2xl font-bold uppercase">Отмена</button>
+            <button onclick="doImport()" class="flex-1 p-5 bg-cyan-600 rounded-2xl font-bold uppercase shadow-lg">Загрузить</button>
         </div>
     </div>
 
     <script>
-        let contour = [{ x: 0, z: 0, a: null, type: 'G0' }];
-        let scale = 8;
+        let contour = [{ x: 0, z: 0, a: null, r: 0, type: 'G0' }];
+        let editingIndex = -1;
+        let zoomScale = 10;
 
-        function switchTab(tab) {
-            document.getElementById('tab-draw').classList.toggle('hidden', tab !== 'draw');
-            document.getElementById('tab-edit').classList.toggle('hidden', tab !== 'edit');
-            document.getElementById('tab-btn-draw').className = `flex-1 p-3 text-xs font-bold ${tab==='draw'?'tab-active':'text-slate-500'}`;
-            document.getElementById('tab-btn-edit').className = `flex-1 p-3 text-xs font-bold ${tab==='edit'?'tab-active':'text-slate-500'}`;
-            if(tab === 'draw') drawContour();
+        // Переключение вкладок
+        function setTab(tab) {
+            document.getElementById('tab-sim').classList.toggle('hidden', tab !== 'sim');
+            document.getElementById('tab-list').classList.toggle('hidden', tab !== 'list');
+            document.getElementById('btn-tab-sim').className = `flex-1 p-4 text-xs font-black tracking-widest ${tab==='sim' ? 'border-b-4 border-cyan-400 text-cyan-400' : 'border-b-4 border-transparent text-slate-500'}`;
+            document.getElementById('btn-tab-list').className = `flex-1 p-4 text-xs font-black tracking-widest ${tab==='list' ? 'border-b-4 border-cyan-400 text-cyan-400' : 'border-b-4 border-transparent text-slate-500'}`;
+            if(tab === 'sim') refreshSimulation();
         }
 
-        function togglePasteModal() {
-            document.getElementById('paste-modal').classList.toggle('hidden');
-        }
+        // Модалки
+        function showImportModal() { document.getElementById('modal-import').classList.remove('hidden'); }
+        function hideImportModal() { document.getElementById('modal-import').classList.add('hidden'); }
 
-        function importCode() {
-            const raw = document.getElementById('raw-gcode').value;
-            const lines = raw.split('\n');
-            contour = [];
-            let curX = 0, curZ = 0;
-
-            lines.forEach(line => {
-                const clean = line.toUpperCase();
-                if(!clean.includes('X') && !clean.includes('Z')) return;
-
-                const xM = clean.match(/X(-?\d*\.?\d+)/);
-                const zM = clean.match(/Z(-?\d*\.?\d+)/);
-                const aM = clean.match(/,A(-?\d*\.?\d+)/);
-
-                let x = xM ? parseFloat(xM[1]) : (contour.length > 0 ? contour[contour.length-1].x : 0);
-                let z = zM ? parseFloat(zM[1]) : null;
-                let a = aM ? parseFloat(aM[1]) : null;
-
-                contour.push({ x, z, a, type: clean.includes('G0') ? 'G0' : 'G1' });
-            });
-
-            togglePasteModal();
-            switchTab('draw');
-        }
-
-        function openEditModal(type) {
-            document.getElementById('angle-field').style.display = (type === 'Angle') ? 'block' : 'none';
-            document.getElementById('edit-modal').classList.remove('hidden');
+        function prepareNewElement(type) {
+            editingIndex = -1;
+            document.getElementById('modal-title').innerText = "НОВЫЙ ЭЛЕМЕНТ";
             let last = contour[contour.length-1];
-            document.getElementById('mX').value = last.x;
-            document.getElementById('mZ').value = '';
-            document.getElementById('mA').value = '';
+            document.getElementById('inX').value = last.x;
+            document.getElementById('inZ').value = '';
+            document.getElementById('inA').value = '';
+            document.getElementById('inR').value = '';
+            document.getElementById('modal-edit').classList.remove('hidden');
         }
 
-        function closeEditModal() { document.getElementById('edit-modal').classList.add('hidden'); }
+        function editExisting(index) {
+            editingIndex = index;
+            document.getElementById('modal-title').innerText = "РЕДАКТИРОВАНИЕ #" + index;
+            let el = contour[index];
+            document.getElementById('inX').value = el.x;
+            document.getElementById('inZ').value = el.z ?? '';
+            document.getElementById('inA').value = el.a ?? '';
+            document.getElementById('inR').value = el.r || '';
+            document.getElementById('modal-edit').classList.remove('hidden');
+        }
+
+        function closeModal() { document.getElementById('modal-edit').classList.add('hidden'); }
 
         function saveElement() {
-            const x = parseFloat(document.getElementById('mX').value) || 0;
-            const z = document.getElementById('mZ').value === '' ? null : parseFloat(document.getElementById('mZ').value);
-            const a = parseFloat(document.getElementById('mA').value) || null;
-            contour.push({ x, z, a, type: a ? 'Angle' : 'G1' });
-            closeEditModal();
-            drawContour();
+            const data = {
+                x: parseFloat(document.getElementById('inX').value) || 0,
+                z: document.getElementById('inZ').value === '' ? null : parseFloat(document.getElementById('inZ').value),
+                a: document.getElementById('inA').value === '' ? null : parseFloat(document.getElementById('inA').value),
+                r: parseFloat(document.getElementById('inR').value) || 0,
+                type: 'G1'
+            };
+
+            if(editingIndex === -1) contour.push(data);
+            else contour[editingIndex] = data;
+
+            closeModal();
+            refreshAll();
+        }
+
+        function refreshAll() {
             renderList();
+            refreshSimulation();
         }
 
         function renderList() {
-            const list = document.getElementById('elements-list');
-            list.innerHTML = contour.map((el, i) => `
-                <div class="bg-slate-900 border border-white/5 p-4 rounded-xl flex justify-between items-center">
-                    <div>
-                        <div class="text-[10px] text-slate-500 font-bold uppercase">${el.type}</div>
-                        <div class="font-mono text-cyan-400">X${el.x} ${el.z !== null ? 'Z'+el.z : ''} ${el.a ? ',A'+el.a : ''}</div>
+            const container = document.getElementById('elements-container');
+            container.innerHTML = contour.map((el, i) => `
+                <div onclick="editExisting(${i})" class="element-card bg-slate-900 p-4 rounded-xl flex justify-between items-center active:scale-95 transition-all">
+                    <div class="flex flex-col gap-1">
+                        <span class="text-[9px] font-black text-slate-500 uppercase">Step ${i} | ${el.type}</span>
+                        <div class="font-mono text-cyan-400 text-sm">
+                            X<span class="text-white">${el.x.toFixed(3)}</span> 
+                            ${el.z !== null ? `Z<span class="text-white">${el.z.toFixed(3)}</span>` : ''} 
+                            ${el.a !== null ? `,A<span class="text-cyan-300">${el.a}</span>` : ''}
+                            ${el.r > 0 ? `,R<span class="text-orange-400">${el.r}</span>` : ''}
+                        </div>
                     </div>
-                    <button onclick="contour.splice(${i},1);renderList();drawContour()" class="text-red-500 bg-red-500/10 w-10 h-10 rounded-full flex items-center justify-center">✕</button>
+                    <div class="text-slate-700 text-xl font-black">➔</div>
                 </div>
             `).join('');
         }
 
-        function drawContour() {
-            const group = document.getElementById('path-group');
-            group.innerHTML = '';
+        function refreshSimulation() {
+            const pathGroup = document.getElementById('path-group');
+            pathGroup.innerHTML = '';
             let cx = 0, cz = 0;
 
             contour.forEach((el, i) => {
                 let nx = el.x;
                 let nz = el.z;
 
+                // Логика угла Nakamura
                 if (el.a !== null && nz === null) {
                     const rad = (el.a * Math.PI) / 180;
                     nz = cz + ((nx - cx) / 2) / Math.tan(rad);
@@ -184,30 +223,66 @@
 
                 if (i > 0) {
                     const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-                    line.setAttribute("x1", cz * scale);
-                    line.setAttribute("y1", -(cx/2) * scale);
-                    line.setAttribute("x2", nz * scale);
-                    line.setAttribute("y2", -(nx/2) * scale);
-                    line.setAttribute("stroke", el.a ? "#00f2ff" : "#facc15");
-                    line.setAttribute("stroke-width", el.a ? "3" : "1.5");
-                    group.appendChild(line);
+                    line.setAttribute("x1", cz * zoomScale);
+                    line.setAttribute("y1", -(cx/2) * zoomScale);
+                    line.setAttribute("x2", nz * zoomScale);
+                    line.setAttribute("y2", -(nx/2) * zoomScale);
+                    line.setAttribute("stroke", el.a !== null ? "#22d3ee" : "#facc15");
+                    line.setAttribute("stroke-width", el.a !== null ? "3" : "2");
+                    line.setAttribute("stroke-linecap", "round");
+                    pathGroup.appendChild(line);
                 }
+
                 cx = nx; cz = nz;
-                
+
                 if(i === contour.length - 1) {
-                    const marker = document.getElementById('marker');
-                    marker.setAttribute('cx', cz * scale);
-                    marker.setAttribute('cy', -(cx/2) * scale);
-                    marker.style.display = 'block';
-                    document.getElementById('curX').innerText = cx.toFixed(3);
-                    document.getElementById('curZ').innerText = cz.toFixed(3);
+                    updatePointer(cx, cz);
                 }
             });
         }
 
-        function clearContour() { if(confirm('Очистить контур?')) { contour = [{ x: 0, z: 0, a: null, type: 'G0' }]; drawContour(); renderList(); } }
+        function updatePointer(x, z) {
+            const ptr = document.getElementById('tool-pointer');
+            ptr.setAttribute('cx', z * zoomScale);
+            ptr.setAttribute('cy', -(x/2) * zoomScale);
+            ptr.style.display = 'block';
+            document.getElementById('droX').innerText = x.toFixed(3);
+            document.getElementById('droZ').innerText = z.toFixed(3);
+        }
 
-        window.onload = () => { renderList(); drawContour(); };
+        function adjustScale(f) { zoomScale *= f; refreshSimulation(); }
+
+        function resetAll() { if(confirm('Удалить весь контур?')) { contour = [{ x: 0, z: 0, a: null, r: 0, type: 'G0' }]; refreshAll(); } }
+
+        function doImport() {
+            const text = document.getElementById('import-area').value;
+            const lines = text.split('\n');
+            contour = [];
+            
+            lines.forEach(line => {
+                const clean = line.toUpperCase();
+                if(!clean.includes('X') && !clean.includes('Z') && !clean.includes('A')) return;
+                
+                const xMatch = clean.match(/X(-?\d*\.?\d+)/);
+                const zMatch = clean.match(/Z(-?\d*\.?\d+)/);
+                const aMatch = clean.match(/,A(-?\d*\.?\d+)/);
+                const rMatch = clean.match(/,R(-?\d*\.?\d+)/);
+
+                contour.push({
+                    x: xMatch ? parseFloat(xMatch[1]) : (contour.length > 0 ? contour[contour.length-1].x : 0),
+                    z: zMatch ? parseFloat(zMatch[1]) : null,
+                    a: aMatch ? parseFloat(aMatch[1]) : null,
+                    r: rMatch ? parseFloat(rMatch[1]) : 0,
+                    type: clean.includes('G0') ? 'G0' : 'G1'
+                });
+            });
+
+            hideImportModal();
+            setTab('sim');
+            refreshAll();
+        }
+
+        window.onload = refreshAll;
     </script>
 </body>
 </html>
