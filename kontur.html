@@ -2,155 +2,178 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nakamura Dialod Guide</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Nakamura Dialog Mobile</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        .siemens-bg { background: #003a5d; } /* Классический цвет Siemens */
-        .siemens-input { background: #e2e8f0; color: #1a202c; border: 1px solid #4a5568; }
-        .grid-bg { background-image: radial-gradient(#2d3748 1px, transparent 1px); background-size: 20px 20px; background-color: #050505; }
+        body { background-color: #050b14; font-family: sans-serif; }
+        .siemens-blue { background-color: #006494; }
+        .canvas-container { background: radial-gradient(#1e293b 1px, transparent 1px); background-size: 15px 15px; background-color: #020617; }
+        input { font-size: 18px !important; } /* Чтобы iPhone не зумил при вводе */
     </style>
 </head>
-<body class="bg-gray-900 text-white h-screen flex flex-col overflow-hidden font-sans">
+<body class="h-screen flex flex-col overflow-hidden text-white">
 
-    <header class="siemens-bg p-3 border-b border-blue-400 flex justify-between items-center shadow-2xl">
-        <div class="flex items-center gap-4">
-            <span class="font-black italic text-xl">SINUMERIK</span>
-            <span class="bg-blue-500 text-[10px] px-2 py-0.5 rounded">CONTOUR EDITOR</span>
+    <header class="siemens-blue p-2 flex justify-between items-center shrink-0">
+        <span class="text-xs font-bold tracking-tighter">SINUMERIK <span class="text-cyan-400">ONE</span></span>
+        <div class="flex gap-2">
+            <button onclick="clearAll()" class="bg-red-900/50 px-2 py-1 rounded text-[10px]">СБРОС</button>
+            <button onclick="exportGCode()" class="bg-orange-500 px-3 py-1 rounded text-xs font-bold uppercase">G-CODE</button>
         </div>
-        <button onclick="processCode()" class="bg-orange-500 hover:bg-orange-400 px-6 py-1 rounded font-bold text-sm transition-all">GENERATE G-CODE</button>
     </header>
 
-    <main class="flex-1 flex flex-col md:flex-row overflow-hidden">
-        
-        <div class="flex-1 relative grid-bg overflow-hidden border-r border-gray-800">
-            <svg id="canvas" class="w-full h-full cursor-move">
-                <g id="viewport" transform="translate(100, 300)">
-                    <line x1="-1000" y1="0" x2="1000" y2="0" stroke="#1e293b" stroke-width="1" />
-                    <g id="path-group"></g>
-                    <circle id="target-point" r="5" fill="#00f2ff" style="display:none shadow: 0 0 10px #00f2ff" />
-                </g>
-            </svg>
+    <div class="flex-[1] relative canvas-container border-b border-blue-900/50 overflow-hidden">
+        <svg id="canvas" class="w-full h-full">
+            <g id="viewport" transform="translate(50, 150)">
+                <line x1="-100" y1="0" x2="1000" y2="0" stroke="#1e293b" />
+                <g id="path-group"></g>
+                <circle id="marker" r="4" fill="cyan" style="display:none" />
+            </g>
+        </svg>
+    </div>
+
+    <div class="flex-[1.2] bg-slate-900 flex flex-col">
+        <div class="flex bg-slate-800 border-b border-white/5">
+            <button class="flex-1 p-3 text-xs font-bold border-b-2 border-cyan-400 text-cyan-400">КОНТУР</button>
+            <button class="flex-1 p-3 text-xs font-bold text-slate-500">ПАРАМЕТРЫ</button>
         </div>
 
-        <div class="w-full md:w-96 bg-gray-200 text-slate-800 flex flex-col shadow-inner">
-            <div class="bg-slate-700 text-white p-2 text-xs font-bold uppercase tracking-widest">
-                Input Element Properties
+        <div id="elements-list" class="flex-1 overflow-y-auto p-2 space-y-1">
             </div>
-            
-            <div id="inspector" class="p-4 flex flex-col gap-4">
-                <div class="space-y-1">
-                    <label class="text-[10px] font-bold text-slate-500 uppercase">Target X (Diameter)</label>
-                    <input type="number" id="inpX" class="siemens-input w-full p-2 text-lg font-mono outline-none focus:ring-2 ring-blue-400" step="0.1">
-                </div>
-                <div class="space-y-1">
-                    <label class="text-[10px] font-bold text-slate-500 uppercase">Target Z (Length)</label>
-                    <input type="number" id="inpZ" class="siemens-input w-full p-2 text-lg font-mono outline-none focus:ring-2 ring-blue-400" step="0.1">
-                </div>
-                <div class="space-y-1 border-t pt-4">
-                    <label class="text-[10px] font-bold text-blue-600 uppercase">Angle ,A (Fanuc Polar)</label>
-                    <div class="flex gap-2">
-                        <input type="number" id="inpA" class="siemens-input flex-1 p-2 text-lg font-mono font-bold text-blue-700" placeholder="e.g. 225">
-                        <div id="angle-hint" class="bg-blue-100 p-2 text-[10px] w-24 leading-tight border border-blue-200">
-                            180° = Left<br>225° = Left-Down
-                        </div>
+
+        <div class="p-2 grid grid-cols-4 gap-2 bg-black/40">
+            <button onclick="openModal('G0')" class="bg-slate-700 p-3 rounded flex flex-col items-center">
+                <span class="text-[10px]">G0</span>
+                <span class="text-lg">➔</span>
+            </button>
+            <button onclick="openModal('G1')" class="bg-slate-700 p-3 rounded flex flex-col items-center border-b-2 border-yellow-500">
+                <span class="text-[10px]">Линия</span>
+                <span class="text-lg">⎯</span>
+            </button>
+            <button onclick="openModal('Angle')" class="bg-slate-700 p-3 rounded flex flex-col items-center border-b-2 border-cyan-500">
+                <span class="text-[10px]">Угол</span>
+                <span class="text-lg">∠</span>
+            </button>
+            <button onclick="openModal('Radius')" class="bg-slate-700 p-3 rounded flex flex-col items-center border-b-2 border-orange-500">
+                <span class="text-[10px]">Радиус</span>
+                <span class="text-lg">◯</span>
+            </button>
+        </div>
+    </div>
+
+    <div id="modal" class="fixed inset-0 bg-black/90 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-slate-800 w-full max-w-sm rounded-xl border border-blue-500 overflow-hidden shadow-2xl">
+            <div id="modal-title" class="siemens-blue p-3 text-sm font-bold uppercase">Свойства элемента</div>
+            <div class="p-6 space-y-4">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-[10px] text-slate-400 uppercase">X (Диаметр)</label>
+                        <input id="mX" type="number" step="0.01" class="w-full bg-slate-900 border border-slate-700 p-3 rounded text-xl">
+                    </div>
+                    <div>
+                        <label class="text-[10px] text-slate-400 uppercase">Z (Длина)</label>
+                        <input id="mZ" type="number" step="0.01" class="w-full bg-slate-900 border border-slate-700 p-3 rounded text-xl">
                     </div>
                 </div>
-                <div class="space-y-1">
-                    <label class="text-[10px] font-bold text-slate-500 uppercase">Radius ,R</label>
-                    <input type="number" id="inpR" class="siemens-input w-full p-2 text-lg font-mono">
+                <div id="angle-input-group">
+                    <label class="text-[10px] text-cyan-400 uppercase font-bold">Угол ,A (180=Слева, 225=Вниз)</label>
+                    <input id="mA" type="number" class="w-full bg-slate-900 border border-slate-700 p-3 rounded text-xl text-cyan-400">
                 </div>
-                <button onclick="updateSelectedLine()" class="mt-4 bg-slate-800 text-white p-3 font-bold hover:bg-black transition">APPLY CHANGES</button>
+                <div class="flex gap-3 pt-4">
+                    <button onclick="closeModal()" class="flex-1 bg-slate-700 p-4 rounded font-bold">ОТМЕНА</button>
+                    <button onclick="saveElement()" class="flex-1 bg-cyan-600 p-4 rounded font-bold text-white">OK</button>
+                </div>
             </div>
-
-            <div id="code-list" class="flex-1 bg-white overflow-y-auto border-t border-gray-300">
-                </div>
         </div>
-    </main>
+    </div>
 
     <script>
-        let gLines = [
-            { x: 26, z: 1, a: null, r: null, raw: 'G0 X26. Z1.' },
-            { x: 32.3, z: 0.1, a: null, r: 0.9, raw: 'G1 X32.3 Z0.1 ,R.9' },
-            { x: 30.3, z: null, a: 225, r: null, raw: 'G1 X30.3 ,A225' },
-            { x: 30.3, z: -24.4, a: null, r: null, raw: 'G1 Z-24.4' }
+        let elements = [
+            { type: 'START', x: 20, z: 2 }
         ];
-        let activeIdx = 0;
-        const scale = 8;
+        let currentEditingType = null;
+        let scale = 10;
 
-        function renderAll() {
-            const list = document.getElementById('code-list');
-            list.innerHTML = gLines.map((l, i) => `
-                <div onclick="selectLine(${i})" class="p-2 border-b text-sm font-mono cursor-pointer ${activeIdx === i ? 'bg-blue-500 text-white' : 'hover:bg-blue-50'}">
-                    ${l.raw}
+        function openModal(type) {
+            currentEditingType = type;
+            document.getElementById('modal-title').innerText = "Добавить: " + type;
+            document.getElementById('angle-input-group').style.display = (type === 'Angle') ? 'block' : 'none';
+            document.getElementById('modal').classList.remove('hidden');
+            
+            // Предзаполнение последними координатами
+            let last = elements[elements.length - 1];
+            document.getElementById('mX').value = last.x;
+            document.getElementById('mZ').value = (type === 'Angle') ? '' : last.z;
+            document.getElementById('mA').value = '';
+        }
+
+        function closeModal() { document.getElementById('modal').classList.add('hidden'); }
+
+        function saveElement() {
+            const x = parseFloat(document.getElementById('mX').value) || 0;
+            const z = document.getElementById('mZ').value === '' ? null : parseFloat(document.getElementById('mZ').value);
+            const a = parseFloat(document.getElementById('mA').value) || null;
+
+            elements.push({ type: currentEditingType, x, z, a });
+            closeModal();
+            render();
+        }
+
+        function render() {
+            const list = document.getElementById('elements-list');
+            list.innerHTML = elements.map((el, i) => `
+                <div class="bg-slate-800/50 p-2 rounded flex justify-between items-center border-l-4 ${el.type === 'Angle' ? 'border-cyan-500' : 'border-yellow-500'}">
+                    <span class="text-[10px] font-bold text-slate-500">#${i}</span>
+                    <span class="text-xs font-mono">${el.type} X${el.x} ${el.z !== null ? 'Z'+el.z : ''} ${el.a ? ',A'+el.a : ''}</span>
+                    <button onclick="elements.splice(${i},1);render()" class="text-red-500 p-1">✕</button>
                 </div>
             `).join('');
-            drawGraph();
+            draw();
         }
 
-        function selectLine(i) {
-            activeIdx = i;
-            const line = gLines[i];
-            document.getElementById('inpX').value = line.x || '';
-            document.getElementById('inpZ').value = line.z || '';
-            document.getElementById('inpA').value = line.a || '';
-            document.getElementById('inpR').value = line.r || '';
-            renderAll();
-        }
-
-        function updateSelectedLine() {
-            const l = gLines[activeIdx];
-            l.x = parseFloat(document.getElementById('inpX').value) || 0;
-            l.z = document.getElementById('inpZ').value ? parseFloat(document.getElementById('inpZ').value) : null;
-            l.a = document.getElementById('inpA').value ? parseFloat(document.getElementById('inpA').value) : null;
-            l.r = document.getElementById('inpR').value ? parseFloat(document.getElementById('inpR').value) : null;
-            
-            // Пересобираем строку G-кода
-            let code = `G1 X${l.x.toFixed(2)}`;
-            if (l.z !== null) code += ` Z${l.z.toFixed(2)}`;
-            if (l.a !== null) code += ` ,A${l.a}`;
-            if (l.r !== null) code += ` ,R${l.r}`;
-            l.raw = code;
-            
-            renderAll();
-        }
-
-        function drawGraph() {
+        function draw() {
             const group = document.getElementById('path-group');
             group.innerHTML = '';
             let cx = 0, cz = 0;
 
-            gLines.forEach((l, i) => {
-                let nz = l.z;
-                let nx = l.x;
+            elements.forEach((el, i) => {
+                let nx = el.x;
+                let nz = el.z;
 
-                if (l.a !== null && l.z === null) {
-                    const rad = (l.a * Math.PI) / 180;
+                if (el.a !== null && nz === null) {
+                    const rad = (el.a * Math.PI) / 180;
                     nz = cz + ((nx - cx) / 2) / Math.tan(rad);
                 }
                 if (nz === null) nz = cz;
 
-                const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-                line.setAttribute("x1", cz * scale);
-                line.setAttribute("y1", -(cx/2) * scale);
-                line.setAttribute("x2", nz * scale);
-                line.setAttribute("y2", -(nx/2) * scale);
-                line.setAttribute("stroke", activeIdx === i ? "#00f2ff" : "#fbbf24");
-                line.setAttribute("stroke-width", activeIdx === i ? "4" : "2");
-                group.appendChild(line);
-
-                if (activeIdx === i) {
-                    const cursor = document.getElementById('target-point');
-                    cursor.setAttribute('cx', nz * scale);
-                    cursor.setAttribute('cy', -(nx/2) * scale);
-                    cursor.style.display = 'block';
+                if (i > 0) {
+                    const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+                    line.setAttribute("x1", cz * scale);
+                    line.setAttribute("y1", -(cx/2) * scale);
+                    line.setAttribute("x2", nz * scale);
+                    line.setAttribute("y2", -(nx/2) * scale);
+                    line.setAttribute("stroke", el.type === 'Angle' ? "#22d3ee" : "#facc15");
+                    line.setAttribute("stroke-width", "2");
+                    group.appendChild(line);
                 }
-
                 cx = nx; cz = nz;
             });
         }
 
-        window.onload = renderAll;
+        function clearAll() { elements = [{ type: 'START', x: 0, z: 0 }]; render(); }
+
+        function exportGCode() {
+            let res = elements.map(el => {
+                if(el.type === 'START') return `G0 X${el.x} Z${el.z}`;
+                let s = `G1 X${el.x}`;
+                if(el.z !== null) s += ` Z${el.z}`;
+                if(el.a !== null) s += ` ,A${el.a}`;
+                return s;
+            }).join('\n');
+            alert("G-CODE:\n" + res);
+        }
+
+        window.onload = render;
     </script>
 </body>
 </html>
