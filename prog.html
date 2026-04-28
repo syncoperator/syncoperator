@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>CNC Precision v38</title>
+    <title>CNC Pure v39</title>
     <style>
         :root {
             --bg: #ffffff;
@@ -11,17 +11,18 @@
             --accent: #007aff;
             --border: #d1d1d6;
             --text: #1c1c1e;
-            /* Ultra-Contrast Palette */
-            --syn-g0: #af52de;    /* Lila */
-            --syn-g1: #007aff;    /* Blau */
-            --syn-g-arc: #5ac8fa; /* Türkis */
-            --syn-m: #ff9500;     /* Gold */
-            --syn-t: #34c759;     /* Grün */
-            --syn-x: #ff3b30;     /* Rot */
-            --syn-z: #007aff;     /* Blau (Achse) */
-            --syn-f: #ff9500;     /* Orange */
-            --syn-s: #ff2d55;     /* Pink */
-            --syn-c: #8e8e93;     /* Grau */
+            /* High-Contrast Industrial Colors */
+            --syn-g0: #af52de;
+            --syn-g1: #007aff;
+            --syn-m: #ff9500;
+            --syn-t: #34c759;
+            --syn-x: #ff3b30;
+            --syn-z: #007aff;
+            --syn-f: #ff9500;
+            --syn-s: #ff2d55;
+            --syn-a: #ff375f;
+            --syn-r: #32ade6;
+            --syn-c: #8e8e93;
         }
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -40,7 +41,7 @@
         #code, #syntax { 
             position: absolute; inset: 0; padding: 20px 15px 20px 60px; 
             font-family: "SF Mono", "Menlo", monospace; font-size: 18px; 
-            line-height: 1.5; white-space: pre; border: none; outline: none; margin: 0; 
+            line-height: 1.55; white-space: pre; border: none; outline: none; margin: 0; 
         }
         #code { color: transparent; background: transparent; z-index: 2; caret-color: var(--accent); resize: none; width: 300%; }
         #syntax { z-index: 1; color: var(--text); pointer-events: none; }
@@ -51,17 +52,17 @@
         .btn { height: 50px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font-size: 14px; font-weight: 700; cursor: pointer; flex: 1; display: flex; align-items: center; justify-content: center; }
         .btn.primary { background: var(--accent); color: #fff; border: none; }
 
-        /* Color classes */
+        /* Syntax Classes */
         .c-t { color: var(--syn-t); font-weight: 800; }
         .c-g0 { color: var(--syn-g0); font-weight: 800; }
         .c-g1 { color: var(--syn-g1); font-weight: 800; }
-        .c-ga { color: var(--syn-g-arc); font-weight: 800; }
-        .c-gs { color: var(--text); font-weight: 800; }
         .c-m { color: var(--syn-m); font-weight: 800; }
         .c-x { color: var(--syn-x); }
         .c-z { color: var(--syn-z); }
-        .c-s { color: var(--syn-s); font-weight: 800; }
         .c-f { color: var(--syn-f); font-weight: 800; }
+        .c-s { color: var(--syn-s); font-weight: 800; }
+        .c-a { color: var(--syn-a); font-weight: 800; }
+        .c-r { color: var(--syn-r); font-weight: 800; }
         .c-cmt { color: var(--syn-c); font-style: italic; }
     </style>
 </head>
@@ -69,7 +70,7 @@
 
 <div class="app-wrapper">
     <header>
-        <b style="font-size: 14px;">CNC PRECISION v38</b>
+        <b style="font-size: 14px;">CNC PURE v39</b>
         <div style="flex:1"></div>
         <button class="btn" style="flex:0; width:44px; height:34px;" onclick="document.getElementById('f').click()">📂</button>
         <input type="file" id="f" hidden onchange="openFile(this)">
@@ -105,43 +106,56 @@
     const hb = document.getElementById('hub');
 
     window.onload = () => {
-        el.value = localStorage.getItem('cnc_v38') || "O3800\nG54 G96 S180 M3\ng0Z2.0\ng1X-0.8F.15\nG1 X40 Z-2.2 R.9\nM30";
+        el.value = localStorage.getItem('cnc_v39') || "O3900\nG54 G96 S180 M3\ng0Z2.0\ng1X-0.8F.15\nG1 X40 Z-2.2 ,A135, R.9\nM30";
         render();
     };
 
     function render() {
+        // 1. T-Format Fix
         let txt = el.value.replace(/T(\d{1,2})(?!\d{2})/gi, (m, p1) => "T" + p1.padStart(2, '0') + p1.padStart(2, '0'));
         if (el.value !== txt) el.value = txt;
-        localStorage.setItem('cnc_v38', txt);
+        localStorage.setItem('cnc_v39', txt);
 
+        // 2. Escape HTML symbols safely
         let h = txt.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
-        // Порядок важен! Сначала комментарии, потом специфические G-коды
+        // 3. One-pass robust highlighting using unique markers
+        const map = [];
         const rules = [
-            { reg: /(\(.*?\))/g, cls: 'c-cmt' },
-            { reg: /(T\d{4})/gi, cls: 'c-t' },
-            { reg: /(G00?)(?![0-9])/gi, cls: 'c-g0' },
-            { reg: /(G01?)(?![0-9])/gi, cls: 'c-g1' },
-            { reg: /(G0[23]|G[23])(?![0-9])/gi, cls: 'c-ga' },
-            { reg: /(M\d+)/gi, cls: 'c-m' },
-            { reg: /(X-?\d*\.?\d+)/gi, cls: 'c-x' },
-            { reg: /(Z-?\d*\.?\d+)/gi, cls: 'c-z' },
-            { reg: /(S\d+)/gi, cls: 'c-s' },
-            { reg: /(F\d*\.?\d+)/gi, cls: 'c-f' }
+            { reg: /\(.*?\)/g, cls: 'c-cmt' },
+            { reg: /\bT\d{4}\b/gi, cls: 'c-t' },
+            { reg: /G00?/gi, cls: 'c-g0' },
+            { reg: /G01?/gi, cls: 'c-g1' },
+            { reg: /M\d+/gi, cls: 'c-m' },
+            { reg: /X-?\d*\.?\d+/gi, cls: 'c-x' },
+            { reg: /Z-?\d*\.?\d+/gi, cls: 'c-z' },
+            { reg: /S\d+/gi, cls: 'c-s' },
+            { reg: /F\d*\.?\d+/gi, cls: 'c-f' },
+            { reg: /,A\d*\.?\d+/gi, cls: 'c-a' },
+            { reg: /,R\d*\.?\d+|R\d*\.?\d+/gi, cls: 'c-r' }
         ];
 
-        rules.forEach(rule => {
-            h = h.replace(rule.reg, (match) => {
-                if (match.includes('<span')) return match;
-                return `<span class="${rule.cls}">${match}</span>`;
+        // Replace matches with temporary markers to avoid nested tagging
+        let processed = h;
+        rules.forEach((rule, idx) => {
+            processed = processed.replace(rule.reg, (match) => {
+                const marker = `__MARKER_${idx}_${map.length}__`;
+                map.push({ marker, html: `<span class="${rule.cls}">${match}</span>` });
+                return marker;
             });
         });
 
-        sx.innerHTML = h;
+        // Swap markers back to HTML
+        map.forEach(item => {
+            processed = processed.replace(item.marker, item.html);
+        });
 
+        sx.innerHTML = processed;
+
+        // UI Updates
         const rows = txt.split('\n');
         ln.innerHTML = rows.map((_, i) => i + 1).join('<br>');
-        el.style.height = sx.style.height = Math.max(window.innerHeight, rows.length * 27 + 200) + 'px';
+        el.style.height = sx.style.height = Math.max(window.innerHeight, rows.length * 28 + 200) + 'px';
         buildHub(rows);
     }
 
@@ -162,7 +176,7 @@
                     document.getElementById('cur-tool').innerText = "T" + t[1] + " " + desc;
                     const pos = rows.slice(0, i).join('\n').length + (i > 0 ? 1 : 0);
                     el.focus(); el.setSelectionRange(pos, pos + line.length);
-                    document.getElementById('scr').scrollTop = i * 27 - 60;
+                    document.getElementById('scr').scrollTop = i * 28 - 60;
                 };
                 hb.appendChild(div);
             }
