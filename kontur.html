@@ -3,211 +3,236 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Nakamura Pro CNC</title>
+    <title>Nakamura Pro Tool</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        :root { --sat: env(safe-area-inset-top); --sab: env(safe-area-inset-bottom); }
+        :root { --sab: env(safe-area-inset-bottom); }
         body { 
-            background-color: #020617; 
-            color: white; 
-            height: 100vh; /* Fallback */
-            height: 100dvh; 
-            display: flex; 
-            flex-direction: column; 
-            overflow: hidden;
-            padding-bottom: var(--sab); /* Отступ под челку/полоску iPhone */
+            background-color: #020617; color: white; 
+            height: 100dvh; display: flex; flex-direction: column; overflow: hidden;
         }
-        .canvas-bg { background-image: radial-gradient(#1e293b 1px, transparent 1px); background-size: 30px 30px; }
-        input { font-size: 16px !important; background: #0f172a !important; color: #22d3ee !important; border: 1px solid #334155 !important; padding: 12px; border-radius: 8px; width: 100%; }
-        .active-tab { color: #00f2ff; border-bottom: 3px solid #00f2ff; background: rgba(0,242,255,0.05); }
+        .canvas-bg { background-image: radial-gradient(#1e293b 1px, transparent 1px); background-size: 20px 20px; }
+        .ui-card { background: rgba(15, 23, 42, 0.9); border: 1px solid rgba(34, 211, 238, 0.2); backdrop-filter: blur(10px); }
+        .btn-main { height: 60px; border-radius: 12px; font-weight: 900; transition: all 0.1s; border-bottom: 4px solid rgba(0,0,0,0.3); }
+        .btn-main:active { transform: translateY(2px); border-bottom-width: 1px; }
+        input { font-size: 16px !important; background: #020617 !important; color: #22d3ee !important; border: 1px solid #334155 !important; padding: 12px; border-radius: 8px; width: 100%; }
+        .tab-active { color: #22d3ee; border-bottom: 3px solid #22d3ee; }
     </style>
 </head>
 <body class="antialiased">
 
-    <header class="bg-slate-900 px-4 py-2 shrink-0 flex justify-between items-center border-b border-cyan-500/30">
-        <div class="leading-none">
-            <div class="text-[10px] text-cyan-500 font-bold tracking-widest">NAKAMURA</div>
-            <div class="text-xs font-black italic">PRO SIM</div>
+    <header class="bg-slate-900/80 p-3 shrink-0 flex justify-between items-center border-b border-cyan-900/50">
+        <div>
+            <div class="text-[10px] font-bold text-cyan-500 tracking-widest uppercase">Nakamura-Tome</div>
+            <div class="text-sm font-black italic">PROFESSIONAL <span class="text-cyan-400">V2</span></div>
         </div>
         <div class="flex gap-2">
-             <button onclick="toggleG0()" id="g0-btn" class="bg-slate-800 text-[9px] px-2 py-1 rounded border border-white/10">G0: ON</button>
-             <button onclick="showPaste()" class="bg-cyan-600 text-[10px] px-3 py-1 rounded font-bold uppercase shadow-lg">Импорт</button>
+            <button onclick="toggleMirror()" id="mirror-btn" class="bg-amber-600/20 border border-amber-600/50 text-[9px] px-2 py-1 rounded text-amber-500 font-bold uppercase">Зеркало: Выкл</button>
+            <button onclick="showModal('m-import')" class="bg-cyan-600 text-[10px] px-3 py-1 rounded font-black uppercase">ИМПОРТ</button>
         </div>
     </header>
 
-    <div class="flex bg-slate-950 shrink-0 text-[10px] font-bold tracking-wider">
-        <button id="t-sim" onclick="setTab('sim')" class="flex-1 p-3 active-tab">СИМУЛЯТОР</button>
-        <button id="t-edit" onclick="setTab('edit')" class="flex-1 p-3 text-slate-500">РЕДАКТОР</button>
+    <div class="flex bg-slate-950 shrink-0 border-b border-white/5">
+        <button id="tab-sim-btn" onclick="switchTab('sim')" class="flex-1 p-3 text-[11px] font-bold tab-active uppercase">Симуляция</button>
+        <button id="tab-list-btn" onclick="switchTab('list')" class="flex-1 p-3 text-[11px] font-bold text-slate-500 uppercase">Список (G-Code)</button>
     </div>
 
     <main class="flex-1 relative overflow-hidden">
         <div id="view-sim" class="absolute inset-0 canvas-bg">
-            <div class="absolute top-4 left-4 z-10 font-mono text-[11px] bg-black/60 p-2 rounded-lg border border-white/5">
-                <div class="text-cyan-400">X: <span id="pos-x">0.00</span></div>
-                <div class="text-cyan-400">Z: <span id="pos-z">0.00</span></div>
+            <div class="absolute top-4 left-4 z-10 ui-card p-3 rounded-xl space-y-1">
+                <div class="text-[9px] text-slate-500 font-bold uppercase">Position</div>
+                <div class="font-mono text-cyan-400 leading-none">X: <span id="pos-x" class="text-lg text-white">0.000</span></div>
+                <div class="font-mono text-cyan-400 leading-none">Z: <span id="pos-z" class="text-lg text-white">0.000</span></div>
             </div>
+            
             <svg id="canvas" class="w-full h-full">
-                <g id="vport" transform="translate(300, 250)">
-                    <line x1="-1500" y1="0" x2="200" y2="0" stroke="#1e293b" stroke-width="1" />
-                    <g id="draw-g"></g>
-                    <circle id="tool" r="5" fill="#ff0055" class="animate-pulse" style="display:none" />
+                <g id="viewport" transform="translate(300, 200)">
+                    <line x1="-2000" y1="0" x2="500" y2="0" stroke="#1e293b" stroke-width="1" />
+                    <g id="g-path"></g>
+                    <circle id="marker" r="4" fill="#f43f5e" class="animate-pulse" style="display:none" />
                 </g>
             </svg>
         </div>
 
-        <div id="view-edit" class="absolute inset-0 bg-slate-900 hidden overflow-y-auto p-4 pb-32">
-            <div id="el-list" class="space-y-2"></div>
+        <div id="view-list" class="absolute inset-0 bg-slate-950 hidden overflow-y-auto p-4 pb-40">
+            <div id="element-list" class="space-y-2"></div>
         </div>
     </main>
 
-    <footer class="bg-black/80 backdrop-blur-lg p-3 border-t border-white/10 flex gap-2 shrink-0">
-        <button onclick="add('G1')" class="flex-1 bg-slate-800 h-14 rounded-xl border-b-4 border-yellow-600 text-lg font-bold">G1</button>
-        <button onclick="add('A')" class="flex-1 bg-slate-800 h-14 rounded-xl border-b-4 border-cyan-600 text-lg font-bold text-cyan-400">∠A</button>
-        <button onclick="add('R')" class="flex-1 bg-slate-800 h-14 rounded-xl border-b-4 border-orange-600 text-lg font-bold text-orange-400">,R</button>
-        <button onclick="resetAll()" class="w-14 bg-red-900/30 h-14 rounded-xl border-b-4 border-red-700 flex items-center justify-center">
-            <span class="text-xl">✕</span>
-        </button>
+    <footer class="bg-slate-900 border-t border-white/10 p-3 pb-[calc(12px+var(--sab))] shrink-0 grid grid-cols-4 gap-2">
+        <button onclick="newStep('G1')" class="btn-main bg-slate-800 border-b-yellow-500 text-white">G1</button>
+        <button onclick="newStep('A')" class="btn-main bg-slate-800 border-b-cyan-500 text-cyan-400">∠ A</button>
+        <button onclick="newStep('R')" class="btn-main bg-slate-800 border-b-orange-500 text-orange-400">,R</button>
+        <button onclick="clearContour()" class="btn-main bg-red-950/40 border-b-red-600 text-red-500">DEL</button>
     </footer>
 
     <div id="m-edit" class="fixed inset-0 bg-black/95 z-[100] hidden flex-col p-6 overflow-y-auto">
         <div class="flex justify-between items-center mb-8">
-            <h2 id="m-title" class="text-cyan-400 font-bold uppercase italic">Параметры</h2>
-            <button onclick="closeM()" class="text-4xl text-slate-500">&times;</button>
+            <h2 class="text-cyan-400 font-black italic uppercase tracking-widest">Параметры G1</h2>
+            <button onclick="closeModal('m-edit')" class="text-4xl text-slate-500">&times;</button>
         </div>
         <div class="space-y-6">
             <div class="grid grid-cols-2 gap-4">
-                <div><label class="text-[9px] text-slate-500 uppercase font-bold">X (Diam)</label><input id="ix" type="number" step="0.001"></div>
-                <div><label class="text-[9px] text-slate-500 uppercase font-bold">Z (Length)</label><input id="iz" type="number" step="0.001"></div>
+                <div><label class="text-[10px] text-slate-500 font-bold block mb-2 uppercase">X (Diameter)</label><input id="inp-x" type="number" step="0.001"></div>
+                <div><label class="text-[10px] text-slate-500 font-bold block mb-2 uppercase">Z (Length)</label><input id="inp-z" type="number" step="0.001"></div>
             </div>
-            <div><label class="text-[9px] text-cyan-500 uppercase font-bold">Angle ,A (180=L, 225=L-Down)</label><input id="ia" type="number" step="0.1"></div>
-            <div><label class="text-[9px] text-orange-500 uppercase font-bold">Radius ,R</label><input id="ir" type="number" step="0.01"></div>
-            <button onclick="save()" class="w-full bg-cyan-600 py-5 rounded-2xl font-black uppercase text-white shadow-2xl active:scale-95 transition-all">OK</button>
+            <div>
+                <label id="angle-label" class="text-[10px] text-cyan-400 font-bold block mb-2 uppercase">УГОЛ ,A (0-360)</label>
+                <input id="inp-a" type="number" step="0.01">
+            </div>
+            <div><label class="text-[10px] text-orange-400 font-bold block mb-2 uppercase">РАДИУС ,R</label><input id="inp-r" type="number" step="0.001"></div>
+            <button onclick="saveElement()" class="w-full bg-cyan-600 h-16 rounded-2xl font-black uppercase text-white shadow-xl mt-4">Применить</button>
         </div>
     </div>
 
-    <div id="m-paste" class="fixed inset-0 bg-black z-[110] hidden flex-col p-4">
-        <h3 class="text-center text-xs font-bold mb-4 tracking-widest text-cyan-400">PASTE G-CODE</h3>
-        <textarea id="p-area" class="flex-1 bg-slate-900 border border-slate-800 p-4 rounded-xl text-green-400 font-mono text-xs outline-none" placeholder="Вставьте текст программы..."></textarea>
-        <div class="flex gap-3 pt-4">
-            <button onclick="closeP()" class="flex-1 p-4 bg-slate-800 rounded-xl font-bold">BACK</button>
-            <button onclick="doImp()" class="flex-1 p-4 bg-cyan-600 rounded-xl font-bold uppercase">IMPORT</button>
+    <div id="m-import" class="fixed inset-0 bg-black z-[110] hidden flex-col p-4">
+        <div class="text-center font-bold text-xs mb-4 text-slate-500 uppercase tracking-widest italic">Вставить код из .O файла</div>
+        <textarea id="import-area" class="flex-1 bg-slate-900 border border-slate-800 p-4 rounded-xl text-green-500 font-mono text-xs outline-none" placeholder="Например: G1 X32.3 ,R.9 ..."></textarea>
+        <div class="flex gap-3 py-4">
+            <button onclick="closeModal('m-import')" class="flex-1 p-4 bg-slate-800 rounded-xl font-bold uppercase text-[10px]">Отмена</button>
+            <button onclick="processImport()" class="flex-1 p-4 bg-cyan-600 rounded-xl font-bold uppercase text-[10px]">Загрузить контур</button>
         </div>
     </div>
 
     <script>
-        let cont = [{ x: 37, z: 2, a: null, r: 0, type: 'G0' }];
-        let curI = -1;
-        let g0On = true;
-        let sc = 7;
+        let contour = [{ x: 37, z: 2, a: null, r: 0, type: 'G0' }];
+        let editingIndex = -1;
+        let isMirrored = false;
+        let zoom = 6.5;
 
-        function setTab(t) {
-            document.getElementById('view-sim').classList.toggle('hidden', t !== 'sim');
-            document.getElementById('view-edit').classList.toggle('hidden', t !== 'edit');
-            document.getElementById('t-sim').className = `flex-1 p-3 ${t==='sim'?'active-tab':'text-slate-500'}`;
-            document.getElementById('t-edit').className = `flex-1 p-3 ${t==='edit'?'active-tab':'text-slate-500'}`;
-            if(t==='sim') draw();
+        function switchTab(tab) {
+            document.getElementById('view-sim').classList.toggle('hidden', tab !== 'sim');
+            document.getElementById('view-list').classList.toggle('hidden', tab !== 'list');
+            document.getElementById('tab-sim-btn').className = `flex-1 p-3 text-[11px] font-bold uppercase ${tab==='sim'?'tab-active':'text-slate-500'}`;
+            document.getElementById('tab-list-btn').className = `flex-1 p-3 text-[11px] font-bold uppercase ${tab==='list'?'tab-active':'text-slate-500'}`;
+            if(tab === 'sim') redraw();
         }
 
-        function toggleG0() { g0On = !g0On; document.getElementById('g0-btn').innerText = `G0: ${g0On?'ON':'OFF'}`; draw(); }
-        function showPaste() { document.getElementById('m-paste').classList.remove('hidden'); }
-        function closeP() { document.getElementById('m-paste').classList.add('hidden'); }
-
-        function add(type) {
-            curI = -1;
-            let l = cont[cont.length-1];
-            document.getElementById('ix').value = l.x;
-            document.getElementById('iz').value = '';
-            document.getElementById('ia').value = '';
-            document.getElementById('ir').value = '';
-            document.getElementById('m-edit').classList.remove('hidden');
+        function toggleMirror() {
+            isMirrored = !isMirrored;
+            document.getElementById('mirror-btn').innerText = isMirrored ? "Зеркало: Вкл" : "Зеркало: Выкл";
+            document.getElementById('mirror-btn').classList.toggle('bg-amber-600/20', !isMirrored);
+            document.getElementById('mirror-btn').classList.toggle('bg-cyan-600/20', isMirrored);
+            redraw();
         }
 
-        function edit(i) {
-            curI = i;
-            let el = cont[i];
-            document.getElementById('ix').value = el.x;
-            document.getElementById('iz').value = el.z ?? '';
-            document.getElementById('ia').value = el.a ?? '';
-            document.getElementById('ir').value = el.r || '';
-            document.getElementById('m-edit').classList.remove('hidden');
+        function showModal(id) { document.getElementById(id).classList.remove('hidden'); }
+        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+        function newStep(type) {
+            editingIndex = -1;
+            let last = contour[contour.length-1];
+            document.getElementById('inp-x').value = last.x;
+            document.getElementById('inp-z').value = '';
+            document.getElementById('inp-a').value = '';
+            document.getElementById('inp-r').value = '';
+            showModal('m-edit');
         }
 
-        function closeM() { document.getElementById('m-edit').classList.add('hidden'); }
+        function editStep(i) {
+            editingIndex = i;
+            let el = contour[i];
+            document.getElementById('inp-x').value = el.x;
+            document.getElementById('inp-z').value = el.z ?? '';
+            document.getElementById('inp-a').value = el.a ?? '';
+            document.getElementById('inp-r').value = el.r || '';
+            showModal('m-edit');
+        }
 
-        function save() {
-            let d = {
-                x: parseFloat(document.getElementById('ix').value) || 0,
-                z: document.getElementById('iz').value === '' ? null : parseFloat(document.getElementById('iz').value),
-                a: document.getElementById('ia').value === '' ? null : parseFloat(document.getElementById('ia').value),
-                r: parseFloat(document.getElementById('ir').value) || 0,
+        function saveElement() {
+            let data = {
+                x: parseFloat(document.getElementById('inp-x').value) || 0,
+                z: document.getElementById('inp-z').value === '' ? null : parseFloat(document.getElementById('inp-z').value),
+                a: document.getElementById('inp-a').value === '' ? null : parseFloat(document.getElementById('inp-a').value),
+                r: parseFloat(document.getElementById('inp-r').value) || 0,
                 type: 'G1'
             };
-            if(curI === -1) cont.push(d); else cont[curI] = d;
-            closeM(); upd();
+            if(editingIndex === -1) contour.push(data); else contour[editingIndex] = data;
+            closeModal('m-edit');
+            updateUI();
         }
 
-        function upd() { render(); draw(); }
-
-        function render() {
-            document.getElementById('el-list').innerHTML = cont.map((el, i) => `
-                <div onclick="edit(${i})" class="bg-slate-800/50 p-3 rounded-lg border-l-4 ${el.a ? 'border-cyan-500' : 'border-slate-700'} flex justify-between items-center">
+        function updateUI() {
+            const list = document.getElementById('element-list');
+            list.innerHTML = contour.map((el, i) => `
+                <div onclick="editStep(${i})" class="bg-slate-900 p-4 rounded-xl border-l-4 ${el.a!==null?'border-cyan-500':'border-slate-700'} flex justify-between items-center active:bg-slate-800 transition-colors">
                     <div class="text-[11px] font-mono">
-                        <span class="text-slate-500">#${i} ${el.type}</span><br>
-                        X${el.x.toFixed(2)} ${el.z!==null?'Z'+el.z.toFixed(2):''} ${el.a?',A'+el.a:''} ${el.r?',R'+el.r:''}
+                        <span class="text-slate-600">STEP ${i} | ${el.type}</span><br>
+                        X<span class="text-white font-bold">${el.x.toFixed(3)}</span>
+                        ${el.z!==null ? ` Z<span class="text-white">${el.z.toFixed(3)}</span>` : ''}
+                        ${el.a!==null ? ` ,A<span class="text-cyan-400">${el.a}</span>` : ''}
+                        ${el.r>0 ? ` ,R<span class="text-orange-400">${el.r}</span>` : ''}
                     </div>
-                    <button onclick="event.stopPropagation();cont.splice(${i},1);upd()" class="text-red-900 px-2 text-xl">✕</button>
+                    <button onclick="event.stopPropagation();contour.splice(${i},1);updateUI();redraw();" class="text-red-900 font-bold px-3">✕</button>
                 </div>
             `).join('');
+            redraw();
         }
 
-        function draw() {
-            const g = document.getElementById('draw-g'); g.innerHTML = '';
+        function redraw() {
+            const pathLayer = document.getElementById('g-path');
+            pathLayer.innerHTML = '';
             let cx = 0, cz = 0;
-            cont.forEach((el, i) => {
+
+            contour.forEach((el, i) => {
                 let nx = el.x, nz = el.z;
+
                 if (el.a !== null && nz === null) {
-                    const rad = (el.a * Math.PI) / 180;
+                    // Учет зеркальности для нижнего револьвера
+                    let angle = parseFloat(el.a);
+                    if (isMirrored) angle = (360 - angle) % 360; 
+                    
+                    const rad = (angle * Math.PI) / 180;
                     nz = cz + ((nx - cx) / 2) / Math.tan(rad);
                 }
                 if (nz === null) nz = cz;
-                if (i > 0 && (el.type !== 'G0' || g0On)) {
-                    const l = document.createElementNS("http://www.w3.org/2000/svg", "line");
-                    l.setAttribute("x1", cz * sc); l.setAttribute("y1", -(cx/2) * sc);
-                    l.setAttribute("x2", nz * sc); l.setAttribute("y2", -(nx/2) * sc);
-                    l.setAttribute("stroke", el.type === 'G0' ? "#334155" : (el.a ? "#22d3ee" : "#facc15"));
-                    l.setAttribute("stroke-width", el.a ? "1.5" : "0.7");
-                    g.appendChild(l);
+
+                if (i > 0) {
+                    const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+                    line.setAttribute("x1", cz * zoom);
+                    line.setAttribute("y1", -(cx/2) * zoom);
+                    line.setAttribute("x2", nz * zoom);
+                    line.setAttribute("y2", -(nx/2) * zoom);
+                    line.setAttribute("stroke", el.a !== null ? "#22d3ee" : "#facc15");
+                    line.setAttribute("stroke-width", el.a !== null ? "1.2" : "0.7");
+                    pathLayer.appendChild(line);
                 }
                 cx = nx; cz = nz;
-                if(i === cont.length - 1) {
-                    let p = document.getElementById('tool');
-                    p.setAttribute('cx', cz * sc); p.setAttribute('cy', -(cx/2) * sc); p.style.display = 'block';
-                    document.getElementById('pos-x').innerText = cx.toFixed(2);
-                    document.getElementById('pos-z').innerText = cz.toFixed(2);
+
+                if(i === contour.length - 1) {
+                    let m = document.getElementById('marker');
+                    m.setAttribute('cx', cz * zoom); m.setAttribute('cy', -(cx/2) * zoom); m.style.display = 'block';
+                    document.getElementById('pos-x').innerText = cx.toFixed(3);
+                    document.getElementById('pos-z').innerText = cz.toFixed(3);
                 }
             });
         }
 
-        function doImp() {
-            const raw = document.getElementById('p-area').value.toUpperCase();
-            cont = [];
-            raw.split('\n').forEach(line => {
-                if(!line.includes('X') && !line.includes('Z') && !line.includes('A')) return;
-                const xM = line.match(/X(-?\d*\.?\d+)/), zM = line.match(/Z(-?\d*\.?\d+)/);
-                const aM = line.match(/,A(-?\d*\.?\d+)/), rM = line.match(/,R(-?\d*\.?\d+)/);
-                cont.push({
-                    x: xM ? parseFloat(xM[1]) : (cont.length?cont[cont.length-1].x:0),
+        function processImport() {
+            const text = document.getElementById('import-area').value.toUpperCase();
+            contour = [];
+            text.split('\n').forEach(line => {
+                if(!/X|Z|A/.test(line)) return;
+                const xM = line.match(/X(-?\d*\.?\d+)/);
+                const zM = line.match(/Z(-?\d*\.?\d+)/);
+                const aM = line.match(/,A(-?\d*\.?\d+)/);
+                const rM = line.match(/,R(-?\d*\.?\d+)/);
+                contour.push({
+                    x: xM ? parseFloat(xM[1]) : (contour.length ? contour[contour.length-1].x : 0),
                     z: zM ? parseFloat(zM[1]) : null,
                     a: aM ? parseFloat(aM[1]) : null,
                     r: rM ? parseFloat(rM[1]) : 0,
                     type: line.includes('G0') ? 'G0' : 'G1'
                 });
             });
-            closeP(); setTab('sim'); upd();
+            closeModal('m-import');
+            switchTab('sim');
+            updateUI();
         }
 
-        function resetAll() { if(confirm('Del all?')) { cont = [{ x: 37, z: 2, a: null, r: 0, type: 'G0' }]; upd(); } }
-        window.onload = upd;
+        function clearContour() { if(confirm('Удалить всё?')) { contour = [{ x: 37, z: 2, a: null, r: 0, type: 'G0' }]; updateUI(); } }
+
+        window.onload = updateUI;
     </script>
 </body>
 </html>
