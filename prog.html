@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>CNC Pro v36</title>
+    <title>CNC Absolute v37</title>
     <style>
         :root {
             --bg: #ffffff;
@@ -11,7 +11,7 @@
             --accent: #007aff;
             --border: #d1d1d6;
             --text: #1c1c1e;
-            /* High-Contrast CNC Palette */
+            /* Industrial Contrast Palette */
             --syn-g0: #af52de;
             --syn-g1: #007aff;
             --syn-g-arc: #5ac8fa;
@@ -27,7 +27,7 @@
         }
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body, html { margin: 0; padding: 0; height: 100dvh; width: 100vw; background: var(--bg); font-family: "Helvetica Neue", Arial, sans-serif; overflow: hidden; }
+        body, html { margin: 0; padding: 0; height: 100dvh; width: 100vw; background: var(--bg); font-family: -apple-system, sans-serif; overflow: hidden; }
         .app-wrapper { display: flex; flex-direction: column; height: 100dvh; }
 
         header { height: 50px; border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 15px; background: #fff; flex-shrink: 0; }
@@ -41,7 +41,7 @@
         
         #code, #syntax { 
             position: absolute; inset: 0; padding: 20px 15px 20px 60px; 
-            font-family: "SF Mono", "Menlo", "Consolas", monospace; font-size: 17px; 
+            font-family: "SF Mono", "Menlo", monospace; font-size: 17px; 
             line-height: 1.5; white-space: pre; border: none; outline: none; margin: 0; 
         }
         #code { color: transparent; background: transparent; z-index: 2; caret-color: var(--accent); resize: none; width: 300%; }
@@ -53,29 +53,29 @@
         .btn { height: 50px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font-size: 14px; font-weight: 700; cursor: pointer; flex: 1; display: flex; align-items: center; justify-content: center; }
         .btn.primary { background: var(--accent); color: #fff; border: none; }
 
-        /* Syntax Color Blocks */
-        .hc-t { color: var(--syn-t); font-weight: 800; }
-        .hc-g0 { color: var(--syn-g0); font-weight: 800; }
-        .hc-g1 { color: var(--syn-g1); font-weight: 800; }
-        .hc-ga { color: var(--syn-g-arc); font-weight: 800; }
-        .hc-gs { color: var(--syn-g-sys); font-weight: 800; }
-        .hc-m { color: var(--syn-m); font-weight: 800; }
-        .hc-x { color: var(--syn-x); }
-        .hc-z { color: var(--syn-z); }
-        .hc-s { color: var(--syn-s); font-weight: 800; }
-        .hc-f { color: var(--syn-f); font-weight: 800; }
-        .hc-a { color: var(--syn-a); font-weight: 800; }
-        .hc-r { color: var(--syn-r); font-weight: 800; }
-        .hc-c { color: var(--syn-c); font-style: italic; }
+        /* Color classes */
+        .c-t { color: var(--syn-t); font-weight: 800; }
+        .c-g0 { color: var(--syn-g0); font-weight: 800; }
+        .c-g1 { color: var(--syn-g1); font-weight: 800; }
+        .c-ga { color: var(--syn-g-arc); font-weight: 800; }
+        .c-gs { color: var(--syn-g-sys); font-weight: 800; }
+        .c-m { color: var(--syn-m); font-weight: 800; }
+        .c-x { color: var(--syn-x); }
+        .c-z { color: var(--syn-z); }
+        .c-s { color: var(--syn-s); font-weight: 800; }
+        .c-f { color: var(--syn-f); font-weight: 800; }
+        .c-a { color: var(--syn-a); font-weight: 800; }
+        .c-r { color: var(--syn-r); font-weight: 800; }
+        .c-cmt { color: var(--syn-c); font-style: italic; }
     </style>
 </head>
 <body>
 
 <div class="app-wrapper">
     <header>
-        <b style="font-size: 14px;">CNC OBSIDIAN v36</b>
+        <b style="font-size: 14px;">CNC ABSOLUTE v37</b>
         <div style="flex:1"></div>
-        <button class="btn" style="flex:0; width:44px; height:34px;" onclick="document.getElementById('f').click()">📂</button>
+        <button class="btn" style="flex:0; width:44px; height:32px;" onclick="document.getElementById('f').click()">📂</button>
         <input type="file" id="f" hidden onchange="openFile(this)">
     </header>
 
@@ -109,33 +109,43 @@
     const hb = document.getElementById('hub');
 
     window.onload = () => {
-        el.value = localStorage.getItem('cnc_v36') || "O3600\nG54 G96 S180 M3\nG0 Z2.\ng1 X-0.8 F.15\nG1 X40 Z-2.2 ,A135, R.9\nM30";
+        el.value = localStorage.getItem('cnc_v37') || "O3700\nG54 G96 S180 M3\nG0 Z2.\ng1 X-0.8 F.15\nG1 X40 Z-2.2 ,A135, R.9\nM30";
         render();
     };
 
     function render() {
-        // T-Auto-Format
         let txt = el.value.replace(/T(\d{1,2})(?!\d{2})/gi, (m, p1) => "T" + p1.padStart(2, '0') + p1.padStart(2, '0'));
         if (el.value !== txt) el.value = txt;
-        localStorage.setItem('cnc_v36', txt);
+        localStorage.setItem('cnc_v37', txt);
 
-        // Escape HTML
+        // 1. Escape HTML
         let h = txt.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
-        // Highlighting Logic (Fixed Regex)
-        h = h.replace(/\((.*?)\)/g, '<span class="hc-c">($1)</span>')
-             .replace(/(T\d{4})/gi, '<span class="hc-t">$1</span>')
-             .replace(/(G00?)(?![0-9])/gi, '<span class="hc-g0">$1</span>')
-             .replace(/(G01?)(?![0-9])/gi, '<span class="hc-g1">$1</span>')
-             .replace(/(G0[23]|G[23])(?![0-9])/gi, '<span class="hc-ga">$1</span>')
-             .replace(/(G[0-9]+)/gi, m => m.match(/G0[0123]|G[0123]/i) ? m : `<span class="hc-gs">${m}</span>`)
-             .replace(/(M[0-9]+)/gi, '<span class="hc-m">$1</span>')
-             .replace(/(X-?[0-9]*\.?[0-9]+)/gi, '<span class="hc-x">$1</span>')
-             .replace(/(Z-?[0-9]*\.?[0-9]+)/gi, '<span class="hc-z">$1</span>')
-             .replace(/(S[0-9]+)/gi, '<span class="hc-s">$1</span>')
-             .replace(/(F[0-9]*\.?[0-9]+)/gi, '<span class="hc-f">$1</span>')
-             .replace(/(,A[0-9]*\.?[0-9]+)/gi, '<span class="hc-a">$1</span>')
-             .replace(/(,R[0-9]*\.?[0-9]+|R[0-9]*\.?[0-9]+)/gi, '<span class="hc-r">$1</span>');
+        // 2. Highlighting using a more robust replacement strategy
+        const rules = [
+            { reg: /\((.*?)\)/g, cls: 'c-cmt' },
+            { reg: /\b(T\d{4})\b/gi, cls: 'c-t' },
+            { reg: /\b(G00?)\b/gi, cls: 'c-g0' },
+            { reg: /\b(G01?)\b/gi, cls: 'c-g1' },
+            { reg: /\b(G0[23]|G[23])\b/gi, cls: 'c-ga' },
+            { reg: /\b(G\d+)\b/gi, cls: 'c-gs' },
+            { reg: /\b(M\d+)\b/gi, cls: 'c-m' },
+            { reg: /(X-?\d*\.?\d+)/gi, cls: 'c-x' },
+            { reg: /(Z-?\d*\.?\d+)/gi, cls: 'c-z' },
+            { reg: /(S\d+)/gi, cls: 'c-s' },
+            { reg: /(F\d*\.?\d+)/gi, cls: 'c-f' },
+            { reg: /(,A\d*\.?\d+)/gi, cls: 'c-a' },
+            { reg: /(,R\d*\.?\d+|R\d*\.?\d+)/gi, cls: 'c-r' }
+        ];
+
+        // Apply rules in order, but avoid double-wrapping
+        rules.forEach(rule => {
+            h = h.replace(rule.reg, (match, p1) => {
+                // Если внутри уже есть span, не трогаем (очень упрощенно)
+                if (match.includes('<span')) return match;
+                return `<span class="${rule.cls}">${match}</span>`;
+            });
+        });
 
         sx.innerHTML = h;
 
