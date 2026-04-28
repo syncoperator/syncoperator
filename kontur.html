@@ -3,218 +3,183 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Nakamura-Tome Pro App</title>
+    <title>Nakamura Pro CNC</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { background-color: #020617; color: white; user-select: none; -webkit-tap-highlight-color: transparent; }
-        .siemens-header { background: linear-gradient(90deg, #003a5d 0%, #006494 100%); border-bottom: 2px solid #00f2ff; }
-        .canvas-bg { background-image: radial-gradient(#1e293b 1px, transparent 1px); background-size: 30px 30px; background-color: #020617; }
-        .btn-action { background: #1e293b; border-bottom: 4px solid #0f172a; transition: all 0.1s; }
-        .btn-action:active { transform: translateY(2px); border-bottom-width: 1px; }
-        input { font-size: 18px !important; background: #0f172a !important; border: 1px solid #334155 !important; color: #22d3ee !important; padding: 12px !important; border-radius: 8px !important; }
-        .element-card { border-left: 4px solid #334155; transition: background 0.2s; }
-        .element-card.active { border-left-color: #00f2ff; background: #0f172a; }
+        body { background-color: #020617; color: white; height: 100vh; display: flex; flex-col; overflow: hidden; }
+        .siemens-blue { background: #004b73; border-bottom: 2px solid #00f2ff; }
+        .canvas-bg { background-image: radial-gradient(#1e293b 1px, transparent 1px); background-size: 25px 25px; }
+        .modal-active { display: flex !important; }
+        .hide-g0 .line-g0 { display: none; }
+        input { font-size: 16px !important; background: #0f172a !important; color: #22d3ee !important; border: 1px solid #334155 !important; padding: 10px; border-radius: 6px; width: 100%; }
+        .btn-tab { flex: 1; padding: 12px; font-size: 11px; font-weight: bold; border-bottom: 3px solid transparent; color: #64748b; }
+        .btn-tab.active { border-color: #00f2ff; color: #00f2ff; background: #0f172a; }
     </style>
 </head>
-<body class="h-screen flex flex-col overflow-hidden font-sans">
+<body class="flex flex-col">
 
-    <header class="siemens-header p-3 flex justify-between items-center shrink-0 shadow-2xl">
-        <div>
-            <h1 class="text-sm font-black tracking-widest text-white italic">NAKAMURA <span class="text-cyan-400">NTJ2</span></h1>
-            <p class="text-[10px] text-cyan-200/60 uppercase font-bold">Simulator v2.0 Professional</p>
+    <header class="siemens-blue p-3 shrink-0 flex justify-between items-center shadow-lg">
+        <span class="font-black italic text-xs tracking-widest">NAKAMURA <span class="text-cyan-300">PRO</span></span>
+        <div class="flex gap-2">
+             <button onclick="toggleG0()" id="g0-toggle" class="bg-slate-800 text-[10px] px-2 py-1 rounded border border-white/20 uppercase">G0: Виден</button>
+             <button onclick="showPaste()" class="bg-cyan-500 text-[10px] px-3 py-1 rounded font-bold uppercase shadow-inner">Импорт</button>
         </div>
-        <button onclick="showImportModal()" class="bg-cyan-500 hover:bg-cyan-400 px-4 py-2 rounded-lg text-[10px] font-black shadow-lg uppercase">Импорт Кода</button>
     </header>
 
-    <nav class="flex bg-slate-900 border-b border-white/5 shrink-0">
-        <button id="btn-tab-sim" onclick="setTab('sim')" class="flex-1 p-4 text-xs font-black tracking-widest border-b-4 border-cyan-400 text-cyan-400">СИМУЛЯЦИЯ</button>
-        <button id="btn-tab-list" onclick="setTab('list')" class="flex-1 p-4 text-xs font-black tracking-widest border-b-4 border-transparent text-slate-500">ЭЛЕМЕНТЫ</button>
-    </nav>
+    <div class="flex bg-slate-950 shrink-0 shadow-md">
+        <button id="tab-draw-btn" onclick="setTab('draw')" class="btn-tab active">СИМУЛЯТОР</button>
+        <button id="tab-edit-btn" onclick="setTab('edit')" class="btn-tab">РЕДАКТОР</button>
+    </div>
 
     <main class="flex-1 relative overflow-hidden">
         
-        <div id="tab-sim" class="absolute inset-0 canvas-bg flex flex-col">
-            <div class="absolute top-4 left-4 z-10 flex flex-col gap-2">
-                <div class="bg-black/80 backdrop-blur-md border border-cyan-500/30 p-2 rounded-xl min-w-[100px]">
-                    <div class="text-[9px] text-slate-500 font-bold">X (DIAMETER)</div>
-                    <div id="droX" class="text-xl font-mono text-cyan-400">0.000</div>
-                </div>
-                <div class="bg-black/80 backdrop-blur-md border border-cyan-500/30 p-2 rounded-xl min-w-[100px]">
-                    <div class="text-[9px] text-slate-500 font-bold">Z (LENGTH)</div>
-                    <div id="droZ" class="text-xl font-mono text-cyan-400">0.000</div>
-                </div>
+        <div id="tab-draw" class="absolute inset-0 canvas-bg flex flex-col">
+            <div class="absolute top-4 right-4 z-10 text-right">
+                <div class="text-[10px] text-slate-500 font-bold uppercase">Position</div>
+                <div class="text-cyan-400 font-mono text-lg">X<span id="dx">0.00</span></div>
+                <div class="text-cyan-400 font-mono text-lg">Z<span id="dz">0.00</span></div>
             </div>
-
+            
             <svg id="canvas" class="w-full h-full touch-none">
-                <g id="viewport" transform="translate(150, 300)">
-                    <line x1="-1000" y1="0" x2="2000" y2="0" stroke="#334155" stroke-dasharray="4" />
-                    <g id="path-group"></g>
-                    <g id="arc-group"></g>
-                    <circle id="tool-pointer" r="6" fill="#ff0055" class="animate-pulse" style="display:none" />
+                <g id="viewport" transform="translate(250, 200)">
+                    <line x1="-1000" y1="0" x2="500" y2="0" stroke="#1e293b" stroke-width="1" />
+                    <line x1="0" y1="-500" x2="0" y2="500" stroke="#1e293b" stroke-width="1" />
+                    <g id="draw-layer"></g>
+                    <circle id="pointer" r="4" fill="#ff0055" style="display:none" />
                 </g>
             </svg>
-
-            <div class="absolute bottom-6 left-6 flex flex-col gap-2">
-                <button onclick="adjustScale(1.2)" class="w-12 h-12 bg-slate-800 rounded-full border border-white/10 text-xl shadow-xl">+</button>
-                <button onclick="adjustScale(0.8)" class="w-12 h-12 bg-slate-800 rounded-full border border-white/10 text-xl shadow-xl">-</button>
-            </div>
         </div>
 
-        <div id="tab-list" class="absolute inset-0 bg-slate-950 hidden flex flex-col">
-            <div id="elements-container" class="flex-1 overflow-y-auto p-4 space-y-3 pb-32">
-                </div>
-            
-            <div class="p-4 bg-slate-900 border-t border-white/10 grid grid-cols-4 gap-2 shrink-0">
-                <button onclick="prepareNewElement('G1')" class="btn-action p-4 rounded-xl flex flex-col items-center">
-                    <span class="text-[10px] font-bold opacity-50">LINE</span>
-                    <span class="text-xl">⎯</span>
-                </button>
-                <button onclick="prepareNewElement('A')" class="btn-action p-4 rounded-xl flex flex-col items-center border-b-cyan-500">
-                    <span class="text-[10px] font-bold opacity-50">ANGLE</span>
-                    <span class="text-xl">∠</span>
-                </button>
-                <button onclick="prepareNewElement('R')" class="btn-action p-4 rounded-xl flex flex-col items-center border-b-orange-500">
-                    <span class="text-[10px] font-bold opacity-50">RAD</span>
-                    <span class="text-xl">∩</span>
-                </button>
-                <button onclick="resetAll()" class="btn-action p-4 rounded-xl bg-red-950/30 flex flex-col items-center border-b-red-600">
-                    <span class="text-[10px] font-bold opacity-50">RESET</span>
-                    <span class="text-xl">✕</span>
-                </button>
-            </div>
+        <div id="tab-edit" class="absolute inset-0 bg-slate-900 hidden overflow-y-auto p-3 pb-24">
+            <div id="list-container" class="space-y-2"></div>
         </div>
     </main>
 
-    <div id="modal-edit" class="fixed inset-0 bg-black/95 z-[100] hidden flex flex-col">
-        <div class="siemens-header p-4 flex justify-between items-center shrink-0">
-            <h2 id="modal-title" class="text-sm font-bold uppercase tracking-widest">Параметры элемента</h2>
-            <button onclick="closeModal()" class="text-2xl">&times;</button>
+    <footer class="bg-slate-950 p-2 border-t border-white/5 flex gap-2 shrink-0">
+        <button onclick="addStep('G1')" class="flex-1 bg-slate-800 p-3 rounded-xl border-b-4 border-yellow-600 font-bold">G1</button>
+        <button onclick="addStep('Angle')" class="flex-1 bg-slate-800 p-3 rounded-xl border-b-4 border-cyan-600 font-bold text-cyan-400">∠ A</button>
+        <button onclick="addStep('Radius')" class="flex-1 bg-slate-800 p-3 rounded-xl border-b-4 border-orange-600 font-bold text-orange-400">,R</button>
+        <button onclick="clearAll()" class="bg-red-900/40 p-3 px-5 rounded-xl font-bold border-b-4 border-red-700 uppercase text-[10px]">Del</button>
+    </footer>
+
+    <div id="modal-edit" class="fixed inset-0 bg-black/90 z-[100] hidden flex-col p-6 animate-in fade-in duration-200">
+        <div class="flex justify-between items-center mb-6">
+            <h3 class="text-cyan-400 font-bold uppercase tracking-tighter">Свойства перехода</h3>
+            <button onclick="closeModal()" class="text-3xl text-slate-500">&times;</button>
         </div>
-        <div class="flex-1 overflow-y-auto p-6 space-y-6">
+        <div class="space-y-5">
             <div class="grid grid-cols-2 gap-4">
-                <div class="flex flex-col gap-2">
-                    <label class="text-[10px] font-bold text-slate-400">X DIAMETER</label>
-                    <input id="inX" type="number" step="0.001" placeholder="0.000">
+                <div>
+                    <label class="text-[10px] text-slate-500 block mb-1">X (ДИАМЕТР)</label>
+                    <input id="mx" type="number" step="0.001">
                 </div>
-                <div class="flex flex-col gap-2">
-                    <label class="text-[10px] font-bold text-slate-400">Z LENGTH</label>
-                    <input id="inZ" type="number" step="0.001" placeholder="0.000">
+                <div>
+                    <label class="text-[10px] text-slate-500 block mb-1">Z (ДЛИНА)</label>
+                    <input id="mz" type="number" step="0.001">
                 </div>
             </div>
-            <div id="row-angle" class="flex flex-col gap-2">
-                <label class="text-[10px] font-bold text-cyan-400 tracking-widest">ANGLE ,A (180=L, 225=L-DOWN, 135=L-UP)</label>
-                <input id="inA" type="number" step="0.001" class="text-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.2)]">
+            <div id="angle-box">
+                <label class="text-[10px] text-cyan-500 block mb-1 font-bold">УГОЛ ,A (180=←, 225=↙, 135=↖)</label>
+                <input id="ma" type="number" step="0.001">
             </div>
-            <div class="flex flex-col gap-2 border-t border-white/5 pt-4">
-                <label class="text-[10px] font-bold text-orange-400 uppercase tracking-widest">RADIUS ,R (AUTO-BLEND)</label>
-                <input id="inR" type="number" step="0.001" class="text-orange-400">
+            <div>
+                <label class="text-[10px] text-orange-500 block mb-1 font-bold">РАДИУС ,R</label>
+                <input id="mr" type="number" step="0.001">
             </div>
-            <div class="pt-10">
-                <button onclick="saveElement()" class="w-full bg-cyan-600 py-5 rounded-2xl font-black text-white shadow-2xl active:scale-95 transition-transform uppercase">Применить</button>
-            </div>
+            <button onclick="saveElement()" class="w-full bg-cyan-600 p-5 rounded-2xl font-black uppercase mt-4 shadow-lg shadow-cyan-900/20">Применить</button>
         </div>
     </div>
 
-    <div id="modal-import" class="fixed inset-0 bg-black/95 z-[100] hidden flex flex-col p-6">
-        <h2 class="text-xl font-bold mb-4 text-cyan-400">ВСТАВИТЬ G-CODE</h2>
-        <textarea id="import-area" class="flex-1 bg-slate-900 border border-slate-700 rounded-xl p-4 font-mono text-green-400 outline-none" placeholder="G1 X32.3 ,R.9 ..."></textarea>
-        <div class="flex gap-4 py-6">
-            <button onclick="hideImportModal()" class="flex-1 p-5 bg-slate-800 rounded-2xl font-bold uppercase">Отмена</button>
-            <button onclick="doImport()" class="flex-1 p-5 bg-cyan-600 rounded-2xl font-bold uppercase shadow-lg">Загрузить</button>
+    <div id="modal-paste" class="fixed inset-0 bg-black z-[110] hidden flex-col p-4">
+        <h3 class="text-center font-bold mb-4">ВСТАВИТЬ G-КОД</h3>
+        <textarea id="paste-area" class="flex-1 bg-slate-900 border border-slate-800 p-4 rounded-xl text-green-400 font-mono text-sm outline-none" placeholder="Вставьте код..."></textarea>
+        <div class="flex gap-3 py-4">
+            <button onclick="closePaste()" class="flex-1 p-4 bg-slate-800 rounded-xl font-bold">ОТМЕНА</button>
+            <button onclick="doImport()" class="flex-1 p-4 bg-cyan-600 rounded-xl font-bold uppercase">Импорт</button>
         </div>
     </div>
 
     <script>
-        let contour = [{ x: 0, z: 0, a: null, r: 0, type: 'G0' }];
-        let editingIndex = -1;
-        let zoomScale = 10;
+        let contour = [{ x: 0, z: 2, a: null, r: 0, type: 'G0' }];
+        let editIdx = -1;
+        let showG0 = true;
+        let scale = 8;
 
-        // Переключение вкладок
         function setTab(tab) {
-            document.getElementById('tab-sim').classList.toggle('hidden', tab !== 'sim');
-            document.getElementById('tab-list').classList.toggle('hidden', tab !== 'list');
-            document.getElementById('btn-tab-sim').className = `flex-1 p-4 text-xs font-black tracking-widest ${tab==='sim' ? 'border-b-4 border-cyan-400 text-cyan-400' : 'border-b-4 border-transparent text-slate-500'}`;
-            document.getElementById('btn-tab-list').className = `flex-1 p-4 text-xs font-black tracking-widest ${tab==='list' ? 'border-b-4 border-cyan-400 text-cyan-400' : 'border-b-4 border-transparent text-slate-500'}`;
-            if(tab === 'sim') refreshSimulation();
+            document.getElementById('tab-draw').classList.toggle('hidden', tab !== 'draw');
+            document.getElementById('tab-edit').classList.toggle('hidden', tab !== 'edit');
+            document.getElementById('tab-draw-btn').className = `btn-tab ${tab==='draw'?'active':''}`;
+            document.getElementById('tab-edit-btn').className = `btn-tab ${tab==='edit'?'active':''}`;
+            if(tab === 'draw') redraw();
         }
 
-        // Модалки
-        function showImportModal() { document.getElementById('modal-import').classList.remove('hidden'); }
-        function hideImportModal() { document.getElementById('modal-import').classList.add('hidden'); }
+        function showPaste() { document.getElementById('modal-paste').classList.add('modal-active'); }
+        function closePaste() { document.getElementById('modal-paste').classList.remove('modal-active'); }
+        function toggleG0() { showG0 = !showG0; document.getElementById('g0-toggle').innerText = `G0: ${showG0?'Виден':'Скрыт'}`; redraw(); }
 
-        function prepareNewElement(type) {
-            editingIndex = -1;
-            document.getElementById('modal-title').innerText = "НОВЫЙ ЭЛЕМЕНТ";
+        function addStep(type) {
+            editIdx = -1;
             let last = contour[contour.length-1];
-            document.getElementById('inX').value = last.x;
-            document.getElementById('inZ').value = '';
-            document.getElementById('inA').value = '';
-            document.getElementById('inR').value = '';
-            document.getElementById('modal-edit').classList.remove('hidden');
+            document.getElementById('mx').value = last.x;
+            document.getElementById('mz').value = '';
+            document.getElementById('ma').value = '';
+            document.getElementById('mr').value = '';
+            document.getElementById('modal-edit').classList.add('modal-active');
         }
 
-        function editExisting(index) {
-            editingIndex = index;
-            document.getElementById('modal-title').innerText = "РЕДАКТИРОВАНИЕ #" + index;
-            let el = contour[index];
-            document.getElementById('inX').value = el.x;
-            document.getElementById('inZ').value = el.z ?? '';
-            document.getElementById('inA').value = el.a ?? '';
-            document.getElementById('inR').value = el.r || '';
-            document.getElementById('modal-edit').classList.remove('hidden');
+        function editElement(i) {
+            editIdx = i;
+            let el = contour[i];
+            document.getElementById('mx').value = el.x;
+            document.getElementById('mz').value = el.z ?? '';
+            document.getElementById('ma').value = el.a ?? '';
+            document.getElementById('mr').value = el.r || '';
+            document.getElementById('modal-edit').classList.add('modal-active');
         }
 
-        function closeModal() { document.getElementById('modal-edit').classList.add('hidden'); }
+        function closeModal() { document.getElementById('modal-edit').classList.remove('modal-active'); }
 
         function saveElement() {
-            const data = {
-                x: parseFloat(document.getElementById('inX').value) || 0,
-                z: document.getElementById('inZ').value === '' ? null : parseFloat(document.getElementById('inZ').value),
-                a: document.getElementById('inA').value === '' ? null : parseFloat(document.getElementById('inA').value),
-                r: parseFloat(document.getElementById('inR').value) || 0,
+            let data = {
+                x: parseFloat(document.getElementById('mx').value) || 0,
+                z: document.getElementById('mz').value === '' ? null : parseFloat(document.getElementById('mz').value),
+                a: document.getElementById('ma').value === '' ? null : parseFloat(document.getElementById('ma').value),
+                r: parseFloat(document.getElementById('mr').value) || 0,
                 type: 'G1'
             };
-
-            if(editingIndex === -1) contour.push(data);
-            else contour[editingIndex] = data;
-
+            if(editIdx === -1) contour.push(data);
+            else contour[editIdx] = data;
             closeModal();
-            refreshAll();
+            updateAll();
         }
 
-        function refreshAll() {
+        function updateAll() {
             renderList();
-            refreshSimulation();
+            redraw();
         }
 
         function renderList() {
-            const container = document.getElementById('elements-container');
-            container.innerHTML = contour.map((el, i) => `
-                <div onclick="editExisting(${i})" class="element-card bg-slate-900 p-4 rounded-xl flex justify-between items-center active:scale-95 transition-all">
-                    <div class="flex flex-col gap-1">
-                        <span class="text-[9px] font-black text-slate-500 uppercase">Step ${i} | ${el.type}</span>
-                        <div class="font-mono text-cyan-400 text-sm">
-                            X<span class="text-white">${el.x.toFixed(3)}</span> 
-                            ${el.z !== null ? `Z<span class="text-white">${el.z.toFixed(3)}</span>` : ''} 
-                            ${el.a !== null ? `,A<span class="text-cyan-300">${el.a}</span>` : ''}
-                            ${el.r > 0 ? `,R<span class="text-orange-400">${el.r}</span>` : ''}
-                        </div>
+            const list = document.getElementById('list-container');
+            list.innerHTML = contour.map((el, i) => `
+                <div onclick="editElement(${i})" class="bg-slate-800 p-3 rounded-lg border-l-4 ${el.a ? 'border-cyan-500' : 'border-slate-600'} flex justify-between">
+                    <div class="text-xs font-mono">
+                        <span class="text-slate-500">#${i} ${el.type}</span><br>
+                        X${el.x.toFixed(3)} ${el.z!==null?'Z'+el.z.toFixed(3):''} ${el.a?',A'+el.a:''} ${el.r?',R'+el.r:''}
                     </div>
-                    <div class="text-slate-700 text-xl font-black">➔</div>
+                    <button onclick="event.stopPropagation();contour.splice(${i},1);updateAll()" class="text-red-900 text-lg px-2">✕</button>
                 </div>
             `).join('');
         }
 
-        function refreshSimulation() {
-            const pathGroup = document.getElementById('path-group');
-            pathGroup.innerHTML = '';
+        function redraw() {
+            const group = document.getElementById('draw-layer');
+            group.innerHTML = '';
             let cx = 0, cz = 0;
 
             contour.forEach((el, i) => {
                 let nx = el.x;
                 let nz = el.z;
 
-                // Логика угла Nakamura
                 if (el.a !== null && nz === null) {
                     const rad = (el.a * Math.PI) / 180;
                     nz = cz + ((nx - cx) / 2) / Math.tan(rad);
@@ -222,67 +187,52 @@
                 if (nz === null) nz = cz;
 
                 if (i > 0) {
-                    const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-                    line.setAttribute("x1", cz * zoomScale);
-                    line.setAttribute("y1", -(cx/2) * zoomScale);
-                    line.setAttribute("x2", nz * zoomScale);
-                    line.setAttribute("y2", -(nx/2) * zoomScale);
-                    line.setAttribute("stroke", el.a !== null ? "#22d3ee" : "#facc15");
-                    line.setAttribute("stroke-width", el.a !== null ? "3" : "2");
-                    line.setAttribute("stroke-linecap", "round");
-                    pathGroup.appendChild(line);
+                    if (el.type === 'G0' && !showG0) { /* skip */ } 
+                    else {
+                        const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+                        line.setAttribute("x1", cz * scale);
+                        line.setAttribute("y1", -(cx/2) * scale);
+                        line.setAttribute("x2", nz * scale);
+                        line.setAttribute("y2", -(nx/2) * scale);
+                        line.setAttribute("stroke", el.type === 'G0' ? "#334155" : (el.a ? "#22d3ee" : "#facc15"));
+                        line.setAttribute("stroke-width", el.a ? "1.5" : "0.8");
+                        group.appendChild(line);
+                    }
                 }
-
                 cx = nx; cz = nz;
-
                 if(i === contour.length - 1) {
-                    updatePointer(cx, cz);
+                    let p = document.getElementById('pointer');
+                    p.setAttribute('cx', cz * scale); p.setAttribute('cy', -(cx/2) * scale); p.style.display = 'block';
+                    document.getElementById('dx').innerText = cx.toFixed(2);
+                    document.getElementById('dz').innerText = cz.toFixed(2);
                 }
             });
         }
-
-        function updatePointer(x, z) {
-            const ptr = document.getElementById('tool-pointer');
-            ptr.setAttribute('cx', z * zoomScale);
-            ptr.setAttribute('cy', -(x/2) * zoomScale);
-            ptr.style.display = 'block';
-            document.getElementById('droX').innerText = x.toFixed(3);
-            document.getElementById('droZ').innerText = z.toFixed(3);
-        }
-
-        function adjustScale(f) { zoomScale *= f; refreshSimulation(); }
-
-        function resetAll() { if(confirm('Удалить весь контур?')) { contour = [{ x: 0, z: 0, a: null, r: 0, type: 'G0' }]; refreshAll(); } }
 
         function doImport() {
-            const text = document.getElementById('import-area').value;
-            const lines = text.split('\n');
+            const raw = document.getElementById('paste-area').value.toUpperCase();
             contour = [];
-            
-            lines.forEach(line => {
-                const clean = line.toUpperCase();
-                if(!clean.includes('X') && !clean.includes('Z') && !clean.includes('A')) return;
-                
-                const xMatch = clean.match(/X(-?\d*\.?\d+)/);
-                const zMatch = clean.match(/Z(-?\d*\.?\d+)/);
-                const aMatch = clean.match(/,A(-?\d*\.?\d+)/);
-                const rMatch = clean.match(/,R(-?\d*\.?\d+)/);
-
+            raw.split('\n').forEach(line => {
+                if(!line.includes('X') && !line.includes('Z')) return;
+                const xM = line.match(/X(-?\d*\.?\d+)/);
+                const zM = line.match(/Z(-?\d*\.?\d+)/);
+                const aM = line.match(/,A(-?\d*\.?\d+)/);
+                const rM = line.match(/,R(-?\d*\.?\d+)/);
                 contour.push({
-                    x: xMatch ? parseFloat(xMatch[1]) : (contour.length > 0 ? contour[contour.length-1].x : 0),
-                    z: zMatch ? parseFloat(zMatch[1]) : null,
-                    a: aMatch ? parseFloat(aMatch[1]) : null,
-                    r: rMatch ? parseFloat(rMatch[1]) : 0,
-                    type: clean.includes('G0') ? 'G0' : 'G1'
+                    x: xM ? parseFloat(xM[1]) : (contour.length?contour[contour.length-1].x:0),
+                    z: zM ? parseFloat(zM[1]) : null,
+                    a: aM ? parseFloat(aM[1]) : null,
+                    r: rM ? parseFloat(rM[1]) : 0,
+                    type: line.includes('G0') ? 'G0' : 'G1'
                 });
             });
-
-            hideImportModal();
-            setTab('sim');
-            refreshAll();
+            closePaste();
+            setTab('draw');
+            updateAll();
         }
 
-        window.onload = refreshAll;
+        function clearAll() { if(confirm('Очистить всё?')) { contour = [{ x: 0, z: 0, a: null, r: 0, type: 'G0' }]; updateAll(); } }
+        window.onload = updateAll;
     </script>
 </body>
 </html>
