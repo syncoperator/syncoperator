@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nakamura-Tome Visualizer | Siemens Style</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @font-face {
+            font-family: 'Consolas';
+            src: local('Consolas');
+        }
+        .cnc-font { font-family: 'Consolas', monospace; }
+        .grid-bg {
+            background-image: radial-gradient(#2d3748 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+        .siemens-blue { color: #0099ff; }
+        .siemens-border { border-color: #0099ff; }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-100 min-h-screen flex flex-col">
+
+    <header class="bg-black p-4 border-b-2 siemens-border flex justify-between items-center shadow-lg">
+        <div>
+            <h1 class="text-xl font-bold tracking-widest text-white">SINUMERIK <span class="siemens-blue">ONE</span></h1>
+            <p class="text-xs text-gray-400">Nakamura-Tome G-Code Analyzer (Direct Drawing Dimensioning)</p>
+        </div>
+        <div class="flex gap-4">
+            <button onclick="processCode()" class="bg-blue-600 hover:bg-blue-500 px-6 py-2 rounded text-sm font-bold transition-all shadow-[0_0_15px_rgba(37,99,235,0.4)]">
+                SIMULATE
+            </button>
+        </div>
+    </header>
+
+    <main class="flex-1 flex overflow-hidden">
+        
+        <div class="w-1/3 bg-black flex flex-col border-r border-gray-800">
+            <div class="p-2 bg-gray-800 text-xs font-bold uppercase flex justify-between">
+                <span>G-Code Editor</span>
+                <span class="siemens-blue">RO.O / RU.O</span>
+            </div>
+            <textarea id="gcode" class="flex-1 bg-black p-4 cnc-font text-green-400 outline-none resize-none" placeholder="Введите код, например:&#10;G1 Z0.&#10;G1 X32.3,R.9&#10;G1 Z-2.9&#10;G1 X30.3,A225"></textarea>
+        </div>
+
+        <div class="flex-1 flex flex-col relative grid-bg">
+            <div id="status-bar" class="absolute top-4 left-4 flex gap-4 z-10">
+                <div class="bg-black/80 border border-gray-700 p-2 rounded text-xs">
+                    X: <span id="curX" class="text-yellow-400">0.000</span>
+                </div>
+                <div class="bg-black/80 border border-gray-700 p-2 rounded text-xs">
+                    Z: <span id="curZ" class="text-yellow-400">0.000</span>
+                </div>
+            </div>
+
+            <div class="flex-1 flex items-center justify-center overflow-hidden">
+                <svg id="canvas" width="800" height="600" viewBox="0 0 800 600" class="cursor-move">
+                    <defs>
+                        <marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                          <path d="M 0 0 L 10 5 L 0 10 z" fill="#0099ff" />
+                        </marker>
+                    </defs>
+                    <g id="viewport">
+                        <line x1="-1000" y1="300" x2="2000" y2="300" stroke="#4a5568" stroke-width="1" stroke-dasharray="5,5" />
+                        <g id="path-group"></g>
+                        <g id="labels-group"></g>
+                    </g>
+                </svg>
+            </div>
+
+            <div class="h-48 bg-gray-800 border-t border-gray-600 p-4 overflow-y-auto font-mono text-sm">
+                <table class="w-full text-left">
+                    <thead class="text-gray-500 uppercase text-xs">
+                        <tr>
+                            <th class="pb-2">Element</th>
+                            <th class="pb-2">Type</th>
+                            <th class="pb-2">Angle/R</th>
+                            <th class="pb-2">Target X</th>
+                            <th class="pb-2">Target Z</th>
+                        </tr>
+                    </thead>
+                    <tbody id="info-table" class="text-gray-300">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        function processCode() {
+            const text = document.getElementById('gcode').value;
+            const lines = text.split('\n');
+            const pathGroup = document.getElementById('path-group');
+            const labelsGroup = document.getElementById('labels-group');
+            const infoTable = document.getElementById('info-table');
+            
+            pathGroup.innerHTML = '';
+            labelsGroup.innerHTML = '';
+            infoTable.innerHTML = '';
+
+            let curX = 0;
+            let curZ = 0;
+            const scale = 5;
+            const offsetX = 300; // Центр оси X
+            const offsetZ = 600; // Смещение Z
+
+            lines.forEach((line, index) => {
+                const cleanLine = line.toUpperCase();
+                if (!cleanLine.includes('G1') && !cleanLine.includes('G0')) return;
+
+                const xMatch = cleanLine.match(/X(-?\d*\.?\d+)/);
+                const zMatch = cleanLine.match(/Z(-?\d*\.?\d+)/);
+                const aMatch = cleanLine.match(/,A(-?\d*\.?\d+)/);
+                const rMatch = cleanLine.match(/,R(-?\d*\.?\d+)/);
+
+                let nextX = xMatch ? parseFloat(xMatch[1]) : curX;
+                let nextZ = zMatch ? parseFloat(zMatch[1]) : curZ;
+                let isAngle = false;
+
+                // Расчет угла ,A
+                if (aMatch && !zMatch) {
+                    const angle = parseFloat(aMatch[1]);
+                    const rad = (angle * Math.PI) / 180;
+                    const deltaX = (nextX - curX) / 2; // Радиус
+                    const deltaZ = deltaX / Math.tan(rad);
+                    nextZ = curZ + deltaZ;
+                    isAngle = true;
+                }
+
+                // Визуализация линии
+                const x1 = offsetZ + curZ * scale;
+                const y1 = offsetX - (curX / 2) * scale;
+                const x2 = offsetZ + nextZ * scale;
+                const y2 = offsetX - (nextX / 2) * scale;
+
+                const pathLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
+                pathLine.setAttribute("x1", x1);
+                pathLine.setAttribute("y1", y1);
+                pathLine.setAttribute("x2", x2);
+                pathLine.setAttribute("y2", y2);
+                pathLine.setAttribute("stroke", isAngle ? "#0099ff" : "#fbbf24");
+                pathLine.setAttribute("stroke-width", "2");
+                if (isAngle) pathLine.setAttribute("marker-end", "url(#arrow)");
+                pathGroup.appendChild(pathLine);
+
+                // Добавление метки угла как в Siemens
+                if (isAngle) {
+                    const textLabel = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                    textLabel.setAttribute("x", (x1 + x2) / 2);
+                    textLabel.setAttribute("y", (y1 + y2) / 2 - 10);
+                    textLabel.setAttribute("fill", "#0099ff");
+                    textLabel.setAttribute("font-size", "12");
+                    textLabel.textContent = `A${aMatch[1]}°`;
+                    labelsGroup.appendChild(textLabel);
+                }
+
+                // Добавление в таблицу
+                const row = `<tr>
+                    <td>${index + 1}</td>
+                    <td>${cleanLine.includes('G0') ? 'Rapid' : 'Linear'}</td>
+                    <td class="text-blue-400">${aMatch ? 'A' + aMatch[1] : (rMatch ? 'R' + rMatch[1] : '-')}</td>
+                    <td>${nextX.toFixed(3)}</td>
+                    <td>${nextZ.toFixed(3)}</td>
+                </tr>`;
+                infoTable.innerHTML += row;
+
+                curX = nextX;
+                curZ = nextZ;
+            });
+
+            document.getElementById('curX').innerText = curX.toFixed(3);
+            document.getElementById('curZ').innerText = curZ.toFixed(3);
+        }
+    </script>
+</body>
+</html>
