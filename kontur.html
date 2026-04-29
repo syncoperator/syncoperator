@@ -3,258 +3,258 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Nakamura Premium OS</title>
+    <title>Nakamura Premium v5</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         :root { --sab: env(safe-area-inset-bottom); }
         body { background: #020617; color: #f8fafc; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; font-family: 'Inter', sans-serif; }
-        .glass { background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(15px); border: 1px solid rgba(255,255,255,0.1); }
-        .canvas-bg { background-image: radial-gradient(circle, rgba(34,211,238,0.1) 1px, transparent 1px); background-size: 40px 40px; }
-        .tool-card { background: #0f172a; border-radius: 16px; padding: 12px; border: 1px solid #1e293b; transition: 0.3s; }
-        .tool-card.active { border-color: #22d3ee; background: #162035; box-shadow: 0 0 15px rgba(34,211,238,0.2); }
-        input, select { background: #020617 !important; border: 1px solid #334155 !important; color: #22d3ee !important; padding: 10px; border-radius: 8px; width: 100%; font-family: monospace; }
-        footer { padding-bottom: calc(10px + var(--sab)); }
-        .smooth-move { transition: transform 0.4s cubic-bezier(0.23, 1, 0.32, 1); }
+        .glass { background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(15px); border: 1px solid rgba(255,255,255,0.1); }
+        .canvas-bg { background-color: #010409; background-image: linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px); background-size: 20px 20px; }
+        .t-card { background: #0f172a; border-radius: 12px; padding: 10px; border: 1px solid #1e293b; margin-bottom: 6px; }
+        .t-card.active { border-color: #22d3ee; background: #162035; box-shadow: 0 0 10px rgba(34,211,238,0.2); }
+        input, select { background: #020617 !important; border: 1px solid #334155 !important; color: #22d3ee !important; padding: 8px; border-radius: 6px; font-size: 14px; }
+        .smooth { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
     </style>
 </head>
 <body>
 
-    <header class="p-4 flex justify-between items-center glass z-[100]">
-        <div class="flex flex-col">
-            <h1 class="text-xs font-black tracking-[0.2em]">NAKAMURA <span class="text-cyan-500">v4 PRO</span></h1>
-            <div id="sys-info" class="text-[9px] text-slate-500 font-bold uppercase mt-1">G54 | UPPER TURRET</div>
+    <header class="p-3 flex justify-between items-center glass z-[100]">
+        <div>
+            <h1 class="text-[10px] font-black tracking-widest text-cyan-500 uppercase">Nakamura Premium</h1>
+            <div id="info-bar" class="text-[9px] text-slate-400 font-bold uppercase tracking-tighter">G54 | UPPER | T0101</div>
         </div>
         <div class="flex gap-2">
-            <button onclick="toggleTurret()" class="bg-slate-800 px-3 py-2 rounded-lg text-[9px] font-black border border-white/10 uppercase">Turret</button>
-            <button onclick="showModal('m-tool')" class="bg-cyan-600 px-3 py-2 rounded-lg text-[9px] font-black uppercase">Tool Setup</button>
-            <button onclick="showModal('m-import')" class="bg-white text-black px-3 py-2 rounded-lg text-[9px] font-black uppercase italic">Import</button>
+            <button onclick="toggleTurret()" class="bg-slate-800 px-3 py-2 rounded-lg text-[9px] font-black border border-white/10">TURRET</button>
+            <button onclick="showModal('m-tool')" class="bg-cyan-900/50 text-cyan-400 px-3 py-2 rounded-lg text-[9px] font-black border border-cyan-500/30">TOOL</button>
+            <button onclick="showModal('m-import')" class="bg-white text-black px-3 py-2 rounded-lg text-[9px] font-black">IMPORT</button>
         </div>
     </header>
 
     <main class="flex-1 relative overflow-hidden canvas-bg">
-        <div class="absolute top-4 left-4 z-10 space-y-1 pointer-events-none">
-            <div class="text-[10px] text-slate-500 font-bold">X DIA</div>
-            <div id="dro-x" class="text-3xl font-mono text-white leading-none">0.000</div>
-            <div class="text-[10px] text-slate-500 font-bold mt-2">Z LEN</div>
-            <div id="dro-z" class="text-3xl font-mono text-white leading-none">0.000</div>
+        <div class="absolute top-4 left-4 z-10 font-mono">
+            <div class="text-[10px] text-slate-500">POS</div>
+            <div id="dro" class="text-xl text-white leading-tight">X<span id="dx">0.00</span><br>Z<span id="dz">0.00</span></div>
         </div>
 
         <div class="absolute top-4 right-4 z-10 flex flex-col gap-2">
             <button onclick="zoom(1.2)" class="w-10 h-10 glass rounded-full font-bold">+</button>
             <button onclick="zoom(0.8)" class="w-10 h-10 glass rounded-full font-bold">-</button>
-            <button onclick="autoCenter()" class="w-10 h-10 glass rounded-full text-[8px] font-black">CENTER</button>
+            <button onclick="autoRecenter()" class="w-10 h-10 glass rounded-full text-[8px] font-black">CENTER</button>
         </div>
 
-        <svg id="stage" class="w-full h-full touch-none">
-            <g id="camera" class="smooth-move" transform="translate(350, 250) scale(8)">
-                <line x1="-2000" y1="0" x2="500" y2="0" stroke="rgba(255,255,255,0.1)" stroke-width="0.2" />
+        <svg id="svg" class="w-full h-full touch-none">
+            <g id="world" transform="translate(300, 250) scale(6)">
+                <line x1="-1000" y1="0" x2="500" y2="0" stroke="rgba(255,255,255,0.1)" stroke-width="0.3" />
                 <g id="path-layer"></g>
-                <g id="tool-layer" class="smooth-move">
-                    <path id="tool-visual" fill="rgba(34,211,238,0.3)" stroke="#22d3ee" stroke-width="0.2" d="" />
+                <g id="tool-layer" class="smooth">
+                    <path id="tool-body" fill="rgba(34,211,238,0.3)" stroke="#22d3ee" stroke-width="0.2" d="" />
                 </g>
             </g>
         </svg>
     </main>
 
-    <div id="scroll-list" class="h-[35%] bg-slate-950/80 backdrop-blur-md border-t border-white/5 overflow-y-auto p-4 space-y-2">
-        </div>
+    <div id="kadre-list" class="h-[38%] bg-slate-950/90 border-t border-white/10 overflow-y-auto p-3"></div>
 
     <footer class="p-3 glass grid grid-cols-4 gap-2">
-        <button onclick="addStep('G1')" class="h-14 bg-slate-800 rounded-xl font-black text-amber-500 border-b-2 border-amber-900">G1</button>
-        <button onclick="addStep('A')" class="h-14 bg-slate-800 rounded-xl font-black text-cyan-400 border-b-2 border-cyan-900">∠ A</button>
-        <button onclick="addStep('R')" class="h-14 bg-slate-800 rounded-xl font-black text-orange-400 border-b-2 border-orange-900">,R</button>
-        <button onclick="resetAll()" class="h-14 bg-red-950/20 rounded-xl font-black text-red-700">RESET</button>
+        <button onclick="openEdit('G1')" class="h-12 bg-slate-800 rounded-xl font-black text-amber-500">G1</button>
+        <button onclick="openEdit('A')" class="h-12 bg-slate-800 rounded-xl font-black text-cyan-400 italic">∠ A</button>
+        <button onclick="openEdit('R')" class="h-12 bg-slate-800 rounded-xl font-black text-orange-400">,R</button>
+        <button onclick="resetAll()" class="h-12 bg-red-950/20 rounded-xl text-red-700 font-bold">✕</button>
     </footer>
 
     <div id="m-tool" class="fixed inset-0 bg-black/95 z-[200] hidden p-8 flex flex-col">
-        <h2 class="text-xl font-black text-cyan-400 mb-6 italic uppercase">Tool Parameters</h2>
+        <h2 class="text-cyan-400 font-black mb-6 italic uppercase">Tool Configuration</h2>
         <div class="space-y-4">
             <div>
-                <label class="text-[10px] text-slate-500 font-bold uppercase">Tool Type</label>
-                <select id="tool-type" onchange="updateToolVisual()">
-                    <option value="turn">OD Turning (VBMT)</option>
-                    <option value="groove">Grooving (Канавочный)</option>
-                    <option value="axial">Axial Drill (Сверло Торцевое)</option>
-                    <option value="radial">Radial Drill (Сверло Боковое)</option>
+                <label class="text-[10px] text-slate-500 font-bold uppercase block mb-1">Type</label>
+                <select id="t-type" class="w-full" onchange="drawTool()">
+                    <option value="turn">Turning (VBMT/CNMG)</option>
+                    <option value="groove">Grooving (Cut-off)</option>
+                    <option value="drill">Drilling (SISO)</option>
+                    <option value="mill">Milling (Endmill)</option>
+                </select>
+            </div>
+            <div>
+                <label class="text-[10px] text-slate-500 font-bold uppercase block mb-1">Mounting</label>
+                <select id="t-mount" class="w-full" onchange="drawTool()">
+                    <option value="axial">Axial (Z-Direction)</option>
+                    <option value="radial">Radial (X-Direction)</option>
                 </select>
             </div>
             <div class="grid grid-cols-2 gap-4">
-                <div><label class="text-[10px] text-slate-500 font-bold">Width / Dia</label><input id="tool-w" type="number" value="3" oninput="updateToolVisual()"></div>
-                <div><label class="text-[10px] text-slate-500 font-bold">Length</label><input id="tool-l" type="number" value="15" oninput="updateToolVisual()"></div>
+                <div><label class="text-[10px] text-slate-500 block mb-1">Length</label><input id="t-l" type="number" value="15" oninput="drawTool()"></div>
+                <div><label class="text-[10px] text-slate-500 block mb-1">Width/Dia</label><input id="t-w" type="number" value="3" oninput="drawTool()"></div>
             </div>
         </div>
-        <button onclick="closeModal('m-tool')" class="mt-auto w-full bg-cyan-600 h-16 rounded-2xl font-black uppercase">Apply Tool</button>
+        <button onclick="closeModal('m-tool')" class="mt-auto bg-cyan-600 h-16 rounded-2xl font-black uppercase">Save & Close</button>
     </div>
 
     <div id="m-edit" class="fixed inset-0 bg-black/95 z-[200] hidden p-8">
-        <h2 class="text-xl font-black text-white mb-6 uppercase">Kadre Setup</h2>
-        <div class="space-y-6">
+        <h2 class="text-white font-black mb-6 uppercase">Kadre Input</h2>
+        <div class="space-y-4">
             <div class="grid grid-cols-2 gap-4">
-                <div><label class="text-[10px] text-slate-400 uppercase font-bold">X Diameter</label><input id="ix" type="number" step="0.001"></div>
-                <div><label class="text-[10px] text-slate-400 uppercase font-bold">Z Position</label><input id="iz" type="number" step="0.001" placeholder="Keep empty"></div>
+                <input id="ix" type="number" step="0.001" placeholder="X (Diameter)">
+                <input id="iz" type="number" step="0.001" placeholder="Z (Position)">
             </div>
-            <div>
-                <label class="text-[10px] text-cyan-400 uppercase font-bold">Angle ,A</label>
-                <div class="flex gap-2 mb-2">
-                    <button onclick="setADir('in')" id="ad-in" class="flex-1 bg-cyan-900/50 p-2 rounded text-[10px] font-bold">IN (↙)</button>
-                    <button onclick="setADir('out')" id="ad-out" class="flex-1 bg-slate-800 p-2 rounded text-[10px] font-bold">OUT (↖)</button>
+            <div class="p-4 bg-slate-900 rounded-lg">
+                <label class="text-[10px] text-cyan-500 font-bold block mb-2">∠ Angle from Drawing</label>
+                <div class="flex gap-2 mb-3">
+                    <button id="btn-in" onclick="setA('in')" class="flex-1 bg-cyan-700 p-2 rounded text-[10px] font-bold">IN (↙)</button>
+                    <button id="btn-out" onclick="setA('out')" class="flex-1 bg-slate-800 p-2 rounded text-[10px] font-bold">OUT (↖)</button>
                 </div>
-                <input id="ia" type="number" placeholder="Degrees from dwg">
+                <input id="ia" type="number" class="w-full" placeholder="Degrees">
             </div>
-            <button onclick="saveStep()" class="w-full bg-white text-black h-16 rounded-2xl font-black uppercase">Save Step</button>
+            <button onclick="saveStep()" class="w-full bg-white text-black h-16 rounded-2xl font-black uppercase">Apply Kadre</button>
         </div>
     </div>
 
     <div id="m-import" class="fixed inset-0 bg-black z-[210] hidden p-4 flex flex-col">
-        <textarea id="import-area" class="flex-1 bg-slate-900 text-green-500 p-4 font-mono text-xs rounded-xl border border-white/5 outline-none"></textarea>
-        <button onclick="doImport()" class="mt-4 h-16 bg-cyan-600 rounded-xl font-black uppercase">Start Analysis</button>
-        <button onclick="closeModal('m-import')" class="mt-2 h-12 text-slate-500 uppercase font-bold">Cancel</button>
+        <textarea id="imp-area" class="flex-1 bg-slate-900 text-green-500 p-4 font-mono text-xs rounded-xl" placeholder="Paste G-Code..."></textarea>
+        <div class="flex gap-2 mt-4">
+            <button onclick="closeModal('m-import')" class="flex-1 h-14 bg-slate-800 rounded-xl font-bold uppercase">Back</button>
+            <button onclick="doImport()" class="flex-1 h-14 bg-blue-600 rounded-xl font-black uppercase tracking-widest">Process</button>
+        </div>
     </div>
 
     <script>
-        let contour = [{ x: 40, z: 2, a: null, r: 0, type: 'G0' }];
+        let contour = [{ x: 40, z: 2, a: null, type: 'G0', hasX: true, hasZ: true }];
         let turret = 'UPPER';
-        let aDir = 'in';
-        let camScale = 8;
-        let camZ = 350;
+        let aMode = 'in';
+        let scale = 6;
         let editIdx = -1;
 
         function toggleTurret() {
             turret = (turret === 'UPPER') ? 'LOWER' : 'UPPER';
-            document.getElementById('sys-info').innerText = `${turret} TURRET | G5${turret==='UPPER'?'4':'5'}`;
-            update();
+            document.getElementById('info-bar').innerText = `G5${turret==='UPPER'?'4':'5'} | ${turret} TURRET`;
+            drawTool(); update();
         }
 
-        function setADir(d) {
-            aDir = d;
-            document.getElementById('ad-in').className = d==='in' ? 'flex-1 bg-cyan-600 p-2 rounded text-[10px] font-bold' : 'flex-1 bg-slate-800 p-2 rounded text-[10px] font-bold';
-            document.getElementById('ad-out').className = d==='out' ? 'flex-1 bg-cyan-600 p-2 rounded text-[10px] font-bold' : 'flex-1 bg-slate-800 p-2 rounded text-[10px] font-bold';
+        function setA(m) {
+            aMode = m;
+            document.getElementById('btn-in').className = m==='in' ? 'flex-1 bg-cyan-600 p-2 rounded text-[10px] font-bold' : 'flex-1 bg-slate-800 p-2 rounded text-[10px] font-bold';
+            document.getElementById('btn-out').className = m==='out' ? 'flex-1 bg-cyan-600 p-2 rounded text-[10px] font-bold' : 'flex-1 bg-slate-800 p-2 rounded text-[10px] font-bold';
         }
 
         function showModal(id) { document.getElementById(id).classList.remove('hidden'); }
         function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
 
-        function addStep() { editIdx = -1; showModal('m-edit'); }
+        function openEdit(t) { editIdx = -1; showModal('m-edit'); }
 
         function saveStep() {
             let last = contour[contour.length-1];
             let rawX = document.getElementById('ix').value;
-            let nx = rawX === '' ? last.x : parseFloat(rawX); // Умный X: если пусто, берем старый
-            
+            let rawZ = document.getElementById('iz').value;
             let deg = parseFloat(document.getElementById('ia').value);
+            
             let finalA = null;
             if(!isNaN(deg)) {
-                if(turret === 'UPPER') finalA = (aDir === 'in') ? (180+deg) : (180-deg);
-                else finalA = (aDir === 'in') ? (180-deg) : (180+deg);
+                if(turret === 'UPPER') finalA = (aMode === 'in') ? (180+deg) : (180-deg);
+                else finalA = (aMode === 'in') ? (180-deg) : (180+deg);
             }
 
-            let data = {
-                x: nx,
-                z: document.getElementById('iz').value === '' ? null : parseFloat(document.getElementById('iz').value),
+            let d = {
+                x: rawX === '' ? last.x : parseFloat(rawX),
+                z: rawZ === '' ? null : parseFloat(rawZ),
                 a: finalA,
-                r: 0,
-                type: 'G1'
+                type: 'G1',
+                hasX: rawX !== '',
+                hasZ: rawZ !== ''
             };
-            if(editIdx === -1) contour.push(data); else contour[editIdx] = data;
-            closeModal('m-edit');
-            update();
+            if(editIdx === -1) contour.push(d); else contour[editIdx] = d;
+            closeModal('m-edit'); update();
+        }
+
+        function drawTool() {
+            const type = document.getElementById('t-type').value;
+            const mount = document.getElementById('t-mount').value;
+            const w = parseFloat(document.getElementById('t-w').value);
+            const l = parseFloat(document.getElementById('t-l').value);
+            const body = document.getElementById('tool-body');
+            let d = "";
+
+            const dir = (turret === 'UPPER') ? 1 : -1;
+
+            if(type === 'turn') d = `M 0 0 L -4 ${2*dir} L -${l} ${2*dir} L -${l} -${2*dir} L -4 -${2*dir} Z`;
+            else if(type === 'groove') d = `M 0 0 L 0 ${w/2*dir} L -${l} ${w/2*dir} L -${l} -${w/2*dir} L 0 -${w/2*dir} Z`;
+            else if(type === 'drill') {
+                if(mount === 'axial') d = `M 0 ${w/2} L -${l} ${w/2} L -${l} -${w/2} L 0 -${w/2} Z`;
+                else d = `M ${-w/2} 0 L ${-w/2} ${l*dir} L ${w/2} ${l*dir} L ${w/2} 0 Z`;
+            }
+            else if(type === 'mill') d = `M ${-w/2} 0 L ${-w/2} ${l*dir} L ${w/2} ${l*dir} L ${w/2} 0 Z`;
+            
+            body.setAttribute('d', d);
         }
 
         function update() {
-            renderList();
+            const list = document.getElementById('kadre-list');
+            list.innerHTML = contour.map((el, i) => `
+                <div id="card-${i}" class="t-card flex justify-between items-center" onclick="goto(${i})">
+                    <div class="font-mono">
+                        <div class="text-[8px] text-slate-500 uppercase">#${i} ${el.type}</div>
+                        <div class="text-[12px] font-black tracking-tight">
+                            ${el.hasX ? 'X'+el.x.toFixed(3) : ''} ${el.hasZ ? 'Z'+el.z.toFixed(3) : ''} ${el.a ? ',A'+el.a : ''}
+                        </div>
+                    </div>
+                    <button onclick="event.stopPropagation();contour.splice(${i},1);update();" class="text-red-900 opacity-20">✕</button>
+                </div>
+            `).join('');
             redraw();
         }
 
-        function renderList() {
-            const list = document.getElementById('scroll-list');
-            list.innerHTML = contour.map((el, i) => `
-                <div id="card-${i}" class="tool-card flex justify-between items-center" onclick="focusStep(${i})">
-                    <div>
-                        <div class="text-[8px] font-bold text-slate-500 uppercase">Step ${i} | ${el.type}</div>
-                        <div class="text-[13px] font-black font-mono">X${el.x.toFixed(3)} ${el.z!==null?'Z'+el.z.toFixed(3):''} ${el.a?',A'+el.a:''}</div>
-                    </div>
-                    <button onclick="event.stopPropagation();contour.splice(${i},1);update();" class="text-red-900 opacity-30 px-3 font-bold">✕</button>
-                </div>
-            `).join('');
-        }
-
-        function focusStep(i) {
-            document.querySelectorAll('.tool-card').forEach(c => c.classList.remove('active'));
+        function goto(i) {
+            document.querySelectorAll('.t-card').forEach(c => c.classList.remove('active'));
             document.getElementById(`card-${i}`).classList.add('active');
             
-            // Расчет реальной позиции для этого кадра
             let cx = 0, cz = 0;
             for(let j=0; j<=i; j++) {
                 let el = contour[j];
                 let nx = el.x, nz = el.z;
-                if(el.a !== null && nz === null) {
-                    const rad = (el.a * Math.PI) / 180;
-                    nz = cz + ((nx - cx)/2) / Math.tan(rad);
-                }
+                if(el.a !== null && nz === null) nz = cz + ((nx - cx)/2) / Math.tan(el.a * Math.PI / 180);
                 if(nz === null) nz = cz;
                 cx = nx; cz = nz;
             }
-            
-            // Двигаем инструмент
-            const tl = document.getElementById('tool-layer');
-            tl.setAttribute('transform', `translate(${cz}, ${-cx/2})`);
-            
-            // Обновляем DRO
-            document.getElementById('dro-x').innerText = cx.toFixed(3);
-            document.getElementById('dro-z').innerText = cz.toFixed(3);
-        }
-
-        function updateToolVisual() {
-            const type = document.getElementById('tool-type').value;
-            const w = parseFloat(document.getElementById('tool-w').value);
-            const l = parseFloat(document.getElementById('tool-l').value);
-            const p = document.getElementById('tool-visual');
-            
-            if(type === 'turn') p.setAttribute('d', `M 0 0 L -4 -2 L -${l} -2 L -${l} 2 L -4 2 Z`);
-            if(type === 'groove') p.setAttribute('d', `M 0 0 L 0 ${w/2} L -${l} ${w/2} L -${l} -${w/2} L 0 -${w/2} Z`);
-            if(type === 'axial') p.setAttribute('d', `M 0 ${w/2} L -${l} ${w/2} L -${l} -${w/2} L 0 -${w/2} Z`);
-            if(type === 'radial') p.setAttribute('d', `M ${w/2} 0 L ${w/2} ${l} L -${w/2} ${l} L -${w/2} 0 Z`);
+            document.getElementById('tool-layer').setAttribute('transform', `translate(${cz}, ${-cx/2})`);
+            document.getElementById('dx').innerText = cx.toFixed(2);
+            document.getElementById('dz').innerText = cz.toFixed(2);
         }
 
         function redraw() {
             const layer = document.getElementById('path-layer');
             layer.innerHTML = '';
             let cx = 0, cz = 0;
-
             contour.forEach((el, i) => {
                 let nx = el.x, nz = el.z;
-                if(el.a !== null && nz === null) {
-                    const rad = (el.a * Math.PI) / 180;
-                    nz = cz + ((nx - cx)/2) / Math.tan(rad);
-                }
+                if(el.a !== null && nz === null) nz = cz + ((nx - cx)/2) / Math.tan(el.a * Math.PI / 180);
                 if(nz === null) nz = cz;
                 if(i > 0) {
-                    const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-                    line.setAttribute("x1", cz); line.setAttribute("y1", -cx/2);
-                    line.setAttribute("x2", nz); line.setAttribute("y2", -nx/2);
-                    line.setAttribute("stroke", el.a ? "#22d3ee" : (el.type==='G0'?'rgba(255,255,255,0.1)':'#fbbf24'));
-                    line.setAttribute("stroke-width", el.a ? "0.8" : "0.5");
-                    layer.appendChild(line);
+                    const l = document.createElementNS("http://www.w3.org/2000/svg", "line");
+                    l.setAttribute("x1", cz); l.setAttribute("y1", -cx/2);
+                    l.setAttribute("x2", nz); l.setAttribute("y2", -nx/2);
+                    l.setAttribute("stroke", el.type==='G0'?'rgba(255,255,255,0.1)':(el.a?'#22d3ee':'#fbbf24'));
+                    l.setAttribute("stroke-width", "0.5");
+                    layer.appendChild(l);
                 }
                 cx = nx; cz = nz;
-                if(i === contour.length - 1) focusStep(i);
+                if(i === contour.length - 1) goto(i);
             });
         }
 
-        function zoom(v) { camScale *= v; applyCam(); }
-        function autoCenter() {
+        function zoom(v) { scale *= v; applyCam(); }
+        function autoRecenter() {
             let zVals = contour.map(e => e.z).filter(v => v !== null);
             let minZ = zVals.length ? Math.min(...zVals) : -50;
-            camZ = Math.abs(minZ * camScale) + 150;
-            applyCam();
+            let offset = Math.abs(minZ * scale) + 150;
+            document.getElementById('world').setAttribute('transform', `translate(${offset}, 250) scale(${scale})`);
         }
-        function applyCam() {
-            document.getElementById('camera').setAttribute('transform', `translate(${camZ}, 250) scale(${camScale})`);
+        function applyCam() { 
+            let transform = document.getElementById('world').getAttribute('transform');
+            let base = transform.split('scale')[0];
+            document.getElementById('world').setAttribute('transform', `${base} scale(${scale})`);
         }
 
         function doImport() {
-            const raw = document.getElementById('import-area').value.toUpperCase();
-            if(raw.includes('G55')) { turret = 'LOWER'; toggleTurret(); toggleTurret(); }
+            const raw = document.getElementById('imp-area').value.toUpperCase();
+            if(raw.includes('G55')) turret = 'LOWER';
             contour = [];
             raw.split('\n').forEach(line => {
                 if(!/X|Z|A/.test(line)) return;
@@ -263,14 +263,15 @@
                     x: xM ? parseFloat(xM[1]) : (contour.length?contour[contour.length-1].x:0),
                     z: zM ? parseFloat(zM[1]) : null,
                     a: aM ? parseFloat(aM[1]) : null,
-                    r: 0, type: line.includes('G0') ? 'G0' : 'G1'
+                    type: line.includes('G0') ? 'G0' : 'G1',
+                    hasX: !!xM, hasZ: !!zM
                 });
             });
-            closeModal('m-import'); update(); autoCenter();
+            closeModal('m-import'); toggleTurret(); toggleTurret(); autoRecenter();
         }
 
-        function resetAll() { if(confirm('Clear all?')) { contour=[{x:40,z:2,a:null,r:0,type:'G0'}]; update(); } }
-        window.onload = () => { updateToolVisual(); update(); autoCenter(); };
+        function resetAll() { if(confirm('Clear?')) { contour=[{x:40,z:2,a:null,type:'G0',hasX:true,hasZ:true}]; update(); } }
+        window.onload = () => { drawTool(); update(); autoRecenter(); };
     </script>
 </body>
 </html>
