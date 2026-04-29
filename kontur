@@ -1,176 +1,241 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="de">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nakamura-Tome Visualizer | Siemens Style</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Nakamura v16 Premium</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        @font-face {
-            font-family: 'Consolas';
-            src: local('Consolas');
-        }
-        .cnc-font { font-family: 'Consolas', monospace; }
-        .grid-bg {
-            background-image: radial-gradient(#2d3748 1px, transparent 1px);
-            background-size: 20px 20px;
-        }
-        .siemens-blue { color: #0099ff; }
-        .siemens-border { border-color: #0099ff; }
+        :root { --sab: env(safe-area-inset-bottom); }
+        body { background: #010409; color: #e6edf3; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; font-family: 'Inter', sans-serif; }
+        
+        /* Tool Cards [cite: 2026-02-04] */
+        .t-card { background: #0d1117; border-radius: 12px; padding: 16px; border: 1px solid #30363d; margin-bottom: 10px; transition: 0.3s; position: relative; }
+        .t-card.active { border-color: #2f81f7; background: #161b22; box-shadow: 0 0 20px rgba(47,129,247,0.15); }
+        .t-nr { font-size: 10px; color: #8b949e; font-weight: 800; display: block; margin-bottom: 4px; }
+        .t-desc { font-size: 18px; font-weight: 900; color: #fff; font-family: 'JetBrains Mono', monospace; }
+        
+        #viewport { background-image: radial-gradient(#1c2128 1px, transparent 1px); background-size: 40px 40px; border-bottom: 2px solid #30363d; }
+        
+        /* Кнопки меню */
+        .btn-mode { background: #21262d; border: 1px solid #30363d; border-radius: 10px; font-weight: 800; font-size: 11px; text-transform: uppercase; color: #8b949e; }
+        .btn-mode.active { background: #2f81f7; color: #fff; }
+        
+        .btn-op { background: #0d1117; border: 1px solid #30363d; border-radius: 12px; color: #e6edf3; font-weight: 800; font-size: 13px; min-height: 55px; box-shadow: 0 4px 0 #000; transition: 0.1s; }
+        .btn-op:active { transform: translateY(2px); box-shadow: 0 2px 0 #000; }
+
+        /* Панель редактирования */
+        #edit-panel { background: #161b22; border-top: 2px solid #2f81f7; padding: 15px; display: none; }
+        input { background: #010409 !important; border: 1px solid #30363d !important; color: #58a6ff !important; padding: 12px; border-radius: 8px; font-weight: 800; text-align: center; font-size: 16px; }
+        
+        footer { background: #0d1117; border-top: 1px solid #30363d; padding-bottom: calc(10px + var(--sab)); }
+        
+        /* Padding-bottom [cite: 2026-02-04] */
+        #step-list { padding-bottom: 120px; }
     </style>
 </head>
-<body class="bg-gray-900 text-gray-100 min-h-screen flex flex-col">
+<body>
 
-    <header class="bg-black p-4 border-b-2 siemens-border flex justify-between items-center shadow-lg">
-        <div>
-            <h1 class="text-xl font-bold tracking-widest text-white">SINUMERIK <span class="siemens-blue">ONE</span></h1>
-            <p class="text-xs text-gray-400">Nakamura-Tome G-Code Analyzer (Direct Drawing Dimensioning)</p>
+    <header class="p-4 bg-[#0d1117]/90 backdrop-blur flex justify-between items-center border-b border-[#30363d]">
+        <div class="flex gap-10">
+            <div><span class="text-[9px] block text-slate-500 font-black">X DIAMETER</span><span id="vX" class="text-2xl font-bold tracking-tighter">0.000</span></div>
+            <div><span class="text-[9px] block text-slate-500 font-black">Z LENGTH</span><span id="vZ" class="text-2xl font-bold text-emerald-400 tracking-tighter">0.000</span></div>
         </div>
-        <div class="flex gap-4">
-            <button onclick="processCode()" class="bg-blue-600 hover:bg-blue-500 px-6 py-2 rounded text-sm font-bold transition-all shadow-[0_0_15px_rgba(37,99,235,0.4)]">
-                SIMULATE
-            </button>
+        <div class="flex gap-2">
+            <button onclick="showM('m-tool')" class="btn-mode px-4 py-2">Tool</button>
+            <button onclick="resetApp()" class="btn-mode px-4 py-2 text-red-500">Reset</button>
         </div>
     </header>
 
-    <main class="flex-1 flex overflow-hidden">
-        
-        <div class="w-1/3 bg-black flex flex-col border-r border-gray-800">
-            <div class="p-2 bg-gray-800 text-xs font-bold uppercase flex justify-between">
-                <span>G-Code Editor</span>
-                <span class="siemens-blue">RO.O / RU.O</span>
-            </div>
-            <textarea id="gcode" class="flex-1 bg-black p-4 cnc-font text-green-400 outline-none resize-none" placeholder="Введите код, например:&#10;G1 Z0.&#10;G1 X32.3,R.9&#10;G1 Z-2.9&#10;G1 X30.3,A225"></textarea>
-        </div>
-
-        <div class="flex-1 flex flex-col relative grid-bg">
-            <div id="status-bar" class="absolute top-4 left-4 flex gap-4 z-10">
-                <div class="bg-black/80 border border-gray-700 p-2 rounded text-xs">
-                    X: <span id="curX" class="text-yellow-400">0.000</span>
-                </div>
-                <div class="bg-black/80 border border-gray-700 p-2 rounded text-xs">
-                    Z: <span id="curZ" class="text-yellow-400">0.000</span>
-                </div>
-            </div>
-
-            <div class="flex-1 flex items-center justify-center overflow-hidden">
-                <svg id="canvas" width="800" height="600" viewBox="0 0 800 600" class="cursor-move">
-                    <defs>
-                        <marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-                          <path d="M 0 0 L 10 5 L 0 10 z" fill="#0099ff" />
-                        </marker>
-                    </defs>
-                    <g id="viewport">
-                        <line x1="-1000" y1="300" x2="2000" y2="300" stroke="#4a5568" stroke-width="1" stroke-dasharray="5,5" />
-                        <g id="path-group"></g>
-                        <g id="labels-group"></g>
-                    </g>
-                </svg>
-            </div>
-
-            <div class="h-48 bg-gray-800 border-t border-gray-600 p-4 overflow-y-auto font-mono text-sm">
-                <table class="w-full text-left">
-                    <thead class="text-gray-500 uppercase text-xs">
-                        <tr>
-                            <th class="pb-2">Element</th>
-                            <th class="pb-2">Type</th>
-                            <th class="pb-2">Angle/R</th>
-                            <th class="pb-2">Target X</th>
-                            <th class="pb-2">Target Z</th>
-                        </tr>
-                    </thead>
-                    <tbody id="info-table" class="text-gray-300">
-                        </tbody>
-                </table>
-            </div>
-        </div>
+    <main id="viewport" class="h-1/2 relative overflow-hidden">
+        <svg id="svg" class="w-full h-full">
+            <g id="scene" transform="translate(150, 200) scale(15)">
+                <line x1="-1000" y1="0" x2="1000" y2="0" stroke="#1c2128" stroke-width="0.1" />
+                <g id="trace-layer"></g>
+                <g id="tool-unit" style="transition: transform 0.2s cubic-bezier(0.18, 0.89, 0.32, 1.28)">
+                    <path id="tool-h" fill="#2d333b" stroke="#484f58" stroke-width="0.1" />
+                    <path id="tool-p" fill="#f2cc60" stroke="#fff" stroke-width="0.15" />
+                    <circle r="0.12" fill="#ff7b72" />
+                </g>
+            </g>
+        </svg>
     </main>
 
+    <section id="step-list" class="flex-1 overflow-y-auto p-4 bg-[#010409]">
+        </section>
+
+    <div id="edit-panel">
+        <div class="grid grid-cols-3 gap-3">
+            <input id="editX" type="number" placeholder="X" oninput="applyEdit()">
+            <input id="editZ" type="number" placeholder="Z" oninput="applyEdit()">
+            <button onclick="closeEdit()" class="bg-blue-600 text-white font-black rounded-lg">OK</button>
+        </div>
+    </div>
+
+    <footer class="p-3">
+        <div id="sub-menu" class="grid grid-cols-4 gap-2 mb-3"></div>
+        <div class="grid grid-cols-4 gap-2">
+            <button onclick="setMenu('drehen')" id="m-drehen" class="h-14 btn-mode active">Drehen</button>
+            <button onclick="setMenu('bohren')" id="m-bohren" class="h-14 btn-mode">Bohren</button>
+            <button onclick="setMenu('cycles')" id="m-cycles" class="h-14 btn-mode">Cycles</button>
+            <button onclick="setMenu('system')" id="m-system" class="h-14 btn-mode">System</button>
+        </div>
+    </footer>
+
+    <div id="m-tool" class="fixed inset-0 bg-black/95 z-[1000] hidden items-center justify-center p-6">
+        <div class="bg-[#0d1117] border border-[#30363d] rounded-2xl p-6 w-full max-w-sm shadow-2xl">
+            <h2 class="text-xl font-black text-blue-500 mb-6 uppercase italic">Tool Configuration</h2>
+            <div class="space-y-5">
+                <div>
+                    <label class="text-[10px] font-bold text-slate-500 block mb-2 uppercase">Mounting</label>
+                    <select id="t-side" onchange="drawTool()" class="w-full bg-black border border-slate-700 p-3 rounded-lg text-blue-400 font-bold">
+                        <option value="outside">Außen (OD)</option>
+                        <option value="inside">Innen (ID)</option>
+                    </select>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-[10px] font-bold text-slate-500 block mb-1 uppercase">Winkel (°)</label>
+                        <input id="t-angle" type="number" value="55" oninput="drawTool()">
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-bold text-slate-500 block mb-1 uppercase">Platte-L</label>
+                        <input id="t-size" type="number" value="12" oninput="drawTool()">
+                    </div>
+                </div>
+                <button onclick="closeM('m-tool')" class="w-full bg-blue-600 h-14 rounded-xl font-black text-white mt-4 uppercase">Save & Close</button>
+            </div>
+        </div>
+    </div>
+
     <script>
-        function processCode() {
-            const text = document.getElementById('gcode').value;
-            const lines = text.split('\n');
-            const pathGroup = document.getElementById('path-group');
-            const labelsGroup = document.getElementById('labels-group');
-            const infoTable = document.getElementById('info-table');
-            
-            pathGroup.innerHTML = '';
-            labelsGroup.innerHTML = '';
-            infoTable.innerHTML = '';
+        let program = [{ x: 40, z: 2, type: 'G0' }];
+        let activeIdx = 0, scale = 15;
 
-            let curX = 0;
-            let curZ = 0;
-            const scale = 5;
-            const offsetX = 300; // Центр оси X
-            const offsetZ = 600; // Смещение Z
+        const menus = {
+            drehen: [
+                { label: 'G0 Rapid', op: 'G0' }, { label: 'G1 Linear', op: 'G1' }, 
+                { label: 'Winkel A', op: 'A' }, { label: 'Radius R', op: 'R' }
+            ],
+            bohren: [
+                { label: 'G83 Drill', op: 'G83' }, { label: 'G84 Tap', op: 'G84' }, 
+                { label: 'Centering', op: 'G81' }, { label: 'Peck', op: 'PECK' }
+            ],
+            cycles: [
+                { label: 'G71 Rough', op: 'G71' }, { label: 'G75 Groov', op: 'G75' }, 
+                { label: 'G33 Thread', op: 'G33' }, { label: 'G70 Finish', op: 'G70' }
+            ],
+            system: [
+                { label: 'G54 Upper', op: 'T1' }, { label: 'G55 Lower', op: 'T2' }, 
+                { label: 'AutoFit', op: 'FIT' }, { label: 'G-Code', op: 'GCODE' }
+            ]
+        };
 
-            lines.forEach((line, index) => {
-                const cleanLine = line.toUpperCase();
-                if (!cleanLine.includes('G1') && !cleanLine.includes('G0')) return;
-
-                const xMatch = cleanLine.match(/X(-?\d*\.?\d+)/);
-                const zMatch = cleanLine.match(/Z(-?\d*\.?\d+)/);
-                const aMatch = cleanLine.match(/,A(-?\d*\.?\d+)/);
-                const rMatch = cleanLine.match(/,R(-?\d*\.?\d+)/);
-
-                let nextX = xMatch ? parseFloat(xMatch[1]) : curX;
-                let nextZ = zMatch ? parseFloat(zMatch[1]) : curZ;
-                let isAngle = false;
-
-                // Расчет угла ,A
-                if (aMatch && !zMatch) {
-                    const angle = parseFloat(aMatch[1]);
-                    const rad = (angle * Math.PI) / 180;
-                    const deltaX = (nextX - curX) / 2; // Радиус
-                    const deltaZ = deltaX / Math.tan(rad);
-                    nextZ = curZ + deltaZ;
-                    isAngle = true;
-                }
-
-                // Визуализация линии
-                const x1 = offsetZ + curZ * scale;
-                const y1 = offsetX - (curX / 2) * scale;
-                const x2 = offsetZ + nextZ * scale;
-                const y2 = offsetX - (nextX / 2) * scale;
-
-                const pathLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
-                pathLine.setAttribute("x1", x1);
-                pathLine.setAttribute("y1", y1);
-                pathLine.setAttribute("x2", x2);
-                pathLine.setAttribute("y2", y2);
-                pathLine.setAttribute("stroke", isAngle ? "#0099ff" : "#fbbf24");
-                pathLine.setAttribute("stroke-width", "2");
-                if (isAngle) pathLine.setAttribute("marker-end", "url(#arrow)");
-                pathGroup.appendChild(pathLine);
-
-                // Добавление метки угла как в Siemens
-                if (isAngle) {
-                    const textLabel = document.createElementNS("http://www.w3.org/2000/svg", "text");
-                    textLabel.setAttribute("x", (x1 + x2) / 2);
-                    textLabel.setAttribute("y", (y1 + y2) / 2 - 10);
-                    textLabel.setAttribute("fill", "#0099ff");
-                    textLabel.setAttribute("font-size", "12");
-                    textLabel.textContent = `A${aMatch[1]}°`;
-                    labelsGroup.appendChild(textLabel);
-                }
-
-                // Добавление в таблицу
-                const row = `<tr>
-                    <td>${index + 1}</td>
-                    <td>${cleanLine.includes('G0') ? 'Rapid' : 'Linear'}</td>
-                    <td class="text-blue-400">${aMatch ? 'A' + aMatch[1] : (rMatch ? 'R' + rMatch[1] : '-')}</td>
-                    <td>${nextX.toFixed(3)}</td>
-                    <td>${nextZ.toFixed(3)}</td>
-                </tr>`;
-                infoTable.innerHTML += row;
-
-                curX = nextX;
-                curZ = nextZ;
-            });
-
-            document.getElementById('curX').innerText = curX.toFixed(3);
-            document.getElementById('curZ').innerText = curZ.toFixed(3);
+        function setMenu(key) {
+            document.querySelectorAll('.btn-mode').forEach(b => b.classList.remove('active'));
+            document.getElementById('m-' + key).classList.add('active');
+            const sub = document.getElementById('sub-menu');
+            sub.innerHTML = menus[key].map(m => `
+                <button onclick="handleOp('${m.op}')" class="btn-op">${m.label}</button>
+            `).join('');
         }
+
+        function handleOp(op) {
+            if(op === 'G0' || op === 'G1') addKadre(op);
+            if(op === 'FIT') autoFit();
+        }
+
+        function drawTool() {
+            const side = document.getElementById('t-side').value;
+            const angle = parseFloat(document.getElementById('t-angle').value);
+            const size = parseFloat(document.getElementById('t-size').value);
+            const p = document.getElementById('tool-p'), h = document.getElementById('tool-h');
+
+            const rad = (angle/2) * (Math.PI/180);
+            const dx = (size/2) * Math.sin(rad), dy = (size/2) * Math.cos(rad);
+
+            // ИСПРАВЛЕННАЯ ЛОГИКА [v16]:
+            // Außen: Пластина выше детали (Y-), острие смотрит на деталь (Y+)
+            if(side === 'outside') {
+                p.setAttribute('d', `M 0 0 L ${-dx} ${-dy} L 0 ${-dy*2} L ${dx} ${-dy} Z`);
+                h.setAttribute('d', `M ${-dx} ${-dy} L ${-dx} ${-dy-15} L ${-20} ${-dy-15} L ${-20} ${-dy} Z`);
+            } else {
+                // Innen: Пластина ниже детали (Y+), острие смотрит вверх (Y-)
+                p.setAttribute('d', `M 0 0 L ${-dx} ${dy} L 0 ${dy*2} L ${dx} ${dy} Z`);
+                h.setAttribute('d', `M ${-dx} ${dy} L ${-dx} ${dy+15} L ${-20} ${dy+15} L ${-20} ${dy} Z`);
+            }
+        }
+
+        function addKadre(t) {
+            const last = program[program.length-1];
+            program.push({ x: last.x, z: last.z, type: t });
+            activeIdx = program.length - 1;
+            updateUI();
+            openEdit();
+        }
+
+        function updateUI() {
+            const list = document.getElementById('step-list');
+            list.innerHTML = program.map((p, i) => `
+                <div class="t-card ${i===activeIdx?'active':''}" onclick="selectStep(${i})">
+                    <span class="t-nr">STEP N${i} — ${p.type}</span>
+                    <div class="t-desc">X${p.x.toFixed(2)} Z${p.z.toFixed(2)}</div>
+                </div>
+            `).join('') + '<div style="height:100px"></div>';
+            renderTrace();
+            const p = program[activeIdx];
+            document.getElementById('tool-unit').setAttribute('transform', `translate(${p.z}, ${-p.x/2})`);
+            document.getElementById('vX').innerText = p.x.toFixed(3);
+            document.getElementById('vZ').innerText = p.z.toFixed(3);
+        }
+
+        function selectStep(i) {
+            activeIdx = i;
+            updateUI();
+            openEdit();
+        }
+
+        function openEdit() {
+            const p = program[activeIdx];
+            document.getElementById('edit-panel').style.display = 'block';
+            document.getElementById('editX').value = p.x;
+            document.getElementById('editZ').value = p.z;
+        }
+
+        function applyEdit() {
+            program[activeIdx].x = parseFloat(document.getElementById('editX').value) || 0;
+            program[activeIdx].z = parseFloat(document.getElementById('editZ').value) || 0;
+            updateUI();
+        }
+
+        function closeEdit() { document.getElementById('edit-panel').style.display = 'none'; }
+
+        function renderTrace() {
+            const g = document.getElementById('trace-layer'); g.innerHTML = '';
+            program.forEach((p, i) => {
+                if(i === 0) return;
+                const prev = program[i-1];
+                const l = document.createElementNS("http://www.w3.org/2000/svg", "line");
+                l.setAttribute("x1", prev.z); l.setAttribute("y1", -prev.x/2);
+                l.setAttribute("x2", p.z); l.setAttribute("y2", -p.x/2);
+                l.setAttribute("stroke", p.type==='G0'?'#21262d':'#2f81f7');
+                l.setAttribute("stroke-width", "0.3");
+                g.appendChild(l);
+            });
+        }
+
+        function autoFit() {
+            const zs = program.map(p => p.z), xs = program.map(p => -p.x/2);
+            const w = document.getElementById('viewport').clientWidth, h = document.getElementById('viewport').clientHeight;
+            scale = 15; // Reset for center
+            document.getElementById('scene').setAttribute('transform', `translate(${w/2}, ${h/2}) scale(${scale})`);
+        }
+
+        function showM(id) { document.getElementById(id).style.display = 'flex'; }
+        function closeM(id) { document.getElementById(id).style.display = 'none'; }
+        function resetApp() { program = [{ x: 40, z: 2, type: 'G0' }]; activeIdx = 0; updateUI(); }
+
+        window.onload = () => { setMenu('drehen'); drawTool(); updateUI(); autoFit(); };
     </script>
 </body>
 </html>
