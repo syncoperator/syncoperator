@@ -3,132 +3,137 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Nakamura v15 Physics</title>
+    <title>Nakamura v16 Premium</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         :root { --sab: env(safe-area-inset-bottom); }
         body { background: #010409; color: #e6edf3; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; font-family: 'Inter', sans-serif; }
         
         /* Tool Cards [cite: 2026-02-04] */
-        .t-card { background: #0d1117; border-radius: 8px; padding: 12px; border: 1px solid #30363d; margin-bottom: 8px; transition: 0.2s; }
-        .t-card.active { border-color: #2f81f7; background: #161b22; box-shadow: inset 4px 0 0 #2f81f7; }
-        .t-nr { font-size: 8px; color: #8b949e; font-weight: 800; text-transform: uppercase; margin-bottom: 4px; display: block; }
-        .t-desc { font-size: 16px; font-weight: 900; color: #fff; }
+        .t-card { background: #0d1117; border-radius: 12px; padding: 16px; border: 1px solid #30363d; margin-bottom: 10px; transition: 0.3s; position: relative; }
+        .t-card.active { border-color: #2f81f7; background: #161b22; box-shadow: 0 0 20px rgba(47,129,247,0.15); }
+        .t-nr { font-size: 10px; color: #8b949e; font-weight: 800; display: block; margin-bottom: 4px; }
+        .t-desc { font-size: 18px; font-weight: 900; color: #fff; font-family: 'JetBrains Mono', monospace; }
         
-        #viewport { background-image: radial-gradient(#1c2128 1px, transparent 1px); background-size: 30px 30px; }
-        .glass { background: rgba(13, 17, 23, 0.95); backdrop-filter: blur(20px); border-bottom: 1px solid #30363d; }
+        #viewport { background-image: radial-gradient(#1c2128 1px, transparent 1px); background-size: 40px 40px; border-bottom: 2px solid #30363d; }
         
-        .btn-mode { background: #21262d; border: 1px solid #30363d; border-radius: 10px; font-weight: 800; font-size: 12px; text-transform: uppercase; color: #8b949e; }
-        .btn-mode.active { background: #2f81f7; color: #fff; border-color: #58a6ff; }
+        /* Кнопки меню */
+        .btn-mode { background: #21262d; border: 1px solid #30363d; border-radius: 10px; font-weight: 800; font-size: 11px; text-transform: uppercase; color: #8b949e; }
+        .btn-mode.active { background: #2f81f7; color: #fff; }
         
-        /* Кнопки операций теперь ярко выражены */
-        .btn-op { background: #161b22; border: 1px solid #30363d; border-radius: 10px; color: #e6edf3; font-weight: 800; font-size: 13px; height: 50px; display: flex; align-items: center; justify-content: center; }
-        .btn-op:active { background: #30363d; transform: scale(0.96); }
+        .btn-op { background: #0d1117; border: 1px solid #30363d; border-radius: 12px; color: #e6edf3; font-weight: 800; font-size: 13px; min-height: 55px; box-shadow: 0 4px 0 #000; transition: 0.1s; }
+        .btn-op:active { transform: translateY(2px); box-shadow: 0 2px 0 #000; }
 
-        input { background: #010409 !important; border: 1px solid #30363d !important; color: #58a6ff !important; padding: 12px; border-radius: 8px; font-weight: 700; width: 100%; }
-        footer { padding: 12px; background: #0d1117; border-top: 1px solid #30363d; padding-bottom: calc(12px + var(--sab)); }
+        /* Панель редактирования */
+        #edit-panel { background: #161b22; border-top: 2px solid #2f81f7; padding: 15px; display: none; }
+        input { background: #010409 !important; border: 1px solid #30363d !important; color: #58a6ff !important; padding: 12px; border-radius: 8px; font-weight: 800; text-align: center; font-size: 16px; }
+        
+        footer { background: #0d1117; border-top: 1px solid #30363d; padding-bottom: calc(10px + var(--sab)); }
+        
+        /* Padding-bottom [cite: 2026-02-04] */
+        #step-list { padding-bottom: 120px; }
     </style>
 </head>
 <body>
 
-    <header class="p-4 glass flex justify-between items-center z-50">
-        <div class="flex gap-8">
-            <div><span class="text-[9px] block text-slate-500 font-black tracking-tighter">ACTUAL X</span><span id="vX" class="text-2xl font-bold">0.000</span></div>
-            <div><span class="text-[9px] block text-slate-500 font-black tracking-tighter">ACTUAL Z</span><span id="vZ" class="text-2xl font-bold text-emerald-400">0.000</span></div>
+    <header class="p-4 bg-[#0d1117]/90 backdrop-blur flex justify-between items-center border-b border-[#30363d]">
+        <div class="flex gap-10">
+            <div><span class="text-[9px] block text-slate-500 font-black">X DIAMETER</span><span id="vX" class="text-2xl font-bold tracking-tighter">0.000</span></div>
+            <div><span class="text-[9px] block text-slate-500 font-black">Z LENGTH</span><span id="vZ" class="text-2xl font-bold text-emerald-400 tracking-tighter">0.000</span></div>
         </div>
         <div class="flex gap-2">
-            <button id="btn-open-tool" class="btn-mode px-4 py-2 active">Werkzeug</button>
-            <button id="btn-open-import" class="btn-mode px-4 py-2">Import</button>
+            <button onclick="showM('m-tool')" class="btn-mode px-4 py-2">Tool</button>
+            <button onclick="resetApp()" class="btn-mode px-4 py-2 text-red-500">Reset</button>
         </div>
     </header>
 
-    <main class="flex-1 flex overflow-hidden">
-        <section id="viewport" class="flex-1 relative">
-            <svg id="svg" class="w-full h-full">
-                <g id="scene" transform="translate(100, 300) scale(15)">
-                    <line x1="-1000" y1="0" x2="1000" y2="0" stroke="#30363d" stroke-width="0.05" stroke-dasharray="0.5,0.5" />
-                    <g id="trace-layer"></g>
-                    <g id="tool-unit" style="transition: transform 0.15s cubic-bezier(0.2, 0, 0.2, 1)">
-                        <path id="tool-h" fill="#2d333b" stroke="#444c56" stroke-width="0.1" />
-                        <path id="tool-p" fill="#f2cc60" stroke="#fff" stroke-width="0.12" />
-                        <circle r="0.15" fill="#ff7b72" />
-                    </g>
+    <main id="viewport" class="h-1/2 relative overflow-hidden">
+        <svg id="svg" class="w-full h-full">
+            <g id="scene" transform="translate(150, 200) scale(15)">
+                <line x1="-1000" y1="0" x2="1000" y2="0" stroke="#1c2128" stroke-width="0.1" />
+                <g id="trace-layer"></g>
+                <g id="tool-unit" style="transition: transform 0.2s cubic-bezier(0.18, 0.89, 0.32, 1.28)">
+                    <path id="tool-h" fill="#2d333b" stroke="#484f58" stroke-width="0.1" />
+                    <path id="tool-p" fill="#f2cc60" stroke="#fff" stroke-width="0.15" />
+                    <circle r="0.12" fill="#ff7b72" />
                 </g>
-            </svg>
-        </section>
-
-        <aside class="w-72 border-l border-[#30363d] bg-[#010409] flex flex-col">
-            <div class="p-4 text-[10px] font-black text-slate-500 uppercase tracking-widest border-b border-[#30363d]">Programm-Schritte</div>
-            <div id="step-list" class="flex-1 overflow-y-auto p-3"></div>
-        </aside>
+            </g>
+        </svg>
     </main>
 
-    <footer>
-        <div id="sub-menu" class="grid grid-cols-4 gap-2 mb-3">
-            </div>
+    <section id="step-list" class="flex-1 overflow-y-auto p-4 bg-[#010409]">
+        </section>
+
+    <div id="edit-panel">
+        <div class="grid grid-cols-3 gap-3">
+            <input id="editX" type="number" placeholder="X" oninput="applyEdit()">
+            <input id="editZ" type="number" placeholder="Z" oninput="applyEdit()">
+            <button onclick="closeEdit()" class="bg-blue-600 text-white font-black rounded-lg">OK</button>
+        </div>
+    </div>
+
+    <footer class="p-3">
+        <div id="sub-menu" class="grid grid-cols-4 gap-2 mb-3"></div>
         <div class="grid grid-cols-4 gap-2">
-            <button id="nav-drehen" class="h-14 btn-mode active">Drehen</button>
-            <button id="nav-bohren" class="h-14 btn-mode">Bohren</button>
-            <button id="nav-system" class="h-14 btn-mode">System</button>
-            <button id="nav-reset" class="h-14 btn-mode !text-red-500">Reset</button>
+            <button onclick="setMenu('drehen')" id="m-drehen" class="h-14 btn-mode active">Drehen</button>
+            <button onclick="setMenu('bohren')" id="m-bohren" class="h-14 btn-mode">Bohren</button>
+            <button onclick="setMenu('cycles')" id="m-cycles" class="h-14 btn-mode">Cycles</button>
+            <button onclick="setMenu('system')" id="m-system" class="h-14 btn-mode">System</button>
         </div>
     </footer>
 
-    <div id="m-tool" class="fixed inset-0 bg-black/90 z-[1000] hidden items-center justify-center p-6">
-        <div class="bg-[#0d1117] border border-[#30363d] rounded-2xl p-6 w-full max-w-sm">
-            <h2 class="text-xl font-black text-blue-500 mb-6 italic uppercase tracking-tighter">Tool Setup</h2>
-            <div class="space-y-4">
-                <select id="t-side" class="bg-black border border-[#30363d] text-blue-400 p-3 w-full rounded-lg font-bold">
-                    <option value="outside">AUSSEN (OD Turning)</option>
-                    <option value="inside">INNEN (ID Boring)</option>
-                </select>
-                <div class="grid grid-cols-2 gap-4">
-                    <div><label class="text-[9px] font-bold text-slate-500 block mb-1">WINKEL (°)</label><input id="t-angle" type="number" value="55"></div>
-                    <div><label class="text-[9px] font-bold text-slate-500 block mb-1">PLATTE-L</label><input id="t-size" type="number" value="12"></div>
+    <div id="m-tool" class="fixed inset-0 bg-black/95 z-[1000] hidden items-center justify-center p-6">
+        <div class="bg-[#0d1117] border border-[#30363d] rounded-2xl p-6 w-full max-w-sm shadow-2xl">
+            <h2 class="text-xl font-black text-blue-500 mb-6 uppercase italic">Tool Configuration</h2>
+            <div class="space-y-5">
+                <div>
+                    <label class="text-[10px] font-bold text-slate-500 block mb-2 uppercase">Mounting</label>
+                    <select id="t-side" onchange="drawTool()" class="w-full bg-black border border-slate-700 p-3 rounded-lg text-blue-400 font-bold">
+                        <option value="outside">Außen (OD)</option>
+                        <option value="inside">Innen (ID)</option>
+                    </select>
                 </div>
-                <button id="btn-tool-save" class="w-full bg-blue-600 h-14 rounded-xl font-black text-white mt-4 uppercase">Sichern & Schließen</button>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-[10px] font-bold text-slate-500 block mb-1 uppercase">Winkel (°)</label>
+                        <input id="t-angle" type="number" value="55" oninput="drawTool()">
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-bold text-slate-500 block mb-1 uppercase">Platte-L</label>
+                        <input id="t-size" type="number" value="12" oninput="drawTool()">
+                    </div>
+                </div>
+                <button onclick="closeM('m-tool')" class="w-full bg-blue-600 h-14 rounded-xl font-black text-white mt-4 uppercase">Save & Close</button>
             </div>
         </div>
     </div>
 
     <script>
-        let program = [{ x: 40, z: 2, type: 'G0', mx: true, mz: true }];
+        let program = [{ x: 40, z: 2, type: 'G0' }];
         let activeIdx = 0, scale = 15;
-
-        // Инициализация кнопок
-        const init = () => {
-            document.getElementById('nav-drehen').onclick = () => setMenu('drehen');
-            document.getElementById('nav-bohren').onclick = () => setMenu('bohren');
-            document.getElementById('nav-system').onclick = () => setMenu('system');
-            document.getElementById('nav-reset').onclick = resetApp;
-            document.getElementById('btn-open-tool').onclick = () => showM('m-tool');
-            document.getElementById('btn-tool-save').onclick = () => { drawTool(); closeM('m-tool'); };
-            
-            setMenu('drehen');
-            drawTool();
-            updateUI();
-        };
 
         const menus = {
             drehen: [
-                { label: 'G0 EIL', op: 'G0' }, { label: 'G1 LIN', op: 'G1' }, 
-                { label: 'WINKEL', op: 'A' }, { label: 'RADIUS', op: 'R' }
+                { label: 'G0 Rapid', op: 'G0' }, { label: 'G1 Linear', op: 'G1' }, 
+                { label: 'Winkel A', op: 'A' }, { label: 'Radius R', op: 'R' }
             ],
             bohren: [
-                { label: 'ZENTRIER', op: 'B1' }, { label: 'BOHREN', op: 'B2' }, 
-                { label: 'GEWINDE', op: 'B3' }, { label: 'TIEFE', op: 'BT' }
+                { label: 'G83 Drill', op: 'G83' }, { label: 'G84 Tap', op: 'G84' }, 
+                { label: 'Centering', op: 'G81' }, { label: 'Peck', op: 'PECK' }
+            ],
+            cycles: [
+                { label: 'G71 Rough', op: 'G71' }, { label: 'G75 Groov', op: 'G75' }, 
+                { label: 'G33 Thread', op: 'G33' }, { label: 'G70 Finish', op: 'G70' }
             ],
             system: [
-                { label: 'G54 UP', op: 'T1' }, { label: 'G55 LOW', op: 'T2' }, 
-                { label: 'CENTER', op: 'FIT' }, { label: 'EXPORT', op: 'EXP' }
+                { label: 'G54 Upper', op: 'T1' }, { label: 'G55 Lower', op: 'T2' }, 
+                { label: 'AutoFit', op: 'FIT' }, { label: 'G-Code', op: 'GCODE' }
             ]
         };
 
         function setMenu(key) {
             document.querySelectorAll('.btn-mode').forEach(b => b.classList.remove('active'));
-            const navBtn = document.getElementById('nav-' + key);
-            if(navBtn) navBtn.classList.add('active');
-            
+            document.getElementById('m-' + key).classList.add('active');
             const sub = document.getElementById('sub-menu');
             sub.innerHTML = menus[key].map(m => `
                 <button onclick="handleOp('${m.op}')" class="btn-op">${m.label}</button>
@@ -138,54 +143,72 @@
         function handleOp(op) {
             if(op === 'G0' || op === 'G1') addKadre(op);
             if(op === 'FIT') autoFit();
-            if(op === 'EXP') alert(JSON.stringify(program));
         }
 
         function drawTool() {
             const side = document.getElementById('t-side').value;
             const angle = parseFloat(document.getElementById('t-angle').value);
             const size = parseFloat(document.getElementById('t-size').value);
-            
-            const p = document.getElementById('tool-p');
-            const h = document.getElementById('tool-h');
+            const p = document.getElementById('tool-p'), h = document.getElementById('tool-h');
 
             const rad = (angle/2) * (Math.PI/180);
-            const dx = (size/2) * Math.sin(rad);
-            const dy = (size/2) * Math.cos(rad);
+            const dx = (size/2) * Math.sin(rad), dy = (size/2) * Math.cos(rad);
 
-            // ИСПРАВЛЕННАЯ ФИЗИКА:
-            // В SVG Y идет вниз. На станке X+ это вверх от центра.
-            // Чтобы резец резал СНАРУЖИ, он должен быть ВЫШЕ детали и смотреть ВНИЗ (в сторону центра).
-            
+            // ИСПРАВЛЕННАЯ ЛОГИКА [v16]:
+            // Außen: Пластина выше детали (Y-), острие смотрит на деталь (Y+)
             if(side === 'outside') {
-                // AUSSEN: Пластина острием вверх (к детали), державка уходит ВНИЗ (в револьвер)
+                p.setAttribute('d', `M 0 0 L ${-dx} ${-dy} L 0 ${-dy*2} L ${dx} ${-dy} Z`);
+                h.setAttribute('d', `M ${-dx} ${-dy} L ${-dx} ${-dy-15} L ${-20} ${-dy-15} L ${-20} ${-dy} Z`);
+            } else {
+                // Innen: Пластина ниже детали (Y+), острие смотрит вверх (Y-)
                 p.setAttribute('d', `M 0 0 L ${-dx} ${dy} L 0 ${dy*2} L ${dx} ${dy} Z`);
                 h.setAttribute('d', `M ${-dx} ${dy} L ${-dx} ${dy+15} L ${-20} ${dy+15} L ${-20} ${dy} Z`);
-            } else {
-                // INNEN: Пластина острием вниз (в отверстие), державка уходит ВВЕРХ
-                p.setAttribute('d', `M 0 0 L ${-dx} ${-dy} L 0 ${-dy*2} L ${dx} ${-dy} Z`);
-                h.setAttribute('d', `M ${-dx} ${-dy} L ${-dx} ${-(dy+15)} L ${-20} ${-(dy+15)} L ${-20} ${-dy} Z`);
             }
+        }
+
+        function addKadre(t) {
+            const last = program[program.length-1];
+            program.push({ x: last.x, z: last.z, type: t });
+            activeIdx = program.length - 1;
+            updateUI();
+            openEdit();
         }
 
         function updateUI() {
             const list = document.getElementById('step-list');
             list.innerHTML = program.map((p, i) => `
-                <div class="t-card ${i===activeIdx?'active':''}" onclick="gotoStep(${i})">
-                    <span class="t-nr">KADRE N${i} — ${p.type}</span>
-                    <div class="t-desc">${p.mx?'X'+p.x.toFixed(2):''} ${p.mz?' Z'+p.z.toFixed(2):''}</div>
+                <div class="t-card ${i===activeIdx?'active':''}" onclick="selectStep(${i})">
+                    <span class="t-nr">STEP N${i} — ${p.type}</span>
+                    <div class="t-desc">X${p.x.toFixed(2)} Z${p.z.toFixed(2)}</div>
                 </div>
             `).join('') + '<div style="height:100px"></div>';
             renderTrace();
-        }
-
-        function gotoStep(i) {
-            activeIdx = i; const p = program[i];
+            const p = program[activeIdx];
             document.getElementById('tool-unit').setAttribute('transform', `translate(${p.z}, ${-p.x/2})`);
             document.getElementById('vX').innerText = p.x.toFixed(3);
             document.getElementById('vZ').innerText = p.z.toFixed(3);
+        }
+
+        function selectStep(i) {
+            activeIdx = i;
+            updateUI();
+            openEdit();
+        }
+
+        function openEdit() {
+            const p = program[activeIdx];
+            document.getElementById('edit-panel').style.display = 'block';
+            document.getElementById('editX').value = p.x;
+            document.getElementById('editZ').value = p.z;
+        }
+
+        function applyEdit() {
+            program[activeIdx].x = parseFloat(document.getElementById('editX').value) || 0;
+            program[activeIdx].z = parseFloat(document.getElementById('editZ').value) || 0;
             updateUI();
         }
+
+        function closeEdit() { document.getElementById('edit-panel').style.display = 'none'; }
 
         function renderTrace() {
             const g = document.getElementById('trace-layer'); g.innerHTML = '';
@@ -195,32 +218,24 @@
                 const l = document.createElementNS("http://www.w3.org/2000/svg", "line");
                 l.setAttribute("x1", prev.z); l.setAttribute("y1", -prev.x/2);
                 l.setAttribute("x2", p.z); l.setAttribute("y2", -p.x/2);
-                l.setAttribute("stroke", p.type==='G0'?'#30363d':'#f2cc60');
-                l.setAttribute("stroke-width", "0.25");
+                l.setAttribute("stroke", p.type==='G0'?'#21262d':'#2f81f7');
+                l.setAttribute("stroke-width", "0.3");
                 g.appendChild(l);
             });
         }
 
-        function addKadre(type) {
-            const last = program[program.length-1];
-            program.push({...last, type: type});
-            updateUI();
-        }
-
         function autoFit() {
             const zs = program.map(p => p.z), xs = program.map(p => -p.x/2);
-            const minZ = Math.min(...zs), maxZ = Math.max(...zs);
-            const minX = Math.min(...xs), maxX = Math.max(...xs);
             const w = document.getElementById('viewport').clientWidth, h = document.getElementById('viewport').clientHeight;
-            scale = Math.min(w/(Math.abs(maxZ-minZ)||40), h/(Math.abs(maxX-minX)||40)) * 0.6;
-            document.getElementById('scene').setAttribute('transform', `translate(${w/2 - ((minZ+maxZ)/2)*scale}, ${h/2 - ((minX+maxX)/2)*scale}) scale(${scale})`);
+            scale = 15; // Reset for center
+            document.getElementById('scene').setAttribute('transform', `translate(${w/2}, ${h/2}) scale(${scale})`);
         }
 
         function showM(id) { document.getElementById(id).style.display = 'flex'; }
         function closeM(id) { document.getElementById(id).style.display = 'none'; }
-        function resetApp() { program = [{ x: 40, z: 2, type: 'G0', mx: true, mz: true }]; activeIdx = 0; updateUI(); autoFit(); }
+        function resetApp() { program = [{ x: 40, z: 2, type: 'G0' }]; activeIdx = 0; updateUI(); }
 
-        window.onload = init;
+        window.onload = () => { setMenu('drehen'); drawTool(); updateUI(); autoFit(); };
     </script>
 </body>
 </html>
