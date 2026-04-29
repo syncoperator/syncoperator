@@ -3,221 +3,162 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Nakamura Premium OS</title>
+    <title>Nakamura OS Pro</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         :root { --sab: env(safe-area-inset-bottom); }
-        body { background: #020617; color: #f8fafc; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; font-family: 'Inter', sans-serif; }
-        .premium-gradient { background: linear-gradient(135deg, #0f172a 0%, #020617 100%); }
-        .canvas-grid { background-image: 
-            linear-gradient(to right, rgba(255,255,255,0.03) 1px, transparent 1px),
-            linear-gradient(to bottom, rgba(255,255,255,0.03) 1px, transparent 1px);
-            background-size: 40px 40px; }
-        .glass { background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.1); }
-        .btn-premium { background: #1e293b; border-bottom: 4px solid #000; transition: all 0.1s; position: relative; overflow: hidden; }
-        .btn-premium:active { transform: translateY(2px); border-bottom-width: 1px; }
-        .btn-premium::after { content: ''; position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(255,255,255,0.05); display: none; }
-        .btn-premium:active::after { display: block; }
-        input { background: #020617 !important; border: 1px solid #334155 !important; color: #22d3ee !important; font-size: 18px !important; padding: 14px !important; border-radius: 12px !important; width: 100%; font-family: monospace; }
-        footer { padding-bottom: calc(10px + var(--sab)); }
-        .line-g0 { stroke-dasharray: 4; stroke: rgba(255,255,255,0.15); stroke-width: 1; }
-        .line-g1 { stroke: #fbbf24; stroke-width: 2; stroke-linecap: round; }
-        .line-angle { stroke: #22d3ee; stroke-width: 2.5; }
+        body { background: #010409; color: #e6edf3; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+        .canvas-container { position: relative; flex: 1; background: radial-gradient(circle at center, #0d1117 0%, #010409 100%); overflow: hidden; }
+        .grid-layer { position: absolute; inset: 0; background-image: radial-gradient(rgba(255,255,255,0.05) 1px, transparent 1px); background-size: 30px 30px; pointer-events: none; }
+        
+        /* Стили карточек из Saved Info */
+        .tool-card { background: rgba(22, 27, 34, 0.7); border: 1px solid rgba(48, 54, 61, 0.8); backdrop-filter: blur(8px); border-radius: 12px; padding: 10px; margin-bottom: 8px; }
+        .t-nr { font-size: 9px; font-weight: bold; color: #8b949e; text-transform: uppercase; margin-bottom: 2px; }
+        .t-desc { font-size: 14px; font-weight: 800; color: #ffffff; }
+        
+        .floating-ui { position: absolute; bottom: 0; left: 0; right: 0; max-height: 45%; overflow-y: auto; padding: 15px; background: linear-gradient(to top, #010409 80%, transparent); z-index: 50; }
+        .btn-action { height: 55px; border-radius: 14px; background: #21262d; border: 1px solid #30363d; font-weight: 700; transition: 0.1s; }
+        .btn-action:active { background: #30363d; transform: scale(0.98); }
+        
+        /* Визуализация инструмента */
+        .tool-shape { fill: rgba(31, 111, 235, 0.4); stroke: #58a6ff; stroke-width: 1; }
+        footer { padding-bottom: calc(10px + var(--sab)); background: #0d1117; border-top: 1px solid #30363d; }
     </style>
 </head>
-<body class="antialiased">
+<body>
 
-    <header class="p-4 flex justify-between items-center glass shrink-0">
-        <div class="flex flex-col">
-            <h1 class="text-xs font-black tracking-[0.3em] text-white">NAKAMURA <span class="text-cyan-500 underline decoration-2">PREMIUM</span></h1>
-            <div id="status-line" class="text-[9px] text-slate-500 font-bold uppercase mt-1 italic tracking-widest">G54 | UPPER REVOLVER | R0.4</div>
-        </div>
-        <div class="flex gap-2">
-            <button onclick="toggleSystem()" id="sys-btn" class="px-3 py-1.5 rounded-lg border border-cyan-500/30 text-[9px] font-black bg-cyan-950/20 text-cyan-400">UPPER (G54)</button>
-            <button onclick="showModal('m-import')" class="px-3 py-1.5 rounded-lg bg-white text-black text-[9px] font-black uppercase">Import</button>
-        </div>
-    </header>
-
-    <main class="flex-1 relative overflow-hidden canvas-grid">
-        <div class="absolute top-4 left-4 z-10 space-y-2 pointer-events-none">
-            <div class="glass p-3 rounded-2xl min-w-[120px]">
-                <div class="text-[8px] text-slate-500 font-bold uppercase">X Diameter</div>
-                <div id="dro-x" class="text-2xl font-mono font-light text-white tracking-tighter">0.000</div>
+    <div class="absolute top-0 left-0 right-0 p-4 z-[60] flex justify-between items-start pointer-events-none">
+        <div class="pointer-events-auto">
+            <div class="tool-card w-48">
+                <div class="t-nr">SYSTEM STATUS</div>
+                <div id="sys-label" class="t-desc text-cyan-400">UPPER / G54</div>
             </div>
-            <div class="glass p-3 rounded-2xl min-w-[120px]">
-                <div class="text-[8px] text-slate-500 font-bold uppercase">Z Length</div>
-                <div id="dro-z" class="text-2xl font-mono font-light text-white tracking-tighter">0.000</div>
+            <div class="tool-card w-48 mt-2">
+                <div class="t-nr">TOOL INFO</div>
+                <div id="tool-name" class="t-desc text-xs">VBMT R0.4 (L:32 W:3)</div>
             </div>
         </div>
-
-        <div class="absolute top-4 right-4 z-10 flex flex-col gap-3">
-            <button onclick="zoom(1.2)" class="w-12 h-12 glass rounded-full flex items-center justify-center text-xl">+</button>
-            <button onclick="zoom(0.8)" class="w-12 h-12 glass rounded-full flex items-center justify-center text-xl">-</button>
-            <button onclick="recenter()" class="w-12 h-12 glass rounded-full flex items-center justify-center text-[10px] font-bold">RESET</button>
-        </div>
-
-        <svg id="screen" class="w-full h-full touch-none">
-            <g id="world" transform="translate(300, 250)">
-                <line x1="-3000" y1="0" x2="500" y2="0" stroke="rgba(255,255,255,0.05)" stroke-width="1" />
-                <g id="draw-group"></g>
-                <circle id="cursor" r="5" fill="#f43f5e" class="animate-pulse" style="display:none" />
-            </g>
-        </svg>
-
-        <div id="list-view" class="absolute inset-0 bg-slate-950/95 hidden overflow-y-auto p-4 pb-40">
-            <div id="elements-list" class="space-y-3"></div>
-        </div>
-    </main>
-
-    <footer class="glass p-4 grid grid-cols-4 gap-3 shrink-0">
-        <button onclick="openEditor('G1')" class="btn-premium h-16 rounded-2xl flex flex-col items-center justify-center">
-            <span class="text-xs font-black tracking-widest text-amber-500">G1</span>
-            <span class="text-[8px] opacity-40 uppercase">Line</span>
-        </button>
-        <button onclick="openEditor('A')" class="btn-premium h-16 rounded-2xl flex flex-col items-center justify-center">
-            <span class="text-xs font-black tracking-widest text-cyan-400 italic">∠ 45°</span>
-            <span class="text-[8px] opacity-40 uppercase">Angle</span>
-        </button>
-        <button onclick="openEditor('R')" class="btn-premium h-16 rounded-2xl flex flex-col items-center justify-center text-orange-500">
-            <span class="text-xs font-black tracking-widest">,R</span>
-            <span class="text-[8px] opacity-40 uppercase">Radius</span>
-        </button>
-        <button id="list-btn" onclick="toggleList()" class="btn-premium h-16 rounded-2xl flex flex-col items-center justify-center">
-            <span class="text-xs font-black tracking-widest">LIST</span>
-            <span class="text-[8px] opacity-40 uppercase font-bold">Code</span>
-        </button>
-    </footer>
-
-    <div id="m-edit" class="fixed inset-0 bg-black/98 z-[100] hidden flex-col p-8">
-        <div class="flex justify-between items-center mb-10">
-            <div>
-                <h2 class="text-2xl font-light tracking-tighter">Geometry <span class="text-cyan-500 font-black italic">EDITOR</span></h2>
-                <p class="text-[10px] text-slate-500 uppercase font-bold tracking-widest">Professional Nakamura Input</p>
-            </div>
-            <button onclick="closeModal('m-edit')" class="text-4xl font-thin">&times;</button>
-        </div>
-        
-        <div class="space-y-8">
-            <div class="grid grid-cols-2 gap-6">
-                <div class="space-y-2">
-                    <label class="text-[10px] font-black text-slate-500 uppercase">Target X (Diam)</label>
-                    <input id="ix" type="number" step="0.001" placeholder="0.000">
-                </div>
-                <div class="space-y-2">
-                    <label class="text-[10px] font-black text-slate-500 uppercase">Target Z (Length)</label>
-                    <input id="iz" type="number" step="0.001" placeholder="0.000">
-                </div>
-            </div>
-
-            <div class="glass p-6 rounded-3xl space-y-4">
-                <div class="flex justify-between items-center">
-                    <label class="text-[10px] font-black text-cyan-500 uppercase tracking-widest">Manual Angle (∠)</label>
-                    <div class="flex bg-black p-1 rounded-lg">
-                        <button onclick="setAngleDir('in')" id="dir-in" class="px-4 py-2 text-[10px] font-bold rounded-md bg-cyan-600">В МЯСО ↙</button>
-                        <button onclick="setAngleDir('out')" id="dir-out" class="px-4 py-2 text-[10px] font-bold rounded-md">НАРУЖУ ↖</button>
-                    </div>
-                </div>
-                <input id="ia" type="number" step="0.1" placeholder="Угол с чертежа (напр. 45)">
-            </div>
-
-            <div class="space-y-2">
-                <label class="text-[10px] font-black text-orange-500 uppercase tracking-widest">Smoothing (,R)</label>
-                <input id="ir" type="number" step="0.01" placeholder="0.00">
-            </div>
-
-            <button onclick="saveStep()" class="w-full bg-white text-black h-20 rounded-[30px] font-black text-xl uppercase tracking-widest active:scale-95 transition-transform">Save Element</button>
-            <button onclick="clearContour()" class="w-full text-red-600 text-[10px] font-bold uppercase tracking-widest pt-4">Reset All Steps</button>
+        <div class="flex flex-col gap-2 pointer-events-auto">
+            <button onclick="toggleTurret()" class="bg-blue-600 px-4 py-2 rounded-full text-[10px] font-black uppercase">Switch Turret</button>
+            <button onclick="showModal('m-import')" class="bg-slate-700 px-4 py-2 rounded-full text-[10px] font-black uppercase">Import .O</button>
         </div>
     </div>
 
-    <div id="m-import" class="fixed inset-0 bg-black z-[110] hidden flex-col p-6">
-        <h3 class="text-center font-black text-xs tracking-widest text-white mb-6 uppercase">Paste G-Code Block</h3>
-        <textarea id="import-area" class="flex-1 bg-slate-900/50 border border-white/5 p-6 rounded-3xl text-green-400 font-mono text-xs leading-relaxed outline-none" placeholder="G1 X40. Z-20. ,A150 ..."></textarea>
-        <div class="grid grid-cols-2 gap-4 mt-6">
-            <button onclick="closeModal('m-import')" class="p-6 rounded-2xl bg-slate-800 font-bold uppercase text-[10px]">Cancel</button>
-            <button onclick="processImport()" class="p-6 rounded-2xl bg-cyan-600 font-bold uppercase text-[10px]">Analyze & Draw</button>
+    <div class="canvas-container">
+        <div class="grid-layer"></div>
+        <svg id="viewport" class="w-full h-full touch-none">
+            <g id="scene" transform="translate(300, 250) scale(6)">
+                <rect id="stock" x="-150" y="-25" width="200" height="50" fill="rgba(255,255,255,0.02)" stroke="rgba(255,255,255,0.1)" stroke-dasharray="2" />
+                <line x1="-1000" y1="0" x2="1000" y2="0" stroke="rgba(255,255,255,0.1)" stroke-width="0.2" />
+                
+                <g id="path-group"></g>
+                <g id="tool-group">
+                    <path id="tool-path" class="tool-shape" d="M 0 0 L -5 -3 L -10 0 L -5 3 Z" />
+                </g>
+            </g>
+        </svg>
+    </div>
+
+    <div class="floating-ui" id="list-container">
+        <div id="steps-list">
+            </div>
+        <div style="height: 60px;"></div> </div>
+
+    <footer class="p-3 grid grid-cols-4 gap-2 z-[70]">
+        <button onclick="addStep('G1')" class="btn-action text-amber-500">G1</button>
+        <button onclick="addStep('A')" class="btn-action text-cyan-400">∠ A</button>
+        <button onclick="addStep('R')" class="btn-action text-orange-400">,R</button>
+        <button onclick="autoRecenter()" class="btn-action text-white">CENTER</button>
+    </footer>
+
+    <div id="m-edit" class="fixed inset-0 bg-black/95 z-[100] hidden p-6 flex flex-col justify-center">
+        <div class="tool-card mb-6">
+            <div class="t-nr italic">Geometry Editor</div>
+            <div class="t-desc">НАСТРОЙКА КАДРА</div>
+        </div>
+        <div class="grid grid-cols-2 gap-4 mb-4">
+            <input id="ix" type="number" step="0.001" class="bg-slate-900 border border-slate-700 p-4 rounded-xl text-white" placeholder="X Dia">
+            <input id="iz" type="number" step="0.001" class="bg-slate-900 border border-slate-700 p-4 rounded-xl text-white" placeholder="Z Pos">
+        </div>
+        <div class="tool-card space-y-4">
+            <div class="flex gap-2">
+                <button onclick="setDir('in')" id="d-in" class="flex-1 p-2 bg-blue-600 rounded text-[10px] font-bold">В МЯСО (↙)</button>
+                <button onclick="setDir('out')" id="d-out" class="flex-1 p-2 bg-slate-800 rounded text-[10px] font-bold">НАРУЖУ (↖)</button>
+            </div>
+            <input id="ia" type="number" class="w-full bg-slate-950 p-3 rounded border border-slate-700" placeholder="Угол с чертежа (45, 30...)">
+        </div>
+        <div class="flex gap-2 mt-6">
+            <button onclick="closeModal('m-edit')" class="flex-1 p-4 bg-slate-800 rounded-xl font-bold">ОТМЕНА</button>
+            <button onclick="saveStep()" class="flex-1 p-4 bg-blue-600 rounded-xl font-bold">СОХРАНИТЬ</button>
+        </div>
+    </div>
+
+    <div id="m-import" class="fixed inset-0 bg-black z-[110] hidden p-4 flex flex-col">
+        <textarea id="import-area" class="flex-1 bg-slate-900 text-green-400 p-4 font-mono text-xs rounded-xl" placeholder="Вставь текст программы..."></textarea>
+        <div class="flex gap-3 py-4">
+            <button onclick="closeModal('m-import')" class="flex-1 p-4 bg-slate-800 rounded-xl font-bold">НАЗАД</button>
+            <button onclick="doImport()" class="flex-1 p-4 bg-blue-600 rounded-xl font-bold">ЗАГРУЗИТЬ</button>
         </div>
     </div>
 
     <script>
-        let contour = [{ x: 40, z: 2, a: null, r: 0, type: 'G0' }];
-        let system = 'UPPER'; // UPPER or LOWER
+        let contour = [{ x: 37, z: 2, a: null, r: 0, type: 'G0' }];
+        let turret = 'UPPER'; 
         let angleDir = 'in';
-        let currentScale = 8;
-        let viewOffset = 350;
+        let scale = 6;
         let editIdx = -1;
 
-        function toggleSystem() {
-            system = (system === 'UPPER') ? 'LOWER' : 'UPPER';
-            document.getElementById('sys-btn').innerText = `${system} (G5${system==='UPPER'?'4':'5'})`;
-            document.getElementById('status-line').innerText = `${system} REVOLVER | NAKAMURA MODE`;
-            document.getElementById('sys-btn').classList.toggle('text-cyan-400', system==='UPPER');
-            document.getElementById('sys-btn').classList.toggle('text-amber-400', system==='LOWER');
+        function toggleTurret() {
+            turret = (turret === 'UPPER') ? 'LOWER' : 'UPPER';
+            document.getElementById('sys-label').innerText = turret + (turret === 'UPPER' ? ' / G54' : ' / G55');
             update();
         }
 
-        function setAngleDir(d) {
+        function setDir(d) {
             angleDir = d;
-            document.getElementById('dir-in').classList.toggle('bg-cyan-600', d === 'in');
-            document.getElementById('dir-out').classList.toggle('bg-cyan-600', d === 'out');
-        }
-
-        function toggleList() {
-            const lv = document.getElementById('list-view');
-            lv.classList.toggle('hidden');
-            document.getElementById('list-btn').classList.toggle('bg-cyan-900', !lv.classList.contains('hidden'));
-            if(!lv.classList.contains('hidden')) renderList();
+            document.getElementById('d-in').className = d==='in' ? 'flex-1 p-2 bg-blue-600 rounded text-[10px] font-bold' : 'flex-1 p-2 bg-slate-800 rounded text-[10px] font-bold';
+            document.getElementById('d-out').className = d==='out' ? 'flex-1 p-2 bg-blue-600 rounded text-[10px] font-bold' : 'flex-1 p-2 bg-slate-800 rounded text-[10px] font-bold';
         }
 
         function showModal(id) { document.getElementById(id).classList.remove('hidden'); }
         function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
 
-        function openEditor(type) {
-            editIdx = -1;
-            let last = contour[contour.length-1];
-            document.getElementById('ix').value = last.x;
-            document.getElementById('iz').value = '';
-            document.getElementById('ia').value = '';
-            document.getElementById('ir').value = '';
-            showModal('m-edit');
-        }
+        function addStep(t) { editIdx = -1; showModal('m-edit'); }
 
         function saveStep() {
             let deg = parseFloat(document.getElementById('ia').value);
             let finalA = null;
             if(!isNaN(deg)) {
-                if(system === 'UPPER') finalA = (angleDir === 'in') ? (180+deg) : (180-deg);
+                if(turret === 'UPPER') finalA = (angleDir === 'in') ? (180+deg) : (180-deg);
                 else finalA = (angleDir === 'in') ? (180-deg) : (180+deg);
             }
-            let data = {
+            let step = {
                 x: parseFloat(document.getElementById('ix').value) || 0,
                 z: document.getElementById('iz').value === '' ? null : parseFloat(document.getElementById('iz').value),
                 a: finalA,
                 r: parseFloat(document.getElementById('ir').value) || 0,
                 type: 'G1'
             };
-            if(editIdx === -1) contour.push(data); else contour[editIdx] = data;
+            if(editIdx === -1) contour.push(step); else contour[editIdx] = step;
             closeModal('m-edit');
             update();
+            autoRecenter();
         }
 
         function update() {
+            renderList();
             redraw();
-            if(!document.getElementById('list-view').classList.contains('hidden')) renderList();
         }
 
         function renderList() {
-            const container = document.getElementById('elements-list');
-            container.innerHTML = contour.map((el, i) => `
-                <div onclick="editExisting(${i})" class="glass p-5 rounded-3xl flex justify-between items-center active:scale-95 transition-all">
-                    <div class="font-mono text-[11px]">
-                        <span class="text-slate-500 font-black italic">#${i} ${el.type}</span><br>
-                        <span class="text-white">X${el.x.toFixed(3)}</span> 
-                        ${el.z!==null?`<span class="text-white">Z${el.z.toFixed(3)}</span>`:''}
-                        ${el.a!==null?`<span class="text-cyan-400">,A${el.a}</span>`:''}
-                        ${el.r>0?`<span class="text-orange-500">,R${el.r}</span>`:''}
+            const list = document.getElementById('steps-list');
+            list.innerHTML = contour.map((el, i) => `
+                <div class="tool-card flex justify-between items-center" onclick="editExisting(${i})">
+                    <div>
+                        <div class="t-nr">KADR #${i} | ${el.type}</div>
+                        <div class="t-desc text-xs">X${el.x.toFixed(2)} ${el.z!==null?'Z'+el.z.toFixed(2):''} ${el.a?',A'+el.a:''}</div>
                     </div>
-                    <button onclick="event.stopPropagation();contour.splice(${i},1);update();" class="text-red-500/30 text-2xl font-thin px-4">&times;</button>
+                    <button onclick="event.stopPropagation();contour.splice(${i},1);update();" class="text-red-900 font-bold px-3">✕</button>
                 </div>
             `).join('');
         }
@@ -228,15 +169,13 @@
             document.getElementById('ix').value = el.x;
             document.getElementById('iz').value = el.z ?? '';
             document.getElementById('ia').value = '';
-            document.getElementById('ir').value = el.r || '';
             showModal('m-edit');
         }
 
         function redraw() {
-            const group = document.getElementById('draw-group');
-            group.innerHTML = '';
+            const g = document.getElementById('path-group');
+            g.innerHTML = '';
             let cx = 0, cz = 0;
-            document.getElementById('world').setAttribute('transform', `translate(${viewOffset}, 250)`);
 
             contour.forEach((el, i) => {
                 let nx = el.x, nz = el.z;
@@ -247,36 +186,33 @@
                 if(nz === null) nz = cz;
                 if(i > 0) {
                     const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-                    line.setAttribute("x1", cz * currentScale); line.setAttribute("y1", -(cx/2) * currentScale);
-                    line.setAttribute("x2", nz * currentScale); line.setAttribute("y2", -(nx/2) * currentScale);
-                    line.className.baseVal = (el.type === 'G0') ? 'line-g0' : (el.a ? 'line-g1 line-angle' : 'line-g1');
-                    group.appendChild(line);
+                    line.setAttribute("x1", cz); line.setAttribute("y1", -cx/2);
+                    line.setAttribute("x2", nz); line.setAttribute("y2", -nx/2);
+                    line.setAttribute("stroke", el.type === 'G0' ? "rgba(255,255,255,0.1)" : "#fbbf24");
+                    line.setAttribute("stroke-width", el.type === 'G0' ? "0.2" : "0.8");
+                    if(el.a) line.setAttribute("stroke", "#22d3ee");
+                    g.appendChild(line);
                 }
                 cx = nx; cz = nz;
                 if(i === contour.length - 1) {
-                    const c = document.getElementById('cursor');
-                    c.setAttribute('cx', cz * currentScale); c.setAttribute('cy', -(cx/2) * currentScale); c.style.display = 'block';
-                    document.getElementById('dro-x').innerText = cx.toFixed(3);
-                    document.getElementById('dro-z').innerText = cz.toFixed(3);
+                    document.getElementById('tool-group').setAttribute('transform', `translate(${cz}, ${-cx/2})`);
                 }
             });
         }
 
-        function zoom(f) { currentScale *= f; redraw(); }
-        function recenter() { 
-            let minZ = Math.min(...contour.map(e => e.z || 0));
-            viewOffset = Math.abs(minZ * currentScale) + 200;
-            redraw(); 
+        function autoRecenter() {
+            let zValues = contour.map(e => e.z).filter(v => v !== null);
+            let minZ = zValues.length ? Math.min(...zValues) : -50;
+            let moveZ = Math.abs(minZ) * scale + 200;
+            document.getElementById('scene').setAttribute('transform', `translate(${moveZ}, 250) scale(${scale})`);
+            redraw();
         }
 
-        function processImport() {
-            const text = document.getElementById('import-area').value.toUpperCase();
-            if(text.includes('G55') || text.includes('B-90')) {
-                system = 'LOWER';
-                document.getElementById('sys-btn').innerText = 'LOWER (G55)';
-            }
+        function doImport() {
+            const raw = document.getElementById('import-area').value.toUpperCase();
+            if(raw.includes('G55')) { turret = 'LOWER'; toggleTurret(); toggleTurret(); }
             contour = [];
-            text.split('\n').forEach(line => {
+            raw.split('\n').forEach(line => {
                 if(!/X|Z|A/.test(line)) return;
                 const xM = line.match(/X(-?\d*\.?\d+)/), zM = line.match(/Z(-?\d*\.?\d+)/);
                 const aM = line.match(/,A(-?\d*\.?\d+)/), rM = line.match(/,R(-?\d*\.?\d+)/);
@@ -288,11 +224,10 @@
                     type: line.includes('G0') ? 'G0' : 'G1'
                 });
             });
-            closeModal('m-import'); update(); recenter();
+            closeModal('m-import'); update(); autoRecenter();
         }
 
-        function clearContour() { if(confirm('Full Reset?')) { contour=[{x:40,z:2,a:null,r:0,type:'G0'}]; update(); closeModal('m-edit'); } }
-        window.onload = () => { update(); recenter(); };
+        window.onload = update;
     </script>
 </body>
 </html>
