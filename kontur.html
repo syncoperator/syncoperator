@@ -3,107 +3,103 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Nakamura v16 Premium</title>
+    <title>Nakamura v17 FullControl</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         :root { --sab: env(safe-area-inset-bottom); }
         body { background: #010409; color: #e6edf3; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; font-family: 'Inter', sans-serif; }
         
-        /* Tool Cards [cite: 2026-02-04] */
-        .t-card { background: #0d1117; border-radius: 12px; padding: 16px; border: 1px solid #30363d; margin-bottom: 10px; transition: 0.3s; position: relative; }
-        .t-card.active { border-color: #2f81f7; background: #161b22; box-shadow: 0 0 20px rgba(47,129,247,0.15); }
-        .t-nr { font-size: 10px; color: #8b949e; font-weight: 800; display: block; margin-bottom: 4px; }
-        .t-desc { font-size: 18px; font-weight: 900; color: #fff; font-family: 'JetBrains Mono', monospace; }
+        header { background: #0d1117; border-bottom: 2px solid #30363d; padding: 15px; z-index: 100; }
+        .val-box { font-family: 'JetBrains Mono', monospace; font-weight: 800; font-size: 24px; letter-spacing: -1px; }
         
-        #viewport { background-image: radial-gradient(#1c2128 1px, transparent 1px); background-size: 40px 40px; border-bottom: 2px solid #30363d; }
+        #viewport { background-color: #010409; background-image: radial-gradient(#1c2128 1px, transparent 1px); background-size: 40px 40px; border-bottom: 2px solid #30363d; flex: 1; position: relative; }
         
-        /* Кнопки меню */
-        .btn-mode { background: #21262d; border: 1px solid #30363d; border-radius: 10px; font-weight: 800; font-size: 11px; text-transform: uppercase; color: #8b949e; }
-        .btn-mode.active { background: #2f81f7; color: #fff; }
-        
-        .btn-op { background: #0d1117; border: 1px solid #30363d; border-radius: 12px; color: #e6edf3; font-weight: 800; font-size: 13px; min-height: 55px; box-shadow: 0 4px 0 #000; transition: 0.1s; }
-        .btn-op:active { transform: translateY(2px); box-shadow: 0 2px 0 #000; }
+        #step-list { background: #010409; height: 35%; overflow-y: auto; padding: 10px; padding-bottom: 100px; }
+        .t-card { background: #0d1117; border: 1px solid #30363d; border-radius: 8px; padding: 12px; margin-bottom: 8px; border-left: 4px solid transparent; }
+        .t-card.active { border-color: #2f81f7; background: #161b22; border-left-color: #2f81f7; }
+        .t-desc { font-size: 18px; font-weight: 900; color: #fff; }
 
-        /* Панель редактирования */
-        #edit-panel { background: #161b22; border-top: 2px solid #2f81f7; padding: 15px; display: none; }
-        input { background: #010409 !important; border: 1px solid #30363d !important; color: #58a6ff !important; padding: 12px; border-radius: 8px; font-weight: 800; text-align: center; font-size: 16px; }
+        .btn-mode { background: #21262d; border: 1px solid #30363d; border-radius: 8px; font-weight: 800; font-size: 11px; text-transform: uppercase; color: #8b949e; height: 45px; }
+        .btn-mode.active { background: #2f81f7; color: #fff; border-color: #58a6ff; }
         
-        footer { background: #0d1117; border-top: 1px solid #30363d; padding-bottom: calc(10px + var(--sab)); }
+        .btn-op { background: #0d1117; border: 1px solid #30363d; border-radius: 10px; color: #e6edf3; font-weight: 800; font-size: 12px; height: 55px; }
+        .btn-op:active { transform: scale(0.95); background: #30363d; }
+
+        #edit-bar { background: #161b22; border-top: 2px solid #2f81f7; padding: 10px; display: flex; gap: 8px; }
+        input { background: #010409; border: 1px solid #30363d; color: #58a6ff; padding: 10px; border-radius: 8px; font-weight: 800; width: 100%; text-align: center; }
         
-        /* Padding-bottom [cite: 2026-02-04] */
-        #step-list { padding-bottom: 120px; }
+        footer { background: #0d1117; border-top: 1px solid #30363d; padding: 10px; padding-bottom: calc(10px + var(--sab)); }
+        .modal { background: rgba(0,0,0,0.95); position: fixed; inset: 0; z-index: 1000; display: none; align-items: center; justify-content: center; padding: 20px; }
     </style>
 </head>
 <body>
 
-    <header class="p-4 bg-[#0d1117]/90 backdrop-blur flex justify-between items-center border-b border-[#30363d]">
-        <div class="flex gap-10">
-            <div><span class="text-[9px] block text-slate-500 font-black">X DIAMETER</span><span id="vX" class="text-2xl font-bold tracking-tighter">0.000</span></div>
-            <div><span class="text-[9px] block text-slate-500 font-black">Z LENGTH</span><span id="vZ" class="text-2xl font-bold text-emerald-400 tracking-tighter">0.000</span></div>
+    <header class="flex justify-between items-center">
+        <div class="flex gap-8">
+            <div><span class="text-[9px] block text-slate-500 font-black">X ACTUAL</span><div id="vX" class="val-box">0.000</div></div>
+            <div><span class="text-[9px] block text-slate-500 font-black text-emerald-500">Z ACTUAL</span><div id="vZ" class="val-box text-emerald-400">0.000</div></div>
         </div>
         <div class="flex gap-2">
-            <button onclick="showM('m-tool')" class="btn-mode px-4 py-2">Tool</button>
-            <button onclick="resetApp()" class="btn-mode px-4 py-2 text-red-500">Reset</button>
+            <button onclick="openM('m-tool')" class="btn-mode px-4">Tool</button>
+            <button onclick="resetApp()" class="btn-mode px-4 text-red-500">Reset</button>
         </div>
     </header>
 
-    <main id="viewport" class="h-1/2 relative overflow-hidden">
+    <main id="viewport">
         <svg id="svg" class="w-full h-full">
-            <g id="scene" transform="translate(150, 200) scale(15)">
+            <g id="scene" transform="translate(100, 200) scale(15)">
                 <line x1="-1000" y1="0" x2="1000" y2="0" stroke="#1c2128" stroke-width="0.1" />
                 <g id="trace-layer"></g>
-                <g id="tool-unit" style="transition: transform 0.2s cubic-bezier(0.18, 0.89, 0.32, 1.28)">
+                <g id="tool-unit" style="transition: transform 0.15s ease-out">
                     <path id="tool-h" fill="#2d333b" stroke="#484f58" stroke-width="0.1" />
                     <path id="tool-p" fill="#f2cc60" stroke="#fff" stroke-width="0.15" />
-                    <circle r="0.12" fill="#ff7b72" />
+                    <circle r="0.15" fill="#ff7b72" />
                 </g>
             </g>
         </svg>
     </main>
 
-    <section id="step-list" class="flex-1 overflow-y-auto p-4 bg-[#010409]">
-        </section>
+    <section id="step-list"></section>
 
-    <div id="edit-panel">
-        <div class="grid grid-cols-3 gap-3">
-            <input id="editX" type="number" placeholder="X" oninput="applyEdit()">
-            <input id="editZ" type="number" placeholder="Z" oninput="applyEdit()">
-            <button onclick="closeEdit()" class="bg-blue-600 text-white font-black rounded-lg">OK</button>
-        </div>
+    <div id="edit-bar">
+        <input id="inX" type="number" step="0.1" placeholder="X" oninput="applyEdit()">
+        <input id="inZ" type="number" step="0.1" placeholder="Z" oninput="applyEdit()">
+        <button onclick="autoFit()" class="btn-mode px-4 bg-slate-800 text-white">FIT</button>
     </div>
 
-    <footer class="p-3">
+    <footer>
         <div id="sub-menu" class="grid grid-cols-4 gap-2 mb-3"></div>
         <div class="grid grid-cols-4 gap-2">
-            <button onclick="setMenu('drehen')" id="m-drehen" class="h-14 btn-mode active">Drehen</button>
-            <button onclick="setMenu('bohren')" id="m-bohren" class="h-14 btn-mode">Bohren</button>
-            <button onclick="setMenu('cycles')" id="m-cycles" class="h-14 btn-mode">Cycles</button>
-            <button onclick="setMenu('system')" id="m-system" class="h-14 btn-mode">System</button>
+            <button id="m-drehen" onclick="setMenu('drehen')" class="btn-mode active">Drehen</button>
+            <button id="m-bohren" onclick="setMenu('bohren')" class="btn-mode">Bohren</button>
+            <button id="m-cycles" onclick="setMenu('cycles')" class="btn-mode">Cycles</button>
+            <button id="m-system" onclick="setMenu('system')" class="btn-mode">System</button>
         </div>
     </footer>
 
-    <div id="m-tool" class="fixed inset-0 bg-black/95 z-[1000] hidden items-center justify-center p-6">
-        <div class="bg-[#0d1117] border border-[#30363d] rounded-2xl p-6 w-full max-w-sm shadow-2xl">
-            <h2 class="text-xl font-black text-blue-500 mb-6 uppercase italic">Tool Configuration</h2>
-            <div class="space-y-5">
-                <div>
-                    <label class="text-[10px] font-bold text-slate-500 block mb-2 uppercase">Mounting</label>
-                    <select id="t-side" onchange="drawTool()" class="w-full bg-black border border-slate-700 p-3 rounded-lg text-blue-400 font-bold">
-                        <option value="outside">Außen (OD)</option>
-                        <option value="inside">Innen (ID)</option>
-                    </select>
-                </div>
+    <div id="m-tool" class="modal">
+        <div class="bg-[#0d1117] border border-[#30363d] p-6 rounded-2xl w-full max-w-sm shadow-2xl">
+            <h2 class="text-xl font-black text-blue-500 mb-6 uppercase italic">Werkzeug Setup</h2>
+            <div class="space-y-4">
+                <select id="t-side" onchange="drawTool()" class="w-full bg-black border border-slate-700 p-3 rounded-lg text-blue-400 font-bold">
+                    <option value="outside">AUSSEN (OD Turning)</option>
+                    <option value="inside">INNEN (ID Boring)</option>
+                </select>
                 <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="text-[10px] font-bold text-slate-500 block mb-1 uppercase">Winkel (°)</label>
-                        <input id="t-angle" type="number" value="55" oninput="drawTool()">
-                    </div>
-                    <div>
-                        <label class="text-[10px] font-bold text-slate-500 block mb-1 uppercase">Platte-L</label>
-                        <input id="t-size" type="number" value="12" oninput="drawTool()">
-                    </div>
+                    <div><label class="text-[9px] font-bold text-slate-500 block mb-1">WINKEL (°)</label><input id="t-angle" type="number" value="55" oninput="drawTool()"></div>
+                    <div><label class="text-[9px] font-bold text-slate-500 block mb-1">PLATTE-L</label><input id="t-size" type="number" value="12" oninput="drawTool()"></div>
                 </div>
-                <button onclick="closeM('m-tool')" class="w-full bg-blue-600 h-14 rounded-xl font-black text-white mt-4 uppercase">Save & Close</button>
+                <button onclick="closeM('m-tool')" class="w-full bg-blue-600 h-14 rounded-xl font-black text-white mt-4 uppercase">Übernehmen</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="m-import" class="modal">
+        <div class="bg-[#0d1117] border border-[#30363d] p-6 rounded-2xl w-full max-w-lg">
+            <textarea id="imp-txt" class="w-full h-64 bg-black border border-slate-800 p-4 font-mono text-sm text-green-500 mb-4" placeholder="G-Code здесь..."></textarea>
+            <div class="flex gap-2">
+                <button onclick="closeM('m-import')" class="flex-1 btn-op">Abbrechen</button>
+                <button onclick="doImport()" class="flex-1 bg-white text-black font-black rounded-lg">IMPORT</button>
             </div>
         </div>
     </div>
@@ -114,20 +110,20 @@
 
         const menus = {
             drehen: [
-                { label: 'G0 Rapid', op: 'G0' }, { label: 'G1 Linear', op: 'G1' }, 
+                { label: 'G0 Eilgang', op: 'G0' }, { label: 'G1 Linear', op: 'G1' }, 
                 { label: 'Winkel A', op: 'A' }, { label: 'Radius R', op: 'R' }
             ],
             bohren: [
-                { label: 'G83 Drill', op: 'G83' }, { label: 'G84 Tap', op: 'G84' }, 
-                { label: 'Centering', op: 'G81' }, { label: 'Peck', op: 'PECK' }
+                { label: 'G83 Bohren', op: 'G83' }, { label: 'G84 Gewinde', op: 'G84' }, 
+                { label: 'Zentrieren', op: 'G81' }, { label: 'Peck Drill', op: 'G73' }
             ],
             cycles: [
-                { label: 'G71 Rough', op: 'G71' }, { label: 'G75 Groov', op: 'G75' }, 
-                { label: 'G33 Thread', op: 'G33' }, { label: 'G70 Finish', op: 'G70' }
+                { label: 'G71 Schruppen', op: 'G71' }, { label: 'G75 Einstich', op: 'G75' }, 
+                { label: 'G33 Gewinde', op: 'G33' }, { label: 'G70 Schlicht', op: 'G70' }
             ],
             system: [
-                { label: 'G54 Upper', op: 'T1' }, { label: 'G55 Lower', op: 'T2' }, 
-                { label: 'AutoFit', op: 'FIT' }, { label: 'G-Code', op: 'GCODE' }
+                { label: 'G-Code Import', op: 'IMP' }, { label: 'G54 Upper', op: 'T1' }, 
+                { label: 'G55 Lower', op: 'T2' }, { label: 'Auto-Center', op: 'FIT' }
             ]
         };
 
@@ -141,8 +137,9 @@
         }
 
         function handleOp(op) {
-            if(op === 'G0' || op === 'G1') addKadre(op);
-            if(op === 'FIT') autoFit();
+            if (op === 'G0' || op === 'G1') addStep(op);
+            if (op === 'IMP') openM('m-import');
+            if (op === 'FIT') autoFit();
         }
 
         function drawTool() {
@@ -154,88 +151,91 @@
             const rad = (angle/2) * (Math.PI/180);
             const dx = (size/2) * Math.sin(rad), dy = (size/2) * Math.cos(rad);
 
-            // ИСПРАВЛЕННАЯ ЛОГИКА [v16]:
-            // Außen: Пластина выше детали (Y-), острие смотрит на деталь (Y+)
+            // ФИЗИКА: Aussen режет сверху (острие вниз), Innen режет снизу (острие вверх)
             if(side === 'outside') {
                 p.setAttribute('d', `M 0 0 L ${-dx} ${-dy} L 0 ${-dy*2} L ${dx} ${-dy} Z`);
                 h.setAttribute('d', `M ${-dx} ${-dy} L ${-dx} ${-dy-15} L ${-20} ${-dy-15} L ${-20} ${-dy} Z`);
             } else {
-                // Innen: Пластина ниже детали (Y+), острие смотрит вверх (Y-)
                 p.setAttribute('d', `M 0 0 L ${-dx} ${dy} L 0 ${dy*2} L ${dx} ${dy} Z`);
                 h.setAttribute('d', `M ${-dx} ${dy} L ${-dx} ${dy+15} L ${-20} ${dy+15} L ${-20} ${dy} Z`);
             }
         }
 
-        function addKadre(t) {
+        function addStep(type) {
             const last = program[program.length-1];
-            program.push({ x: last.x, z: last.z, type: t });
+            program.push({ x: last.x, z: last.z, type: type });
             activeIdx = program.length - 1;
-            updateUI();
-            openEdit();
+            update();
         }
 
-        function updateUI() {
+        function update() {
             const list = document.getElementById('step-list');
             list.innerHTML = program.map((p, i) => `
                 <div class="t-card ${i===activeIdx?'active':''}" onclick="selectStep(${i})">
-                    <span class="t-nr">STEP N${i} — ${p.type}</span>
+                    <span class="text-[9px] text-slate-500 font-bold uppercase">Step N${i} — ${p.type}</span>
                     <div class="t-desc">X${p.x.toFixed(2)} Z${p.z.toFixed(2)}</div>
                 </div>
-            `).join('') + '<div style="height:100px"></div>';
+            `).join('') + '<div style="height:50px"></div>';
+
+            const cur = program[activeIdx];
+            document.getElementById('tool-unit').setAttribute('transform', `translate(${cur.z}, ${-cur.x/2})`);
+            document.getElementById('vX').innerText = cur.x.toFixed(3);
+            document.getElementById('vZ').innerText = cur.z.toFixed(3);
+            document.getElementById('inX').value = cur.x;
+            document.getElementById('inZ').value = cur.z;
+            
             renderTrace();
-            const p = program[activeIdx];
-            document.getElementById('tool-unit').setAttribute('transform', `translate(${p.z}, ${-p.x/2})`);
-            document.getElementById('vX').innerText = p.x.toFixed(3);
-            document.getElementById('vZ').innerText = p.z.toFixed(3);
         }
 
-        function selectStep(i) {
-            activeIdx = i;
-            updateUI();
-            openEdit();
-        }
-
-        function openEdit() {
-            const p = program[activeIdx];
-            document.getElementById('edit-panel').style.display = 'block';
-            document.getElementById('editX').value = p.x;
-            document.getElementById('editZ').value = p.z;
-        }
-
+        function selectStep(i) { activeIdx = i; update(); }
+        
         function applyEdit() {
-            program[activeIdx].x = parseFloat(document.getElementById('editX').value) || 0;
-            program[activeIdx].z = parseFloat(document.getElementById('editZ').value) || 0;
-            updateUI();
+            program[activeIdx].x = parseFloat(document.getElementById('inX').value) || 0;
+            program[activeIdx].z = parseFloat(document.getElementById('inZ').value) || 0;
+            update();
         }
-
-        function closeEdit() { document.getElementById('edit-panel').style.display = 'none'; }
 
         function renderTrace() {
-            const g = document.getElementById('trace-layer'); g.innerHTML = '';
+            const layer = document.getElementById('trace-layer');
+            layer.innerHTML = '';
             program.forEach((p, i) => {
                 if(i === 0) return;
                 const prev = program[i-1];
-                const l = document.createElementNS("http://www.w3.org/2000/svg", "line");
-                l.setAttribute("x1", prev.z); l.setAttribute("y1", -prev.x/2);
-                l.setAttribute("x2", p.z); l.setAttribute("y2", -p.x/2);
-                l.setAttribute("stroke", p.type==='G0'?'#21262d':'#2f81f7');
-                l.setAttribute("stroke-width", "0.3");
-                g.appendChild(l);
+                const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+                line.setAttribute("x1", prev.z); line.setAttribute("y1", -prev.x/2);
+                line.setAttribute("x2", p.z); line.setAttribute("y2", -p.x/2);
+                line.setAttribute("stroke", p.type === 'G0' ? '#21262d' : '#f2cc60');
+                line.setAttribute("stroke-width", "0.3");
+                layer.appendChild(line);
             });
         }
 
-        function autoFit() {
-            const zs = program.map(p => p.z), xs = program.map(p => -p.x/2);
-            const w = document.getElementById('viewport').clientWidth, h = document.getElementById('viewport').clientHeight;
-            scale = 15; // Reset for center
-            document.getElementById('scene').setAttribute('transform', `translate(${w/2}, ${h/2}) scale(${scale})`);
+        function doImport() {
+            const text = document.getElementById('imp-txt').value.toUpperCase().split('\n');
+            program = []; let lx = 40, lz = 2;
+            text.forEach(line => {
+                const xm = line.match(/X(-?\d*\.?\d+)/), zm = line.match(/Z(-?\d*\.?\d+)/);
+                if(xm || zm) {
+                    lx = xm ? parseFloat(xm[1]) : lx;
+                    lz = zm ? parseFloat(zm[1]) : lz;
+                    program.push({ x: lx, z: lz, type: line.includes('G0') ? 'G0' : 'G1' });
+                }
+            });
+            if(program.length === 0) program = [{ x: 40, z: 2, type: 'G0' }];
+            activeIdx = program.length - 1;
+            closeM('m-import'); update(); autoFit();
         }
 
-        function showM(id) { document.getElementById(id).style.display = 'flex'; }
-        function closeM(id) { document.getElementById(id).style.display = 'none'; }
-        function resetApp() { program = [{ x: 40, z: 2, type: 'G0' }]; activeIdx = 0; updateUI(); }
+        function autoFit() {
+            const w = document.getElementById('viewport').clientWidth, h = document.getElementById('viewport').clientHeight;
+            document.getElementById('scene').setAttribute('transform', `translate(${w/2}, ${h/2}) scale(15)`);
+        }
 
-        window.onload = () => { setMenu('drehen'); drawTool(); updateUI(); autoFit(); };
+        function openM(id) { document.getElementById(id).style.display = 'flex'; }
+        function closeM(id) { document.getElementById(id).style.display = 'none'; }
+        function resetApp() { program = [{ x: 40, z: 2, type: 'G0' }]; activeIdx = 0; update(); }
+
+        window.onload = () => { setMenu('drehen'); drawTool(); update(); autoFit(); };
     </script>
 </body>
 </html>
