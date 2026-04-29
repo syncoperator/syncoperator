@@ -3,237 +3,265 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Nakamura v17 FullControl</title>
+    <title>Nakamura v18 Clean</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         :root { --sab: env(safe-area-inset-bottom); }
-        body { background: #010409; color: #e6edf3; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; font-family: 'Inter', sans-serif; }
+        body { background: #010409; color: #e6edf3; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; margin: 0; font-family: system-ui, -apple-system, sans-serif; }
         
-        header { background: #0d1117; border-bottom: 2px solid #30363d; padding: 15px; z-index: 100; }
-        .val-box { font-family: 'JetBrains Mono', monospace; font-weight: 800; font-size: 24px; letter-spacing: -1px; }
-        
-        #viewport { background-color: #010409; background-image: radial-gradient(#1c2128 1px, transparent 1px); background-size: 40px 40px; border-bottom: 2px solid #30363d; flex: 1; position: relative; }
-        
-        #step-list { background: #010409; height: 35%; overflow-y: auto; padding: 10px; padding-bottom: 100px; }
-        .t-card { background: #0d1117; border: 1px solid #30363d; border-radius: 8px; padding: 12px; margin-bottom: 8px; border-left: 4px solid transparent; }
-        .t-card.active { border-color: #2f81f7; background: #161b22; border-left-color: #2f81f7; }
-        .t-desc { font-size: 18px; font-weight: 900; color: #fff; }
+        /* 1. Информационная панель */
+        header { height: 70px; background: #0d1117; border-bottom: 2px solid #30363d; display: flex; align-items: center; justify-content: space-between; padding: 0 15px; flex-shrink: 0; }
+        .val-display { font-family: 'ui-monospace', monospace; font-weight: 800; font-size: 20px; }
 
-        .btn-mode { background: #21262d; border: 1px solid #30363d; border-radius: 8px; font-weight: 800; font-size: 11px; text-transform: uppercase; color: #8b949e; height: 45px; }
-        .btn-mode.active { background: #2f81f7; color: #fff; border-color: #58a6ff; }
-        
-        .btn-op { background: #0d1117; border: 1px solid #30363d; border-radius: 10px; color: #e6edf3; font-weight: 800; font-size: 12px; height: 55px; }
-        .btn-op:active { transform: scale(0.95); background: #30363d; }
+        /* 2. Область симуляции */
+        #viewport { flex: 1; background: #010409; position: relative; min-height: 200px; border-bottom: 2px solid #30363d; overflow: hidden; }
 
-        #edit-bar { background: #161b22; border-top: 2px solid #2f81f7; padding: 10px; display: flex; gap: 8px; }
-        input { background: #010409; border: 1px solid #30363d; color: #58a6ff; padding: 10px; border-radius: 8px; font-weight: 800; width: 100%; text-align: center; }
+        /* 3. Список программы (Scroll Down) */
+        #program-area { height: 30%; background: #010409; overflow-y: auto; padding: 10px; border-bottom: 1px solid #30363d; }
+        .t-card { background: #0d1117; border: 1px solid #30363d; border-radius: 8px; padding: 12px; margin-bottom: 8px; }
+        .t-card.active { border-color: #2f81f7; background: #161b22; box-shadow: inset 4px 0 0 #2f81f7; }
+        .t-card-title { font-size: 10px; color: #8b949e; font-weight: 800; text-transform: uppercase; }
+        .t-card-val { font-size: 17px; font-weight: 900; color: #fff; margin-top: 4px; }
+
+        /* 4. Панель управления (Кнопки) */
+        footer { background: #0d1117; padding: 10px; padding-bottom: calc(10px + var(--sab)); flex-shrink: 0; z-index: 100; }
+        .grid-menu { display: grid; grid-template-cols: repeat(4, 1fr); gap: 8px; }
         
-        footer { background: #0d1117; border-top: 1px solid #30363d; padding: 10px; padding-bottom: calc(10px + var(--sab)); }
-        .modal { background: rgba(0,0,0,0.95); position: fixed; inset: 0; z-index: 1000; display: none; align-items: center; justify-content: center; padding: 20px; }
+        .btn-main { background: #21262d; border: 1px solid #30363d; color: #c9d1d9; border-radius: 10px; height: 45px; font-weight: 800; font-size: 11px; text-transform: uppercase; }
+        .btn-main.active { background: #2f81f7; color: white; border-color: #58a6ff; }
+        
+        .btn-sub { background: #161b22; border: 1px solid #30363d; color: #f0f6fc; border-radius: 10px; height: 50px; font-weight: 800; font-size: 12px; }
+        .btn-sub:active { background: #30363d; transform: scale(0.97); }
+
+        /* Редактор */
+        #edit-panel { background: #161b22; padding: 10px; display: none; gap: 10px; border-top: 2px solid #2f81f7; }
+        #edit-panel input { background: #010409; border: 1px solid #30363d; color: #58a6ff; border-radius: 8px; padding: 10px; width: 100%; text-align: center; font-weight: 800; font-size: 18px; }
+
+        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 2000; display: none; align-items: center; justify-content: center; padding: 20px; }
     </style>
 </head>
 <body>
 
-    <header class="flex justify-between items-center">
-        <div class="flex gap-8">
-            <div><span class="text-[9px] block text-slate-500 font-black">X ACTUAL</span><div id="vX" class="val-box">0.000</div></div>
-            <div><span class="text-[9px] block text-slate-500 font-black text-emerald-500">Z ACTUAL</span><div id="vZ" class="val-box text-emerald-400">0.000</div></div>
+    <header>
+        <div class="flex gap-6">
+            <div><span class="text-[9px] font-black text-slate-500 block uppercase">X-Axis</span><div id="dispX" class="val-display">0.000</div></div>
+            <div><span class="text-[9px] font-black text-emerald-500 block uppercase">Z-Axis</span><div id="dispZ" class="val-display text-emerald-400">0.000</div></div>
         </div>
         <div class="flex gap-2">
-            <button onclick="openM('m-tool')" class="btn-mode px-4">Tool</button>
-            <button onclick="resetApp()" class="btn-mode px-4 text-red-500">Reset</button>
+            <button id="open-tool" class="btn-main px-4">Tool</button>
+            <button id="reset-app" class="btn-main px-4 text-red-500">Reset</button>
         </div>
     </header>
 
     <main id="viewport">
         <svg id="svg" class="w-full h-full">
-            <g id="scene" transform="translate(100, 200) scale(15)">
+            <g id="world" transform="translate(100, 150) scale(15)">
                 <line x1="-1000" y1="0" x2="1000" y2="0" stroke="#1c2128" stroke-width="0.1" />
-                <g id="trace-layer"></g>
-                <g id="tool-unit" style="transition: transform 0.15s ease-out">
-                    <path id="tool-h" fill="#2d333b" stroke="#484f58" stroke-width="0.1" />
-                    <path id="tool-p" fill="#f2cc60" stroke="#fff" stroke-width="0.15" />
-                    <circle r="0.15" fill="#ff7b72" />
+                <g id="path-layer"></g>
+                <g id="tool-group" style="transition: transform 0.1s linear">
+                    <path id="t-halter" fill="#2d333b" stroke="#484f58" stroke-width="0.1" />
+                    <path id="t-plate" fill="#f2cc60" stroke="#fff" stroke-width="0.15" />
+                    <circle r="0.12" fill="#ff7b72" />
                 </g>
             </g>
         </svg>
     </main>
 
-    <section id="step-list"></section>
+    <section id="program-area">
+        <div id="step-list"></div>
+        <div style="height: 50px;"></div> </section>
 
-    <div id="edit-bar">
-        <input id="inX" type="number" step="0.1" placeholder="X" oninput="applyEdit()">
-        <input id="inZ" type="number" step="0.1" placeholder="Z" oninput="applyEdit()">
-        <button onclick="autoFit()" class="btn-mode px-4 bg-slate-800 text-white">FIT</button>
+    <div id="edit-panel">
+        <input id="inpX" type="number" step="0.1" placeholder="X">
+        <input id="inpZ" type="number" step="0.1" placeholder="Z">
+        <button id="close-edit" class="btn-main px-6 bg-blue-600 text-white">OK</button>
     </div>
 
     <footer>
         <div id="sub-menu" class="grid grid-cols-4 gap-2 mb-3"></div>
-        <div class="grid grid-cols-4 gap-2">
-            <button id="m-drehen" onclick="setMenu('drehen')" class="btn-mode active">Drehen</button>
-            <button id="m-bohren" onclick="setMenu('bohren')" class="btn-mode">Bohren</button>
-            <button id="m-cycles" onclick="setMenu('cycles')" class="btn-mode">Cycles</button>
-            <button id="m-system" onclick="setMenu('system')" class="btn-mode">System</button>
+        <div class="grid-menu">
+            <button id="tab-drehen" class="btn-main active">Drehen</button>
+            <button id="tab-bohren" class="btn-main">Bohren</button>
+            <button id="tab-cycles" class="btn-main">Cycles</button>
+            <button id="tab-system" class="btn-main">System</button>
         </div>
     </footer>
 
     <div id="m-tool" class="modal">
-        <div class="bg-[#0d1117] border border-[#30363d] p-6 rounded-2xl w-full max-w-sm shadow-2xl">
-            <h2 class="text-xl font-black text-blue-500 mb-6 uppercase italic">Werkzeug Setup</h2>
+        <div class="bg-[#0d1117] border border-[#30363d] p-6 rounded-2xl w-full max-w-sm">
+            <h3 class="text-blue-500 font-black mb-4 uppercase">Tool Geometry</h3>
             <div class="space-y-4">
-                <select id="t-side" onchange="drawTool()" class="w-full bg-black border border-slate-700 p-3 rounded-lg text-blue-400 font-bold">
-                    <option value="outside">AUSSEN (OD Turning)</option>
-                    <option value="inside">INNEN (ID Boring)</option>
+                <select id="t-mode" class="w-full bg-black border border-slate-700 p-3 rounded-lg text-blue-400 font-bold">
+                    <option value="out">AUSSEN (OD)</option>
+                    <option value="in">INNEN (ID)</option>
                 </select>
-                <div class="grid grid-cols-2 gap-4">
-                    <div><label class="text-[9px] font-bold text-slate-500 block mb-1">WINKEL (°)</label><input id="t-angle" type="number" value="55" oninput="drawTool()"></div>
-                    <div><label class="text-[9px] font-bold text-slate-500 block mb-1">PLATTE-L</label><input id="t-size" type="number" value="12" oninput="drawTool()"></div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div><label class="text-[9px] font-bold text-slate-500 uppercase">Winkel</label><input id="t-angle" type="number" value="55" class="w-full bg-black border border-slate-700 p-2 rounded text-white"></div>
+                    <div><label class="text-[9px] font-bold text-slate-500 uppercase">Länge</label><input id="t-size" type="number" value="12" class="w-full bg-black border border-slate-700 p-2 rounded text-white"></div>
                 </div>
-                <button onclick="closeM('m-tool')" class="w-full bg-blue-600 h-14 rounded-xl font-black text-white mt-4 uppercase">Übernehmen</button>
+                <button id="save-tool" class="w-full bg-blue-600 h-12 rounded-xl font-black text-white uppercase mt-2">Speichern</button>
             </div>
         </div>
     </div>
 
     <div id="m-import" class="modal">
         <div class="bg-[#0d1117] border border-[#30363d] p-6 rounded-2xl w-full max-w-lg">
-            <textarea id="imp-txt" class="w-full h-64 bg-black border border-slate-800 p-4 font-mono text-sm text-green-500 mb-4" placeholder="G-Code здесь..."></textarea>
+            <textarea id="import-area" class="w-full h-60 bg-black border border-slate-800 p-3 font-mono text-green-500 text-sm mb-4" placeholder="G-Code..."></textarea>
             <div class="flex gap-2">
-                <button onclick="closeM('m-import')" class="flex-1 btn-op">Abbrechen</button>
-                <button onclick="doImport()" class="flex-1 bg-white text-black font-black rounded-lg">IMPORT</button>
+                <button id="cancel-import" class="flex-1 btn-sub">Abbrechen</button>
+                <button id="do-import" class="flex-1 bg-white text-black font-black rounded-lg uppercase">Import</button>
             </div>
         </div>
     </div>
 
     <script>
         let program = [{ x: 40, z: 2, type: 'G0' }];
-        let activeIdx = 0, scale = 15;
+        let activeIdx = 0;
+
+        // Элементы
+        const list = document.getElementById('step-list');
+        const sub = document.getElementById('sub-menu');
+        const editPanel = document.getElementById('edit-panel');
 
         const menus = {
             drehen: [
-                { label: 'G0 Eilgang', op: 'G0' }, { label: 'G1 Linear', op: 'G1' }, 
-                { label: 'Winkel A', op: 'A' }, { label: 'Radius R', op: 'R' }
+                { l: 'G0 RAPID', op: 'G0' }, { l: 'G1 LINEAR', op: 'G1' }, 
+                { l: 'WINKEL A', op: 'A' }, { l: 'RADIUS R', op: 'R' }
             ],
             bohren: [
-                { label: 'G83 Bohren', op: 'G83' }, { label: 'G84 Gewinde', op: 'G84' }, 
-                { label: 'Zentrieren', op: 'G81' }, { label: 'Peck Drill', op: 'G73' }
+                { l: 'G83 DRILL', op: 'G83' }, { l: 'G81 CENT', op: 'G81' }, 
+                { l: 'G84 TAP', op: 'G84' }, { l: 'PECK', op: 'G73' }
             ],
             cycles: [
-                { label: 'G71 Schruppen', op: 'G71' }, { label: 'G75 Einstich', op: 'G75' }, 
-                { label: 'G33 Gewinde', op: 'G33' }, { label: 'G70 Schlicht', op: 'G70' }
+                { l: 'G71 ROUGH', op: 'G71' }, { l: 'G75 GROOV', op: 'G75' }, 
+                { l: 'G33 THRD', op: 'G33' }, { l: 'G70 FINISH', op: 'G70' }
             ],
             system: [
-                { label: 'G-Code Import', op: 'IMP' }, { label: 'G54 Upper', op: 'T1' }, 
-                { label: 'G55 Lower', op: 'T2' }, { label: 'Auto-Center', op: 'FIT' }
+                { l: 'IMPORT', op: 'IMP' }, { l: 'CENTER', op: 'FIT' }, 
+                { l: 'UPPER G54', op: 'T1' }, { l: 'LOWER G55', op: 'T2' }
             ]
         };
 
+        // 1. Управление меню
         function setMenu(key) {
-            document.querySelectorAll('.btn-mode').forEach(b => b.classList.remove('active'));
-            document.getElementById('m-' + key).classList.add('active');
-            const sub = document.getElementById('sub-menu');
-            sub.innerHTML = menus[key].map(m => `
-                <button onclick="handleOp('${m.op}')" class="btn-op">${m.label}</button>
-            `).join('');
+            document.querySelectorAll('.btn-main').forEach(b => b.classList.remove('active'));
+            document.getElementById('tab-' + key).classList.add('active');
+            sub.innerHTML = menus[key].map(m => `<button class="btn-sub" data-op="${m.op}">${m.l}</button>`).join('');
+            
+            // Привязка событий к новым кнопкам
+            sub.querySelectorAll('.btn-sub').forEach(btn => {
+                btn.onclick = () => {
+                    const op = btn.dataset.op;
+                    if (op === 'G0' || op === 'G1') addStep(op);
+                    if (op === 'IMP') document.getElementById('m-import').style.display = 'flex';
+                    if (op === 'FIT') autoFit();
+                };
+            });
         }
 
-        function handleOp(op) {
-            if (op === 'G0' || op === 'G1') addStep(op);
-            if (op === 'IMP') openM('m-import');
-            if (op === 'FIT') autoFit();
-        }
-
+        // 2. Отрисовка резца
         function drawTool() {
-            const side = document.getElementById('t-side').value;
-            const angle = parseFloat(document.getElementById('t-angle').value);
+            const mode = document.getElementById('t-mode').value;
+            const ang = parseFloat(document.getElementById('t-angle').value);
             const size = parseFloat(document.getElementById('t-size').value);
-            const p = document.getElementById('tool-p'), h = document.getElementById('tool-h');
+            const plate = document.getElementById('t-plate');
+            const halter = document.getElementById('t-halter');
 
-            const rad = (angle/2) * (Math.PI/180);
-            const dx = (size/2) * Math.sin(rad), dy = (size/2) * Math.cos(rad);
+            const rad = (ang / 2) * (Math.PI / 180);
+            const dx = (size / 2) * Math.sin(rad);
+            const dy = (size / 2) * Math.cos(rad);
 
-            // ФИЗИКА: Aussen режет сверху (острие вниз), Innen режет снизу (острие вверх)
-            if(side === 'outside') {
-                p.setAttribute('d', `M 0 0 L ${-dx} ${-dy} L 0 ${-dy*2} L ${dx} ${-dy} Z`);
-                h.setAttribute('d', `M ${-dx} ${-dy} L ${-dx} ${-dy-15} L ${-20} ${-dy-15} L ${-20} ${-dy} Z`);
+            if (mode === 'out') {
+                // AUSSEN: Над деталью, острие вниз
+                plate.setAttribute('d', `M 0 0 L ${-dx} ${-dy} L 0 ${-dy*2} L ${dx} ${-dy} Z`);
+                halter.setAttribute('d', `M ${-dx} ${-dy} L ${-dx} ${-dy-15} L ${-20} ${-dy-15} L ${-20} ${-dy} Z`);
             } else {
-                p.setAttribute('d', `M 0 0 L ${-dx} ${dy} L 0 ${dy*2} L ${dx} ${dy} Z`);
-                h.setAttribute('d', `M ${-dx} ${dy} L ${-dx} ${dy+15} L ${-20} ${dy+15} L ${-20} ${dy} Z`);
+                // INNEN: Снизу детали, острие вверх
+                plate.setAttribute('d', `M 0 0 L ${-dx} ${dy} L 0 ${dy*2} L ${dx} ${dy} Z`);
+                halter.setAttribute('d', `M ${-dx} ${dy} L ${-dx} ${dy+15} L ${-20} ${dy+15} L ${-20} ${dy} Z`);
             }
         }
 
-        function addStep(type) {
-            const last = program[program.length-1];
-            program.push({ x: last.x, z: last.z, type: type });
-            activeIdx = program.length - 1;
-            update();
-        }
-
+        // 3. Логика программы
         function update() {
-            const list = document.getElementById('step-list');
             list.innerHTML = program.map((p, i) => `
                 <div class="t-card ${i===activeIdx?'active':''}" onclick="selectStep(${i})">
-                    <span class="text-[9px] text-slate-500 font-bold uppercase">Step N${i} — ${p.type}</span>
-                    <div class="t-desc">X${p.x.toFixed(2)} Z${p.z.toFixed(2)}</div>
+                    <div class="t-card-title">Step N${i} — ${p.type}</div>
+                    <div class="t-card-val">X${p.x.toFixed(2)} Z${p.z.toFixed(2)}</div>
                 </div>
-            `).join('') + '<div style="height:50px"></div>';
+            `).join('');
 
             const cur = program[activeIdx];
-            document.getElementById('tool-unit').setAttribute('transform', `translate(${cur.z}, ${-cur.x/2})`);
-            document.getElementById('vX').innerText = cur.x.toFixed(3);
-            document.getElementById('vZ').innerText = cur.z.toFixed(3);
-            document.getElementById('inX').value = cur.x;
-            document.getElementById('inZ').value = cur.z;
-            
-            renderTrace();
-        }
+            document.getElementById('tool-group').setAttribute('transform', `translate(${cur.z}, ${-cur.x/2})`);
+            document.getElementById('dispX').innerText = cur.x.toFixed(3);
+            document.getElementById('dispZ').innerText = cur.z.toFixed(3);
+            document.getElementById('inpX').value = cur.x;
+            document.getElementById('inpZ').value = cur.z;
 
-        function selectStep(i) { activeIdx = i; update(); }
-        
-        function applyEdit() {
-            program[activeIdx].x = parseFloat(document.getElementById('inX').value) || 0;
-            program[activeIdx].z = parseFloat(document.getElementById('inZ').value) || 0;
-            update();
-        }
-
-        function renderTrace() {
-            const layer = document.getElementById('trace-layer');
+            // Траектория
+            const layer = document.getElementById('path-layer');
             layer.innerHTML = '';
             program.forEach((p, i) => {
-                if(i === 0) return;
+                if (i === 0) return;
                 const prev = program[i-1];
-                const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-                line.setAttribute("x1", prev.z); line.setAttribute("y1", -prev.x/2);
-                line.setAttribute("x2", p.z); line.setAttribute("y2", -p.x/2);
-                line.setAttribute("stroke", p.type === 'G0' ? '#21262d' : '#f2cc60');
-                line.setAttribute("stroke-width", "0.3");
-                layer.appendChild(line);
+                const l = document.createElementNS("http://www.w3.org/2000/svg", "line");
+                l.setAttribute("x1", prev.z); l.setAttribute("y1", -prev.x/2);
+                l.setAttribute("x2", p.z); l.setAttribute("y2", -p.x/2);
+                l.setAttribute("stroke", p.type === 'G0' ? '#21262d' : '#f2cc60');
+                l.setAttribute("stroke-width", "0.3");
+                layer.appendChild(l);
             });
         }
 
-        function doImport() {
-            const text = document.getElementById('imp-txt').value.toUpperCase().split('\n');
-            program = []; let lx = 40, lz = 2;
-            text.forEach(line => {
-                const xm = line.match(/X(-?\d*\.?\d+)/), zm = line.match(/Z(-?\d*\.?\d+)/);
-                if(xm || zm) {
-                    lx = xm ? parseFloat(xm[1]) : lx;
-                    lz = zm ? parseFloat(zm[1]) : lz;
-                    program.push({ x: lx, z: lz, type: line.includes('G0') ? 'G0' : 'G1' });
-                }
-            });
-            if(program.length === 0) program = [{ x: 40, z: 2, type: 'G0' }];
+        function addStep(t) {
+            program.push({ ...program[program.length-1], type: t });
             activeIdx = program.length - 1;
-            closeM('m-import'); update(); autoFit();
+            update();
+            editPanel.style.display = 'flex';
+        }
+
+        function selectStep(i) {
+            activeIdx = i;
+            update();
+            editPanel.style.display = 'flex';
         }
 
         function autoFit() {
-            const w = document.getElementById('viewport').clientWidth, h = document.getElementById('viewport').clientHeight;
-            document.getElementById('scene').setAttribute('transform', `translate(${w/2}, ${h/2}) scale(15)`);
+            const w = document.getElementById('viewport').clientWidth;
+            const h = document.getElementById('viewport').clientHeight;
+            document.getElementById('world').setAttribute('transform', `translate(${w/2}, ${h/2}) scale(15)`);
         }
 
-        function openM(id) { document.getElementById(id).style.display = 'flex'; }
-        function closeM(id) { document.getElementById(id).style.display = 'none'; }
-        function resetApp() { program = [{ x: 40, z: 2, type: 'G0' }]; activeIdx = 0; update(); }
+        // Инициализация событий (Безопасная)
+        document.getElementById('tab-drehen').onclick = () => setMenu('drehen');
+        document.getElementById('tab-bohren').onclick = () => setMenu('bohren');
+        document.getElementById('tab-cycles').onclick = () => setMenu('cycles');
+        document.getElementById('tab-system').onclick = () => setMenu('system');
+
+        document.getElementById('open-tool').onclick = () => document.getElementById('m-tool').style.display = 'flex';
+        document.getElementById('save-tool').onclick = () => { drawTool(); document.getElementById('m-tool').style.display = 'none'; };
+        document.getElementById('reset-app').onclick = () => { program = [{x:40,z:2,type:'G0'}]; activeIdx=0; update(); };
+        
+        document.getElementById('close-edit').onclick = () => editPanel.style.display = 'none';
+        document.getElementById('inpX').oninput = (e) => { program[activeIdx].x = parseFloat(e.target.value) || 0; update(); };
+        document.getElementById('inpZ').oninput = (e) => { program[activeIdx].z = parseFloat(e.target.value) || 0; update(); };
+
+        document.getElementById('do-import').onclick = () => {
+            const text = document.getElementById('import-area').value.toUpperCase().split('\n');
+            program = []; let lx=40, lz=2;
+            text.forEach(line => {
+                const xm = line.match(/X(-?\d*\.?\d+)/), zm = line.match(/Z(-?\d*\.?\d+)/);
+                if(xm || zm) {
+                    lx = xm ? parseFloat(xm[1]) : lx; lz = zm ? parseFloat(zm[1]) : lz;
+                    program.push({ x:lx, z:lz, type: line.includes('G0')?'G0':'G1' });
+                }
+            });
+            if(program.length===0) program = [{x:40,z:2,type:'G0'}];
+            activeIdx = program.length-1;
+            document.getElementById('m-import').style.display = 'none';
+            update(); autoFit();
+        };
+        document.getElementById('cancel-import').onclick = () => document.getElementById('m-import').style.display = 'none';
 
         window.onload = () => { setMenu('drehen'); drawTool(); update(); autoFit(); };
     </script>
