@@ -1,321 +1,486 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Nakamura v20 Light Premium</title>
+    <title>Nakamura Premium - Parser Edition</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         :root { --sab: env(safe-area-inset-bottom); }
         * { box-sizing: border-box; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
-        body { margin: 0; background: #f8f9fa; color: #1e293b; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
+        body { margin: 0; background: #0b1120; color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, monospace; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
         
         /* HEADER */
-        header { background: #ffffff; border-bottom: 2px solid #e2e8f0; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; z-index: 10; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-        .val-box { font-family: ui-monospace, SFMono-Regular, monospace; font-size: 22px; font-weight: 900; letter-spacing: -0.5px; }
+        header { background: #0f172a; border-bottom: 1px solid #1e293b; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; z-index: 10; }
+        .val-box { font-size: 24px; font-weight: 700; font-family: ui-monospace, monospace; letter-spacing: 1px; }
         
-        /* SIMULATION */
-        #sim-view { flex: 1; background: #f1f5f9; background-image: radial-gradient(#cbd5e1 1px, transparent 1px); background-size: 30px 30px; position: relative; border-bottom: 2px solid #e2e8f0; min-height: 25vh; }
-        
-        /* EDITOR BAR (Always above list) */
-        #editor-bar { background: #ffffff; border-bottom: 1px solid #e2e8f0; padding: 12px; display: none; gap: 10px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); z-index: 5; }
-        .ed-input { flex: 1; background: #f8f9fa; border: 2px solid #cbd5e1; border-radius: 8px; padding: 10px; font-size: 18px; font-weight: 800; text-align: center; color: #0f172a; font-family: ui-monospace, monospace; }
-        .ed-input:focus { outline: none; border-color: #3b82f6; background: #fff; }
+        /* VIEWS */
+        #view-parser, #view-sim { display: none; flex-direction: column; height: 100%; flex: 1; }
+        #view-parser.active, #view-sim.active { display: flex; }
 
-        /* LIST & CARDS [cite: 2026-02-04] */
-        #list-container { flex: 1; overflow-y: auto; padding: 12px; background: #f8f9fa; }
-        /* padding-bottom to avoid overlap */
-        #list-container::after { content: ''; display: block; height: 100px; } 
-        
-        .t-card { background: #ffffff; border: 2px solid #e2e8f0; border-radius: 12px; padding: 14px; margin-bottom: 10px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); transition: all 0.1s; cursor: grab; user-select: none; }
-        .t-card:active { cursor: grabbing; }
-        .t-card.active { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.2); background: #f0fdf4; }
-        
-        .t-nr { font-size: 11px; font-weight: 800; color: #64748b; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
-        .t-desc { font-size: 18px; font-weight: 900; color: #0f172a; font-family: ui-monospace, monospace; }
+        /* SIMULATION AREA */
+        #sim-area { flex: 1; background: #0b1120; position: relative; min-height: 25vh; border-bottom: 1px solid #1e293b; overflow: hidden; }
+        #sim-grid { position: absolute; inset: 0; background-image: radial-gradient(#334155 1px, transparent 1px); background-size: 30px 30px; opacity: 0.3; }
+        .sim-btn { position: absolute; right: 12px; width: 44px; height: 44px; background: #1e293b; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-weight: bold; border: 1px solid #334155; color: white; z-index: 10; }
+        .sim-btn:active { background: #334155; }
 
-        /* CONTROLS */
-        #controls { background: #ffffff; border-top: 2px solid #e2e8f0; padding: 12px; padding-bottom: calc(12px + var(--sab)); box-shadow: 0 -4px 6px -1px rgba(0,0,0,0.05); z-index: 10; }
+        /* LIST & CARDS */
+        #list-container { flex: 1; overflow-y: auto; padding: 12px; background: #0b1120; }
+        #list-container::after { content: ''; display: block; height: 120px; } /* Padding-bottom */
+        
+        .t-card { background: #0f172a; border: 1px solid #1e293b; border-radius: 12px; padding: 14px; margin-bottom: 10px; transition: 0.1s; cursor: pointer; display: flex; flex-direction: column; }
+        .t-card.active { border-color: #3b82f6; background: #172554; box-shadow: 0 0 0 1px #3b82f6; }
+        
+        .t-card-header { display: flex; justify-content: space-between; font-size: 11px; font-weight: 700; color: #64748b; margin-bottom: 6px; }
+        .t-card-body { font-size: 18px; font-weight: 700; color: #f8fafc; font-family: ui-monospace, monospace; display: flex; gap: 12px;}
+        
+        .val-g0 { color: #94a3b8; }
+        .val-g1 { color: #f8fafc; }
+        .val-x { color: #60a5fa; }
+        .val-z { color: #34d399; }
+
+        /* EDITOR CONTROLS */
+        #editor-controls { background: #0f172a; border-top: 1px solid #1e293b; padding: 12px; padding-bottom: calc(12px + var(--sab)); z-index: 10; box-shadow: 0 -4px 10px rgba(0,0,0,0.5); }
+        .input-row { display: flex; gap: 8px; margin-bottom: 12px; }
+        .axis-input { flex: 1; background: #1e293b; border: 1px solid #334155; color: white; padding: 12px; border-radius: 8px; font-size: 18px; font-family: monospace; font-weight: bold; text-align: center; }
+        .axis-input:focus { outline: none; border-color: #3b82f6; background: #0f172a; }
+        
         .btn-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
-        
-        .btn-tab { background: #f1f5f9; border: 2px solid #e2e8f0; color: #475569; border-radius: 10px; height: 48px; font-weight: 800; font-size: 12px; text-transform: uppercase; transition: 0.2s; }
-        .btn-tab.active { background: #3b82f6; border-color: #2563eb; color: #ffffff; }
-        
-        .btn-act { background: #ffffff; border: 2px solid #cbd5e1; color: #0f172a; border-radius: 10px; height: 56px; font-weight: 800; font-size: 13px; box-shadow: 0 2px 0 #cbd5e1; }
-        .btn-act:active { transform: translateY(2px); box-shadow: 0 0 0 #cbd5e1; }
-
-        .btn-sys { background: #1e293b; color: white; border-color: #0f172a; }
+        .btn-act { background: #1e293b; border: 1px solid #334155; color: white; border-radius: 8px; height: 50px; font-weight: 700; font-size: 12px; text-transform: uppercase; }
+        .btn-act:active { background: #334155; }
+        .btn-act.highlight { background: #3b82f6; border-color: #2563eb; }
+        .btn-act.g0-toggle.is-g0 { background: #ef4444; border-color: #dc2626; } /* Красный для G0 */
+        .btn-act.g0-toggle.is-g1 { background: #10b981; border-color: #059669; } /* Зеленый для G1 */
 
         /* MODALS */
-        .modal { position: fixed; inset: 0; background: rgba(15,23,42,0.8); z-index: 1000; display: none; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(4px); }
-        .modal-box { background: #ffffff; border-radius: 16px; padding: 24px; width: 100%; max-width: 400px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); border: 2px solid #e2e8f0; }
+        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 1000; display: none; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(5px); }
+        .modal-box { background: #0f172a; border-radius: 16px; padding: 20px; width: 100%; max-width: 400px; border: 1px solid #1e293b; }
+        
+        /* LIST ITEM IN PARSER */
+        .tool-list-item { background: #f8fafc; color: #0f172a; padding: 16px; border-radius: 10px; font-weight: 700; margin-bottom: 10px; text-transform: uppercase; display: flex; justify-content: space-between; align-items: center;}
     </style>
 </head>
 <body>
 
-    <header>
-        <div class="flex gap-6">
-            <div><span class="text-[10px] font-black text-slate-500 uppercase block">Ist-X (Dia)</span><div id="val-x" class="val-box text-slate-800">0.000</div></div>
-            <div><span class="text-[10px] font-black text-emerald-600 uppercase block">Ist-Z (Len)</span><div id="val-z" class="val-box text-emerald-600">0.000</div></div>
+    <div id="view-parser" class="active">
+        <header>
+            <div>
+                <div class="text-[10px] font-black text-blue-500 uppercase tracking-widest">G-Code Parser</div>
+                <div class="font-bold text-white text-sm">Programm Analyse</div>
+            </div>
+        </header>
+        <div class="p-4 flex flex-col h-full overflow-y-auto">
+            <textarea id="raw-gcode" class="w-full h-40 bg-slate-800 text-slate-300 font-mono text-xs p-3 rounded-lg border border-slate-600 mb-4 focus:border-blue-500 outline-none" placeholder="G-Code einfügen..."></textarea>
+            
+            <button onclick="parseGCode()" class="w-full bg-blue-600 text-white font-bold py-4 rounded-xl uppercase tracking-widest mb-6">Liste Laden</button>
+            
+            <div id="parsed-tools-list" class="flex-1 overflow-y-auto">
+                <div class="text-center text-slate-500 text-sm mt-10">Keine Daten geladen.</div>
+            </div>
         </div>
-        <div class="flex gap-2">
-            <button onclick="openModal('mod-tool')" class="bg-slate-800 text-white font-bold px-4 py-2 rounded-lg text-xs uppercase">Tool</button>
-            <button onclick="clearProgram()" class="bg-red-100 text-red-600 font-bold px-4 py-2 rounded-lg text-xs uppercase">Reset</button>
-        </div>
-    </header>
-
-    <main id="sim-view">
-        <svg id="svg" class="w-full h-full">
-            <g id="camera" transform="translate(150,150) scale(10)">
-                <line x1="-1000" y1="0" x2="1000" y2="0" stroke="#94a3b8" stroke-width="0.3" stroke-dasharray="2,2" />
-                <line x1="0" y1="-1000" x2="0" y2="1000" stroke="#94a3b8" stroke-width="0.3" />
-                
-                <g id="layer-trace"></g>
-                
-                <g id="layer-tool" style="transition: transform 0.1s linear">
-                    <path id="t-hold" fill="#475569" stroke="#1e293b" stroke-width="0.2" />
-                    <path id="t-ins" fill="#fbbf24" stroke="#b45309" stroke-width="0.3" />
-                    <circle r="0.6" fill="#ef4444" />
-                </g>
-            </g>
-        </svg>
-    </main>
-
-    <div id="editor-bar">
-        <input id="inp-x" type="number" step="0.1" class="ed-input" placeholder="X" oninput="updateAxis('x', this.value)">
-        <input id="inp-z" type="number" step="0.1" class="ed-input" placeholder="Z" oninput="updateAxis('z', this.value)">
     </div>
 
-    <div id="list-container"></div>
+    <div id="view-sim">
+        <header>
+            <div class="flex flex-col">
+                <span class="text-[10px] font-black text-blue-500 uppercase tracking-widest">Nakamura Premium</span>
+                <span id="header-tool-name" class="text-xs font-bold text-slate-400">G54 | UPPER TURRET</span>
+            </div>
+            <div class="flex gap-2">
+                <button onclick="openModal('mod-tool')" class="bg-slate-800 border border-slate-700 text-white px-4 py-2 rounded-lg text-xs font-bold uppercase">Werkzeug</button>
+                <button onclick="backToParser()" class="bg-slate-800 border border-slate-700 text-white px-4 py-2 rounded-lg text-xs font-bold uppercase">Zurück</button>
+            </div>
+        </header>
 
-    <div id="controls">
-        <div id="sub-menu" class="btn-grid mb-3"></div>
-        <div class="btn-grid">
-            <button onclick="setMenu('drehen')" id="tab-drehen" class="btn-tab active">Drehen</button>
-            <button onclick="setMenu('bohren')" id="tab-bohren" class="btn-tab">Bohren</button>
-            <button onclick="setMenu('cycles')" id="tab-cycles" class="btn-tab">Cycles</button>
-            <button onclick="setMenu('system')" id="tab-system" class="btn-tab">System</button>
+        <div id="sim-area">
+            <div id="sim-grid"></div>
+            <button class="sim-btn" style="top: 12px" onclick="zoom(1.2)">+</button>
+            <button class="sim-btn" style="top: 68px" onclick="zoom(0.8)">-</button>
+            <button class="sim-btn text-[10px]" style="top: 124px; padding: 0" onclick="autoFit()">CTR</button>
+            
+            <div class="absolute top-3 left-4 pointer-events-none z-10">
+                <div class="text-[10px] text-slate-500 font-bold uppercase mb-1">Pos</div>
+                <div class="val-box val-x">X<span id="ui-x">0.000</span></div>
+                <div class="val-box val-z">Z<span id="ui-z">0.000</span></div>
+            </div>
+
+            <svg id="svg" class="w-full h-full absolute inset-0 z-0">
+                <g id="camera" transform="translate(150,150) scale(4)">
+                    <line x1="-1000" y1="0" x2="1000" y2="0" stroke="#334155" stroke-width="0.3" stroke-dasharray="2,2" />
+                    <line x1="0" y1="-1000" x2="0" y2="1000" stroke="#334155" stroke-width="0.3" />
+                    <g id="layer-trace"></g>
+                    <g id="layer-tool" style="transition: transform 0.15s ease-out">
+                        <polygon id="t-ins" points="0,0 -4,6 4,6" fill="#fbbf24" stroke="#d97706" stroke-width="0.3" />
+                        <polygon id="t-hold" points="-4,6 -4,25 15,25 15,6" fill="#334155" stroke="#0f172a" stroke-width="0.2" />
+                        <circle r="0.6" fill="#ef4444" />
+                    </g>
+                </g>
+            </svg>
+        </div>
+
+        <div id="list-container"></div>
+
+        <div id="editor-controls">
+            <div class="input-row">
+                <div class="relative flex-1">
+                    <span class="absolute left-3 top-3 font-bold text-blue-400">X</span>
+                    <input id="inp-x" type="number" step="0.1" class="axis-input w-full pl-8" oninput="updateActiveStep('x', this.value)">
+                </div>
+                <div class="relative flex-1">
+                    <span class="absolute left-3 top-3 font-bold text-emerald-400">Z</span>
+                    <input id="inp-z" type="number" step="0.1" class="axis-input w-full pl-8" oninput="updateActiveStep('z', this.value)">
+                </div>
+            </div>
+            
+            <div class="btn-grid">
+                <button id="btn-toggle-g" onclick="toggleGMode()" class="btn-act g0-toggle is-g1">G1</button>
+                <button onclick="addStep()" class="btn-act highlight">+ Add</button>
+                <button onclick="deleteStep()" class="btn-act bg-red-900 border-red-800">Del</button>
+                <button class="btn-act">Angle A</button>
+            </div>
         </div>
     </div>
 
     <div id="mod-tool" class="modal">
         <div class="modal-box">
-            <h2 class="text-xl font-black text-slate-800 mb-4">Werkzeug Setup</h2>
-            <select id="tool-side" class="w-full p-3 border-2 border-slate-300 rounded-lg mb-4 font-bold text-slate-700">
-                <option value="AUSSEN">AUSSEN (OD)</option>
-                <option value="INNEN">INNEN (ID)</option>
+            <h2 class="text-lg font-black text-white italic mb-4 uppercase">Tool Configuration</h2>
+            
+            <label class="text-[10px] text-slate-400 font-bold uppercase block mb-1">Type</label>
+            <select class="w-full bg-slate-800 text-blue-400 border border-slate-600 rounded-lg p-3 mb-4 font-bold outline-none">
+                <option>Turning (VBMT/CNMG)</option>
+                <option>Drilling</option>
             </select>
-            <button onclick="saveTool()" class="w-full bg-blue-600 text-white font-black py-4 rounded-xl uppercase">Speichern</button>
-        </div>
-    </div>
 
-    <div id="mod-json" class="modal">
-        <div class="modal-box w-full max-w-lg">
-            <h2 class="text-xl font-black text-slate-800 mb-2">JSON Manager</h2>
-            <textarea id="json-text" class="w-full h-48 p-3 border-2 border-slate-300 rounded-lg font-mono text-sm mb-4 bg-slate-50"></textarea>
-            <div class="flex gap-2">
-                <button onclick="closeModal('mod-json')" class="flex-1 py-3 bg-slate-200 text-slate-800 font-bold rounded-lg">Cancel</button>
-                <button onclick="doImportJSON()" class="flex-1 py-3 bg-blue-600 text-white font-bold rounded-lg">Import</button>
-            </div>
+            <label class="text-[10px] text-slate-400 font-bold uppercase block mb-1">Mounting</label>
+            <select id="tool-mount" class="w-full bg-slate-800 text-blue-400 border border-slate-600 rounded-lg p-3 mb-4 font-bold outline-none">
+                <option value="OD">Radial (X-Direction / AUSSEN)</option>
+                <option value="ID">Axial (Z-Direction / INNEN)</option>
+            </select>
+
+            <button onclick="saveToolConfig()" class="w-full bg-cyan-600 text-white font-bold py-4 rounded-xl mt-4">SAVE & CLOSE</button>
         </div>
     </div>
 
     <script>
-        // --- СОСТОЯНИЕ (STATE) ---
-        let program = [{ id: 'id_' + Date.now(), type: 'G0', x: 50, z: 2 }];
-        let activeIdx = 0;
+        // ================= СТЕЙТ (STATE) =================
+        let parsedTools = []; 
+        let activeToolIndex = -1;
+        let activeStepIndex = 0;
+        let currentScale = 4;
 
-        const menus = {
-            drehen: [{l:'G0 RAPID', v:'G0'}, {l:'G1 LINEAR', v:'G1'}, {l:'G2/G3 RAD', v:'G2'}, {l:'CHAMFER', v:'CHF'}],
-            bohren: [{l:'G83 DRILL', v:'G83'}, {l:'G84 TAP', v:'G84'}, {l:'G81 CENT', v:'G81'}, {l:'PECK', v:'G73'}],
-            cycles: [{l:'G71 ROUGH', v:'G71'}, {l:'G75 GROOV', v:'G75'}, {l:'G33 THRD', v:'G33'}, {l:'G70 FIN', v:'G70'}],
-            system: [{l:'JSON EXPORT', v:'EXP'}, {l:'JSON IMPORT', v:'IMP'}, {l:'AUTO-FIT', v:'FIT'}, {l:'G-CODE', v:'TXT'}]
-        };
+        // Вшитый пример для быстрого старта (вырезка из твоего кода)
+        const defaultGCode = `N1G54M41 
+G0G99T0101M765 
+(KOPIERST.R0.8 G54)
+G96S180M3
+G0X50 Z2
+G1Z.1F.2 
+G1X0F.12 
+G0X36Z1
+G1X40.5Z-2
+M1
 
-        // --- УПРАВЛЕНИЕ МЕНЮ ---
-        function setMenu(key) {
-            document.querySelectorAll('.btn-tab').forEach(b => b.classList.remove('active'));
-            document.getElementById('tab-' + key).classList.add('active');
+N2G54M41 
+G0G99T0202 
+(KOPIERST. AUSSEN FERTIG G54)
+G0X47 Z2.
+G1Z0.F.15
+G1X-0.8
+G0X28Z1
+G1X40Z-2.2
+M1`;
+
+        document.getElementById('raw-gcode').value = defaultGCode;
+
+        // ================= ПАРСЕР =================
+        function parseGCode() {
+            const text = document.getElementById('raw-gcode').value;
+            const lines = text.split('\n');
             
-            const sub = document.getElementById('sub-menu');
-            sub.innerHTML = menus[key].map(m => `
-                <button onclick="handleBtn('${m.v}')" class="btn-act ${key==='system'?'btn-sys':''}">${m.l}</button>
-            `).join('');
+            parsedTools = [];
+            let currentTool = null;
+            let currentX = 0, currentZ = 0, currentG = 'G0';
+
+            for (let i = 0; i < lines.length; i++) {
+                let line = lines[i].trim().toUpperCase();
+                if (!line) continue;
+
+                // Ищем вызов инструмента (T0101, T0202 и т.д.)
+                let tMatch = line.match(/T(\d{4})/);
+                if (tMatch) {
+                    if (currentTool) parsedTools.push(currentTool); // Сохраняем предыдущий
+                    currentTool = { 
+                        number: tMatch[0], 
+                        desc: 'Unbekanntes Werkzeug', 
+                        steps: [] 
+                    };
+                    
+                    // Пытаемся найти описание в скобках на следующей строке
+                    let nextLine = (lines[i+1] || '').trim();
+                    if (nextLine.startsWith('(')) {
+                        currentTool.desc = nextLine.replace(/[()]/g, '');
+                    }
+                    // Сбрасываем координаты для нового инструмента (приблизительно к безопасной точке)
+                    currentX = 50; currentZ = 5; currentG = 'G0';
+                } 
+                else if (currentTool) {
+                    // Ищем координаты X, Z и G-коды
+                    let gMatch = line.match(/G([01])/);
+                    let xMatch = line.match(/X([-\d.]+)/);
+                    let zMatch = line.match(/Z([-\d.]+)/);
+
+                    if (gMatch) currentG = 'G' + gMatch[1];
+
+                    // Если есть движение по осям, создаем кадр (step)
+                    if (xMatch || zMatch) {
+                        if (xMatch) currentX = parseFloat(xMatch[1]);
+                        if (zMatch) currentZ = parseFloat(zMatch[1]);
+                        
+                        currentTool.steps.push({
+                            type: currentG,
+                            x: currentX,
+                            z: currentZ,
+                            raw: line // Сохраняем оригинал для истории
+                        });
+                    }
+                    
+                    // Прерываем сбор кадра при М1 (опциональный останов)
+                    if (line.includes('M1') && !line.includes('(')) {
+                        // Не обязательно прерывать, но можно, чтобы логика была чистой
+                    }
+                }
+            }
+            if (currentTool && currentTool.steps.length > 0) {
+                parsedTools.push(currentTool);
+            }
+
+            renderToolsList();
         }
 
-        function handleBtn(op) {
-            if (op === 'FIT') return autoFit();
-            if (op === 'EXP') return openJSON(true);
-            if (op === 'IMP') return openJSON(false);
-            if (op === 'TXT') return alert('G-Code Generator in Pro Version');
+        // ================= СПИСОК ИНСТРУМЕНТОВ =================
+        function renderToolsList() {
+            const container = document.getElementById('parsed-tools-list');
+            if (parsedTools.length === 0) {
+                container.innerHTML = `<div class="text-center text-red-500 font-bold mt-10">Keine Werkzeuge gefunden!</div>`;
+                return;
+            }
 
-            // ДОБАВЛЕНИЕ НОВОГО КАДРА
-            const last = program[activeIdx] || { x: 0, z: 0 };
-            const newStep = { id: 'id_' + Date.now(), type: op, x: last.x, z: last.z };
-            
-            // Вставляем ПОСЛЕ активного
-            program.splice(activeIdx + 1, 0, newStep);
-            activeIdx++;
-            
-            renderList();
-        }
-
-        // --- ОТРИСОВКА СПИСКА ---
-        function renderList() {
-            const list = document.getElementById('list-container');
-            list.innerHTML = program.map((p, i) => `
-                <div class="t-card ${i === activeIdx ? 'active' : ''}" 
-                     draggable="true" 
-                     data-idx="${i}" 
-                     onclick="selectStep(${i})"
-                     ondragstart="dragStart(event, ${i})"
-                     ondragover="dragOver(event)"
-                     ondrop="drop(event, ${i})">
-                    <div class="t-nr">T-NR ${String(i).padStart(2,'0')} — ${p.type}</div>
-                    <div class="t-desc" id="txt-${p.id}">X${Number(p.x).toFixed(3)} Z${Number(p.z).toFixed(3)}</div>
+            container.innerHTML = parsedTools.map((t, idx) => `
+                <div class="tool-list-item" onclick="loadToolIntoSim(${idx})">
+                    <div class="flex flex-col">
+                        <span class="text-sm font-black text-blue-600">${t.number}</span>
+                        <span class="text-xs text-slate-500">${t.desc}</span>
+                    </div>
+                    <div class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-[10px]">
+                        ${t.steps.length} Steps
+                    </div>
                 </div>
             `).join('');
+        }
+
+        // ================= ЗАГРУЗКА В СИМУЛЯТОР =================
+        function loadToolIntoSim(idx) {
+            activeToolIndex = idx;
+            activeStepIndex = 0;
             
-            updateUI();
-        }
-
-        function selectStep(i) {
-            activeIdx = i;
-            renderList();
-        }
-
-        // --- БЕЗОПАСНЫЙ ВВОД (БЕЗ ПОТЕРИ ФОКУСА) ---
-        function updateAxis(axis, val) {
-            const num = parseFloat(val) || 0;
-            const p = program[activeIdx];
-            p[axis] = num;
+            const t = parsedTools[idx];
+            document.getElementById('header-tool-name').innerText = `${t.number} | ${t.desc}`;
             
-            // Обновляем текст напрямую в DOM, чтобы не перерисовывать весь список
-            document.getElementById(`txt-${p.id}`).innerText = `X${Number(p.x).toFixed(3)} Z${Number(p.z).toFixed(3)}`;
-            updateUI(true); // Обновляем графику, но не список
+            // Если инструмент пустой, создадим базовый кадр
+            if (t.steps.length === 0) {
+                t.steps.push({ type: 'G0', x: 0, z: 0 });
+            }
+
+            document.getElementById('view-parser').classList.remove('active');
+            document.getElementById('view-sim').classList.add('active');
+            
+            renderSimList();
+            setTimeout(autoFit, 100);
         }
 
-        // --- ОБНОВЛЕНИЕ ГРАФИКИ И ПАНЕЛЕЙ ---
-        function updateUI(skipList = false) {
-            const p = program[activeIdx];
+        function backToParser() {
+            document.getElementById('view-sim').classList.remove('active');
+            document.getElementById('view-parser').classList.add('active');
+        }
+
+        // ================= РЕДАКТОР КАДРОВ =================
+        function renderSimList() {
+            const steps = parsedTools[activeToolIndex].steps;
+            const list = document.getElementById('list-container');
+            
+            // Формируем N-номера: N10, N20...
+            list.innerHTML = steps.map((s, i) => `
+                <div id="card-${i}" class="t-card ${i === activeStepIndex ? 'active' : ''}" onclick="selectStep(${i})">
+                    <div class="t-card-header">
+                        <span>N${(i+1)*10}</span>
+                        <span>${s.type}</span>
+                    </div>
+                    <div class="t-card-body">
+                        <span class="val-x">X${s.x.toFixed(3)}</span>
+                        <span class="val-z">Z${s.z.toFixed(3)}</span>
+                    </div>
+                </div>
+            `).join('');
+
+            // Скролл к активному элементу
+            const activeCard = document.getElementById(`card-${activeStepIndex}`);
+            if (activeCard) activeCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+            updateEditorAndGraphics();
+        }
+
+        function selectStep(idx) {
+            activeStepIndex = idx;
+            renderSimList();
+        }
+
+        // ================= ИНПУТЫ И КНОПКИ =================
+        function updateActiveStep(axis, val) {
+            const steps = parsedTools[activeToolIndex].steps;
+            if (!steps[activeStepIndex]) return;
+            
+            let num = parseFloat(val);
+            if (isNaN(num)) num = 0;
+            
+            steps[activeStepIndex][axis] = num;
+            
+            // Быстрое обновление DOM без перерисовки всего списка (чтобы не терять фокус клавиатуры)
+            const card = document.getElementById(`card-${activeStepIndex}`);
+            if (card) {
+                card.querySelector(`.val-${axis}`).innerText = `${axis.toUpperCase()}${num.toFixed(3)}`;
+            }
+            updateEditorAndGraphics(true);
+        }
+
+        function toggleGMode() {
+            const step = parsedTools[activeToolIndex].steps[activeStepIndex];
+            if (!step) return;
+            
+            // Переключаем тип
+            step.type = step.type === 'G0' ? 'G1' : 'G0';
+            renderSimList(); // Тут нужен полный рендер
+        }
+
+        function addStep() {
+            const steps = parsedTools[activeToolIndex].steps;
+            const current = steps[activeStepIndex] || { x: 0, z: 0, type: 'G1' };
+            
+            // Копируем текущий кадр и вставляем ПОСЛЕ него
+            const newStep = { type: current.type, x: current.x, z: current.z };
+            steps.splice(activeStepIndex + 1, 0, newStep);
+            activeStepIndex++;
+            renderSimList();
+        }
+
+        function deleteStep() {
+            const steps = parsedTools[activeToolIndex].steps;
+            if (steps.length <= 1) return; // Не удаляем последний
+            
+            steps.splice(activeStepIndex, 1);
+            if (activeStepIndex >= steps.length) activeStepIndex = steps.length - 1;
+            renderSimList();
+        }
+
+        // ================= ГРАФИКА =================
+        function updateEditorAndGraphics(skipListUpdate = false) {
+            const steps = parsedTools[activeToolIndex].steps;
+            const p = steps[activeStepIndex];
             if (!p) return;
 
-            // Панель редактора
-            const ed = document.getElementById('editor-bar');
-            ed.style.display = 'flex';
+            // 1. Обновляем инпуты
             document.getElementById('inp-x').value = p.x;
             document.getElementById('inp-z').value = p.z;
+            
+            // 2. Обновляем кнопку G0/G1
+            const btnG = document.getElementById('btn-toggle-g');
+            btnG.innerText = p.type;
+            if (p.type === 'G0') {
+                btnG.classList.add('is-g0'); btnG.classList.remove('is-g1');
+            } else {
+                btnG.classList.add('is-g1'); btnG.classList.remove('is-g0');
+            }
 
-            // Табло
-            document.getElementById('val-x').innerText = Number(p.x).toFixed(3);
-            document.getElementById('val-z').innerText = Number(p.z).toFixed(3);
+            // 3. Табло координат (сверху слева)
+            document.getElementById('ui-x').innerText = p.x.toFixed(3);
+            document.getElementById('ui-z').innerText = p.z.toFixed(3);
 
-            // Резец (Помним: X - диаметр, поэтому X/2. Y вниз = минус)
+            // 4. Двигаем резец (X - диаметр, делим на 2)
             document.getElementById('layer-tool').setAttribute('transform', `translate(${p.z}, ${-p.x/2})`);
 
-            // Траектория
+            // 5. Рисуем траекторию до текущего кадра
             const trace = document.getElementById('layer-trace');
             trace.innerHTML = '';
-            for (let i = 1; i <= activeIdx; i++) {
-                const p1 = program[i-1], p2 = program[i];
+            for (let i = 1; i <= activeStepIndex; i++) {
+                const p1 = steps[i-1], p2 = steps[i];
                 const l = document.createElementNS('http://www.w3.org/2000/svg', 'line');
                 l.setAttribute('x1', p1.z); l.setAttribute('y1', -p1.x/2);
                 l.setAttribute('x2', p2.z); l.setAttribute('y2', -p2.x/2);
-                l.setAttribute('stroke', p2.type === 'G0' ? '#94a3b8' : '#3b82f6');
-                l.setAttribute('stroke-width', '0.6');
+                l.setAttribute('stroke', p2.type === 'G0' ? '#64748b' : '#fbbf24'); // G0 - серый, G1 - желтый
+                l.setAttribute('stroke-width', p2.type === 'G0' ? '0.3' : '0.6');
+                if (p2.type === 'G0') l.setAttribute('stroke-dasharray', '1,1');
                 trace.appendChild(l);
             }
         }
 
-        // --- DRAG AND DROP ---
-        let dragIdx = null;
-        function dragStart(e, i) { dragIdx = i; }
-        function dragOver(e) { e.preventDefault(); }
-        function drop(e, targetIdx) {
-            e.preventDefault();
-            if (dragIdx === targetIdx || dragIdx === null) return;
-            const item = program.splice(dragIdx, 1)[0];
-            program.splice(targetIdx, 0, item);
-            activeIdx = targetIdx;
-            renderList();
+        // ================= УТИЛИТЫ И КАМЕРА =================
+        function zoom(factor) {
+            currentScale *= factor;
+            applyCam();
+        }
+        
+        let camX = 150, camY = 150;
+        function applyCam() {
+            document.getElementById('camera').setAttribute('transform', `translate(${camX}, ${camY}) scale(${currentScale})`);
         }
 
-        // --- ИНСТРУМЕНТ (AUSSEN / INNEN) ---
-        function saveTool() {
-            const side = document.getElementById('tool-side').value;
+        function autoFit() {
+            const steps = parsedTools[activeToolIndex]?.steps;
+            if (!steps || steps.length === 0) return;
+            
+            const w = document.getElementById('sim-area').clientWidth;
+            const h = document.getElementById('sim-area').clientHeight;
+            
+            let minZ = steps[0].z, maxZ = minZ, minX = -steps[0].x/2, maxX = minX;
+            steps.forEach(p => {
+                if (p.z < minZ) minZ = p.z; if (p.z > maxZ) maxZ = p.z;
+                let rx = -p.x/2; if (rx < minX) minX = rx; if (rx > maxX) maxX = rx;
+            });
+
+            const pad = 10;
+            minZ -= pad; maxZ += pad; minX -= pad; maxX += pad;
+            
+            let sc = Math.min(w / (maxZ - minZ || 1), h / (maxX - minX || 1));
+            currentScale = Math.max(1, Math.min(sc, 20));
+
+            const cx = (minZ + maxZ) / 2, cy = (minX + maxX) / 2;
+            camX = w/2 - cx*currentScale;
+            camY = h/2 - cy*currentScale;
+            
+            applyCam();
+        }
+
+        // ================= MODAL & TOOL CONFIG =================
+        function openModal(id) { document.getElementById(id).style.display = 'flex'; }
+        function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+        
+        function saveToolConfig() {
+            const mount = document.getElementById('tool-mount').value;
             const h = document.getElementById('t-hold'), i = document.getElementById('t-ins');
             
-            if (side === 'AUSSEN') {
-                // Острие вниз (Y+), тело вверх (Y-)
-                i.setAttribute('d', 'M 0 0 L -4 -6 L 4 -6 Z');
-                h.setAttribute('d', 'M -4 -6 L -4 -25 L 15 -25 L 15 -6 Z');
-            } else {
-                // Острие вверх (Y-), тело вниз (Y+)
-                i.setAttribute('d', 'M 0 0 L -4 6 L 4 6 Z');
-                h.setAttribute('d', 'M -4 6 L -4 25 L 15 25 L 15 6 Z');
+            if (mount === 'OD') { // Наружный (острие вниз)
+                i.setAttribute('points', '0,0 -4,-6 4,-6');
+                h.setAttribute('points', '-4,-6 -4,-25 15,-25 15,-6');
+            } else { // Внутренний (острие вверх)
+                i.setAttribute('points', '0,0 -4,6 4,6');
+                h.setAttribute('points', '-4,6 -4,25 15,25 15,6');
             }
             closeModal('mod-tool');
         }
 
-        // --- JSON (IMPORT/EXPORT) ---
-        function openJSON(isExport) {
-            const txt = document.getElementById('json-text');
-            if (isExport) txt.value = JSON.stringify(program, null, 2);
-            else txt.value = '';
-            openModal('mod-json');
-        }
-
-        function doImportJSON() {
-            try {
-                const parsed = JSON.parse(document.getElementById('json-text').value);
-                if (Array.isArray(parsed) && parsed.length > 0) {
-                    program = parsed;
-                    // Гарантируем наличие id
-                    program.forEach((p, i) => { if(!p.id) p.id = 'id_'+Date.now()+i; });
-                    activeIdx = program.length - 1;
-                    renderList();
-                    autoFit();
-                    closeModal('mod-json');
-                }
-            } catch (e) {
-                alert("Ungültiges JSON Format!");
-            }
-        }
-
-        // --- AUTO-FIT ---
-        function autoFit() {
-            if (program.length === 0) return;
-            const cam = document.getElementById('camera');
-            const w = document.getElementById('sim-view').clientWidth, h = document.getElementById('sim-view').clientHeight;
-            
-            let minZ = program[0].z, maxZ = minZ, minX = -program[0].x/2, maxX = minX;
-            program.forEach(p => {
-                if (p.z < minZ) minZ = p.z; if (p.z > maxZ) maxZ = p.z;
-                let rx = -p.x / 2;
-                if (rx < minX) minX = rx; if (rx > maxX) maxX = rx;
-            });
-
-            const pad = 15;
-            minZ -= pad; maxZ += pad; minX -= pad; maxX += pad;
-            
-            let scale = Math.min(w / (maxZ - minZ || 1), h / (maxX - minX || 1));
-            if (scale < 1) scale = 1; if (scale > 30) scale = 30;
-
-            const cx = (minZ + maxZ) / 2, cy = (minX + maxX) / 2;
-            cam.setAttribute('transform', `translate(${w/2 - cx*scale}, ${h/2 - cy*scale}) scale(${scale})`);
-        }
-
-        // --- УТИЛИТЫ ---
-        function openModal(id) { document.getElementById(id).style.display = 'flex'; }
-        function closeModal(id) { document.getElementById(id).style.display = 'none'; }
-        function clearProgram() { program = [{ id: 'id_1', type: 'G0', x: 50, z: 2 }]; activeIdx = 0; renderList(); autoFit(); }
-
-        // ЗАПУСК
+        // INIT
         window.onload = () => {
-            setMenu('drehen');
-            saveTool();
-            renderList();
-            setTimeout(autoFit, 100);
+            // Можно сразу распарсить тестовый код
+            parseGCode();
         };
     </script>
 </body>
