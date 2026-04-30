@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>CNC Programmer — Nakamura-Tome Style</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;500;600;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  :root {
+    --bg-deep:    #080e1a;
+    --bg-panel:   #0b1423;
+    --bg-card:    #0f1d30;
+    --bg-input:   #0a1628;
+    --border:     #1e3a5f;
+    --border-lit: #2a5f9e;
+    --accent-b:   #1d7cff;
+    --accent-b2:  #3b9eff;
+    --accent-em:  #00e5a0;
+    --accent-am:  #f5c518;
+    --accent-rd:  #ff4444;
+    --text-hi:    #e8f4ff;
+    --text-md:    #7ca0c8;
+    --text-lo:    #3a5a7a;
+    --g0-col:     #00e5a0;
+    --g1-col:     #1d7cff;
+    --scanline: repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.07) 2px,rgba(0,0,0,0.07) 4px);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; overflow: hidden; background: var(--bg-deep); font-family: 'Rajdhani', sans-serif; }
+  body { display: flex; flex-direction: column; }
+  .mono { font-family: 'Share Tech Mono', monospace; }
+  .orb  { font-family: 'Orbitron', sans-serif; }
+
+/* Scanline overlay */
+body::before {
+content:’’; position:fixed; inset:0; pointer-events:none; z-index:9999;
+background: var(–scanline); opacity:0.4;
+}
+
+/* Scrollbars */
+::-webkit-scrollbar { width:4px; height:4px; }
+::-webkit-scrollbar-track { background: var(–bg-deep); }
+::-webkit-scrollbar-thumb { background: var(–border-lit); border-radius:2px; }
+
+/* Header */
+#header {
+background: linear-gradient(90deg, #060c17 0%, #0b1423 60%, #060c17 100%);
+border-bottom: 1px solid var(–border-lit);
+padding: 0 12px;
+height: 44px;
+display: flex; align-items: center; justify-content: space-between;
+flex-shrink: 0;
+position: relative;
+z-index: 10;
+}
+#header::after {
+content:’’; position:absolute; bottom:0; left:0; right:0; height:1px;
+background: linear-gradient(90deg, transparent, var(–accent-b), var(–accent-em), var(–accent-b), transparent);
+opacity:0.6;
+}
+
+.logo { font-family:‘Orbitron’,sans-serif; font-size:13px; font-weight:700; letter-spacing:2px; color:var(–accent-b2);
+text-shadow: 0 0 14px rgba(29,124,255,0.5); }
+.logo span { color:var(–accent-em); }
+
+/* Nav tabs */
+.nav-tabs { display:flex; gap:4px; }
+.nav-tab {
+padding: 4px 14px; font-size:11px; font-weight:600; letter-spacing:1px;
+border: 1px solid var(–border); border-radius:3px; cursor:pointer;
+color: var(–text-md); background: var(–bg-panel); transition: all 0.15s;
+font-family:‘Orbitron’,sans-serif;
+}
+.nav-tab.active { border-color:var(–accent-b); color:var(–accent-b2);
+background: rgba(29,124,255,0.12); box-shadow: 0 0 8px rgba(29,124,255,0.2); }
+.nav-tab:hover:not(.active) { border-color:var(–border-lit); color:var(–text-hi); }
+
+/* Screens */
+.screen { display:none; flex:1; overflow:hidden; flex-direction:column; }
+.screen.active { display:flex; }
+
+/* ── SCREEN 1 ─────────────────────────────────────────── */
+#screen1 { padding: 8px; gap: 8px; }
+
+.panel {
+background: var(–bg-panel); border: 1px solid var(–border);
+border-radius: 6px; overflow: hidden;
+}
+.panel-header {
+background: linear-gradient(90deg, rgba(29,124,255,0.08), transparent);
+border-bottom: 1px solid var(–border);
+padding: 6px 12px; font-size:10px; font-weight:600; letter-spacing:2px;
+color:var(–text-md); font-family:‘Orbitron’,sans-serif;
+display:flex; align-items:center; gap:8px;
+}
+.panel-header .dot { width:6px; height:6px; border-radius:50%; background:var(–accent-em); box-shadow:0 0 6px var(–accent-em); }
+
+#gcode-input {
+width:100%; background: var(–bg-input); color: #7dd3a8;
+border:none; outline:none; padding:10px; resize:none;
+font-family:‘Share Tech Mono’,monospace; font-size:12px; line-height:1.6;
+height: 160px;
+}
+#gcode-input::placeholder { color: var(–text-lo); }
+
+.parse-btn {
+margin: 8px; padding: 9px; width: calc(100% - 16px);
+background: linear-gradient(90deg, rgba(29,124,255,0.2), rgba(0,229,160,0.15));
+border: 1px solid var(–accent-b); border-radius: 4px; color:var(–accent-b2);
+font-family:‘Orbitron’,sans-serif; font-size:11px; font-weight:700; letter-spacing:2px;
+cursor:pointer; transition:all 0.2s;
+}
+.parse-btn:hover { background: linear-gradient(90deg,rgba(29,124,255,0.35),rgba(0,229,160,0.25)); box-shadow:0 0 12px rgba(29,124,255,0.3); }
+.parse-btn:active { transform:scale(0.98); }
+
+.tool-list { overflow-y:auto; max-height: 220px; }
+.tool-item {
+display:flex; align-items:center; gap:10px; padding: 9px 12px;
+border-bottom: 1px solid rgba(30,58,95,0.5); cursor:pointer; transition:all 0.15s;
+}
+.tool-item:hover { background: rgba(29,124,255,0.07); }
+.tool-item.active { background: rgba(29,124,255,0.14); border-left:3px solid var(–accent-b); }
+.tool-badge {
+font-family:‘Share Tech Mono’,monospace; font-size:11px; font-weight:700;
+color:var(–accent-am); background:rgba(245,197,24,0.1); border:1px solid rgba(245,197,24,0.3);
+padding:2px 7px; border-radius:3px; white-space:nowrap; min-width:56px; text-align:center;
+}
+.tool-desc { font-size:13px; color:var(–text-hi); font-weight:500; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.tool-steps { font-size:10px; color:var(–text-md); font-family:‘Share Tech Mono’,monospace; }
+.tool-arrow { color:var(–accent-b); font-size:16px; }
+.empty-state { padding:20px; text-align:center; color:var(–text-lo); font-size:12px; font-family:‘Share Tech Mono’,monospace; }
+
+/* ── SCREEN 2 ─────────────────────────────────────────── */
+#screen2 { gap:0; }
+
+/* SVG Sim area */
+#sim-wrap {
+flex-shrink:0; position:relative;
+background: radial-gradient(ellipse at center, #0a1628 0%, #060c17 100%);
+border-bottom: 1px solid var(–border-lit);
+height: 200px; overflow:hidden;
+}
+#sim-wrap::before {
+content:’’; position:absolute; inset:0; pointer-events:none;
+background: radial-gradient(ellipse at 50% 100%, rgba(29,124,255,0.06) 0%, transparent 70%);
+}
+#sim-svg { width:100%; height:100%; }
+
+.sim-toolbar {
+position:absolute; top:6px; right:6px; display:flex; gap:4px; z-index:5;
+}
+.sim-btn {
+padding:4px 8px; font-size:9px; font-family:‘Orbitron’,sans-serif; letter-spacing:1px;
+border:1px solid var(–border-lit); border-radius:3px; cursor:pointer;
+color:var(–text-md); background:rgba(11,20,35,0.85); transition:all 0.15s;
+}
+.sim-btn:hover { border-color:var(–accent-b); color:var(–accent-b2); }
+.sim-btn.active-mode { border-color:var(–accent-em); color:var(–accent-em); }
+
+/* Current tool badge in sim */
+#sim-tool-badge {
+position:absolute; top:6px; left:8px;
+font-family:‘Orbitron’,sans-serif; font-size:9px; color:var(–accent-am);
+background:rgba(245,197,24,0.08); border:1px solid rgba(245,197,24,0.3);
+padding:3px 8px; border-radius:3px; letter-spacing:1px;
+}
+
+/* Coords HUD */
+#coords-hud {
+position:absolute; bottom:6px; left:8px;
+display:flex; gap:10px; font-family:‘Share Tech Mono’,monospace; font-size:10px;
+}
+.hud-item { color:var(–text-lo); }
+.hud-item span { color:var(–accent-em); }
+
+/* Steps list */
+#steps-wrap {
+flex:1; overflow-y:auto; background:var(–bg-deep);
+border-bottom: 1px solid var(–border);
+}
+.step-item {
+display:flex; align-items:center; gap:8px; padding: 7px 10px;
+border-bottom: 1px solid rgba(30,58,95,0.35); cursor:pointer;
+transition: all 0.12s; position:relative;
+}
+.step-item:hover { background:rgba(29,124,255,0.05); }
+.step-item.active {
+background: rgba(29,124,255,0.11);
+border-left: 3px solid var(–accent-b);
+box-shadow: inset 0 0 20px rgba(29,124,255,0.06);
+}
+.step-n { font-family:‘Share Tech Mono’,monospace; font-size:10px; color:var(–text-lo); min-width:30px; }
+.step-type {
+font-family:‘Share Tech Mono’,monospace; font-size:11px; font-weight:700;
+padding:1px 6px; border-radius:2px; min-width:30px; text-align:center;
+}
+.step-type.G0 { color:var(–g0-col); background:rgba(0,229,160,0.1); border:1px solid rgba(0,229,160,0.25); }
+.step-type.G1 { color:var(–g1-col); background:rgba(29,124,255,0.1); border:1px solid rgba(29,124,255,0.25); }
+.step-coords { font-family:‘Share Tech Mono’,monospace; font-size:11px; color:var(–text-md); flex:1; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+.step-coords .lbl { color:var(–text-lo); font-size:9px; }
+.step-coords .val { color:var(–text-hi); }
+.step-coords .null-val { color:var(–text-lo); }
+.step-del { color:var(–text-lo); font-size:14px; padding:2px 5px; border-radius:3px; border:none; background:transparent; cursor:pointer; transition:all 0.12s; }
+.step-del:hover { color:var(–accent-rd); background:rgba(255,68,68,0.1); }
+
+/* Editor panel */
+#editor-panel {
+flex-shrink:0; background:var(–bg-panel);
+border-top:1px solid var(–border-lit); padding:10px;
+}
+.editor-grid {
+display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:8px;
+}
+.inp-group { display:flex; flex-direction:column; gap:3px; }
+.inp-label {
+font-size:9px; font-family:‘Orbitron’,sans-serif; letter-spacing:2px;
+color:var(–text-lo); display:flex; justify-content:space-between; align-items:center;
+}
+.inp-label .inp-unit { color:var(–accent-b); font-size:8px; }
+.inp-field {
+background:var(–bg-input); border:1px solid var(–border); border-radius:4px;
+color:var(–text-hi); font-family:‘Share Tech Mono’,monospace; font-size:15px;
+padding:8px 10px; outline:none; transition:border-color 0.15s; width:100%;
+}
+.inp-field:focus { border-color:var(–accent-b); box-shadow:0 0 8px rgba(29,124,255,0.2); }
+.inp-field::placeholder { color:var(–text-lo); font-size:12px; }
+
+.editor-btns { display:flex; gap:6px; }
+.e-btn {
+flex:1; padding:9px 6px; border-radius:4px; border:1px solid; cursor:pointer;
+font-family:‘Orbitron’,sans-serif; font-size:9px; letter-spacing:1px; font-weight:700;
+transition:all 0.15s; text-align:center;
+}
+.btn-toggle {
+border-color:var(–border-lit); color:var(–text-md); background:var(–bg-card);
+}
+.btn-toggle.is-g0 { border-color:var(–g0-col); color:var(–g0-col); background:rgba(0,229,160,0.08); }
+.btn-toggle.is-g1 { border-color:var(–g1-col); color:var(–g1-col); background:rgba(29,124,255,0.08); }
+.btn-toggle:hover { opacity:0.8; }
+.btn-add { border-color:var(–accent-em); color:var(–accent-em); background:rgba(0,229,160,0.08); }
+.btn-add:hover { background:rgba(0,229,160,0.16); box-shadow:0 0 8px rgba(0,229,160,0.2); }
+.btn-del { border-color:var(–accent-rd); color:var(–accent-rd); background:rgba(255,68,68,0.06); }
+.btn-del:hover { background:rgba(255,68,68,0.14); }
+.btn-export { border-color:var(–accent-am); color:var(–accent-am); background:rgba(245,197,24,0.06); }
+.btn-export:hover { background:rgba(245,197,24,0.14); }
+
+/* Modal */
+#modal-overlay {
+display:none; position:fixed; inset:0; z-index:1000;
+background:rgba(4,9,18,0.85); backdrop-filter:blur(4px);
+align-items:center; justify-content:center; padding:16px;
+}
+#modal-overlay.open { display:flex; }
+#modal-box {
+background:var(–bg-panel); border:1px solid var(–border-lit); border-radius:8px;
+width:100%; max-width:320px; overflow:hidden;
+box-shadow: 0 0 40px rgba(29,124,255,0.2);
+}
+.modal-header {
+background:linear-gradient(90deg,rgba(29,124,255,0.12),transparent);
+border-bottom:1px solid var(–border);
+padding:10px 14px; font-family:‘Orbitron’,sans-serif; font-size:11px;
+color:var(–accent-b2); letter-spacing:2px; display:flex; justify-content:space-between; align-items:center;
+}
+.modal-close { color:var(–text-lo); cursor:pointer; font-size:18px; transition:color 0.15s; }
+.modal-close:hover { color:var(–accent-rd); }
+.modal-body { padding:16px; }
+.modal-option {
+display:flex; align-items:center; gap:12px; padding:12px;
+border:1px solid var(–border); border-radius:5px; margin-bottom:8px;
+cursor:pointer; transition:all 0.15s;
+}
+.modal-option:hover { border-color:var(–accent-b); background:rgba(29,124,255,0.07); }
+.modal-option.selected { border-color:var(–accent-em); background:rgba(0,229,160,0.07); }
+.modal-option-title { font-size:13px; font-weight:600; color:var(–text-hi); }
+.modal-option-desc { font-size:11px; color:var(–text-md); margin-top:2px; }
+.modal-icon { font-size:24px; width:36px; text-align:center; }
+
+/* No tool selected overlay */
+#no-tool-msg {
+position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+flex-direction:column; gap:6px; pointer-events:none;
+}
+#no-tool-msg .nt-icon { font-size:28px; opacity:0.3; }
+#no-tool-msg .nt-text { font-family:‘Orbitron’,sans-serif; font-size:10px; color:var(–text-lo); letter-spacing:2px; }
+
+/* Notification toast */
+#toast {
+position:fixed; bottom:80px; left:50%; transform:translateX(-50%) translateY(20px);
+background:rgba(0,229,160,0.15); border:1px solid var(–accent-em); color:var(–accent-em);
+padding:8px 18px; border-radius:4px; font-family:‘Orbitron’,sans-serif; font-size:10px;
+letter-spacing:1px; opacity:0; transition:all 0.3s; z-index:9000; pointer-events:none;
+white-space:nowrap;
+}
+#toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+/* Animated grid lines in SVG */
+.grid-line { stroke: rgba(30,58,95,0.5); stroke-width:0.5; }
+.grid-line-major { stroke: rgba(42,95,158,0.4); stroke-width:0.7; }
+.axis-line { stroke: var(–border-lit); stroke-width:1; }
+.path-g0 { stroke:var(–g0-col); stroke-width:1.5; stroke-dasharray:5,3; fill:none; opacity:0.7; }
+.path-g1 { stroke:var(–g1-col); stroke-width:2; fill:none; }
+.path-active { stroke-width:2.5; filter: drop-shadow(0 0 3px currentColor); }
+.tool-marker { filter: drop-shadow(0 0 4px var(–accent-am)); }
+.workpiece { fill:rgba(42,95,158,0.15); stroke:rgba(42,95,158,0.4); stroke-width:1; }
+
+/* Responsive fix: hide some chrome on very small screens */
+@media (max-height: 600px) {
+#sim-wrap { height: 150px; }
+}
+</style>
+
+</head>
+<body>
+
+<!-- HEADER -->
+
+<div id="header">
+  <div class="logo orb">CNC<span>PRO</span></div>
+  <div class="nav-tabs">
+    <div class="nav-tab active" onclick="switchScreen(1)" id="tab1">G-CODE</div>
+    <div class="nav-tab" onclick="switchScreen(2)" id="tab2">SIM</div>
+    <div class="nav-tab sim-btn" onclick="openModal()" style="border-color:var(--border-lit)">CFG</div>
+  </div>
+</div>
+
+<!-- SCREEN 1: G-Code Input -->
+
+<div class="screen active" id="screen1">
+  <div class="panel" style="flex-shrink:0;">
+    <div class="panel-header"><div class="dot"></div>G-CODE INPUT</div>
+    <textarea id="gcode-input" placeholder="; Paste your G-code here...
+; Tool lines: T0101 followed by (TOOL NAME)
+; Supported: G0/G1 X.. Z.. A.. R..
+
+T0101
+(KOPIERSTAHL)
+G0 X80 Z5
+G1 X60 Z-30
+G1 X40 Z-50 A135
+G1 X40 Z-80 R2
+
+T0202
+(PLANSTAHL)
+G0 X90 Z5
+G1 X0 Z0
+G1 X0 Z-5
+G1 X85 Z-5 A90
+
+T0303
+(BOHRER 10MM)
+G0 X0 Z5
+G1 X0 Z-40
+G0 X0 Z5”></textarea>
+<button class="parse-btn" onclick="parseGCode()">▶ PARSE G-CODE</button>
+
+  </div>
+
+  <div class="panel" style="flex:1; overflow:hidden; display:flex; flex-direction:column;">
+    <div class="panel-header"><div class="dot" style="background:var(--accent-am);box-shadow:0 0 6px var(--accent-am);"></div>TOOL LIST</div>
+    <div class="tool-list" id="tool-list">
+      <div class="empty-state">No tools parsed yet.<br>Paste G-code and press PARSE.</div>
+    </div>
+  </div>
+</div>
+
+<!-- SCREEN 2: Simulation & Editor -->
+
+<div class="screen" id="screen2" style="position:relative;">
+  <!-- SIM AREA -->
+  <div id="sim-wrap">
+    <div id="sim-tool-badge">— NO TOOL —</div>
+    <div class="sim-toolbar">
+      <div class="sim-btn active-mode" id="btn-od" onclick="setToolMode('OD')">OD</div>
+      <div class="sim-btn" id="btn-id" onclick="setToolMode('ID')">ID</div>
+    </div>
+    <svg id="sim-svg" viewBox="0 0 360 200" preserveAspectRatio="xMidYMid meet"></svg>
+    <div id="coords-hud">
+      <div class="hud-item">X:<span id="hud-x">0.000</span></div>
+      <div class="hud-item">Z:<span id="hud-z">0.000</span></div>
+      <div class="hud-item" id="hud-a-wrap" style="display:none">A:<span id="hud-a">0</span>°</div>
+    </div>
+    <div id="no-tool-msg">
+      <div class="nt-icon">⚙</div>
+      <div class="nt-text">SELECT A TOOL</div>
+    </div>
+  </div>
+
+  <!-- STEPS LIST -->
+
+  <div id="steps-wrap">
+    <div id="steps-list"></div>
+  </div>
+
+  <!-- EDITOR PANEL -->
+
+  <div id="editor-panel">
+    <div class="editor-grid">
+      <div class="inp-group">
+        <div class="inp-label">X <span class="inp-unit">mm</span></div>
+        <input class="inp-field" id="inp-x" type="number" step="0.001" placeholder="—" oninput="updateActiveStep('x', this.value)">
+      </div>
+      <div class="inp-group">
+        <div class="inp-label">Z <span class="inp-unit">mm</span></div>
+        <input class="inp-field" id="inp-z" type="number" step="0.001" placeholder="—" oninput="updateActiveStep('z', this.value)">
+      </div>
+      <div class="inp-group">
+        <div class="inp-label">A <span class="inp-unit">deg</span></div>
+        <input class="inp-field" id="inp-a" type="number" step="1" placeholder="—" oninput="updateActiveStep('a', this.value)">
+      </div>
+      <div class="inp-group">
+        <div class="inp-label">R <span class="inp-unit">mm</span></div>
+        <input class="inp-field" id="inp-r" type="number" step="0.1" placeholder="—" oninput="updateActiveStep('r', this.value)">
+      </div>
+    </div>
+    <div class="editor-btns">
+      <button class="e-btn btn-toggle is-g1" id="btn-toggle-type" onclick="toggleStepType()">G1</button>
+      <button class="e-btn btn-add" onclick="addStep()">+ STEP</button>
+      <button class="e-btn btn-del" onclick="deleteActiveStep()">✕ DEL</button>
+      <button class="e-btn btn-export" onclick="exportGCode()">↑ EXP</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Tool Config -->
+
+<div id="modal-overlay">
+  <div id="modal-box">
+    <div class="modal-header">
+      TOOL CONFIGURATION
+      <span class="modal-close" onclick="closeModal()">×</span>
+    </div>
+    <div class="modal-body">
+      <div class="modal-option selected" id="opt-od" onclick="setToolMode('OD'); closeModal()">
+        <div class="modal-icon">🔩</div>
+        <div>
+          <div class="modal-option-title">OD TURNING</div>
+          <div class="modal-option-desc">External diameter / facing operations</div>
+        </div>
+      </div>
+      <div class="modal-option" id="opt-id" onclick="setToolMode('ID'); closeModal()">
+        <div class="modal-icon">🕳</div>
+        <div>
+          <div class="modal-option-title">ID BORING</div>
+          <div class="modal-option-desc">Internal diameter / boring operations</div>
+        </div>
+      </div>
+      <div style="margin-top:12px; font-size:11px; color:var(--text-lo); font-family:'Share Tech Mono',monospace; line-height:1.6;">
+        Tip: Tool mode affects the graphic rendering in the simulation view. OD tools approach from outside; ID tools from inside.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+
+<div id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════════════════
+const state = {
+  tools: [],          // [{id, tool, desc, steps:[{type,x,z,a,r}]}]
+  activeToolIdx: -1,
+  activeStepIdx: -1,
+  toolMode: 'OD',     // 'OD' | 'ID'
+  simScale: 2.5,
+  simOffset: { x: 280, z: 30 },  // SVG pixel coords for origin
+  animFrame: null,
+  toolPos: { x: 0, z: 0 },
+  targetPos: { x: 0, z: 0 },
+};
+
+// ══════════════════════════════════════════════════════
+//  NAV
+// ══════════════════════════════════════════════════════
+function switchScreen(n) {
+  document.querySelectorAll('.screen').forEach((s,i) => s.classList.toggle('active', i===n-1));
+  document.querySelectorAll('.nav-tab').forEach((t,i) => t.classList.toggle('active', i===n-1));
+  if (n===2) renderAll();
+}
+
+// ══════════════════════════════════════════════════════
+//  PARSER
+// ══════════════════════════════════════════════════════
+function parseGCode() {
+  const raw = document.getElementById('gcode-input').value;
+  const lines = raw.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+  const tools = [];
+  let currentTool = null;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+
+    // Tool change line: T followed by digits
+    const tMatch = line.match(/^(T\d{2,4})\b/i);
+    if (tMatch) {
+      // Look ahead for description in next comment line
+      let desc = 'UNKNOWN';
+      if (i+1 < lines.length) {
+        const nextLine = lines[i+1];
+        const dMatch = nextLine.match(/^\(([^)]+)\)/);
+        if (dMatch) { desc = dMatch[1].toUpperCase(); i++; }
+      }
+      currentTool = { id: tools.length, tool: tMatch[1].toUpperCase(), desc, steps: [] };
+      tools.push(currentTool);
+      continue;
+    }
+
+    // Motion line
+    if (currentTool) {
+      const typeMatch = line.match(/\b(G0|G00|G1|G01)\b/i);
+      if (typeMatch) {
+        const type = typeMatch[1].toUpperCase().replace('00','0').replace('01','1');
+        const xM = line.match(/X([+-]?\d*\.?\d+)/i);
+        const zM = line.match(/Z([+-]?\d*\.?\d+)/i);
+        const aM = line.match(/A([+-]?\d*\.?\d+)/i);
+        const rM = line.match(/R([+-]?\d*\.?\d+)/i);
+        const step = {
+          type: type === 'G00' ? 'G0' : type === 'G01' ? 'G1' : type,
+          x: xM ? parseFloat(xM[1]) : null,
+          z: zM ? parseFloat(zM[1]) : null,
+          a: aM ? parseFloat(aM[1]) : null,
+          r: rM ? parseFloat(rM[1]) : null,
+        };
+        currentTool.steps.push(step);
+      }
+    }
+  }
+
+  state.tools = tools;
+  state.activeToolIdx = -1;
+  state.activeStepIdx = -1;
+  renderToolList();
+  if (tools.length > 0) toast(`${tools.length} TOOL${tools.length>1?'S':''} PARSED`);
+  else toast('NO TOOLS FOUND');
+}
+
+// ══════════════════════════════════════════════════════
+//  RENDER TOOL LIST (Screen 1)
+// ══════════════════════════════════════════════════════
+function renderToolList() {
+  const el = document.getElementById('tool-list');
+  if (!state.tools.length) {
+    el.innerHTML = '<div class="empty-state">No tools parsed yet.<br>Paste G-code and press PARSE.</div>';
+    return;
+  }
+  el.innerHTML = state.tools.map((t, i) => `
+    <div class="tool-item ${state.activeToolIdx===i?'active':''}" onclick="selectTool(${i})">
+      <div class="tool-badge">${t.tool}</div>
+      <div class="tool-desc">${t.desc}</div>
+      <div class="tool-steps">${t.steps.length}N</div>
+      <div class="tool-arrow">›</div>
+    </div>
+  `).join('');
+}
+
+// ══════════════════════════════════════════════════════
+//  SELECT TOOL
+// ══════════════════════════════════════════════════════
+function selectTool(idx) {
+  state.activeToolIdx = idx;
+  state.activeStepIdx = state.tools[idx].steps.length > 0 ? 0 : -1;
+  renderToolList();
+  renderAll();
+  switchScreen(2);
+}
+
+// ══════════════════════════════════════════════════════
+//  RENDER SCREEN 2
+// ══════════════════════════════════════════════════════
+function renderAll() {
+  renderStepsList();
+  renderEditor();
+  renderSVG();
+  updateSimBadge();
+}
+
+function updateSimBadge() {
+  const badge = document.getElementById('sim-tool-badge');
+  const noTool = document.getElementById('no-tool-msg');
+  const tool = activeTool();
+  if (tool) {
+    badge.textContent = `${tool.tool} — ${tool.desc}`;
+    noTool.style.display = 'none';
+  } else {
+    badge.textContent = '— NO TOOL —';
+    noTool.style.display = 'flex';
+  }
+}
+
+function activeTool() {
+  return state.activeToolIdx >= 0 ? state.tools[state.activeToolIdx] : null;
+}
+function activeStep() {
+  const t = activeTool();
+  return (t && state.activeStepIdx >= 0) ? t.steps[state.activeStepIdx] : null;
+}
+
+// ══════════════════════════════════════════════════════
+//  STEPS LIST
+// ══════════════════════════════════════════════════════
+function renderStepsList() {
+  const el = document.getElementById('steps-list');
+  const tool = activeTool();
+  if (!tool) { el.innerHTML = '<div class="empty-state" style="padding:20px">Select a tool from G-CODE tab.</div>'; return; }
+
+  el.innerHTML = tool.steps.map((s, i) => {
+    const n = `N${String((i+1)*10).padStart(3,'0')}`;
+    const coords = buildCoordsHtml(s);
+    return `
+      <div class="step-item ${state.activeStepIdx===i?'active':''}" id="step-item-${i}" onclick="selectStep(${i})">
+        <div class="step-n mono">${n}</div>
+        <div class="step-type ${s.type}">${s.type}</div>
+        <div class="step-coords">${coords}</div>
+        <button class="step-del" onclick="event.stopPropagation();deleteStep(${i})">✕</button>
+      </div>`;
+  }).join('');
+
+  scrollToActive();
+}
+
+function buildCoordsHtml(s) {
+  const parts = [];
+  if (s.x !== null) parts.push(`<span class="lbl">X</span><span class="val">${s.x.toFixed(3)}</span>`);
+  if (s.z !== null) parts.push(`<span class="lbl">Z</span><span class="val">${s.z.toFixed(3)}</span>`);
+  if (s.a !== null) parts.push(`<span class="lbl">A</span><span class="val">${s.a}°</span>`);
+  if (s.r !== null) parts.push(`<span class="lbl">R</span><span class="val">${s.r}</span>`);
+  return parts.join(' ');
+}
+
+function scrollToActive() {
+  const el = document.getElementById(`step-item-${state.activeStepIdx}`);
+  if (el) el.scrollIntoView({ block:'nearest', behavior:'smooth' });
+}
+
+// ══════════════════════════════════════════════════════
+//  SELECT STEP
+// ══════════════════════════════════════════════════════
+function selectStep(idx) {
+  state.activeStepIdx = idx;
+  renderAll();
+  scrollToActive();
+}
+
+// ══════════════════════════════════════════════════════
+//  EDITOR
+// ══════════════════════════════════════════════════════
+function renderEditor() {
+  const s = activeStep();
+  const xi = document.getElementById('inp-x');
+  const zi = document.getElementById('inp-z');
+  const ai = document.getElementById('inp-a');
+  const ri = document.getElementById('inp-r');
+  const btn = document.getElementById('btn-toggle-type');
+
+  if (!s) {
+    [xi,zi,ai,ri].forEach(el => { el.value=''; el.disabled=true; });
+    btn.textContent='—'; btn.className='e-btn btn-toggle';
+    return;
+  }
+  [xi,zi,ai,ri].forEach(el => el.disabled=false);
+  xi.value = s.x !== null ? s.x : '';
+  zi.value = s.z !== null ? s.z : '';
+  ai.value = s.a !== null ? s.a : '';
+  ri.value = s.r !== null ? s.r : '';
+  btn.textContent = s.type;
+  btn.className = `e-btn btn-toggle ${s.type === 'G0' ? 'is-g0' : 'is-g1'}`;
+}
+
+function updateActiveStep(field, val) {
+  const s = activeStep();
+  if (!s) return;
+  const num = val === '' ? null : parseFloat(val);
+  s[field] = (isNaN(num) ? null : num);
+  renderStepsList();
+  renderSVG();
+  updateHUD();
+}
+
+function toggleStepType() {
+  const s = activeStep();
+  if (!s) return;
+  s.type = s.type === 'G0' ? 'G1' : 'G0';
+  renderAll();
+}
+
+function addStep() {
+  const tool = activeTool();
+  if (!tool) { toast('SELECT A TOOL FIRST'); return; }
+  const prev = tool.steps[tool.steps.length-1];
+  const newStep = { type:'G1', x: prev?prev.x:0, z: prev?prev.z:0, a:null, r:null };
+  tool.steps.push(newStep);
+  state.activeStepIdx = tool.steps.length - 1;
+  renderAll();
+  scrollToActive();
+  toast('STEP ADDED');
+}
+
+function deleteActiveStep() {
+  const tool = activeTool();
+  if (!tool || state.activeStepIdx < 0) return;
+  deleteStep(state.activeStepIdx);
+}
+
+function deleteStep(idx) {
+  const tool = activeTool();
+  if (!tool) return;
+  tool.steps.splice(idx, 1);
+  if (state.activeStepIdx >= tool.steps.length) state.activeStepIdx = tool.steps.length - 1;
+  renderAll();
+  toast('STEP DELETED');
+}
+
+// ══════════════════════════════════════════════════════
+//  SVG SIMULATION
+// ══════════════════════════════════════════════════════
+function toSVG(x, z) {
+  // CNC lathe: Z is horizontal axis (left=positive), X is vertical (up=positive)
+  // Flip: Z increases right-to-left in lathe convention, X from center upward
+  const svgX = state.simOffset.x - z * state.simScale;
+  const svgY = state.simOffset.z - (x/2) * state.simScale;  // /2 for radius
+  return { sx: svgX, sy: svgY };
+}
+
+function renderSVG() {
+  const svg = document.getElementById('sim-svg');
+  const W = 360, H = 200;
+  const tool = activeTool();
+
+  let html = '';
+
+  // Grid
+  html += drawGrid(W, H);
+
+  if (!tool) { svg.innerHTML = html; return; }
+
+  // Workpiece cylinder (rough approximation from max X)
+  const maxX = Math.max(...tool.steps.filter(s=>s.x!==null).map(s=>s.x), 60);
+  const minZ = Math.min(...tool.steps.filter(s=>s.z!==null).map(s=>s.z), -80);
+  const origin = toSVG(0, 0);
+  const minPt = toSVG(maxX, minZ);
+  html += `<rect class="workpiece" x="${Math.min(origin.sx,minPt.sx)}" y="${minPt.sy}" width="${Math.abs(origin.sx-minPt.sx)}" height="${origin.sy-minPt.sy}" rx="1"/>`;
+  // Mirror for lathe symmetry (below centerline)
+  html += `<rect class="workpiece" x="${Math.min(origin.sx,minPt.sx)}" y="${origin.sy}" width="${Math.abs(origin.sx-minPt.sx)}" height="${origin.sy-minPt.sy}" rx="1"/>`;
+
+  // Centerline
+  html += `<line x1="0" y1="${origin.sy}" x2="${W}" y2="${origin.sy}" stroke="rgba(42,95,158,0.4)" stroke-width="0.8" stroke-dasharray="8,4"/>`;
+
+  // Path
+  let pathD = '';
+  let prevPt = null;
+  tool.steps.forEach((s, i) => {
+    if (s.x === null && s.z === null) return;
+    const pt = toSVG(s.x ?? 0, s.z ?? 0);
+    if (prevPt === null) { pathD = `M${pt.sx.toFixed(1)},${pt.sy.toFixed(1)}`; }
+    else { pathD += ` L${pt.sx.toFixed(1)},${pt.sy.toFixed(1)}`; }
+
+    // Draw segment up to this point
+    if (prevPt !== null) {
+      const cls = s.type === 'G0' ? 'path-g0' : 'path-g1';
+      const active = i === state.activeStepIdx ? ' path-active' : '';
+      const col = s.type === 'G0' ? 'var(--g0-col)' : 'var(--g1-col)';
+      html += `<line x1="${prevPt.sx.toFixed(1)}" y1="${prevPt.sy.toFixed(1)}" x2="${pt.sx.toFixed(1)}" y2="${pt.sy.toFixed(1)}" class="${cls}${active}" style="stroke:${col}"/>`;
+      // Mirror
+      const mirY1 = (2*origin.sy - prevPt.sy).toFixed(1);
+      const mirY2 = (2*origin.sy - pt.sy).toFixed(1);
+      html += `<line x1="${prevPt.sx.toFixed(1)}" y1="${mirY1}" x2="${pt.sx.toFixed(1)}" y2="${mirY2}" class="${cls}" style="stroke:${col};opacity:0.4"/>`;
+    }
+    prevPt = pt;
+  });
+
+  // Step dots
+  tool.steps.forEach((s, i) => {
+    if (s.x === null && s.z === null) return;
+    const pt = toSVG(s.x ?? 0, s.z ?? 0);
+    const isAct = i === state.activeStepIdx;
+    const col = s.type === 'G0' ? 'var(--g0-col)' : 'var(--g1-col)';
+    const r = isAct ? 5 : 3;
+    html += `<circle cx="${pt.sx.toFixed(1)}" cy="${pt.sy.toFixed(1)}" r="${r}" fill="${isAct?col:'transparent'}" stroke="${col}" stroke-width="1.5"/>`;
+    if (isAct) html += `<circle cx="${pt.sx.toFixed(1)}" cy="${pt.sy.toFixed(1)}" r="9" fill="none" stroke="${col}" stroke-width="0.8" opacity="0.4"/>`;
+  });
+
+  // Tool icon at active step
+  const aStep = activeStep();
+  if (aStep && (aStep.x !== null || aStep.z !== null)) {
+    const tp = toSVG(aStep.x ?? 0, aStep.z ?? 0);
+    html += drawToolIcon(tp.sx, tp.sy, state.toolMode);
+    // Update HUD
+    document.getElementById('hud-x').textContent = (aStep.x ?? 0).toFixed(3);
+    document.getElementById('hud-z').textContent = (aStep.z ?? 0).toFixed(3);
+    if (aStep.a !== null) {
+      document.getElementById('hud-a-wrap').style.display = '';
+      document.getElementById('hud-a').textContent = aStep.a;
+    } else {
+      document.getElementById('hud-a-wrap').style.display = 'none';
+    }
+  }
+
+  // Axis labels
+  html += `<text x="${origin.sx+4}" y="${origin.sy-4}" fill="var(--text-lo)" font-size="8" font-family="Share Tech Mono">X</text>`;
+  html += `<text x="${W-14}" y="${origin.sy-4}" fill="var(--text-lo)" font-size="8" font-family="Share Tech Mono">Z</text>`;
+  html += `<text x="${origin.sx+2}" y="${H-4}" fill="var(--text-lo)" font-size="8" font-family="Share Tech Mono">0,0</text>`;
+
+  svg.innerHTML = html;
+}
+
+function drawGrid(W, H) {
+  let g = '';
+  const origin = toSVG(0, 0);
+  // Minor grid every 10mm
+  for (let z = -200; z <= 50; z += 10) {
+    const p = toSVG(0, z);
+    const isMajor = z % 50 === 0;
+    g += `<line x1="${p.sx}" y1="0" x2="${p.sx}" y2="${H}" class="${isMajor?'grid-line-major':'grid-line'}"/>`;
+  }
+  for (let x = -80; x <= 80; x += 10) {
+    const p = toSVG(x, 0);
+    const isMajor = x % 50 === 0;
+    g += `<line x1="0" y1="${p.sy}" x2="${W}" y2="${p.sy}" class="${isMajor?'grid-line-major':'grid-line'}"/>`;
+  }
+  // Axes
+  g += `<line x1="${origin.sx}" y1="0" x2="${origin.sx}" y2="${H}" class="axis-line"/>`;
+  g += `<line x1="0" y1="${origin.sy}" x2="${W}" y2="${origin.sy}" class="axis-line"/>`;
+  return g;
+}
+
+function drawToolIcon(cx, cy, mode) {
+  if (mode === 'OD') {
+    // OD tool: triangle pointing left/down
+    const pts = `${cx},${cy-6} ${cx+10},${cy+8} ${cx-10},${cy+8}`;
+    return `<g class="tool-marker">
+      <polygon points="${pts}" fill="var(--accent-am)" opacity="0.9"/>
+      <polygon points="${pts}" fill="none" stroke="var(--accent-am)" stroke-width="1"/>
+      <circle cx="${cx}" cy="${cy}" r="13" fill="none" stroke="var(--accent-am)" stroke-width="0.6" opacity="0.4" stroke-dasharray="3,3"/>
+    </g>`;
+  } else {
+    // ID tool: diamond shape
+    const s = 7;
+    return `<g class="tool-marker">
+      <polygon points="${cx},${cy-s} ${cx+s},${cy} ${cx},${cy+s} ${cx-s},${cy}" fill="var(--accent-am)" opacity="0.9"/>
+      <polygon points="${cx},${cy-s} ${cx+s},${cy} ${cx},${cy+s} ${cx-s},${cy}" fill="none" stroke="var(--accent-am)" stroke-width="1"/>
+      <circle cx="${cx}" cy="${cy}" r="13" fill="none" stroke="var(--accent-am)" stroke-width="0.6" opacity="0.4" stroke-dasharray="3,3"/>
+    </g>`;
+  }
+}
+
+function updateHUD() {
+  const s = activeStep();
+  if (!s) return;
+  document.getElementById('hud-x').textContent = (s.x ?? 0).toFixed(3);
+  document.getElementById('hud-z').textContent = (s.z ?? 0).toFixed(3);
+}
+
+// ══════════════════════════════════════════════════════
+//  TOOL MODE
+// ══════════════════════════════════════════════════════
+function setToolMode(mode) {
+  state.toolMode = mode;
+  document.getElementById('btn-od').classList.toggle('active-mode', mode==='OD');
+  document.getElementById('btn-id').classList.toggle('active-mode', mode==='ID');
+  document.getElementById('opt-od').classList.toggle('selected', mode==='OD');
+  document.getElementById('opt-id').classList.toggle('selected', mode==='ID');
+  renderSVG();
+  toast(`MODE: ${mode} TOOL`);
+}
+
+// ══════════════════════════════════════════════════════
+//  EXPORT
+// ══════════════════════════════════════════════════════
+function exportGCode() {
+  const tool = activeTool();
+  if (!tool) { toast('NO TOOL SELECTED'); return; }
+  const lines = [`${tool.tool}`, `(${tool.desc})`];
+  tool.steps.forEach((s, i) => {
+    const n = `N${String((i+1)*10).padStart(3,'0')}`;
+    let line = `${n} ${s.type}`;
+    if (s.x !== null) line += ` X${s.x}`;
+    if (s.z !== null) line += ` Z${s.z}`;
+    if (s.a !== null) line += ` A${s.a}`;
+    if (s.r !== null) line += ` R${s.r}`;
+    lines.push(line);
+  });
+  const code = lines.join('\n');
+  navigator.clipboard.writeText(code).then(() => toast('COPIED TO CLIPBOARD')).catch(() => {
+    // fallback: update textarea
+    document.getElementById('gcode-input').value = code;
+    toast('EXPORTED TO INPUT AREA');
+    switchScreen(1);
+  });
+}
+
+// ══════════════════════════════════════════════════════
+//  MODAL
+// ══════════════════════════════════════════════════════
+function openModal() { document.getElementById('modal-overlay').classList.add('open'); }
+function closeModal() { document.getElementById('modal-overlay').classList.remove('open'); }
+document.getElementById('modal-overlay').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(); });
+
+// ══════════════════════════════════════════════════════
+//  TOAST
+// ══════════════════════════════════════════════════════
+let toastTimer;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 1800);
+}
+
+// ══════════════════════════════════════════════════════
+//  BOOT: Auto-parse default G-code
+// ══════════════════════════════════════════════════════
+window.addEventListener('load', () => {
+  parseGCode();
+});
+</script>
+
+</body>
+</html>
