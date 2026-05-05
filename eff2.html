@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Effizienz-Analyse v2.4</title>
+    <title>Effizienz-Analyse v2.5</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
     <style>
@@ -56,18 +56,17 @@
 <div class="container">
     <header>
         <h1>EFFIZIENZ-BERICHT</h1>
-        <p style="font-weight: 700; color: var(--text-sec);">CNC PRODUCTION OPTIMIZER v2.4</p>
+        <p style="font-weight: 700; color: var(--text-sec);">CNC PRODUCTION OPTIMIZER v2.5</p>
     </header>
 
     <section class="card">
         <div class="input-row">
             <div style="grid-column: span 2;">
-                <label>Benennung (z.B. Gehäuse)</label>
-                <input type="text" id="partName" placeholder="Name der Komponente" value="Gehäuse">
-            </div>
-            <div style="grid-column: span 2;">
-                <label>Zeichnungsnummer</label>
-                <input type="text" id="partNum" placeholder="234446" value="234446">
+                <label>Benennung / Zeichnungsnummer</label>
+                <div style="display:flex; gap:8px;">
+                    <input type="text" id="partName" value="Gehäuse" style="flex:2">
+                    <input type="text" id="partNum" value="234446" style="flex:1">
+                </div>
             </div>
             <div style="grid-column: span 2;">
                 <label>Gesamtstückzahl</label>
@@ -87,6 +86,14 @@
                     <input type="number" id="ns" value="15" oninput="calc()">
                 </div>
             </div>
+            <div>
+                <label>Abends (Stk)</label>
+                <input type="number" id="abend" value="30" oninput="calc()">
+            </div>
+            <div>
+                <label>Schicht (h)</label>
+                <input type="number" id="sh" value="7.5" oninput="calc()">
+            </div>
         </div>
     </section>
 
@@ -99,8 +106,8 @@
             <thead>
                 <tr>
                     <th>PARAMETER</th>
-                    <th>STATUS: ALT</th>
-                    <th>STATUS: NEU</th>
+                    <th>ALT</th>
+                    <th>NEU</th>
                 </tr>
             </thead>
             <tbody>
@@ -113,21 +120,25 @@
 </div>
 
 <div class="footer-nav">
-    <button class="btn btn-black" onclick="generatePDF()">PDF Bericht Erstellen</button>
+    <button class="btn btn-black" onclick="generatePDF()">Bericht PDF Speichern</button>
 </div>
 
 <script>
-    // Все функции расчета скрыты для краткости, они работают так же
     function calc() {
         const stk = parseFloat(document.getElementById('stk').value) || 0;
-        const shSec = 7.5 * 3600; 
+        const abendStk = parseFloat(document.getElementById('abend').value) || 0;
+        const shHours = parseFloat(document.getElementById('sh').value) || 0;
+        const shSec = shHours * 3600;
+
         const tA = (parseFloat(document.getElementById('am').value) * 60) + (parseFloat(document.getElementById('as').value) || 0);
         const tN = (parseFloat(document.getElementById('nm').value) * 60) + (parseFloat(document.getElementById('ns').value) || 0);
+
         if (tA <= 0 || tN <= 0) return;
 
         const stkShA = shSec / tA;
         const stkShN = shSec / tN;
-        const daysN = stk / (stkShN + 30);
+        const daysA = stk / (stkShA + abendStk);
+        const daysN = stk / (stkShN + abendStk);
         const minDiff = ((stk * tA) - (stk * tN)) / 60;
 
         document.getElementById('s-alt-sh').innerText = stkShA.toFixed(1);
@@ -136,9 +147,9 @@
         document.getElementById('s-neu-tot').innerText = ((stk * tN) / 3600).toFixed(1) + " h";
         document.getElementById('s-alt-sch').innerText = ((stk * tA) / shSec).toFixed(1);
         document.getElementById('s-neu-sch').innerText = ((stk * tN) / shSec).toFixed(1);
+
         document.getElementById('finish-days').innerText = daysN.toFixed(1) + " TAGE PROGNOSE";
-        
-        window.latestCalc = { tA, tN, stk, stkShA, stkShN, minDiff, daysN, daysA: stk/(stkShA+30) };
+        window.latestCalc = { daysA, daysN, stkShA, stkShN, abendStk, minDiff, tA, tN, stk, shHours };
     }
 
     function generatePDF() {
@@ -148,7 +159,6 @@
         const pName = document.getElementById('partName').value;
         const pNum = document.getElementById('partNum').value;
         
-        // Линия верха
         doc.setDrawColor(0);
         doc.setLineWidth(0.8);
         doc.line(15, 30, 195, 30);
@@ -157,19 +167,11 @@
         doc.setFontSize(26);
         doc.text("EFFIZIENZ-BERICHT", 15, 25);
 
-        // Meta данные с новыми полями
         doc.setFontSize(10);
-        doc.setFont("helvetica", "bold");
-        doc.text(`BAUTEIL:`, 15, 40);
+        doc.text(`BAUTEIL: ${pName} | NR: ${pNum}`, 15, 40);
         doc.setFont("helvetica", "normal");
-        doc.text(`${pName} | Nr. ${pNum}`, 35, 40);
+        doc.text(`DATUM: ${new Date().toLocaleDateString('de-DE')} | MENGE: ${d.stk} STK`, 15, 46);
 
-        doc.setFont("helvetica", "bold");
-        doc.text(`PRODAKTION:`, 15, 46);
-        doc.setFont("helvetica", "normal");
-        doc.text(`${d.stk} STÜCK | DATUM: ${new Date().toLocaleDateString('de-DE')}`, 45, 46);
-
-        // Таблица (Zebra style)
         doc.autoTable({
             startY: 55,
             head: [['PARAMETER', 'STATUS: ALT', 'STATUS: NEU']],
@@ -177,7 +179,7 @@
                 ['Zeit pro Stück (Min)', (d.tA/60).toFixed(2), (d.tN/60).toFixed(2)],
                 ['Stückzahl pro Schicht', d.stkShA.toFixed(1), d.stkShN.toFixed(1)],
                 ['Produktionszeit (Std)', ((d.stk*d.tA)/3600).toFixed(1)+" h", ((d.stk*d.tN)/3600).toFixed(1)+" h"],
-                ['Schichten ', (d.stk*d.tA/(7.5*3600)).toFixed(1), (d.stk*d.tN/(7.5*3600)).toFixed(1)]
+                ['Schichten Netto', (d.stk*d.tA/(d.shHours*3600)).toFixed(1), (d.stk*d.tN/(d.shHours*3600)).toFixed(1)]
             ],
             theme: 'striped',
             headStyles: { fillColor: [0, 0, 0], textColor: [255, 255, 255], fontStyle: 'bold' },
@@ -187,36 +189,33 @@
 
         let y = doc.lastAutoTable.finalY + 15;
 
-        // Капацитет (Текст)
         const drawAnalysis = (title, days, stkDaily, totalMin) => {
             doc.setFont("helvetica", "bold");
             doc.setFontSize(14);
             doc.text(title, 15, y);
             doc.setFont("helvetica", "normal");
             doc.setFontSize(11);
-            doc.text(`- Kapazität pro Tag: ${stkDaily.toFixed(1)} Stück`, 20, y + 10);
+            doc.text(`- Kapazität pro Tag: ${stkDaily.toFixed(1)} Stück (inkl. Abend)`, 20, y + 10);
             doc.text(`- Zeitbedarf: ${days.toFixed(1)} Arbeitstage`, 20, y + 17);
             doc.text(`- Gesamtminuten: ${totalMin.toFixed(0)} min`, 20, y + 24);
             y += 35;
         };
 
-        drawAnalysis("KAPAZITÄTSANALYSE (ALT)", d.daysA, (d.stkShA + 30), (d.stk * d.tA / 60));
-        drawAnalysis("KAPAZITÄTSANALYSE (NEU)", d.daysN, (d.stkShN + 30), (d.stk * d.tN / 60));
+        drawAnalysis("KAPAZITÄTSANALYSE (ALT):", d.daysA, (d.stkShA + d.abendStk), (d.stk * d.tA / 60));
+        drawAnalysis("KAPAZITÄTSANALYSE (NEU / ERSPARNIS):", d.daysN, (d.stkShN + d.abendStk), (d.stk * d.tN / 60));
 
-        // Ersparnis
-        doc.setLineWidth(0.4); doc.setDrawColor(200);
+        doc.setDrawColor(200); doc.setLineWidth(0.4);
         doc.line(15, y - 5, 120, y - 5);
         doc.setFontSize(16); doc.setFont("helvetica", "bold");
         doc.text(`ERSPARNIS: ${d.minDiff.toFixed(0)} MIN`, 15, y + 5);
 
-        // ФИНАЛЬНАЯ ЧЕРНАЯ ЛИНИЯ
-        doc.setDrawColor(0, 0, 0);
+        doc.setDrawColor(0);
         doc.setLineWidth(0.8);
         doc.line(15, 280, 195, 280); 
         doc.setFontSize(9);
-        doc.text("", 105, 287, {align: 'center'});
+        doc.text("CNC PRODUCTION OPTIMIZER | INDUSTRIAL FINAL v2.5", 105, 287, {align: 'center'});
 
-        doc.save(`Report_${pNum}.pdf`);
+        doc.save(`Bericht_${pNum}.pdf`);
     }
     calc();
 </script>
