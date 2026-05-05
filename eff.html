@@ -3,16 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Efficiency Pro v4.1</title>
+    <title>Efficiency Pro v4.2</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
     <style>
         :root {
-            --bg: #f4f4f7; 
-            --surface: #ffffff; 
-            --accent: #000000; 
-            --text-main: #000000; 
-            --text-sec: #444446;
+            --bg: #f4f4f7; --surface: #ffffff; --accent: #000000;
+            --text-main: #000000; --text-sec: #444446;
         }
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -20,8 +17,8 @@
         
         .container { max-width: 600px; margin: 0 auto; padding: 20px; padding-bottom: 180px; }
         
-        header { margin-bottom: 25px; border-bottom: 3.5px solid var(--accent); padding-bottom: 10px; }
-        header h1 { font-size: 24px; font-weight: 900; margin: 0; text-transform: uppercase; color: var(--accent); }
+        header { margin-bottom: 25px; border-bottom: 4px solid var(--accent); padding-bottom: 10px; }
+        header h1 { font-size: 24px; font-weight: 900; margin: 0; text-transform: uppercase; }
 
         .card { 
             background: var(--surface); border: 1.5px solid #d1d1d6; 
@@ -43,12 +40,9 @@
         .money-banner { background: var(--accent); color: white; padding: 25px; margin-bottom: 20px; text-align: center; }
         .money-banner span { display: block; font-size: 32px; font-weight: 900; }
 
-        .analysis-text { font-size: 14px; line-height: 1.7; margin-top: 15px; color: #000; }
-        .analysis-text b { display: block; font-size: 13px; margin-bottom: 5px; text-transform: uppercase; font-weight: 900; }
-
         .footer-nav { 
             position: fixed; bottom: 0; left: 0; right: 0; 
-            background: white; border-top: 3.5px solid var(--accent); 
+            background: white; border-top: 4px solid var(--accent); 
             display: flex; padding: 25px 20px; gap: 15px; z-index: 1000;
         }
         .btn { flex: 1; height: 60px; border: none; font-weight: 900; text-transform: uppercase; cursor: pointer; }
@@ -82,22 +76,16 @@
     </section>
 
     <div class="money-banner">
-        <small>Gesamtersparnis</small>
+        <small>Gesamtersparnis (Min)</small>
         <span id="res-min">0 MIN</span>
-        <div id="res-eur" style="font-size:18px; margin-top:5px;">0,00 €</div>
+        <small style="margin-top: 10px; display: block;">Finanziell</small>
+        <div id="res-eur" style="font-size:20px; font-weight: 900;">0,00 €</div>
     </div>
-
-    <section class="card">
-        <span class="tool-nr">T-03</span><span class="tool-desc">Vorschau Analyse</span>
-        <div class="analysis-text" id="out-alt"></div>
-        <div style="border-top: 1px solid #eee; margin: 15px 0;"></div>
-        <div class="analysis-text" id="out-neu"></div>
-    </section>
 </div>
 
 <div class="footer-nav">
-    <button class="btn btn-outline" onclick="alert('Daten lokal gespeichert')">Save</button>
-    <button class="btn btn-black" onclick="generatePDF()">PDF Bericht Erzeugen</button>
+    <button class="btn btn-outline" onclick="alert('OK')">Save</button>
+    <button class="btn btn-black" onclick="generatePDF()">PDF Bericht</button>
 </div>
 
 <script>
@@ -106,16 +94,16 @@
         const abend = parseFloat(document.getElementById('abend').value) || 0;
         const shH = parseFloat(document.getElementById('sh').value) || 0;
         const rate = parseFloat(document.getElementById('rate').value) || 0;
-        const tA = parseFloat(document.getElementById('am').value);
-        const tN = parseFloat(document.getElementById('nm').value);
+        const tA = parseFloat(document.getElementById('am').value) || 0;
+        const tN = parseFloat(document.getElementById('nm').value) || 0;
 
         const shMin = shH * 60;
-        const shA = shMin / tA;
-        const shN = shMin / tN;
+        const shA = tA > 0 ? shMin / tA : 0;
+        const shN = tN > 0 ? shMin / tN : 0;
         const capDayA = shA + abend;
         const capDayN = shN + abend;
-        const workDaysA = stk / capDayA;
-        const workDaysN = stk / capDayN;
+        const workDaysA = capDayA > 0 ? stk / capDayA : 0;
+        const workDaysN = capDayN > 0 ? stk / capDayN : 0;
         const totalMinA = stk * tA;
         const totalMinN = stk * tN;
         const diffMin = totalMinA - totalMinN;
@@ -123,10 +111,6 @@
 
         document.getElementById('res-min').innerText = Math.round(diffMin) + " MIN";
         document.getElementById('res-eur').innerText = diffEur.toLocaleString('de-DE', {style:'currency', currency:'EUR'});
-
-        const fmt = (title, cap, days, min) => `<b>${title}</b>- Kapazität pro Tag: ${cap.toFixed(1)} Stück<br>- Zeitbedarf: ${days.toFixed(1)} Arbeitstage<br>- Gesamtminuten: ${Math.round(min)} min`;
-        document.getElementById('out-alt').innerHTML = fmt("KAPAZITÄTSANALYSE (ALT):", capDayA, workDaysA, totalMinA);
-        document.getElementById('out-neu').innerHTML = fmt("KAPAZITÄTSANALYSE (NEU):", capDayN, workDaysN, totalMinN);
 
         window.pdfData = { stk, tA, tN, abend, shH, rate, shA, shN, capDayA, capDayN, workDaysA, workDaysN, totalMinA, totalMinN, diffMin, diffEur };
     }
@@ -136,12 +120,10 @@
         const doc = new jsPDF();
         const d = window.pdfData;
 
-        // Header Line
-        doc.setDrawColor(0, 0, 0);
-        doc.setLineWidth(1.2);
+        // Top Border
+        doc.setDrawColor(0); doc.setLineWidth(1.2);
         doc.line(15, 25, 195, 25);
         
-        doc.setTextColor(0, 0, 0);
         doc.setFont("helvetica", "bold"); doc.setFontSize(22);
         doc.text("EFFIZIENZ-BERICHT", 15, 20);
 
@@ -162,9 +144,8 @@
                 ['Maschinensatz', d.rate.toFixed(2) + ' €/h', d.rate.toFixed(2) + ' €/h']
             ],
             theme: 'striped',
-            headStyles: { fillColor: [0, 0, 0], textColor: [255, 255, 255], fontStyle: 'bold' },
-            styles: { fontSize: 9, cellPadding: 3, textColor: [0, 0, 0] },
-            columnStyles: { 0: { fontStyle: 'normal' } }
+            headStyles: { fillColor: [0, 0, 0] },
+            styles: { fontSize: 9, cellPadding: 3 }
         });
 
         let y = doc.lastAutoTable.finalY + 12;
@@ -181,18 +162,16 @@
         y = addBlock("KAPAZITÄTSANALYSE (ALT):", d.capDayA, d.workDaysA, d.totalMinA, y);
         y = addBlock("KAPAZITÄTSANALYSE (NEU):", d.capDayN, d.workDaysN, d.totalMinN, y);
 
-        doc.setLineWidth(0.5); doc.setDrawColor(150, 150, 150);
-        doc.line(15, y, 110, y);
-        
-        doc.setFontSize(14); doc.setFont("helvetica", "bold"); doc.setTextColor(0,0,0);
+        doc.setLineWidth(0.5); doc.line(15, y, 110, y);
+        doc.setFontSize(14); doc.setFont("helvetica", "bold");
         doc.text(`ERSPARNIS: ${Math.round(d.diffMin)} MIN`, 15, y + 10);
+        doc.text(`FINANZIELLE ERSPARNIS: ${d.diffEur.toFixed(2)} €`, 15, y + 18);
 
-        // Footer Line (Identical to Top)
-        doc.setDrawColor(0, 0, 0);
+        // Bottom Border
         doc.setLineWidth(1.2);
         doc.line(15, 280, 195, 280);
         
-        doc.save(`Effizienz_Bericht_${document.getElementById('pNum').value}.pdf`);
+        doc.save(`Report.pdf`);
     }
     calc();
 </script>
