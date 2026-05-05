@@ -3,189 +3,117 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Efficiency Pro v2.7</title>
+    <title>Efficiency Pro v2.8</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
     <style>
         :root {
-            --bg: #ececf1;
+            --bg: #f2f2f7;
             --surface: #ffffff;
             --accent: #000000;
             --text-main: #1c1c1e;
-            --text-sec: #636366;
+            --text-sec: #8e8e93;
             --border: #d1d1d6;
-            --active: #007aff;
         }
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { 
-            margin: 0; background: var(--bg); 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
-            color: var(--text-main); line-height: 1.4;
-        }
-
-        .container { max-width: 600px; margin: 0 auto; padding: 20px; padding-bottom: 140px; }
+        body { margin: 0; background: var(--bg); font-family: -apple-system, sans-serif; color: var(--text-main); }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; padding-bottom: 140px; } /* Padding-bottom to avoid overlap */
         
-        /* Header */
-        header { margin-bottom: 25px; display: flex; justify-content: space-between; align-items: flex-end; }
-        header h1 { font-size: 22px; font-weight: 900; margin: 0; letter-spacing: -0.5px; text-transform: uppercase; }
-        .version { font-size: 10px; background: var(--accent); color: white; padding: 2px 6px; font-weight: 700; }
+        header { margin-bottom: 25px; border-left: 5px solid var(--accent); padding-left: 15px; }
+        header h1 { font-size: 22px; font-weight: 900; margin: 0; text-transform: uppercase; }
 
-        /* Group Labels */
-        .group-label { 
-            font-size: 11px; font-weight: 800; color: var(--text-sec); 
-            text-transform: uppercase; margin: 20px 0 10px 5px; letter-spacing: 1px;
-            display: flex; align-items: center; gap: 8px;
-        }
-        .group-label::after { content: ""; height: 1px; background: var(--border); flex: 1; }
-
-        /* Modern Cards */
         .card { 
-            background: var(--surface); border: 1px solid var(--border); 
-            padding: 20px; margin-bottom: 15px; position: relative;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+            background: var(--surface); border: 1.5px solid var(--accent); 
+            padding: 20px; margin-bottom: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.05);
         }
 
-        /* Input Styling */
+        .tool-nr { font-size: 10px; color: var(--text-sec); text-transform: uppercase; margin-bottom: 2px; display: block; }
+        .tool-desc { font-size: 14px; font-weight: 800; text-transform: uppercase; margin-bottom: 10px; display: block; }
+
         .input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
         .full { grid-column: span 2; }
         
-        .field { display: flex; flex-direction: column; gap: 6px; }
-        label { font-size: 12px; font-weight: 700; color: var(--accent); }
-        
+        label { display: block; font-size: 11px; font-weight: 700; margin-bottom: 5px; color: var(--text-sec); }
         input { 
-            width: 100%; padding: 12px 15px; border: 1px solid var(--border); 
-            font-size: 16px; font-weight: 600; outline: none; transition: all 0.2s;
-            background: #f9f9fb;
+            width: 100%; padding: 12px; border: 1px solid var(--border); 
+            font-size: 16px; font-weight: 700; background: #fff; outline: none;
         }
-        input:focus { border-color: var(--accent); background: #fff; box-shadow: 0 0 0 3px rgba(0,0,0,0.05); }
+        input:focus { border-color: var(--accent); }
 
-        /* Time Inputs */
-        .time-box { display: flex; align-items: center; gap: 5px; }
-        .time-box span { font-weight: 900; color: var(--border); }
+        .analysis-box { background: var(--accent); color: white; padding: 25px; margin-bottom: 15px; }
+        .analysis-box span { display: block; font-size: 28px; font-weight: 900; }
 
-        /* Result Dash */
-        .result-dash { 
-            background: var(--accent); color: white; padding: 25px; 
-            margin-top: 10px; display: flex; flex-direction: column; gap: 5px;
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th { text-align: left; font-size: 10px; padding: 8px 0; border-bottom: 2px solid var(--accent); }
+        td { padding: 12px 0; font-size: 14px; font-weight: 700; border-bottom: 1px solid #eee; }
+
+        .footer-nav { 
+            position: fixed; bottom: 0; left: 0; right: 0; height: 110px; 
+            background: rgba(255,255,255,0.9); backdrop-filter: blur(10px);
+            border-top: 1px solid var(--border); display: flex; align-items: center; 
+            padding: 0 20px; gap: 10px; z-index: 1000;
         }
-        .res-label { font-size: 12px; font-weight: 600; opacity: 0.7; text-transform: uppercase; }
-        .res-val { font-size: 32px; font-weight: 900; letter-spacing: -1px; }
-
-        /* Compact Table */
-        .data-table { width: 100%; border-collapse: collapse; margin-top: 5px; }
-        .data-table th { text-align: left; font-size: 10px; padding: 8px 0; color: var(--text-sec); border-bottom: 1px solid var(--border); }
-        .data-table td { padding: 12px 0; font-size: 15px; font-weight: 700; border-bottom: 1px solid #f0f0f5; }
-        .td-label { font-weight: 500; color: var(--text-sec); font-size: 14px; }
-
-        /* Bottom Nav */
-        .bottom-actions { 
-            position: fixed; bottom: 0; left: 0; right: 0; 
-            background: var(--surface); padding: 20px; 
-            border-top: 1px solid var(--border); display: flex; gap: 10px;
-            box-shadow: 0 -10px 20px rgba(0,0,0,0.05); z-index: 1000;
-        }
-        .btn { 
-            flex: 1; height: 55px; border: none; font-weight: 800; 
-            text-transform: uppercase; cursor: pointer; transition: transform 0.1s;
-            display: flex; align-items: center; justify-content: center; font-size: 14px;
-        }
-        .btn:active { transform: scale(0.98); }
+        .btn { flex: 1; height: 55px; border: none; font-weight: 900; text-transform: uppercase; cursor: pointer; }
         .btn-black { background: var(--accent); color: white; }
-        .btn-outline { background: white; border: 2px solid var(--accent); color: var(--accent); }
-
-        /* Tool NR styling from Saved Info */
-        .tool-nr { font-size: 9px; color: var(--text-sec); text-transform: uppercase; margin-bottom: 2px; display: block; }
+        .btn-data { background: #e5e5ea; color: var(--accent); font-size: 12px; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <header>
-        <div>
-            <h1>Efficiency Pro</h1>
-            <div style="color: var(--text-sec); font-size: 12px; font-weight: 600;">Industrial Analysis System</div>
-        </div>
-        <span class="version">v2.7 PREMIUM</span>
+        <h1>Efficiency Pro</h1>
+        <small>System v2.8 | Premium Light</small>
     </header>
 
-    <div class="group-label">Bauteil Information</div>
     <section class="card">
+        <span class="tool-nr">T-01</span>
+        <span class="tool-desc">Bauteil Information</span>
         <div class="input-grid">
             <div class="field full">
-                <span class="tool-nr">T-01</span>
                 <label>Benennung</label>
-                <input type="text" id="partName" value="Gehäuse" placeholder="z.B. Halterung">
+                <input type="text" id="partName" value="Gehäuse">
             </div>
             <div class="field full">
-                <span class="tool-nr">T-02</span>
                 <label>Zeichnungsnummer</label>
-                <input type="text" id="partNum" value="234446" placeholder="Nr. eingeben">
+                <input type="text" id="partNum" value="234446">
             </div>
         </div>
     </section>
 
-    <div class="group-label">Produktionsparameter</div>
     <section class="card">
+        <span class="tool-nr">T-02</span>
+        <span class="tool-desc">Produktionsdaten</span>
         <div class="input-grid">
-            <div class="field full">
-                <label>Gesamtstückzahl</label>
-                <input type="number" id="stk" value="290" oninput="calc()">
-            </div>
-            <div class="field">
-                <label>Laufzeit ALT</label>
-                <div class="time-box">
-                    <input type="number" id="am" value="5" oninput="calc()">
-                    <span>:</span>
-                    <input type="number" id="as" value="30" oninput="calc()">
-                </div>
-            </div>
-            <div class="field">
-                <label>Laufzeit NEU</label>
-                <div class="time-box">
-                    <input type="number" id="nm" value="4" oninput="calc()">
-                    <span>:</span>
-                    <input type="number" id="ns" value="15" oninput="calc()">
-                </div>
-            </div>
-            <div class="field">
-                <label>Abends (Stk)</label>
-                <input type="number" id="abend" value="30" oninput="calc()">
-            </div>
-            <div class="field">
-                <label>Schicht (h)</label>
-                <input type="number" id="sh" value="7.5" oninput="calc()">
-            </div>
+            <div class="field full"><label>Gesamtstückzahl</label><input type="number" id="stk" value="290" oninput="calc()"></div>
+            <div class="field"><label>ALT (Min:Sek)</label><div style="display:flex;gap:5px"><input type="number" id="am" value="5" oninput="calc()"><input type="number" id="as" value="30" oninput="calc()"></div></div>
+            <div class="field"><label>NEU (Min:Sek)</label><div style="display:flex;gap:5px"><input type="number" id="nm" value="4" oninput="calc()"><input type="number" id="ns" value="15" oninput="calc()"></div></div>
+            <div class="field"><label>Abends (Stk)</label><input type="number" id="abend" value="30" oninput="calc()"></div>
+            <div class="field"><label>Schicht (h)</label><input type="number" id="sh" value="7.5" oninput="calc()"></div>
         </div>
     </section>
 
-    <div class="result-dash">
-        <span class="res-label">Prognose Fertigstellung</span>
-        <span id="finish-days" class="res-val">- TAGE</span>
+    <div class="analysis-box">
+        <label style="color:rgba(255,255,255,0.6)">PROGNOSE FERTIGSTELLUNG</label>
+        <span id="finish-days">- TAGE</span>
     </div>
 
-    <div class="group-label">Vergleichsanalyse</div>
     <section class="card">
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th>PARAMETER</th>
-                    <th>ALT</th>
-                    <th>NEU</th>
-                </tr>
-            </thead>
+        <table>
+            <thead><tr><th>PARAMETER</th><th>ALT</th><th>NEU</th></tr></thead>
             <tbody>
-                <tr><td class="td-label">Stück / Schicht</td><td id="s-alt-sh">-</td><td id="s-neu-sh">-</td></tr>
-                <tr><td class="td-label">Produktion (h)</td><td id="s-alt-tot">-</td><td id="s-neu-tot">-</td></tr>
-                <tr><td class="td-label">Schichten</td><td id="s-alt-sch">-</td><td id="s-neu-sch">-</td></tr>
+                <tr><td>Stück / Schicht</td><td id="s-alt-sh">-</td><td id="s-neu-sh">-</td></tr>
+                <tr><td>Produktion (h)</td><td id="s-alt-tot">-</td><td id="s-neu-tot">-</td></tr>
+                <tr><td>Schichten</td><td id="s-alt-sch">-</td><td id="s-neu-sch">-</td></tr>
             </tbody>
         </table>
     </section>
 </div>
 
-<div class="bottom-actions">
-    <button class="btn btn-outline" onclick="exportData()">Data</button>
-    <button class="btn btn-black" onclick="generatePDF()">PDF Bericht</button>
+<div class="footer-nav">
+    <button class="btn btn-data" onclick="alert('JSON Export/Import Ready')">JSON Export/Import</button>
+    <button class="btn btn-black" onclick="generatePDF()">Bericht PDF</button>
 </div>
 
 <script>
@@ -202,6 +130,7 @@
 
         const stkShA = shSec / tA;
         const stkShN = shSec / tN;
+        const daysA = stk / (stkShA + abendStk);
         const daysN = stk / (stkShN + abendStk);
         const minDiff = ((stk * tA) - (stk * tN)) / 60;
 
@@ -213,7 +142,7 @@
         document.getElementById('s-neu-sch').innerText = ((stk * tN) / shSec).toFixed(1);
 
         document.getElementById('finish-days').innerText = daysN.toFixed(1) + " TAGE";
-        window.latestCalc = { daysA: stk/(stkShA+abendStk), daysN, stkShA, stkShN, abendStk, minDiff, tA, tN, stk, shH };
+        window.latestCalc = { daysA, daysN, stkShA, stkShN, abendStk, minDiff, tA, tN, stk, shH };
     }
 
     function generatePDF() {
@@ -221,58 +150,51 @@
         const doc = new jsPDF('p', 'mm', 'a4');
         const d = window.latestCalc;
         
-        doc.setDrawColor(0); doc.setLineWidth(0.8);
-        doc.line(15, 30, 195, 30);
-        doc.setFont("helvetica", "bold"); doc.setFontSize(22);
-        doc.text("EFFIZIENZ-BERICHT", 15, 23);
+        doc.setLineWidth(0.8); doc.line(15, 30, 195, 30);
+        doc.setFont("helvetica", "bold"); doc.setFontSize(24);
+        doc.text("EFFIZIENZ-BERICHT", 15, 24);
 
-        doc.setFontSize(10);
+        doc.setFontSize(10); doc.setFont("helvetica", "normal");
         doc.text(`BAUTEIL: ${document.getElementById('partName').value} | NR: ${document.getElementById('partNum').value}`, 15, 38);
-        doc.setFont("helvetica", "normal");
         doc.text(`DATUM: ${new Date().toLocaleDateString('de-DE')} | MENGE: ${d.stk} STK`, 15, 44);
 
         doc.autoTable({
             startY: 52,
-            head: [['PARAMETER', 'IST-ZUSTAND', 'OPTIMIERT']],
+            head: [['PARAMETER', 'STATUS: ALT', 'STATUS: NEU']],
             body: [
-                ['Taktzeit (Min)', (d.tA/60).toFixed(2), (d.tN/60).toFixed(2)],
-                ['Stück pro Schicht', d.stkShA.toFixed(1), d.stkShN.toFixed(1)],
-                ['Abend-Produktion', d.abendStk.toFixed(0), d.abendStk.toFixed(0)],
-                ['Gesamtstunden', ((d.stk*d.tA)/3600).toFixed(1), ((d.stk*d.tN)/3600).toFixed(1)],
-                ['Schicht-Bedarf', (d.stk*d.tA/(d.shH*3600)).toFixed(1), (d.stk*d.tN/(d.shH*3600)).toFixed(1)]
+                ['Zeit pro Stück (Min)', (d.tA/60).toFixed(2), (d.tN/60).toFixed(2)],
+                ['Stückzahl pro Schicht', d.stkShA.toFixed(1), d.stkShN.toFixed(1)],
+                ['Abend-Produktion (Stk)', d.abendStk.toFixed(0), d.abendStk.toFixed(0)],
+                ['Produktionszeit (Std)', ((d.stk*d.tA)/3600).toFixed(1)+" h", ((d.stk*d.tN)/3600).toFixed(1)+" h"],
+                ['Schichten Netto', (d.stk*d.tA/(d.shH*3600)).toFixed(1), (d.stk*d.tN/(d.shH*3600)).toFixed(1)]
             ],
-            theme: 'striped',
-            headStyles: { fillColor: [0, 0, 0], fontSize: 10 },
-            styles: { cellPadding: 5, fontSize: 10 }
+            theme: 'striped', headStyles: { fillColor: [0,0,0] }, styles: { fontSize: 10, cellPadding: 5 }
         });
 
         let y = doc.lastAutoTable.finalY + 15;
-        doc.setFont("helvetica", "bold"); doc.setFontSize(14);
-        doc.text("KAPAZITÄTS-PROGNOSE", 15, y);
-        
-        doc.setFont("helvetica", "normal"); doc.setFontSize(11);
-        doc.text(`- Aktuell: ${d.daysA.toFixed(1)} Arbeitstage`, 20, y + 10);
-        doc.text(`- Optimiert: ${d.daysN.toFixed(1)} Arbeitstage`, 20, y + 17);
-        
-        doc.setFont("helvetica", "bold"); doc.setFontSize(16);
-        doc.text(`ZEIT-ERSPARNIS: ${d.minDiff.toFixed(0)} MINUTEN`, 15, y + 32);
+
+        // KAPAZITÄTSANALYSE BLOCKS (RESTORED)
+        const drawBlock = (title, days, stkD, totalM) => {
+            doc.setFont("helvetica", "bold"); doc.setFontSize(13);
+            doc.text(title, 15, y);
+            doc.setFont("helvetica", "normal"); doc.setFontSize(10);
+            doc.text(`- Kapazität pro Tag: ${stkD.toFixed(1)} Stück`, 20, y + 8);
+            doc.text(`- Zeitbedarf: ${days.toFixed(1)} Arbeitstage`, 20, y + 14);
+            doc.text(`- Gesamtminuten: ${totalM.toFixed(0)} min`, 20, y + 20);
+            y += 32;
+        };
+
+        drawBlock("KAPAZITÄTSANALYSE (ALT):", d.daysA, (d.stkShA + d.abendStk), (d.stk * d.tA / 60));
+        drawBlock("KAPAZITÄTSANALYSE (NEU / ERSPARNIS):", d.daysN, (d.stkShN + d.abendStk), (d.stk * d.tN / 60));
+
+        doc.setFontSize(16); doc.setFont("helvetica", "bold");
+        doc.text(`ERSPARNIS: ${d.minDiff.toFixed(0)} MIN`, 15, y);
 
         doc.setLineWidth(0.8); doc.line(15, 280, 195, 280); 
-        doc.setFontSize(8); doc.text("GENERATED BY EFFICIENCY PRO PREMIUM", 105, 286, {align:'center'});
+        doc.setFontSize(8); doc.text("CNC PRODUCTION OPTIMIZER I SOLID INDUSTRIAL v2.8", 105, 287, {align:'center'});
 
-        doc.save(`Report_${document.getElementById('partNum').value}.pdf`);
+        doc.save(`Analysis_${document.getElementById('partNum').value}.pdf`);
     }
-
-    function exportData() {
-        const data = {
-            name: document.getElementById('partName').value,
-            num: document.getElementById('partNum').value,
-            stk: document.getElementById('stk').value,
-            abend: document.getElementById('abend').value
-        };
-        alert("JSON Export: " + JSON.stringify(data));
-    }
-
     calc();
 </script>
 </body>
