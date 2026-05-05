@@ -3,15 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Efficiency Pro v3.9</title>
+    <title>Efficiency Pro v4.0</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
     <style>
         :root {
             --bg: #f4f4f7; 
             --surface: #ffffff; 
-            --accent: #000000; /* Чистый черный */
-            --text-main: #000000; /* Чистый черный */
+            --accent: #000000; 
+            --text-main: #000000; 
             --text-sec: #444446;
         }
 
@@ -20,17 +20,16 @@
         
         .container { max-width: 600px; margin: 0 auto; padding: 20px; padding-bottom: 180px; }
         
-        /* Заголовок с жирной черной линией */
         header { margin-bottom: 25px; border-bottom: 5px solid var(--accent); padding-bottom: 10px; }
         header h1 { font-size: 24px; font-weight: 900; margin: 0; text-transform: uppercase; color: var(--accent); }
 
         .card { 
-            background: var(--surface); border: 2px solid var(--accent); 
+            background: var(--surface); border: 2.5px solid var(--accent); 
             padding: 20px; margin-bottom: 20px;
         }
 
         .tool-nr { font-size: 10px; color: var(--text-sec); text-transform: uppercase; display: block; margin-bottom: 2px; }
-        .tool-desc { font-size: 16px; font-weight: 900; text-transform: uppercase; margin-bottom: 15px; display: block; border-bottom: 1px solid #000; padding-bottom: 5px; }
+        .tool-desc { font-size: 16px; font-weight: 900; text-transform: uppercase; margin-bottom: 15px; display: block; border-bottom: 2px solid #000; padding-bottom: 5px; }
 
         .input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         .full { grid-column: span 2; }
@@ -44,7 +43,7 @@
         .money-banner { background: var(--accent); color: white; padding: 25px; margin-bottom: 20px; text-align: center; }
         .money-banner span { display: block; font-size: 32px; font-weight: 900; }
 
-        .analysis-text { font-size: 14px; line-height: 1.6; margin-top: 15px; color: #000; }
+        .analysis-text { font-size: 14px; line-height: 1.7; margin-top: 15px; color: #000; }
         .analysis-text b { display: block; font-size: 13px; margin-bottom: 5px; text-transform: uppercase; font-weight: 900; }
 
         .footer-nav { 
@@ -97,7 +96,7 @@
 </div>
 
 <div class="footer-nav">
-    <button class="btn btn-outline" onclick="alert('Gespeichert')">Speichern</button>
+    <button class="btn btn-outline" onclick="alert('Daten gesichert')">Speichern</button>
     <button class="btn btn-black" onclick="generatePDF()">PDF Bericht</button>
 </div>
 
@@ -113,23 +112,37 @@
 
         if (tA <= 0 || tN <= 0) return;
 
-        const shA = (shH * 3600) / tA;
-        const shN = (shH * 3600) / tN;
+        const prodSecA = stk * tA;
+        const prodSecN = stk * tN;
+        const shSec = shH * 3600;
+
+        const shA = shSec / tA;
+        const shN = shSec / tN;
+        
         const capDayA = shA + abend;
         const capDayN = shN + abend;
-        const totalMinA = (stk * tA) / 60;
-        const totalMinN = (stk * tN) / 60;
+
+        const workDaysA = stk / capDayA;
+        const workDaysN = stk / capDayN;
+
+        const totalMinA = prodSecA / 60;
+        const totalMinN = prodSecN / 60;
+
         const diffMin = totalMinA - totalMinN;
         const diffEur = (diffMin / 60) * rate;
 
         document.getElementById('res-min').innerText = Math.round(diffMin) + " MIN";
         document.getElementById('res-eur').innerText = diffEur.toLocaleString('de-DE', {style:'currency', currency:'EUR'});
 
-        const fmt = (title, cap, min) => `<b>${title}</b>- Kapazität pro Tag: ${cap.toFixed(1)} Stück<br>- Gesamtminuten: ${Math.round(min)} min`;
-        document.getElementById('out-alt').innerHTML = fmt("KAPAZITÄTSANALYSE (ALT):", capDayA, totalMinA);
-        document.getElementById('out-neu').innerHTML = fmt("KAPAZITÄTSANALYSE (NEU):", capDayN, totalMinN);
+        const fmt = (title, cap, days, min) => `<b>${title}</b>
+            - Kapazität pro Tag: ${cap.toFixed(1)} Stück<br>
+            - Zeitbedarf: ${days.toFixed(1)} Arbeitstage<br>
+            - Gesamtminuten: ${Math.round(min)} min`;
 
-        window.pdfData = { stk, tA, tN, abend, shH, rate, shA, shN, capDayA, capDayN, diffMin, diffEur, totalMinA, totalMinN };
+        document.getElementById('out-alt').innerHTML = fmt("KAPAZITÄTSANALYSE (ALT):", capDayA, workDaysA, totalMinA);
+        document.getElementById('out-neu').innerHTML = fmt("KAPAZITÄTSANALYSE (NEU):", capDayN, workDaysN, totalMinN);
+
+        window.pdfData = { stk, tA, tN, abend, shH, rate, shA, shN, capDayA, capDayN, workDaysA, workDaysN, totalMinA, totalMinN, diffMin, diffEur };
     }
 
     function generatePDF() {
@@ -137,7 +150,7 @@
         const doc = new jsPDF();
         const d = window.pdfData;
 
-        // Линия Сверху (Черная)
+        // Линия Сверху
         doc.setDrawColor(0, 0, 0);
         doc.setLineWidth(1.5);
         doc.line(15, 25, 195, 25);
@@ -158,7 +171,8 @@
                 ['Zeit pro Stück (Min)', (d.tA/60).toFixed(2), (d.tN/60).toFixed(2)],
                 ['Stückzahl pro Schicht', d.shA.toFixed(1), d.shN.toFixed(1)],
                 ['Abend-Produktion (Stk)', d.abend, d.abend],
-                ['Produktionszeit (Std)', ((d.stk * d.tA)/3600).toFixed(1) + ' h', ((d.stk * d.tN)/3600).toFixed(1) + ' h'],
+                ['Produktionszeit (Std)', (d.totalMinA/60).toFixed(1) + ' h', (d.totalMinN/60).toFixed(1) + ' h'],
+                ['Schichten', (d.workDaysA).toFixed(1), (d.workDaysN).toFixed(1)],
                 ['Maschinensatz', d.rate.toFixed(2) + ' €/h', d.rate.toFixed(2) + ' €/h']
             ],
             theme: 'grid',
@@ -167,28 +181,29 @@
         });
 
         let y = doc.lastAutoTable.finalY + 15;
-        const addBlock = (title, cap, min, curY) => {
+        const addBlock = (title, cap, days, min, curY) => {
             doc.setFont("helvetica", "bold"); doc.setFontSize(11);
             doc.text(title, 15, curY);
             doc.setFont("helvetica", "normal"); doc.setFontSize(10);
             doc.text(`  - Kapazität pro Tag: ${cap.toFixed(1)} Stück`, 15, curY+7);
-            doc.text(`  - Gesamtminuten: ${Math.round(min)} min`, 15, curY+13);
-            return curY + 22;
+            doc.text(`  - Zeitbedarf: ${days.toFixed(1)} Arbeitstage`, 15, curY+13);
+            doc.text(`  - Gesamtminuten: ${Math.round(min)} min`, 15, curY+19);
+            return curY + 28;
         };
 
-        y = addBlock("KAPAZITÄTSANALYSE (ALT):", d.capDayA, d.totalMinA, y);
-        y = addBlock("KAPAZITÄTSANALYSE (NEU):", d.capDayN, d.totalMinN, y);
+        y = addBlock("KAPAZITÄTSANALYSE (ALT):", d.capDayA, d.workDaysA, d.totalMinA, y);
+        y = addBlock("KAPAZITÄTSANALYSE (NEU):", d.capDayN, d.workDaysN, d.totalMinN, y);
 
         doc.setLineWidth(0.8); doc.line(15, y, 100, y);
         doc.setFontSize(14); doc.setFont("helvetica", "bold");
         doc.text(`ERSPARNIS: ${Math.round(d.diffMin)} MIN`, 15, y + 12);
         doc.text(`FINANZIELLE ERSPARNIS: ${d.diffEur.toFixed(2)} €`, 15, y + 20);
 
-        // Линия Снизу (Идентична верхней, Черная)
+        // Линия Снизу
         doc.setLineWidth(1.5);
         doc.line(15, 280, 195, 280);
         
-        doc.setFontSize(8); doc.text("CNC PRODUCTION OPTIMIZER I v3.9 PREMIUM", 105, 286, {align:'center'});
+        doc.setFontSize(8); doc.text("CNC PRODUCTION OPTIMIZER I v4.0 PREMIUM", 105, 286, {align:'center'});
         doc.save(`Bericht_${document.getElementById('pNum').value}.pdf`);
     }
     calc();
