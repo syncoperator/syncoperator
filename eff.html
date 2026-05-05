@@ -3,52 +3,58 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Efficiency Pro v3.0</title>
+    <title>Efficiency Pro v3.1</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
     <style>
         :root {
-            --bg: #f2f2f7; --surface: #ffffff; --accent: #000000;
-            --text-main: #1c1c1e; --text-sec: #8e8e93; --border: #d1d1d6;
+            --bg: #ececf1; --surface: #ffffff; --accent: #000000;
+            --text-main: #1c1c1e; --text-sec: #636366; --border: #d1d1d6;
         }
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body { margin: 0; background: var(--bg); font-family: -apple-system, sans-serif; color: var(--text-main); }
         
-        .container { max-width: 600px; margin: 0 auto; padding: 20px; padding-bottom: 150px; } /* Отступ снизу */
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; padding-bottom: 160px; } /* Отступ для предотвращения перекрытия */
         
-        header { margin-bottom: 25px; border-left: 5px solid var(--accent); padding-left: 15px; }
-        header h1 { font-size: 22px; font-weight: 900; margin: 0; text-transform: uppercase; }
+        header { margin-bottom: 25px; border-left: 6px solid var(--accent); padding-left: 15px; }
+        header h1 { font-size: 24px; font-weight: 900; margin: 0; text-transform: uppercase; }
 
         .card { 
             background: var(--surface); border: 2px solid var(--accent); 
-            padding: 20px; margin-bottom: 15px; position: relative;
+            padding: 20px; margin-bottom: 20px;
         }
 
-        /* Стиль T-NR из Saved Info */
-        .tool-nr { font-size: 10px; color: var(--text-sec); text-transform: uppercase; display: block; margin-bottom: 2px; }
-        .tool-desc { font-size: 16px; font-weight: 800; text-transform: uppercase; margin-bottom: 15px; display: block; }
+        /* T-NR Styling */
+        .tool-nr { font-size: 10px; color: var(--text-sec); text-transform: uppercase; display: block; }
+        .tool-desc { font-size: 18px; font-weight: 900; text-transform: uppercase; margin-bottom: 15px; display: block; }
 
-        .input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
         .full { grid-column: span 2; }
         
-        label { display: block; font-size: 11px; font-weight: 700; margin-bottom: 4px; color: var(--text-sec); }
-        input, select { 
-            width: 100%; padding: 12px; border: 1px solid var(--border); 
-            font-size: 16px; font-weight: 700; background: #fff; outline: none; border-radius: 0;
+        label { display: block; font-size: 11px; font-weight: 700; margin-bottom: 5px; color: var(--text-sec); text-transform: uppercase; }
+        input { 
+            width: 100%; padding: 12px; border: 1.5px solid var(--border); 
+            font-size: 16px; font-weight: 700; background: #f9f9fb; outline: none;
         }
+        input:focus { border-color: var(--accent); background: #fff; }
 
-        .analysis-box { background: var(--accent); color: white; padding: 20px; margin-bottom: 15px; }
-        .analysis-box span { display: block; font-size: 24px; font-weight: 900; }
+        /* Таблица результатов */
+        .res-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        .res-table th { text-align: left; font-size: 10px; padding: 8px 0; border-bottom: 2px solid var(--accent); }
+        .res-table td { padding: 12px 0; font-size: 15px; font-weight: 800; border-bottom: 1px solid #eee; }
+        .td-label { color: var(--text-sec); font-weight: 500; }
 
-        #photo-preview { width: 100%; height: 150px; object-fit: cover; border: 1px dashed var(--border); margin-top: 10px; display: none; }
+        .money-banner { background: var(--accent); color: white; padding: 20px; margin-bottom: 20px; }
+        .money-banner small { font-size: 11px; opacity: 0.7; font-weight: 600; }
+        .money-banner div { font-size: 32px; font-weight: 900; }
 
         .footer-nav { 
             position: fixed; bottom: 0; left: 0; right: 0; 
             background: white; border-top: 2px solid var(--accent);
-            display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; padding: 15px 20px; z-index: 1000;
+            display: flex; gap: 10px; padding: 20px; z-index: 1000;
         }
-        .btn { height: 50px; border: none; font-weight: 900; text-transform: uppercase; cursor: pointer; font-size: 12px; }
+        .btn { flex: 1; height: 55px; border: none; font-weight: 900; text-transform: uppercase; cursor: pointer; }
         .btn-black { background: var(--accent); color: white; }
         .btn-outline { background: white; border: 2px solid var(--accent); color: var(--accent); }
     </style>
@@ -56,128 +62,101 @@
 <body>
 
 <div class="container">
-    <header><h1>Efficiency Pro v3.0</h1></header>
+    <header><h1>Efficiency Pro</h1><small>v3.1 Premium View</small></header>
 
-    <!-- СЕКЦИЯ БАЗЫ ДАННЫХ -->
-    <section class="card">
-        <span class="tool-nr">T-00</span>
-        <span class="tool-desc">Datenbank / Gespeicherte Teile</span>
-        <select id="db-select" onchange="loadFromDB()">
-            <option value="">-- Teil auswählen --</option>
-        </select>
-    </section>
-
-    <!-- ИНФОРМАЦИЯ О ДЕТАЛИ -->
+    <!-- T-01: BAUTEIL -->
     <section class="card">
         <span class="tool-nr">T-01</span>
-        <span class="tool-desc">Bauteil & Foto</span>
+        <span class="tool-desc">Bauteil Information</span>
         <div class="input-grid">
             <div class="field full"><label>Benennung</label><input type="text" id="partName" value="Gehäuse"></div>
             <div class="field full"><label>Zeichnungsnummer</label><input type="text" id="partNum" value="234446"></div>
-            <div class="field full">
-                <button class="btn btn-outline" style="width:100%" onclick="document.getElementById('cam-input').click()">📷 Foto machen</button>
-                <input type="file" id="cam-input" accept="image/*" capture="environment" hidden onchange="previewPhoto(this)">
-                <img id="photo-preview">
-            </div>
         </div>
     </section>
 
-    <!-- ПАРАМЕТРЫ -->
+    <!-- T-02: ZEITEN & MENGE -->
     <section class="card">
         <span class="tool-nr">T-02</span>
-        <span class="tool-desc">Produktion & Kosten</span>
+        <span class="tool-desc">Produktionsdaten</span>
         <div class="input-grid">
-            <div class="field full"><label>Menge (Stk)</label><input type="number" id="stk" value="290" oninput="calc()"></div>
-            <div class="field"><label>ALT (M:S)</label><div style="display:flex;gap:4px"><input type="number" id="am" value="5" oninput="calc()"><input type="number" id="as" value="30" oninput="calc()"></div></div>
-            <div class="field"><label>NEU (M:S)</label><div style="display:flex;gap:4px"><input type="number" id="nm" value="4" oninput="calc()"><input type="number" id="ns" value="15" oninput="calc()"></div></div>
+            <div class="field full"><label>Gesamtstückzahl</label><input type="number" id="stk" value="290" oninput="calc()"></div>
+            
+            <div class="field"><label>Laufzeit ALT (Min)</label><input type="number" id="am" value="5" oninput="calc()"></div>
+            <div class="field"><label>Sekunden ALT</label><input type="number" id="as" value="30" oninput="calc()"></div>
+            
+            <div class="field"><label>Laufzeit NEU (Min)</label><input type="number" id="nm" value="4" oninput="calc()"></div>
+            <div class="field"><label>Sekunden NEU</label><input type="number" id="ns" value="15" oninput="calc()"></div>
+            
             <div class="field"><label>Abends (Stk)</label><input type="number" id="abend" value="30" oninput="calc()"></div>
-            <div class="field"><label>Maschinensatz (€/h)</label><input type="number" id="hourlyRate" value="85" oninput="calc()"></div>
+            <div class="field"><label>Schichtzeit (h)</label><input type="number" id="sh" value="7.5" oninput="calc()"></div>
         </div>
     </section>
 
-    <div class="analysis-box">
-        <label style="color:rgba(255,255,255,0.6)">FINANZIELLE ERSPARNIS</label>
-        <span id="money-saved">0,00 €</span>
+    <!-- T-03: KOSTEN -->
+    <section class="card">
+        <span class="tool-nr">T-03</span>
+        <span class="tool-desc">Maschinenstundensatz</span>
+        <div class="field full">
+            <label>Kostensatz pro Stunde (€/h)</label>
+            <input type="number" id="hourlyRate" value="85" oninput="calc()">
+        </div>
+    </section>
+
+    <div class="money-banner">
+        <small>FINANZIELLE ERSPARNIS GESAMT</small>
+        <div id="money-saved">0,00 €</div>
     </div>
+
+    <!-- T-04: VERGLEICH -->
+    <section class="card">
+        <span class="tool-nr">T-04</span>
+        <span class="tool-desc">Analyse Vergleich</span>
+        <table class="res-table">
+            <thead><tr><th>WERT</th><th>ALT</th><th>NEU</th></tr></thead>
+            <tbody>
+                <tr><td class="td-label">Stk / Schicht</td><td id="s-alt-sh">-</td><td id="s-neu-sh">-</td></tr>
+                <tr><td class="td-label">Gesamtzeit (h)</td><td id="s-alt-tot">-</td><td id="s-neu-tot">-</td></tr>
+                <tr><td class="td-label">Schichten</td><td id="s-alt-sch">-</td><td id="s-neu-sch">-</td></tr>
+            </tbody>
+        </table>
+    </section>
 </div>
 
 <div class="footer-nav">
     <button class="btn btn-outline" onclick="saveToDB()">Speichern</button>
-    <button class="btn btn-outline" onclick="exportJSON()">JSON</button>
     <button class="btn btn-black" onclick="generatePDF()">PDF Bericht</button>
 </div>
 
 <script>
-    let photoData = null;
-
-    function previewPhoto(input) {
-        if (input.files && input.files[0]) {
-            const reader = new FileReader();
-            reader.onload = e => {
-                photoData = e.target.result;
-                const img = document.getElementById('photo-preview');
-                img.src = photoData;
-                img.style.display = 'block';
-            };
-            reader.readAsDataURL(input.files[0]);
-        }
-    }
-
     function calc() {
         const stk = parseFloat(document.getElementById('stk').value) || 0;
-        const abend = parseFloat(document.getElementById('abend').value) || 0;
         const rate = parseFloat(document.getElementById('hourlyRate').value) || 0;
-        
-        const tA = (parseFloat(document.getElementById('am').value)*60) + (parseFloat(document.getElementById('as').value)||0);
-        const tN = (parseFloat(document.getElementById('nm').value)*60) + (parseFloat(document.getElementById('ns').value)||0);
-        
+        const shH = parseFloat(document.getElementById('sh').value) || 0;
+        const abend = parseFloat(document.getElementById('abend').value) || 0;
+        const shSec = shH * 3600;
+
+        const tA = (parseFloat(document.getElementById('am').value) * 60) + (parseFloat(document.getElementById('as').value) || 0);
+        const tN = (parseFloat(document.getElementById('nm').value) * 60) + (parseFloat(document.getElementById('ns').value) || 0);
+
         if (tA <= 0 || tN <= 0) return;
 
+        // Расчеты
+        const stkShA = shSec / tA;
+        const stkShN = shSec / tN;
         const totalHoursA = (stk * tA) / 3600;
         const totalHoursN = (stk * tN) / 3600;
         const savingEur = (totalHoursA - totalHoursN) * rate;
 
+        // Обновление UI
         document.getElementById('money-saved').innerText = savingEur.toLocaleString('de-DE', {style: 'currency', currency: 'EUR'});
-        window.latestCalc = { stk, tA, tN, abend, rate, savingEur, totalHoursA, totalHoursN };
-    }
+        document.getElementById('s-alt-sh').innerText = stkShA.toFixed(1);
+        document.getElementById('s-neu-sh').innerText = stkShN.toFixed(1);
+        document.getElementById('s-alt-tot').innerText = totalHoursA.toFixed(1) + "h";
+        document.getElementById('s-neu-tot').innerText = totalHoursN.toFixed(1) + "h";
+        document.getElementById('s-alt-sch').innerText = (totalHoursA / shH).toFixed(1);
+        document.getElementById('s-neu-sch').innerText = (totalHoursN / shH).toFixed(1);
 
-    function saveToDB() {
-        const data = {
-            name: document.getElementById('partName').value,
-            num: document.getElementById('partNum').value,
-            stk: document.getElementById('stk').value,
-            am: document.getElementById('am').value, as: document.getElementById('as').value,
-            nm: document.getElementById('nm').value, ns: document.getElementById('ns').value,
-            abend: document.getElementById('abend').value, rate: document.getElementById('hourlyRate').value
-        };
-        localStorage.setItem('part_' + data.num, JSON.stringify(data));
-        updateDBSelect();
-        alert("Gespeichert!");
-    }
-
-    function updateDBSelect() {
-        const sel = document.getElementById('db-select');
-        sel.innerHTML = '<option value="">-- Teil auswählen --</option>';
-        for(let i=0; i<localStorage.length; i++){
-            let key = localStorage.key(i);
-            if(key.startsWith('part_')) {
-                let d = JSON.parse(localStorage.getItem(key));
-                sel.innerHTML += `<option value="${key}">${d.name} (${d.num})</option>`;
-            }
-        }
-    }
-
-    function loadFromDB() {
-        const key = document.getElementById('db-select').value;
-        if(!key) return;
-        const d = JSON.parse(localStorage.getItem(key));
-        document.getElementById('partName').value = d.name;
-        document.getElementById('partNum').value = d.num;
-        document.getElementById('stk').value = d.stk;
-        document.getElementById('am').value = d.am; document.getElementById('as').value = d.as;
-        document.getElementById('nm').value = d.nm; document.getElementById('ns').value = d.ns;
-        document.getElementById('abend').value = d.abend; document.getElementById('hourlyRate').value = d.rate;
-        calc();
+        window.latestCalc = { stk, tA, tN, abend, rate, savingEur, totalHoursA, totalHoursN, stkShA, stkShN, shH };
     }
 
     function generatePDF() {
@@ -185,24 +164,21 @@
         const doc = new jsPDF('p', 'mm', 'a4');
         const d = window.latestCalc;
         
-        // Стиль PDF: Жирные линии и центровка
         doc.setLineWidth(1.0); doc.line(15, 25, 195, 25);
         doc.setFont("helvetica", "bold"); doc.setFontSize(22);
-        doc.text("PRODUKTIONS-ANALYSE", 105, 20, {align: 'center'});
+        doc.text("PRODUKTIONS-BERICHT", 105, 20, {align: 'center'});
 
-        if(photoData) {
-            doc.addImage(photoData, 'JPEG', 150, 30, 40, 30);
-        }
-
-        doc.setFontSize(10); doc.text(`NR: ${document.getElementById('partNum').value} | ${document.getElementById('partName').value}`, 15, 35);
+        doc.setFontSize(10); doc.setFont("helvetica", "normal");
+        doc.text(`NR: ${document.getElementById('partNum').value} | ${document.getElementById('partName').value}`, 15, 35);
 
         doc.autoTable({
             startY: 45,
-            head: [['PRODUKTION', 'IST (ALT)', 'ZIEL (NEU)']],
+            head: [['PARAMETER', 'ALT-ZUSTAND', 'NEU-ZUSTAND']],
             body: [
                 ['Zeit pro Stk (Min)', (d.tA/60).toFixed(2), (d.tN/60).toFixed(2)],
-                ['Gesamtzeit (h)', d.totalHoursA.toFixed(1), d.totalHoursN.toFixed(1)],
-                ['Kosten bei ' + d.rate + '€/h', (d.totalHoursA*d.rate).toFixed(2) + ' €', (d.totalHoursN*d.rate).toFixed(2) + ' €']
+                ['Stückzahl / Schicht', d.stkShA.toFixed(1), d.stkShN.toFixed(1)],
+                ['Gesamtzeit Bedarf', d.totalHoursA.toFixed(1) + " h", d.totalHoursN.toFixed(1) + " h"],
+                ['Kosten (Gesamt)', (d.totalHoursA*d.rate).toFixed(2) + " €", (d.totalHoursN*d.rate).toFixed(2) + " €"]
             ],
             theme: 'grid', headStyles: { fillColor: [0,0,0] }
         });
@@ -211,22 +187,16 @@
         doc.setFontSize(18); doc.text(`ERSPARNIS: ${d.savingEur.toFixed(2)} €`, 15, y);
         
         doc.setLineWidth(1.0); doc.line(15, 280, 195, 280);
-        doc.setFontSize(8); doc.text("EFFICIENCY PRO v3.0 | DATABASE & PHOTO INTEGRATED", 105, 287, {align: 'center'});
-        
-        doc.save(`Report_${document.getElementById('partNum').value}.pdf`);
+        doc.setFontSize(8); doc.text("EFFICIENCY PRO PREMIUM I CENTERING & BOLD LINES ACTIVE", 105, 287, {align: 'center'});
+        doc.save(`Analysis_${document.getElementById('partNum').value}.pdf`);
     }
 
-    function exportJSON() {
-        const data = {};
-        for(let i=0; i<localStorage.length; i++) {
-            let key = localStorage.key(i);
-            data[key] = localStorage.getItem(key);
-        }
-        console.log(JSON.stringify(data));
-        alert("Daten in Konsole exportiert (F12)");
+    function saveToDB() {
+        const id = document.getElementById('partNum').value;
+        localStorage.setItem('job_'+id, JSON.stringify(window.latestCalc));
+        alert("Daten gespeichert!");
     }
 
-    updateDBSelect();
     calc();
 </script>
 </body>
