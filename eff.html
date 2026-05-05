@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Effizienz-Analyse v1.8</title>
+    <title>Effizienz-Analyse v1.9</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
     <style>
@@ -18,7 +18,7 @@
         }
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { margin: 0; padding: 0; background: var(--bg); font-family: "Helvetica Neue", Helvetica, sans-serif; color: var(--text-main); }
+        body { margin: 0; padding: 0; background: var(--bg); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: var(--text-main); }
         .container { max-width: 650px; margin: 0 auto; padding: 25px; padding-bottom: 120px; }
         
         header { margin-bottom: 30px; border-left: 6px solid var(--accent); padding-left: 20px; }
@@ -34,9 +34,8 @@
         label { display: block; font-size: 12px; font-weight: 900; color: var(--accent); margin-bottom: 8px; text-transform: uppercase; }
         input { 
             width: 100%; padding: 14px; border-radius: 0; border: 2px solid #d1d1d6; 
-            font-size: 18px; background: #fff; font-weight: 700; outline: none; transition: all 0.2s;
+            font-size: 18px; background: #fff; font-weight: 700; outline: none;
         }
-        input:focus { border-color: var(--accent); background: #fdfdfd; }
 
         .analysis-box { background: var(--accent); color: white; padding: 30px; border-radius: 0; margin-bottom: 20px; }
         .analysis-box.is-loss { background: var(--loss); }
@@ -59,8 +58,8 @@
 
 <div class="container">
     <header>
-        <h1>EFFIZIENZ-ANALYSE</h1>
-        <p style="font-weight: 700; color: var(--text-sec);">INDUSTRIAL REPORTING SYSTEM</p>
+        <h1>EFFIZIENZ-BERICHT</h1>
+        <p style="font-weight: 700; color: var(--text-sec);">INDUSTRIAL SYSTEM v1.9</p>
     </header>
 
     <section class="card">
@@ -97,7 +96,6 @@
     </section>
 
     <div id="main-box" class="analysis-box">
-        <label id="box-label" style="color: rgba(255,255,255,0.7); font-size: 14px;">PROGNOSE (NEU)</label>
         <span id="finish-days" class="big-val">-</span>
         <div id="finish-details" style="font-size: 14px; margin-top: 10px; font-weight: 600;"></div>
     </div>
@@ -121,7 +119,7 @@
 </div>
 
 <div class="footer-nav">
-    <button class="btn btn-black" onclick="generatePDF()">PDF Bericht Exportieren</button>
+    <button class="btn btn-black" onclick="generatePDF()">Bericht PDF Speichern</button>
 </div>
 
 <script>
@@ -148,13 +146,9 @@
         document.getElementById('s-alt-sch').innerText = ((stk * tA) / shSec).toFixed(1);
         document.getElementById('s-neu-sch').innerText = ((stk * tN) / shSec).toFixed(1);
 
-        const box = document.getElementById('main-box');
-        box.classList.toggle('is-loss', tN > tA);
-        document.getElementById('box-label').innerText = tN > tA ? "VERLUST PROGNOSE" : "ERSPARNIS PROGNOSE";
-
         document.getElementById('finish-days').innerText = daysN.toFixed(1) + " ARBEITSTAGE";
         document.getElementById('finish-details').innerText = 
-            `DIFFERENZ: ${Math.abs(minDiff).toFixed(0)} MIN / ${Math.abs(daysA - daysN).toFixed(1)} TAGE`;
+            `DIFFERENZ: ${Math.abs(minDiff).toFixed(0)} MINUTEN`;
         
         window.latestCalc = { daysA, daysN, stkShA, stkShN, abendStk, minDiff, tA, tN, stk };
     }
@@ -165,50 +159,55 @@
         const d = window.latestCalc;
         const isLoss = d.tN > d.tA;
         
-        // --- HEADER ---
+        // Линии заголовка
         doc.setFont("helvetica", "bold");
         doc.setFontSize(26);
         doc.text("EFFIZIENZ-BERICHT", 15, 25);
         doc.setLineWidth(1.0);
         doc.line(15, 30, 195, 30);
 
-        // --- META ---
+        // Мета данные
         doc.setFontSize(11);
         doc.setFont("helvetica", "normal");
         doc.text(`DATUM: ${new Date().toLocaleDateString('de-DE')}`, 15, 40);
         doc.text(`MENGE: ${d.stk} STÜCK`, 15, 46);
 
-        // --- TABLE (No Black Background) ---
+        // РИСУЕМ ТАБЛИЦУ ВРУЧНУЮ (БЕЗ ТЕМЫ)
         doc.autoTable({
             startY: 55,
             head: [['PARAMETER', 'STATUS: ALT', 'STATUS: NEU']],
             body: [
                 ['Zeit pro Stück (Min)', (d.tA/60).toFixed(2), (d.tN/60).toFixed(2)],
-                ['Stückzahl pro Schicht', document.getElementById('s-alt-sh').innerText, document.getElementById('s-neu-sh').innerText],
-                ['Produktionszeit (Std)', document.getElementById('s-alt-tot').innerText, document.getElementById('s-neu-tot').innerText],
-                ['Schichten Netto', document.getElementById('s-alt-sch').innerText, document.getElementById('s-neu-sch').innerText]
+                ['Stückzahl pro Schicht', d.stkShA.toFixed(1), d.stkShN.toFixed(1)],
+                ['Produktionszeit (Std)', ( (d.stk * d.tA) / 3600).toFixed(1) + " h", ( (d.stk * d.tN) / 3600).toFixed(1) + " h"],
+                ['Schichten Netto', ( (d.stk * d.tA) / (parseFloat(document.getElementById('sh').value)*3600) ).toFixed(1), ( (d.stk * d.tN) / (parseFloat(document.getElementById('sh').value)*3600) ).toFixed(1)]
             ],
-            theme: 'plain', // Clean style
-            headStyles: { 
-                textColor: [0, 0, 0], 
-                fontSize: 12, 
-                fontStyle: 'bold',
-                cellPadding: 6,
-                lineColor: [0, 0, 0],
-                lineWidth: { bottom: 0.8 } // Heavy line under header
-            },
-            styles: { 
-                fontSize: 11, 
-                cellPadding: 6, 
+            styles: {
+                fillColor: false, // ГАРАНТИРУЕМ ОТСУТСТВИЕ ФОНА
                 textColor: [0, 0, 0],
-                lineColor: [200, 200, 200],
-                lineWidth: { bottom: 0.1 } 
+                fontSize: 11,
+                cellPadding: 6,
+                font: "helvetica",
+                lineWidth: 0 // Убираем стандартные границы
             },
-            columnStyles: { 2: { fontStyle: 'bold' } }
+            headStyles: {
+                fontStyle: 'bold',
+                fontSize: 12,
+                lineWidth: { bottom: 0.8 } // Только нижняя линия заголовка
+            },
+            didDrawCell: (data) => {
+                // Добавляем тонкие линии между рядами вручную
+                if (data.section === 'body') {
+                    doc.setDrawColor(220);
+                    doc.setLineWidth(0.1);
+                    doc.line(data.cell.x, data.cell.y + data.cell.height, data.cell.x + data.cell.width, data.cell.y + data.cell.height);
+                }
+            }
         });
 
         let y = doc.lastAutoTable.finalY + 15;
 
+        // Блоки анализа
         const drawAnalysis = (title, days, stkDaily, totalMin) => {
             doc.setFont("helvetica", "bold");
             doc.setFontSize(14);
@@ -225,20 +224,20 @@
         y -= 5;
         drawAnalysis(isLoss ? "KAPAZITÄTSANALYSE (NEU / VERLUST):" : "KAPAZITÄTSANALYSE (NEU / ERSPARNIS):", d.daysN, (d.stkShN + d.abendStk), (d.stk * d.tN / 60));
 
-        // Result Line
+        // Линия итога
         doc.setLineWidth(0.8);
         doc.line(15, y - 5, 120, y - 5);
         doc.setFontSize(16);
         doc.setFont("helvetica", "bold");
         doc.text(isLoss ? `VERLUST: ${Math.abs(d.minDiff).toFixed(0)} MIN` : `ERSPARNIS: ${d.minDiff.toFixed(0)} MIN`, 15, y + 5);
 
-        // Bottom Line
+        // Финальная линия внизу
         doc.setLineWidth(1.0);
         doc.line(15, 280, 195, 280); 
         doc.setFontSize(9);
-        doc.text("CNC PRODUCTION OPTIMIZER | SYSTEM-GENERATED REPORT", 105, 287, {align: 'center'});
+        doc.text("CNC PRODUCTION OPTIMIZER | INDUSTRIAL FINAL v1.9", 105, 287, {align: 'center'});
 
-        doc.save(`Bericht_${d.stk}_Stk.pdf`);
+        doc.save(`Effizienz_Bericht_${d.stk}_Stk.pdf`);
     }
     calc();
 </script>
