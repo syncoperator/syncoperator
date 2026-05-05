@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Effizienz-Analyse v2.2</title>
+    <title>Effizienz-Analyse v2.3</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
     <style>
@@ -58,7 +58,7 @@
 <div class="container">
     <header>
         <h1>EFFIZIENZ-BERICHT</h1>
-        <p style="font-weight: 700; color: var(--text-sec);">CNC OPTIMIZER SYSTEM v2.2</p>
+        <p style="font-weight: 700; color: var(--text-sec);">CNC OPTIMIZER SYSTEM v2.3</p>
     </header>
 
     <section class="card">
@@ -154,6 +154,7 @@
         const d = window.latestCalc;
         const isLoss = d.tN > d.tA;
         
+        // Header
         doc.setDrawColor(0);
         doc.setLineWidth(0.8);
         doc.line(15, 30, 195, 30);
@@ -162,12 +163,13 @@
         doc.setFontSize(26);
         doc.text("EFFIZIENZ-BERICHT", 15, 25);
 
+        // Meta
         doc.setFontSize(11);
         doc.setFont("helvetica", "normal");
         doc.text(`DATUM: ${new Date().toLocaleDateString('de-DE')}`, 15, 40);
         doc.text(`MENGE: ${d.stk} STÜCK`, 15, 46);
 
-        // ТАБЛИЦА С ЧЕРНОЙ ШАПКОЙ (Оставляем — она крутая)
+        // Таблица (Ячейки и цвета как были)
         doc.autoTable({
             startY: 55,
             head: [['PARAMETER', 'STATUS: ALT', 'STATUS: NEU']],
@@ -177,61 +179,47 @@
                 ['Produktionszeit (Std)', ((d.stk*d.tA)/3600).toFixed(1)+" h", ((d.stk*d.tN)/3600).toFixed(1)+" h"],
                 ['Schichten Netto', (d.stk*d.tA/(parseFloat(document.getElementById('sh').value)*3600)).toFixed(1), (d.stk*d.tN/(parseFloat(document.getElementById('sh').value)*3600)).toFixed(1)]
             ],
-            theme: 'plain',
-            headStyles: { textColor: [255, 255, 255], fontStyle: 'bold' },
-            styles: { fontSize: 11, cellPadding: 6, textColor: [0, 0, 0] },
-            willDrawCell: (data) => {
-                if (data.section === 'head') {
-                    doc.setFillColor(0, 0, 0);
-                    doc.rect(data.cell.x, data.cell.y, data.cell.width, data.cell.height, 'F');
-                }
-            },
-            didDrawCell: (data) => {
-                if (data.section === 'body') {
-                    doc.setDrawColor(220);
-                    doc.setLineWidth(0.1);
-                    doc.line(data.cell.x, data.cell.y + data.cell.height, data.cell.x + data.cell.width, data.cell.y + data.cell.height);
-                }
-            }
+            theme: 'striped', // Возвращаем серые полоски
+            headStyles: { fillColor: [0, 0, 0], textColor: [255, 255, 255], fontStyle: 'bold' },
+            bodyStyles: { textColor: [0, 0, 0], fontSize: 11 },
+            alternateRowStyles: { fillColor: [245, 245, 247] }, // Светло-серый для "зебры"
+            styles: { cellPadding: 6 }
         });
 
         let y = doc.lastAutoTable.finalY + 15;
 
-        // БЛОКИ АНАЛИЗА: БЕЛЫЕ С ЖИРНЫМ ЗАГОЛОВКОМ (Возвращаем чистоту)
-        const drawCleanAnalysis = (title, days, stkDaily, totalMin) => {
+        // Капацитет (Белый стиль)
+        const drawAnalysis = (title, days, stkDaily, totalMin) => {
             doc.setFont("helvetica", "bold");
             doc.setFontSize(14);
-            doc.setTextColor(0, 0, 0);
             doc.text(title, 15, y);
-            
-            doc.setLineWidth(0.4);
-            doc.line(15, y + 2, 80, y + 2); // Подчеркивание заголовка
-
             doc.setFont("helvetica", "normal");
             doc.setFontSize(11);
-            doc.text(`- Kapazität pro Tag: ${stkDaily.toFixed(1)} Stück`, 20, y + 12);
-            doc.text(`- Zeitbedarf: ${days.toFixed(1)} Arbeitstage`, 20, y + 19);
-            doc.text(`- Gesamtminuten: ${totalMin.toFixed(0)} min`, 20, y + 26);
-            y += 40;
+            doc.text(`- Kapazität pro Tag: ${stkDaily.toFixed(1)} Stück`, 20, y + 10);
+            doc.text(`- Zeitbedarf: ${days.toFixed(1)} Arbeitstage`, 20, y + 17);
+            doc.text(`- Gesamtminuten: ${totalMin.toFixed(0)} min`, 20, y + 24);
+            y += 35;
         };
 
-        drawCleanAnalysis("KAPAZITÄTSANALYSE (ALT)", d.daysA, (d.stkShA + d.abendStk), (d.stk * d.tA / 60));
-        drawCleanAnalysis(isLoss ? "KAPAZITÄTSANALYSE (NEU / VERLUST)" : "KAPAZITÄTSANALYSE (NEU / ERSPARNIS)", d.daysN, (d.stkShN + d.abendStk), (d.stk * d.tN / 60));
+        drawAnalysis("KAPAZITÄTSANALYSE (ALT)", d.daysA, (d.stkShA + d.abendStk), (d.stk * d.tA / 60));
+        drawAnalysis(isLoss ? "KAPAZITÄTSANALYSE (NEU / VERLUST)" : "KAPAZITÄTSANALYSE (NEU / ERSPARNIS)", d.daysN, (d.stkShN + d.abendStk), (d.stk * d.tN / 60));
 
-        // Итог
-        doc.setLineWidth(0.8);
+        // Линия Ersparnis
+        doc.setDrawColor(200);
+        doc.setLineWidth(0.4);
         doc.line(15, y - 5, 120, y - 5);
         doc.setFontSize(16);
         doc.setFont("helvetica", "bold");
         doc.text(isLoss ? `VERLUST: ${Math.abs(d.minDiff).toFixed(0)} MIN` : `ERSPARNIS: ${d.minDiff.toFixed(0)} MIN`, 15, y + 5);
 
-        // Линия низа
+        // ФИНАЛЬНАЯ ЧЕРНАЯ ЛИНИЯ (ИСПРАВЛЕНО)
+        doc.setDrawColor(0, 0, 0); // Чистый черный
         doc.setLineWidth(0.8);
         doc.line(15, 280, 195, 280); 
         doc.setFontSize(9);
-        doc.text("CNC PRODUCTION OPTIMIZER | BALANCED v2.2", 105, 287, {align: 'center'});
+        doc.text("CNC PRODUCTION OPTIMIZER | RESTORED v2.3", 105, 287, {align: 'center'});
 
-        doc.save(`Report_${d.stk}_Balanced.pdf`);
+        doc.save(`Final_Report_${d.stk}.pdf`);
     }
     calc();
 </script>
