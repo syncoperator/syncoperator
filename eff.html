@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Efficiency Pro v4.0</title>
+    <title>Efficiency Pro v4.1</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
     <style>
@@ -20,24 +20,24 @@
         
         .container { max-width: 600px; margin: 0 auto; padding: 20px; padding-bottom: 180px; }
         
-        header { margin-bottom: 25px; border-bottom: 5px solid var(--accent); padding-bottom: 10px; }
+        header { margin-bottom: 25px; border-bottom: 3.5px solid var(--accent); padding-bottom: 10px; }
         header h1 { font-size: 24px; font-weight: 900; margin: 0; text-transform: uppercase; color: var(--accent); }
 
         .card { 
-            background: var(--surface); border: 2.5px solid var(--accent); 
+            background: var(--surface); border: 1.5px solid #d1d1d6; 
             padding: 20px; margin-bottom: 20px;
         }
 
         .tool-nr { font-size: 10px; color: var(--text-sec); text-transform: uppercase; display: block; margin-bottom: 2px; }
-        .tool-desc { font-size: 16px; font-weight: 900; text-transform: uppercase; margin-bottom: 15px; display: block; border-bottom: 2px solid #000; padding-bottom: 5px; }
+        .tool-desc { font-size: 16px; font-weight: 800; text-transform: uppercase; margin-bottom: 15px; display: block; border-bottom: 1px solid #eee; padding-bottom: 5px; }
 
         .input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         .full { grid-column: span 2; }
         
-        label { display: block; font-size: 10px; font-weight: 800; margin-bottom: 5px; color: var(--accent); text-transform: uppercase; }
+        label { display: block; font-size: 10px; font-weight: 700; margin-bottom: 5px; color: var(--text-sec); text-transform: uppercase; }
         input { 
-            width: 100%; padding: 12px; border: 2px solid var(--accent); 
-            font-size: 16px; font-weight: 700; background: #fff; outline: none; border-radius: 0; color: #000;
+            width: 100%; padding: 12px; border: 1.5px solid #d1d1d6; 
+            font-size: 16px; font-weight: 700; background: #fff; outline: none; border-radius: 0;
         }
 
         .money-banner { background: var(--accent); color: white; padding: 25px; margin-bottom: 20px; text-align: center; }
@@ -48,12 +48,12 @@
 
         .footer-nav { 
             position: fixed; bottom: 0; left: 0; right: 0; 
-            background: white; border-top: 5px solid var(--accent); 
+            background: white; border-top: 3.5px solid var(--accent); 
             display: flex; padding: 25px 20px; gap: 15px; z-index: 1000;
         }
         .btn { flex: 1; height: 60px; border: none; font-weight: 900; text-transform: uppercase; cursor: pointer; }
         .btn-black { background: var(--accent); color: white; }
-        .btn-outline { background: white; border: 3px solid var(--accent); color: var(--accent); }
+        .btn-outline { background: white; border: 2.5px solid var(--accent); color: var(--accent); }
     </style>
 </head>
 <body>
@@ -62,7 +62,7 @@
     <header><h1>Effizienz-Bericht</h1></header>
 
     <section class="card">
-        <span class="tool-nr">T-01</span><span class="tool-desc">Bauteil & Menge</span>
+        <span class="tool-nr">T-01</span><span class="tool-desc">Bauteil-Daten</span>
         <div class="input-grid">
             <div class="field full"><label>Benennung</label><input type="text" id="pName" value="Gehäuse"></div>
             <div class="field"><label>Zeichnungs-NR</label><input type="text" id="pNum" value="234446"></div>
@@ -71,7 +71,7 @@
     </section>
 
     <section class="card">
-        <span class="tool-nr">T-02</span><span class="tool-desc">Parameter</span>
+        <span class="tool-nr">T-02</span><span class="tool-desc">Prozess-Parameter</span>
         <div class="input-grid">
             <div class="field"><label>ALT (Min)</label><input type="number" id="am" value="5.50" step="0.01" oninput="calc()"></div>
             <div class="field"><label>NEU (Min)</label><input type="number" id="nm" value="4.25" step="0.01" oninput="calc()"></div>
@@ -88,16 +88,16 @@
     </div>
 
     <section class="card">
-        <span class="tool-nr">T-03</span><span class="tool-desc">Kapazitätsanalyse</span>
+        <span class="tool-nr">T-03</span><span class="tool-desc">Vorschau Analyse</span>
         <div class="analysis-text" id="out-alt"></div>
-        <div style="border-top: 3px solid #000; margin: 15px 0;"></div>
+        <div style="border-top: 1px solid #eee; margin: 15px 0;"></div>
         <div class="analysis-text" id="out-neu"></div>
     </section>
 </div>
 
 <div class="footer-nav">
-    <button class="btn btn-outline" onclick="alert('Daten gesichert')">Speichern</button>
-    <button class="btn btn-black" onclick="generatePDF()">PDF Bericht</button>
+    <button class="btn btn-outline" onclick="alert('Daten lokal gespeichert')">Save</button>
+    <button class="btn btn-black" onclick="generatePDF()">PDF Bericht Erzeugen</button>
 </div>
 
 <script>
@@ -106,39 +106,25 @@
         const abend = parseFloat(document.getElementById('abend').value) || 0;
         const shH = parseFloat(document.getElementById('sh').value) || 0;
         const rate = parseFloat(document.getElementById('rate').value) || 0;
+        const tA = parseFloat(document.getElementById('am').value);
+        const tN = parseFloat(document.getElementById('nm').value);
 
-        const tA = parseFloat(document.getElementById('am').value) * 60;
-        const tN = parseFloat(document.getElementById('nm').value) * 60;
-
-        if (tA <= 0 || tN <= 0) return;
-
-        const prodSecA = stk * tA;
-        const prodSecN = stk * tN;
-        const shSec = shH * 3600;
-
-        const shA = shSec / tA;
-        const shN = shSec / tN;
-        
+        const shMin = shH * 60;
+        const shA = shMin / tA;
+        const shN = shMin / tN;
         const capDayA = shA + abend;
         const capDayN = shN + abend;
-
         const workDaysA = stk / capDayA;
         const workDaysN = stk / capDayN;
-
-        const totalMinA = prodSecA / 60;
-        const totalMinN = prodSecN / 60;
-
+        const totalMinA = stk * tA;
+        const totalMinN = stk * tN;
         const diffMin = totalMinA - totalMinN;
         const diffEur = (diffMin / 60) * rate;
 
         document.getElementById('res-min').innerText = Math.round(diffMin) + " MIN";
         document.getElementById('res-eur').innerText = diffEur.toLocaleString('de-DE', {style:'currency', currency:'EUR'});
 
-        const fmt = (title, cap, days, min) => `<b>${title}</b>
-            - Kapazität pro Tag: ${cap.toFixed(1)} Stück<br>
-            - Zeitbedarf: ${days.toFixed(1)} Arbeitstage<br>
-            - Gesamtminuten: ${Math.round(min)} min`;
-
+        const fmt = (title, cap, days, min) => `<b>${title}</b>- Kapazität pro Tag: ${cap.toFixed(1)} Stück<br>- Zeitbedarf: ${days.toFixed(1)} Arbeitstage<br>- Gesamtminuten: ${Math.round(min)} min`;
         document.getElementById('out-alt').innerHTML = fmt("KAPAZITÄTSANALYSE (ALT):", capDayA, workDaysA, totalMinA);
         document.getElementById('out-neu').innerHTML = fmt("KAPAZITÄTSANALYSE (NEU):", capDayN, workDaysN, totalMinN);
 
@@ -150,37 +136,38 @@
         const doc = new jsPDF();
         const d = window.pdfData;
 
-        // Линия Сверху
+        // Header Line
         doc.setDrawColor(0, 0, 0);
-        doc.setLineWidth(1.5);
+        doc.setLineWidth(1.2);
         doc.line(15, 25, 195, 25);
         
         doc.setTextColor(0, 0, 0);
         doc.setFont("helvetica", "bold"); doc.setFontSize(22);
         doc.text("EFFIZIENZ-BERICHT", 15, 20);
 
-        doc.setFontSize(10);
-        doc.text(`BAUTEIL: ${document.getElementById('pName').value} I NR: ${document.getElementById('pNum').value}`, 15, 33);
+        doc.setFontSize(9);
+        doc.text(`BAUTEIL: ${document.getElementById('pName').value} I NR: ${document.getElementById('pNum').value}`, 15, 32);
         doc.setFont("helvetica", "normal");
-        doc.text(`DATUM: ${new Date().toLocaleDateString('de-DE')} I MENGE: ${d.stk} STK`, 15, 38);
+        doc.text(`DATUM: ${new Date().toLocaleDateString('de-DE')} I MENGE: ${d.stk} STK`, 15, 37);
 
         doc.autoTable({
             startY: 45,
             head: [['PARAMETER', 'STATUS: ALT', 'STATUS: NEU']],
             body: [
-                ['Zeit pro Stück (Min)', (d.tA/60).toFixed(2), (d.tN/60).toFixed(2)],
+                ['Zeit pro Stück (Min)', d.tA.toFixed(2), d.tN.toFixed(2)],
                 ['Stückzahl pro Schicht', d.shA.toFixed(1), d.shN.toFixed(1)],
                 ['Abend-Produktion (Stk)', d.abend, d.abend],
                 ['Produktionszeit (Std)', (d.totalMinA/60).toFixed(1) + ' h', (d.totalMinN/60).toFixed(1) + ' h'],
-                ['Schichten', (d.workDaysA).toFixed(1), (d.workDaysN).toFixed(1)],
+                ['Schichten', d.workDaysA.toFixed(1), d.workDaysN.toFixed(1)],
                 ['Maschinensatz', d.rate.toFixed(2) + ' €/h', d.rate.toFixed(2) + ' €/h']
             ],
-            theme: 'grid',
-            headStyles: { fillColor: [0, 0, 0], textColor: [255, 255, 255] },
-            styles: { textColor: [0, 0, 0], lineColor: [0, 0, 0], lineWidth: 0.2 }
+            theme: 'striped',
+            headStyles: { fillColor: [0, 0, 0], textColor: [255, 255, 255], fontStyle: 'bold' },
+            styles: { fontSize: 9, cellPadding: 3, textColor: [0, 0, 0] },
+            columnStyles: { 0: { fontStyle: 'normal' } }
         });
 
-        let y = doc.lastAutoTable.finalY + 15;
+        let y = doc.lastAutoTable.finalY + 12;
         const addBlock = (title, cap, days, min, curY) => {
             doc.setFont("helvetica", "bold"); doc.setFontSize(11);
             doc.text(title, 15, curY);
@@ -194,17 +181,18 @@
         y = addBlock("KAPAZITÄTSANALYSE (ALT):", d.capDayA, d.workDaysA, d.totalMinA, y);
         y = addBlock("KAPAZITÄTSANALYSE (NEU):", d.capDayN, d.workDaysN, d.totalMinN, y);
 
-        doc.setLineWidth(0.8); doc.line(15, y, 100, y);
-        doc.setFontSize(14); doc.setFont("helvetica", "bold");
-        doc.text(`ERSPARNIS: ${Math.round(d.diffMin)} MIN`, 15, y + 12);
-        doc.text(`FINANZIELLE ERSPARNIS: ${d.diffEur.toFixed(2)} €`, 15, y + 20);
+        doc.setLineWidth(0.5); doc.setDrawColor(150, 150, 150);
+        doc.line(15, y, 110, y);
+        
+        doc.setFontSize(14); doc.setFont("helvetica", "bold"); doc.setTextColor(0,0,0);
+        doc.text(`ERSPARNIS: ${Math.round(d.diffMin)} MIN`, 15, y + 10);
 
-        // Линия Снизу
-        doc.setLineWidth(1.5);
+        // Footer Line (Identical to Top)
+        doc.setDrawColor(0, 0, 0);
+        doc.setLineWidth(1.2);
         doc.line(15, 280, 195, 280);
         
-        doc.setFontSize(8); doc.text("CNC PRODUCTION OPTIMIZER I v4.0 PREMIUM", 105, 286, {align:'center'});
-        doc.save(`Bericht_${document.getElementById('pNum').value}.pdf`);
+        doc.save(`Effizienz_Bericht_${document.getElementById('pNum').value}.pdf`);
     }
     calc();
 </script>
