@@ -3,258 +3,252 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Efficiency Pro | Light Premium</title>
-    <!-- Подключаем библиотеку для PDF -->
+    <title>Produktions-Effizienz | Premium</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
     <style>
         :root {
-            --bg: #f8f9fa;
+            --bg: #f2f2f7;
             --surface: #ffffff;
             --accent: #007aff;
             --text-main: #1c1c1e;
             --text-sec: #8e8e93;
-            --border: #e5e5ea;
+            --border: #d1d1d6;
             --positive: #34c759;
-            --negative: #ff3b30;
         }
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body { 
             margin: 0; padding: 0; background: var(--bg); 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
-            color: var(--text-main); line-height: 1.4;
+            font-family: -apple-system, sans-serif; color: var(--text-main);
         }
 
-        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; padding-bottom: 100px; }
         
-        header { margin-bottom: 25px; text-align: center; }
-        header h1 { font-size: 22px; font-weight: 700; margin: 0; color: var(--accent); }
-        header p { color: var(--text-sec); font-size: 14px; margin: 5px 0 0; }
+        header { margin-bottom: 25px; border-left: 4px solid var(--accent); padding-left: 15px; }
+        header h1 { font-size: 20px; font-weight: 800; margin: 0; letter-spacing: -0.5px; }
+        header p { color: var(--text-sec); font-size: 13px; margin: 2px 0 0; text-transform: uppercase; }
 
-        /* Входные данные */
         .card { 
-            background: var(--surface); border-radius: 16px; padding: 20px; 
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05); border: 1px solid var(--border);
+            background: var(--surface); border-radius: 14px; padding: 20px; 
+            box-shadow: 0 8px 24px rgba(0,0,0,0.04); border: 1px solid var(--border);
             margin-bottom: 15px;
         }
 
-        .input-group { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 15px; }
-        .full-width { grid-column: span 2; }
-        
-        label { display: block; font-size: 12px; font-weight: 600; color: var(--text-sec); margin-bottom: 6px; text-transform: uppercase; }
+        .input-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 15px; }
+        label { display: block; font-size: 11px; font-weight: 700; color: var(--text-sec); margin-bottom: 6px; text-transform: uppercase; }
         input { 
-            width: 100%; padding: 12px; border-radius: 10px; border: 1px solid var(--border); 
-            font-size: 16px; background: var(--bg); outline: none; transition: border 0.2s;
+            width: 100%; padding: 12px; border-radius: 10px; border: 1.5px solid var(--border); 
+            font-size: 16px; background: #fff; font-weight: 600; outline: none;
         }
         input:focus { border-color: var(--accent); }
 
-        /* Результаты */
-        .res-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
-        .res-item { background: var(--bg); padding: 15px; border-radius: 12px; text-align: center; }
-        .res-val { display: block; font-size: 18px; font-weight: 700; color: var(--accent); }
-        .res-label { font-size: 11px; color: var(--text-sec); text-transform: uppercase; margin-top: 4px; }
+        .highlight-box { 
+            background: #f8f9ff; border: 2px solid var(--accent); text-align: center; 
+            padding: 20px; border-radius: 14px; grid-column: span 2;
+        }
+        .big-val { font-size: 32px; font-weight: 900; color: var(--accent); display: block; }
 
-        /* Таблица */
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 14px; }
-        th { text-align: left; color: var(--text-sec); font-weight: 600; padding: 10px 5px; border-bottom: 2px solid var(--border); }
-        td { padding: 12px 5px; border-bottom: 1px solid var(--border); }
-        .val-alt { color: var(--text-sec); }
-        .val-neu { color: var(--accent); font-weight: 600; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th { text-align: left; font-size: 11px; color: var(--text-sec); padding: 10px 5px; text-transform: uppercase; border-bottom: 2px solid var(--text-main); }
+        td { padding: 14px 5px; border-bottom: 1px solid var(--border); font-size: 15px; }
+        .val-neu { color: var(--accent); font-weight: 800; }
 
-        /* Кнопки */
-        .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 20px; padding-bottom: 40px; }
+        footer-nav { 
+            position: fixed; bottom: 0; left: 0; right: 0; height: 90px; 
+            background: rgba(255,255,255,0.9); backdrop-filter: blur(10px);
+            border-top: 1px solid var(--border); display: flex; align-items: center; 
+            padding: 0 20px calc(env(safe-area-inset-bottom) + 5px); gap: 12px;
+        }
         .btn { 
-            padding: 15px; border-radius: 12px; border: none; font-weight: 700; cursor: pointer; 
-            font-size: 14px; transition: opacity 0.2s; text-align: center;
+            height: 54px; border-radius: 12px; border: none; font-weight: 800; cursor: pointer; 
+            font-size: 14px; flex: 1; text-transform: uppercase;
         }
-        .btn-primary { background: var(--accent); color: white; }
-        .btn-sec { background: var(--surface); color: var(--accent); border: 1px solid var(--accent); }
-        .btn:active { opacity: 0.7; }
-
-        .saving-highlight { color: var(--positive); font-weight: 800; }
-
-        @media (max-width: 400px) {
-            .input-group { grid-template-columns: 1fr; }
-            .full-width { grid-column: span 1; }
-        }
+        .btn-pdf { background: var(--text-main); color: white; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <header>
-        <h1>PRODUCTION ANALYZER</h1>
-        <p>Light Premium Edition</p>
+        <h1>EFFIZIENZ-ANALYSE</h1>
+        <p>Premium Production Tool</p>
     </header>
 
-    <!-- INPUTS -->
     <section class="card">
-        <label>Общее количество (Stück Gesamt)</label>
-        <input type="number" id="stkGesamt" value="1000" oninput="calc()">
-        
-        <div class="input-group" style="margin-top: 15px;">
+        <div class="input-row">
+            <div style="grid-column: span 2;">
+                <label>Gesamtstückzahl (Штук всего)</label>
+                <input type="number" id="stk" value="1000" oninput="calc()">
+            </div>
             <div>
-                <label>Laufzeit ALT (Min/Sek)</label>
-                <div style="display: flex; gap: 5px;">
-                    <input type="number" id="altMin" value="5" oninput="calc()">
-                    <input type="number" id="altSek" value="30" oninput="calc()">
+                <label>Zeit ALT (Min : Sek)</label>
+                <div style="display:flex; gap:5px;">
+                    <input type="number" id="am" value="5" oninput="calc()">
+                    <input type="number" id="as" value="30" oninput="calc()">
                 </div>
             </div>
             <div>
-                <label>Laufzeit NEU (Min/Sek)</label>
-                <div style="display: flex; gap: 5px;">
-                    <input type="number" id="neuMin" value="4" oninput="calc()">
-                    <input type="number" id="neuSek" value="15" oninput="calc()">
+                <label>Zeit NEU (Min : Sek)</label>
+                <div style="display:flex; gap:5px;">
+                    <input type="number" id="nm" value="4" oninput="calc()">
+                    <input type="number" id="ns" value="15" oninput="calc()">
                 </div>
             </div>
         </div>
-
-        <div class="input-group">
+        <div class="input-row">
             <div>
-                <label>Abend Stück (Вечер)</label>
-                <input type="number" id="stkAbend" value="50" oninput="calc()">
+                <label>Abendschicht (шт)</label>
+                <input type="number" id="abend" value="50" oninput="calc()">
             </div>
             <div>
-                <label>Смена (Stunden)</label>
-                <input type="number" id="shiftHrs" value="7.5" step="0.5" oninput="calc()">
+                <label>Schichtzeit (Std)</label>
+                <input type="number" id="sh" value="7.5" oninput="calc()">
             </div>
         </div>
     </section>
 
-    <!-- SUMMARY -->
-    <section class="card">
-        <div class="res-grid">
-            <div class="res-item" style="grid-column: span 2; background: #e1f5fe;">
-                <span class="res-val saving-highlight" id="totalSaving">0h 0m</span>
-                <span class="res-label">Общая экономия времени (Total Saving)</span>
-            </div>
-            <div class="res-item">
-                <span class="res-val" id="savingShifts">0.0</span>
-                <span class="res-label">Экономия в сменах</span>
-            </div>
-            <div class="res-item">
-                <span class="res-val" id="percentFaster">0%</span>
-                <span class="res-label">Быстрее на</span>
-            </div>
+    <div class="input-row" style="padding: 0 5px;">
+        <div class="highlight-box">
+            <span class="big-val" id="res-saving">0h 0m</span>
+            <label style="color: var(--accent); margin:0;">Gesamte Zeitersparnis</label>
         </div>
-    </section>
+    </div>
 
-    <!-- TABLE -->
     <section class="card">
         <table>
             <thead>
                 <tr>
-                    <th>Параметр</th>
+                    <th>Parameter</th>
                     <th>Alt</th>
                     <th>Neu</th>
                 </tr>
             </thead>
-            <tbody>
+            <tbody id="table-body">
                 <tr>
-                    <td>Сек / Деталь</td>
-                    <td class="val-alt" id="tAltSek">-</td>
-                    <td class="val-neu" id="tNeuSek">-</td>
+                    <td>Sekunden / Stk</td>
+                    <td id="s-alt-s">-</td>
+                    <td class="val-neu" id="s-neu-s">-</td>
                 </tr>
                 <tr>
-                    <td>Шт / Смена</td>
-                    <td class="val-alt" id="stkShiftAlt">-</td>
-                    <td class="val-neu" id="stkShiftNeu">-</td>
+                    <td>Stk / Schicht</td>
+                    <td id="s-alt-sh">-</td>
+                    <td class="val-neu" id="s-neu-sh">-</td>
                 </tr>
                 <tr>
-                    <td>Всего время</td>
-                    <td class="val-alt" id="totalTimeAlt">-</td>
-                    <td class="val-neu" id="totalTimeNeu">-</td>
+                    <td>Gesamtzeit</td>
+                    <td id="s-alt-tot">-</td>
+                    <td class="val-neu" id="s-neu-tot">-</td>
                 </tr>
                 <tr>
-                    <td>Нужно смен</td>
-                    <td class="val-alt" id="shiftsAlt">-</td>
-                    <td class="val-neu" id="shiftsNeu">-</td>
+                    <td>Schichten</td>
+                    <td id="s-alt-sch">-</td>
+                    <td class="val-neu" id="s-neu-sch">-</td>
                 </tr>
             </tbody>
         </table>
-        <div style="margin-top: 15px; font-size: 13px; color: var(--text-sec);">
-            Дней на выполнение (5д/нед): <b id="daysReq" style="color: var(--text-main);">-</b>
-        </div>
     </section>
-
-    <div class="actions">
-        <button class="btn btn-sec" onclick="window.print()">ПЕЧАТЬ</button>
-        <button class="btn btn-primary" onclick="downloadPDF()">ОТЧЕТ (PDF)</button>
-    </div>
 </div>
 
+<footer-nav>
+    <button class="btn btn-pdf" onclick="generatePDF()">Bericht PDF Erstellen</button>
+</footer-nav>
+
 <script>
-    function formatTime(totalSeconds) {
-        const h = Math.floor(totalSeconds / 3600);
-        const m = Math.floor((totalSeconds % 3600) / 60);
-        return `${h}h ${m}m`;
-    }
-
     function calc() {
-        // Получаем данные
-        const stk = parseFloat(document.getElementById('stkGesamt').value) || 0;
-        const stkAbend = parseFloat(document.getElementById('stkAbend').value) || 0;
-        const shiftSec = (parseFloat(document.getElementById('shiftHrs').value) || 0) * 3600;
+        const stk = parseFloat(document.getElementById('stk').value) || 0;
+        const shSec = parseFloat(document.getElementById('sh').value) * 3600;
+        const tA = (parseFloat(document.getElementById('am').value) * 60) + (parseFloat(document.getElementById('as').value) || 0);
+        const tN = (parseFloat(document.getElementById('nm').value) * 60) + (parseFloat(document.getElementById('ns').value) || 0);
 
-        const tAlt = (parseFloat(document.getElementById('altMin').value) || 0) * 60 + (parseFloat(document.getElementById('altSek').value) || 0);
-        const tNeu = (parseFloat(document.getElementById('neuMin').value) || 0) * 60 + (parseFloat(document.getElementById('neuSek').value) || 0);
+        const totA = stk * tA;
+        const totN = stk * tN;
+        const save = totA - totN;
 
-        if (tAlt <= 0 || tNeu <= 0) return;
+        const fTime = (s) => `${Math.floor(s/3600)}h ${Math.floor((s%3600)/60)}m`;
 
-        // Расчеты
-        const totalSecAlt = stk * tAlt;
-        const totalSecNeu = stk * tNeu;
-        const savingSec = totalSecAlt - totalSecNeu;
-        const diffPercent = ((tAlt - tNeu) / tAlt * 100).toFixed(1);
-
-        const sShiftAlt = (shiftSec / tAlt).toFixed(1);
-        const sShiftNeu = (shiftSec / tNeu).toFixed(1);
-
-        const totalShiftsAlt = (totalSecAlt / shiftSec).toFixed(1);
-        const totalShiftsNeu = (totalSecNeu / shiftSec).toFixed(1);
-        
-        const savingShifts = (totalShiftsAlt - totalShiftsNeu).toFixed(1);
-
-        // Дни (5-дневка)
-        const days = (totalSecNeu / shiftSec / 1).toFixed(1); // грубый расчет смен в дни
-        const calendarDays = (parseFloat(totalShiftsNeu) * (7/5)).toFixed(1);
-
-        // Вывод
-        document.getElementById('totalSaving').innerText = formatTime(savingSec);
-        document.getElementById('savingShifts').innerText = savingShifts;
-        document.getElementById('percentFaster').innerText = diffPercent + "%";
-
-        document.getElementById('tAltSek').innerText = tAlt + "s";
-        document.getElementById('tNeuSek').innerText = tNeu + "s";
-
-        document.getElementById('stkShiftAlt').innerText = sShiftAlt;
-        document.getElementById('stkShiftNeu').innerText = sShiftNeu;
-
-        document.getElementById('totalTimeAlt').innerText = formatTime(totalSecAlt);
-        document.getElementById('totalTimeNeu').innerText = formatTime(totalSecNeu);
-
-        document.getElementById('shiftsAlt').innerText = totalShiftsAlt;
-        document.getElementById('shiftsNeu').innerText = totalShiftsNeu;
-        
-        document.getElementById('daysReq').innerText = days + " раб. дней";
+        document.getElementById('res-saving').innerText = fTime(save);
+        document.getElementById('s-alt-s').innerText = tA + " s";
+        document.getElementById('s-neu-s').innerText = tN + " s";
+        document.getElementById('s-alt-sh').innerText = (shSec / tA).toFixed(1);
+        document.getElementById('s-neu-sh').innerText = (shSec / tN).toFixed(1);
+        document.getElementById('s-alt-tot').innerText = fTime(totA);
+        document.getElementById('s-neu-tot').innerText = fTime(totN);
+        document.getElementById('s-alt-sch').innerText = (totA / shSec).toFixed(1);
+        document.getElementById('s-neu-sch').innerText = (totN / shSec).toFixed(1);
     }
 
-    function downloadPDF() {
+    async function generatePDF() {
         const { jsPDF } = window.jspdf;
-        const doc = new jsPDF();
+        const doc = new jsPDF('p', 'mm', 'a4');
         
-        doc.setFontSize(20);
-        doc.text("Production Efficiency Report", 10, 20);
+        // Settings
+        const accent = [0, 122, 255];
+        const stk = document.getElementById('stk').value;
+        const saving = document.getElementById('res-saving').innerText;
+
+        // Header
+        doc.setFillColor(245, 245, 247);
+        doc.rect(0, 0, 210, 40, 'F');
+        doc.setDrawColor(accent[0], accent[1], accent[2]);
+        doc.setLineWidth(1.5);
+        doc.line(10, 15, 10, 30);
+
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(22);
+        doc.setTextColor(30, 30, 30);
+        doc.text("EFFIZIENZ-BERICHT", 15, 22);
+        
+        doc.setFontSize(10);
+        doc.setTextColor(100, 100, 100);
+        doc.text("PRODUKTIONSOPTIMIERUNG CNC", 15, 28);
+        doc.text(new Date().toLocaleDateString('de-DE'), 170, 22);
+
+        // Main Metric Box
+        doc.setDrawColor(200, 200, 200);
+        doc.setLineWidth(0.5);
+        doc.roundedRect(10, 50, 190, 35, 3, 3, 'S');
+        
         doc.setFontSize(12);
-        doc.text(`Total Pieces: ${document.getElementById('stkGesamt').value}`, 10, 35);
-        doc.text(`Time Saving: ${document.getElementById('totalSaving').innerText}`, 10, 45);
-        doc.text(`Shifts Saved: ${document.getElementById('savingShifts').innerText}`, 10, 55);
-        doc.text(`Improvement: ${document.getElementById('percentFaster').innerText}`, 10, 65);
+        doc.text("GESAMTE ZEITERSPARNIS:", 105, 62, {align: "center"});
+        doc.setFontSize(30);
+        doc.setTextColor(accent[0], accent[1], accent[2]);
+        doc.text(saving, 105, 75, {align: "center"});
+
+        // Table
+        doc.autoTable({
+            startY: 95,
+            head: [['PARAMETER', 'STATUS: ALT', 'STATUS: NEU']],
+            body: [
+                ['Gesamtstückzahl', stk, stk],
+                ['Zeit pro Stück', document.getElementById('s-alt-s').innerText, document.getElementById('s-neu-s').innerText],
+                ['Stück pro Schicht', document.getElementById('s-alt-sh').innerText, document.getElementById('s-neu-sh').innerText],
+                ['Gesamtzeit (Produktion)', document.getElementById('s-alt-tot').innerText, document.getElementById('s-neu-tot').innerText],
+                ['Benötigte Schichten', document.getElementById('s-alt-sch').innerText, document.getElementById('s-neu-sch').innerText]
+            ],
+            theme: 'grid',
+            headStyles: { fillColor: [30, 30, 30], textColor: 255, fontStyle: 'bold', halign: 'center' },
+            styles: { fontSize: 11, cellPadding: 8 },
+            columnStyles: { 
+                1: { halign: 'center' }, 
+                2: { halign: 'center', fontStyle: 'bold', textColor: accent } 
+            }
+        });
+
+        // Conclusion
+        const finalY = doc.lastAutoTable.finalY + 20;
+        doc.setFontSize(14);
+        doc.setTextColor(30, 30, 30);
+        const savedShifts = (parseFloat(document.getElementById('s-alt-sch').innerText) - parseFloat(document.getElementById('s-neu-sch').innerText)).toFixed(1);
+        doc.text(`Ergebnis: Wir sparen ca. ${savedShifts} Arbeitsschichten ein.`, 10, finalY);
         
-        doc.save("CNC_Efficiency_Report.pdf");
+        doc.setDrawColor(accent[0], accent[1], accent[2]);
+        doc.setLineWidth(1);
+        doc.line(10, finalY + 2, 200, finalY + 2);
+
+        doc.save(`Effizienz_Bericht_${stk}_Stk.pdf`);
     }
 
-    // Первый запуск
     calc();
 </script>
 
