@@ -3,530 +3,798 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta name="theme-color" content="#0E0E0E">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#111111">
 <title>Effizienz-Rechner</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Archivo+Black&family=Archivo:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Archivo+Black&family=Archivo:wght@400;600&display=swap" rel="stylesheet">
 <style>
-:root {
-  --bg:      #ECEAE4;
-  --paper:   #F7F5F0;
-  --ink:     #0E0E0E;
-  --soft:    #3A3A36;
-  --mute:    #7A7A72;
-  --rule:    #C9C5BB;
-  --accent:  #D94F00;
-  --green:   #1B3A2E;
-  --warn:    #E8B600;
-  --grid:    rgba(0,0,0,.045);
-
-–fd: ‘Archivo Black’, sans-serif;
-–fs: ‘Archivo’, system-ui, sans-serif;
-–fm: ‘JetBrains Mono’, monospace;
-
-–sbot: env(safe-area-inset-bottom, 0px);
-–stop: env(safe-area-inset-top, 0px);
-}
+/* ======================================
+   RESET & BASE
+====================================== */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html { -webkit-text-size-adjust: 100%; }
+html { -webkit-text-size-adjust: 100%; background: #111; }
 body {
-background: var(–bg);
-color: var(–ink);
-font-family: var(–fs);
--webkit-font-smoothing: antialiased;
--webkit-tap-highlight-color: transparent;
-min-height: 100dvh;
-padding-bottom: calc(90px + var(–sbot));
-background-image:
-linear-gradient(var(–grid) 1px, transparent 1px),
-linear-gradient(90deg, var(–grid) 1px, transparent 1px);
-background-size: 24px 24px;
+  font-family: 'Archivo', system-ui, sans-serif;
+  background: #F0EDE6;
+  color: #111;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  padding-bottom: 100px;
 }
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; }
+input[type=number] { -moz-appearance: textfield; }
 
-/* ── HEADER ── */
+/* ======================================
+HEADER
+====================================== */
 .hdr {
-position: sticky; top: 0; z-index: 60;
-background: var(–ink);
-padding-top: var(–stop);
-border-bottom: 3px solid var(–accent);
+background: #111;
+position: sticky;
+top: 0;
+z-index: 100;
 }
-.hdr-inner {
-display: flex; align-items: center; justify-content: space-between;
-padding: 12px 16px 10px;
+.hdr-top {
+display: flex;
+align-items: center;
+justify-content: space-between;
+padding: 14px 18px 12px;
 }
-.brand { display: flex; align-items: center; gap: 10px; }
-.brand-mark { font-family: var(–fm); color: var(–accent); font-size: 22px; letter-spacing: -2px; }
-.brand-name { font-family: var(–fd); font-size: 15px; color: #F7F5F0; letter-spacing: .5px; }
-.brand-sub { font-family: var(–fm); font-size: 9px; color: rgba(255,255,255,.5); letter-spacing: 1.5px; margin-top: 2px; }
-.hdr-live { font-family: var(–fm); font-size: 10px; color: var(–warn); letter-spacing: 1.5px; }
-.hdr-live span { display: inline-block; animation: blink 1.5s ease-in-out infinite; }
-@keyframes blink { 50% { opacity: .2; } }
-.hdr-stripe {
-height: 5px;
-background: repeating-linear-gradient(-45deg, var(–accent) 0 8px, var(–ink) 8px 16px);
+.logo {
+display: flex;
+align-items: center;
+gap: 10px;
 }
-
-/* ── TABS ── */
-.tabs {
-display: grid; grid-template-columns: 1fr 1fr;
-background: #1A1A1A;
+.logo-mark {
+font-family: ‘JetBrains Mono’, monospace;
+font-size: 20px;
+color: #E05500;
+letter-spacing: -3px;
+line-height: 1;
 }
-.tab {
-background: transparent; border: none; color: rgba(255,255,255,.45);
-font-family: var(–fm); font-size: 10.5px; letter-spacing: 1.8px;
-padding: 13px 8px; cursor: pointer; font-weight: 700;
-position: relative; transition: color .15s;
+.logo-text {
+font-family: ‘Archivo Black’, sans-serif;
+font-size: 14px;
+color: #fff;
+letter-spacing: 0.5px;
 }
-.tab.on { color: #F7F5F0; }
-.tab.on::after {
-content: ‘’; position: absolute; left: 16%; right: 16%; bottom: 0;
-height: 2.5px; background: var(–accent);
-}
-
-/* ── VIEWS ── */
-.view { display: none; padding: 14px 14px 6px; max-width: 680px; margin: 0 auto; }
-.view.on { display: block; animation: rise .28s ease-out; }
-@keyframes rise { from { opacity:0; transform:translateY(5px); } to { opacity:1; transform:translateY(0); } }
-
-/* ── INPUT CARD ── */
-.card {
-background: var(–paper);
-border: 1.5px solid var(–ink);
-box-shadow: 4px 4px 0 var(–ink);
-margin-bottom: 14px;
-}
-.card-head {
-background: var(–ink); color: #F7F5F0;
-padding: 11px 16px;
-display: flex; align-items: baseline; gap: 10px;
-}
-.card-num { font-family: var(–fm); font-size: 10px; color: var(–accent); letter-spacing: 2px; font-weight: 700; }
-.card-title { font-family: var(–fd); font-size: 13px; letter-spacing: 1px; }
-
-/* 4 big input fields */
-.inputs-grid {
-display: grid;
-grid-template-columns: 1fr 1fr;
-gap: 1.5px;
-background: var(–ink);
-padding: 1.5px;
-margin: 14px 14px 8px;
-}
-.inp-cell {
-background: var(–paper);
-padding: 14px 12px 12px;
-display: flex; flex-direction: column; gap: 8px;
-position: relative;
-}
-.inp-label {
-font-family: var(–fm);
-font-size: 9px; letter-spacing: 1.8px;
-color: var(–mute); font-weight: 700;
-text-transform: uppercase;
-line-height: 1.3;
-}
-.inp-label em {
-display: block; font-style: normal;
-color: var(–accent); font-size: 8px; letter-spacing: 1.5px;
+.logo-sub {
+font-family: ‘JetBrains Mono’, monospace;
+font-size: 8px;
+color: rgba(255,255,255,0.45);
+letter-spacing: 2px;
 margin-top: 2px;
 }
-.inp-wrap {
-display: flex; align-items: baseline; gap: 4px;
+.live {
+font-family: ‘JetBrains Mono’, monospace;
+font-size: 10px;
+color: #E8B600;
+letter-spacing: 1.5px;
+display: flex;
+align-items: center;
+gap: 5px;
 }
-.inp-wrap input {
-font-family: var(–fm);
-font-size: 22px; font-weight: 700;
-color: var(–ink);
-background: transparent; border: none;
-border-bottom: 2px solid var(–ink);
-padding: 4px 2px 4px 0;
+.live-dot {
+width: 6px; height: 6px;
+border-radius: 50%;
+background: #E8B600;
+animation: pulse 1.5s ease-in-out infinite;
+}
+@keyframes pulse { 50% { opacity: 0.2; } }
+
+/* TABS */
+.tabs {
+display: grid;
+grid-template-columns: 1fr 1fr;
+background: #1C1C1C;
+}
+.tab {
+background: none;
+border: none;
+color: rgba(255,255,255,0.4);
+font-family: ‘JetBrains Mono’, monospace;
+font-size: 10px;
+font-weight: 700;
+letter-spacing: 2px;
+padding: 12px 8px;
+cursor: pointer;
+position: relative;
+transition: color .15s;
+-webkit-tap-highlight-color: transparent;
+}
+.tab.active {
+color: #fff;
+}
+.tab.active::after {
+content: ‘’;
+position: absolute;
+bottom: 0; left: 20%; right: 20%;
+height: 2px;
+background: #E05500;
+}
+
+/* stripe */
+.hdr-stripe {
+height: 4px;
+background: repeating-linear-gradient(
+-45deg,
+#E05500 0px 7px,
+#111 7px 14px
+);
+}
+
+/* ======================================
+VIEWS
+====================================== */
+.view { display: none; }
+.view.active { display: block; animation: fadein .25s ease; }
+@keyframes fadein { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+/* ======================================
+INPUT VIEW
+====================================== */
+.inp-view {
+padding: 16px;
+max-width: 600px;
+margin: 0 auto;
+}
+
+/* 4 big inputs grid */
+.big-grid {
+display: grid;
+grid-template-columns: 1fr 1fr;
+gap: 2px;
+background: #111;
+border: 2px solid #111;
+margin-bottom: 16px;
+}
+.big-cell {
+background: #F7F4EE;
+padding: 16px 14px 14px;
+}
+.big-lbl {
+font-family: ‘JetBrains Mono’, monospace;
+font-size: 8px;
+font-weight: 700;
+letter-spacing: 2px;
+color: #888;
+text-transform: uppercase;
+margin-bottom: 2px;
+}
+.big-sub {
+font-family: ‘JetBrains Mono’, monospace;
+font-size: 7px;
+letter-spacing: 1.5px;
+color: #E05500;
+margin-bottom: 10px;
+text-transform: uppercase;
+}
+.big-inp-row {
+display: flex;
+align-items: baseline;
+gap: 5px;
+}
+.big-inp-row input {
+font-family: ‘Archivo Black’, sans-serif;
+font-size: 28px;
+font-weight: 900;
+color: #111;
+background: transparent;
+border: none;
+border-bottom: 2px solid #111;
+padding: 2px 0;
 width: 100%;
-text-align: left;
-font-variant-numeric: tabular-nums;
--webkit-appearance: none; appearance: none;
+min-width: 0;
+-webkit-appearance: none;
 border-radius: 0;
 }
-.inp-wrap input:focus {
+.big-inp-row input:focus {
 outline: none;
-background: #FFE9D6;
-border-bottom-color: var(–accent);
+border-bottom-color: #E05500;
+background: rgba(224,85,0,0.06);
 }
-input[type=number]::-webkit-outer-spin-button,
-input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-input[type=number] { -moz-appearance: textfield; }
-.inp-unit {
-font-family: var(–fm); font-size: 11px;
-color: var(–mute); white-space: nowrap;
-}
-
-/* bauteil row */
-.bauteil-row {
-display: grid; grid-template-columns: 1fr 1fr;
-gap: 12px; padding: 0 14px 14px;
-}
-.bf { display: flex; flex-direction: column; gap: 4px; }
-.bf label { font-family: var(–fm); font-size: 9px; letter-spacing: 1.5px; color: var(–mute); font-weight: 700; }
-.bf input {
-font-family: var(–fm); font-size: 15px; font-weight: 500;
-background: transparent; border: none;
-border-bottom: 1.5px solid var(–rule);
-padding: 4px 0;
-color: var(–ink);
-width: 100%;
--webkit-appearance: none; border-radius: 0;
-}
-.bf input:focus { outline: none; border-bottom-color: var(–accent); }
-
-/* menge full width */
-.menge-row { padding: 0 14px 14px; }
-.menge-row .bf { flex-direction: row; align-items: center; justify-content: space-between; }
-.menge-row .bf label { flex: 1; font-size: 10px; }
-.menge-row .bf input { font-size: 17px; font-weight: 700; width: 120px; text-align: right; border-bottom-color: var(–ink); }
-
-/* ── REPORT ── */
-.rpt-head { padding: 16px 16px 6px; }
-.rpt-title-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
-.rpt-title { font-family: var(–fd); font-size: 26px; line-height: .95; }
-.stamp {
-border: 2px solid var(–accent); color: var(–accent);
-padding: 6px 9px; font-family: var(–fm); text-align: center;
-transform: rotate(-3deg); background: rgba(217,79,0,.04);
+.big-unit {
+font-family: ‘JetBrains Mono’, monospace;
+font-size: 11px;
+color: #999;
+white-space: nowrap;
 flex-shrink: 0;
 }
-.stamp-line { font-size: 7px; letter-spacing: 1.5px; }
-.stamp-id { font-size: 12px; font-weight: 700; margin-top: 1px; }
-.rpt-rule { height: 3px; background: var(–ink); margin: 12px 0 10px; position: relative; }
-.rpt-rule::after { content: ‘’; position: absolute; right: 0; top: 0; bottom: 0; width: 28%; background: var(–accent); }
-.rpt-meta { font-family: var(–fm); font-size: 10.5px; color: var(–soft); display: flex; flex-direction: column; gap: 3px; }
-.mk { color: var(–mute); letter-spacing: 1px; }
 
-/* table header labels */
-.tbl-labels {
-display: grid; grid-template-columns: 1.4fr 1fr 1fr auto;
-gap: 0; padding: 8px 16px 4px;
-border-top: 1.5px solid var(–ink);
-background: var(–ink);
+/* hint */
+.hint-bar {
+background: #111;
+color: rgba(255,255,255,0.55);
+font-family: ‘JetBrains Mono’, monospace;
+font-size: 9px;
+letter-spacing: 1.5px;
+text-align: center;
+padding: 9px 14px;
+margin-bottom: 16px;
 }
-.tbl-lbl {
-font-family: var(–fm); font-size: 8.5px; letter-spacing: 1.5px;
-color: rgba(255,255,255,.65); font-weight: 700;
+.hint-bar b { color: #E05500; }
+
+/* optional section */
+.opt-card {
+background: #F7F4EE;
+border: 1.5px solid #111;
+box-shadow: 3px 3px 0 #111;
+padding: 16px;
 }
-.tbl-lbl:last-child { text-align: right; }
+.opt-title {
+font-family: ‘JetBrains Mono’, monospace;
+font-size: 8px;
+font-weight: 700;
+letter-spacing: 2px;
+color: #999;
+margin-bottom: 14px;
+padding-bottom: 8px;
+border-bottom: 1px dashed #C9C5BB;
+}
+.opt-row {
+display: grid;
+grid-template-columns: 1fr 1fr;
+gap: 14px;
+margin-bottom: 14px;
+}
+.opt-field { display: flex; flex-direction: column; gap: 5px; }
+.opt-field label {
+font-family: ‘JetBrains Mono’, monospace;
+font-size: 8px;
+font-weight: 700;
+letter-spacing: 1.5px;
+color: #999;
+}
+.opt-field input {
+font-family: ‘Archivo’, sans-serif;
+font-size: 16px;
+font-weight: 600;
+color: #111;
+background: transparent;
+border: none;
+border-bottom: 1.5px solid #C9C5BB;
+padding: 4px 0;
+-webkit-appearance: none;
+border-radius: 0;
+width: 100%;
+}
+.opt-field input:focus {
+outline: none;
+border-bottom-color: #E05500;
+}
+.opt-menge {
+display: flex;
+align-items: center;
+justify-content: space-between;
+border-top: 1px dashed #C9C5BB;
+padding-top: 12px;
+}
+.opt-menge label {
+font-family: ‘JetBrains Mono’, monospace;
+font-size: 8px;
+font-weight: 700;
+letter-spacing: 1.5px;
+color: #999;
+}
+.opt-menge input {
+font-family: ‘Archivo Black’, sans-serif;
+font-size: 20px;
+font-weight: 900;
+color: #111;
+background: transparent;
+border: none;
+border-bottom: 2px solid #111;
+padding: 2px 0;
+text-align: right;
+width: 130px;
+-webkit-appearance: none;
+border-radius: 0;
+}
+.opt-menge input:focus {
+outline: none;
+border-bottom-color: #E05500;
+}
+
+/* ======================================
+REPORT VIEW
+====================================== */
+.rpt-view {
+padding: 16px;
+max-width: 600px;
+margin: 0 auto;
+}
+.rpt-card {
+background: #F7F4EE;
+border: 1.5px solid #111;
+box-shadow: 3px 3px 0 #111;
+overflow: hidden;
+}
+
+/* report header */
+.rpt-top {
+padding: 20px 18px 10px;
+}
+.rpt-title-row {
+display: flex;
+justify-content: space-between;
+align-items: flex-start;
+gap: 10px;
+margin-bottom: 14px;
+}
+.rpt-title {
+font-family: ‘Archivo Black’, sans-serif;
+font-size: 28px;
+font-weight: 900;
+line-height: 0.95;
+}
+.rpt-stamp {
+border: 2px solid #E05500;
+color: #E05500;
+padding: 6px 10px;
+text-align: center;
+transform: rotate(-3deg);
+flex-shrink: 0;
+}
+.stamp-top { font-family: ‘JetBrains Mono’, monospace; font-size: 7px; letter-spacing: 2px; }
+.stamp-id  { font-family: ‘JetBrains Mono’, monospace; font-size: 13px; font-weight: 700; margin-top: 2px; }
+
+.rpt-rule {
+height: 3px;
+background: #111;
+position: relative;
+margin-bottom: 10px;
+}
+.rpt-rule::after {
+content: ‘’;
+position: absolute;
+right: 0; top: 0; bottom: 0;
+width: 28%;
+background: #E05500;
+}
+.rpt-meta {
+font-family: ‘JetBrains Mono’, monospace;
+font-size: 10px;
+color: #666;
+display: flex;
+flex-direction: column;
+gap: 3px;
+}
+.rpt-meta b { color: #111; }
+.mk { letter-spacing: 1px; }
+
+/* table header */
+.tbl-head {
+background: #111;
+display: grid;
+grid-template-columns: 1.5fr 1fr 1fr auto;
+padding: 8px 18px;
+gap: 6px;
+margin-top: 14px;
+}
+.th {
+font-family: ‘JetBrains Mono’, monospace;
+font-size: 8px;
+font-weight: 700;
+letter-spacing: 1.5px;
+color: rgba(255,255,255,0.6);
+}
+.th:last-child { text-align: right; }
 
 /* data rows */
-.data-list { border-bottom: 1.5px solid var(–ink); }
+.tbl-body { border-bottom: 1.5px solid #111; }
 .dr {
-display: grid; grid-template-columns: 1.4fr 1fr 1fr auto;
-align-items: center; gap: 4px;
-padding: 11px 16px;
-border-bottom: 1px solid var(–rule);
+display: grid;
+grid-template-columns: 1.5fr 1fr 1fr auto;
+gap: 6px;
+align-items: center;
+padding: 11px 18px;
+border-bottom: 1px solid #DDD9D0;
 }
 .dr:last-child { border-bottom: none; }
-.dr:nth-child(even) { background: rgba(0,0,0,.025); }
-.dr-label { font-family: var(–fs); font-size: 12px; color: var(–soft); font-weight: 500; }
+.dr:nth-child(even) { background: rgba(0,0,0,0.03); }
+.dr-lbl { font-size: 12px; color: #444; font-weight: 600; }
 .dr-alt {
-font-family: var(–fm); font-size: 12px; font-weight: 500;
-color: var(–mute);
+font-family: ‘JetBrains Mono’, monospace;
+font-size: 11px;
+color: #AAA;
 text-decoration: line-through;
-text-decoration-color: rgba(0,0,0,.25);
-font-variant-numeric: tabular-nums;
+text-decoration-color: rgba(0,0,0,0.3);
 }
 .dr-neu {
-font-family: var(–fm); font-size: 13px; font-weight: 700;
-color: var(–ink); font-variant-numeric: tabular-nums;
+font-family: ‘JetBrains Mono’, monospace;
+font-size: 12px;
+font-weight: 700;
+color: #111;
 }
-.dr-delta {
-font-family: var(–fm); font-size: 10px; font-weight: 700;
-padding: 2px 5px; border: 1px solid; white-space: nowrap; text-align: right;
+.badge {
+font-family: ‘JetBrains Mono’, monospace;
+font-size: 9px;
+font-weight: 700;
+padding: 2px 5px;
+border: 1px solid;
+white-space: nowrap;
+text-align: right;
 }
-.dp { color: var(–green); border-color: var(–green); background: rgba(27,58,46,.08); }
-.dn { color: var(–accent); border-color: var(–accent); background: rgba(217,79,0,.08); }
-.dz { color: var(–mute); border-color: var(–rule); }
+.badge-g { color: #1B5E35; border-color: #1B5E35; background: rgba(27,94,53,0.08); }
+.badge-r { color: #C43000; border-color: #C43000; background: rgba(196,48,0,0.08); }
+.badge-n { color: #999; border-color: #CCC; }
 
-/* kap grid */
-.kap-wrap { padding: 12px 16px 0; }
+/* ======================================
+TOGGLE SWITCHES
+====================================== */
+.toggles-card {
+background: #F7F4EE;
+border: 1.5px solid #111;
+box-shadow: 3px 3px 0 #111;
+margin-top: 16px;
+overflow: hidden;
+}
+.toggles-title {
+background: #111;
+color: rgba(255,255,255,0.5);
+font-family: ‘JetBrains Mono’, monospace;
+font-size: 8px;
+font-weight: 700;
+letter-spacing: 2px;
+padding: 8px 16px;
+}
+.toggle-row {
+display: flex;
+align-items: center;
+justify-content: space-between;
+padding: 14px 16px;
+border-bottom: 1px solid #E8E4DC;
+cursor: pointer;
+-webkit-tap-highlight-color: transparent;
+transition: background .12s;
+}
+.toggle-row:last-child { border-bottom: none; }
+.toggle-row:active { background: rgba(0,0,0,0.04); }
+.toggle-info { display: flex; flex-direction: column; gap: 3px; }
+.toggle-label {
+font-family: ‘JetBrains Mono’, monospace;
+font-size: 11px;
+font-weight: 700;
+letter-spacing: 1px;
+color: #111;
+}
+.toggle-desc {
+font-family: ‘JetBrains Mono’, monospace;
+font-size: 9px;
+letter-spacing: 1px;
+color: #999;
+}
+/* the switch pill */
+.sw {
+position: relative;
+width: 48px;
+height: 28px;
+flex-shrink: 0;
+}
+.sw input { opacity: 0; width: 0; height: 0; position: absolute; }
+.sw-track {
+position: absolute;
+inset: 0;
+border-radius: 0;
+background: #CCC;
+border: 1.5px solid #111;
+transition: background .2s;
+}
+.sw input:checked ~ .sw-track { background: #E05500; }
+.sw-thumb {
+position: absolute;
+top: 3px; left: 3px;
+width: 18px; height: 18px;
+background: #fff;
+border: 1.5px solid #111;
+transition: transform .2s;
+}
+.sw input:checked ~ .sw-thumb { transform: translateX(20px); }
+
+/* row dimmed when off */
+.toggle-row.off .toggle-label { color: #AAA; }
+.toggle-row.off .toggle-desc  { color: #CCC; }
+
+/* kapazität */
+.kap-wrap { padding: 14px 18px 0; }
 .kap-grid {
-display: grid; grid-template-columns: 1fr 1fr;
-border: 1.5px solid var(–ink);
+display: grid;
+grid-template-columns: 1fr 1fr;
+border: 1.5px solid #111;
 margin-bottom: 12px;
 }
 .kb { padding: 12px 14px; }
-.kb-alt { background: rgba(0,0,0,.04); border-right: 1.5px solid var(–ink); }
-.kb-neu { background: rgba(27,58,46,.06); }
-.kb-label {
-font-family: var(–fm); font-size: 8px; letter-spacing: 2px;
-font-weight: 700; margin-bottom: 8px; padding-bottom: 6px;
-border-bottom: 1px solid var(–ink);
+.kb-alt { background: rgba(0,0,0,0.04); border-right: 1.5px solid #111; }
+.kb-neu { background: rgba(27,94,53,0.05); }
+.kb-title {
+font-family: ‘JetBrains Mono’, monospace;
+font-size: 7.5px;
+font-weight: 700;
+letter-spacing: 1.8px;
+margin-bottom: 8px;
+padding-bottom: 6px;
+border-bottom: 1px solid #111;
 }
 .kb ul { list-style: none; }
 .kb li {
-display: flex; justify-content: space-between; align-items: baseline;
-padding: 4px 0; font-size: 11.5px;
+display: flex;
+justify-content: space-between;
+align-items: baseline;
+padding: 4px 0;
+font-size: 11px;
 }
-.kb li span { color: var(–mute); font-size: 11px; }
-.kb li b { font-family: var(–fm); font-weight: 700; font-variant-numeric: tabular-nums; font-size: 12px; }
+.kb li span { color: #999; font-size: 10px; }
+.kb li b { font-family: ‘JetBrains Mono’, monospace; font-weight: 700; font-size: 12px; }
 
 /* savings */
+.sv-wrap { padding: 0 18px 18px; }
 .sv-grid {
-display: grid; grid-template-columns: 1fr;
-gap: 1.5px; background: var(–ink);
-border: 1.5px solid var(–ink);
-margin-bottom: 16px;
+border: 1.5px solid #111;
+background: #111;
+display: flex;
+flex-direction: column;
+gap: 1.5px;
 }
-.sv-cell { background: var(–paper); padding: 14px 16px; display: flex; flex-direction: column; gap: 6px; }
-.sv-strong { background: var(–accent); color: #fff; }
-.sv-strong .sv-k { color: rgba(255,255,255,.8); }
-.sv-k { font-family: var(–fm); font-size: 8.5px; letter-spacing: 2px; color: var(–mute); font-weight: 700; }
-.sv-v { font-family: var(–fd); font-size: 24px; line-height: 1; font-variant-numeric: tabular-nums; }
-
-/* hint under card */
-.hint {
-font-family: var(–fm); font-size: 9.5px; letter-spacing: 1px;
-color: var(–mute); text-align: center;
-padding: 8px 0 2px;
+.sv-cell { background: #F7F4EE; padding: 13px 15px; }
+.sv-cell-hot { background: #E05500; }
+.sv-k {
+font-family: ‘JetBrains Mono’, monospace;
+font-size: 7.5px;
+font-weight: 700;
+letter-spacing: 2px;
+color: #999;
+margin-bottom: 5px;
 }
-.hint b { color: var(–accent); font-weight: 700; }
+.sv-cell-hot .sv-k { color: rgba(255,255,255,0.75); }
+.sv-v {
+font-family: ‘Archivo Black’, sans-serif;
+font-size: 24px;
+font-weight: 900;
+line-height: 1;
+}
+.sv-cell-hot .sv-v { color: #fff; }
 
-/* ── STICKY ACTIONS ── */
-.actions {
-position: fixed; left: 0; right: 0; bottom: 0;
-padding: 10px 14px calc(10px + var(–sbot));
-background: linear-gradient(to top, var(–bg) 65%, transparent);
-display: flex; gap: 10px; z-index: 50;
+/* ======================================
+STICKY BUTTONS
+====================================== */
+.bottom-bar {
+position: fixed;
+bottom: 0; left: 0; right: 0;
+background: #111;
+padding: 10px 16px 16px;
+display: flex;
+gap: 10px;
+z-index: 200;
+border-top: 2px solid #E05500;
+}
+/* extra space for iPhone home indicator */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+.bottom-bar { padding-bottom: calc(12px + env(safe-area-inset-bottom)); }
+body { padding-bottom: calc(80px + env(safe-area-inset-bottom)); }
 }
 .btn {
-flex: 1; display: flex; align-items: center; justify-content: center; gap: 7px;
-padding: 15px 12px;
-font-family: var(–fm); font-size: 11px; font-weight: 700; letter-spacing: 1.2px;
-border: 1.5px solid var(–ink);
-background: var(–paper); color: var(–ink);
+flex: 1;
+background: #2A2A2A;
+color: #fff;
+border: 1.5px solid #444;
+font-family: ‘JetBrains Mono’, monospace;
+font-size: 11px;
+font-weight: 700;
+letter-spacing: 1.5px;
+padding: 14px 10px;
 cursor: pointer;
-box-shadow: 3px 3px 0 var(–ink);
-transition: transform .08s, box-shadow .08s;
-user-select: none; -webkit-tap-highlight-color: transparent;
+-webkit-tap-highlight-color: transparent;
+transition: background .1s, transform .08s;
+display: flex;
+align-items: center;
+justify-content: center;
+gap: 7px;
 }
-.btn:active { transform: translate(3px,3px); box-shadow: none; }
-.btn-go { background: var(–accent); color: #fff; }
+.btn:active { transform: scale(0.97); }
+.btn-pdf {
+background: #E05500;
+border-color: #E05500;
+color: #fff;
+flex: 1.4;
+}
+.btn-pdf:active { background: #C04600; }
 
-/* ── TOAST ── */
+/* ======================================
+TOAST
+====================================== */
 .toast {
-position: fixed; bottom: calc(88px + var(–sbot)); left: 50%;
-transform: translateX(-50%) translateY(40px);
-background: var(–ink); color: #F7F5F0;
-font-family: var(–fm); font-size: 10px; letter-spacing: 1.5px;
-padding: 10px 18px; border: 1.5px solid var(–accent);
-opacity: 0; transition: .22s; pointer-events: none; white-space: nowrap; z-index: 99;
+position: fixed;
+bottom: 90px;
+left: 50%;
+transform: translateX(-50%) translateY(10px);
+background: #111;
+color: #fff;
+font-family: ‘JetBrains Mono’, monospace;
+font-size: 10px;
+letter-spacing: 1.5px;
+padding: 10px 18px;
+border-top: 2px solid #E05500;
+opacity: 0;
+transition: opacity .2s, transform .2s;
+pointer-events: none;
+white-space: nowrap;
+z-index: 300;
 }
-.toast.on { opacity: 1; transform: translateX(-50%) translateY(0); }
-
-/* ── DESKTOP ── */
-@media (min-width: 720px) {
-body { padding-bottom: 20px; }
-.tabs { display: none; }
-.view { display: block !important; max-width: 1240px; padding: 20px 24px 10px; }
-.wrap { display: grid; grid-template-columns: minmax(340px,420px) 1fr; gap: 24px; align-items: start; }
-.actions { position: static; background: none; padding: 14px 14px 0; }
-.sv-grid { grid-template-columns: 1fr 1.4fr 1fr; }
-.rpt-title { font-size: 34px; }
-}
-
-/* ── PRINT ── */
-@media print {
-@page { margin: 12mm 14mm; size: A4 portrait; }
-
-- { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-
-body {
-background: #fff !important;
-background-image: none !important;
-padding: 0 !important; margin: 0 !important;
-}
-
-/* скрыть ВСЁ кроме отчёта */
-.hdr, .tabs, .actions, .toast,
-#vi, .hdr-stripe { display: none !important; }
-
-.wrap { display: block !important; }
-
-#vr {
-display: block !important;
-padding: 0 !important;
-max-width: none !important;
-}
-
-.card {
-border: none !important;
-box-shadow: none !important;
-background: #fff !important;
-}
-
-.rpt-title { font-size: 28pt !important; }
-.rpt-rule { background: #0E0E0E !important; }
-.rpt-rule::after { background: #D94F00 !important; }
-.stamp { border: 2pt solid #D94F00 !important; color: #D94F00 !important; }
-
-.tbl-labels {
-background: #0E0E0E !important;
-padding: 6pt 12pt !important;
--webkit-print-color-adjust: exact !important;
-}
-.tbl-lbl { color: #fff !important; font-size: 8pt !important; }
-
-.dr { padding: 8pt 12pt !important; }
-.dr:nth-child(even) { background: rgba(0,0,0,.04) !important; }
-.dr-label { font-size: 10pt !important; }
-.dr-alt, .dr-neu { font-size: 10pt !important; }
-.dr-delta { font-size: 9pt !important; padding: 1pt 4pt !important; }
-
-.kap-wrap { padding: 8pt 12pt 0 !important; }
-.kap-grid { border: 1.5pt solid #0E0E0E !important; }
-.kb-alt {
-background: #EFEFEF !important;
-border-right: 1.5pt solid #0E0E0E !important;
-}
-.kb-neu { background: #EBF0EE !important; }
-.kb-label { font-size: 8pt !important; }
-.kb li { font-size: 10pt !important; }
-
-.sv-grid {
-grid-template-columns: 1fr 1.4fr 1fr !important;
-border: 1.5pt solid #0E0E0E !important;
-background: #0E0E0E !important;
-margin-bottom: 0 !important;
-}
-.sv-cell { background: #fff !important; padding: 10pt 12pt !important; }
-.sv-strong { background: #D94F00 !important; }
-.sv-strong .sv-k { color: rgba(255,255,255,.85) !important; }
-.sv-strong .sv-v { color: #fff !important; }
-.sv-v { font-size: 20pt !important; }
-.sv-k { font-size: 7pt !important; }
-
-.dp { color: #1B3A2E !important; border-color: #1B3A2E !important; }
-.dn { color: #D94F00 !important; border-color: #D94F00 !important; }
+.toast.show {
+opacity: 1;
+transform: translateX(-50%) translateY(0);
 }
 </style>
 
 </head>
 <body>
 
+<!-- ===== HEADER ===== -->
+
 <header class="hdr">
-  <div class="hdr-inner">
-    <div class="brand">
-      <div class="brand-mark">▮▮</div>
+  <div class="hdr-top">
+    <div class="logo">
+      <div class="logo-mark">▮▮</div>
       <div>
-        <div class="brand-name">EFFIZIENZ-RECHNER</div>
-        <div class="brand-sub" id="hdr-date">—</div>
+        <div class="logo-text">EFFIZIENZ-RECHNER</div>
+        <div class="logo-sub" id="hdr-date">—</div>
       </div>
     </div>
-    <div class="hdr-live"><span>●</span> LIVE</div>
+    <div class="live">
+      <div class="live-dot"></div>
+      LIVE
+    </div>
   </div>
   <div class="tabs">
-    <button class="tab on" data-t="vi">⚙ EINGABE</button>
-    <button class="tab" data-t="vr">▤ BERICHT</button>
+    <button class="tab active" data-tab="inp">⚙ EINGABE</button>
+    <button class="tab" data-tab="rpt">▤ BERICHT</button>
   </div>
   <div class="hdr-stripe"></div>
 </header>
 
-<div class="wrap">
+<!-- ===== INPUT VIEW ===== -->
 
-<!-- ===== INPUT ===== -->
+<div class="view active" id="view-inp">
+  <div class="inp-view">
 
-<div class="view on" id="vi">
-<div class="card">
-  <div class="card-head">
-    <span class="card-num">01</span>
-    <span class="card-title">EINGABE · 4 FELDER GENÜGEN</span>
-  </div>
-
-  <!-- 4 MAIN INPUTS -->
-
-  <div class="inputs-grid">
-    <div class="inp-cell">
-      <div class="inp-label">Zeit ALT<em>Min / Stück</em></div>
-      <div class="inp-wrap">
-        <input type="number" id="zeit-alt" value="4.40" step="0.01" min="0.01" inputmode="decimal">
-        <span class="inp-unit">min</span>
-      </div>
-    </div>
-    <div class="inp-cell">
-      <div class="inp-label">Zeit NEU<em>Min / Stück</em></div>
-      <div class="inp-wrap">
-        <input type="number" id="zeit-neu" value="2.57" step="0.01" min="0.01" inputmode="decimal">
-        <span class="inp-unit">min</span>
-      </div>
-    </div>
-    <div class="inp-cell">
-      <div class="inp-label">Abend<em>Stk / Abendschicht</em></div>
-      <div class="inp-wrap">
-        <input type="number" id="abend" value="100" min="0" inputmode="numeric">
-        <span class="inp-unit">Stk</span>
-      </div>
-    </div>
-    <div class="inp-cell">
-      <div class="inp-label">Maschinensatz<em>€ pro Stunde</em></div>
-      <div class="inp-wrap">
-        <input type="number" id="rate" value="135" step="0.01" min="0" inputmode="decimal">
-        <span class="inp-unit">€/h</span>
-      </div>
+```
+<div class="big-grid">
+  <div class="big-cell">
+    <div class="big-lbl">ZEIT ALT</div>
+    <div class="big-sub">MIN / STÜCK</div>
+    <div class="big-inp-row">
+      <input type="number" id="zeit-alt" value="4.40" step="0.01" min="0.01" inputmode="decimal">
+      <span class="big-unit">min</span>
     </div>
   </div>
-
-  <div class="hint">1 Schicht = <b>7.5 h</b> · Alle anderen Werte werden automatisch berechnet</div>
-
-  <!-- Bauteil optional -->
-
-  <div style="padding: 14px 14px 0; margin-top: 10px; border-top: 1px dashed var(--rule);">
-    <div class="card-head" style="margin: 0 -0px; background: transparent; color: var(--mute); padding: 4px 0 8px;">
-      <span style="font-family:var(--fm);font-size:9px;letter-spacing:2px;font-weight:700;">BAUTEIL (OPTIONAL)</span>
-    </div>
-    <div class="bauteil-row">
-      <div class="bf"><label>BEZEICHNUNG</label><input type="text" id="bauteil" value="Gehäuse" placeholder="z.B. Gehäuse"></div>
-      <div class="bf"><label>NR</label><input type="text" id="nr" value="234186" inputmode="numeric" placeholder="—"></div>
-    </div>
-    <div class="menge-row">
-      <div class="bf"><label>MENGE (STK)</label><input type="number" id="menge" value="1000" min="1" inputmode="numeric"></div>
+  <div class="big-cell">
+    <div class="big-lbl">ZEIT NEU</div>
+    <div class="big-sub">MIN / STÜCK</div>
+    <div class="big-inp-row">
+      <input type="number" id="zeit-neu" value="2.57" step="0.01" min="0.01" inputmode="decimal">
+      <span class="big-unit">min</span>
     </div>
   </div>
+  <div class="big-cell">
+    <div class="big-lbl">ABEND</div>
+    <div class="big-sub">STK / ABENDSCHICHT</div>
+    <div class="big-inp-row">
+      <input type="number" id="abend" value="100" min="0" inputmode="numeric">
+      <span class="big-unit">Stk</span>
+    </div>
+  </div>
+  <div class="big-cell">
+    <div class="big-lbl">MASCHINENSATZ</div>
+    <div class="big-sub">€ PRO STUNDE</div>
+    <div class="big-inp-row">
+      <input type="number" id="rate" value="135" step="0.01" min="0" inputmode="decimal">
+      <span class="big-unit">€/h</span>
+    </div>
+  </div>
+</div>
 
-</div><!-- /card -->
-</div><!-- /vi -->
+<div class="hint-bar">1 Schicht = <b>7,5 h</b> · Alles andere wird automatisch berechnet</div>
 
-<!-- ===== REPORT ===== -->
+<div class="opt-card">
+  <div class="opt-title">BAUTEIL (OPTIONAL)</div>
+  <div class="opt-row">
+    <div class="opt-field">
+      <label>BEZEICHNUNG</label>
+      <input type="text" id="bauteil" value="Gehäuse" placeholder="z.B. Gehäuse">
+    </div>
+    <div class="opt-field">
+      <label>NR</label>
+      <input type="text" id="nr" value="234186" inputmode="numeric" placeholder="—">
+    </div>
+  </div>
+  <div class="opt-menge">
+    <label>MENGE (STK)</label>
+    <input type="number" id="menge" value="1000" min="1" inputmode="numeric">
+  </div>
+</div>
+```
 
-<div class="view" id="vr">
-<div class="card">
+  </div>
 
-  <div class="rpt-head">
+```
+<div class="toggles-card">
+  <div class="toggles-title">ANZEIGE-OPTIONEN</div>
+
+  <label class="toggle-row" id="tr-abend">
+    <div class="toggle-info">
+      <div class="toggle-label">ABEND-ZEILE</div>
+      <div class="toggle-desc">Stk / Tag inkl. Abendschicht anzeigen</div>
+    </div>
+    <div class="sw">
+      <input type="checkbox" id="tog-abend" checked>
+      <div class="sw-track"></div>
+      <div class="sw-thumb"></div>
+    </div>
+  </label>
+
+  <label class="toggle-row" id="tr-masch">
+    <div class="toggle-info">
+      <div class="toggle-label">MASCHINENSATZ</div>
+      <div class="toggle-desc">Finanzielle Ersparnis berechnen</div>
+    </div>
+    <div class="sw">
+      <input type="checkbox" id="tog-masch" checked>
+      <div class="sw-track"></div>
+      <div class="sw-thumb"></div>
+    </div>
+  </label>
+
+  <label class="toggle-row" id="tr-pct">
+    <div class="toggle-info">
+      <div class="toggle-label">EFFIZIENZGEWINN %</div>
+      <div class="toggle-desc">Prozentuale Verbesserung anzeigen</div>
+    </div>
+    <div class="sw">
+      <input type="checkbox" id="tog-pct" checked>
+      <div class="sw-track"></div>
+      <div class="sw-thumb"></div>
+    </div>
+  </label>
+
+</div>
+```
+
+</div>
+
+<!-- ===== REPORT VIEW ===== -->
+
+<div class="view" id="view-rpt">
+  <div class="rpt-view">
+    <div class="rpt-card">
+
+```
+  <div class="rpt-top">
     <div class="rpt-title-row">
-      <h1 class="rpt-title">EFFIZIENZ-<br>BERICHT</h1>
-      <div class="stamp">
-        <div class="stamp-line">REF</div>
+      <div class="rpt-title">EFFIZIENZ-<br>BERICHT</div>
+      <div class="rpt-stamp">
+        <div class="stamp-top">REF</div>
         <div class="stamp-id" id="s-id">—</div>
       </div>
     </div>
     <div class="rpt-rule"></div>
     <div class="rpt-meta">
-      <div><span class="mk">BAUTEIL:</span> <strong id="r-bt">—</strong> &nbsp;<span class="mk">NR:</span> <strong id="r-nr">—</strong></div>
-      <div><span class="mk">DATUM:</span> <strong id="r-dat">—</strong> &nbsp;<span class="mk">MENGE:</span> <strong id="r-mg">—</strong> STK</div>
+      <div><span class="mk">BAUTEIL:</span> <b id="r-bt">—</b> &nbsp; <span class="mk">NR:</span> <b id="r-nr">—</b></div>
+      <div><span class="mk">DATUM:</span> <b id="r-dat">—</b> &nbsp; <span class="mk">MENGE:</span> <b id="r-mg">—</b> STK</div>
     </div>
   </div>
 
-  <div class="tbl-labels">
-    <div class="tbl-lbl">PARAMETER</div>
-    <div class="tbl-lbl">ALT</div>
-    <div class="tbl-lbl">NEU</div>
-    <div class="tbl-lbl">Δ</div>
+  <div class="tbl-head">
+    <div class="th">PARAMETER</div>
+    <div class="th">ALT</div>
+    <div class="th">NEU</div>
+    <div class="th">Δ</div>
   </div>
-  <div class="data-list" id="data-list"></div>
+  <div class="tbl-body" id="tbl-body"></div>
 
   <div class="kap-wrap">
     <div class="kap-grid">
       <div class="kb kb-alt">
-        <div class="kb-label">KAPAZITÄT (ALT)</div>
+        <div class="kb-title">KAPAZITÄT (ALT)</div>
         <ul>
           <li><span>Stk / Tag</span><b id="ka-tag">—</b></li>
           <li><span>Arbeitstage</span><b id="ka-tage">—</b></li>
@@ -534,7 +802,7 @@ margin-bottom: 0 !important;
         </ul>
       </div>
       <div class="kb kb-neu">
-        <div class="kb-label">KAPAZITÄT (NEU)</div>
+        <div class="kb-title">KAPAZITÄT (NEU)</div>
         <ul>
           <li><span>Stk / Tag</span><b id="kn-tag">—</b></li>
           <li><span>Arbeitstage</span><b id="kn-tage">—</b></li>
@@ -542,317 +810,190 @@ margin-bottom: 0 !important;
         </ul>
       </div>
     </div>
+  </div>
 
-```
-<div class="sv-grid">
-  <div class="sv-cell">
-    <div class="sv-k">ZEITERSPARNIS</div>
-    <div class="sv-v" id="sv-min">— MIN</div>
+  <div class="sv-wrap">
+    <div class="sv-grid">
+      <div class="sv-cell">
+        <div class="sv-k">ZEITERSPARNIS</div>
+        <div class="sv-v" id="sv-min">—</div>
+      </div>
+      <div class="sv-cell sv-cell-hot">
+        <div class="sv-k">FINANZIELLE ERSPARNIS</div>
+        <div class="sv-v" id="sv-eur">—</div>
+      </div>
+      <div class="sv-cell">
+        <div class="sv-k">EFFIZIENZGEWINN</div>
+        <div class="sv-v" id="sv-pct">—</div>
+      </div>
+    </div>
   </div>
-  <div class="sv-cell sv-strong">
-    <div class="sv-k">FINANZIELLE ERSPARNIS</div>
-    <div class="sv-v" id="sv-eur">— €</div>
-  </div>
-  <div class="sv-cell">
-    <div class="sv-k">EFFIZIENZGEWINN</div>
-    <div class="sv-v" id="sv-pct">— %</div>
-  </div>
+
 </div>
 ```
 
   </div>
+</div>
 
-</div><!-- /card -->
-</div><!-- /vr -->
+<!-- ===== BOTTOM BUTTONS ===== -->
 
-</div><!-- /wrap -->
-
-<div class="actions">
+<div class="bottom-bar">
   <button class="btn" id="btn-reset">↺ RESET</button>
-  <button class="btn btn-go" id="btn-export">⎙ PDF</button>
+  <button class="btn btn-pdf" id="btn-pdf">⎙ PDF EXPORT</button>
 </div>
+
 <div class="toast" id="toast"></div>
 
 <script>
-/* ── helpers ── */
 const $ = id => document.getElementById(id);
-const fmt  = (n, d=2) => isFinite(n) ? n.toLocaleString('de-DE',{minimumFractionDigits:d,maximumFractionDigits:d}) : '—';
+const SCHICHT_MIN = 7.5 * 60; // 450 min
+
+const fmt = (n, d = 2) =>
+  isFinite(n) ? n.toLocaleString('de-DE', { minimumFractionDigits: d, maximumFractionDigits: d }) : '—';
 const fmtI = n => isFinite(n) ? Math.round(n).toLocaleString('de-DE') : '—';
-const today = () => { const d=new Date(); return `${d.getDate()}.${d.getMonth()+1}.${d.getFullYear()}`; };
+const dateDE = () => new Date().toLocaleDateString('de-DE');
 
-/* ── constants ── */
-const SCHICHT_H = 7.5;               // 1 Schicht = 7.5 Stunden
-const SCHICHT_MIN = SCHICHT_H * 60;  // = 450 Min
-
-/* ── core calc ── */
+/* ── CALC ── */
 function calc() {
-  const zeitAlt = parseFloat($('zeit-alt').value) || 0;
-  const zeitNeu = parseFloat($('zeit-neu').value) || 0;
-  const abend   = parseFloat($('abend').value)    || 0;
-  const rate    = parseFloat($('rate').value)     || 0;
-  const menge   = parseFloat($('menge').value)    || 0;
+  const zA  = parseFloat($('zeit-alt').value) || 0;
+  const zN  = parseFloat($('zeit-neu').value) || 0;
+  const ab  = parseFloat($('abend').value)    || 0;
+  const rt  = parseFloat($('rate').value)     || 0;
+  const mg  = parseFloat($('menge').value)    || 0;
 
-  // Stückzahl pro Schicht = Schichtlänge / Zeit pro Stück
-  const stkAlt = zeitAlt > 0 ? SCHICHT_MIN / zeitAlt : 0;
-  const stkNeu = zeitNeu > 0 ? SCHICHT_MIN / zeitNeu : 0;
+  const sA = zA > 0 ? SCHICHT_MIN / zA : 0; // Stk/Schicht ALT
+  const sN = zN > 0 ? SCHICHT_MIN / zN : 0; // Stk/Schicht NEU
 
-  // Kapazität pro Tag = Schicht + Abend
-  const kapAlt = stkAlt + abend;
-  const kapNeu = stkNeu + abend;
+  const kA = sA + ab;  // Stk/Tag ALT
+  const kN = sN + ab;  // Stk/Tag NEU
 
-  // Arbeitstage für Gesamtmenge
-  const tageAlt = kapAlt > 0 ? menge / kapAlt : 0;
-  const tageNeu = kapNeu > 0 ? menge / kapNeu : 0;
+  const tA = kA > 0 ? mg / kA : 0; // Arbeitstage ALT
+  const tN = kN > 0 ? mg / kN : 0; // Arbeitstage NEU
 
-  // Produktionszeit gesamt
-  const minAlt = menge * zeitAlt;
-  const minNeu = menge * zeitNeu;
-  const stdAlt = minAlt / 60;
-  const stdNeu = minNeu / 60;
+  const mA = mg * zA;  // Gesamtminuten ALT
+  const mN = mg * zN;  // Gesamtminuten NEU
+  const hA = mA / 60;
+  const hN = mN / 60;
 
-  // Schichten (Nachtschichten ohne Abend)
-  const schichtenAlt = stkAlt > 0 ? menge / kapAlt : 0;
-  const schichtenNeu = stkNeu > 0 ? menge / kapNeu : 0;
+  const eMin = mA - mN;
+  const eEur = (eMin / 60) * rt;
+  const ePct = zA > 0 ? ((zA - zN) / zA) * 100 : 0;
 
-  // Ersparnis
-  const erspMin = minAlt - minNeu;
-  const erspEur = (erspMin / 60) * rate;
-  const pct     = zeitAlt > 0 ? ((zeitAlt - zeitNeu) / zeitAlt) * 100 : 0;
-
-  return {
-    zeitAlt, zeitNeu, abend, rate, menge,
-    stkAlt, stkNeu,
-    kapAlt, kapNeu,
-    tageAlt, tageNeu,
-    minAlt, minNeu, stdAlt, stdNeu,
-    schichtenAlt, schichtenNeu,
-    erspMin, erspEur, pct
-  };
+  return { zA, zN, ab, rt, mg, sA, sN, kA, kN, tA, tN, mA, mN, hA, hN, eMin, eEur, ePct };
 }
 
-/* ── delta badge ── */
-function dlt(a, b, opts={}) {
-  const hi = !!opts.hi;
-  const diff = b - a;
-  if (Math.abs(diff) < 0.005) return { txt:'±0', cls:'dz' };
-  const good = hi ? diff > 0 : diff < 0;
-  const sign = diff > 0 ? '+' : '';
-  return { txt: `${sign}${fmt(diff, opts.d ?? 2)}${opts.u||''}`, cls: good ? 'dp' : 'dn' };
+/* ── DELTA BADGE ── */
+function badge(a, b, opts = {}) {
+  const d = b - a;
+  if (Math.abs(d) < 0.005) return `<span class="badge badge-n">—</span>`;
+  const good = opts.hi ? d > 0 : d < 0;
+  const sign = d > 0 ? '+' : '';
+  const txt = `${sign}${fmt(d, opts.dec ?? 1)}${opts.u || ''}`;
+  return `<span class="badge ${good ? 'badge-g' : 'badge-r'}">${txt}</span>`;
 }
 
-/* ── render table ── */
+/* ── TOGGLES STATE ── */
+const tog = {
+  abend: () => $('tog-abend').checked,
+  masch: () => $('tog-masch').checked,
+  pct:   () => $('tog-pct').checked,
+};
+
+function syncToggleUI() {
+  ['abend','masch','pct'].forEach(k => {
+    const row = $('tr-' + k);
+    if (row) row.classList.toggle('off', !$('tog-' + k).checked);
+  });
+  // Maschinensatz input cell dim
+  const rateCell = $('rate').closest ? $('rate').closest('.big-cell') : null;
+  if (rateCell) rateCell.style.opacity = tog.masch() ? '1' : '0.35';
+}
+
+/* ── RENDER TABLE ── */
 function renderTable(d) {
   const rows = [
-    { l:'Zeit / Stück',       a:`${fmt(d.zeitAlt,2)} min`, n:`${fmt(d.zeitNeu,2)} min`, δ: dlt(d.zeitAlt, d.zeitNeu, {d:2,u:' min'}) },
-    { l:'Stk / Schicht',      a:fmt(d.stkAlt,1),          n:fmt(d.stkNeu,1),           δ: dlt(d.stkAlt, d.stkNeu, {d:1,hi:true}) },
-    { l:'Stk / Tag (+ Abend)',a:fmt(d.kapAlt,1),           n:fmt(d.kapNeu,1),           δ: dlt(d.kapAlt, d.kapNeu, {d:1,hi:true}) },
-    { l:'Produktionszeit',    a:`${fmt(d.stdAlt,1)} h`,   n:`${fmt(d.stdNeu,1)} h`,    δ: dlt(d.stdAlt, d.stdNeu, {d:1,u:' h'}) },
-    { l:'Arbeitstage',        a:fmt(d.tageAlt,1),          n:fmt(d.tageNeu,1),          δ: dlt(d.tageAlt, d.tageNeu, {d:1}) },
-    { l:'Maschinensatz',      a:`${fmt(d.rate,2)} €/h`,   n:`${fmt(d.rate,2)} €/h`,    δ: {txt:'—',cls:'dz'} },
+    { l: 'Zeit / Stück',    a: `${fmt(d.zA,2)} min`, n: `${fmt(d.zN,2)} min`, b: badge(d.zA, d.zN, {dec:2, u:' min'}), show: true },
+    { l: 'Stk / Schicht',   a: fmt(d.sA,1),          n: fmt(d.sN,1),          b: badge(d.sA, d.sN, {hi:true}),          show: true },
+    { l: 'Abend (Stk/Tag)', a: fmt(d.kA,1),           n: fmt(d.kN,1),          b: badge(d.kA, d.kN, {hi:true}),          show: tog.abend() },
+    { l: 'Produktionszeit', a: `${fmt(d.hA,1)} h`,   n: `${fmt(d.hN,1)} h`,   b: badge(d.hA, d.hN, {u:' h'}),           show: true },
+    { l: 'Arbeitstage',     a: fmt(d.tA,1),            n: fmt(d.tN,1),          b: badge(d.tA, d.tN),                      show: true },
+    { l: 'Maschinensatz',   a: `${fmt(d.rt,2)} €/h`, n: `${fmt(d.rt,2)} €/h`, b: `<span class="badge badge-n">—</span>`, show: tog.masch() },
   ];
-  $('data-list').innerHTML = rows.map(r => `
+  $('tbl-body').innerHTML = rows.filter(r => r.show).map(r => `
     <div class="dr">
-      <div class="dr-label">${r.l}</div>
+      <div class="dr-lbl">${r.l}</div>
       <div class="dr-alt">${r.a}</div>
       <div class="dr-neu">${r.n}</div>
-      <div class="dr-delta ${r.δ.cls}">${r.δ.txt}</div>
+      <div>${r.b}</div>
     </div>`).join('');
 }
 
-/* ── render all ── */
+/* ── RENDER ALL ── */
 function render() {
   const d = calc();
-  $('hdr-date').textContent = today();
+  $('hdr-date').textContent = dateDE();
 
   // meta
   $('r-bt').textContent  = $('bauteil').value || '—';
   $('r-nr').textContent  = $('nr').value || '—';
-  $('r-dat').textContent = today();
-  $('r-mg').textContent  = fmtI(d.menge);
+  $('r-dat').textContent = dateDE();
+  $('r-mg').textContent  = fmtI(d.mg);
   $('s-id').textContent  = $('nr').value || '—';
 
   renderTable(d);
 
-  // kapazität
-  $('ka-tag').textContent  = `${fmt(d.kapAlt,1)} Stk`;
-  $('ka-tage').textContent = fmt(d.tageAlt,1);
-  $('ka-min').textContent  = `${fmtI(d.minAlt)} min`;
-  $('kn-tag').textContent  = `${fmt(d.kapNeu,1)} Stk`;
-  $('kn-tage').textContent = fmt(d.tageNeu,1);
-  $('kn-min').textContent  = `${fmtI(d.minNeu)} min`;
+  $('ka-tag').textContent  = `${fmt(d.kA,1)} Stk`;
+  $('ka-tage').textContent = fmt(d.tA,1);
+  $('ka-min').textContent  = `${fmtI(d.mA)} min`;
+  $('kn-tag').textContent  = `${fmt(d.kN,1)} Stk`;
+  $('kn-tage').textContent = fmt(d.tN,1);
+  $('kn-min').textContent  = `${fmtI(d.mN)} min`;
 
-  // savings
-  $('sv-min').textContent = `${fmtI(d.erspMin)} MIN`;
-  $('sv-eur').textContent = `${fmt(d.erspEur,2)} €`;
-  $('sv-pct').textContent = `${fmt(d.pct,1)} %`;
+  $('sv-min').textContent = `${fmtI(d.eMin)} MIN`;
+
+  // Finanzielle Ersparnis
+  const eurCell = $('sv-eur').parentElement;
+  if (tog.masch()) {
+    eurCell.style.display = '';
+    $('sv-eur').textContent = `${fmt(d.eEur,2)} €`;
+  } else {
+    eurCell.style.display = 'none';
+  }
+
+  // Effizienzgewinn
+  const pctCell = $('sv-pct').parentElement;
+  if (tog.pct()) {
+    pctCell.style.display = '';
+    $('sv-pct').textContent = `${fmt(d.ePct,1)} %`;
+  } else {
+    pctCell.style.display = 'none';
+  }
+
+  syncToggleUI();
 }
 
-/* ── tabs ── */
+/* ── TABS ── */
 document.querySelectorAll('.tab').forEach(btn => {
   btn.addEventListener('click', () => {
-    document.querySelectorAll('.tab,.view').forEach(x => x.classList.remove('on'));
-    btn.classList.add('on');
-    $('v'+btn.dataset.t.slice(1)).classList.add('on');
-    window.scrollTo({top:0,behavior:'smooth'});
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    btn.classList.add('active');
+    $('view-' + btn.dataset.tab).classList.add('active');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   });
 });
 
-/* ── toast ── */
-let tt;
-function toast(msg) {
-  const t = $('toast'); t.textContent = msg; t.classList.add('on');
-  clearTimeout(tt); tt = setTimeout(() => t.classList.remove('on'), 1700);
+/* ── TOAST ── */
+let toastTimer;
+function showToast(msg) {
+  const t = $('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 1800);
 }
 
-/* ── export: открываем чистое окно с отчётом ── */
-function exportPDF() {
-  const d = calc();
-  const fmt2 = (n, dec=2) => isFinite(n) ? n.toLocaleString('de-DE',{minimumFractionDigits:dec,maximumFractionDigits:dec}) : '—';
-  const fmtI2 = n => isFinite(n) ? Math.round(n).toLocaleString('de-DE') : '—';
-
-  const rows = [
-    { l:'Zeit / Stück',        a:`${fmt2(d.zeitAlt,2)} min`, n:`${fmt2(d.zeitNeu,2)} min`, diff: d.zeitNeu-d.zeitAlt, unit:' min', hi:false },
-    { l:'Stk / Schicht',       a:fmt2(d.stkAlt,1),           n:fmt2(d.stkNeu,1),           diff: d.stkNeu-d.stkAlt,   unit:'',     hi:true  },
-    { l:'Stk / Tag (+ Abend)', a:fmt2(d.kapAlt,1),           n:fmt2(d.kapNeu,1),            diff: d.kapNeu-d.kapAlt,   unit:'',     hi:true  },
-    { l:'Produktionszeit',     a:`${fmt2(d.stdAlt,1)} h`,    n:`${fmt2(d.stdNeu,1)} h`,     diff: d.stdNeu-d.stdAlt,   unit:' h',   hi:false },
-    { l:'Arbeitstage',         a:fmt2(d.tageAlt,1),          n:fmt2(d.tageNeu,1),           diff: d.tageNeu-d.tageAlt, unit:'',     hi:false },
-    { l:'Maschinensatz',       a:`${fmt2(d.rate,2)} €/h`,    n:`${fmt2(d.rate,2)} €/h`,     diff: 0,                   unit:'',     hi:false },
-  ];
-
-  const rowsHTML = rows.map(r => {
-    let dTxt = '—', dColor = '#888';
-    if (Math.abs(r.diff) >= 0.005) {
-      const good = r.hi ? r.diff > 0 : r.diff < 0;
-      dColor = good ? '#1B3A2E' : '#D94F00';
-      dTxt = (r.diff > 0 ? '+' : '') + fmt2(r.diff, r.unit==='' ? 1 : 2) + r.unit;
-    }
-    return `<tr>
-      <td style="padding:10px 14px;font-size:12pt;color:#3A3A36;border-bottom:1px solid #C9C5BB;">${r.l}</td>
-      <td style="padding:10px 14px;font-family:monospace;font-size:11pt;color:#aaa;text-decoration:line-through;border-bottom:1px solid #C9C5BB;">${r.a}</td>
-      <td style="padding:10px 14px;font-family:monospace;font-size:12pt;font-weight:700;border-bottom:1px solid #C9C5BB;">${r.n}</td>
-      <td style="padding:10px 14px;text-align:right;border-bottom:1px solid #C9C5BB;">
-        <span style="font-family:monospace;font-size:9pt;font-weight:700;color:${dColor};border:1px solid ${dColor};padding:2px 5px;">${dTxt}</span>
-      </td>
-    </tr>`;
-  }).join('');
-
-  const html = `<!DOCTYPE html>
-<html lang="de">
-<head>
-<meta charset="UTF-8">
-<title>Effizienz-Bericht · ${$('nr').value || '—'}</title>
-<style>
-  @page { margin: 14mm 16mm; size: A4; }
-  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  body { font-family: Arial, sans-serif; background: #fff; color: #0E0E0E; }
-
-  .title { font-family: 'Arial Black', sans-serif; font-size: 32pt; font-weight: 900; line-height: 1; }
-  .rule { height: 4px; background: #0E0E0E; margin: 14px 0 10px; position: relative; }
-  .rule::after { content:''; position:absolute; right:0; top:0; bottom:0; width:30%; background:#D94F00; }
-  .stamp {
-    border: 2px solid #D94F00; color: #D94F00;
-    padding: 6px 10px; text-align: center;
-    transform: rotate(-3deg); display: inline-block;
-    font-family: monospace;
-  }
-  .stamp-line { font-size: 7pt; letter-spacing: 2px; }
-  .stamp-id   { font-size: 13pt; font-weight: 700; margin-top: 2px; }
-
-  .meta { font-family: monospace; font-size: 9pt; color: #555; margin-bottom: 4px; }
-  .meta b { color: #0E0E0E; }
-
-  table { width: 100%; border-collapse: collapse; margin: 6px 0 16px; }
-  thead th {
-    background: #0E0E0E; color: #fff;
-    font-family: monospace; font-size: 8pt; letter-spacing: 1.5px;
-    padding: 9px 14px; text-align: left; font-weight: 700;
-  }
-  thead th:last-child { text-align: right; }
-  tbody tr:nth-child(even) { background: rgba(0,0,0,.03); }
-
-  .kap-grid { display: flex; border: 1.5px solid #0E0E0E; margin-bottom: 14px; }
-  .kb { flex: 1; padding: 12px 14px; }
-  .kb-alt { background: #EFEFEF; border-right: 1.5px solid #0E0E0E; }
-  .kb-neu { background: #EBF0EE; }
-  .kb-label { font-family: monospace; font-size: 7.5pt; letter-spacing: 2px; font-weight: 700; padding-bottom: 6px; border-bottom: 1px solid #0E0E0E; margin-bottom: 8px; }
-  .kb-row { display: flex; justify-content: space-between; padding: 4px 0; font-size: 10pt; }
-  .kb-row span { color: #888; }
-  .kb-row b { font-family: monospace; font-weight: 700; }
-
-  .sv-grid { display: flex; border: 1.5px solid #0E0E0E; background: #0E0E0E; gap: 1.5px; }
-  .sv { flex: 1; background: #fff; padding: 12px 14px; }
-  .sv-strong { background: #D94F00; }
-  .sv-k { font-family: monospace; font-size: 7pt; letter-spacing: 2px; color: #888; font-weight: 700; margin-bottom: 5px; }
-  .sv-strong .sv-k { color: rgba(255,255,255,.8); }
-  .sv-v { font-family: 'Arial Black', sans-serif; font-size: 22pt; font-weight: 900; line-height: 1; }
-  .sv-strong .sv-v { color: #fff; }
-</style>
-
-</head>
-<body>
-<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:2px;">
-  <div class="title">EFFIZIENZ-<br>BERICHT</div>
-  <div class="stamp">
-    <div class="stamp-line">REF</div>
-    <div class="stamp-id">${$('nr').value || '—'}</div>
-  </div>
-</div>
-<div class="rule"></div>
-<div class="meta">BAUTEIL: <b>${$('bauteil').value || '—'}</b> &nbsp; NR: <b>${$('nr').value || '—'}</b></div>
-<div class="meta">DATUM: <b>${new Date().toLocaleDateString('de-DE')}</b> &nbsp; MENGE: <b>${fmtI2(d.menge)}</b> STK</div>
-
-<table>
-  <thead>
-    <tr>
-      <th>PARAMETER</th><th>STATUS: ALT</th><th>STATUS: NEU</th><th style="text-align:right">Δ</th>
-    </tr>
-  </thead>
-  <tbody>${rowsHTML}</tbody>
-</table>
-
-<div class="kap-grid">
-  <div class="kb kb-alt">
-    <div class="kb-label">KAPAZITÄT (ALT)</div>
-    <div class="kb-row"><span>Stk / Tag</span><b>${fmt2(d.kapAlt,1)} Stk</b></div>
-    <div class="kb-row"><span>Arbeitstage</span><b>${fmt2(d.tageAlt,1)}</b></div>
-    <div class="kb-row"><span>Gesamt-min</span><b>${fmtI2(d.minAlt)} min</b></div>
-  </div>
-  <div class="kb kb-neu">
-    <div class="kb-label">KAPAZITÄT (NEU)</div>
-    <div class="kb-row"><span>Stk / Tag</span><b>${fmt2(d.kapNeu,1)} Stk</b></div>
-    <div class="kb-row"><span>Arbeitstage</span><b>${fmt2(d.tageNeu,1)}</b></div>
-    <div class="kb-row"><span>Gesamt-min</span><b>${fmtI2(d.minNeu)} min</b></div>
-  </div>
-</div>
-
-<div class="sv-grid">
-  <div class="sv">
-    <div class="sv-k">ZEITERSPARNIS</div>
-    <div class="sv-v">${fmtI2(d.erspMin)} MIN</div>
-  </div>
-  <div class="sv sv-strong">
-    <div class="sv-k">FINANZIELLE ERSPARNIS</div>
-    <div class="sv-v">${fmt2(d.erspEur,2)} €</div>
-  </div>
-  <div class="sv">
-    <div class="sv-k">EFFIZIENZGEWINN</div>
-    <div class="sv-v">${fmt2(d.pct,1)} %</div>
-  </div>
-</div>
-
-<script>window.onload = () => { window.print(); window.onafterprint = () => window.close(); };<\/script>
-</body></html>`;
-
-  const w = window.open('', '_blank', 'width=900,height=700');
-  if (w) {
-    w.document.write(html);
-    w.document.close();
-  } else {
-    alert('Bitte Popups erlauben und erneut versuchen.');
-  }
-}
-
-$('btn-export').addEventListener('click', exportPDF);
+/* ── RESET ── */
 $('btn-reset').addEventListener('click', () => {
   $('zeit-alt').value = '4.40';
   $('zeit-neu').value = '2.57';
@@ -862,13 +1003,125 @@ $('btn-reset').addEventListener('click', () => {
   $('bauteil').value  = 'Gehäuse';
   $('nr').value       = '234186';
   render();
-  toast('✓ ZURÜCKGESETZT');
+  showToast('✓ ZURÜCKGESETZT');
 });
 
-/* ── live input ── */
-['zeit-alt','zeit-neu','abend','rate','menge','bauteil','nr'].forEach(id => {
-  const el = $(id);
-  if (el) el.addEventListener('input', render);
+/* ── PDF EXPORT: чистое окно ── */
+$('btn-pdf').addEventListener('click', () => {
+  const d = calc();
+  const f = (n, dec=2) => isFinite(n) ? n.toLocaleString('de-DE',{minimumFractionDigits:dec,maximumFractionDigits:dec}) : '—';
+  const fi = n => isFinite(n) ? Math.round(n).toLocaleString('de-DE') : '—';
+
+  const rows = [
+    { l:'Zeit / Stück',        a:`${f(d.zA,2)} min`, n:`${f(d.zN,2)} min`, v:d.zN-d.zA, hi:false, u:' min', dec:2 },
+    { l:'Stk / Schicht',       a:f(d.sA,1),          n:f(d.sN,1),          v:d.sN-d.sA, hi:true,  u:'', dec:1 },
+    { l:'Stk / Tag (+ Abend)', a:f(d.kA,1),          n:f(d.kN,1),          v:d.kN-d.kA, hi:true,  u:'', dec:1 },
+    { l:'Produktionszeit',     a:`${f(d.hA,1)} h`,   n:`${f(d.hN,1)} h`,   v:d.hN-d.hA, hi:false, u:' h', dec:1 },
+    { l:'Arbeitstage',         a:f(d.tA,1),           n:f(d.tN,1),          v:d.tN-d.tA, hi:false, u:'', dec:1 },
+    { l:'Maschinensatz',       a:`${f(d.rt,2)} €/h`, n:`${f(d.rt,2)} €/h`, v:0,         hi:false, u:'', dec:2 },
+  ];
+
+  const rowsHTML = rows.map(r => {
+    let badgeHTML = '<span style="color:#999;border:1px solid #CCC;padding:2px 5px;font-size:8pt;">—</span>';
+    if (Math.abs(r.v) >= 0.005) {
+      const good = r.hi ? r.v > 0 : r.v < 0;
+      const col = good ? '#1B5E35' : '#C43000';
+      const bg  = good ? 'rgba(27,94,53,0.09)' : 'rgba(196,48,0,0.09)';
+      badgeHTML = `<span style="color:${col};border:1px solid ${col};background:${bg};padding:2px 5px;font-size:8pt;font-weight:700;">${r.v>0?'+':''}${f(r.v,r.dec)}${r.u}</span>`;
+    }
+    return `<tr>
+      <td style="padding:9px 12px;font-size:11pt;color:#444;border-bottom:1px solid #DDD;">${r.l}</td>
+      <td style="padding:9px 12px;font-family:monospace;font-size:10pt;color:#AAA;text-decoration:line-through;border-bottom:1px solid #DDD;">${r.a}</td>
+      <td style="padding:9px 12px;font-family:monospace;font-size:11pt;font-weight:700;border-bottom:1px solid #DDD;">${r.n}</td>
+      <td style="padding:9px 12px;text-align:right;border-bottom:1px solid #DDD;white-space:nowrap;">${badgeHTML}</td>
+    </tr>`;
+  }).join('');
+
+  const html = `<!DOCTYPE html>
+<html lang="de"><head>
+<meta charset="UTF-8">
+<title>Effizienz-Bericht ${$('nr').value}</title>
+<style>
+  @page { margin: 15mm 18mm; size: A4; }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body { font-family: Arial, sans-serif; background: #fff; color: #111; font-size: 11pt; }
+  h1 { font-family: 'Arial Black', Arial, sans-serif; font-size: 30pt; font-weight: 900; line-height: 0.95; }
+  .row { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12pt; }
+  .stamp { border: 2pt solid #E05500; color: #E05500; padding: 6pt 10pt; text-align: center; transform: rotate(-3deg); font-family: monospace; }
+  .rule { height: 3pt; background: #111; margin: 12pt 0 8pt; position: relative; }
+  .rule::after { content:''; position:absolute; right:0; top:0; bottom:0; width:28%; background:#E05500; }
+  .meta { font-family: monospace; font-size: 8.5pt; color: #666; margin-bottom: 3pt; }
+  .meta b { color: #111; }
+  table { width: 100%; border-collapse: collapse; margin-top: 8pt; margin-bottom: 14pt; }
+  thead th { background: #111; color: #fff; font-family: monospace; font-size: 7.5pt; letter-spacing: 1.5pt; padding: 8pt 12pt; text-align: left; font-weight: 700; }
+  thead th:last-child { text-align: right; }
+  tbody tr:nth-child(even) { background: rgba(0,0,0,0.03); }
+  .kap { display: flex; border: 1.5pt solid #111; margin-bottom: 12pt; }
+  .kb { flex: 1; padding: 10pt 12pt; }
+  .kb-a { background: #EFEFEF; border-right: 1.5pt solid #111; }
+  .kb-n { background: #EBF0EE; }
+  .kb h3 { font-family: monospace; font-size: 7pt; letter-spacing: 2pt; font-weight: 700; padding-bottom: 5pt; border-bottom: 1pt solid #111; margin-bottom: 6pt; }
+  .krow { display: flex; justify-content: space-between; padding: 3pt 0; font-size: 9.5pt; }
+  .krow span { color: #888; }
+  .krow b { font-family: monospace; font-weight: 700; }
+  .sv { display: flex; border: 1.5pt solid #111; background: #111; gap: 1.5pt; }
+  .sc { flex: 1; background: #fff; padding: 10pt 12pt; }
+  .sc-hot { background: #E05500; }
+  .sk { font-family: monospace; font-size: 7pt; letter-spacing: 1.5pt; color: #999; font-weight: 700; margin-bottom: 4pt; }
+  .sc-hot .sk { color: rgba(255,255,255,0.75); }
+  .sv-val { font-family: 'Arial Black', Arial, sans-serif; font-size: 20pt; font-weight: 900; line-height: 1; }
+  .sc-hot .sv-val { color: #fff; }
+</style>
+
+</head><body>
+<div class="row">
+  <h1>EFFIZIENZ-<br>BERICHT</h1>
+  <div class="stamp"><div style="font-size:7pt;letter-spacing:2pt;">REF</div><div style="font-size:13pt;font-weight:700;margin-top:2pt;">${$('nr').value||'—'}</div></div>
+</div>
+<div class="rule"></div>
+<div class="meta">BAUTEIL: <b>${$('bauteil').value||'—'}</b> &nbsp;|&nbsp; NR: <b>${$('nr').value||'—'}</b></div>
+<div class="meta">DATUM: <b>${new Date().toLocaleDateString('de-DE')}</b> &nbsp;|&nbsp; MENGE: <b>${fi(d.mg)}</b> STK</div>
+<table>
+  <thead><tr><th>PARAMETER</th><th>STATUS: ALT</th><th>STATUS: NEU</th><th style="text-align:right">Δ</th></tr></thead>
+  <tbody>${rowsHTML}</tbody>
+</table>
+<div class="kap">
+  <div class="kb kb-a">
+    <h3>KAPAZITÄT (ALT)</h3>
+    <div class="krow"><span>Stk / Tag</span><b>${f(d.kA,1)} Stk</b></div>
+    <div class="krow"><span>Arbeitstage</span><b>${f(d.tA,1)}</b></div>
+    <div class="krow"><span>Gesamt-min</span><b>${fi(d.mA)} min</b></div>
+  </div>
+  <div class="kb kb-n">
+    <h3>KAPAZITÄT (NEU)</h3>
+    <div class="krow"><span>Stk / Tag</span><b>${f(d.kN,1)} Stk</b></div>
+    <div class="krow"><span>Arbeitstage</span><b>${f(d.tN,1)}</b></div>
+    <div class="krow"><span>Gesamt-min</span><b>${fi(d.mN)} min</b></div>
+  </div>
+</div>
+<div class="sv">
+  <div class="sc"><div class="sk">ZEITERSPARNIS</div><div class="sv-val">${fi(d.eMin)} MIN</div></div>
+  <div class="sc sc-hot"><div class="sk">FINANZIELLE ERSPARNIS</div><div class="sv-val">${f(d.eEur,2)} €</div></div>
+  <div class="sc"><div class="sk">EFFIZIENZGEWINN</div><div class="sv-val">${f(d.ePct,1)} %</div></div>
+</div>
+<script>window.onload=()=>{window.print();window.onafterprint=()=>window.close();};<\/script>
+</body></html>`;
+
+const w = window.open(’’, ‘_blank’);
+if (w) { w.document.write(html); w.document.close(); }
+else { alert(‘Bitte Popups für diese Seite erlauben, dann erneut tippen.’); }
+});
+
+/* ── LIVE INPUT ── */
+[‘zeit-alt’,‘zeit-neu’,‘abend’,‘rate’,‘menge’,‘bauteil’,‘nr’].forEach(id => {
+const el = $(id);
+if (el) el.addEventListener(‘input’, render);
+});
+
+/* ── TOGGLE LISTENERS ── */
+[‘tog-abend’,‘tog-masch’,‘tog-pct’].forEach(id => {
+const el = $(id);
+if (el) el.addEventListener(‘change’, render);
 });
 
 render();
