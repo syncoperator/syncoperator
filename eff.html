@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Effizienz-Analyse v1.6</title>
+    <title>Effizienz-Analyse v1.7</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
     <style>
@@ -18,7 +18,7 @@
         }
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { margin: 0; padding: 0; background: var(--bg); font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; color: var(--text-main); }
+        body { margin: 0; padding: 0; background: var(--bg); font-family: "Helvetica Neue", Helvetica, sans-serif; color: var(--text-main); }
         .container { max-width: 650px; margin: 0 auto; padding: 25px; padding-bottom: 120px; }
         
         header { margin-bottom: 30px; border-left: 6px solid var(--accent); padding-left: 20px; }
@@ -52,8 +52,7 @@
             display: flex; align-items: center; padding: 0 20px; gap: 15px; z-index: 100;
         }
         .btn { height: 60px; border-radius: 0; border: none; font-weight: 900; cursor: pointer; flex: 1; text-transform: uppercase; font-size: 16px; letter-spacing: 1px; }
-        .btn-black { background: var(--accent); color: white; transition: background 0.2s; }
-        .btn-black:hover { background: #333; }
+        .btn-black { background: var(--accent); color: white; }
     </style>
 </head>
 <body>
@@ -103,13 +102,13 @@
         <div id="finish-details" style="font-size: 14px; margin-top: 10px; font-weight: 600;"></div>
     </div>
 
-    <section class="card">
+    <section class="card" style="padding-bottom: 40px;"> <!-- Padding-bottom added -->
         <table>
             <thead>
                 <tr>
-                    <th>Parameter</th>
-                    <th>Alt</th>
-                    <th>Neu</th>
+                    <th>PARAMETER</th>
+                    <th>STATUS: ALT</th>
+                    <th>STATUS: NEU</th>
                 </tr>
             </thead>
             <tbody>
@@ -155,7 +154,7 @@
 
         document.getElementById('finish-days').innerText = daysN.toFixed(1) + " ARBEITSTAGE";
         document.getElementById('finish-details').innerText = 
-            `REALE DIFFERENZ: ${Math.abs(minDiff).toFixed(0)} MIN / ${Math.abs(daysA - daysN).toFixed(1)} TAGE`;
+            `DIFFERENZ: ${Math.abs(minDiff).toFixed(0)} MIN / ${Math.abs(daysA - daysN).toFixed(1)} TAGE`;
         
         window.latestCalc = { daysA, daysN, stkShA, stkShN, abendStk, minDiff, tA, tN, stk };
     }
@@ -166,24 +165,20 @@
         const d = window.latestCalc;
         const isLoss = d.tN > d.tA;
         
-        // --- HEADER ---
         doc.setFont("helvetica", "bold");
         doc.setFontSize(26);
         doc.text("EFFIZIENZ-BERICHT", 15, 25);
-        doc.setLineWidth(1.0); // Сделал чуть тоньше по просьбе
+        doc.setLineWidth(1.0);
         doc.line(15, 30, 195, 30);
 
-        // --- META ---
         doc.setFontSize(11);
         doc.setFont("helvetica", "normal");
-        doc.setTextColor(0); // Все черным
         doc.text(`DATUM: ${new Date().toLocaleDateString('de-DE')}`, 15, 40);
         doc.text(`MENGE: ${d.stk} STÜCK`, 15, 46);
 
-        // --- MAIN TABLE ---
         doc.autoTable({
             startY: 55,
-            head: [['PARAMETER', 'ALT', 'NEU']],
+            head: [['PARAMETER', 'STATUS: ALT', 'STATUS: NEU']],
             body: [
                 ['Zeit pro Stück (Min)', (d.tA/60).toFixed(2), (d.tN/60).toFixed(2)],
                 ['Stückzahl pro Schicht', document.getElementById('s-alt-sh').innerText, document.getElementById('s-neu-sh').innerText],
@@ -198,13 +193,10 @@
 
         let y = doc.lastAutoTable.finalY + 15;
 
-        // --- ANALYSIS BLOCKS (BOTH BLACK) ---
-        const drawAnalysis = (title, days, stkDaily, totalMin, isResult) => {
+        const drawAnalysis = (title, days, stkDaily, totalMin) => {
             doc.setFont("helvetica", "bold");
             doc.setFontSize(14);
-            doc.setTextColor(0);
             doc.text(title, 15, y);
-            
             doc.setFont("helvetica", "normal");
             doc.setFontSize(12);
             doc.text(`- Kapazität pro Tag: ${stkDaily.toFixed(1)} Stück`, 20, y + 10);
@@ -214,27 +206,21 @@
         };
 
         drawAnalysis("KAPAZITÄTSANALYSE (ALT):", d.daysA, (d.stkShA + d.abendStk), (d.stk * d.tA / 60));
-        
         y -= 5;
         drawAnalysis(isLoss ? "KAPAZITÄTSANALYSE (NEU / VERLUST):" : "KAPAZITÄTSANALYSE (NEU / ERSPARNIS):", d.daysN, (d.stkShN + d.abendStk), (d.stk * d.tN / 60));
 
-        // --- FINAL SUMMARY LINE ---
         doc.setLineWidth(0.8);
         doc.line(15, y - 5, 120, y - 5);
         doc.setFontSize(16);
         doc.setFont("helvetica", "bold");
-        const diffText = isLoss ? `VERLUST: ${Math.abs(d.minDiff).toFixed(0)} MIN` : `ERSPARNIS: ${d.minDiff.toFixed(0)} MIN`;
-        doc.text(diffText, 15, y + 5);
+        doc.text(isLoss ? `VERLUST: ${Math.abs(d.minDiff).toFixed(0)} MIN` : `ERSPARNIS: ${d.minDiff.toFixed(0)} MIN`, 15, y + 5);
 
-        // --- FOOTER LINE (THINNER) ---
-        doc.setLineWidth(1.0); // Сделал 1.0 вместо 2.0, теперь гармонирует с верхней
-        doc.setDrawColor(0);
+        doc.setLineWidth(1.0);
         doc.line(15, 280, 195, 280); 
         doc.setFontSize(9);
-        doc.setFont("helvetica", "normal");
-        doc.text("CNC PRODUCTION OPTIMIZER | GENERATED REPORT", 105, 287, {align: 'center'});
+        doc.text("CNC PRODUCTION OPTIMIZER | SYSTEM-GENERATED REPORT", 105, 287, {align: 'center'});
 
-        doc.save(`Report_${d.stk}_Stk.pdf`);
+        doc.save(`Bericht_${d.stk}_Stk.pdf`);
     }
     calc();
 </script>
