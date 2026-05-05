@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Effizienz-Analyse v2.5</title>
+    <title>Effizienz-Analyse v2.6</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
     <style>
@@ -28,7 +28,7 @@
             margin-bottom: 20px;
         }
 
-        .input-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
+        .input-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px; }
         label { display: block; font-size: 11px; font-weight: 900; color: var(--accent); margin-bottom: 8px; text-transform: uppercase; }
         input { 
             width: 100%; padding: 14px; border-radius: 0; border: 2px solid #d1d1d6; 
@@ -40,7 +40,7 @@
 
         table { width: 100%; border-collapse: collapse; margin-top: 15px; }
         th { text-align: left; font-size: 11px; color: var(--accent); padding: 10px 5px; text-transform: uppercase; border-bottom: 3px solid var(--accent); }
-        td { padding: 16px 5px; border-bottom: 1px solid #e5e5e7; font-size: 16px; font-weight: 600; }
+        td { padding: 14px 5px; border-bottom: 1px solid #e5e5e7; font-size: 15px; font-weight: 600; }
         
         .footer-nav { 
             position: fixed; bottom: 0; left: 0; right: 0; height: 100px; 
@@ -56,7 +56,7 @@
 <div class="container">
     <header>
         <h1>EFFIZIENZ-BERICHT</h1>
-        <p style="font-weight: 700; color: var(--text-sec);">CNC PRODUCTION OPTIMIZER v2.5</p>
+        <p style="font-weight: 700; color: var(--text-sec);">CNC PRODUCTION OPTIMIZER v2.6</p>
     </header>
 
     <section class="card">
@@ -72,44 +72,18 @@
                 <label>Gesamtstückzahl</label>
                 <input type="number" id="stk" value="290" oninput="calc()">
             </div>
-            <div>
-                <label>ALT (M:S)</label>
-                <div style="display:flex; gap:8px;">
-                    <input type="number" id="am" value="5" oninput="calc()">
-                    <input type="number" id="as" value="30" oninput="calc()">
-                </div>
-            </div>
-            <div>
-                <label>NEU (M:S)</label>
-                <div style="display:flex; gap:8px;">
-                    <input type="number" id="nm" value="4" oninput="calc()">
-                    <input type="number" id="ns" value="15" oninput="calc()">
-                </div>
-            </div>
-            <div>
-                <label>Abends (Stk)</label>
-                <input type="number" id="abend" value="30" oninput="calc()">
-            </div>
-            <div>
-                <label>Schicht (h)</label>
-                <input type="number" id="sh" value="7.5" oninput="calc()">
-            </div>
+            <div><label>ALT (M:S)</label><div style="display:flex; gap:5px;"><input type="number" id="am" value="5" oninput="calc()"><input type="number" id="as" value="30" oninput="calc()"></div></div>
+            <div><label>NEU (M:S)</label><div style="display:flex; gap:5px;"><input type="number" id="nm" value="4" oninput="calc()"><input type="number" id="ns" value="15" oninput="calc()"></div></div>
+            <div><label>Abends (Stk)</label><input type="number" id="abend" value="30" oninput="calc()"></div>
+            <div><label>Schicht (h)</label><input type="number" id="sh" value="7.5" oninput="calc()"></div>
         </div>
     </section>
 
-    <div id="main-box" class="analysis-box">
-        <span id="finish-days" class="big-val">-</span>
-    </div>
+    <div id="main-box" class="analysis-box"><span id="finish-days" class="big-val">-</span></div>
 
     <section class="card">
-        <table>
-            <thead>
-                <tr>
-                    <th>PARAMETER</th>
-                    <th>ALT</th>
-                    <th>NEU</th>
-                </tr>
-            </thead>
+        <table id="uiTable">
+            <thead><tr><th>PARAMETER</th><th>ALT</th><th>NEU</th></tr></thead>
             <tbody>
                 <tr><td>Stück / Schicht</td><td id="s-alt-sh">-</td><td id="s-neu-sh">-</td></tr>
                 <tr><td>Produktion (h)</td><td id="s-alt-tot">-</td><td id="s-neu-tot">-</td></tr>
@@ -119,9 +93,7 @@
     </section>
 </div>
 
-<div class="footer-nav">
-    <button class="btn btn-black" onclick="generatePDF()">Bericht PDF Speichern</button>
-</div>
+<div class="footer-nav"><button class="btn btn-black" onclick="generatePDF()">PDF Bericht Speichern</button></div>
 
 <script>
     function calc() {
@@ -159,12 +131,9 @@
         const pName = document.getElementById('partName').value;
         const pNum = document.getElementById('partNum').value;
         
-        doc.setDrawColor(0);
-        doc.setLineWidth(0.8);
+        doc.setDrawColor(0); doc.setLineWidth(0.8);
         doc.line(15, 30, 195, 30);
-        
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(26);
+        doc.setFont("helvetica", "bold"); doc.setFontSize(26);
         doc.text("EFFIZIENZ-BERICHT", 15, 25);
 
         doc.setFontSize(10);
@@ -172,12 +141,14 @@
         doc.setFont("helvetica", "normal");
         doc.text(`DATUM: ${new Date().toLocaleDateString('de-DE')} | MENGE: ${d.stk} STK`, 15, 46);
 
+        // ТАБЛИЦА С ABEND
         doc.autoTable({
             startY: 55,
             head: [['PARAMETER', 'STATUS: ALT', 'STATUS: NEU']],
             body: [
                 ['Zeit pro Stück (Min)', (d.tA/60).toFixed(2), (d.tN/60).toFixed(2)],
                 ['Stückzahl pro Schicht', d.stkShA.toFixed(1), d.stkShN.toFixed(1)],
+                ['Abend-Produktion (Stk)', d.abendStk.toFixed(0), d.abendStk.toFixed(0)], // ВОТ ОНА
                 ['Produktionszeit (Std)', ((d.stk*d.tA)/3600).toFixed(1)+" h", ((d.stk*d.tN)/3600).toFixed(1)+" h"],
                 ['Schichten Netto', (d.stk*d.tA/(d.shHours*3600)).toFixed(1), (d.stk*d.tN/(d.shHours*3600)).toFixed(1)]
             ],
@@ -190,32 +161,29 @@
         let y = doc.lastAutoTable.finalY + 15;
 
         const drawAnalysis = (title, days, stkDaily, totalMin) => {
-            doc.setFont("helvetica", "bold");
-            doc.setFontSize(14);
+            doc.setFont("helvetica", "bold"); doc.setFontSize(14);
             doc.text(title, 15, y);
-            doc.setFont("helvetica", "normal");
-            doc.setFontSize(11);
-            doc.text(`- Kapazität pro Tag: ${stkDaily.toFixed(1)} Stück (inkl. Abend)`, 20, y + 10);
+            doc.setFont("helvetica", "normal"); doc.setFontSize(11);
+            doc.text(`- Kapazität pro Tag: ${stkDaily.toFixed(1)} Stück`, 20, y + 10);
             doc.text(`- Zeitbedarf: ${days.toFixed(1)} Arbeitstage`, 20, y + 17);
             doc.text(`- Gesamtminuten: ${totalMin.toFixed(0)} min`, 20, y + 24);
             y += 35;
         };
 
         drawAnalysis("KAPAZITÄTSANALYSE (ALT):", d.daysA, (d.stkShA + d.abendStk), (d.stk * d.tA / 60));
-        drawAnalysis("KAPAZITÄTSANALYSE (NEU / ERSPARNIS):", d.daysN, (d.stkShN + d.abendStk), (d.stk * d.tN / 60));
+        drawAnalysis("KAPAZITÄTSANALYSE (NEU):", d.daysN, (d.stkShN + d.abendStk), (d.stk * d.tN / 60));
 
         doc.setDrawColor(200); doc.setLineWidth(0.4);
         doc.line(15, y - 5, 120, y - 5);
         doc.setFontSize(16); doc.setFont("helvetica", "bold");
         doc.text(`ERSPARNIS: ${d.minDiff.toFixed(0)} MIN`, 15, y + 5);
 
-        doc.setDrawColor(0);
-        doc.setLineWidth(0.8);
+        doc.setDrawColor(0); doc.setLineWidth(0.8);
         doc.line(15, 280, 195, 280); 
         doc.setFontSize(9);
-        doc.text("CNC PRODUCTION OPTIMIZER | INDUSTRIAL FINAL v2.5", 105, 287, {align: 'center'});
+        doc.text("CNC PRODUCTION OPTIMIZER | FULL SPEC v2.6", 105, 287, {align: 'center'});
 
-        doc.save(`Bericht_${pNum}.pdf`);
+        doc.save(`Bericht_${pNum}_Full.pdf`);
     }
     calc();
 </script>
