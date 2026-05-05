@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Produktions-Effizienz | v1.2</title>
+    <title>Effizienz-Bericht v1.3</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
     <style>
@@ -21,7 +21,7 @@
         .container { max-width: 600px; margin: 0 auto; padding: 20px; padding-bottom: 110px; }
         
         header { margin-bottom: 25px; border-left: 4px solid var(--accent); padding-left: 15px; }
-        header h1 { font-size: 20px; font-weight: 800; margin: 0; }
+        header h1 { font-size: 20px; font-weight: 800; margin: 0; text-transform: uppercase; }
         
         .card { 
             background: var(--surface); border-radius: 14px; padding: 20px; 
@@ -37,11 +37,8 @@
         }
         input:focus { border-color: var(--accent); }
 
-        .highlight-box { 
-            background: #f1f1f1; border: 2px solid var(--accent); text-align: center; 
-            padding: 20px; border-radius: 14px; grid-column: span 2;
-        }
-        .big-val { font-size: 32px; font-weight: 900; color: var(--accent); display: block; }
+        .analysis-box { background: var(--accent); color: white; padding: 20px; border-radius: 14px; margin-bottom: 15px; }
+        .big-val { font-size: 24px; font-weight: 900; display: block; }
 
         table { width: 100%; border-collapse: collapse; margin-top: 10px; }
         th { text-align: left; font-size: 10px; color: var(--text-sec); padding: 8px 5px; border-bottom: 2px solid var(--accent); }
@@ -61,14 +58,14 @@
 
 <div class="container">
     <header>
-        <h1>PRODUKTIONSPLANUNG</h1>
-        <p>Industrial Efficiency Analyser</p>
+        <h1>EFFIZIENZ-ANALYSE</h1>
+        <p>Premium Industrial Design</p>
     </header>
 
     <section class="card">
         <div class="input-row">
             <div style="grid-column: span 2;">
-                <label>Gesamtstückzahl (Штук всего)</label>
+                <label>Gesamtstückzahl</label>
                 <input type="number" id="stk" value="290" oninput="calc()">
             </div>
             <div>
@@ -88,7 +85,7 @@
         </div>
         <div class="input-row">
             <div>
-                <label>Abends laufen (шт/ночь)</label>
+                <label>Abends laufen (Stk)</label>
                 <input type="number" id="abend" value="30" oninput="calc()">
             </div>
             <div>
@@ -98,19 +95,13 @@
         </div>
     </section>
 
-    <section class="card" style="background: var(--accent); color: white;">
-        <label style="color: #aaa;">Prognose Fertigstellung (NEU)</label>
-        <span id="finish-days" style="font-size: 24px; font-weight: 900;">-</span>
+    <div class="analysis-box">
+        <label style="color: #aaa;">Zeitbedarf (NEU)</label>
+        <span id="finish-days" class="big-val">-</span>
         <div id="finish-details" style="font-size: 12px; margin-top: 5px; opacity: 0.8;"></div>
-    </section>
+    </div>
 
     <section class="card">
-        <div class="input-row">
-            <div class="highlight-box">
-                <span class="big-val" id="res-saving">0h 0m</span>
-                <label style="color: var(--accent); margin:0;">Zeitersparnis Gesamt</label>
-            </div>
-        </div>
         <table>
             <thead>
                 <tr>
@@ -120,8 +111,8 @@
                 </tr>
             </thead>
             <tbody>
-                <tr><td>Stk / Schicht</td><td id="s-alt-sh">-</td><td style="font-weight:800;" id="s-neu-sh">-</td></tr>
-                <tr><td>Gesamtzeit (Std)</td><td id="s-alt-tot">-</td><td style="font-weight:800;" id="s-neu-tot">-</td></tr>
+                <tr><td>Stückzahl / Schicht</td><td id="s-alt-sh">-</td><td style="font-weight:800;" id="s-neu-sh">-</td></tr>
+                <tr><td>Produktionszeit (Std)</td><td id="s-alt-tot">-</td><td style="font-weight:800;" id="s-neu-tot">-</td></tr>
                 <tr><td>Schichten Netto</td><td id="s-alt-sch">-</td><td style="font-weight:800;" id="s-neu-sch">-</td></tr>
             </tbody>
         </table>
@@ -136,88 +127,100 @@
     function calc() {
         const stk = parseFloat(document.getElementById('stk').value) || 0;
         const abendStk = parseFloat(document.getElementById('abend').value) || 0;
-        const shHrs = parseFloat(document.getElementById('sh').value) || 0;
-        const shSec = shHrs * 3600;
+        const shSec = (parseFloat(document.getElementById('sh').value) || 0) * 3600;
 
         const tA = (parseFloat(document.getElementById('am').value) * 60) + (parseFloat(document.getElementById('as').value) || 0);
         const tN = (parseFloat(document.getElementById('nm').value) * 60) + (parseFloat(document.getElementById('ns').value) || 0);
 
         if (tA <= 0 || tN <= 0) return;
 
-        // Экономия общая
-        const totSecA = stk * tA;
-        const totSecN = stk * tN;
-        const save = totSecA - totSecN;
-
-        // Расчет времени (Ночь + Смена)
-        // Сколько реально за день (Смена + Ночь)
-        const stkPerShiftN = shSec / tN;
-        const dailyCapacity = stkPerShiftN + abendStk;
-        const daysRequired = stk / dailyCapacity;
+        const stkShA = shSec / tA;
+        const stkShN = shSec / tN;
+        const daysA = stk / (stkShA + abendStk);
+        const daysN = stk / (stkShN + abendStk);
 
         const fTime = (s) => `${Math.floor(s/3600)}h ${Math.floor((s%3600)/60)}m`;
 
-        document.getElementById('res-saving').innerText = fTime(save);
-        document.getElementById('s-alt-sh').innerText = (shSec / tA).toFixed(1);
-        document.getElementById('s-neu-sh').innerText = stkPerShiftN.toFixed(1);
-        document.getElementById('s-alt-tot').innerText = (totSecA/3600).toFixed(1) + " h";
-        document.getElementById('s-neu-tot').innerText = (totSecN/3600).toFixed(1) + " h";
-        document.getElementById('s-alt-sch').innerText = (totSecA / shSec).toFixed(1);
-        document.getElementById('s-neu-sch').innerText = (totSecN / shSec).toFixed(1);
+        document.getElementById('s-alt-sh').innerText = stkShA.toFixed(1);
+        document.getElementById('s-neu-sh').innerText = stkShN.toFixed(1);
+        document.getElementById('s-alt-tot').innerText = ( (stk * tA) / 3600).toFixed(1) + " h";
+        document.getElementById('s-neu-tot').innerText = ( (stk * tN) / 3600).toFixed(1) + " h";
+        document.getElementById('s-alt-sch').innerText = ( (stk * tA) / shSec).toFixed(1);
+        document.getElementById('s-neu-sch').innerText = ( (stk * tN) / shSec).toFixed(1);
 
-        document.getElementById('finish-days').innerText = daysRequired.toFixed(1) + " Arbeitstage";
+        document.getElementById('finish-days').innerText = daysN.toFixed(1) + " Arbeitstage";
         document.getElementById('finish-details').innerText = 
-            `Kapazität: ${dailyCapacity.toFixed(1)} Stk/Tag (${abendStk} Abend + ${stkPerShiftN.toFixed(1)} Schicht)`;
+            `Kapazität: ${(stkShN + abendStk).toFixed(1)} Stk/Tag vs. ${(stkShA + abendStk).toFixed(1)} (Alt)`;
+        
+        window.latestCalc = { daysA, daysN, stkShA, stkShN, abendStk };
     }
 
     function generatePDF() {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
+        const data = window.latestCalc;
         
         // Header
         doc.setFont("helvetica", "bold");
-        doc.setFontSize(18);
-        doc.text("TECHNISCHER EFFIZIENZ-BERICHT", 15, 20);
-        doc.setLineWidth(0.5);
+        doc.setFontSize(20);
+        doc.text("EFFIZIENZ-BERICHT", 15, 20);
+        doc.setLineWidth(0.8);
         doc.line(15, 25, 195, 25);
 
-        // Meta
-        doc.setFontSize(10);
+        // Meta Info
+        doc.setFontSize(9);
         doc.setFont("helvetica", "normal");
+        doc.setTextColor(100);
         doc.text(`Datum: ${new Date().toLocaleDateString('de-DE')}`, 15, 32);
         doc.text(`Gesamtstückzahl: ${document.getElementById('stk').value} Stück`, 15, 37);
 
-        // Summary Table
+        // Table
         doc.autoTable({
             startY: 45,
-            head: [['PROZESS-PARAMETER', 'STATUS: ALT', 'STATUS: NEU']],
+            head: [['PARAMETER', 'STATUS: ALT', 'STATUS: NEU']],
             body: [
                 ['Zeit pro Stück', document.getElementById('am').value + ':' + document.getElementById('as').value + ' min', document.getElementById('nm').value + ':' + document.getElementById('ns').value + ' min'],
-                ['Ausstoß pro Schicht', document.getElementById('s-alt-sh').innerText, document.getElementById('s-neu-sh').innerText],
+                ['Stückzahl pro Schicht', document.getElementById('s-alt-sh').innerText, document.getElementById('s-neu-sh').innerText],
                 ['Produktionszeit Gesamt', document.getElementById('s-alt-tot').innerText, document.getElementById('s-neu-tot').innerText],
-                ['Benötigte Schichten', document.getElementById('s-alt-sch').innerText, document.getElementById('s-neu-sch').innerText]
+                ['Schichten Netto', document.getElementById('s-alt-sch').innerText, document.getElementById('s-neu-sch').innerText]
             ],
             theme: 'striped',
-            headStyles: { fillColor: [30, 30, 30], textColor: 255 },
+            headStyles: { fillColor: [0, 0, 0], textColor: 255 },
             styles: { fontSize: 10, cellPadding: 5 }
         });
 
-        // Capacity Section
-        const finalY = doc.lastAutoTable.finalY + 15;
+        let currentY = doc.lastAutoTable.finalY + 15;
+
+        // KAPAZITÄTSANALYSE (ALT)
         doc.setFont("helvetica", "bold");
-        doc.text("KAPAZITÄTSANALYSE (NEU):", 15, finalY);
+        doc.setFontSize(11);
+        doc.setTextColor(100);
+        doc.text("KAPAZITÄTSANALYSE (ALT):", 15, currentY);
         doc.setFont("helvetica", "normal");
-        doc.text(`- Ersparnis Gesamtzeit: ${document.getElementById('res-saving').innerText}`, 15, finalY + 8);
-        doc.text(`- Realer Zeitbedarf: ${document.getElementById('finish-days').innerText}`, 15, finalY + 14);
-        doc.text(`- ${document.getElementById('finish-details').innerText}`, 15, finalY + 20);
+        doc.setFontSize(10);
+        doc.text(`- Kapazität pro Tag: ${(data.stkShA + data.abendStk).toFixed(1)} Stück`, 15, currentY + 7);
+        doc.text(`- Zeitbedarf: ${data.daysA.toFixed(1)} Arbeitstage`, 15, currentY + 13);
 
-        // Footer line
+        currentY += 28;
+
+        // KAPAZITÄTSANALYSE (NEU)
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(11);
+        doc.setTextColor(0);
+        doc.text("KAPAZITÄTSANALYSE (NEU):", 15, currentY);
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(10);
+        doc.text(`- Kapazität pro Tag: ${(data.stkShN + data.abendStk).toFixed(1)} Stück`, 15, currentY + 7);
+        doc.text(`- Zeitbedarf: ${data.daysN.toFixed(1)} Arbeitstage`, 15, currentY + 13);
+        doc.text(`- Ersparnis: ${(data.daysA - data.daysN).toFixed(1)} Arbeitstage`, 15, currentY + 19);
+
+        // Bottom Line
         doc.setLineWidth(0.2);
-        doc.line(15, finalY + 30, 195, finalY + 30);
+        doc.line(15, 280, 195, 280);
         doc.setFontSize(8);
-        doc.text("CNC PRODUCTION OPTIMIZER - GENERATED REPORT", 105, finalY + 35, {align: 'center'});
+        doc.text("PRODUKTIONSOPTIMIERUNG CNC - SYSTEMBERICHT", 105, 285, {align: 'center'});
 
-        doc.save("CNC_Effizienz_Bericht.pdf");
+        doc.save("Effizienz_Bericht_CNC.pdf");
     }
 
     calc();
