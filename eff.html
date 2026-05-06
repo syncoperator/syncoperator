@@ -19,30 +19,27 @@ body{
   body{padding-bottom:calc(82px + env(safe-area-inset-bottom))}
 }
 
-/* HEADER */
 .hdr{background:#111;position:sticky;top:0;z-index:100}
 .hdr-top{display:flex;align-items:center;justify-content:space-between;padding:13px 16px 10px}
 .logo-name{font-family:‘Arial Black’,Arial,sans-serif;font-size:14px;color:#fff;letter-spacing:.5px}
 .logo-sub{font-family:monospace;font-size:8px;color:rgba(255,255,255,.4);letter-spacing:2px;margin-top:2px}
-.hdr-date{font-family:monospace;font-size:10px;color:rgba(255,255,255,.5)}
 .hdr-stripe{height:4px;background:repeating-linear-gradient(-45deg,#b8390e 0 7px,#111 7px 14px)}
 
-/* FORM */
 .wrap{padding:14px;max-width:560px;margin:0 auto}
 .box{background:#FAF7F0;border:1.5px solid #1c1c1c;box-shadow:3px 3px 0 #1c1c1c;padding:14px 13px 4px;margin-bottom:14px;position:relative}
 .box-lbl{position:absolute;top:-9px;left:11px;background:#F5F1E8;padding:0 7px;font:10px/1 monospace;text-transform:uppercase;letter-spacing:.2em}
 .f{margin-bottom:16px}
 label{display:block;font:10px/1 monospace;text-transform:uppercase;letter-spacing:.2em;color:#7a6f62;margin-bottom:7px}
 label b{color:#b8390e;margin-right:7px}
-input,textarea{
+input,textarea,select{
 width:100%;background:transparent;border:none;border-bottom:1.5px solid #1c1c1c;
 padding:6px 0 8px;font-family:Georgia,serif;font-size:16px;color:#1c1c1c;
 outline:none;resize:none;border-radius:0;-webkit-appearance:none;appearance:none
 }
+input[type=date]{font-family:Georgia,serif;font-size:16px}
 input:focus,textarea:focus{border-bottom-color:#b8390e}
 textarea{min-height:150px;line-height:1.55}
 
-/* BOTTOM BAR */
 .bottom-bar{
 position:fixed;bottom:0;left:0;right:0;background:#111;
 padding:10px 14px 14px;display:flex;gap:10px;z-index:200;
@@ -83,69 +80,94 @@ background:#fff!important;
 font-family:Arial,Helvetica,sans-serif;
 font-size:10pt;
 color:#000;
-line-height:1.45;
-/* DIN 5008: Seitenränder 25mm links, 20mm rechts, 20mm oben, 20mm unten */
-padding:20mm 20mm 20mm 25mm;
-min-height:297mm;
+line-height:1.5;
 width:210mm;
+min-height:297mm;
+position:relative;
 }
 
-/* Absender-Kurzinfo (kleine Zeile über Empfänger) */
+/*
+DIN 5008 Form A — Anschriftfeld exakt für Fensterkuvert:
+Anschriftzone: links 20mm, oben 27mm, Breite 85mm, Höhe 40mm
+Absender-Kurzzeile startet bei ~27mm von oben
+Empfänger bei ~32mm von oben
+Textbeginn: links 25mm, oben 97mm
+*/
+
+/* Kopfbereich rechts (Absender-Block) */
+.pr-absender-block{
+position:absolute;
+top:20mm;
+left:125mm;
+right:10mm;
+font-size:9pt;
+line-height:1.5;
+}
+
+/* Anschriftfeld (Fensterzone) */
+.pr-anschrift-feld{
+position:absolute;
+top:27mm;
+left:20mm;
+width:85mm;
+height:40mm;
+}
+
+/* Absender-Kurzzeile im Fenster */
 .pr-absender-klein{
-font-size:7.5pt;
-color:#555;
-border-bottom:1px solid #aaa;
-padding-bottom:2pt;
-margin-bottom:4pt;
+font-size:7pt;
+color:#000;
+border-bottom:0.3pt solid #000;
+padding-bottom:1.5pt;
+margin-bottom:3pt;
 white-space:nowrap;
 overflow:hidden;
+line-height:1.3;
 }
 
 /* Empfänger-Anschrift */
 .pr-empfaenger{
 font-size:10pt;
-line-height:1.4;
-min-height:30mm;
-margin-bottom:8mm;
+line-height:1.45;
 }
 
-/* Datum rechtsbündig */
+/* Datum rechtsbündig — unter Absender-Block */
 .pr-datum{
+position:absolute;
+top:72mm;
+left:125mm;
+right:10mm;
 text-align:right;
 font-size:10pt;
-margin-bottom:6mm;
 }
 
-/* Betreff */
+/* Textblock ab 97mm */
+.pr-textblock{
+position:absolute;
+top:97mm;
+left:25mm;
+right:20mm;
+}
+
 .pr-betreff{
 font-size:10pt;
 font-weight:bold;
 margin-bottom:5mm;
 }
-
-/* Anrede */
 .pr-anrede{
 margin-bottom:4mm;
 }
-
-/* Brieftext */
 .pr-text{
 margin-bottom:6mm;
 white-space:pre-wrap;
 text-align:justify;
 }
-
-/* Grußformel */
 .pr-gruss{
 margin-bottom:14mm;
 }
-
-/* Unterschrift / Name */
 .pr-name{
 margin-bottom:6mm;
 }
-
-/* Anlagen */
 .pr-anlagen-titel{
 font-size:9pt;
 font-weight:bold;
@@ -157,20 +179,6 @@ padding-left:0;
 list-style:none;
 }
 .pr-anlagen-liste li::before{content:”– “;}
-
-/* Fußzeile */
-.pr-fuss{
-position:fixed;
-bottom:12mm;
-left:25mm;
-right:20mm;
-border-top:0.5pt solid #aaa;
-padding-top:3pt;
-font-size:7.5pt;
-color:#555;
-display:flex;
-justify-content:space-between;
-}
 }
 </style>
 
@@ -181,9 +189,8 @@ justify-content:space-between;
   <div class="hdr-top">
     <div>
       <div class="logo-name">BRIEF.PDF</div>
-      <div class="logo-sub">BRIEFGENERATOR · DIN 5008</div>
+      <div class="logo-sub">BRIEFGENERATOR · DIN 5008 FORM A</div>
     </div>
-    <div class="hdr-date" id="hdrDate"></div>
   </div>
   <div class="hdr-stripe"></div>
 </header>
@@ -195,7 +202,7 @@ justify-content:space-between;
     <div class="f"><label><b>01</b>Name</label><input id="absName" autocomplete="off" placeholder="Erika Mustermann"></div>
     <div class="f"><label><b>02</b>Straße &amp; Hausnummer</label><input id="absStr" autocomplete="off" placeholder="Musterstraße 12"></div>
     <div class="f"><label><b>03</b>PLZ &amp; Ort</label><input id="absOrt" autocomplete="off" placeholder="12345 Berlin"></div>
-    <div class="f"><label><b>04</b>E-Mail / Telefon (optional)</label><input id="absKontakt" autocomplete="off" placeholder="erika.mustermann@gmail.com"></div>
+    <div class="f"><label><b>04</b>E-Mail / Telefon (optional)</label><input id="absKontakt" autocomplete="off" placeholder="erika@gmail.com · 030 123456"></div>
   </div>
 
   <div class="box">
@@ -205,16 +212,17 @@ justify-content:space-between;
     <div class="f"><label><b>07</b>PLZ &amp; Ort</label><input id="empOrt" autocomplete="off" placeholder="20354 Hamburg"></div>
   </div>
 
-  <div class="f"><label><b>08</b>Betreff</label><input id="betreff" autocomplete="off" placeholder="Dies ist ein einfacher und effektiver Brief-Generator"></div>
-  <div class="f"><label><b>09</b>Anrede</label><input id="anrede" autocomplete="off" placeholder="Sehr geehrte Damen und Herren,"></div>
-  <div class="f"><label><b>10</b>Brieftext</label><textarea id="text" rows="10" placeholder="Schreiben Sie hier den Inhalt Ihres Briefes…"></textarea></div>
-  <div class="f"><label><b>11</b>Grußformel</label><input id="gruss" autocomplete="off" placeholder="Mit freundlichen Grüßen"></div>
+  <div class="f"><label><b>08</b>Datum</label><input type="date" id="datum"></div>
+  <div class="f"><label><b>09</b>Betreff</label><input id="betreff" autocomplete="off" placeholder="Betreff des Briefes"></div>
+  <div class="f"><label><b>10</b>Anrede</label><input id="anrede" autocomplete="off" placeholder="Sehr geehrte Damen und Herren,"></div>
+  <div class="f"><label><b>11</b>Brieftext</label><textarea id="text" rows="10" placeholder="Schreiben Sie hier den Inhalt Ihres Briefes…"></textarea></div>
+  <div class="f"><label><b>12</b>Grußformel</label><input id="gruss" autocomplete="off" placeholder="Mit freundlichen Grüßen"></div>
 
   <div class="box">
     <div class="box-lbl">Anlagen (optional)</div>
-    <div class="f"><label><b>12</b>Anlage 1</label><input id="anl1" autocomplete="off" placeholder="Lebenslauf"></div>
-    <div class="f"><label><b>13</b>Anlage 2</label><input id="anl2" autocomplete="off" placeholder="Zeugnisse"></div>
-    <div class="f"><label><b>14</b>Anlage 3</label><input id="anl3" autocomplete="off" placeholder=""></div>
+    <div class="f"><label><b>13</b>Anlage 1</label><input id="anl1" autocomplete="off" placeholder="Lebenslauf"></div>
+    <div class="f"><label><b>14</b>Anlage 2</label><input id="anl2" autocomplete="off" placeholder="Zeugnisse"></div>
+    <div class="f"><label><b>15</b>Anlage 3</label><input id="anl3" autocomplete="off" placeholder=""></div>
   </div>
 
 </div>
@@ -232,61 +240,58 @@ function g(id){return document.getElementById(id)}
 function v(id){return g(id).value.trim()}
 function esc(s){return(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}
 
-// Datum auf Deutsch
-function datumHeute(){
-  var mo=["Januar","Februar","März","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"];
-  var d=new Date();
-  return d.getDate()+". "+mo[d.getMonth()]+" "+d.getFullYear();
+var MO=["Januar","Februar","März","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"];
+
+function datumFormatieren(iso){
+  if(!iso)return"";
+  var p=iso.split("-");
+  return parseInt(p[2])+". "+MO[parseInt(p[1])-1]+" "+p[0];
 }
 
 function doPDF(){
-  var absName=v("absName"), absStr=v("absStr"), absOrt=v("absOrt"), absKontakt=v("absKontakt");
-  var empName=v("empName"), empStr=v("empStr"), empOrt=v("empOrt");
-  var betreff=v("betreff"), anrede=v("anrede");
-  var text=v("text"), gruss=v("gruss");
-  var anl1=v("anl1"), anl2=v("anl2"), anl3=v("anl3");
-  var datum=datumHeute();
+  var absName=v("absName"),absStr=v("absStr"),absOrt=v("absOrt"),absKontakt=v("absKontakt");
+  var empName=v("empName"),empStr=v("empStr"),empOrt=v("empOrt");
+  var datum=datumFormatieren(v("datum"));
+  var betreff=v("betreff"),anrede=v("anrede");
+  var text=v("text"),gruss=v("gruss");
+  var anl1=v("anl1"),anl2=v("anl2"),anl3=v("anl3");
 
   var h="";
 
-  // Absender-Kurzzeile über Empfänger (DIN 5008)
+  // Absender-Block rechts oben
+  var absZeilen=[absName,absStr,absOrt,absKontakt].filter(Boolean);
+  if(absZeilen.length){
+    h+='<div class="pr-absender-block">'+absZeilen.map(esc).join("<br>")+'</div>';
+  }
+
+  // Anschriftfeld (Fensterzone DIN 5008 Form A)
+  h+='<div class="pr-anschrift-feld">';
+  // Absender-Kurzzeile
   var absKurz=[absName,absStr,absOrt].filter(Boolean).join(", ");
   if(absKurz) h+='<div class="pr-absender-klein">'+esc(absKurz)+'</div>';
-
-  // Empfänger-Anschrift
+  // Empfänger
   var empZeilen=[empName,empStr,empOrt].filter(Boolean);
   if(empZeilen.length)
     h+='<div class="pr-empfaenger">'+empZeilen.map(esc).join("<br>")+'</div>';
+  h+='</div>';
 
   // Datum
-  h+='<div class="pr-datum">'+datum+'</div>';
+  if(datum) h+='<div class="pr-datum">'+esc(datum)+'</div>';
 
-  // Betreff
+  // Textblock
+  h+='<div class="pr-textblock">';
   if(betreff) h+='<div class="pr-betreff">'+esc(betreff)+'</div>';
-
-  // Anrede
-  if(anrede) h+='<div class="pr-anrede">'+esc(anrede)+'</div>';
-
-  // Text
-  if(text) h+='<div class="pr-text">'+esc(text)+'</div>';
-
-  // Grußformel
-  if(gruss) h+='<div class="pr-gruss">'+esc(gruss)+'</div>';
-
-  // Name (Unterschrift)
+  if(anrede)  h+='<div class="pr-anrede">'+esc(anrede)+'</div>';
+  if(text)    h+='<div class="pr-text">'+esc(text)+'</div>';
+  if(gruss)   h+='<div class="pr-gruss">'+esc(gruss)+'</div>';
   if(absName) h+='<div class="pr-name">'+esc(absName)+'</div>';
 
-  // Anlagen
   var anlagen=[anl1,anl2,anl3].filter(Boolean);
   if(anlagen.length){
     h+='<div class="pr-anlagen-titel">Anlagen:</div>';
     h+='<ul class="pr-anlagen-liste">'+anlagen.map(function(a){return"<li>"+esc(a)+"</li>"}).join("")+'</ul>';
   }
-
-  // Fußzeile
-  var fussLinks=[absName,absStr,absOrt].filter(Boolean).join(", ");
-  var fussRechts=[absKontakt].filter(Boolean).join(" · ");
-  h+='<div class="pr-fuss"><span>'+esc(fussLinks)+'</span><span>'+esc(fussRechts)+'</span></div>';
+  h+='</div>';
 
   g("print-doc").innerHTML=h;
   window.print();
@@ -294,15 +299,17 @@ function doPDF(){
 
 function doReset(){
   ["absName","absStr","absOrt","absKontakt","empName","empStr","empOrt",
-   "betreff","anrede","text","gruss","anl1","anl2","anl3"].forEach(function(id){g(id).value=""});
-  var toast=g("toast");
-  toast.textContent="✓ ZURÜCKGESETZT";
-  toast.classList.add("on");
-  setTimeout(function(){toast.classList.remove("on")},1800);
+   "datum","betreff","anrede","text","gruss","anl1","anl2","anl3"]
+  .forEach(function(id){g(id).value=""});
+  g("datum").value=new Date().toISOString().slice(0,10);
+  var t=g("toast");
+  t.textContent="✓ ZURÜCKGESETZT";
+  t.classList.add("on");
+  setTimeout(function(){t.classList.remove("on")},1800);
 }
 
-// Datum im Header
-g("hdrDate").textContent=datumHeute();
+// Heute als Standard-Datum
+g("datum").value=new Date().toISOString().slice(0,10);
 </script>
 
 </body>
