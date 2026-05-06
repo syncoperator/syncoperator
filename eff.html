@@ -1,182 +1,420 @@
 <!DOCTYPE html>
-<html lang="de">
+
+<html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Efficiency Pro v4.2</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
-    <style>
-        :root {
-            --bg: #f4f4f7; --surface: #ffffff; --accent: #000000;
-            --text-main: #000000; --text-sec: #444446;
-        }
-
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body { margin: 0; background: var(--bg); font-family: -apple-system, sans-serif; color: var(--text-main); }
-        
-        .container { max-width: 600px; margin: 0 auto; padding: 20px; padding-bottom: 180px; }
-        
-        header { margin-bottom: 25px; border-bottom: 4px solid var(--accent); padding-bottom: 10px; }
-        header h1 { font-size: 24px; font-weight: 900; margin: 0; text-transform: uppercase; }
-
-        .card { 
-            background: var(--surface); border: 1.5px solid #d1d1d6; 
-            padding: 20px; margin-bottom: 20px;
-        }
-
-        .tool-nr { font-size: 10px; color: var(--text-sec); text-transform: uppercase; display: block; margin-bottom: 2px; }
-        .tool-desc { font-size: 16px; font-weight: 800; text-transform: uppercase; margin-bottom: 15px; display: block; border-bottom: 1px solid #eee; padding-bottom: 5px; }
-
-        .input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-        .full { grid-column: span 2; }
-        
-        label { display: block; font-size: 10px; font-weight: 700; margin-bottom: 5px; color: var(--text-sec); text-transform: uppercase; }
-        input { 
-            width: 100%; padding: 12px; border: 1.5px solid #d1d1d6; 
-            font-size: 16px; font-weight: 700; background: #fff; outline: none; border-radius: 0;
-        }
-
-        .money-banner { background: var(--accent); color: white; padding: 25px; margin-bottom: 20px; text-align: center; }
-        .money-banner span { display: block; font-size: 32px; font-weight: 900; }
-
-        .footer-nav { 
-            position: fixed; bottom: 0; left: 0; right: 0; 
-            background: white; border-top: 4px solid var(--accent); 
-            display: flex; padding: 25px 20px; gap: 15px; z-index: 1000;
-        }
-        .btn { flex: 1; height: 60px; border: none; font-weight: 900; text-transform: uppercase; cursor: pointer; }
-        .btn-black { background: var(--accent); color: white; }
-        .btn-outline { background: white; border: 2.5px solid var(--accent); color: var(--accent); }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Letter → PDF</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  :root {
+    --ink: #1a1a1a;
+    --paper: #f4f1ea;
+    --line: #2a2a2a;
+    --accent: #b8390e;
+    --muted: #6b6155;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Iowan Old Style', 'Palatino Linotype', 'Book Antiqua', Palatino, Georgia, serif;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+  body {
+    background-image:
+      radial-gradient(circle at 20% 10%, rgba(184, 57, 14, 0.04), transparent 40%),
+      radial-gradient(circle at 80% 90%, rgba(26, 26, 26, 0.05), transparent 40%);
+    padding: 24px 18px 60px;
+  }
+  .stage {
+    max-width: 560px;
+    margin: 0 auto;
+  }
+  header {
+    border-bottom: 2px solid var(--line);
+    padding-bottom: 18px;
+    margin-bottom: 28px;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+  }
+  .mark {
+    font-family: 'Didot', 'Bodoni 72', 'Bodoni MT', Didot, serif;
+    font-size: 32px;
+    font-weight: 400;
+    letter-spacing: -0.02em;
+    line-height: 1;
+  }
+  .mark em {
+    font-style: italic;
+    color: var(--accent);
+  }
+  .meta {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: var(--muted);
+  }
+  .field {
+    margin-bottom: 22px;
+  }
+  label {
+    display: block;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.22em;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+  label .num {
+    color: var(--accent);
+    margin-right: 8px;
+    font-weight: 700;
+  }
+  input, textarea {
+    width: 100%;
+    background: transparent;
+    border: none;
+    border-bottom: 1.5px solid var(--line);
+    padding: 8px 0 10px;
+    font-family: inherit;
+    font-size: 17px;
+    color: var(--ink);
+    outline: none;
+    resize: none;
+    border-radius: 0;
+    -webkit-appearance: none;
+  }
+  input:focus, textarea:focus {
+    border-bottom-color: var(--accent);
+  }
+  textarea {
+    min-height: 180px;
+    line-height: 1.5;
+  }
+  .row { display: flex; gap: 14px; }
+  .row .field { flex: 1; }
+  .group {
+    border: 1.5px solid var(--line);
+    padding: 16px 14px 4px;
+    margin-bottom: 24px;
+    position: relative;
+  }
+  .group-title {
+    position: absolute;
+    top: -9px;
+    left: 12px;
+    background: var(--paper);
+    padding: 0 8px;
+    font-family: 'Courier New', monospace;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.22em;
+    color: var(--ink);
+  }
+  .actions {
+    margin-top: 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  button {
+    width: 100%;
+    padding: 18px;
+    font-family: inherit;
+    font-size: 17px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    border-radius: 0;
+    -webkit-appearance: none;
+    transition: transform 0.1s ease;
+  }
+  button:active { transform: translateY(1px); }
+  .btn-primary {
+    background: var(--ink);
+    color: var(--paper);
+    letter-spacing: 0.04em;
+  }
+  .btn-primary::before {
+    content: '→ ';
+    color: var(--accent);
+  }
+  .btn-secondary {
+    background: transparent;
+    color: var(--ink);
+    border: 1.5px solid var(--line);
+    font-size: 14px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  footer {
+    margin-top: 48px;
+    text-align: center;
+    font-family: 'Courier New', monospace;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    color: var(--muted);
+  }
+  footer span { color: var(--accent); }
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: var(--ink);
+    color: var(--paper);
+    padding: 14px 22px;
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    transition: transform 0.3s ease;
+    z-index: 100;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+</style>
 </head>
 <body>
+<div class="stage">
+  <header>
+    <div class="mark">Letter<em>.</em>pdf</div>
+    <div class="meta">№ 001</div>
+  </header>
 
-<div class="container">
-    <header><h1>Effizienz-Bericht</h1></header>
-
-    <section class="card">
-        <span class="tool-nr">T-01</span><span class="tool-desc">Bauteil-Daten</span>
-        <div class="input-grid">
-            <div class="field full"><label>Benennung</label><input type="text" id="pName" value="Gehäuse"></div>
-            <div class="field"><label>Zeichnungs-NR</label><input type="text" id="pNum" value="234446"></div>
-            <div class="field"><label>Menge (Stk)</label><input type="number" id="stk" value="290" oninput="calc()"></div>
-        </div>
-    </section>
-
-    <section class="card">
-        <span class="tool-nr">T-02</span><span class="tool-desc">Prozess-Parameter</span>
-        <div class="input-grid">
-            <div class="field"><label>ALT (Min)</label><input type="number" id="am" value="5.50" step="0.01" oninput="calc()"></div>
-            <div class="field"><label>NEU (Min)</label><input type="number" id="nm" value="4.25" step="0.01" oninput="calc()"></div>
-            <div class="field"><label>Abend-Prod (Stk)</label><input type="number" id="abend" value="30" oninput="calc()"></div>
-            <div class="field"><label>Schicht (h)</label><input type="number" id="sh" value="7.5" oninput="calc()"></div>
-            <div class="field full"><label>Maschinensatz (€/h)</label><input type="number" id="rate" value="85" oninput="calc()"></div>
-        </div>
-    </section>
-
-    <div class="money-banner">
-        <small>Gesamtersparnis (Min)</small>
-        <span id="res-min">0 MIN</span>
-        <small style="margin-top: 10px; display: block;">Finanziell</small>
-        <div id="res-eur" style="font-size:20px; font-weight: 900;">0,00 €</div>
+  <div class="group">
+    <div class="group-title">From / Отправитель</div>
+    <div class="field">
+      <label><span class="num">01</span>Имя</label>
+      <input id="fromName" type="text" placeholder="Иван Петров" autocomplete="off">
     </div>
+    <div class="field">
+      <label><span class="num">02</span>Адрес</label>
+      <textarea id="fromAddr" rows="3" placeholder="ул. Ленина, 10, кв. 5&#10;Москва, 101000&#10;Россия"></textarea>
+    </div>
+  </div>
+
+  <div class="group">
+    <div class="group-title">To / Получатель</div>
+    <div class="field">
+      <label><span class="num">03</span>Имя</label>
+      <input id="toName" type="text" placeholder="Анна Сидорова" autocomplete="off">
+    </div>
+    <div class="field">
+      <label><span class="num">04</span>Адрес</label>
+      <textarea id="toAddr" rows="3" placeholder="пр. Невский, 25&#10;Санкт-Петербург, 191000&#10;Россия"></textarea>
+    </div>
+  </div>
+
+  <div class="field">
+    <label><span class="num">05</span>Дата</label>
+    <input id="date" type="date">
+  </div>
+
+  <div class="field">
+    <label><span class="num">06</span>Тема</label>
+    <input id="subject" type="text" placeholder="Касательно нашего соглашения" autocomplete="off">
+  </div>
+
+  <div class="field">
+    <label><span class="num">07</span>Приветствие</label>
+    <input id="greeting" type="text" placeholder="Уважаемая Анна," autocomplete="off">
+  </div>
+
+  <div class="field">
+    <label><span class="num">08</span>Текст письма</label>
+    <textarea id="body" rows="10" placeholder="Пишите здесь основной текст письма..."></textarea>
+  </div>
+
+  <div class="field">
+    <label><span class="num">09</span>Подпись</label>
+    <input id="closing" type="text" placeholder="С уважением," autocomplete="off">
+  </div>
+
+  <div class="actions">
+    <button class="btn-primary" onclick="makePDF()">Создать PDF</button>
+    <button class="btn-secondary" onclick="clearAll()">Очистить</button>
+  </div>
+
+  <footer>
+    Made on a phone <span>✦</span> Print-ready A4
+  </footer>
 </div>
 
-<div class="footer-nav">
-    <button class="btn btn-outline" onclick="alert('OK')">Save</button>
-    <button class="btn btn-black" onclick="generatePDF()">PDF Bericht</button>
-</div>
+<div class="toast" id="toast">PDF готов</div>
 
 <script>
-    function calc() {
-        const stk = parseFloat(document.getElementById('stk').value) || 0;
-        const abend = parseFloat(document.getElementById('abend').value) || 0;
-        const shH = parseFloat(document.getElementById('sh').value) || 0;
-        const rate = parseFloat(document.getElementById('rate').value) || 0;
-        const tA = parseFloat(document.getElementById('am').value) || 0;
-        const tN = parseFloat(document.getElementById('nm').value) || 0;
+// Сохранение полей в памяти браузера
+const fields = ['fromName','fromAddr','toName','toAddr','date','subject','greeting','body','closing'];
+fields.forEach(id => {
+  const el = document.getElementById(id);
+  const saved = sessionStorage.getItem('lt_' + id);
+  if (saved) el.value = saved;
+  el.addEventListener('input', () => sessionStorage.setItem('lt_' + id, el.value));
+});
 
-        const shMin = shH * 60;
-        const shA = tA > 0 ? shMin / tA : 0;
-        const shN = tN > 0 ? shMin / tN : 0;
-        const capDayA = shA + abend;
-        const capDayN = shN + abend;
-        const workDaysA = capDayA > 0 ? stk / capDayA : 0;
-        const workDaysN = capDayN > 0 ? stk / capDayN : 0;
-        const totalMinA = stk * tA;
-        const totalMinN = stk * tN;
-        const diffMin = totalMinA - totalMinN;
-        const diffEur = (diffMin / 60) * rate;
+// Дата по умолчанию — сегодня
+if (!document.getElementById('date').value) {
+  const d = new Date();
+  document.getElementById('date').value = d.toISOString().slice(0,10);
+}
 
-        document.getElementById('res-min').innerText = Math.round(diffMin) + " MIN";
-        document.getElementById('res-eur').innerText = diffEur.toLocaleString('de-DE', {style:'currency', currency:'EUR'});
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
 
-        window.pdfData = { stk, tA, tN, abend, shH, rate, shA, shN, capDayA, capDayN, workDaysA, workDaysN, totalMinA, totalMinN, diffMin, diffEur };
+function clearAll() {
+  if (!confirm('Очистить все поля?')) return;
+  fields.forEach(id => {
+    document.getElementById(id).value = '';
+    sessionStorage.removeItem('lt_' + id);
+  });
+  const d = new Date();
+  document.getElementById('date').value = d.toISOString().slice(0,10);
+}
+
+function formatDate(iso) {
+  if (!iso) return '';
+  const months = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
+  const [y,m,d] = iso.split('-');
+  return `${parseInt(d)} ${months[parseInt(m)-1]} ${y} г.`;
+}
+
+async function makePDF() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+
+  // Подгружаем шрифт с поддержкой кириллицы
+  try {
+    const fontUrl = 'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/ptserif/PTSerif-Regular.ttf';
+    const fontBoldUrl = 'https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/ptserif/PTSerif-Bold.ttf';
+    const [reg, bold] = await Promise.all([
+      fetch(fontUrl).then(r => r.arrayBuffer()),
+      fetch(fontBoldUrl).then(r => r.arrayBuffer())
+    ]);
+    const toBase64 = buf => {
+      let bin = '';
+      const bytes = new Uint8Array(buf);
+      for (let i = 0; i < bytes.byteLength; i++) bin += String.fromCharCode(bytes[i]);
+      return btoa(bin);
+    };
+    doc.addFileToVFS('PTSerif.ttf', toBase64(reg));
+    doc.addFont('PTSerif.ttf', 'PTSerif', 'normal');
+    doc.addFileToVFS('PTSerif-Bold.ttf', toBase64(bold));
+    doc.addFont('PTSerif-Bold.ttf', 'PTSerif', 'bold');
+    doc.setFont('PTSerif', 'normal');
+  } catch (e) {
+    alert('Не удалось загрузить шрифт. Проверь интернет.');
+    return;
+  }
+
+  const v = id => document.getElementById(id).value.trim();
+  const fromName = v('fromName');
+  const fromAddr = v('fromAddr');
+  const toName   = v('toName');
+  const toAddr   = v('toAddr');
+  const date     = formatDate(v('date'));
+  const subject  = v('subject');
+  const greeting = v('greeting');
+  const body     = v('body');
+  const closing  = v('closing');
+
+  const margin = 25;
+  const pageW = 210;
+  const pageH = 297;
+  const maxW = pageW - margin * 2;
+  let y = margin;
+
+  // Отправитель — справа сверху
+  doc.setFontSize(10);
+  doc.setFont('PTSerif', 'normal');
+  if (fromName || fromAddr) {
+    const fromLines = [fromName, ...fromAddr.split('\n')].filter(Boolean);
+    fromLines.forEach((line, i) => {
+      const w = doc.getTextWidth(line);
+      doc.text(line, pageW - margin - w, y + i * 5);
+    });
+    y += fromLines.length * 5 + 10;
+  } else {
+    y += 10;
+  }
+
+  // Получатель — слева
+  if (toName || toAddr) {
+    doc.setFontSize(11);
+    const toLines = [toName, ...toAddr.split('\n')].filter(Boolean);
+    toLines.forEach((line, i) => {
+      doc.text(line, margin, y + i * 5.5);
+    });
+    y += toLines.length * 5.5 + 10;
+  }
+
+  // Дата
+  if (date) {
+    doc.setFontSize(11);
+    const w = doc.getTextWidth(date);
+    doc.text(date, pageW - margin - w, y);
+    y += 12;
+  }
+
+  // Тема
+  if (subject) {
+    doc.setFont('PTSerif', 'bold');
+    doc.setFontSize(12);
+    const subjLines = doc.splitTextToSize('Тема: ' + subject, maxW);
+    doc.text(subjLines, margin, y);
+    y += subjLines.length * 6 + 6;
+    doc.setFont('PTSerif', 'normal');
+  }
+
+  // Приветствие
+  if (greeting) {
+    doc.setFontSize(12);
+    doc.text(greeting, margin, y);
+    y += 8;
+  }
+
+  // Текст
+  if (body) {
+    doc.setFontSize(12);
+    const paragraphs = body.split('\n');
+    for (const p of paragraphs) {
+      if (!p.trim()) { y += 4; continue; }
+      const lines = doc.splitTextToSize(p, maxW);
+      for (const line of lines) {
+        if (y > pageH - margin - 30) {
+          doc.addPage();
+          y = margin;
+        }
+        doc.text(line, margin, y);
+        y += 6.5;
+      }
+      y += 3;
     }
+    y += 6;
+  }
 
-    function generatePDF() {
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF();
-        const d = window.pdfData;
+  // Подпись
+  if (closing || fromName) {
+    if (y > pageH - margin - 20) { doc.addPage(); y = margin; }
+    doc.setFontSize(12);
+    if (closing) { doc.text(closing, margin, y); y += 8; }
+    if (fromName) { doc.text(fromName, margin, y); }
+  }
 
-        // Top Border
-        doc.setDrawColor(0); doc.setLineWidth(1.2);
-        doc.line(15, 25, 195, 25);
-        
-        doc.setFont("helvetica", "bold"); doc.setFontSize(22);
-        doc.text("EFFIZIENZ-BERICHT", 15, 20);
-
-        doc.setFontSize(9);
-        doc.text(`BAUTEIL: ${document.getElementById('pName').value} I NR: ${document.getElementById('pNum').value}`, 15, 32);
-        doc.setFont("helvetica", "normal");
-        doc.text(`DATUM: ${new Date().toLocaleDateString('de-DE')} I MENGE: ${d.stk} STK`, 15, 37);
-
-        doc.autoTable({
-            startY: 45,
-            head: [['PARAMETER', 'STATUS: ALT', 'STATUS: NEU']],
-            body: [
-                ['Zeit pro Stück (Min)', d.tA.toFixed(2), d.tN.toFixed(2)],
-                ['Stückzahl pro Schicht', d.shA.toFixed(1), d.shN.toFixed(1)],
-                ['Abend-Produktion (Stk)', d.abend, d.abend],
-                ['Produktionszeit (Std)', (d.totalMinA/60).toFixed(1) + ' h', (d.totalMinN/60).toFixed(1) + ' h'],
-                ['Schichten', d.workDaysA.toFixed(1), d.workDaysN.toFixed(1)],
-                ['Maschinensatz', d.rate.toFixed(2) + ' €/h', d.rate.toFixed(2) + ' €/h']
-            ],
-            theme: 'striped',
-            headStyles: { fillColor: [0, 0, 0] },
-            styles: { fontSize: 9, cellPadding: 3 }
-        });
-
-        let y = doc.lastAutoTable.finalY + 12;
-        const addBlock = (title, cap, days, min, curY) => {
-            doc.setFont("helvetica", "bold"); doc.setFontSize(11);
-            doc.text(title, 15, curY);
-            doc.setFont("helvetica", "normal"); doc.setFontSize(10);
-            doc.text(`  - Kapazität pro Tag: ${cap.toFixed(1)} Stück`, 15, curY+7);
-            doc.text(`  - Zeitbedarf: ${days.toFixed(1)} Arbeitstage`, 15, curY+13);
-            doc.text(`  - Gesamtminuten: ${Math.round(min)} min`, 15, curY+19);
-            return curY + 28;
-        };
-
-        y = addBlock("KAPAZITÄTSANALYSE (ALT):", d.capDayA, d.workDaysA, d.totalMinA, y);
-        y = addBlock("KAPAZITÄTSANALYSE (NEU):", d.capDayN, d.workDaysN, d.totalMinN, y);
-
-        doc.setLineWidth(0.5); doc.line(15, y, 110, y);
-        doc.setFontSize(14); doc.setFont("helvetica", "bold");
-        doc.text(`ERSPARNIS: ${Math.round(d.diffMin)} MIN`, 15, y + 10);
-        doc.text(`FINANZIELLE ERSPARNIS: ${d.diffEur.toFixed(2)} €`, 15, y + 18);
-
-        // Bottom Border
-        // Bottom Border (Черная и жирная)
-doc.setDrawColor(0, 0, 0); // Принудительно черный
-doc.setLineWidth(1.2);     // Толщина как у заголовка
-doc.line(15, 280, 195, 280); 
-
-        
-        doc.save(`Report.pdf`);
-    }
-    calc();
+  const fname = (toName ? 'letter-to-' + toName.replace(/\s+/g,'_') : 'letter') + '.pdf';
+  doc.save(fname);
+  showToast('PDF сохранён');
+}
 </script>
+
 </body>
 </html>
