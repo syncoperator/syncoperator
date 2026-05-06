@@ -99,9 +99,9 @@ Textbeginn: links 25mm, oben 97mm
 position:absolute;
 top:20mm;
 left:125mm;
-right:10mm;
-font-size:9pt;
-line-height:1.5;
+right:20mm;
+font-size:10pt;
+line-height:1.6;
 }
 
 /* Anschriftfeld (Fensterzone) */
@@ -299,19 +299,42 @@ function doPDF(){
   window.print();
 }
 
+var FIELDS=["absName","absStr","absOrt","absKontakt","empName","empStr","empOrt",
+            "datum","betreff","anrede","text","gruss","anl1","anl2","anl3"];
+
+function setupSave(){
+  FIELDS.forEach(function(id){
+    var el=g(id);
+    function save(){localStorage.setItem("brief_"+id,el.value);}
+    el.addEventListener("input",save);
+    el.addEventListener("change",save);
+  });
+}
+
+function laden(){
+  FIELDS.forEach(function(id){
+    var val=localStorage.getItem("brief_"+id);
+    if(val!==null) g(id).value=val;
+  });
+  if(!g("datum").value)
+    g("datum").value=new Date().toISOString().slice(0,10);
+}
+
 function doReset(){
-  ["absName","absStr","absOrt","absKontakt","empName","empStr","empOrt",
-   "datum","betreff","anrede","text","gruss","anl1","anl2","anl3"]
-  .forEach(function(id){g(id).value=""});
+  FIELDS.forEach(function(id){
+    g(id).value="";
+    localStorage.removeItem("brief_"+id);
+  });
   g("datum").value=new Date().toISOString().slice(0,10);
+  localStorage.setItem("brief_datum",g("datum").value);
   var t=g("toast");
   t.textContent="✓ ZURÜCKGESETZT";
   t.classList.add("on");
   setTimeout(function(){t.classList.remove("on")},1800);
 }
 
-// Heute als Standard-Datum
-g("datum").value=new Date().toISOString().slice(0,10);
+laden();
+setupSave();
 </script>
 
 </body>
