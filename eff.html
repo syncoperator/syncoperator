@@ -2,1421 +2,894 @@
 
 <html lang="de">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<meta name="theme-color" content="#1a1a1a" />
-<meta name="apple-mobile-web-app-capable" content="yes" />
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-<meta name="robots" content="noindex" />
-<title>Brief Generator – Mobil</title>
-
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+<meta name="theme-color" content="#1a1a1a"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="robots" content="noindex"/>
+<title>Brief Generator</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fira+Sans:ital,wght@0,300;0,400;0,500;0,700;1,400;1,500&family=Playfair+Display:ital,wght@0,700;0,900;1,700&display=swap" rel="stylesheet">
-
+<link href="https://fonts.googleapis.com/css2?family=Fira+Sans:ital,wght@0,300;0,400;0,500;0,700;1,400&family=Playfair+Display:ital,wght@1,700&display=swap" rel="stylesheet">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='18' fill='%231a1a1a'/%3E%3Cpath d='M22 32h56v36H22z' fill='none' stroke='%23fff' stroke-width='4'/%3E%3Cpath d='M22 32l28 22 28-22' fill='none' stroke='%23fff' stroke-width='4'/%3E%3C/svg%3E">
-
 <style>
-/**
- * Brief Generator – Mobile Edition (Single File)
- * Original print layout © 2016 Kim-Christian Meyer (GPL-3.0+)
- * Mobile rewrite preserves baseline grid (7pt) and DIN lang window position.
- */
-
+/* === TOKENS === */
 :root {
-  --ink: #1a1a1a;
+  --ink:      #1a1a1a;
   --ink-soft: #4a4a4a;
-  --ink-mute: #8a8a8a;
-  --paper: #ffffff;
-  --bg: #f4f3ef;
-  --bg-card: #ffffff;
-  --line: #e5e2dc;
-  --line-strong: #d6d2c8;
-  --accent: #1a1a1a;
-  --accent-ink: #ffffff;
-  --danger: #c1432f;
-  --shadow-sm: 0 1px 2px rgba(20,18,14,.04), 0 2px 6px rgba(20,18,14,.04);
-  --shadow-md: 0 4px 12px rgba(20,18,14,.08), 0 12px 32px rgba(20,18,14,.06);
-  --shadow-lg: 0 10px 40px rgba(20,18,14,.12), 0 30px 80px rgba(20,18,14,.08);
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 18px;
-  --display: 'Playfair Display', Georgia, serif;
-  --body: 'Fira Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --ink-mute: #9a9a9a;
+  --paper:    #fff;
+  --bg:       #f4f3ef;
+  --card:     #fff;
+  --bdr:      #e5e2dc;
+  --bdr2:     #d0ccc4;
+  --danger:   #c1432f;
+  --r:        12px;
+  --r-lg:     18px;
+  --font:     'Fira Sans', -apple-system, sans-serif;
+  --serif:    'Playfair Display', Georgia, serif;
 }
-
-* { margin:0; padding:0; box-sizing:border-box; }
-
-html, body {
-  width: 100%;
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  font-family: var(--font);
   background: var(--bg);
   color: var(--ink);
-  font-family: var(--body);
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-rendering: optimizeLegibility;
-}
-
-body {
-  min-height: 100vh;
-  min-height: 100dvh;
   overflow-x: hidden;
+  min-height: 100dvh;
 }
-
-button { font-family: inherit; cursor: pointer; border: 0; background: none; color: inherit; }
+button { font-family: inherit; cursor: pointer; border: none; background: none; color: inherit; -webkit-tap-highlight-color: transparent; }
 input, textarea { font-family: inherit; }
 
-/* === MOBILE EDITOR === */
+/* === EDITOR === */
 .editor {
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
-  min-height: 100dvh;
-  padding-bottom: env(safe-area-inset-bottom);
+display: flex;
+flex-direction: column;
+min-height: 100dvh;
+max-width: 680px;
+margin: 0 auto;
 }
 
-.editor-header {
-  position: sticky;
-  top: 0;
-  z-index: 30;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 14px 18px;
-  padding-top: max(14px, env(safe-area-inset-top));
-  background: rgba(244,243,239,.92);
-  backdrop-filter: saturate(180%) blur(14px);
-  -webkit-backdrop-filter: saturate(180%) blur(14px);
-  border-bottom: 1px solid var(--line);
+/* Header */
+.hdr {
+position: sticky; top: 0; z-index: 20;
+display: flex; align-items: center; justify-content: space-between;
+padding: max(14px, env(safe-area-inset-top)) 16px 14px;
+background: rgba(244,243,239,.95);
+backdrop-filter: blur(16px) saturate(180%);
+-webkit-backdrop-filter: blur(16px) saturate(180%);
+border-bottom: 1px solid var(–bdr);
 }
-
-.brand {
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
-}
-
-.brand-mark {
-  font-size: 20px;
-  line-height: 1;
-  transform: translateY(2px);
-}
-
+.brand { display: flex; align-items: center; gap: 9px; }
+.brand-icon { font-size: 18px; opacity: .65; }
 .brand-name {
-  font-family: var(--display);
-  font-weight: 900;
-  font-size: 22px;
-  letter-spacing: -.01em;
-  font-style: italic;
+font-family: var(–serif);
+font-style: italic; font-weight: 700;
+font-size: 22px; letter-spacing: -.01em; line-height: 1;
 }
-
-.btn-icon {
-  width: 40px;
-  height: 40px;
-  display: grid;
-  place-items: center;
-  border-radius: 10px;
-  color: var(--ink);
-  transition: background .15s ease;
+.hdr-btn {
+width: 38px; height: 38px;
+display: grid; place-items: center;
+border-radius: 10px; transition: background .15s;
 }
-.btn-icon:hover, .btn-icon:active { background: rgba(0,0,0,.06); }
+.hdr-btn:hover { background: rgba(0,0,0,.06); }
 
+/* === DRAFTS BAR — scrollbar hidden, NO iOS indicator === */
 .drafts-bar {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 18px 4px;
-  overflow-x: auto;
-  scrollbar-width: none;
-  -webkit-overflow-scrolling: touch;
+display: flex; align-items: center; gap: 8px;
+padding: 10px 16px;
+overflow-x: auto; overflow-y: visible;
+scrollbar-width: none; -ms-overflow-style: none;
 }
 .drafts-bar::-webkit-scrollbar { display: none; }
 
-.drafts-list {
-  display: flex;
-  gap: 8px;
-  flex-wrap: nowrap;
+.chip-new {
+flex-shrink: 0;
+display: inline-flex; align-items: center; gap: 6px;
+padding: 7px 14px;
+border: 1px dashed var(–bdr2); border-radius: 999px;
+font-size: 13px; font-weight: 500; color: var(–ink-soft);
+white-space: nowrap; transition: background .15s;
 }
+.chip-new:hover { background: var(–card); }
 
-.draft-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 6px 8px 14px;
-  background: var(--bg-card);
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--ink-soft);
-  white-space: nowrap;
-  transition: all .15s ease;
-  flex-shrink: 0;
-}
-.draft-chip:hover { border-color: var(--line-strong); color: var(--ink); }
-.draft-chip.is-active {
-  background: var(--ink);
-  color: var(--accent-ink);
-  border-color: var(--ink);
-}
-.draft-chip-name {
-  max-width: 140px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.draft-chip-x {
-  display: grid;
-  place-items: center;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  margin-left: 2px;
-  color: inherit;
-  opacity: .55;
-  transition: opacity .15s ease, background .15s ease;
-}
-.draft-chip-x:hover, .draft-chip-x:active {
-  opacity: 1;
-  background: rgba(255,255,255,.15);
-}
-.draft-chip:not(.is-active) .draft-chip-x:hover {
-  background: rgba(0,0,0,.08);
-}
-.new-chip {
-  background: transparent;
-  border: 1px dashed var(--line-strong);
-  color: var(--ink-soft);
-  padding: 8px 14px;
-}
-.new-chip:hover { background: var(--bg-card); }
+.drafts-list { display: flex; gap: 8px; flex-wrap: nowrap; }
 
+.chip {
+flex-shrink: 0;
+display: inline-flex; align-items: center;
+border: 1px solid var(–bdr); border-radius: 999px;
+font-size: 13px; font-weight: 500; color: var(–ink-soft);
+white-space: nowrap; background: var(–card);
+overflow: hidden; transition: all .15s;
+}
+.chip.active { background: var(–ink); color: #fff; border-color: var(–ink); }
+
+.chip-label {
+padding: 7px 8px 7px 14px;
+max-width: 140px; overflow: hidden; text-overflow: ellipsis;
+cursor: pointer;
+}
+.chip-x {
+display: grid; place-items: center;
+width: 28px; height: 30px; flex-shrink: 0;
+opacity: .4; transition: opacity .15s, background .15s; cursor: pointer;
+}
+.chip-x:hover { opacity: 1; background: rgba(0,0,0,.07); }
+.chip.active .chip-x:hover { background: rgba(255,255,255,.12); }
+
+/* === FORM === */
 .form {
-  flex: 1;
-  padding: 8px 18px 24px;
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
+flex: 1;
+display: flex; flex-direction: column; gap: 14px;
+padding: 8px 16px calc(80px + env(safe-area-inset-bottom));
+width: 100%;
 }
+.card {
+background: var(–card); border: 1px solid var(–bdr);
+border-radius: var(–r-lg); padding: 18px 16px;
+box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 2px 8px rgba(0,0,0,.03);
+width: 100%; overflow: hidden;
+}
+.card-hd {
+display: flex; align-items: baseline; gap: 10px;
+padding-bottom: 12px; margin-bottom: 14px;
+border-bottom: 1px solid var(–bdr);
+}
+.card-num { font-family: var(–serif); font-style: italic; font-size: 13px; color: var(–ink-mute); }
+.card-title { font-size: 11.5px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; }
 
-.form-section {
-  background: var(--bg-card);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-lg);
-  padding: 20px 18px;
-  box-shadow: var(--shadow-sm);
-}
-
-.section-label {
-  display: flex;
-  align-items: baseline;
-  gap: 12px;
-  margin-bottom: 16px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid var(--line);
-}
-
-.section-num {
-  font-family: var(--display);
-  font-style: italic;
-  font-size: 14px;
-  color: var(--ink-mute);
-}
-
-.section-label h2 {
-  font-size: 15px;
-  font-weight: 500;
-  letter-spacing: .02em;
-  text-transform: uppercase;
-  color: var(--ink);
-}
-
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-bottom: 14px;
-}
+.field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 12px; width: 100%; }
 .field:last-child { margin-bottom: 0; }
+.lbl { font-size: 11.5px; font-weight: 600; color: var(–ink-soft); letter-spacing: .03em; }
+.opt { font-weight: 400; color: var(–ink-mute); font-style: italic; }
 
-.field-label {
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--ink-soft);
-  letter-spacing: .02em;
+.field input, .field textarea {
+width: 100%; padding: 11px 13px;
+font-size: 16px; line-height: 1.45; color: var(–ink);
+background: var(–bg); border: 1px solid var(–bdr);
+border-radius: var(–r); -webkit-appearance: none; appearance: none;
+transition: border-color .15s, box-shadow .15s, background .15s;
 }
-
-.field-opt {
-  color: var(--ink-mute);
-  font-weight: 400;
-  font-style: italic;
+.field textarea { resize: vertical; min-height: 64px; }
+.field input:focus, .field textarea:focus {
+outline: none; border-color: var(–ink);
+background: var(–paper); box-shadow: 0 0 0 3px rgba(26,26,26,.07);
 }
+.field input::placeholder, .field textarea::placeholder { color: var(–ink-mute); }
 
-.field input,
-.field textarea {
-  width: 100%;
-  padding: 12px 14px;
-  font-size: 16px;
-  line-height: 1.4;
-  color: var(--ink);
-  background: var(--bg);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-md);
-  transition: border-color .15s ease, background .15s ease, box-shadow .15s ease;
-  -webkit-appearance: none;
-  appearance: none;
+/* Templates */
+.tpl-row {
+display: flex; gap: 6px; margin-bottom: 14px;
+overflow-x: auto; overflow-y: visible;
+scrollbar-width: none; -ms-overflow-style: none;
 }
-
-.field textarea {
-  resize: vertical;
-  min-height: 60px;
-  font-family: var(--body);
+.tpl-row::-webkit-scrollbar { display: none; }
+.tpl {
+flex-shrink: 0; padding: 6px 12px;
+border: 1px solid var(–bdr); border-radius: 999px;
+font-size: 12px; font-weight: 500; color: var(–ink-soft);
+background: var(–bg); white-space: nowrap; transition: all .15s;
 }
+.tpl:hover { background: var(–ink); color: #fff; border-color: var(–ink); }
+.tpl:active { transform: scale(.96); }
 
-.field input:focus,
-.field textarea:focus {
-  outline: none;
-  border-color: var(--ink);
-  background: var(--paper);
-  box-shadow: 0 0 0 3px rgba(26,26,26,.08);
-}
-
-.field input::placeholder,
-.field textarea::placeholder { color: var(--ink-mute); }
-
-.templates {
-  display: flex;
-  gap: 6px;
-  margin-bottom: 16px;
-  overflow-x: auto;
-  scrollbar-width: none;
-  -webkit-overflow-scrolling: touch;
-  padding-bottom: 4px;
-}
-.templates::-webkit-scrollbar { display: none; }
-
-.template-pill {
-  padding: 7px 12px;
-  background: var(--bg);
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--ink-soft);
-  white-space: nowrap;
-  transition: all .15s ease;
-  flex-shrink: 0;
-}
-.template-pill:hover {
-  background: var(--ink);
-  color: var(--accent-ink);
-  border-color: var(--ink);
-}
-.template-pill:active { transform: scale(.96); }
-
-.form-spacer { height: 90px; }
-
+/* === ACTION BAR === */
 .action-bar {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  z-index: 30;
-  display: flex;
-  gap: 10px;
-  padding: 12px 18px calc(12px + env(safe-area-inset-bottom));
-  background: rgba(244,243,239,.94);
-  backdrop-filter: saturate(180%) blur(14px);
-  -webkit-backdrop-filter: saturate(180%) blur(14px);
-  border-top: 1px solid var(--line);
+position: fixed; bottom: 0; z-index: 20;
+display: flex; gap: 10px;
+padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+background: rgba(244,243,239,.96);
+backdrop-filter: blur(16px) saturate(180%);
+-webkit-backdrop-filter: blur(16px) saturate(180%);
+border-top: 1px solid var(–bdr);
+width: 100%; max-width: 680px;
+left: 50%; transform: translateX(-50%);
 }
-
-.action-btn {
-  flex: 1;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 14px 16px;
-  border-radius: var(--radius-md);
-  font-size: 15px;
-  font-weight: 500;
-  letter-spacing: .01em;
-  transition: transform .1s ease, background .15s ease;
+.act {
+flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+padding: 13px 16px; border-radius: var(–r);
+font-size: 15px; font-weight: 500; transition: transform .1s, background .15s;
 }
-.action-btn:active { transform: scale(.98); }
+.act:active { transform: scale(.97); }
+.act-p { background: var(–ink); color: #fff; }
+.act-p:hover { background: #000; }
+.act-s { background: var(–card); color: var(–ink); border: 1px solid var(–bdr); }
+.act-s:hover { border-color: var(–bdr2); }
 
-.action-primary { background: var(--ink); color: var(--accent-ink); }
-.action-primary:hover { background: #000; }
-
-.action-secondary {
-  background: var(--bg-card);
-  color: var(--ink);
-  border: 1px solid var(--line);
+/* === MENU === */
+.overlay {
+position: fixed; inset: 0; z-index: 100;
+background: rgba(20,18,14,.45);
+display: flex; align-items: flex-end; justify-content: center;
+animation: fadeIn .2s ease;
 }
-.action-secondary:hover { border-color: var(--line-strong); }
-
-/* === MENU OVERLAY === */
-.menu-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 100;
-  background: rgba(20,18,14,.4);
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  animation: fadeIn .2s ease;
+.overlay[hidden] { display: none; }
+.sheet {
+position: relative; width: 100%; max-width: 520px;
+background: var(–card); border-radius: 22px 22px 0 0;
+padding: 16px 16px calc(20px + env(safe-area-inset-bottom));
+box-shadow: 0 8px 30px rgba(0,0,0,.14), 0 30px 80px rgba(0,0,0,.1);
+animation: slideUp .22s cubic-bezier(.2,.8,.2,1);
 }
-.menu-overlay[hidden] { display: none; }
-
-.menu-sheet {
-  position: relative;
-  width: 100%;
-  max-width: 520px;
-  background: var(--bg-card);
-  border-radius: 24px 24px 0 0;
-  padding: 18px 18px calc(24px + env(safe-area-inset-bottom));
-  box-shadow: var(--shadow-lg);
-  animation: slideUp .25s cubic-bezier(.2,.8,.2,1);
+.sheet-hd { font-family: var(–serif); font-style: italic; font-size: 20px; font-weight: 700; margin-bottom: 12px; padding-right: 40px; }
+.sheet-x {
+position: absolute; top: 14px; right: 14px;
+width: 34px; height: 34px; display: grid; place-items: center;
+border-radius: 9px; color: var(–ink-soft);
 }
-
-.menu-sheet h3 {
-  font-family: var(--display);
-  font-style: italic;
-  font-weight: 700;
-  font-size: 20px;
-  margin-bottom: 14px;
-  padding-right: 40px;
+.sheet-x:hover { background: var(–bg); }
+.mitem {
+display: flex; align-items: center; gap: 12px;
+width: 100%; padding: 13px 10px;
+border-radius: var(–r); font-size: 15px; text-align: left; transition: background .15s;
 }
-
-.menu-close {
-  position: absolute;
-  top: 14px;
-  right: 14px;
-  width: 36px;
-  height: 36px;
-  display: grid;
-  place-items: center;
-  border-radius: 10px;
-  color: var(--ink-soft);
+.mitem:hover { background: var(–bg); }
+.mitem-d { color: var(–danger); }
+.sheet-note {
+margin-top: 10px; padding: 11px 12px;
+background: var(–bg); border-radius: var(–r);
+font-size: 12px; line-height: 1.5; color: var(–ink-soft);
 }
-.menu-close:hover { background: var(--bg); color: var(--ink); }
-
-.menu-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  width: 100%;
-  padding: 14px 12px;
-  border-radius: var(--radius-md);
-  font-size: 15px;
-  color: var(--ink);
-  text-align: left;
-  transition: background .15s ease;
-}
-.menu-item:hover { background: var(--bg); }
-
-.menu-item-danger { color: var(--danger); }
-
-.menu-hint {
-  margin-top: 12px;
-  padding: 12px;
-  background: var(--bg);
-  border-radius: var(--radius-md);
-  font-size: 12px;
-  line-height: 1.5;
-  color: var(--ink-soft);
-}
-
-@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes fadeIn  { from { opacity: 0; }          to { opacity: 1; } }
 @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
 
 /* === TOAST === */
 .toast {
-  position: fixed;
-  bottom: calc(90px + env(safe-area-inset-bottom));
-  left: 50%;
-  transform: translateX(-50%) translateY(20px);
-  z-index: 200;
-  padding: 10px 18px;
-  background: var(--ink);
-  color: var(--accent-ink);
-  font-size: 13px;
-  border-radius: 999px;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity .2s ease, transform .2s ease;
-  white-space: nowrap;
-  box-shadow: var(--shadow-md);
+position: fixed; bottom: calc(82px + env(safe-area-inset-bottom));
+left: 50%; transform: translateX(-50%) translateY(14px);
+z-index: 300; padding: 9px 16px;
+background: var(–ink); color: #fff;
+font-size: 13px; border-radius: 999px;
+opacity: 0; pointer-events: none;
+transition: opacity .2s, transform .2s;
+white-space: nowrap; box-shadow: 0 4px 16px rgba(0,0,0,.2);
 }
-.toast.is-visible {
-  opacity: 1;
-  transform: translateX(-50%) translateY(0);
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* === PREVIEW === */
+.preview-wrap {
+display: none;
+position: fixed; inset: 0; z-index: 50;
+background: #272420; overflow: auto; -webkit-overflow-scrolling: touch;
 }
+.preview-wrap.open { display: block; }
 
-/* === A4 PREVIEW (preserves original print layout) === */
-.preview {
-  display: none;
-  position: fixed;
-  inset: 0;
-  z-index: 50;
-  background: rgba(20,18,14,.7);
-  overflow: auto;
-  -webkit-overflow-scrolling: touch;
+.preview-bar {
+position: sticky; top: 0; z-index: 10;
+display: flex; justify-content: space-between; align-items: center;
+padding: max(12px, env(safe-area-inset-top)) 14px 12px;
+background: rgba(28,25,22,.88);
+backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
 }
-.preview.is-open { display: block; }
-
-.preview-header {
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px 16px;
-  padding-top: max(12px, env(safe-area-inset-top));
-  background: rgba(20,18,14,.85);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  color: white;
+.pv-back, .pv-print {
+display: inline-flex; align-items: center; gap: 7px;
+padding: 9px 13px; border-radius: 9px;
+font-size: 14px; font-weight: 500; transition: background .15s;
 }
+.pv-back  { color: #fff; }
+.pv-back:hover { background: rgba(255,255,255,.1); }
+.pv-print { background: #fff; color: var(–ink); }
+.pv-print:hover { background: rgba(255,255,255,.88); }
 
-.preview-back, .preview-print {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 14px;
-  border-radius: 10px;
-  font-size: 14px;
-  font-weight: 500;
-  color: white;
-  transition: background .15s ease;
+/* Page host: centres the scaled page, provides scrollable space */
+.page-host {
+display: flex; justify-content: center;
+padding: 14px 0 40px;
 }
-.preview-back:hover { background: rgba(255,255,255,.1); }
-.preview-print { background: white; color: var(--ink); }
-.preview-print:hover { background: rgba(255,255,255,.9); }
-
-/* The actual A4 page – wrapped so scaling preserves layout */
-.page-wrap {
-  display: flex;
-  justify-content: center;
-  padding: 20px 12px 40px;
-}
-
-.page {
-  position: relative;
-  width: 210mm;
-  min-width: 210mm;
-  height: 297mm;
-  padding: 24mm;
-  background: var(--paper);
-  box-shadow: 0 5px 50px rgba(0,0,0,.4);
-  font-family: 'Fira Sans', sans-serif;
-  font-size: 10pt;
-  line-height: 14pt;
-  color: #000;
-  box-sizing: border-box;
-  transform-origin: top left;
-  flex-shrink: 0;
-}
-
-.address-overlay {
-  position: absolute;
-  left: 15mm;
-  top: 46.5mm;
-  width: 90mm;
-  height: 45mm;
-  border-radius: 4mm;
-  background: rgba(0,0,0,.04);
-  z-index: 0;
-}
-
-.address-wrapper {
-  position: absolute;
-  left: 20mm;
-  top: 126pt;
-  width: 90mm;
-  padding: 14pt 4mm;
-  z-index: 10;
-  box-sizing: border-box;
-}
-
-.address-overline {
-  font-size: 8pt;
-  line-height: 12pt;
-  padding-top: 5.1pt;
-  margin-bottom: 8pt;
-  color: #555;
-}
-
-.address-block {
-  font-size: 10pt;
-  line-height: 14pt;
-  padding-top: 4.7pt;
-}
-
-.sidebar {
-  position: absolute;
-  right: 24mm;
-  top: 70pt;
-  width: 40mm;
-  height: 182pt;
-  font-size: 8pt;
-  line-height: 12pt;
-}
-
-.sidebar-inner {
-  position: absolute;
-  bottom: 0;
-  width: 100%;
-  padding-bottom: 1.4pt;
-}
-
-.sidebar-text { white-space: pre-line; }
-
-.body {
-  position: absolute;
-  left: 24mm;
-  top: 308pt;
-  right: 24mm;
-  padding-top: 4.7pt;
-  font-size: 10pt;
-  line-height: 14pt;
-}
-
-.body-subject {
-  font-weight: bold;
-  margin-bottom: 14pt;
-  font-size: 10pt;
-}
-
-.body-text { white-space: pre-line; }
-.body-text p { margin: 0 0 14pt 0; }
-
-.footer-attachments {
-  margin-top: 21pt;
-  font-size: 8pt;
-  line-height: 12pt;
-}
-
-.footer-attachments .attachments-hd {
-  font-style: italic;
-  font-weight: bold;
-  margin: 0;
-}
-
-.footer-attachments .attachments-bd { white-space: pre-line; }
-
-.line {
-  position: absolute;
-  left: 5mm;
-  height: 0.3mm;
-  background: rgba(0,0,0,.3);
-  display: block;
-}
-.line-1 { top: 105mm; width: 3mm; }
-.line-2 { top: 148.5mm; width: 5mm; }
-.line-3 { top: 210mm; width: 3mm; }
-
-/* === RESPONSIVE PREVIEW SCALING ===
-   Page is rendered at 210mm and JS sets a CSS variable --scale.
-   We use a wrapper to absorb the scaled size so layout stays clean. */
-.page {
-  transform: scale(var(--scale, 1));
-}
-
-.page-wrap {
-  /* Reserve space equal to the scaled page so scrolling works */
-  min-height: calc(297mm * var(--scale, 1) + 60px);
-  width: 100%;
-}
-
 .page-sizer {
-  width: calc(210mm * var(--scale, 1));
-  height: calc(297mm * var(--scale, 1));
-  position: relative;
+/* Dimensions are set by JS to match scaled page */
+position: relative; flex-shrink: 0;
 }
 
-@media (max-width: 420px) {
-  .editor-header { padding-left: 16px; padding-right: 12px; }
-  .form { padding-left: 14px; padding-right: 14px; }
-  .form-section { padding: 18px 14px; }
+/* The A4 page: 794×1123 px = 210×297 mm @ 96 dpi.
+JS sets –s, transform scales from top-left. */
+.page {
+position: absolute; top: 0; left: 0;
+width: 794px; height: 1123px;
+transform: scale(var(–s, 1)); transform-origin: top left;
+background: #fff;
+box-shadow: 0 4px 40px rgba(0,0,0,.55);
+font-family: ‘Fira Sans’, sans-serif;
+font-size: 10pt; line-height: 14pt; color: #000;
+padding: 90.7px; /* 24 mm */
+box-sizing: border-box; overflow: hidden;
 }
 
-@media (min-width: 900px) {
-  .editor {
-    max-width: 720px;
-    margin: 0 auto;
-    border-left: 1px solid var(--line);
-    border-right: 1px solid var(--line);
-    background: var(--bg);
-  }
-  .action-bar {
-    max-width: 720px;
-    left: 50%;
-    transform: translateX(-50%);
-    border-left: 1px solid var(--line);
-    border-right: 1px solid var(--line);
-  }
+/* Address window ghost (visual only) */
+.a-win {
+position: absolute;
+left: 56.7px; top: 166px; /* 15mm, ~44mm */
+width: 340px; height: 170px;
+border-radius: 14px; background: rgba(0,0,0,.04);
 }
 
-/* === PRINT === */
+/* Sender mini-line above recipient */
+.a-from {
+position: absolute;
+left: 75.6px; top: 164px;
+width: 340px;
+font-size: 8pt; line-height: 12pt; color: #666;
+}
+
+/* Recipient */
+.a-to {
+position: absolute;
+left: 75.6px; top: 186px;
+width: 340px;
+font-size: 10pt; line-height: 14pt;
+}
+
+/* Sender info sidebar (right) */
+.s-bar {
+position: absolute;
+right: 90.7px; top: 93.3px; /* 70pt */
+width: 151px; /* 40mm */
+height: 242px; /* 182pt */
+font-size: 8pt; line-height: 12pt;
+}
+.s-bar-in {
+position: absolute; bottom: 2px; width: 100%;
+}
+
+/* Letter body */
+.l-body {
+position: absolute;
+left: 90.7px; top: 411px; /* 308pt */
+right: 90.7px;
+font-size: 10pt; line-height: 14pt;
+}
+.l-body p { margin: 0 0 14pt; }
+.l-subj { font-weight: bold; margin-bottom: 14pt; }
+.l-attach { margin-top: 21pt; font-size: 8pt; line-height: 12pt; }
+.l-attach em { font-style: italic; font-weight: bold; }
+
+/* Fold marks */
+.fold { position: absolute; left: 18.9px; background: rgba(0,0,0,.25); width: 1px; }
+.fold-1 { top: 396.9px; height: 11.3px; }
+.fold-2 { top: 561.3px; height: 18.9px; }
+.fold-3 { top: 793.7px; height: 11.3px; }
+
+/* === PRINT — scale reset, only page content === */
 @media print {
-  @page { size: A4; margin: 0; }
-
-  html, body {
-    background: white !important;
-    width: 210mm;
-    height: 297mm;
-    --scale: 1 !important;
-  }
-
-  .no-print, .editor, .preview-header, .menu-overlay, .toast, .action-bar {
-    display: none !important;
-  }
-
-  .preview {
-    display: block !important;
-    position: static !important;
-    background: white !important;
-    overflow: visible !important;
-  }
-
-  .page-wrap, .page-sizer {
-    padding: 0 !important;
-    margin: 0 !important;
-    width: 210mm !important;
-    height: 297mm !important;
-    min-height: 0 !important;
-    display: block !important;
-  }
-
-  .page {
-    margin: 0 !important;
-    padding: 24mm !important;
-    box-shadow: none !important;
-    width: 210mm !important;
-    height: 297mm !important;
-    transform: none !important;
-    page-break-after: avoid;
-  }
-
-  .address-overlay { display: none; }
+@page { size: A4; margin: 0; }
+html, body { background: white !important; }
+.no-print, .editor, .action-bar, .overlay, .toast,
+.preview-bar, .page-host { display: none !important; }
+.preview-wrap {
+display: block !important; position: static !important;
+background: white !important; overflow: visible !important;
+}
+.page-sizer { display: none !important; }
+/* Print page rendered separately with mm units */
+.print-page {
+position: static !important;
+width: 210mm !important; height: 297mm !important;
+padding: 24mm !important;
+transform: none !important;
+box-shadow: none !important;
+font-size: 10pt !important; line-height: 14pt !important;
+background: white; overflow: hidden;
+}
+.print-page .a-win  { display: none; }
+.print-page .a-from { position: absolute; left: 20mm; top: 126pt; width: 90mm; }
+.print-page .a-to   { position: absolute; left: 20mm; top: 148pt; width: 90mm; }
+.print-page .s-bar  { position: absolute; right: 24mm; top: 70pt; width: 40mm; height: 182pt; }
+.print-page .l-body { position: absolute; left: 24mm; top: 308pt; right: 24mm; }
+.print-page .fold-1 { top: 105mm; height: 3mm; }
+.print-page .fold-2 { top: 148.5mm; height: 5mm; }
+.print-page .fold-3 { top: 210mm; height: 3mm; }
 }
 </style>
 
 </head>
 <body>
 
-<!-- ============= MOBILE EDITOR ============= -->
+<!-- ======================================================
+     EDITOR
+     ====================================================== -->
 
 <main class="editor no-print" id="editor">
 
-  <header class="editor-header">
+  <header class="hdr">
     <div class="brand">
-      <span class="brand-mark" aria-hidden="true">✉</span>
+      <span class="brand-icon">✉</span>
       <span class="brand-name">Brief</span>
     </div>
-    <button class="btn-icon" id="menu-btn" aria-label="Menü">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    <button class="hdr-btn" id="menu-btn" aria-label="Menü">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
     </button>
   </header>
 
-  <div class="drafts-bar" id="drafts-bar">
-    <button class="draft-chip new-chip" id="new-draft-btn" aria-label="Neuer Entwurf">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-      <span>Neu</span>
+  <div class="drafts-bar">
+    <button class="chip-new" id="btn-new">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="4" x2="12" y2="20"/><line x1="4" y1="12" x2="20" y2="12"/></svg>
+      Neu
     </button>
     <div class="drafts-list" id="drafts-list"></div>
   </div>
 
-  <form class="form" id="form" autocomplete="off" onsubmit="return false">
+  <form class="form" onsubmit="return false" autocomplete="off">
 
 ```
-<section class="form-section">
-  <div class="section-label">
-    <span class="section-num">01</span>
-    <h2>Absender</h2>
+<div class="card">
+  <div class="card-hd"><span class="card-num">01</span><span class="card-title">Absender</span></div>
+  <label class="field"><span class="lbl">Name</span>
+    <input type="text" id="f-sname" placeholder="Erika Mustermann"/></label>
+  <label class="field"><span class="lbl">Anschrift</span>
+    <textarea id="f-saddr" rows="2" placeholder="Musterstraße 12&#10;12345 Berlin"></textarea></label>
+  <label class="field"><span class="lbl">E-Mail</span>
+    <input type="email" id="f-semail" placeholder="erika@example.com" inputmode="email"/></label>
+  <label class="field"><span class="lbl">Telefon <span class="opt">(optional)</span></span>
+    <input type="tel" id="f-sphone" placeholder="+49 30 12345678" inputmode="tel"/></label>
+</div>
+
+<div class="card">
+  <div class="card-hd"><span class="card-num">02</span><span class="card-title">Empfänger</span></div>
+  <label class="field"><span class="lbl">Name oder Firma</span>
+    <input type="text" id="f-rname" placeholder="Google Germany GmbH"/></label>
+  <label class="field"><span class="lbl">Anschrift</span>
+    <textarea id="f-raddr" rows="3" placeholder="ABC-Strasse 19&#10;20354 Hamburg"></textarea></label>
+</div>
+
+<div class="card">
+  <div class="card-hd"><span class="card-num">03</span><span class="card-title">Brief</span></div>
+  <div class="tpl-row">
+    <button type="button" class="tpl" data-tpl="bewerbung">Bewerbung</button>
+    <button type="button" class="tpl" data-tpl="kuendigung">Kündigung</button>
+    <button type="button" class="tpl" data-tpl="widerspruch">Widerspruch</button>
+    <button type="button" class="tpl" data-tpl="anfrage">Anfrage</button>
+    <button type="button" class="tpl" data-tpl="dank">Dankschreiben</button>
+    <button type="button" class="tpl" data-tpl="leer">Leer</button>
   </div>
-  <label class="field">
-    <span class="field-label">Name</span>
-    <input type="text" id="f-sender-name" placeholder="Erika Mustermann" />
-  </label>
-  <label class="field">
-    <span class="field-label">Anschrift</span>
-    <textarea id="f-sender-address" rows="2" placeholder="Musterstraße 12&#10;12345 Berlin"></textarea>
-  </label>
-  <label class="field">
-    <span class="field-label">E-Mail</span>
-    <input type="email" id="f-sender-email" placeholder="erika.mustermann@example.com" inputmode="email" />
-  </label>
-  <label class="field">
-    <span class="field-label">Telefon <span class="field-opt">(optional)</span></span>
-    <input type="tel" id="f-sender-phone" placeholder="+49 30 12345678" inputmode="tel" />
-  </label>
-</section>
-
-<section class="form-section">
-  <div class="section-label">
-    <span class="section-num">02</span>
-    <h2>Empfänger</h2>
-  </div>
-  <label class="field">
-    <span class="field-label">Name oder Firma</span>
-    <input type="text" id="f-recipient-name" placeholder="Google Germany GmbH" />
-  </label>
-  <label class="field">
-    <span class="field-label">Anschrift</span>
-    <textarea id="f-recipient-address" rows="3" placeholder="ABC-Strasse 19&#10;20354 Hamburg"></textarea>
-  </label>
-</section>
-
-<section class="form-section">
-  <div class="section-label">
-    <span class="section-num">03</span>
-    <h2>Brief</h2>
-  </div>
-
-  <div class="templates" id="templates">
-    <button type="button" class="template-pill" data-template="bewerbung">Bewerbung</button>
-    <button type="button" class="template-pill" data-template="kuendigung">Kündigung</button>
-    <button type="button" class="template-pill" data-template="widerspruch">Widerspruch</button>
-    <button type="button" class="template-pill" data-template="anfrage">Anfrage</button>
-    <button type="button" class="template-pill" data-template="dank">Dankschreiben</button>
-    <button type="button" class="template-pill" data-template="leer">Leer</button>
-  </div>
-
-  <label class="field">
-    <span class="field-label">Datum</span>
-    <input type="text" id="f-date" placeholder="28. Dezember 2024" />
-  </label>
-
-  <label class="field">
-    <span class="field-label">Betreff</span>
-    <input type="text" id="f-subject" placeholder="Ihre Anfrage vom …" />
-  </label>
-
-  <label class="field">
-    <span class="field-label">Anrede</span>
-    <input type="text" id="f-greeting" placeholder="Sehr geehrte Damen und Herren," />
-  </label>
-
-  <label class="field field-grow">
-    <span class="field-label">Text</span>
-    <textarea id="f-body" rows="10" placeholder="Schreiben Sie hier Ihren Brief…"></textarea>
-  </label>
-
-  <label class="field">
-    <span class="field-label">Schlussformel</span>
-    <input type="text" id="f-closing" placeholder="Mit freundlichen Grüßen" />
-  </label>
-
-  <label class="field">
-    <span class="field-label">Anlagen <span class="field-opt">(optional)</span></span>
-    <textarea id="f-attachments" rows="2" placeholder="Lebenslauf&#10;Zeugnisse"></textarea>
-  </label>
-</section>
-
-<div class="form-spacer"></div>
+  <label class="field"><span class="lbl">Datum</span>
+    <input type="text" id="f-date" placeholder="7. Mai 2026"/></label>
+  <label class="field"><span class="lbl">Betreff</span>
+    <input type="text" id="f-subj" placeholder="Ihre Anfrage vom …"/></label>
+  <label class="field"><span class="lbl">Anrede</span>
+    <input type="text" id="f-greet" placeholder="Sehr geehrte Damen und Herren,"/></label>
+  <label class="field"><span class="lbl">Text</span>
+    <textarea id="f-body" rows="10" placeholder="Schreiben Sie hier Ihren Brief…"></textarea></label>
+  <label class="field"><span class="lbl">Schlussformel</span>
+    <input type="text" id="f-close" placeholder="Mit freundlichen Grüßen"/></label>
+  <label class="field"><span class="lbl">Anlagen <span class="opt">(optional)</span></span>
+    <textarea id="f-attach" rows="2" placeholder="Lebenslauf&#10;Zeugnisse"></textarea></label>
+</div>
 ```
 
   </form>
 
-  <nav class="action-bar" aria-label="Aktionen">
-    <button class="action-btn action-secondary" id="preview-btn">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-      <span>Vorschau</span>
+  <nav class="action-bar no-print">
+    <button class="act act-s" id="btn-preview">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+      Vorschau
     </button>
-    <button class="action-btn action-primary" id="pdf-btn">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-      <span>PDF / Drucken</span>
+    <button class="act act-p" id="btn-pdf">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      PDF / Drucken
     </button>
   </nav>
 </main>
 
-<!-- ============= MENU OVERLAY ============= -->
+<!-- ======================================================
+     MENU
+     ====================================================== -->
 
-<div class="menu-overlay no-print" id="menu-overlay" hidden>
-  <div class="menu-sheet">
-    <button class="menu-close" id="menu-close" aria-label="Schließen">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+<div class="overlay no-print" id="menu-wrap" hidden>
+  <div class="sheet">
+    <p class="sheet-hd">Menü</p>
+    <button class="sheet-x" id="menu-close">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
     </button>
-    <h3>Menü</h3>
-    <button class="menu-item" id="menu-rename">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+    <button class="mitem" id="m-rename">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
       Entwurf umbenennen
     </button>
-    <button class="menu-item" id="menu-duplicate">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+    <button class="mitem" id="m-dup">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
       Entwurf duplizieren
     </button>
-    <button class="menu-item" id="menu-export">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+    <button class="mitem" id="m-export">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
       Als JSON exportieren
     </button>
-    <button class="menu-item" id="menu-import">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+    <button class="mitem" id="m-import">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
       Aus JSON importieren
     </button>
-    <button class="menu-item menu-item-danger" id="menu-delete">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+    <button class="mitem mitem-d" id="m-del">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
       Entwurf löschen
     </button>
-    <p class="menu-hint">Alle Daten werden lokal in Ihrem Browser gespeichert. Nichts wird an einen Server gesendet.</p>
+    <p class="sheet-note">Alle Daten bleiben lokal in Ihrem Browser gespeichert. Nichts wird an einen Server gesendet.</p>
   </div>
 </div>
+<input type="file" id="file-import" accept="application/json" hidden/>
 
-<input type="file" id="import-file" accept="application/json" hidden />
+<!-- ======================================================
+     PREVIEW + PRINT
+     ====================================================== -->
 
-<!-- ============= PREVIEW (A4) ============= -->
+<div class="preview-wrap" id="preview" aria-hidden="true">
 
-<section class="preview" id="preview" aria-hidden="true">
-  <div class="preview-header no-print">
-    <button class="preview-back" id="preview-back" aria-label="Zurück">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
-      <span>Bearbeiten</span>
+  <div class="preview-bar no-print">
+    <button class="pv-back" id="btn-back">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+      Bearbeiten
     </button>
-    <button class="preview-print" id="preview-print">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-      <span>Drucken / PDF</span>
+    <button class="pv-print" id="btn-print">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+      Drucken / PDF
     </button>
   </div>
 
-  <div class="page-wrap">
-    <div class="page-sizer">
-      <article class="page" id="page">
-        <div class="address-overlay" aria-hidden="true"></div>
+  <!-- Scaled preview (screen only) -->
 
-```
-    <div class="address-wrapper">
-      <div class="address-overline" id="p-overline"></div>
-      <div class="address-block" id="p-recipient"></div>
-    </div>
-
-    <aside class="sidebar">
-      <div class="sidebar-inner">
-        <div class="sidebar-text" id="p-sidebar"></div>
+  <div class="page-host no-print">
+    <div class="page-sizer" id="sizer">
+      <div class="page" id="pv-page">
+        <div class="a-win"></div>
+        <div class="a-from" id="pv-from"></div>
+        <div class="a-to"   id="pv-to"></div>
+        <div class="s-bar"><div class="s-bar-in" id="pv-sidebar"></div></div>
+        <div class="l-body">
+          <div class="l-subj" id="pv-subj"></div>
+          <div id="pv-body"></div>
+          <div class="l-attach" id="pv-attach"></div>
+        </div>
+        <div class="fold fold-1"></div>
+        <div class="fold fold-2"></div>
+        <div class="fold fold-3"></div>
       </div>
-    </aside>
-
-    <section class="body">
-      <div class="body-subject" id="p-subject"></div>
-      <div class="body-text" id="p-body"></div>
-      <div class="footer-attachments" id="p-attachments"></div>
-    </section>
-
-    <span class="line line-1" aria-hidden="true"></span>
-    <span class="line line-2" aria-hidden="true"></span>
-    <span class="line line-3" aria-hidden="true"></span>
-  </article>
-</div>
-```
-
+    </div>
   </div>
-</section>
+
+  <!-- Full-size print page (hidden on screen, shown only during window.print()) -->
+
+  <div id="print-wrap" style="display:none">
+    <div class="page print-page" id="pr-page">
+      <div class="a-win"></div>
+      <div class="a-from" id="pr-from"></div>
+      <div class="a-to"   id="pr-to"></div>
+      <div class="s-bar"><div class="s-bar-in" id="pr-sidebar"></div></div>
+      <div class="l-body">
+        <div class="l-subj" id="pr-subj"></div>
+        <div id="pr-body"></div>
+        <div class="l-attach" id="pr-attach"></div>
+      </div>
+      <div class="fold fold-1"></div>
+      <div class="fold fold-2"></div>
+      <div class="fold fold-3"></div>
+    </div>
+  </div>
+
+</div>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script>
-/**
- * Brief Generator – Mobile Edition
- * Vanilla JS, no dependencies. All data stays in localStorage.
- * Original print layout © 2016 Kim-Christian Meyer (GPL-3.0+)
- */
-(function () {
-  'use strict';
+(function(){
+'use strict';
 
-  const STORAGE_KEY = 'brief-generator-mobile-v1';
-  const ACTIVE_KEY  = 'brief-generator-mobile-active';
+/* ---- Storage keys ---- */
+const SK='brief-v3', AK='brief-v3-active';
 
-  const blankDraft = () => ({
-    id: 'd_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
-    name: 'Neuer Entwurf',
-    updated: Date.now(),
-    fields: {
-      senderName: '', senderAddress: '', senderEmail: '', senderPhone: '',
-      recipientName: '', recipientAddress: '',
-      date: formatToday(),
-      subject: '',
-      greeting: 'Sehr geehrte Damen und Herren,',
-      body: '',
-      closing: 'Mit freundlichen Grüßen',
-      attachments: ''
+/* ---- Blank draft ---- */
+function blank(){
+  return {
+    id:'D'+Date.now().toString(36)+Math.random().toString(36).slice(2,5),
+    name:'Neuer Entwurf', ts:Date.now(),
+    f:{ sname:'',saddr:'',semail:'',sphone:'',
+        rname:'',raddr:'',date:today(),
+        subj:'',greet:'Sehr geehrte Damen und Herren,',
+        body:'',close:'Mit freundlichen Grüßen',attach:'' }
+  };
+}
+
+/* ---- Templates ---- */
+var T={
+  bewerbung:{name:'Bewerbung',subj:'Bewerbung als [Position]',
+    greet:'Sehr geehrte Damen und Herren,',
+    body:'mit großem Interesse habe ich Ihre Stellenanzeige gelesen und möchte mich hiermit auf die Position als [Position] bewerben.\n\nIn meiner bisherigen Tätigkeit konnte ich umfangreiche Erfahrungen in [Bereich] sammeln. Besonders meine Kenntnisse in [Fähigkeit 1] und [Fähigkeit 2] qualifizieren mich für diese Stelle.\n\nIch freue mich darauf, Sie in einem persönlichen Gespräch von meiner Motivation zu überzeugen.',
+    close:'Mit freundlichen Grüßen',attach:'Lebenslauf\nZeugnisse\nReferenzen'},
+  kuendigung:{name:'Kündigung',subj:'Kündigung meines Vertrags zum nächstmöglichen Termin',
+    greet:'Sehr geehrte Damen und Herren,',
+    body:'hiermit kündige ich meinen oben genannten Vertrag fristgerecht zum nächstmöglichen Termin.\n\nBitte bestätigen Sie mir den Eingang dieser Kündigung sowie das Vertragsende schriftlich.',
+    close:'Mit freundlichen Grüßen',attach:''},
+  widerspruch:{name:'Widerspruch',subj:'Widerspruch gegen [Bescheid] vom [Datum]',
+    greet:'Sehr geehrte Damen und Herren,',
+    body:'gegen den oben genannten Bescheid lege ich hiermit fristgerecht Widerspruch ein.\n\nBegründung: [Bitte hier Ihre Begründung einfügen]\n\nIch bitte um Prüfung des Sachverhalts und um schriftliche Stellungnahme.',
+    close:'Mit freundlichen Grüßen',attach:''},
+  anfrage:{name:'Anfrage',subj:'Anfrage bezüglich [Thema]',
+    greet:'Sehr geehrte Damen und Herren,',
+    body:'ich wende mich mit folgendem Anliegen an Sie:\n\n[Bitte hier Ihre Anfrage formulieren]\n\nÜber eine baldige Rückmeldung würde ich mich sehr freuen.',
+    close:'Mit freundlichen Grüßen',attach:''},
+  dank:{name:'Dankschreiben',subj:'Vielen Dank',
+    greet:'Sehr geehrte Damen und Herren,',
+    body:'ich möchte mich auf diesem Wege herzlich bei Ihnen für [Anlass] bedanken.\n\n[Persönliche Worte]\n\nVielen Dank nochmals für Ihre Mühe.',
+    close:'Mit freundlichen Grüßen',attach:''},
+  leer:{name:'Leer',subj:'',greet:'Sehr geehrte Damen und Herren,',body:'',close:'Mit freundlichen Grüßen',attach:''}
+};
+
+/* ---- State ---- */
+var drafts={}, active=null, saveTimer=null;
+
+/* ---- DOM ---- */
+function $i(id){ return document.getElementById(id); }
+var E={
+  sname:$i('f-sname'),saddr:$i('f-saddr'),semail:$i('f-semail'),sphone:$i('f-sphone'),
+  rname:$i('f-rname'),raddr:$i('f-raddr'),
+  date:$i('f-date'),subj:$i('f-subj'),greet:$i('f-greet'),
+  body:$i('f-body'),close:$i('f-close'),attach:$i('f-attach'),
+  draftsList:$i('drafts-list'),btnNew:$i('btn-new'),
+  menuBtn:$i('menu-btn'),menuWrap:$i('menu-wrap'),menuClose:$i('menu-close'),
+  mRename:$i('m-rename'),mDup:$i('m-dup'),mExport:$i('m-export'),mImport:$i('m-import'),mDel:$i('m-del'),
+  fileImport:$i('file-import'),
+  btnPreview:$i('btn-preview'),btnPdf:$i('btn-pdf'),
+  preview:$i('preview'),btnBack:$i('btn-back'),btnPrint:$i('btn-print'),
+  sizer:$i('sizer'),
+  pvFrom:$i('pv-from'),pvTo:$i('pv-to'),pvSidebar:$i('pv-sidebar'),
+  pvSubj:$i('pv-subj'),pvBody:$i('pv-body'),pvAttach:$i('pv-attach'),
+  printWrap:$i('print-wrap'),
+  prFrom:$i('pr-from'),prTo:$i('pr-to'),prSidebar:$i('pr-sidebar'),
+  prSubj:$i('pr-subj'),prBody:$i('pr-body'),prAttach:$i('pr-attach'),
+  toast:$i('toast'),
+  tpls:document.querySelectorAll('.tpl')
+};
+var FIELDS=['sname','saddr','semail','sphone','rname','raddr','date','subj','greet','body','close','attach'];
+
+/* ---- Helpers ---- */
+function today(){
+  var M=['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
+  var d=new Date();
+  return d.getDate()+'. '+M[d.getMonth()]+' '+d.getFullYear();
+}
+function esc(s){
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+var toastTimer;
+function toast(msg){
+  E.toast.textContent=msg;
+  E.toast.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(function(){ E.toast.classList.remove('show'); },2000);
+}
+
+/* ---- Persistence ---- */
+function loadDrafts(){
+  try{ drafts=JSON.parse(localStorage.getItem(SK))||{}; }catch(e){ drafts={}; }
+  active=localStorage.getItem(AK);
+  if(!Object.keys(drafts).length){ var d=blank(); drafts[d.id]=d; active=d.id; }
+  if(!active||!drafts[active]) active=Object.keys(drafts)[0];
+}
+function persist(){
+  try{ localStorage.setItem(SK,JSON.stringify(drafts)); localStorage.setItem(AK,active); }
+  catch(e){ toast('Speichern fehlgeschlagen'); }
+}
+
+/* ---- Form ---- */
+function fillForm(d){
+  FIELDS.forEach(function(k){ if(E[k]) E[k].value=d.f[k]||''; });
+}
+function readForm(){
+  var f={};
+  FIELDS.forEach(function(k){ f[k]=E[k]?E[k].value:''; });
+  return f;
+}
+function onInput(){
+  var d=drafts[active]; if(!d) return;
+  d.f=readForm();
+  clearTimeout(saveTimer);
+  saveTimer=setTimeout(function(){
+    d.ts=Date.now();
+    if(d.name==='Neuer Entwurf'||!d.name){
+      var c=(d.f.subj||d.f.rname||'').trim();
+      if(c && /[a-zA-ZäöüÄÖÜß0-9]{2,}/.test(c)) d.name=c.slice(0,28);
     }
+    persist(); renderDrafts();
+  },500);
+}
+
+/* ---- Drafts ---- */
+function renderDrafts(){
+  var list=Object.values(drafts).sort(function(a,b){ return b.ts-a.ts; });
+  E.draftsList.innerHTML='';
+  list.forEach(function(d){
+    var chip=document.createElement('div');
+    chip.className='chip'+(d.id===active?' active':'');
+
+    var lbl=document.createElement('span');
+    lbl.className='chip-label';
+    lbl.textContent=d.name||'Ohne Titel';
+    lbl.title=d.name||'Ohne Titel';
+    lbl.addEventListener('click',function(){ switchDraft(d.id); });
+
+    var x=document.createElement('span');
+    x.className='chip-x';
+    x.setAttribute('role','button');
+    x.setAttribute('aria-label','Löschen');
+    x.innerHTML='<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+    x.addEventListener('click',function(e){ e.stopPropagation(); deleteDraftById(d.id); });
+
+    chip.appendChild(lbl); chip.appendChild(x);
+    E.draftsList.appendChild(chip);
   });
-
-  const TEMPLATES = {
-    bewerbung: {
-      name: 'Bewerbung',
-      subject: 'Bewerbung als [Position]',
-      greeting: 'Sehr geehrte Damen und Herren,',
-      body: 'mit großem Interesse habe ich Ihre Stellenanzeige gelesen und möchte mich hiermit auf die Position als [Position] bewerben.\n\nIn meiner bisherigen Tätigkeit konnte ich umfangreiche Erfahrungen in [Bereich] sammeln. Besonders meine Kenntnisse in [Fähigkeit 1] und [Fähigkeit 2] qualifizieren mich für diese Stelle.\n\nIch freue mich darauf, Sie in einem persönlichen Gespräch von meiner Motivation zu überzeugen.',
-      closing: 'Mit freundlichen Grüßen',
-      attachments: 'Lebenslauf\nZeugnisse\nReferenzen'
-    },
-    kuendigung: {
-      name: 'Kündigung',
-      subject: 'Kündigung meines Vertrags zum nächstmöglichen Termin',
-      greeting: 'Sehr geehrte Damen und Herren,',
-      body: 'hiermit kündige ich meinen oben genannten Vertrag fristgerecht zum nächstmöglichen Termin.\n\nBitte bestätigen Sie mir den Eingang der Kündigung sowie das Vertragsende schriftlich.',
-      closing: 'Mit freundlichen Grüßen',
-      attachments: ''
-    },
-    widerspruch: {
-      name: 'Widerspruch',
-      subject: 'Widerspruch gegen [Bescheid/Rechnung] vom [Datum]',
-      greeting: 'Sehr geehrte Damen und Herren,',
-      body: 'gegen den oben genannten Bescheid lege ich hiermit fristgerecht Widerspruch ein.\n\nBegründung: [Bitte hier Ihre Begründung einfügen]\n\nIch bitte um Prüfung des Sachverhalts und um schriftliche Stellungnahme.',
-      closing: 'Mit freundlichen Grüßen',
-      attachments: ''
-    },
-    anfrage: {
-      name: 'Anfrage',
-      subject: 'Anfrage bezüglich [Thema]',
-      greeting: 'Sehr geehrte Damen und Herren,',
-      body: 'ich wende mich mit folgendem Anliegen an Sie:\n\n[Bitte hier Ihre Anfrage konkret formulieren]\n\nÜber eine baldige Rückmeldung würde ich mich sehr freuen.',
-      closing: 'Mit freundlichen Grüßen',
-      attachments: ''
-    },
-    dank: {
-      name: 'Dankschreiben',
-      subject: 'Vielen Dank',
-      greeting: 'Sehr geehrte Damen und Herren,',
-      body: 'ich möchte mich auf diesem Wege herzlich bei Ihnen für [Anlass] bedanken.\n\n[Persönliche Worte hier ergänzen]\n\nVielen Dank nochmals für Ihre Mühe.',
-      closing: 'Mit freundlichen Grüßen',
-      attachments: ''
-    },
-    leer: {
-      name: 'Leer',
-      subject: '',
-      greeting: 'Sehr geehrte Damen und Herren,',
-      body: '',
-      closing: 'Mit freundlichen Grüßen',
-      attachments: ''
-    }
+}
+function switchDraft(id){
+  if(!drafts[id]) return;
+  active=id; fillForm(drafts[id]); persist(); renderDrafts();
+}
+function newDraft(){
+  var d=blank(); drafts[d.id]=d; active=d.id;
+  fillForm(d); persist(); renderDrafts();
+  toast('Neuer Entwurf erstellt');
+  window.scrollTo({top:0,behavior:'smooth'});
+  setTimeout(function(){ E.rname.focus(); },300);
+}
+function deleteDraftById(id){
+  var d=drafts[id]; if(!d) return;
+  if(!confirm('Entwurf "'+( d.name||'Ohne Titel')+'" löschen?')) return;
+  delete drafts[id];
+  if(!Object.keys(drafts).length){ var nd=blank(); drafts[nd.id]=nd; active=nd.id; }
+  else if(id===active) active=Object.keys(drafts)[0];
+  fillForm(drafts[active]); persist(); renderDrafts();
+  toast('Gelöscht');
+}
+function renameDraft(){
+  var d=drafts[active]; if(!d) return;
+  var n=prompt('Name:',d.name||''); if(n===null) return;
+  d.name=n.trim()||'Ohne Titel'; persist(); renderDrafts(); toast('Umbenannt');
+}
+function dupDraft(){
+  var d=drafts[active]; if(!d) return;
+  var c=JSON.parse(JSON.stringify(d));
+  c.id='D'+Date.now().toString(36)+Math.random().toString(36).slice(2,5);
+  c.name=(d.name||'Entwurf')+' (Kopie)'; c.ts=Date.now();
+  drafts[c.id]=c; active=c.id; fillForm(c); persist(); renderDrafts(); toast('Dupliziert');
+}
+function exportDraft(){
+  var d=drafts[active]; if(!d) return;
+  var b=new Blob([JSON.stringify(d,null,2)],{type:'application/json'});
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(b);
+  a.download='brief-'+(d.name||'entwurf').replace(/[^\wäöüÄÖÜß]+/g,'-').toLowerCase()+'.json';
+  a.click(); URL.revokeObjectURL(a.href); toast('Exportiert');
+}
+function importDraft(file){
+  var r=new FileReader();
+  r.onload=function(e){
+    try{
+      var o=JSON.parse(e.target.result);
+      if(!o.f) throw 0;
+      o.id='D'+Date.now().toString(36)+Math.random().toString(36).slice(2,5);
+      o.ts=Date.now();
+      drafts[o.id]=o; active=o.id; fillForm(o); persist(); renderDrafts(); toast('Importiert');
+    }catch(e){ toast('Ungültiges Format'); }
   };
+  r.readAsText(file);
+}
 
-  let drafts = {};
-  let activeId = null;
-  let saveTimer = null;
+/* ---- Template ---- */
+function applyTpl(key){
+  var t=T[key]; if(!t) return;
+  var d=drafts[active]; if(!d) return;
+  if(d.f.body&&d.f.body.trim()&&!confirm('Text überschreiben?')) return;
+  d.f.subj=t.subj; d.f.greet=t.greet; d.f.body=t.body; d.f.close=t.close; d.f.attach=t.attach;
+  if(d.name==='Neuer Entwurf') d.name=t.name;
+  fillForm(d); persist(); renderDrafts(); toast('Vorlage: '+t.name);
+}
 
-  const $ = id => document.getElementById(id);
-
-  const els = {
-    senderName: $('f-sender-name'), senderAddress: $('f-sender-address'),
-    senderEmail: $('f-sender-email'), senderPhone: $('f-sender-phone'),
-    recipientName: $('f-recipient-name'), recipientAddress: $('f-recipient-address'),
-    date: $('f-date'), subject: $('f-subject'), greeting: $('f-greeting'),
-    body: $('f-body'), closing: $('f-closing'), attachments: $('f-attachments'),
-    draftsList: $('drafts-list'), newDraftBtn: $('new-draft-btn'),
-    menuBtn: $('menu-btn'), menuOverlay: $('menu-overlay'), menuClose: $('menu-close'),
-    menuRename: $('menu-rename'), menuDuplicate: $('menu-duplicate'),
-    menuExport: $('menu-export'), menuImport: $('menu-import'), menuDelete: $('menu-delete'),
-    importFile: $('import-file'),
-    previewBtn: $('preview-btn'), pdfBtn: $('pdf-btn'),
-    preview: $('preview'), previewBack: $('preview-back'), previewPrint: $('preview-print'),
-    pOverline: $('p-overline'), pRecipient: $('p-recipient'),
-    pSidebar: $('p-sidebar'), pSubject: $('p-subject'),
-    pBody: $('p-body'), pAttachments: $('p-attachments'),
-    templates: document.querySelectorAll('.template-pill'),
-    toast: $('toast')
-  };
-
-  const FIELD_MAP = {
-    senderName: 'senderName', senderAddress: 'senderAddress',
-    senderEmail: 'senderEmail', senderPhone: 'senderPhone',
-    recipientName: 'recipientName', recipientAddress: 'recipientAddress',
-    date: 'date', subject: 'subject', greeting: 'greeting',
-    body: 'body', closing: 'closing', attachments: 'attachments'
-  };
-
-  function formatToday() {
-    const months = ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
-    const d = new Date();
-    return d.getDate() + '. ' + months[d.getMonth()] + ' ' + d.getFullYear();
-  }
-
-  function escapeHtml(str) {
-    if (!str) return '';
-    return String(str)
-      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;').replace(/'/g, '&#039;');
-  }
-
-  function showToast(msg) {
-    els.toast.textContent = msg;
-    els.toast.classList.add('is-visible');
-    clearTimeout(showToast._t);
-    showToast._t = setTimeout(() => els.toast.classList.remove('is-visible'), 2200);
-  }
-
-  function loadDrafts() {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) drafts = JSON.parse(raw) || {};
-    } catch (e) { drafts = {}; }
-
-    activeId = localStorage.getItem(ACTIVE_KEY);
-
-    if (Object.keys(drafts).length === 0) {
-      const d = blankDraft();
-      drafts[d.id] = d;
-      activeId = d.id;
-    }
-    if (!activeId || !drafts[activeId]) activeId = Object.keys(drafts)[0];
-  }
-
-  function persist() {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(drafts));
-      localStorage.setItem(ACTIVE_KEY, activeId);
-    } catch (e) { showToast('Speichern fehlgeschlagen'); }
-  }
-
-  function debouncedSave() {
-    clearTimeout(saveTimer);
-    saveTimer = setTimeout(() => {
-      const d = drafts[activeId];
-      if (!d) return;
-      d.updated = Date.now();
-      // Auto-name from subject or recipient, but only if it looks like real text
-      if (d.name === 'Neuer Entwurf' || !d.name) {
-        const candidate = (d.fields.subject || d.fields.recipientName || '').trim();
-        // Require at least 2 letters/digits (not just punctuation/symbols)
-        if (candidate && /[\p{L}\p{N}]{2,}/u.test(candidate)) {
-          d.name = candidate.slice(0, 30);
-        }
-      }
-      persist();
-      renderDrafts();
-    }, 400);
-  }
-
-  function fillForm(draft) {
-    Object.keys(FIELD_MAP).forEach(k => {
-      const el = els[FIELD_MAP[k]];
-      if (el) el.value = draft.fields[k] || '';
-    });
-  }
-
-  function getFromForm() {
-    const fields = {};
-    Object.keys(FIELD_MAP).forEach(k => {
-      const el = els[FIELD_MAP[k]];
-      fields[k] = el ? el.value : '';
-    });
-    return fields;
-  }
-
-  function onFieldChange() {
-    const d = drafts[activeId];
-    if (!d) return;
-    d.fields = getFromForm();
-    debouncedSave();
-  }
-
-  function renderDrafts() {
-    const list = Object.values(drafts).sort((a, b) => b.updated - a.updated);
-    els.draftsList.innerHTML = '';
-    list.forEach(d => {
-      const btn = document.createElement('button');
-      btn.className = 'draft-chip' + (d.id === activeId ? ' is-active' : '');
-      btn.type = 'button';
-      btn.dataset.id = d.id;
-
-      const nameSpan = document.createElement('span');
-      nameSpan.className = 'draft-chip-name';
-      nameSpan.textContent = d.name || 'Ohne Titel';
-      btn.appendChild(nameSpan);
-
-      const xBtn = document.createElement('span');
-      xBtn.className = 'draft-chip-x';
-      xBtn.setAttribute('role', 'button');
-      xBtn.setAttribute('aria-label', 'Entwurf löschen');
-      xBtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
-      xBtn.addEventListener('click', e => {
-        e.stopPropagation();
-        deleteDraftById(d.id);
-      });
-      btn.appendChild(xBtn);
-
-      btn.addEventListener('click', () => switchDraft(d.id));
-      els.draftsList.appendChild(btn);
-    });
-  }
-
-  function deleteDraftById(id) {
-    const d = drafts[id];
-    if (!d) return;
-    if (!confirm('Entwurf "' + (d.name || 'Ohne Titel') + '" wirklich löschen?')) return;
-    delete drafts[id];
-    if (Object.keys(drafts).length === 0) {
-      const nd = blankDraft();
-      drafts[nd.id] = nd;
-      activeId = nd.id;
-    } else if (id === activeId) {
-      activeId = Object.keys(drafts)[0];
-    }
-    fillForm(drafts[activeId]);
-    persist();
-    renderDrafts();
-    showToast('Entwurf gelöscht');
-  }
-
-  function switchDraft(id) {
-    if (!drafts[id]) return;
-    activeId = id;
-    fillForm(drafts[id]);
-    persist();
-    renderDrafts();
-  }
-
-  function newDraft() {
-    const d = blankDraft();
-    drafts[d.id] = d;
-    activeId = d.id;
-    fillForm(d);
-    persist();
-    renderDrafts();
-    showToast('Neuer Entwurf erstellt');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-    setTimeout(() => els.recipientName.focus(), 300);
-  }
-
-  function duplicateDraft() {
-    const cur = drafts[activeId];
-    if (!cur) return;
-    const copy = JSON.parse(JSON.stringify(cur));
-    copy.id = 'd_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-    copy.name = (cur.name || 'Entwurf') + ' (Kopie)';
-    copy.updated = Date.now();
-    drafts[copy.id] = copy;
-    activeId = copy.id;
-    fillForm(copy);
-    persist();
-    renderDrafts();
-    showToast('Entwurf dupliziert');
-  }
-
-  function renameDraft() {
-    const cur = drafts[activeId];
-    if (!cur) return;
-    const name = prompt('Name des Entwurfs:', cur.name || '');
-    if (name === null) return;
-    cur.name = name.trim() || 'Ohne Titel';
-    persist();
-    renderDrafts();
-    showToast('Umbenannt');
-  }
-
-  function deleteDraft() {
-    if (activeId) deleteDraftById(activeId);
-  }
-
-  function applyTemplate(key) {
-    const t = TEMPLATES[key];
-    if (!t) return;
-    const d = drafts[activeId];
-    if (!d) return;
-    if (d.fields.body && d.fields.body.trim() &&
-        !confirm('Aktuellen Text mit Vorlage überschreiben?')) return;
-    d.fields.subject = t.subject;
-    d.fields.greeting = t.greeting;
-    d.fields.body = t.body;
-    d.fields.closing = t.closing;
-    d.fields.attachments = t.attachments;
-    if (d.name === 'Neuer Entwurf') d.name = t.name;
-    fillForm(d);
-    persist();
-    renderDrafts();
-    showToast('Vorlage geladen: ' + t.name);
-  }
-
-  function renderPreview() {
-    const d = drafts[activeId];
-    if (!d) return;
-    const f = d.fields;
-
-    // Address overline (small line above recipient, mimicking envelope window).
-    // Only show if BOTH name and address are filled, otherwise looks weird.
-    if (f.senderName && f.senderAddress) {
-      const overlineParts = [
-        f.senderName,
-        f.senderAddress.replace(/\n+/g, ', ').trim()
-      ].filter(Boolean).join(', ');
-      els.pOverline.textContent = overlineParts;
-      els.pOverline.style.display = '';
-    } else {
-      els.pOverline.textContent = '';
-      els.pOverline.style.display = 'none';
-    }
-
-    const recipientLines = [f.recipientName, f.recipientAddress]
-      .filter(s => s && s.trim()).join('\n');
-    els.pRecipient.innerHTML = escapeHtml(recipientLines).replace(/\n/g, '<br>');
-
-    // Sidebar: sender details + email + phone + date, each block separated.
-    // Only include non-empty blocks to avoid stray blank lines.
-    const sidebarBlocks = [];
-    const senderBlock = [f.senderName, f.senderAddress].filter(s => s && s.trim()).join('\n');
-    if (senderBlock) sidebarBlocks.push(senderBlock);
-    if (f.senderEmail && f.senderEmail.trim()) sidebarBlocks.push(f.senderEmail);
-    if (f.senderPhone && f.senderPhone.trim()) sidebarBlocks.push(f.senderPhone);
-    if (f.date && f.date.trim()) sidebarBlocks.push(f.date);
-    const sidebarHtml = sidebarBlocks
-      .map(b => escapeHtml(b).replace(/\n/g, '<br>'))
-      .join('<br><br>');
-    els.pSidebar.innerHTML = sidebarHtml;
-
-    els.pSubject.textContent = f.subject || '';
-
-    const bodyParts = [];
-    if (f.greeting) bodyParts.push('<p>' + escapeHtml(f.greeting) + '</p>');
-    if (f.body) {
-      f.body.split(/\n\s*\n/).forEach(par => {
-        if (par.trim()) bodyParts.push('<p>' + escapeHtml(par).replace(/\n/g, '<br>') + '</p>');
-      });
-    }
-    if (f.closing) {
-      bodyParts.push('<p>' + escapeHtml(f.closing) + '<br><br><br>' + escapeHtml(f.senderName || '') + '</p>');
-    }
-    els.pBody.innerHTML = bodyParts.join('');
-
-    if (f.attachments && f.attachments.trim()) {
-      els.pAttachments.innerHTML =
-        '<p class="attachments-hd"><em>Anlagen</em>:</p>' +
-        '<div class="attachments-bd">' + escapeHtml(f.attachments).replace(/\n/g, '<br>') + '</div>';
-    } else {
-      els.pAttachments.innerHTML = '';
-    }
-
-    updatePreviewScale();
-  }
-
-  // 210mm at 96 DPI ≈ 793.7px. Scale page to fit available width.
-  function updatePreviewScale() {
-    const A4_WIDTH_PX = 793.7;
-    const padding = 24; // 12px each side
-    const available = Math.min(window.innerWidth, 900) - padding;
-    const scale = Math.min(1, available / A4_WIDTH_PX);
-    document.documentElement.style.setProperty('--scale', scale.toFixed(4));
-  }
-
-  function openPreview() {
-    renderPreview();
-    els.preview.classList.add('is-open');
-    els.preview.setAttribute('aria-hidden', 'false');
-    document.body.style.overflow = 'hidden';
-  }
-
-  function closePreview() {
-    els.preview.classList.remove('is-open');
-    els.preview.setAttribute('aria-hidden', 'true');
-    document.body.style.overflow = '';
-  }
-
-  function printLetter() {
-    renderPreview();
-    setTimeout(() => window.print(), 50);
-  }
-
-  function exportJson() {
-    const cur = drafts[activeId];
-    if (!cur) return;
-    const data = JSON.stringify(cur, null, 2);
-    const blob = new Blob([data], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'brief-' + (cur.name || 'entwurf').replace(/[^a-z0-9äöüß]+/gi, '-').toLowerCase() + '.json';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    showToast('Exportiert');
-  }
-
-  function importJson(file) {
-    const reader = new FileReader();
-    reader.onload = e => {
-      try {
-        const obj = JSON.parse(e.target.result);
-        if (!obj.fields) throw new Error('Ungültiges Format');
-        obj.id = 'd_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-        obj.updated = Date.now();
-        drafts[obj.id] = obj;
-        activeId = obj.id;
-        fillForm(obj);
-        persist();
-        renderDrafts();
-        showToast('Importiert');
-      } catch (err) {
-        showToast('Import fehlgeschlagen');
-      }
-    };
-    reader.readAsText(file);
-  }
-
-  function openMenu()  { els.menuOverlay.hidden = false; }
-  function closeMenu() { els.menuOverlay.hidden = true; }
-
-  function bindEvents() {
-    Object.values(FIELD_MAP).forEach(key => {
-      const el = els[key];
-      if (el) el.addEventListener('input', onFieldChange);
-    });
-
-    els.newDraftBtn.addEventListener('click', newDraft);
-
-    els.templates.forEach(btn => {
-      btn.addEventListener('click', () => applyTemplate(btn.dataset.template));
-    });
-
-    els.previewBtn.addEventListener('click', openPreview);
-    els.previewBack.addEventListener('click', closePreview);
-    els.previewPrint.addEventListener('click', printLetter);
-    els.pdfBtn.addEventListener('click', printLetter);
-
-    els.menuBtn.addEventListener('click', openMenu);
-    els.menuClose.addEventListener('click', closeMenu);
-    els.menuOverlay.addEventListener('click', e => {
-      if (e.target === els.menuOverlay) closeMenu();
-    });
-    els.menuRename.addEventListener('click', () => { closeMenu(); renameDraft(); });
-    els.menuDuplicate.addEventListener('click', () => { closeMenu(); duplicateDraft(); });
-    els.menuDelete.addEventListener('click', () => { closeMenu(); deleteDraft(); });
-    els.menuExport.addEventListener('click', () => { closeMenu(); exportJson(); });
-    els.menuImport.addEventListener('click', () => { closeMenu(); els.importFile.click(); });
-
-    els.importFile.addEventListener('change', e => {
-      const file = e.target.files[0];
-      if (file) importJson(file);
-      e.target.value = '';
-    });
-
-    document.addEventListener('keydown', e => {
-      if (e.key !== 'Escape') return;
-      if (els.preview.classList.contains('is-open')) closePreview();
-      else if (!els.menuOverlay.hidden) closeMenu();
-    });
-
-    window.addEventListener('resize', () => {
-      updatePreviewScale();
-    });
-    window.addEventListener('orientationchange', updatePreviewScale);
-  }
-
-  function init() {
-    loadDrafts();
-    fillForm(drafts[activeId]);
-    renderDrafts();
-    bindEvents();
-  }
-
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
+/* ---- Render letter into DOM elements ---- */
+function renderLetter(ids, f){
+  var hasFrom=f.sname&&f.sname.trim()&&f.saddr&&f.saddr.trim();
+  if(hasFrom){
+    ids.from.textContent=[f.sname, f.saddr.replace(/\n+/g,', ').trim()].join(', ');
+    ids.from.style.display='';
   } else {
-    init();
+    ids.from.textContent=''; ids.from.style.display='none';
   }
+
+  ids.to.innerHTML=esc([f.rname,f.raddr].filter(function(s){ return s&&s.trim(); }).join('\n')).replace(/\n/g,'<br>');
+
+  var sb=[];
+  var sblock=[f.sname,f.saddr].filter(function(s){ return s&&s.trim(); }).join('\n');
+  if(sblock) sb.push(sblock);
+  if(f.semail&&f.semail.trim()) sb.push(f.semail);
+  if(f.sphone&&f.sphone.trim()) sb.push(f.sphone);
+  if(f.date&&f.date.trim()) sb.push(f.date);
+  ids.sidebar.innerHTML=sb.map(function(b){ return esc(b).replace(/\n/g,'<br>'); }).join('<br><br>');
+
+  ids.subj.textContent=f.subj||'';
+
+  var parts=[];
+  if(f.greet) parts.push('<p>'+esc(f.greet)+'</p>');
+  (f.body||'').split(/\n\s*\n/).forEach(function(p){ if(p.trim()) parts.push('<p>'+esc(p).replace(/\n/g,'<br>')+'</p>'); });
+  if(f.close) parts.push('<p>'+esc(f.close)+'<br><br><br>'+esc(f.sname||'')+'</p>');
+  ids.body.innerHTML=parts.join('');
+
+  if(f.attach&&f.attach.trim()){
+    ids.attach.innerHTML='<p><em>Anlagen</em>:</p><div>'+esc(f.attach).replace(/\n/g,'<br>')+'</div>';
+  } else { ids.attach.innerHTML=''; }
+}
+
+/* ---- Scale preview to fit screen ---- */
+function scalePreview(){
+  var W=794, H=1123;
+  var avail=Math.min(window.innerWidth,680)-24;
+  var s=Math.min(1, avail/W);
+  document.documentElement.style.setProperty('--s', s.toFixed(4));
+  E.sizer.style.width=Math.round(W*s)+'px';
+  E.sizer.style.height=Math.round(H*s)+'px';
+}
+
+/* ---- Preview open/close ---- */
+function openPreview(){
+  var f=drafts[active]?drafts[active].f:{};
+  renderLetter({from:E.pvFrom,to:E.pvTo,sidebar:E.pvSidebar,subj:E.pvSubj,body:E.pvBody,attach:E.pvAttach},f);
+  scalePreview();
+  E.preview.classList.add('open');
+  E.preview.setAttribute('aria-hidden','false');
+  document.body.style.overflow='hidden';
+}
+function closePreview(){
+  E.preview.classList.remove('open');
+  E.preview.setAttribute('aria-hidden','true');
+  document.body.style.overflow='';
+}
+
+/* ---- Print/PDF ---- */
+function doPrint(){
+  var f=drafts[active]?drafts[active].f:{};
+  renderLetter({from:E.prFrom,to:E.prTo,sidebar:E.prSidebar,subj:E.prSubj,body:E.prBody,attach:E.prAttach},f);
+  E.printWrap.style.display='block';
+  // Brief pause so browser renders the full-size page before print dialog
+  setTimeout(function(){
+    window.print();
+    setTimeout(function(){ E.printWrap.style.display='none'; },1500);
+  },80);
+}
+
+/* ---- Menu ---- */
+function openMenu(){ E.menuWrap.hidden=false; }
+function closeMenu(){ E.menuWrap.hidden=true; }
+
+/* ---- Event binding ---- */
+function bind(){
+  FIELDS.forEach(function(k){ if(E[k]) E[k].addEventListener('input',onInput); });
+  E.btnNew.addEventListener('click',newDraft);
+  E.tpls.forEach(function(b){ b.addEventListener('click',function(){ applyTpl(b.dataset.tpl); }); });
+  E.btnPreview.addEventListener('click',openPreview);
+  E.btnBack.addEventListener('click',closePreview);
+  E.btnPrint.addEventListener('click',doPrint);
+  E.btnPdf.addEventListener('click',doPrint);
+  E.menuBtn.addEventListener('click',openMenu);
+  E.menuClose.addEventListener('click',closeMenu);
+  E.menuWrap.addEventListener('click',function(e){ if(e.target===E.menuWrap) closeMenu(); });
+  E.mRename.addEventListener('click',function(){ closeMenu(); renameDraft(); });
+  E.mDup.addEventListener('click',function(){ closeMenu(); dupDraft(); });
+  E.mExport.addEventListener('click',function(){ closeMenu(); exportDraft(); });
+  E.mImport.addEventListener('click',function(){ closeMenu(); E.fileImport.click(); });
+  E.mDel.addEventListener('click',function(){ closeMenu(); deleteDraftById(active); });
+  E.fileImport.addEventListener('change',function(e){ if(e.target.files[0]) importDraft(e.target.files[0]); e.target.value=''; });
+  document.addEventListener('keydown',function(e){
+    if(e.key!=='Escape') return;
+    if(E.preview.classList.contains('open')) closePreview();
+    else if(!E.menuWrap.hidden) closeMenu();
+  });
+  window.addEventListener('resize',function(){ if(E.preview.classList.contains('open')) scalePreview(); });
+  if(screen.orientation) screen.orientation.addEventListener('change',scalePreview);
+}
+
+/* ---- Init ---- */
+function init(){
+  loadDrafts(); fillForm(drafts[active]); renderDrafts(); bind();
+}
+document.readyState==='loading'
+  ? document.addEventListener('DOMContentLoaded',init)
+  : init();
+
 })();
 </script>
 
