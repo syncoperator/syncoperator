@@ -471,12 +471,18 @@ input, textarea { font-family: inherit; }
 .preview-print { background: white; color: var(--ink); }
 .preview-print:hover { background: rgba(255,255,255,.9); }
 
-/* The actual A4 page */
+/* The actual A4 page – wrapped so scaling preserves layout */
+.page-wrap {
+  display: flex;
+  justify-content: center;
+  padding: 20px 12px 40px;
+}
+
 .page {
   position: relative;
   width: 210mm;
+  min-width: 210mm;
   height: 297mm;
-  margin: 30px auto;
   padding: 24mm;
   background: var(--paper);
   box-shadow: 0 5px 50px rgba(0,0,0,.4);
@@ -485,7 +491,8 @@ input, textarea { font-family: inherit; }
   line-height: 14pt;
   color: #000;
   box-sizing: border-box;
-  transform-origin: top center;
+  transform-origin: top left;
+  flex-shrink: 0;
 }
 
 .address-overlay {
@@ -586,16 +593,23 @@ input, textarea { font-family: inherit; }
 .line-2 { top: 148.5mm; width: 5mm; }
 .line-3 { top: 210mm; width: 3mm; }
 
-/* === RESPONSIVE PREVIEW SCALING === */
-@media (max-width: 820px) {
-  .page {
-    transform: scale(calc((100vw - 24px) / 794));
-    margin-top: 12px;
-    margin-bottom: 0;
-  }
-  .preview {
-    padding-bottom: calc(297mm * ((100vw - 24px) / 794) - 297mm + 40px);
-  }
+/* === RESPONSIVE PREVIEW SCALING ===
+   Page is rendered at 210mm and JS sets a CSS variable --scale.
+   We use a wrapper to absorb the scaled size so layout stays clean. */
+.page {
+  transform: scale(var(--scale, 1));
+}
+
+.page-wrap {
+  /* Reserve space equal to the scaled page so scrolling works */
+  min-height: calc(297mm * var(--scale, 1) + 60px);
+  width: 100%;
+}
+
+.page-sizer {
+  width: calc(210mm * var(--scale, 1));
+  height: calc(297mm * var(--scale, 1));
+  position: relative;
 }
 
 @media (max-width: 420px) {
@@ -629,6 +643,7 @@ input, textarea { font-family: inherit; }
     background: white !important;
     width: 210mm;
     height: 297mm;
+    --scale: 1 !important;
   }
 
   .no-print, .editor, .preview-header, .menu-overlay, .toast, .action-bar {
@@ -640,6 +655,15 @@ input, textarea { font-family: inherit; }
     position: static !important;
     background: white !important;
     overflow: visible !important;
+  }
+
+  .page-wrap, .page-sizer {
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 210mm !important;
+    height: 297mm !important;
+    min-height: 0 !important;
+    display: block !important;
   }
 
   .page {
@@ -833,33 +857,37 @@ input, textarea { font-family: inherit; }
     </button>
   </div>
 
-  <article class="page" id="page">
-    <div class="address-overlay" aria-hidden="true"></div>
+  <div class="page-wrap">
+    <div class="page-sizer">
+      <article class="page" id="page">
+        <div class="address-overlay" aria-hidden="true"></div>
 
 ```
-<div class="address-wrapper">
-  <div class="address-overline" id="p-overline"></div>
-  <div class="address-block" id="p-recipient"></div>
-</div>
+    <div class="address-wrapper">
+      <div class="address-overline" id="p-overline"></div>
+      <div class="address-block" id="p-recipient"></div>
+    </div>
 
-<aside class="sidebar">
-  <div class="sidebar-inner">
-    <div class="sidebar-text" id="p-sidebar"></div>
-  </div>
-</aside>
+    <aside class="sidebar">
+      <div class="sidebar-inner">
+        <div class="sidebar-text" id="p-sidebar"></div>
+      </div>
+    </aside>
 
-<section class="body">
-  <div class="body-subject" id="p-subject"></div>
-  <div class="body-text" id="p-body"></div>
-  <div class="footer-attachments" id="p-attachments"></div>
-</section>
+    <section class="body">
+      <div class="body-subject" id="p-subject"></div>
+      <div class="body-text" id="p-body"></div>
+      <div class="footer-attachments" id="p-attachments"></div>
+    </section>
 
-<span class="line line-1" aria-hidden="true"></span>
-<span class="line line-2" aria-hidden="true"></span>
-<span class="line line-3" aria-hidden="true"></span>
-```
-
+    <span class="line line-1" aria-hidden="true"></span>
+    <span class="line line-2" aria-hidden="true"></span>
+    <span class="line line-3" aria-hidden="true"></span>
   </article>
+</div>
+```
+
+  </div>
 </section>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
@@ -1160,21 +1188,36 @@ input, textarea { font-family: inherit; }
     if (!d) return;
     const f = d.fields;
 
-    const overlineParts = [f.senderName, f.senderAddress.replace(/\n/g, ', ')]
-      .filter(Boolean).join(', ');
-    els.pOverline.textContent = overlineParts;
+    // Address overline (small line above recipient, mimicking envelope window).
+    // Only show if BOTH name and address are filled, otherwise looks weird.
+    if (f.senderName && f.senderAddress) {
+      const overlineParts = [
+        f.senderName,
+        f.senderAddress.replace(/\n+/g, ', ').trim()
+      ].filter(Boolean).join(', ');
+      els.pOverline.textContent = overlineParts;
+      els.pOverline.style.display = '';
+    } else {
+      els.pOverline.textContent = '';
+      els.pOverline.style.display = 'none';
+    }
 
     const recipientLines = [f.recipientName, f.recipientAddress]
-      .filter(Boolean).join('\n');
+      .filter(s => s && s.trim()).join('\n');
     els.pRecipient.innerHTML = escapeHtml(recipientLines).replace(/\n/g, '<br>');
 
-    const sidebarLines = [
-      f.senderName, f.senderAddress,
-      f.senderEmail ? '\n' + f.senderEmail : '',
-      f.senderPhone ? f.senderPhone : '',
-      f.date ? '\n' + f.date : ''
-    ].filter(Boolean).join('\n');
-    els.pSidebar.innerHTML = escapeHtml(sidebarLines).replace(/\n/g, '<br>');
+    // Sidebar: sender details + email + phone + date, each block separated.
+    // Only include non-empty blocks to avoid stray blank lines.
+    const sidebarBlocks = [];
+    const senderBlock = [f.senderName, f.senderAddress].filter(s => s && s.trim()).join('\n');
+    if (senderBlock) sidebarBlocks.push(senderBlock);
+    if (f.senderEmail && f.senderEmail.trim()) sidebarBlocks.push(f.senderEmail);
+    if (f.senderPhone && f.senderPhone.trim()) sidebarBlocks.push(f.senderPhone);
+    if (f.date && f.date.trim()) sidebarBlocks.push(f.date);
+    const sidebarHtml = sidebarBlocks
+      .map(b => escapeHtml(b).replace(/\n/g, '<br>'))
+      .join('<br><br>');
+    els.pSidebar.innerHTML = sidebarHtml;
 
     els.pSubject.textContent = f.subject || '';
 
@@ -1197,6 +1240,17 @@ input, textarea { font-family: inherit; }
     } else {
       els.pAttachments.innerHTML = '';
     }
+
+    updatePreviewScale();
+  }
+
+  // 210mm at 96 DPI ≈ 793.7px. Scale page to fit available width.
+  function updatePreviewScale() {
+    const A4_WIDTH_PX = 793.7;
+    const padding = 24; // 12px each side
+    const available = Math.min(window.innerWidth, 900) - padding;
+    const scale = Math.min(1, available / A4_WIDTH_PX);
+    document.documentElement.style.setProperty('--scale', scale.toFixed(4));
   }
 
   function openPreview() {
@@ -1298,8 +1352,9 @@ input, textarea { font-family: inherit; }
     });
 
     window.addEventListener('resize', () => {
-      if (els.preview.classList.contains('is-open')) renderPreview();
+      updatePreviewScale();
     });
+    window.addEventListener('orientationchange', updatePreviewScale);
   }
 
   function init() {
