@@ -553,41 +553,34 @@ font-size: 10pt; line-height: 14pt;
 .fold-3 { top: 794px;  height: 11px; }
 
 /* ═══════════════════════════════════════
-PRINT  — only the hidden print-page
+PRINT
 ═══════════════════════════════════════ */
-#print-page {
-display: none;
-position: fixed; inset: 0; z-index: -1;
-}
+#print-page { display: none; }
 
 @media print {
-@page { size: A4; margin: 0; }
-
-- { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-
-/* hide everything except the print page */
-body > *:not(#print-page) { display: none !important; }
-
+@page { size: A4 portrait; margin: 0; }
+html, body { margin: 0 !important; padding: 0 !important; background: white !important; }
+/* JS adds .printing class to body before window.print() */
+body.printing > *          { display: none !important; }
+body.printing > #print-page { display: block !important; }
 #print-page {
-display: block !important;
-position: static !important;
-z-index: auto !important;
-background: white;
+display: none;
+position: fixed;
+top: 0; left: 0;
 width: 210mm; height: 297mm;
+background: white;
 }
-
 .pp {
 position: relative;
 width: 210mm; height: 297mm;
 padding: 24mm;
 box-sizing: border-box;
+overflow: hidden;
 font-family: ‘Helvetica Neue’, Arial, sans-serif;
 font-size: 10pt; line-height: 14pt;
 color: #000;
 background: white;
-overflow: hidden;
 }
-
 .pp .a4-win  { display: none; }
 .pp .a4-from { position: absolute; left: 20mm; top: 126pt; width: 90mm; font-size: 7.5pt; line-height: 11pt; color: #666; }
 .pp .a4-to   { position: absolute; left: 20mm; top: 146pt; width: 90mm; font-size: 10pt; line-height: 14pt; }
@@ -805,6 +798,9 @@ overflow: hidden;
       </svg>
       Drucken / PDF
     </button>
+  </div>
+  <div style="text-align:center;padding:6px 16px 0;font-size:11px;color:rgba(255,255,255,.5);letter-spacing:.01em">
+    iOS: Dialog öffnet sich → Teilen-Symbol → „In Dateien sichern" → PDF
   </div>
 
   <div class="page-outer">
@@ -1165,18 +1161,26 @@ function closePreview(){
 }
 
 /* ── Print / PDF ──
-   Renders the full-size print page, shows it, calls window.print().
-   On iOS Safari: print dialog → share icon → "In Dateien sichern" → PDF.
-   On desktop Chrome/Edge: "Als PDF speichern" printer.                    */
+   Adds .printing class to body (hides all but #print-page),
+   calls window.print(), then removes class.
+   iOS: dialog → share → "In Dateien sichern" → PDF
+   Desktop: select "Als PDF speichern" printer              */
 function doPrint(){
   var f=DB[active]?DB[active].f:{};
   renderLetter({from:G.ppFrom,to:G.ppTo,side:G.ppSide,subj:G.ppSubj,body:G.ppBody,attach:G.ppAttach},f);
   G.printPage.style.display='block';
+  document.body.classList.add('printing');
+  // Two rAF to let browser render before opening print dialog
   requestAnimationFrame(function(){
     requestAnimationFrame(function(){
       window.print();
-      /* hide after print dialog closes */
-      setTimeout(function(){ G.printPage.style.display='none'; },2000);
+      // Restore after dialog (afterprint fires on desktop; timeout as fallback for iOS)
+      function restore(){
+        document.body.classList.remove('printing');
+        G.printPage.style.display='none';
+      }
+      window.addEventListener('afterprint', restore, {once:true});
+      setTimeout(restore, 3000);
     });
   });
 }
