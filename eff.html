@@ -142,7 +142,7 @@ input, textarea { font-family: inherit; }
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 8px 14px;
+  padding: 8px 6px 8px 14px;
   background: var(--bg-card);
   border: 1px solid var(--line);
   border-radius: 999px;
@@ -159,10 +159,34 @@ input, textarea { font-family: inherit; }
   color: var(--accent-ink);
   border-color: var(--ink);
 }
+.draft-chip-name {
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.draft-chip-x {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  margin-left: 2px;
+  color: inherit;
+  opacity: .55;
+  transition: opacity .15s ease, background .15s ease;
+}
+.draft-chip-x:hover, .draft-chip-x:active {
+  opacity: 1;
+  background: rgba(255,255,255,.15);
+}
+.draft-chip:not(.is-active) .draft-chip-x:hover {
+  background: rgba(0,0,0,.08);
+}
 .new-chip {
   background: transparent;
   border: 1px dashed var(--line-strong);
   color: var(--ink-soft);
+  padding: 8px 14px;
 }
 .new-chip:hover { background: var(--bg-card); }
 
@@ -1054,9 +1078,13 @@ input, textarea { font-family: inherit; }
       const d = drafts[activeId];
       if (!d) return;
       d.updated = Date.now();
+      // Auto-name from subject or recipient, but only if it looks like real text
       if (d.name === 'Neuer Entwurf' || !d.name) {
-        const auto = d.fields.subject || d.fields.recipientName;
-        if (auto) d.name = auto.slice(0, 30);
+        const candidate = (d.fields.subject || d.fields.recipientName || '').trim();
+        // Require at least 2 letters/digits (not just punctuation/symbols)
+        if (candidate && /[\p{L}\p{N}]{2,}/u.test(candidate)) {
+          d.name = candidate.slice(0, 30);
+        }
       }
       persist();
       renderDrafts();
@@ -1093,11 +1121,45 @@ input, textarea { font-family: inherit; }
       const btn = document.createElement('button');
       btn.className = 'draft-chip' + (d.id === activeId ? ' is-active' : '');
       btn.type = 'button';
-      btn.textContent = d.name || 'Ohne Titel';
       btn.dataset.id = d.id;
+
+      const nameSpan = document.createElement('span');
+      nameSpan.className = 'draft-chip-name';
+      nameSpan.textContent = d.name || 'Ohne Titel';
+      btn.appendChild(nameSpan);
+
+      const xBtn = document.createElement('span');
+      xBtn.className = 'draft-chip-x';
+      xBtn.setAttribute('role', 'button');
+      xBtn.setAttribute('aria-label', 'Entwurf löschen');
+      xBtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+      xBtn.addEventListener('click', e => {
+        e.stopPropagation();
+        deleteDraftById(d.id);
+      });
+      btn.appendChild(xBtn);
+
       btn.addEventListener('click', () => switchDraft(d.id));
       els.draftsList.appendChild(btn);
     });
+  }
+
+  function deleteDraftById(id) {
+    const d = drafts[id];
+    if (!d) return;
+    if (!confirm('Entwurf "' + (d.name || 'Ohne Titel') + '" wirklich löschen?')) return;
+    delete drafts[id];
+    if (Object.keys(drafts).length === 0) {
+      const nd = blankDraft();
+      drafts[nd.id] = nd;
+      activeId = nd.id;
+    } else if (id === activeId) {
+      activeId = Object.keys(drafts)[0];
+    }
+    fillForm(drafts[activeId]);
+    persist();
+    renderDrafts();
+    showToast('Entwurf gelöscht');
   }
 
   function switchDraft(id) {
@@ -1147,21 +1209,7 @@ input, textarea { font-family: inherit; }
   }
 
   function deleteDraft() {
-    const cur = drafts[activeId];
-    if (!cur) return;
-    if (!confirm('Entwurf "' + cur.name + '" wirklich löschen?')) return;
-    delete drafts[activeId];
-    if (Object.keys(drafts).length === 0) {
-      const d = blankDraft();
-      drafts[d.id] = d;
-      activeId = d.id;
-    } else {
-      activeId = Object.keys(drafts)[0];
-    }
-    fillForm(drafts[activeId]);
-    persist();
-    renderDrafts();
-    showToast('Entwurf gelöscht');
+    if (activeId) deleteDraftById(activeId);
   }
 
   function applyTemplate(key) {
