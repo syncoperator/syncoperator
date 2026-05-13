@@ -477,25 +477,18 @@ function bldP(d,sN,sR,sP){
     +'</tr></table>'
     +'<table class="psv"><tr>'+sv+'</tr></table>'
     +(t('taw')?
-      '<div class="pauw"><div class="pauw-h">AUSWERTUNG</div><div class="pauw-t">'+(g('auw-text').textContent||'').replace(/\n/g,'<br>')+'</div></div>'
+      '<div class="pauw"><div class="pauw-h">AUSWERTUNG</div><div class="pauw-t">'+makeAuwText(d).replace(/\n/g,'<br>')+'</div></div>'
     :'');
 }
 
-function buildAuw(d){
-  var sAw=t('taw');
-  var wrap=g('auw-wrap');
-  if(!wrap)return;
-  wrap.classList.toggle('on',sAw);
-  if(!sAw)return;
-
+function makeAuwText(d){
   function fmt2(dec){
     var tot=Math.round(dec*60);
     var m=Math.floor(tot/60),s=tot%60;
     return m+' Minuten '+(s>0?(s+' Sekunden'):'');
   }
-  function fN2(n,d){return isFinite(n)?n.toLocaleString('de-DE',{minimumFractionDigits:d,maximumFractionDigits:d}):'—';}
+  function fN2(n,dc){return isFinite(n)?n.toLocaleString('de-DE',{minimumFractionDigits:dc,maximumFractionDigits:dc}):'—';}
   function fI2(n){return isFinite(n)?Math.round(n).toLocaleString('de-DE'):'—';}
-
   var bt=g('bt').value||'Bauteil', nr=g('nr').value||'—';
   var txt=
     'Auswertung der Produktionsoptimierung für '+bt+' mit der Zeichnungsnummer '+nr+'. '
@@ -511,8 +504,16 @@ function buildAuw(d){
       +'Die Berechnung basiert auf einem Maschinensatz von '+fN2(d.rt,2)+' € pro Stunde.\n\n'
       :'')
     +(t('tp')?'Der gesamte Effizienzgewinn liegt bei '+fN2(d.ePct,1)+' %.\n':'');
+  return txt.trim();
+}
 
-  g('auw-text').textContent=txt.trim();
+function buildAuw(d){
+  var sAw=t('taw');
+  var wrap=g('auw-wrap');
+  if(!wrap)return;
+  wrap.classList.toggle('on',sAw);
+  if(!sAw)return;
+  g('auw-text').textContent=makeAuwText(d);
 }
 
 function copyAuw(){
