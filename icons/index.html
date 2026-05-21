@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <meta name="mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title" content="Nakamura CNC"/>
+  <title>Nakamura WT-250 II</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%233B82F6'/><text y='22' x='5' font-size='18' font-weight='bold' fill='white' font-family='monospace'>N</text></svg>"/>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; background: #080A10; overflow: hidden; }
+    #root { height: 100%; }
+    #loading {
+      position: fixed; inset: 0;
+      background: #080A10;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 20px; z-index: 9999;
+    }
+    .load-logo {
+      width: 56px; height: 56px; border-radius: 12px;
+      background: linear-gradient(135deg, #3B82F6, #6366F1);
+      display: flex; align-items: center; justify-content: center;
+      font-family: monospace; font-size: 24px; font-weight: 700; color: #fff;
+      box-shadow: 0 0 30px rgba(59,130,246,0.5);
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+    .load-text {
+      font-family: 'Courier New', monospace;
+      font-size: 11px; letter-spacing: 3px;
+      text-transform: uppercase; color: #3A4060;
+    }
+    .load-bar {
+      width: 160px; height: 2px;
+      background: #1E2333; border-radius: 1px; overflow: hidden;
+    }
+    .load-fill {
+      height: 100%; width: 0%;
+      background: linear-gradient(90deg, #3B82F6, #8B5CF6);
+      animation: fill 1.8s ease-in-out forwards;
+    }
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 20px rgba(59,130,246,0.4); }
+      50% { box-shadow: 0 0 40px rgba(59,130,246,0.8); }
+    }
+    @keyframes fill {
+      0% { width: 0%; }
+      60% { width: 80%; }
+      100% { width: 100%; }
+    }
+    #error {
+      display: none; position: fixed; inset: 0;
+      background: #080A10; align-items: center; justify-content: center;
+      flex-direction: column; gap: 16px; padding: 24px; z-index: 9999;
+    }
+    #error h2 { color: #EF4444; font-family: monospace; font-size: 14px; letter-spacing: 2px; }
+    #error pre { color: #7A82A0; font-size: 11px; max-width: 100%; overflow: auto;
+      background: #0F1118; padding: 12px; border-radius: 8px; border: 1px solid #1E2333; }
+    #error button { padding: 10px 24px; background: #3B82F6; border: none; color: #fff;
+      border-radius: 8px; cursor: pointer; font-family: monospace; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <div id="loading">
+    <div class="load-logo">N</div>
+    <div class="load-text">Nakamura WT-250 II</div>
+    <div class="load-bar"><div class="load-fill"></div></div>
+    <div class="load-text" style="font-size:9px;margin-top:-10px">LOADING CNC SIMULATOR...</div>
+  </div>
+
+  <div id="error">
+    <div class="load-logo" style="background:linear-gradient(135deg,#B91C1C,#EF4444)">!</div>
+    <h2>ERROR LOADING APP</h2>
+    <pre id="error-msg"></pre>
+    <button onclick="location.reload()">RELOAD</button>
+  </div>
+
+  <div id="root"></div>
+
+  <!-- React + Babel -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <script>
+    // Hide loading when app is ready
+    window.__appReady = function() {
+      document.getElementById('loading').style.display = 'none';
+    };
+    window.__appError = function(msg) {
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('error').style.display = 'flex';
+      document.getElementById('error-msg').textContent = msg;
+    };
+
+    // Load the app
+    fetch('nakamura-v6.jsx')
+      .then(r => {
+        if (!r.ok) throw new Error('Failed to load nakamura-v6.jsx: ' + r.status);
+        return r.text();
+      })
+      .then(code => {
+        // Transform JSX to JS
+        const transformed = Babel.transform(code, {
+          presets: ['react'],
+          plugins: []
+        }).code;
+
+        // Create module-like execution context
+        const moduleWrapper = new Function(
+          'React', 'ReactDOM',
+          transformed + '\n\n' +
+          'const root = ReactDOM.createRoot(document.getElementById("root"));\n' +
+          'root.render(React.createElement(App));\n' +
+          'window.__appReady();'
+        );
+
+        moduleWrapper(React, ReactDOM);
+      })
+      .catch(err => {
+        console.error(err);
+        window.__appError(err.message || String(err));
+      });
+  </script>
+</body>
+</html>
