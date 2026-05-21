@@ -13,16 +13,16 @@
     html,body{height:100%;background:#080A10;overflow:hidden;}
     #root{height:100%;}
     #loading{position:fixed;inset:0;background:#080A10;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;z-index:9999;}
-    .ll{width:56px;height:56px;border-radius:12px;background:linear-gradient(135deg,#3B82F6,#6366F1);display:flex;align-items:center;justify-content:center;font-family:monospace;font-size:24px;font-weight:700;color:#fff;box-shadow:0 0 30px rgba(59,130,246,.5);animation:pulse 1.5s ease-in-out infinite;}
+    .ll{width:56px;height:56px;border-radius:12px;background:linear-gradient(135deg,#3B82F6,#6366F1);display:flex;align-items:center;justify-content:center;font-family:monospace;font-size:24px;font-weight:700;color:#fff;animation:pulse 1.5s ease-in-out infinite;}
     .lt{font-family:'Courier New',monospace;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#3A4060;}
     .lb{width:160px;height:2px;background:#1E2333;border-radius:1px;overflow:hidden;}
-    .lf{height:100%;width:0%;background:linear-gradient(90deg,#3B82F6,#8B5CF6);animation:fill 2s ease-in-out forwards;}
+    .lf{height:100%;background:linear-gradient(90deg,#3B82F6,#8B5CF6);animation:fill 2s ease-in-out forwards;}
     @keyframes pulse{0%,100%{box-shadow:0 0 20px rgba(59,130,246,.4);}50%{box-shadow:0 0 40px rgba(59,130,246,.8);}}
-    @keyframes fill{0%{width:0%;}70%{width:85%;}100%{width:100%;}}
+    @keyframes fill{from{width:0%;}to{width:100%;}}
     #err{display:none;position:fixed;inset:0;background:#080A10;align-items:center;justify-content:center;flex-direction:column;gap:16px;padding:24px;z-index:9999;}
-    #err h2{color:#EF4444;font-family:monospace;font-size:13px;letter-spacing:2px;text-transform:uppercase;}
-    #err pre{color:#7A82A0;font-size:10px;max-width:100%;overflow:auto;background:#0F1118;padding:12px;border-radius:8px;border:1px solid #1E2333;white-space:pre-wrap;word-break:break-all;}
-    #err button{padding:10px 24px;background:#3B82F6;border:none;color:#fff;border-radius:8px;cursor:pointer;font-family:monospace;font-size:12px;letter-spacing:1px;}
+    #err h2{color:#EF4444;font-family:monospace;font-size:13px;letter-spacing:2px;}
+    #err pre{color:#7A82A0;font-size:10px;max-width:100%;overflow:auto;background:#0F1118;padding:12px;border-radius:8px;border:1px solid #1E2333;white-space:pre-wrap;word-break:break-all;max-height:300px;}
+    #err button{padding:10px 24px;background:#3B82F6;border:none;color:#fff;border-radius:8px;cursor:pointer;font-family:monospace;font-size:12px;}
   </style>
 </head>
 <body>
@@ -33,7 +33,7 @@
     <div class="lt" style="font-size:8px;margin-top:-10px;color:#2A3050">LOADING CNC SIMULATOR...</div>
   </div>
   <div id="err">
-    <div class="ll" style="background:linear-gradient(135deg,#B91C1C,#EF4444)">!</div>
+    <div class="ll" style="background:linear-gradient(135deg,#B91C1C,#EF4444);animation:none">!</div>
     <h2>ERROR LOADING APP</h2>
     <pre id="errmsg"></pre>
     <button onclick="location.reload()">RELOAD</button>
@@ -45,48 +45,58 @@
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
   <script>
+    function showError(msg) {
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('err').style.display = 'flex';
+      document.getElementById('errmsg').textContent = msg;
+    }
+
     fetch('nakamura-v6.jsx')
-      .then(r => {
+      .then(function(r) {
         if (!r.ok) throw new Error('HTTP ' + r.status + ': cannot load nakamura-v6.jsx');
         return r.text();
       })
-      .then(code => {
-        // Strip ES module import/export statements - we use UMD globals instead
-        code = code
-          .replace(/^import\s+React\s*,?\s*\{[^}]*\}\s+from\s+['"]react['"];?\s*/m, '')
-          .replace(/^import\s+\{[^}]*\}\s+from\s+['"]react['"];?\s*/m, '')
-          .replace(/^import\s+React\s+from\s+['"]react['"];?\s*/m, '')
-          .replace(/^export\s+default\s+function\s+/m, 'function ')
-          .replace(/^export\s+default\s+/m, 'var __AppExport = ');
+      .then(function(code) {
+        // Remove ALL import lines (lines starting with "import")
+        var lines = code.split('\n');
+        var filtered = lines.filter(function(line) {
+          var t = line.trim();
+          return !t.startsWith('import ') && !t.startsWith('import{');
+        });
+        // Remove export default
+        code = filtered.join('\n')
+          .replace(/export\s+default\s+function\s+App/g, 'function App');
 
-        // Inject React hooks from global React
-        const header = `
-var useState = React.useState;
-var useRef = React.useRef;
-var useEffect = React.useEffect;
-var useCallback = React.useCallback;
-var useMemo = React.useMemo;
-`;
-        code = header + code;
-
-        // Transform JSX
-        const result = Babel.transform(code, {
-          presets: [['react', { runtime: 'classic' }]],
+        // Transform JSX with Babel
+        var result = Babel.transform(code, {
+          presets: [['react', {runtime: 'classic'}]],
           filename: 'app.jsx'
         }).code;
 
-        // Execute and mount
-        const fn = new Function('React', 'ReactDOM', result + '\nreturn App;');
-        const App = fn(React, ReactDOM);
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(React.createElement(App));
+        // Run in a scope where React hooks are available
+        var fn = new Function(
+          'React','useState','useRef','useEffect','useCallback','useMemo','ReactDOM',
+          result + '\nreturn App;'
+        );
+
+        var App = fn(
+          React,
+          React.useState,
+          React.useRef,
+          React.useEffect,
+          React.useCallback,
+          React.useMemo,
+          ReactDOM
+        );
+
+        ReactDOM.createRoot(document.getElementById('root')).render(
+          React.createElement(App)
+        );
         document.getElementById('loading').style.display = 'none';
       })
-      .catch(err => {
+      .catch(function(err) {
         console.error(err);
-        document.getElementById('loading').style.display = 'none';
-        document.getElementById('err').style.display = 'flex';
-        document.getElementById('errmsg').textContent = err.message || String(err);
+        showError(err.message || String(err));
       });
   </script>
 </body>
