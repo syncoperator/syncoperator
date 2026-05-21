@@ -55,10 +55,10 @@ const G=`@import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@4
 .ln{height:22px;line-height:22px;padding-right:9px;text-align:right;font-size:10px;color:var(--inkM);}
 .ln.c{color:var(--blue);background:var(--blueL);}
 .ea{flex:1;position:relative;overflow:hidden;}
-.eo{position:absolute;inset:0;padding-top:10px;padding-left:12px;overflow:hidden;pointer-events:none;white-space:pre;text-transform:none;}
+.eo{position:absolute;inset:0;padding-top:10px;padding-left:12px;overflow:hidden;pointer-events:none;white-space:pre;text-transform:uppercase;}
 .el{height:22px;line-height:22px;}
 .el.c{background:rgba(59,130,246,.08);}
-.eta{position:absolute;inset:0;padding-top:10px;padding-left:12px;font-family:'Space Mono',monospace;font-size:12.5px;line-height:22px;background:transparent;border:none;outline:none;color:transparent;caret-color:var(--blue);resize:none;white-space:pre;overflow:auto;width:100%;height:100%;text-transform:none;}
+.eta{position:absolute;inset:0;padding-top:10px;padding-left:12px;font-family:'Space Mono',monospace;font-size:12.5px;line-height:22px;background:transparent;border:none;outline:none;color:transparent;caret-color:var(--blue);resize:none;white-space:pre;overflow:auto;width:100%;height:100%;text-transform:uppercase;}
 .ei{width:60px;flex-shrink:0;background:var(--p);border-left:1px solid var(--b1);display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:12px;gap:2px;font-family:'Space Mono',monospace;color:var(--inkM);font-size:8px;text-align:center;letter-spacing:1px;}
 .eiv{font-size:15px;font-weight:700;color:var(--blue);line-height:1;}
 .tc{border-radius:10px;border:1px solid var(--b1);overflow:hidden;background:var(--r);}
