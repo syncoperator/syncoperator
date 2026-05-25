@@ -822,7 +822,7 @@ body {
   box-shadow: 0 0 0 2px rgba(0,0,0,.06);
 }
 
-.print-page2, .print-header2, .meta-print, .wkz-table { display: none; }
+.print-page2, .print-header2, .meta-print, .wkz-table, .wkz-grid { display: none; }
 
 /* ═══════════════════════════════════════════════════
    PRINT — DIN A4 — matching reference PDF
@@ -1018,27 +1018,29 @@ body {
     grid-template-columns: 1fr 1fr;
     gap: 0;
     border: 1px solid #000;
-    margin-bottom: 6mm;
+    margin-bottom: 5mm;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
   }
   .meta-print-row {
     display: flex !important;
     align-items: stretch;
     border-bottom: 1px solid #000;
     border-right: 1px solid #000;
-    min-height: 9mm;
+    min-height: 7mm;
   }
   .meta-print-row:nth-child(2n) { border-right: none; }
   .meta-print-row:nth-last-child(-n+2) { border-bottom: none; }
   .meta-print-row:last-child:nth-child(odd) { grid-column: 1 / -1; border-right: none; }
   .mpr-label {
-    width: 42mm;
-    padding: 2mm 3mm;
+    width: 38mm;
+    padding: 1.5mm 2.5mm;
     background: #f0f0f0 !important;
     font-family: 'JetBrains Mono', monospace;
-    font-size: 8pt;
+    font-size: 7.5pt;
     font-weight: 600;
     color: #000;
-    letter-spacing: .04em;
+    letter-spacing: .03em;
     text-transform: uppercase;
     border-right: 1px solid #000;
     display: flex;
@@ -1046,9 +1048,9 @@ body {
   }
   .mpr-value {
     flex: 1;
-    padding: 2mm 3mm;
+    padding: 1.5mm 2.5mm;
     font-family: 'Inter', sans-serif;
-    font-size: 10pt;
+    font-size: 9pt;
     font-weight: 500;
     color: #000;
     display: flex;
@@ -1058,70 +1060,81 @@ body {
     content: '';
     flex: 1;
     border-bottom: 1px solid #999;
-    margin-bottom: 1.5mm;
+    margin-bottom: 1.2mm;
     align-self: flex-end;
     height: 0;
   }
   .mpr-value.is-empty { color: transparent; }
 
+  .wkz-grid {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr;
+    gap: 4mm;
+  }
+  .wkz-col { page-break-inside: avoid; }
+
   .wkz-table {
-    display: table !important;
     width: 100%;
     border-collapse: collapse;
-    font-size: 8.5pt;
+    font-size: 7.5pt;
     table-layout: fixed;
   }
   .wkz-table thead { display: table-header-group; }
-  .wkz-table tr { page-break-inside: avoid !important; }
+  .wkz-table tr { page-break-inside: avoid !important; break-inside: avoid !important; }
   .wkz-table th {
     background: #f0f0f0 !important;
     border: 1px solid #000;
-    padding: 2mm 2mm;
+    padding: 1.5mm 1.5mm;
     font-family: 'JetBrains Mono', monospace;
-    font-size: 8pt;
+    font-size: 7pt;
     font-weight: 700;
     color: #000;
-    letter-spacing: .04em;
+    letter-spacing: .03em;
     text-transform: uppercase;
     text-align: left;
-    height: 7mm;
+    height: 6mm;
   }
   .wkz-table td {
     border: 1px solid #000;
-    padding: 1.5mm 2mm;
+    padding: 1mm 1.5mm;
     vertical-align: middle;
-    font-size: 8.5pt;
+    font-size: 7.5pt;
     color: #000;
     background: #fff !important;
-    height: 8mm;
+    height: 6mm;
     overflow: hidden;
-    word-break: break-word;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   .wkz-table .wkz-tno {
-    width: 16mm;
+    width: 14mm;
     font-family: 'JetBrains Mono', monospace;
     font-weight: 700;
     text-align: center;
     background: #fff !important;
+    font-size: 7.5pt;
   }
   .wkz-table .wkz-l {
-    width: 18mm;
+    width: 14mm;
     font-family: 'JetBrains Mono', monospace;
     font-weight: 600;
     text-align: center;
     background: #fff !important;
+    font-size: 7pt;
   }
   .wkz-table .wkz-name { font-weight: 500; }
+  .wkz-table th.wkz-tno, .wkz-table th.wkz-l { text-align: center; }
   .wkz-table .wkz-section-head td {
     background: #404040 !important;
     color: #fff !important;
     text-align: center;
     font-family: 'JetBrains Mono', monospace;
     font-weight: 700;
-    font-size: 9pt;
+    font-size: 7.5pt;
     letter-spacing: .04em;
-    padding: 2mm;
-    height: 7mm;
+    padding: 1.5mm;
+    height: 6mm;
+    border: 1px solid #000;
   }
 }
 
@@ -1274,7 +1287,7 @@ body {
       <div class="meta-print-row"><div class="mpr-label">Robo2Go A</div><div class="mpr-value" id="phRoboA">—</div></div>
       <div class="meta-print-row"><div class="mpr-label">Robo2Go B</div><div class="mpr-value" id="phRoboB">—</div></div>
     </div>
-    <table class="wkz-table" id="wkzTable"></table>
+    <div class="wkz-grid" id="wkzContainer"></div>
   </div>
 
   <div class="print-foot">
@@ -1683,8 +1696,8 @@ function updatePrintHeader(){
 }
 
 function renderWkzTable(){
-  const tbl = $('#wkzTable');
-  if (!tbl) return;
+  const cont = $('#wkzContainer');
+  if (!cont) return;
   function collect(kanal){
     const seen = new Set(); const list = [];
     const slots = S.slots[kanal] || [];
@@ -1694,25 +1707,24 @@ function renderWkzTable(){
       const tno = (op.toolNo || '').trim();
       if (!tno || seen.has(tno)) continue;
       seen.add(tno);
-      list.push({ tno, lc: L[kanal](i+1), name: opName(op), spindle: op.spindle });
+      list.push({ tno, lc: L[kanal](i+1), name: opName(op) });
     }
     return list;
   }
+  function buildTable(title, list) {
+    let h = '<table class="wkz-table"><thead>';
+    h += `<tr class="wkz-section-head"><td colspan="3">${esc(title)}</td></tr>`;
+    h += '<tr class="wkz-head-row"><th class="wkz-tno">T-Nr.</th><th class="wkz-l">L-Code</th><th>Werkzeug · Bezeichnung</th></tr>';
+    h += '</thead><tbody>';
+    if (!list.length) h += '<tr><td colspan="3" style="text-align:center;color:#888;font-style:italic;padding:4mm;">— keine Werkzeuge —</td></tr>';
+    else list.forEach(t => { h += `<tr><td class="wkz-tno">${esc(t.tno)}</td><td class="wkz-l">${esc(t.lc)}</td><td class="wkz-name">${esc(t.name)}</td></tr>`; });
+    h += '</tbody></table>';
+    return h;
+  }
   const k1 = collect('1'), k2 = collect('2');
-  let h = '<thead><tr>';
-  h += '<th class="wkz-tno">T-Nr.</th>';
-  h += '<th class="wkz-l">L-Code</th>';
-  h += '<th>Werkzeug · Bezeichnung</th>';
-  h += '<th class="wkz-tno">Spindel</th>';
-  h += '</tr></thead><tbody>';
-  h += '<tr class="wkz-section-head"><td colspan="4">Kanal 1 · 1000.MPF · Revolver Oben</td></tr>';
-  if (!k1.length) h += '<tr><td colspan="4" style="text-align:center;color:#888;font-style:italic;">— keine Werkzeuge —</td></tr>';
-  else k1.forEach(t => { h += `<tr><td class="wkz-tno">${esc(t.tno)}</td><td class="wkz-l">${esc(t.lc)}</td><td class="wkz-name">${esc(t.name)}</td><td class="wkz-tno">${esc(t.spindle)}</td></tr>`; });
-  h += '<tr class="wkz-section-head"><td colspan="4">Kanal 2 · 2000.MPF · Revolver Unten</td></tr>';
-  if (!k2.length) h += '<tr><td colspan="4" style="text-align:center;color:#888;font-style:italic;">— keine Werkzeuge —</td></tr>';
-  else k2.forEach(t => { h += `<tr><td class="wkz-tno">${esc(t.tno)}</td><td class="wkz-l">${esc(t.lc)}</td><td class="wkz-name">${esc(t.name)}</td><td class="wkz-tno">${esc(t.spindle)}</td></tr>`; });
-  h += '</tbody>';
-  tbl.innerHTML = h;
+  cont.innerHTML =
+    '<div class="wkz-col">' + buildTable('Kanal 1 · 1000.MPF · Revolver Oben', k1) + '</div>' +
+    '<div class="wkz-col">' + buildTable('Kanal 2 · 2000.MPF · Revolver Unten', k2) + '</div>';
 }
 
 function renderAll(){renderSlots();renderFilters();renderLib();renderPrintTable()}
