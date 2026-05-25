@@ -1079,6 +1079,7 @@ body {
     display: grid !important;
     grid-template-columns: 1fr 1fr;
     gap: 4mm;
+    align-items: start;
   }
   .wkz-col { page-break-inside: avoid; }
 
@@ -1088,6 +1089,8 @@ body {
     font-size: 8pt;
     table-layout: fixed;
   }
+  .wkz-table col.wkz-c-tno { width: 18mm; }
+  .wkz-table col.wkz-c-name { width: auto; }
   .wkz-table thead { display: table-header-group; }
   .wkz-table tr { page-break-inside: avoid !important; break-inside: avoid !important; }
 
@@ -1110,21 +1113,19 @@ body {
     font-family: 'JetBrains Mono', monospace;
     font-size: 7.5pt;
     font-weight: 700;
-    color: #fff !important;
+    color: #000 !important;
+    background: #fff !important;
     letter-spacing: .06em;
     text-transform: uppercase;
-    padding: 1.5mm 2mm;
+    padding: 1.5mm 2.5mm;
     height: 6mm;
     border: 1px solid #000;
-    text-align: center;
+    text-align: left;
   }
-  .wkz-table.wkz-sp4 .wkz-head-row th { background: #6CC393 !important; }
-  .wkz-table.wkz-sp3 .wkz-head-row th { background: #6F9CD0 !important; }
-  .wkz-table .wkz-name-h { text-align: left !important; }
 
   .wkz-table td {
     border: 1px solid #000;
-    padding: 1.5mm 2mm;
+    padding: 1.5mm 2.5mm;
     vertical-align: middle;
     font-size: 8pt;
     color: #000;
@@ -1134,15 +1135,20 @@ body {
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  .wkz-table .wkz-tno {
-    width: 16mm;
+  .wkz-table .wkz-tno,
+  .wkz-table th.wkz-tno {
     font-family: 'JetBrains Mono', monospace;
     font-weight: 700;
-    text-align: center;
+    text-align: left;
     background: #fff !important;
     font-size: 8pt;
   }
-  .wkz-table .wkz-name { font-weight: 500; font-size: 8pt; }
+  .wkz-table .wkz-name,
+  .wkz-table th.wkz-name-h {
+    font-weight: 500;
+    font-size: 8pt;
+    text-align: left;
+  }
   .wkz-table .wkz-empty {
     text-align: center !important;
     color: #888 !important;
@@ -1252,6 +1258,14 @@ body {
         <input class="meta-input" id="inSaege" type="text" placeholder="1000 mm" />
       </div>
       <div class="meta-field">
+        <label class="meta-label">Ausspannlänge</label>
+        <input class="meta-input" id="inAusspann" type="text" placeholder="mm" />
+      </div>
+      <div class="meta-field">
+        <label class="meta-label">Reststücklänge</label>
+        <input class="meta-input" id="inReststueck" type="text" placeholder="mm" />
+      </div>
+      <div class="meta-field">
         <label class="meta-label">Backen-Nr.</label>
         <input class="meta-input" id="inBackenNr" type="text" placeholder="BK-01" />
       </div>
@@ -1260,11 +1274,11 @@ body {
         <input class="meta-input" id="inBackenAbst" type="text" placeholder="mm" />
       </div>
       <div class="meta-field">
-        <label class="meta-label">Robo2Go Abstand A</label>
+        <label class="meta-label">Robo2Go A · Abstand</label>
         <input class="meta-input" id="inRoboA" type="text" placeholder="mm" />
       </div>
       <div class="meta-field">
-        <label class="meta-label">Robo2Go Abstand B</label>
+        <label class="meta-label">Robo2Go B · Abstand</label>
         <input class="meta-input" id="inRoboB" type="text" placeholder="mm" />
       </div>
     </div>
@@ -1297,10 +1311,12 @@ body {
       <div class="meta-print-row"><div class="mpr-label">Laufzeit</div><div class="mpr-value" id="phLaufzeit">—</div></div>
       <div class="meta-print-row"><div class="mpr-label">Material</div><div class="mpr-value" id="phMaterial">—</div></div>
       <div class="meta-print-row"><div class="mpr-label">Sägelänge</div><div class="mpr-value" id="phSaege">—</div></div>
+      <div class="meta-print-row"><div class="mpr-label">Ausspannlänge</div><div class="mpr-value" id="phAusspann">—</div></div>
+      <div class="meta-print-row"><div class="mpr-label">Reststücklänge</div><div class="mpr-value" id="phReststueck">—</div></div>
       <div class="meta-print-row"><div class="mpr-label">Backen-Nr.</div><div class="mpr-value" id="phBackenNr">—</div></div>
       <div class="meta-print-row"><div class="mpr-label">Backen-Abstand</div><div class="mpr-value" id="phBackenAbst">—</div></div>
-      <div class="meta-print-row"><div class="mpr-label">Robo2Go A</div><div class="mpr-value" id="phRoboA">—</div></div>
-      <div class="meta-print-row"><div class="mpr-label">Robo2Go B</div><div class="mpr-value" id="phRoboB">—</div></div>
+      <div class="meta-print-row"><div class="mpr-label">Robo2Go A · Abstand</div><div class="mpr-value" id="phRoboA">—</div></div>
+      <div class="meta-print-row"><div class="mpr-label">Robo2Go B · Abstand</div><div class="mpr-value" id="phRoboB">—</div></div>
     </div>
     <div class="wkz-grid" id="wkzContainer"></div>
   </div>
@@ -1371,7 +1387,7 @@ body {
 <input type="file" id="fileInput" accept=".json" style="display:none">
 
 <script>
-const MIN_SLOTS=5, SK='CitiTool_SO_v8_m';
+const MIN_SLOTS=5, SK='CitiTool_SO_v9_m';
 const S={
   kanal:'1',
   slots:{'1':Array(MIN_SLOTS).fill(null),'2':Array(MIN_SLOTS).fill(null)},
@@ -1379,6 +1395,7 @@ const S={
   catFilter:'Alle', spFilter:'ALL',
   zn:'', bez:'',
   laufzeit:'', material:'', saegelaenge:'',
+  ausspannlaenge:'', reststuecklaenge:'',
   backenNr:'', backenAbstand:'',
   roboA:'', roboB:'',
 };
@@ -1392,6 +1409,7 @@ const DEFAULT={
   laufzeit:'4 Min 00 Sek',
   material:'F75 D42',
   saegelaenge:'1000 mm',
+  ausspannlaenge:'', reststuecklaenge:'',
   backenNr:'', backenAbstand:'',
   roboA:'', roboB:'',
   slots:{
@@ -1461,6 +1479,8 @@ function applyState(raw){
   S.laufzeit=raw.laufzeit||'';
   S.material=raw.material||'';
   S.saegelaenge=raw.saegelaenge||'';
+  S.ausspannlaenge=raw.ausspannlaenge||'';
+  S.reststuecklaenge=raw.reststuecklaenge||'';
   S.backenNr=raw.backenNr||'';
   S.backenAbstand=raw.backenAbstand||'';
   S.roboA=raw.roboA||'';
@@ -1468,7 +1488,7 @@ function applyState(raw){
   return true;
 }
 
-function save(){try{localStorage.setItem(SK,JSON.stringify({v:1,data:{kanal:S.kanal,slots:S.slots,library:S.library,nextId:S.nextId,catFilter:S.catFilter,spFilter:S.spFilter,zn:S.zn,bez:S.bez,laufzeit:S.laufzeit,material:S.material,saegelaenge:S.saegelaenge,backenNr:S.backenNr,backenAbstand:S.backenAbstand,roboA:S.roboA,roboB:S.roboB}}))}catch(_){}}
+function save(){try{localStorage.setItem(SK,JSON.stringify({v:1,data:{kanal:S.kanal,slots:S.slots,library:S.library,nextId:S.nextId,catFilter:S.catFilter,spFilter:S.spFilter,zn:S.zn,bez:S.bez,laufzeit:S.laufzeit,material:S.material,saegelaenge:S.saegelaenge,ausspannlaenge:S.ausspannlaenge,reststuecklaenge:S.reststuecklaenge,backenNr:S.backenNr,backenAbstand:S.backenAbstand,roboA:S.roboA,roboB:S.roboB}}))}catch(_){}}
 function load(){try{const r=localStorage.getItem(SK);if(!r)return false;const p=JSON.parse(r);return applyState(p&&p.data?p.data:p)}catch(_){return false}}
 
 function openSheet(){$('#libSheet').classList.add('open');$('#sheetBackdrop').classList.add('open');document.body.style.overflow='hidden';renderFilters();renderLib()}
@@ -1704,6 +1724,8 @@ function updatePrintHeader(){
   setMeta('phLaufzeit', S.laufzeit);
   setMeta('phMaterial', S.material);
   setMeta('phSaege', S.saegelaenge);
+  setMeta('phAusspann', S.ausspannlaenge);
+  setMeta('phReststueck', S.reststuecklaenge);
   setMeta('phBackenNr', S.backenNr);
   setMeta('phBackenAbst', S.backenAbstand);
   setMeta('phRoboA', S.roboA);
@@ -1726,20 +1748,30 @@ function renderWkzTable(){
     }
     return list;
   }
-  function buildTable(title, list, spClass) {
-    let h = `<table class="wkz-table ${spClass}"><thead>`;
+  function buildTable(title, list, spClass, padTo) {
+    let h = `<table class="wkz-table ${spClass}">`;
+    h += '<colgroup><col class="wkz-c-tno"><col class="wkz-c-name"></colgroup>';
+    h += '<thead>';
     h += `<tr class="wkz-section-head"><td colspan="2">${esc(title)}</td></tr>`;
     h += '<tr class="wkz-head-row"><th class="wkz-tno">T-Nr.</th><th class="wkz-name-h">Werkzeug</th></tr>';
     h += '</thead><tbody>';
-    if (!list.length) h += '<tr><td colspan="2" class="wkz-empty">— keine Werkzeuge zugeordnet —</td></tr>';
-    else list.forEach(t => { h += `<tr><td class="wkz-tno">${esc(t.tno)}</td><td class="wkz-name">${esc(t.name)}</td></tr>`; });
+    if (!list.length && padTo === 0) {
+      h += '<tr><td colspan="2" class="wkz-empty">— keine Werkzeuge zugeordnet —</td></tr>';
+    } else {
+      list.forEach(t => { h += `<tr><td class="wkz-tno">${esc(t.tno)}</td><td class="wkz-name">${esc(t.name)}</td></tr>`; });
+      const need = Math.max(0, padTo - list.length);
+      for (let i = 0; i < need; i++) {
+        h += '<tr><td class="wkz-tno">&nbsp;</td><td class="wkz-name">&nbsp;</td></tr>';
+      }
+    }
     h += '</tbody></table>';
     return h;
   }
   const k1 = collect('1'), k2 = collect('2');
+  const maxLen = Math.max(k1.length, k2.length);
   cont.innerHTML =
-    '<div class="wkz-col">' + buildTable('Kanal 1 · 1000.MPF · Revolver Oben', k1, 'wkz-sp4') + '</div>' +
-    '<div class="wkz-col">' + buildTable('Kanal 2 · 2000.MPF · Revolver Unten', k2, 'wkz-sp3') + '</div>';
+    '<div class="wkz-col">' + buildTable('Kanal 1 · 1000.MPF · Revolver Oben', k1, 'wkz-sp4', maxLen) + '</div>' +
+    '<div class="wkz-col">' + buildTable('Kanal 2 · 2000.MPF · Revolver Unten', k2, 'wkz-sp3', maxLen) + '</div>';
 }
 
 function renderAll(){renderSlots();renderFilters();renderLib();renderPrintTable()}
@@ -1763,6 +1795,7 @@ function init(){
   // Meta inputs
   const metaMap = {
     inLaufzeit:'laufzeit', inMaterial:'material', inSaege:'saegelaenge',
+    inAusspann:'ausspannlaenge', inReststueck:'reststuecklaenge',
     inBackenNr:'backenNr', inBackenAbst:'backenAbstand',
     inRoboA:'roboA', inRoboB:'roboB',
   };
