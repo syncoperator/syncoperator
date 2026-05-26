@@ -232,6 +232,88 @@ body {
 .toolbar-spacer { flex: 1; }
 .toolbar-actions { display: flex; align-items: center; gap: 8px; }
 
+/* View Tabs */
+.view-pane { display: none; }
+.view-pane.active { display: block; }
+
+.custom-fields {
+  margin-top: 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--bg);
+  overflow: hidden;
+}
+.custom-fields-head {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg-soft);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.custom-field-row {
+  display: grid;
+  grid-template-columns: 180px 1fr auto;
+  gap: 8px;
+  align-items: center;
+}
+.custom-field-row .meta-input {
+  background: var(--bg);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r);
+  padding: 7px 11px;
+  font-family: var(--sans);
+  font-size: 13px;
+  color: var(--ink);
+  width: 100%;
+}
+.custom-field-row .label-input {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--ink);
+}
+.custom-field-row .icon-btn { flex-shrink: 0; }
+
+.view-tabs {
+  display: inline-flex;
+  gap: 0;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r);
+  background: var(--bg);
+  overflow: hidden;
+}
+.view-tab {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--bg);
+  border: none;
+  padding: 8px 16px;
+  font-family: var(--sans);
+  font-size: 12.5px; font-weight: 600;
+  color: var(--ink-4);
+  cursor: pointer;
+  transition: all var(--t);
+  border-right: 1px solid var(--line);
+}
+.view-tab:last-child { border-right: none; }
+.view-tab:hover { color: var(--ink); background: var(--bg-2); }
+.view-tab.active {
+  background: var(--ink);
+  color: var(--bg);
+}
+.view-tab .vt-num {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 600;
+  opacity: .6;
+  letter-spacing: .04em;
+}
+.view-tab.active .vt-num { opacity: .7; }
+.view-tab .vt-name { letter-spacing: .01em; }
+
 /* Kanal switcher */
 .kanal-switch {
   display: inline-flex;
@@ -840,6 +922,23 @@ body {
     print-color-adjust: exact;
   }
 
+  /* When view=plan → hide page2; when view=wkz → hide page1 */
+  body.print-plan .print-page2,
+  body.print-plan .print-header2,
+  body.print-plan .meta-print,
+  body.print-plan .wkz-grid { display: none !important; }
+
+  body.print-wkz .print-header,
+  body.print-wkz .print-table { display: none !important; }
+  body.print-wkz .print-page2 {
+    page-break-before: auto !important;
+    break-before: auto !important;
+  }
+  body.print-wkz .print-header2 {
+    page-break-before: auto !important;
+    break-before: auto !important;
+  }
+
   /* Hide ALL interactive/UI elements */
   .statusbar, .toolbar, .sidebar, .footer,
   .modal-overlay, .slot-actions, .add-slot,
@@ -1206,12 +1305,7 @@ body {
   <div class="statusbar">
     <div class="sb-live">
       <div class="sb-dot"></div>
-      <span>SINUMERIK ONE · CONNECTED</span>
-    </div>
-    <div class="sb-sep"></div>
-    <div class="sb-item">
-      <span class="sb-label">CTRL</span>
-      <span class="sb-value">v4.92</span>
+      <span>CONNECTED</span>
     </div>
     <div class="sb-sep"></div>
     <div class="sb-item">
@@ -1233,18 +1327,8 @@ body {
       <div class="brand-mark"></div>
       <div class="brand-text">
         <div class="brand-name">CitiTool</div>
-        <div class="brand-sub">SyncOperator · Workbench</div>
+        <div class="brand-sub">SyncOperator</div>
       </div>
-    </div>
-    <div class="header-divider"></div>
-    <div class="machine-context">
-      <div class="mc-label">Maschine</div>
-      <div class="mc-value">DMG MORI CTX 350 4A</div>
-    </div>
-    <div class="header-divider"></div>
-    <div class="machine-context">
-      <div class="mc-label">Steuerung</div>
-      <div class="mc-value">SINUMERIK ONE</div>
     </div>
     <div class="header-spacer"></div>
     <div class="header-meta">
@@ -1265,9 +1349,15 @@ body {
 
   <!-- TOOLBAR -->
   <div class="toolbar">
-    <div class="section-title">
-      <div class="st-tag">[01] · Operations</div>
-      <div class="st-main">Slots — Programmplan</div>
+    <div class="view-tabs">
+      <button class="view-tab active" data-view="plan">
+        <span class="vt-num">01</span>
+        <span class="vt-name">Programmplan</span>
+      </button>
+      <button class="view-tab" data-view="wkz">
+        <span class="vt-num">02</span>
+        <span class="vt-name">Werkzeugliste</span>
+      </button>
     </div>
     <div class="toolbar-spacer"></div>
     <div class="toolbar-actions">
@@ -1278,7 +1368,7 @@ body {
       <button class="btn btn-ghost btn-sm" id="btnExport">↓ JSON</button>
       <button class="btn btn-ghost btn-sm" id="btnImport">↑ JSON</button>
       <input type="file" id="fileInput" accept=".json" style="display:none">
-      <button class="btn btn-primary btn-sm" onclick="window.print()">🖨 Drucken</button>
+      <button class="btn btn-primary btn-sm" id="btnPrint">🖨 Drucken</button>
     </div>
   </div>
 
@@ -1287,18 +1377,24 @@ body {
 
     <!-- WORKSPACE -->
     <div class="workspace">
-      <div class="section-sub">
-        <div class="ss-hint">Klick auf leeren Slot = <strong>Neue Operation</strong> · Drag &amp; Drop zwischen Slots</div>
-        <div class="ss-spacer"></div>
-        <div class="ss-count">
-          <span>Slots belegt:</span>
-          <span class="sc-val" id="slotCount">0 / 5</span>
+
+      <!-- VIEW: Programmplan -->
+      <div class="view-pane active" data-pane="plan">
+        <div class="section-sub">
+          <div class="ss-hint">Klick auf leeren Slot = <strong>Neue Operation</strong> · Drag &amp; Drop zwischen Slots</div>
+          <div class="ss-spacer"></div>
+          <div class="ss-count">
+            <span>Slots belegt:</span>
+            <span class="sc-val" id="slotCount">0 / 5</span>
+          </div>
         </div>
+
+        <div id="slotList" class="slot-list"></div>
+        <button class="add-slot" id="btnAddSlot">＋ Slot hinzufügen</button>
       </div>
 
-      <div id="slotList" class="slot-list"></div>
-      <button class="add-slot" id="btnAddSlot">＋ Slot hinzufügen</button>
-
+      <!-- VIEW: Werkzeugliste (meta + custom fields) -->
+      <div class="view-pane" data-pane="wkz">
       <!-- ═══════ METADATA PANEL ═══════ -->
       <div class="meta-panel">
         <div class="meta-panel-head">
@@ -1343,6 +1439,17 @@ body {
             <input class="meta-input" id="inRoboB" type="text" placeholder="mm" />
           </div>
         </div>
+
+        <!-- Custom user fields -->
+        <div class="custom-fields">
+          <div class="custom-fields-head">
+            <div class="mph-tag">[CUSTOM] · Eigene Felder</div>
+            <button class="btn btn-ghost btn-sm" id="btnAddCustom">+ Feld hinzufügen</button>
+          </div>
+          <div class="meta-grid" id="customFieldsGrid"></div>
+        </div>
+      </div>
+      <!-- end view-pane wkz -->
       </div>
 
       <!-- ═══════ PRINT — PAGE 1: PROGRAMMPLAN ═══════ -->
@@ -1350,11 +1457,6 @@ body {
         <div class="ph-row">
           <div class="ph-zn" id="phZN">—</div>
           <div class="ph-bez" id="phBez">—</div>
-        </div>
-        <div class="ph-sub">
-          <span>Maschine: <strong>DMG MORI CTX 350 4A</strong></span>
-          <span>Steuerung: <strong>SINUMERIK ONE</strong></span>
-          <span>Datum: <strong id="phDate">—</strong></span>
         </div>
       </div>
       <table class="print-table print-only" id="printTable"></table>
@@ -1412,8 +1514,8 @@ body {
       </div>
 
       <div class="print-foot print-only">
-        <span>CitiTool · SyncOperator · Workbench</span>
-        <span id="printFootRight">DMG MORI CTX 350 4A · SINUMERIK ONE</span>
+        <span></span>
+        <span></span>
       </div>
     </div>
 
@@ -1446,7 +1548,7 @@ body {
     <strong>F5</strong> Library
     <strong>STRG+P</strong> Drucken
     <div class="footer-spacer"></div>
-    <span>CitiTool · SyncOperator · Workbench</span>
+    <span>CitiTool · SyncOperator</span>
   </div>
 
 </div>
@@ -1469,9 +1571,10 @@ body {
 </div>
 
 <script>
-const MIN_SLOTS=5, SK='CitiTool_SO_v9';
+const MIN_SLOTS=5, SK='CitiTool_SO_v10';
 const S={
   kanal:'1',
+  view:'plan',     /* 'plan' | 'wkz' */
   slots:{'1':Array(MIN_SLOTS).fill(null),'2':Array(MIN_SLOTS).fill(null)},
   library:[], nextId:1,
   catFilter:'Alle', spFilter:'ALL',
@@ -1481,6 +1584,7 @@ const S={
   ausspannlaenge:'', reststuecklaenge:'',
   backenNr:'', backenAbstand:'',
   roboA:'', roboB:'',
+  custom:[],   /* [{id, label, value}, ...] */
 };
 const L={1:n=>'L11'+String(n).padStart(2,'0'),2:n=>'L21'+String(n).padStart(2,'0')};
 const CATS=['Alle','Außen','Innen','Radial','Axial'];
@@ -1571,10 +1675,16 @@ function applyState(raw){
   S.backenAbstand=raw.backenAbstand||'';
   S.roboA=raw.roboA||'';
   S.roboB=raw.roboB||'';
+  S.view=raw.view==='wkz'?'wkz':'plan';
+  S.custom=Array.isArray(raw.custom)?raw.custom.map(c=>({
+    id:c.id||'cf_'+Math.random().toString(16).slice(2),
+    label:c.label||'',
+    value:c.value||''
+  })):[];
   return true;
 }
 
-function save(){try{localStorage.setItem(SK,JSON.stringify({v:1,data:{kanal:S.kanal,slots:S.slots,library:S.library,nextId:S.nextId,catFilter:S.catFilter,spFilter:S.spFilter,zn:S.zn,bez:S.bez,laufzeit:S.laufzeit,material:S.material,saegelaenge:S.saegelaenge,ausspannlaenge:S.ausspannlaenge,reststuecklaenge:S.reststuecklaenge,backenNr:S.backenNr,backenAbstand:S.backenAbstand,roboA:S.roboA,roboB:S.roboB}}))}catch(_){}}
+function save(){try{localStorage.setItem(SK,JSON.stringify({v:1,data:{kanal:S.kanal,view:S.view,slots:S.slots,library:S.library,nextId:S.nextId,catFilter:S.catFilter,spFilter:S.spFilter,zn:S.zn,bez:S.bez,laufzeit:S.laufzeit,material:S.material,saegelaenge:S.saegelaenge,ausspannlaenge:S.ausspannlaenge,reststuecklaenge:S.reststuecklaenge,backenNr:S.backenNr,backenAbstand:S.backenAbstand,roboA:S.roboA,roboB:S.roboB,custom:S.custom}}))}catch(_){}}
 function load(){try{const r=localStorage.getItem(SK);if(!r)return false;const p=JSON.parse(r);return applyState(p&&p.data?p.data:p)}catch(_){return false}}
 
 /* MODAL */
@@ -1831,13 +1941,57 @@ function tick(){
   $('#metaDate').textContent=`${pad(d.getDate())}.${pad(d.getMonth()+1)}.${d.getFullYear()}`;
 }
 
+function renderCustom(){
+  const grid = $('#customFieldsGrid');
+  if (!grid) return;
+  grid.innerHTML = '';
+  if (!S.custom.length) {
+    grid.innerHTML = '<div class="lib-empty" style="grid-column:1/-1;padding:20px 8px;">Noch keine eigenen Felder. Mit „+ Feld hinzufügen" anlegen.</div>';
+    return;
+  }
+  // 2-column layout same as meta-grid; each row has label input + value input + delete
+  grid.style.gridTemplateColumns = '1fr';
+  S.custom.forEach(cf => {
+    const row = document.createElement('div');
+    row.className = 'custom-field-row';
+    const labelIn = document.createElement('input');
+    labelIn.type = 'text';
+    labelIn.className = 'meta-input label-input';
+    labelIn.placeholder = 'Feldname (z.B. Spannmittel)';
+    labelIn.value = cf.label;
+    labelIn.addEventListener('input', e => { cf.label = e.target.value; save(); updatePrintHeader(); });
+    const valIn = document.createElement('input');
+    valIn.type = 'text';
+    valIn.className = 'meta-input';
+    valIn.placeholder = 'Wert';
+    valIn.value = cf.value;
+    valIn.addEventListener('input', e => { cf.value = e.target.value; save(); updatePrintHeader(); });
+    const del = document.createElement('button');
+    del.className = 'icon-btn danger';
+    del.title = 'Feld löschen';
+    del.innerHTML = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3l10 10M13 3L3 13"/></svg>';
+    del.addEventListener('click', () => {
+      S.custom = S.custom.filter(x => x.id !== cf.id);
+      save(); renderCustom(); updatePrintHeader();
+    });
+    row.append(labelIn, valIn, del);
+    grid.appendChild(row);
+  });
+}
+
+function setView(v){
+  S.view = (v === 'wkz') ? 'wkz' : 'plan';
+  $$('.view-tab').forEach(b => b.classList.toggle('active', b.dataset.view === S.view));
+  $$('.view-pane').forEach(p => p.classList.toggle('active', p.dataset.pane === S.view));
+  save();
+}
+
 function updatePrintHeader(){
   const d=new Date();
   const pad=n=>String(n).padStart(2,'0');
   // Page 1
   $('#phZN').textContent = S.zn || '—';
   $('#phBez').textContent = S.bez || '—';
-  $('#phDate').textContent = `${pad(d.getDate())}.${pad(d.getMonth()+1)}.${d.getFullYear()}`;
   // Page 2 header
   $('#phZN2').textContent = S.zn || '—';
   $('#phBez2').textContent = S.bez || '—';
@@ -1862,6 +2016,29 @@ function updatePrintHeader(){
   setMeta('phBackenAbst', S.backenAbstand);
   setMeta('phRoboA', S.roboA);
   setMeta('phRoboB', S.roboB);
+
+  // Append custom fields to meta-print (remove old custom rows first)
+  const mp = document.querySelector('.meta-print');
+  if (mp) {
+    mp.querySelectorAll('.meta-print-row.custom').forEach(el => el.remove());
+    S.custom.forEach(cf => {
+      if (!cf.label.trim() && !cf.value.trim()) return;
+      const row = document.createElement('div');
+      row.className = 'meta-print-row custom';
+      const lab = document.createElement('div');
+      lab.className = 'mpr-label';
+      lab.textContent = cf.label || '—';
+      const val = document.createElement('div');
+      val.className = 'mpr-value';
+      if (cf.value.trim()) {
+        val.textContent = cf.value;
+      } else {
+        val.classList.add('is-empty');
+      }
+      row.append(lab, val);
+      mp.appendChild(row);
+    });
+  }
 }
 
 /* Werkzeugliste — list tools ONLY from current slots */
@@ -1957,6 +2134,33 @@ function init(){
     });
   });
 
+  // VIEW TABS
+  setView(S.view);
+  $$('.view-tab').forEach(b => {
+    b.addEventListener('click', () => setView(b.dataset.view));
+  });
+
+  // Custom fields button
+  $('#btnAddCustom').addEventListener('click', () => {
+    S.custom.push({ id:'cf_'+Math.random().toString(16).slice(2), label:'', value:'' });
+    save(); renderCustom(); updatePrintHeader();
+  });
+
+  // PRINT — print only the active view
+  $('#btnPrint').addEventListener('click', () => {
+    document.body.classList.add(S.view === 'wkz' ? 'print-wkz' : 'print-plan');
+    renderPrintTable();
+    renderWkzTable();
+    updatePrintHeader();
+    setTimeout(() => {
+      window.print();
+      // Cleanup body class right after print dialog closes
+      setTimeout(() => {
+        document.body.classList.remove('print-plan', 'print-wkz');
+      }, 100);
+    }, 60);
+  });
+
   $('#mClose').addEventListener('click',closeModal);
   $('#modal').addEventListener('click',e=>{if(e.target.id==='modal')closeModal()});
   document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});
@@ -1988,11 +2192,20 @@ function init(){
   });
 
   // ensure print table & header are updated right before printing
-  window.addEventListener('beforeprint',()=>{ renderPrintTable(); renderWkzTable(); updatePrintHeader(); });
+  window.addEventListener('beforeprint',()=>{
+    if (!document.body.classList.contains('print-plan') && !document.body.classList.contains('print-wkz')) {
+      document.body.classList.add(S.view === 'wkz' ? 'print-wkz' : 'print-plan');
+    }
+    renderPrintTable(); renderWkzTable(); updatePrintHeader();
+  });
+  window.addEventListener('afterprint',()=>{
+    document.body.classList.remove('print-plan', 'print-wkz');
+  });
 
   renderAll();
   updatePrintHeader();
   renderWkzTable();
+  renderCustom();
   tick();setInterval(tick,1000);
 }
 document.addEventListener('DOMContentLoaded',init);
