@@ -766,6 +766,98 @@ body {
 }
 .editor-foot .btn { flex: 1; }
 
+/* View Tabs */
+.view-tabs {
+  display: flex;
+  background: var(--bg);
+  border-bottom: 1px solid var(--line);
+  padding: 8px 12px;
+  gap: 6px;
+}
+.view-tab {
+  flex: 1;
+  background: var(--bg);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r);
+  padding: 9px 8px;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  font-family: var(--sans);
+  font-size: 12px; font-weight: 600;
+  color: var(--ink-4);
+  cursor: pointer;
+  transition: all var(--t);
+}
+.view-tab:active { transform: scale(.98); }
+.view-tab.active {
+  background: var(--ink);
+  color: var(--bg);
+  border-color: var(--ink);
+}
+.view-tab .vt-num {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  opacity: .6;
+  letter-spacing: .04em;
+}
+.view-tab.active .vt-num { opacity: .7; }
+
+.view-pane { display: none; }
+.view-pane.active { display: block; }
+
+/* Custom fields block */
+.custom-fields {
+  margin: 0 16px 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--bg);
+  overflow: hidden;
+}
+.custom-fields-head {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg-soft);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.custom-field-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--line);
+}
+.custom-field-row:last-child { border-bottom: none; }
+.custom-field-row .cf-head {
+  display: flex; align-items: center; gap: 8px;
+}
+.custom-field-row .label-input {
+  flex: 1;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  background: var(--bg);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r);
+  padding: 7px 11px;
+  color: var(--ink);
+}
+.custom-field-row .meta-input {
+  background: var(--bg);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r);
+  padding: 10px 12px;
+  font-family: var(--sans);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink);
+  width: 100%;
+}
+.custom-field-row .icon-btn { flex-shrink: 0; }
+
 /* ═══════════════════════════════════════════════════
    META PANEL (UI)
 ═══════════════════════════════════════════════════ */
@@ -847,9 +939,30 @@ body {
   .sheet-backdrop, .sheet, .editor,
   .h-actions, .slot-mini-btn, .page-count,
   .slot-list, .page-head, .header, .zn-bar,
-  .brand-mark, .brand-text { display: none !important; }
+  .brand-mark, .brand-text, .view-tabs,
+  .custom-fields, .meta-panel { display: none !important; }
 
   .shell { padding: 0; }
+
+  /* in print, force both view-panes to be visible so printable elements render */
+  .view-pane { display: block !important; }
+
+  /* When view=plan → hide page2; when view=wkz → hide page1 */
+  body.print-plan .print-page2,
+  body.print-plan .print-header2,
+  body.print-plan .meta-print,
+  body.print-plan .wkz-grid { display: none !important; }
+
+  body.print-wkz .print-header,
+  body.print-wkz .print-table { display: none !important; }
+  body.print-wkz .print-page2 {
+    page-break-before: auto !important;
+    break-before: auto !important;
+  }
+  body.print-wkz .print-header2 {
+    page-break-before: auto !important;
+    break-before: auto !important;
+  }
 
   /* PRINT HEADER — only Zeichnungsnummer + Bezeichnung */
   .print-header {
@@ -1174,7 +1287,7 @@ body {
   <div class="statusbar">
     <div class="sb-live">
       <div class="sb-dot"></div>
-      <span>SINUMERIK ONE</span>
+      <span>CONNECTED</span>
     </div>
     <div class="sb-spacer"></div>
     <span style="color:var(--ink-4)">EDIT</span>
@@ -1185,7 +1298,7 @@ body {
     <div class="brand-mark"></div>
     <div class="brand-text">
       <div class="brand-name">CitiTool</div>
-      <div class="brand-sub">SyncOperator · Workbench</div>
+      <div class="brand-sub">SyncOperator</div>
     </div>
     <div class="h-actions">
       <button class="icon-btn" id="btnExport" title="Export JSON">
@@ -1208,12 +1321,15 @@ body {
     </div>
   </div>
 
-  <div class="mc-bar">
-    <div class="mc-block"><span>Maschine</span><strong>CTX 350 4A</strong></div>
-    <div class="mc-sep"></div>
-    <div class="mc-block"><strong>SINUMERIK ONE</strong></div>
-    <div class="mc-sep"></div>
-    <div class="mc-block"><span id="mcDate">--</span></div>
+  <div class="view-tabs">
+    <button class="view-tab active" data-view="plan">
+      <span class="vt-num">01</span>
+      <span class="vt-name">Programmplan</span>
+    </button>
+    <button class="view-tab" data-view="wkz">
+      <span class="vt-num">02</span>
+      <span class="vt-name">Werkzeugliste</span>
+    </button>
   </div>
 
   <div class="kanal-bar">
@@ -1227,24 +1343,36 @@ body {
     </button>
   </div>
 
-  <div class="page-head">
-    <div>
-      <div class="page-tag">[01] · Operations</div>
-      <div class="page-title">Slots-Belegung</div>
+  <!-- VIEW: Programmplan -->
+  <div class="view-pane active" data-pane="plan">
+    <div class="page-head">
+      <div>
+        <div class="page-tag">[01] · Operations</div>
+        <div class="page-title">Slots-Belegung</div>
+      </div>
+      <div class="page-count">
+        <span class="pc-val" id="slotCount">0 / 5</span>
+        <span>belegt</span>
+      </div>
     </div>
-    <div class="page-count">
-      <span class="pc-val" id="slotCount">0 / 5</span>
-      <span>belegt</span>
-    </div>
+
+    <div class="hint-row">Tippen auf leeren Slot = neue Operation · ↑↓ für Reihenfolge</div>
+
+    <div id="slotList" class="slot-list"></div>
+    <button class="add-slot" id="btnAddSlot">＋ Slot hinzufügen</button>
   </div>
 
-  <div class="hint-row">Tippen auf leeren Slot = neue Operation · ↑↓ für Reihenfolge</div>
+  <!-- VIEW: Werkzeugliste -->
+  <div class="view-pane" data-pane="wkz">
+    <div class="page-head">
+      <div>
+        <div class="page-tag">[02] · Werkzeugliste</div>
+        <div class="page-title">Bauteil-Daten</div>
+      </div>
+    </div>
 
-  <div id="slotList" class="slot-list"></div>
-  <button class="add-slot" id="btnAddSlot">＋ Slot hinzufügen</button>
-
-  <!-- META PANEL (UI) -->
-  <div class="meta-panel">
+    <!-- META PANEL (UI) -->
+    <div class="meta-panel">
     <div class="meta-panel-head">
       <div class="mph-tag">[META] · Werkzeugliste</div>
       <div class="mph-title">Bauteil-Daten &amp; Spannmittel</div>
@@ -1289,16 +1417,22 @@ body {
     </div>
   </div>
 
+    <!-- Custom user fields -->
+    <div class="custom-fields">
+      <div class="custom-fields-head">
+        <div class="mph-tag">[CUSTOM] · Eigene Felder</div>
+        <button class="btn btn-ghost" id="btnAddCustom" style="padding:7px 11px;font-size:11.5px;">+ Feld hinzufügen</button>
+      </div>
+      <div class="meta-grid" id="customFieldsGrid"></div>
+    </div>
+  </div>
+  <!-- end view-pane wkz -->
+
   <!-- PRINT-ONLY PAGE 1 -->
   <div class="print-header" id="printHeader">
     <div class="ph-row">
       <div class="ph-zn" id="phZN">—</div>
       <div class="ph-bez" id="phBez">—</div>
-    </div>
-    <div class="ph-sub">
-      <span>Maschine: <strong>DMG MORI CTX 350 4A</strong></span>
-      <span>Steuerung: <strong>SINUMERIK ONE</strong></span>
-      <span>Datum: <strong id="phDate">—</strong></span>
     </div>
   </div>
   <table class="print-table" id="printTable"></table>
@@ -1327,8 +1461,8 @@ body {
   </div>
 
   <div class="print-foot">
-    <span>CitiTool · SyncOperator · Workbench</span>
-    <span>DMG MORI CTX 350 4A · SINUMERIK ONE</span>
+    <span></span>
+    <span></span>
   </div>
 
   <div class="bottom-pad"></div>
@@ -1392,9 +1526,10 @@ body {
 <input type="file" id="fileInput" accept=".json" style="display:none">
 
 <script>
-const MIN_SLOTS=5, SK='CitiTool_SO_v9_m';
+const MIN_SLOTS=5, SK='CitiTool_SO_v10_m';
 const S={
   kanal:'1',
+  view:'plan',
   slots:{'1':Array(MIN_SLOTS).fill(null),'2':Array(MIN_SLOTS).fill(null)},
   library:[], nextId:1,
   catFilter:'Alle', spFilter:'ALL',
@@ -1403,6 +1538,7 @@ const S={
   ausspannlaenge:'', reststuecklaenge:'',
   backenNr:'', backenAbstand:'',
   roboA:'', roboB:'',
+  custom:[],
 };
 const L={1:n=>'L11'+String(n).padStart(2,'0'),2:n=>'L21'+String(n).padStart(2,'0')};
 const CATS=['Alle','Außen','Innen','Radial','Axial'];
@@ -1490,10 +1626,16 @@ function applyState(raw){
   S.backenAbstand=raw.backenAbstand||'';
   S.roboA=raw.roboA||'';
   S.roboB=raw.roboB||'';
+  S.view=raw.view==='wkz'?'wkz':'plan';
+  S.custom=Array.isArray(raw.custom)?raw.custom.map(c=>({
+    id:c.id||'cf_'+Math.random().toString(16).slice(2),
+    label:c.label||'',
+    value:c.value||''
+  })):[];
   return true;
 }
 
-function save(){try{localStorage.setItem(SK,JSON.stringify({v:1,data:{kanal:S.kanal,slots:S.slots,library:S.library,nextId:S.nextId,catFilter:S.catFilter,spFilter:S.spFilter,zn:S.zn,bez:S.bez,laufzeit:S.laufzeit,material:S.material,saegelaenge:S.saegelaenge,ausspannlaenge:S.ausspannlaenge,reststuecklaenge:S.reststuecklaenge,backenNr:S.backenNr,backenAbstand:S.backenAbstand,roboA:S.roboA,roboB:S.roboB}}))}catch(_){}}
+function save(){try{localStorage.setItem(SK,JSON.stringify({v:1,data:{kanal:S.kanal,view:S.view,slots:S.slots,library:S.library,nextId:S.nextId,catFilter:S.catFilter,spFilter:S.spFilter,zn:S.zn,bez:S.bez,laufzeit:S.laufzeit,material:S.material,saegelaenge:S.saegelaenge,ausspannlaenge:S.ausspannlaenge,reststuecklaenge:S.reststuecklaenge,backenNr:S.backenNr,backenAbstand:S.backenAbstand,roboA:S.roboA,roboB:S.roboB,custom:S.custom}}))}catch(_){}}
 function load(){try{const r=localStorage.getItem(SK);if(!r)return false;const p=JSON.parse(r);return applyState(p&&p.data?p.data:p)}catch(_){return false}}
 
 function openSheet(){$('#libSheet').classList.add('open');$('#sheetBackdrop').classList.add('open');document.body.style.overflow='hidden';renderFilters();renderLib()}
@@ -1705,6 +1847,56 @@ function renderPrintTable(){
   tbl.innerHTML = h;
 }
 
+function renderCustom(){
+  const grid = $('#customFieldsGrid');
+  if (!grid) return;
+  grid.innerHTML = '';
+  if (!S.custom.length) {
+    grid.innerHTML = '<div class="lib-empty" style="padding:20px 8px;">Noch keine eigenen Felder.</div>';
+    return;
+  }
+  S.custom.forEach(cf => {
+    const row = document.createElement('div');
+    row.className = 'custom-field-row';
+    const head = document.createElement('div');
+    head.className = 'cf-head';
+    const labelIn = document.createElement('input');
+    labelIn.type = 'text';
+    labelIn.className = 'label-input';
+    labelIn.placeholder = 'Feldname';
+    labelIn.value = cf.label;
+    labelIn.addEventListener('input', e => { cf.label = e.target.value; save(); updatePrintHeader(); });
+    const del = document.createElement('button');
+    del.className = 'icon-btn';
+    del.style.width = '36px'; del.style.height = '36px';
+    del.title = 'Feld löschen';
+    del.innerHTML = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3l10 10M13 3L3 13"/></svg>';
+    del.addEventListener('click', () => {
+      S.custom = S.custom.filter(x => x.id !== cf.id);
+      save(); renderCustom(); updatePrintHeader();
+    });
+    head.append(labelIn, del);
+    const valIn = document.createElement('input');
+    valIn.type = 'text';
+    valIn.className = 'meta-input';
+    valIn.placeholder = 'Wert';
+    valIn.value = cf.value;
+    valIn.addEventListener('input', e => { cf.value = e.target.value; save(); updatePrintHeader(); });
+    row.append(head, valIn);
+    grid.appendChild(row);
+  });
+}
+
+function setView(v){
+  S.view = (v === 'wkz') ? 'wkz' : 'plan';
+  $$('.view-tab').forEach(b => b.classList.toggle('active', b.dataset.view === S.view));
+  $$('.view-pane').forEach(p => p.classList.toggle('active', p.dataset.pane === S.view));
+  // Hide kanal-bar in wkz view (it's only relevant for slots)
+  const kb = document.querySelector('.kanal-bar');
+  if (kb) kb.style.display = S.view === 'wkz' ? 'none' : '';
+  save();
+}
+
 function updatePrintHeader(){
   const d=new Date();
   const pad=n=>String(n).padStart(2,'0');
@@ -1735,6 +1927,29 @@ function updatePrintHeader(){
   setMeta('phBackenAbst', S.backenAbstand);
   setMeta('phRoboA', S.roboA);
   setMeta('phRoboB', S.roboB);
+
+  // Append custom fields
+  const mp = document.querySelector('.meta-print');
+  if (mp) {
+    mp.querySelectorAll('.meta-print-row.custom').forEach(el => el.remove());
+    S.custom.forEach(cf => {
+      if (!cf.label.trim() && !cf.value.trim()) return;
+      const row = document.createElement('div');
+      row.className = 'meta-print-row custom';
+      const lab = document.createElement('div');
+      lab.className = 'mpr-label';
+      lab.textContent = cf.label || '—';
+      const val = document.createElement('div');
+      val.className = 'mpr-value';
+      if (cf.value.trim()) {
+        val.textContent = cf.value;
+      } else {
+        val.classList.add('is-empty');
+      }
+      row.append(lab, val);
+      mp.appendChild(row);
+    });
+  }
 }
 
 function renderWkzTable(){
@@ -1785,7 +2000,6 @@ function tick(){
   const d=new Date();
   const pad=n=>String(n).padStart(2,'0');
   $('#sbClock').textContent=`${pad(d.getHours())}:${pad(d.getMinutes())}`;
-  $('#mcDate').textContent=`${pad(d.getDate())}.${pad(d.getMonth()+1)}.${d.getFullYear()}`;
 }
 
 function init(){
@@ -1796,6 +2010,21 @@ function init(){
   $('#inBez').value = S.bez;
   $('#inZN').addEventListener('input', e => { S.zn = e.target.value; save(); updatePrintHeader(); });
   $('#inBez').addEventListener('input', e => { S.bez = e.target.value; save(); updatePrintHeader(); });
+
+  // VIEW TABS
+  setView(S.view);
+  $$('.view-tab').forEach(b => {
+    b.addEventListener('click', () => setView(b.dataset.view));
+  });
+
+  // Custom field add
+  const btnAddCustom = document.getElementById('btnAddCustom');
+  if (btnAddCustom) {
+    btnAddCustom.addEventListener('click', () => {
+      S.custom.push({ id:'cf_'+Math.random().toString(16).slice(2), label:'', value:'' });
+      save(); renderCustom(); updatePrintHeader();
+    });
+  }
 
   // Meta inputs
   const metaMap = {
@@ -1829,7 +2058,18 @@ function init(){
   });
 
   $('#btnAddSlot').addEventListener('click',()=>{S.slots[S.kanal].push(null);save();renderSlots();renderPrintTable()});
-  $('#btnPrint').addEventListener('click',()=>{renderPrintTable();renderWkzTable();updatePrintHeader();setTimeout(()=>window.print(),50)});
+  $('#btnPrint').addEventListener('click',()=>{
+    document.body.classList.add(S.view === 'wkz' ? 'print-wkz' : 'print-plan');
+    renderPrintTable();
+    renderWkzTable();
+    updatePrintHeader();
+    setTimeout(()=>{
+      window.print();
+      setTimeout(()=>{
+        document.body.classList.remove('print-plan', 'print-wkz');
+      }, 100);
+    }, 60);
+  });
   $('#btnExport').addEventListener('click',()=>{
     const blob=new Blob([JSON.stringify({v:1,exportedAt:new Date().toISOString(),data:{kanal:S.kanal,slots:S.slots,library:S.library,nextId:S.nextId,zn:S.zn,bez:S.bez}},null,2)],{type:'application/json'});
     const a=document.createElement('a');a.href=URL.createObjectURL(blob);
@@ -1837,10 +2077,19 @@ function init(){
     document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(a.href);
   });
 
-  window.addEventListener('beforeprint',()=>{ renderPrintTable(); renderWkzTable(); updatePrintHeader(); });
+  window.addEventListener('beforeprint',()=>{
+    if (!document.body.classList.contains('print-plan') && !document.body.classList.contains('print-wkz')) {
+      document.body.classList.add(S.view === 'wkz' ? 'print-wkz' : 'print-plan');
+    }
+    renderPrintTable(); renderWkzTable(); updatePrintHeader();
+  });
+  window.addEventListener('afterprint',()=>{
+    document.body.classList.remove('print-plan', 'print-wkz');
+  });
   renderAll();
   updatePrintHeader();
   renderWkzTable();
+  renderCustom();
   tick();setInterval(tick,30000);
 }
 document.addEventListener('DOMContentLoaded',init);
