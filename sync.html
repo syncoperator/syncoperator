@@ -932,6 +932,83 @@ body {
 }
 .view-tab.active .vt-num { opacity: .7; }
 
+/* Library tabs */
+.lib-tabs {
+  display: flex;
+  background: var(--bg);
+  border-bottom: 1px solid var(--line);
+  padding: 0 16px;
+  gap: 4px;
+}
+.lib-tab {
+  background: transparent;
+  border: none;
+  padding: 12px 14px 11px;
+  font-family: var(--sans);
+  font-size: 13px; font-weight: 600;
+  color: var(--ink-4);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  flex: 1;
+}
+.lib-tab.active {
+  color: var(--ink);
+  border-bottom-color: var(--ink);
+}
+
+/* Slot editor sections */
+.slot-picker-section {
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line);
+}
+.slot-picker-section:last-of-type { border-bottom: none; }
+.slot-picker-current {
+  background: var(--bg-soft);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  padding: 12px 14px;
+  margin: 8px 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 42px;
+}
+.spc-main { flex: 1; min-width: 0; }
+.spc-code {
+  font-family: var(--mono);
+  font-size: 13px; font-weight: 700;
+  color: var(--ink);
+}
+.spc-title {
+  font-size: 13.5px;
+  color: var(--ink-2);
+  margin-top: 2px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.spc-empty {
+  color: var(--ink-5);
+  font-style: italic;
+  font-size: 13px;
+}
+.spc-clear {
+  width: 32px; height: 32px;
+  background: transparent;
+  border: none;
+  color: var(--ink-4);
+  cursor: pointer;
+  font-size: 20px;
+  line-height: 1;
+  border-radius: 3px;
+}
+.spc-clear:active { background: var(--danger-bg); color: var(--danger); }
+
+.tag-warn {
+  background: #fff4e5;
+  color: #b85c00;
+  font-weight: 600;
+}
+
 .view-pane { display: none; }
 .view-pane.active { display: block; }
 
@@ -1692,13 +1769,17 @@ body {
   <div class="sheet-head">
     <div class="sheet-head-text">
       <div class="sheet-tag">[LIB] · Library</div>
-      <div class="sheet-title">Operation Library</div>
+      <div class="sheet-title">Library</div>
     </div>
     <button class="icon-btn" id="libClose">
       <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3l10 10M13 3L3 13"/></svg>
     </button>
   </div>
-  <div class="sheet-filters">
+  <div class="lib-tabs">
+    <button class="lib-tab active" data-libtab="op">Operationen</button>
+    <button class="lib-tab" data-libtab="tool">Werkzeuge</button>
+  </div>
+  <div class="lib-filters">
     <div>
       <div class="filter-label">Kategorie</div>
       <div class="filter-row" id="catFilters"></div>
@@ -1765,13 +1846,16 @@ body {
 </div>
 
 <script>
-const MIN_SLOTS=5, SK='CitiTool_SO_v11_m';
+const MIN_SLOTS=5, SK='CitiTool_SO_v12_m';
 const S={
   kanal:'1',
   view:'plan',
   slots:{'1':Array(MIN_SLOTS).fill(null),'2':Array(MIN_SLOTS).fill(null)},
-  library:[], nextId:1,
+  library:[],
+  tools:[],
+  nextId:1,
   catFilter:'Alle', spFilter:'ALL',
+  libTab:'op',
   zn:'', bez:'',
   laufzeit:'', material:'', saegelaenge:'',
   ausspannlaenge:'', reststuecklaenge:'',
@@ -1783,7 +1867,7 @@ const S={
 };
 
 const PROJECT_FIELDS = [
-  'kanal','view','slots','library','nextId','catFilter','spFilter',
+  'kanal','view','slots','library','tools','nextId','catFilter','spFilter','libTab',
   'zn','bez',
   'laufzeit','material','saegelaenge','ausspannlaenge','reststuecklaenge',
   'backenNr','backenAbstand','roboA','roboB','custom'
@@ -1792,19 +1876,52 @@ const PROJECT_FIELDS = [
 function snapshotProject() {
   const snap = {};
   PROJECT_FIELDS.forEach(k => {
-    snap[k] = (k === 'slots' || k === 'library' || k === 'custom')
+    snap[k] = (k === 'slots' || k === 'library' || k === 'tools' || k === 'custom')
       ? JSON.parse(JSON.stringify(S[k]))
       : S[k];
   });
   return snap;
+}
+function normalizeSlot(s) {
+  if (s === null || s === undefined) return null;
+  if (typeof s === 'string') return { opId: s, toolId: null };
+  if (typeof s === 'object') return { opId: s.opId || null, toolId: s.toolId || null };
+  return null;
 }
 function applyProjectSnapshot(snap) {
   if (!snap) return;
   PROJECT_FIELDS.forEach(k => {
     if (snap[k] !== undefined) S[k] = snap[k];
   });
+  if (!S.tools) S.tools = [];
+  if (!S.libTab) S.libTab = 'op';
   if (!S.slots || !S.slots['1']) S.slots = {'1':Array(MIN_SLOTS).fill(null), '2':Array(MIN_SLOTS).fill(null)};
-  ['1','2'].forEach(k=>{while(S.slots[k].length<MIN_SLOTS)S.slots[k].push(null)});
+  ['1','2'].forEach(k=>{
+    S.slots[k] = S.slots[k].map(normalizeSlot);
+    while(S.slots[k].length<MIN_SLOTS)S.slots[k].push(null);
+  });
+  migrateOpToolsToTools();
+}
+function migrateOpToolsToTools() {
+  const tnoToId = new Map();
+  S.tools.forEach(t => { if (t.tno) tnoToId.set(t.tno, t.id); });
+  S.library.forEach(op => {
+    const tno = (op.toolNo || '').trim();
+    if (!tno) return;
+    if (!tnoToId.has(tno)) {
+      const id = 'tool_' + S.nextId++;
+      const name = (op.toolName || '').trim() || op.title || tno;
+      S.tools.push({ id, tno, name });
+      tnoToId.set(tno, id);
+    }
+    ['1','2'].forEach(k => {
+      S.slots[k] = S.slots[k].map(s => {
+        if (!s || s.opId !== op.id) return s;
+        if (s.toolId) return s;
+        return { opId: s.opId, toolId: tnoToId.get(tno) };
+      });
+    });
+  });
 }
 function findProject(id) { return S._projects.find(p => p.id === id) || null; }
 function persistActive() {
@@ -1827,8 +1944,8 @@ function createProject(zn = '', bez = '', clone = false) {
     snap = {
       kanal:'1', view:'plan',
       slots:{'1':Array(MIN_SLOTS).fill(null),'2':Array(MIN_SLOTS).fill(null)},
-      library:[], nextId:1,
-      catFilter:'Alle', spFilter:'ALL',
+      library:[], tools:[], nextId:1,
+      catFilter:'Alle', spFilter:'ALL', libTab:'op',
       zn, bez,
       laufzeit:'', material:'', saegelaenge:'',
       ausspannlaenge:'', reststuecklaenge:'',
@@ -1883,9 +2000,11 @@ function normalizeProject(p) {
     view: p.view === 'wkz' ? 'wkz' : 'plan',
     slots: (p.slots && p.slots['1']) ? p.slots : {'1':Array(MIN_SLOTS).fill(null),'2':Array(MIN_SLOTS).fill(null)},
     library: Array.isArray(p.library) ? p.library : [],
+    tools: Array.isArray(p.tools) ? p.tools : [],
     nextId: p.nextId || 1,
     catFilter: p.catFilter || 'Alle',
     spFilter: p.spFilter || 'ALL',
+    libTab: p.libTab === 'tool' ? 'tool' : 'op',
     zn: p.zn || '', bez: p.bez || '',
     laufzeit: p.laufzeit || '', material: p.material || '', saegelaenge: p.saegelaenge || '',
     ausspannlaenge: p.ausspannlaenge || '', reststuecklaenge: p.reststuecklaenge || '',
@@ -1946,15 +2065,19 @@ function esc(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').
 function $(s){return document.querySelector(s)}
 function $$(s){return[...document.querySelectorAll(s)]}
 function getOp(id){return S.library.find(o=>o.id===id)||null}
+function getTool(id){return S.tools.find(t=>t.id===id)||null}
+function getSlot(k,i){const s=S.slots[k][i];return s?{opId:s.opId||null,toolId:s.toolId||null}:null}
+function slotIsEmpty(s){return !s || (!s.opId && !s.toolId)}
 function opName(op){return(op.title||'').trim()||(op.code||'').trim()||''}
+function toolNameOf(t){return(t.name||'').trim()||(t.tno||'').trim()||''}
 function ensure(k,n){while(S.slots[k].length<n)S.slots[k].push(null)}
 
 function applyState(raw){
   if(!raw)return false;
   const sl=raw.slots||{};
   S.slots={
-    '1':Array.isArray(sl['1'])?[...sl['1']]:Array(MIN_SLOTS).fill(null),
-    '2':Array.isArray(sl['2'])?[...sl['2']]:Array(MIN_SLOTS).fill(null)
+    '1':Array.isArray(sl['1'])?sl['1'].map(normalizeSlot):Array(MIN_SLOTS).fill(null),
+    '2':Array.isArray(sl['2'])?sl['2'].map(normalizeSlot):Array(MIN_SLOTS).fill(null)
   };
   ['1','2'].forEach(k=>{while(S.slots[k].length<MIN_SLOTS)S.slots[k].push(null)});
   S.library=(Array.isArray(raw.library)?raw.library:[]).map(o=>({
@@ -1965,10 +2088,15 @@ function applyState(raw){
     doppelhalter:!!o.doppelhalter,
     toolNo:o.toolNo||'',toolName:o.toolName||'',
   }));
-  S.nextId=raw.nextId>0?raw.nextId:S.library.length+1;
+  S.tools=(Array.isArray(raw.tools)?raw.tools:[]).map(t=>({
+    id:t.id||'tool_'+Math.random().toString(16).slice(2),
+    tno:t.tno||'',name:t.name||'',
+  }));
+  S.nextId=raw.nextId>0?raw.nextId:Math.max(S.library.length, S.tools.length)+1;
   S.kanal=raw.kanal==='2'?'2':'1';
   S.catFilter=raw.catFilter||'Alle';
   S.spFilter=raw.spFilter||'ALL';
+  S.libTab=raw.libTab==='tool'?'tool':'op';
   S.zn=raw.zn||'';
   S.bez=raw.bez||'';
   S.laufzeit=raw.laufzeit||'';
@@ -2032,8 +2160,9 @@ function openEditor(opId=null, assignSlot=null){
   function field(label,el){const f=document.createElement('div');f.className='field';const l=document.createElement('div');l.className='field-label';l.textContent=label;f.append(l,el);return f}
   function inp(val,ph,mono){const i=document.createElement('input');i.className='field-input'+(mono?' mono':'');i.type='text';i.value=val||'';i.placeholder=ph||'';return i}
   function sel(opts,val){const s=document.createElement('select');s.className='field-select';opts.forEach(([v,t])=>{const o=new Option(t,v);if(v===val)o.selected=true;s.appendChild(o)});return s}
+  function row(...ch){const r=document.createElement('div');r.className='editor-row';ch.forEach(c=>r.appendChild(c));return r}
 
-  const codeIn=inp(isEdit?ex.code:'','L1101',true);
+  const codeIn=inp(isEdit?ex.code:'','L1101 (oder 1101)',true);
   const nameIn=inp(isEdit?ex.title:'','Plandrehen');
   const spSel=sel([['SP4','SP4 · Hauptspindel'],['SP3','SP3 · Gegenspindel']], isEdit?ex.spindle:'SP4');
   const catSel=sel([['Außen','Außen Bearbeitung'],['Innen','Innen Bearbeitung'],['Radial','Radial Bearbeitung'],['Axial','Axial']], isEdit?ex.category:'Außen');
@@ -2041,83 +2170,12 @@ function openEditor(opId=null, assignSlot=null){
   const tg=document.createElement('div');tg.className='toggle-pill'+(doppel?' on':'');
   tg.innerHTML='<div class="toggle-track"><div class="toggle-thumb"></div></div><span>Doppelhalter aktiv</span>';
   tg.addEventListener('click',()=>{doppel=!doppel;tg.classList.toggle('on',doppel)});
-  const toolNoIn=inp(isEdit?ex.toolNo:'','T0101',true);
-  const toolNameIn=inp(isEdit?ex.toolName:'','Plan-Drehstahl');
 
-  function row(...ch){const r=document.createElement('div');r.className='editor-row';ch.forEach(c=>r.appendChild(c));return r}
-
-  const fCode=field('L-Code · Basis',codeIn);fCode.classList.add('narrow');fCode.style.flex='0 0 110px';
+  const fCode=field('L-Code · Basis',codeIn);fCode.classList.add('narrow');fCode.style.flex='0 0 120px';
   const fName=field('Bezeichnung',nameIn);
   const fSp=field('Spindel',spSel);
   const fCat=field('Kategorie',catSel);
-  const fTno=field('Werkzeug-Nr.',toolNoIn);fTno.classList.add('narrow');fTno.style.flex='0 0 110px';
-  const fTnm=field('Werkzeug-Name',toolNameIn);
-
-  body.append(row(fCode,fName),row(fSp,fCat),tg,row(fTno,fTnm));
-
-  // Library picker for tools
-  const pickerWrap = document.createElement('div');
-  pickerWrap.className = 'lib-picker-wrap';
-  const pickerBtn = document.createElement('button');
-  pickerBtn.type = 'button';
-  pickerBtn.className = 'btn btn-ghost lib-picker-btn';
-  pickerBtn.innerHTML = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 4h12M2 8h12M2 12h12"/></svg>Aus Library wählen';
-  const pickerList = document.createElement('div');
-  pickerList.className = 'lib-picker-list';
-  pickerList.style.display = 'none';
-  function buildLibPicker(){
-    pickerList.innerHTML = '';
-    const seen = new Map();
-    S.library.forEach(o => {
-      const tno = (o.toolNo || '').trim();
-      if (!tno) return;
-      const tname = (o.toolName || '').trim() || (o.title || '').trim();
-      if (!seen.has(tno)) seen.set(tno, tname);
-    });
-    const items = [...seen.entries()].sort((a, b) => a[0].localeCompare(b[0], undefined, { numeric: true }));
-    if (!items.length) {
-      pickerList.innerHTML = '<div class="lib-picker-empty">— Library leer —</div>';
-      return;
-    }
-    const search = document.createElement('input');
-    search.type = 'text';
-    search.className = 'field-input lib-picker-search';
-    search.placeholder = 'Suchen…';
-    pickerList.appendChild(search);
-    const itemsHost = document.createElement('div');
-    itemsHost.className = 'lib-picker-items';
-    pickerList.appendChild(itemsHost);
-    function renderItems(q) {
-      itemsHost.innerHTML = '';
-      const qq = (q||'').toLowerCase();
-      items.forEach(([tno, tname]) => {
-        if (qq && !((tno+' '+tname).toLowerCase().includes(qq))) return;
-        const r = document.createElement('div');
-        r.className = 'lib-picker-item';
-        r.innerHTML = `<span class="lpi-tno">${esc(tno)}</span><span class="lpi-name">${esc(tname)}</span>`;
-        r.addEventListener('click', () => {
-          toolNoIn.value = tno;
-          toolNameIn.value = tname;
-          pickerList.style.display = 'none';
-          pickerBtn.classList.remove('open');
-        });
-        itemsHost.appendChild(r);
-      });
-      if (!itemsHost.children.length) {
-        itemsHost.innerHTML = '<div class="lib-picker-empty">Nichts gefunden</div>';
-      }
-    }
-    search.addEventListener('input', e => renderItems(e.target.value));
-    renderItems('');
-  }
-  pickerBtn.addEventListener('click', () => {
-    const willOpen = pickerList.style.display === 'none';
-    if (willOpen) buildLibPicker();
-    pickerList.style.display = willOpen ? 'block' : 'none';
-    pickerBtn.classList.toggle('open', willOpen);
-  });
-  pickerWrap.append(pickerBtn, pickerList);
-  body.append(pickerWrap);
+  body.append(row(fCode,fName),row(fSp,fCat),tg);
 
   const cancel=document.createElement('button');cancel.className='btn btn-ghost';cancel.textContent='Abbrechen';
   cancel.addEventListener('click',closeEditor);
@@ -2128,40 +2186,33 @@ function openEditor(opId=null, assignSlot=null){
     const title = nameIn.value.trim();
     if(!code){codeIn.focus();return}
     if(!title){nameIn.focus();return}
-    const tnoRaw = toolNoIn.value.trim();
-    const tnoNorm = tnoRaw ? (/^\d+$/.test(tnoRaw) ? 'T' + tnoRaw : tnoRaw) : '';
-    const data={code,title,spindle:spSel.value,category:catSel.value,doppelhalter:doppel,toolNo:tnoNorm,toolName:toolNameIn.value.trim()};
+    const data={code,title,spindle:spSel.value,category:catSel.value,doppelhalter:doppel};
     if(isEdit){Object.assign(ex,data)}
     else{
       const nop={id:'op_'+S.nextId++,...data};
       S.library.push(nop);
-      if(assignSlot){ensure(assignSlot.kanal,assignSlot.index+1);S.slots[assignSlot.kanal][assignSlot.index]=nop.id}
+      if(assignSlot){ensure(assignSlot.kanal,assignSlot.index+1);S.slots[assignSlot.kanal][assignSlot.index]={opId:nop.id,toolId:null}}
     }
     closeEditor();save();renderAll();
   });
-
   if(isEdit){
     const del=document.createElement('button');del.className='btn btn-danger';del.textContent='Löschen';
-    let delConfirm = false;
-    let delTimer = null;
+    let delConfirm=false, delTimer=null;
     del.addEventListener('click',()=>{
       if (!delConfirm) {
         delConfirm = true;
-        del.textContent = 'Wirklich löschen?';
-        del.style.background = 'var(--danger)';
-        del.style.color = '#fff';
-        del.style.borderColor = 'var(--danger)';
-        delTimer = setTimeout(() => {
-          delConfirm = false;
-          del.textContent = 'Löschen';
-          del.style.background = '';
-          del.style.color = '';
-          del.style.borderColor = '';
-        }, 3000);
+        del.textContent='Wirklich löschen?';
+        del.style.background='var(--danger)';del.style.color='#fff';del.style.borderColor='var(--danger)';
+        delTimer=setTimeout(()=>{delConfirm=false;del.textContent='Löschen';del.style.background='';del.style.color='';del.style.borderColor=''},3000);
         return;
       }
       clearTimeout(delTimer);
-      ['1','2'].forEach(k=>{S.slots[k]=S.slots[k].map(id=>id===opId?null:id)});
+      ['1','2'].forEach(k=>{
+        S.slots[k]=S.slots[k].map(s=>{
+          if(!s||s.opId!==opId)return s;
+          return s.toolId?{opId:null,toolId:s.toolId}:null;
+        });
+      });
       S.library=S.library.filter(x=>x.id!==opId);
       closeEditor();save();renderAll();
     });
@@ -2169,6 +2220,200 @@ function openEditor(opId=null, assignSlot=null){
   } else {
     foot.append(cancel,submit);
   }
+  $('#editor').classList.add('open');
+  document.body.style.overflow='hidden';
+}
+
+function openToolEditor(toolId=null){
+  const isEdit=!!toolId, ex=isEdit?getTool(toolId):null;
+  if(isEdit&&!ex)return;
+  $('#eTag').textContent=isEdit?'[TOOL] · Bearbeiten':'[TOOL] · Neu anlegen';
+  $('#eTitle').textContent=isEdit?(ex.name||ex.tno):'Neues Werkzeug';
+  const body=$('#eBody');body.innerHTML='';
+  const foot=$('#eFoot');foot.innerHTML='';
+
+  function field(label,el){const f=document.createElement('div');f.className='field';const l=document.createElement('div');l.className='field-label';l.textContent=label;f.append(l,el);return f}
+  function inp(val,ph,mono){const i=document.createElement('input');i.className='field-input'+(mono?' mono':'');i.type='text';i.value=val||'';i.placeholder=ph||'';return i}
+  function row(...ch){const r=document.createElement('div');r.className='editor-row';ch.forEach(c=>r.appendChild(c));return r}
+
+  const tnoIn=inp(isEdit?ex.tno:'','T01 (oder 1)',true);
+  const nameIn=inp(isEdit?ex.name:'','Plan-Drehstahl');
+  const fTno=field('T-Nr.',tnoIn);fTno.classList.add('narrow');fTno.style.flex='0 0 120px';
+  const fName=field('Werkzeug-Name',nameIn);
+  body.append(row(fTno,fName));
+
+  const cancel=document.createElement('button');cancel.className='btn btn-ghost';cancel.textContent='Abbrechen';
+  cancel.addEventListener('click',closeEditor);
+  const submit=document.createElement('button');submit.className='btn btn-primary';submit.textContent=isEdit?'Speichern':'Anlegen';
+  submit.addEventListener('click',()=>{
+    const tnoRaw=tnoIn.value.trim();
+    const tno=tnoRaw?(/^\d+$/.test(tnoRaw)?'T'+tnoRaw.padStart(2,'0'):tnoRaw):'';
+    const name=nameIn.value.trim();
+    if(!tno){tnoIn.focus();return}
+    if(!name){nameIn.focus();return}
+    if(isEdit){Object.assign(ex,{tno,name})}
+    else{S.tools.push({id:'tool_'+S.nextId++,tno,name})}
+    closeEditor();save();renderAll();
+  });
+  if(isEdit){
+    const del=document.createElement('button');del.className='btn btn-danger';del.textContent='Löschen';
+    let delConfirm=false, delTimer=null;
+    del.addEventListener('click',()=>{
+      if (!delConfirm) {
+        delConfirm = true;
+        del.textContent='Wirklich löschen?';
+        del.style.background='var(--danger)';del.style.color='#fff';del.style.borderColor='var(--danger)';
+        delTimer=setTimeout(()=>{delConfirm=false;del.textContent='Löschen';del.style.background='';del.style.color='';del.style.borderColor=''},3000);
+        return;
+      }
+      clearTimeout(delTimer);
+      ['1','2'].forEach(k=>{
+        S.slots[k]=S.slots[k].map(s=>{
+          if(!s||s.toolId!==toolId)return s;
+          return s.opId?{opId:s.opId,toolId:null}:null;
+        });
+      });
+      S.tools=S.tools.filter(x=>x.id!==toolId);
+      closeEditor();save();renderAll();
+    });
+    foot.append(del,cancel,submit);
+  } else {
+    foot.append(cancel,submit);
+  }
+  $('#editor').classList.add('open');
+  document.body.style.overflow='hidden';
+}
+
+function openSlotEditor(kanal, index){
+  ensure(kanal, index+1);
+  const cur = S.slots[kanal][index] || {opId:null, toolId:null};
+  let selOpId = cur.opId;
+  let selToolId = cur.toolId;
+
+  $('#eTag').textContent='[SLOT] · Bearbeiten';
+  $('#eTitle').textContent=`Slot ${index+1} · Kanal ${kanal}`;
+  const body=$('#eBody');body.innerHTML='';
+  const foot=$('#eFoot');foot.innerHTML='';
+
+  // Operation section
+  const opSection = document.createElement('div');
+  opSection.className = 'slot-picker-section';
+  const opLabel = document.createElement('div');
+  opLabel.className='field-label';opLabel.textContent='Operation';
+  const opCurrent = document.createElement('div');
+  opCurrent.className = 'slot-picker-current';
+  function refreshOpDisplay(){
+    if (selOpId) {
+      const op = getOp(selOpId);
+      if (op) {
+        opCurrent.innerHTML = `<div class="spc-main"><div class="spc-code">${esc(op.code)}</div><div class="spc-title">${esc(op.title)}</div></div><button type="button" class="spc-clear">×</button>`;
+        opCurrent.querySelector('.spc-clear').addEventListener('click', ()=>{selOpId=null;refreshOpDisplay()});
+        return;
+      }
+    }
+    opCurrent.innerHTML='<div class="spc-empty">— keine Operation —</div>';
+  }
+  refreshOpDisplay();
+  const opPickBtn = document.createElement('button');
+  opPickBtn.type='button';opPickBtn.className='btn btn-ghost';
+  opPickBtn.innerHTML='<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 4h12M2 8h12M2 12h12"/></svg>Operation wählen';
+  const opPickerList = document.createElement('div');
+  opPickerList.className='lib-picker-list';opPickerList.style.display='none';
+  function buildOpPicker(){
+    opPickerList.innerHTML='';
+    if(!S.library.length){opPickerList.innerHTML='<div class="lib-picker-empty">— Keine Operationen —</div>';return}
+    const search=document.createElement('input');search.type='text';search.className='field-input lib-picker-search';search.placeholder='Suchen…';
+    opPickerList.appendChild(search);
+    const itemsHost=document.createElement('div');itemsHost.className='lib-picker-items';opPickerList.appendChild(itemsHost);
+    const items=S.library.slice().sort((a,b)=>(a.code||'').localeCompare(b.code||'',undefined,{numeric:true}));
+    function renderItems(q){
+      itemsHost.innerHTML='';const qq=(q||'').toLowerCase();
+      items.forEach(op=>{
+        if(qq && !((op.code+' '+op.title).toLowerCase().includes(qq)))return;
+        const r=document.createElement('div');r.className='lib-picker-item';
+        r.innerHTML=`<span class="lpi-tno">${esc(op.code)}</span><span class="lpi-name">${esc(op.title)}</span>`;
+        r.addEventListener('click',()=>{selOpId=op.id;refreshOpDisplay();opPickerList.style.display='none';opPickBtn.classList.remove('open')});
+        itemsHost.appendChild(r);
+      });
+      if(!itemsHost.children.length)itemsHost.innerHTML='<div class="lib-picker-empty">Nichts gefunden</div>';
+    }
+    search.addEventListener('input',e=>renderItems(e.target.value));
+    renderItems('');
+  }
+  opPickBtn.addEventListener('click',()=>{
+    const willOpen=opPickerList.style.display==='none';
+    if(willOpen)buildOpPicker();
+    opPickerList.style.display=willOpen?'block':'none';
+    opPickBtn.classList.toggle('open',willOpen);
+  });
+  opSection.append(opLabel,opCurrent,opPickBtn,opPickerList);
+
+  // Tool section
+  const tlSection = document.createElement('div');
+  tlSection.className='slot-picker-section';
+  const tlLabel = document.createElement('div');
+  tlLabel.className='field-label';tlLabel.textContent='Werkzeug';
+  const tlCurrent = document.createElement('div');
+  tlCurrent.className='slot-picker-current';
+  function refreshToolDisplay(){
+    if (selToolId) {
+      const t = getTool(selToolId);
+      if (t) {
+        tlCurrent.innerHTML = `<div class="spc-main"><div class="spc-code">${esc(t.tno)}</div><div class="spc-title">${esc(t.name)}</div></div><button type="button" class="spc-clear">×</button>`;
+        tlCurrent.querySelector('.spc-clear').addEventListener('click', ()=>{selToolId=null;refreshToolDisplay()});
+        return;
+      }
+    }
+    tlCurrent.innerHTML='<div class="spc-empty">— kein Werkzeug —</div>';
+  }
+  refreshToolDisplay();
+  const tlPickBtn = document.createElement('button');
+  tlPickBtn.type='button';tlPickBtn.className='btn btn-ghost';
+  tlPickBtn.innerHTML='<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 4h12M2 8h12M2 12h12"/></svg>Werkzeug wählen';
+  const tlPickerList = document.createElement('div');
+  tlPickerList.className='lib-picker-list';tlPickerList.style.display='none';
+  function buildToolPicker(){
+    tlPickerList.innerHTML='';
+    if(!S.tools.length){tlPickerList.innerHTML='<div class="lib-picker-empty">— Keine Werkzeuge —</div>';return}
+    const search=document.createElement('input');search.type='text';search.className='field-input lib-picker-search';search.placeholder='Suchen…';
+    tlPickerList.appendChild(search);
+    const itemsHost=document.createElement('div');itemsHost.className='lib-picker-items';tlPickerList.appendChild(itemsHost);
+    const items=S.tools.slice().sort((a,b)=>(a.tno||'').localeCompare(b.tno||'',undefined,{numeric:true}));
+    function renderItems(q){
+      itemsHost.innerHTML='';const qq=(q||'').toLowerCase();
+      items.forEach(t=>{
+        if(qq && !((t.tno+' '+t.name).toLowerCase().includes(qq)))return;
+        const r=document.createElement('div');r.className='lib-picker-item';
+        r.innerHTML=`<span class="lpi-tno">${esc(t.tno)}</span><span class="lpi-name">${esc(t.name)}</span>`;
+        r.addEventListener('click',()=>{selToolId=t.id;refreshToolDisplay();tlPickerList.style.display='none';tlPickBtn.classList.remove('open')});
+        itemsHost.appendChild(r);
+      });
+      if(!itemsHost.children.length)itemsHost.innerHTML='<div class="lib-picker-empty">Nichts gefunden</div>';
+    }
+    search.addEventListener('input',e=>renderItems(e.target.value));
+    renderItems('');
+  }
+  tlPickBtn.addEventListener('click',()=>{
+    const willOpen=tlPickerList.style.display==='none';
+    if(willOpen)buildToolPicker();
+    tlPickerList.style.display=willOpen?'block':'none';
+    tlPickBtn.classList.toggle('open',willOpen);
+  });
+  tlSection.append(tlLabel,tlCurrent,tlPickBtn,tlPickerList);
+
+  body.append(opSection,tlSection);
+
+  const cancel=document.createElement('button');cancel.className='btn btn-ghost';cancel.textContent='Abbrechen';
+  cancel.addEventListener('click',closeEditor);
+  const clear=document.createElement('button');clear.className='btn btn-ghost';clear.textContent='Slot leeren';
+  clear.addEventListener('click',()=>{S.slots[kanal][index]=null;closeEditor();save();renderAll()});
+  const submit=document.createElement('button');submit.className='btn btn-primary';submit.textContent='Speichern';
+  submit.addEventListener('click',()=>{
+    if(!selOpId && !selToolId){S.slots[kanal][index]=null}
+    else{S.slots[kanal][index]={opId:selOpId,toolId:selToolId}}
+    closeEditor();save();renderAll();
+  });
+  foot.append(cancel,clear,submit);
 
   $('#editor').classList.add('open');
   document.body.style.overflow='hidden';
@@ -2180,19 +2425,22 @@ function renderSlots(){
   const sl=S.slots[S.kanal];
   const n=Math.max(MIN_SLOTS,sl.length);
   for(let i=0;i<n;i++){
-    const op=sl[i]?getOp(sl[i]):null;
+    const slotData=sl[i];
+    const isEmpty=slotIsEmpty(slotData);
+    const op=(slotData&&slotData.opId)?getOp(slotData.opId):null;
+    const tool=(slotData&&slotData.toolId)?getTool(slotData.toolId):null;
+
     const row=document.createElement('div');
-    row.className='slot-row '+(op?'filled':'empty');
+    row.className='slot-row '+(isEmpty?'empty':'filled');
     row.dataset.index=i;
 
     const head=document.createElement('div');head.className='slot-head';
     const num=document.createElement('div');num.className='slot-num';num.textContent=String(i+1).padStart(2,'0');
     head.appendChild(num);
 
-    if(op){
+    if(!isEmpty){
       const lc=document.createElement('span');lc.className='slot-l-code';lc.textContent=L[S.kanal](i+1);
       head.appendChild(lc);
-
       const sp=document.createElement('div');sp.className='slot-spacer';head.appendChild(sp);
 
       const upBtn=document.createElement('button');upBtn.className='slot-mini-btn';upBtn.title='Hoch';
@@ -2207,37 +2455,49 @@ function renderSlots(){
 
       const clrBtn=document.createElement('button');clrBtn.className='slot-mini-btn danger';clrBtn.title='Leeren';
       clrBtn.innerHTML='<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3l10 10M13 3L3 13"/></svg>';
-      clrBtn.addEventListener('click',e=>{e.stopPropagation();S.slots[S.kanal][i]=null;save();renderSlots()});
+      clrBtn.addEventListener('click',e=>{e.stopPropagation();S.slots[S.kanal][i]=null;save();renderSlots();renderWkzTable()});
       head.appendChild(clrBtn);
 
       row.appendChild(head);
 
-      const title=document.createElement('div');title.className='slot-title';title.textContent=opName(op);
+      const title=document.createElement('div');title.className='slot-title';
+      title.textContent = op ? opName(op) : (tool ? toolNameOf(tool) : '— leer —');
       row.appendChild(title);
 
       const meta=document.createElement('div');meta.className='slot-meta';
-      const bsp=document.createElement('span');bsp.className='tag '+(op.spindle==='SP4'?'tag-sp4':'tag-sp3');bsp.textContent=op.spindle;
-      const bcat=document.createElement('span');bcat.className='tag tag-cat';bcat.textContent=op.category;
-      meta.append(bsp,bcat);
-      if(op.doppelhalter){const bd=document.createElement('span');bd.className='tag tag-doppel';bd.textContent='Doppelhalter';meta.appendChild(bd)}
-      if(op.toolNo){const bt=document.createElement('span');bt.className='tag tag-tool';bt.textContent=op.toolNo;meta.appendChild(bt)}
+      if(op){
+        const bsp=document.createElement('span');bsp.className='tag '+(op.spindle==='SP4'?'tag-sp4':'tag-sp3');bsp.textContent=op.spindle;
+        meta.appendChild(bsp);
+        const bcat=document.createElement('span');bcat.className='tag tag-cat';bcat.textContent=op.category;meta.appendChild(bcat);
+        if(op.doppelhalter){const bd=document.createElement('span');bd.className='tag tag-doppel';bd.textContent='Doppelhalter';meta.appendChild(bd)}
+      } else {
+        const bnop=document.createElement('span');bnop.className='tag tag-warn';bnop.textContent='ohne Operation';meta.appendChild(bnop);
+      }
+      if(tool){
+        const bt=document.createElement('span');bt.className='tag tag-tool';bt.textContent=tool.tno+' · '+tool.name;
+        meta.appendChild(bt);
+      } else {
+        const bnt=document.createElement('span');bnt.className='tag tag-warn';bnt.textContent='ohne Werkzeug';
+        meta.appendChild(bnt);
+      }
       row.appendChild(meta);
 
-      row.addEventListener('click',e=>{if(e.target.closest('.slot-mini-btn'))return;openEditor(op.id)});
+      row.addEventListener('click',e=>{if(e.target.closest('.slot-mini-btn'))return;openSlotEditor(S.kanal,i)});
     } else {
       row.appendChild(head);
-      const ph=document.createElement('div');ph.className='slot-placeholder';ph.textContent='Tippen für neue Operation';
+      const ph=document.createElement('div');ph.className='slot-placeholder';ph.textContent='Tippen für Slot';
       row.appendChild(ph);
-      row.addEventListener('click',()=>openEditor(null,{kanal:S.kanal,index:i}));
+      row.addEventListener('click',()=>openSlotEditor(S.kanal,i));
     }
-
     list.appendChild(row);
   }
-  const filled=S.slots[S.kanal].filter(Boolean).length;
+  const filled=S.slots[S.kanal].filter(s=>!slotIsEmpty(s)).length;
   $('#slotCount').textContent=`${filled} / ${n}`;
 }
 
 function renderFilters(){
+  const fbox = document.querySelector('.lib-filters');
+  if (fbox) fbox.style.display = (S.libTab === 'tool') ? 'none' : '';
   const cf=$('#catFilters');cf.innerHTML='';
   CATS.forEach(cat=>{
     const p=document.createElement('button');p.className='pill'+(S.catFilter===cat?' active':'');
@@ -2252,10 +2512,25 @@ function renderFilters(){
     p.addEventListener('click',()=>{S.spFilter=v;save();renderFilters();renderLib()});
     sf.appendChild(p);
   });
+  $$('.lib-tab').forEach(b => b.classList.toggle('active', b.dataset.libtab === S.libTab));
 }
 
 function renderLib(){
   const list=$('#libList');list.innerHTML='';
+  if (S.libTab === 'tool') {
+    const tools = S.tools.slice().sort((a,b)=>(a.tno||'').localeCompare(b.tno||'', undefined, {numeric:true}));
+    if (!tools.length) {
+      list.innerHTML='<div class="lib-empty">Keine Werkzeuge.<br>MPF importieren oder „+ Neu".</div>';
+      return;
+    }
+    tools.forEach(t=>{
+      const card=document.createElement('div');card.className='op-card';
+      card.addEventListener('click',()=>{closeSheet();setTimeout(()=>openToolEditor(t.id),200)});
+      card.innerHTML=`<div class="op-card-title"><span>${esc(t.name)}</span><span class="op-card-l">${esc(t.tno)}</span></div>`;
+      list.appendChild(card);
+    });
+    return;
+  }
   let ops=S.library;
   if(S.catFilter!=='Alle')ops=ops.filter(o=>o.category===S.catFilter);
   if(S.spFilter==='SP3')ops=ops.filter(o=>o.spindle==='SP3');
@@ -2270,10 +2545,16 @@ function renderLib(){
         <span class="tag ${op.spindle==='SP4'?'tag-sp4':'tag-sp3'}">${op.spindle}</span>
         <span class="tag tag-cat">${esc(op.category)}</span>
         ${op.doppelhalter?'<span class="tag tag-doppel">DH</span>':''}
-        ${op.toolNo?`<span class="tag tag-tool">${esc(op.toolNo)}</span>`:''}
       </div>`;
     list.appendChild(card);
   });
+}
+
+function setLibTab(t){
+  S.libTab = (t === 'tool') ? 'tool' : 'op';
+  save();
+  renderFilters();
+  renderLib();
 }
 
 /* PRINT TABLE — matches reference PDF */
@@ -2292,20 +2573,25 @@ function renderPrintTable(){
   h += '<tr class="ptr-spindle-head"><td class="pt-corner"></td><td class="pt-sp4-head">Spindel 4</td><td class="pt-sp3-head">Spindel 3</td><td class="pt-sp4-head">Spindel 4</td><td class="pt-sp3-head">Spindel 3</td></tr>';
   h += '</thead><tbody>';
   for(let i=0;i<n;i++){
-    const op1=s1[i]?getOp(s1[i]):null;
-    const op2=s2[i]?getOp(s2[i]):null;
+    const slot1=s1[i]||null, slot2=s2[i]||null;
+    const op1=(slot1&&slot1.opId)?getOp(slot1.opId):null;
+    const op2=(slot2&&slot2.opId)?getOp(slot2.opId):null;
+    const t1=(slot1&&slot1.toolId)?getTool(slot1.toolId):null;
+    const t2=(slot2&&slot2.toolId)?getTool(slot2.toolId):null;
     const lc1=L[1](i+1),lc2=L[2](i+1);
-    function cellHTML(op,lc){
-      if(!op) return '';
-      const tno=(op.toolNo||'').trim();
+    function cellHTML(op,tool,lc){
+      if(!op && !tool) return '';
       let codes=`<span class="pt-l">${esc(lc)}</span>`;
-      if(tno) codes += `<span class="pt-t">${esc(tno)}</span>`;
-      return `<div class="pt-content"><span class="pt-text">${esc(opName(op))}</span><span class="pt-codes">${codes}</span></div>`;
+      if(tool && tool.tno) codes += `<span class="pt-t">${esc(tool.tno)}</span>`;
+      const text = op ? opName(op) : (tool ? tool.name : '');
+      return `<div class="pt-content"><span class="pt-text">${esc(text)}</span><span class="pt-codes">${codes}</span></div>`;
     }
-    const k1sp4 = op1 && op1.spindle === 'SP4' ? cellHTML(op1, lc1) : '';
-    const k1sp3 = op1 && op1.spindle === 'SP3' ? cellHTML(op1, lc1) : '';
-    const k2sp4 = op2 && op2.spindle === 'SP4' ? cellHTML(op2, lc2) : '';
-    const k2sp3 = op2 && op2.spindle === 'SP3' ? cellHTML(op2, lc2) : '';
+    const spOf = (op) => op ? op.spindle : 'SP4';
+    const sp1 = spOf(op1), sp2 = spOf(op2);
+    const k1sp4 = (op1 || t1) && sp1 === 'SP4' ? cellHTML(op1, t1, lc1) : '';
+    const k1sp3 = (op1 || t1) && sp1 === 'SP3' ? cellHTML(op1, t1, lc1) : '';
+    const k2sp4 = (op2 || t2) && sp2 === 'SP4' ? cellHTML(op2, t2, lc2) : '';
+    const k2sp3 = (op2 || t2) && sp2 === 'SP3' ? cellHTML(op2, t2, lc2) : '';
     h += `<tr><td class="pt-idx">${i+1}</td><td class="pt-cell">${k1sp4}</td><td class="pt-cell">${k1sp3}</td><td class="pt-cell">${k2sp4}</td><td class="pt-cell">${k2sp3}</td></tr>`;
   }
   h += '</tbody>';
@@ -2585,24 +2871,22 @@ function importMPFFile(text, filename, onDone) {
     return;
   }
 
-  // Werkzeug list
+  // Werkzeug list → S.tools
   const tools = parseWerkzeugListing(text);
   if (!tools.length) {
     customAlert('Keine Werkzeuge gefunden. Bitte Datei prüfen.', { tag: '[MPF]', title: 'Import fehlgeschlagen' });
     if (onDone) onDone(0); return;
   }
-  const existingByT = new Set(S.library.filter(o => (o.toolNo||'').trim()).map(o => o.toolNo));
+  const existingByT = new Set(S.tools.map(t => t.tno));
   const willOverlap = tools.some(t => existingByT.has(t.tno));
   const proceed = () => {
     const importedT = new Set(tools.map(t => t.tno));
-    S.library = S.library.filter(o => !importedT.has((o.toolNo||'').trim()));
-    const lFor = detectedKanal === '2' ? (n => 'L21' + String(n).padStart(2,'0')) : (n => 'L11' + String(n).padStart(2,'0'));
-    tools.forEach((t, i) => {
-      S.library.push({
-        id: 'op_imp_' + S.nextId++,
-        code: lFor(i + 1), title: t.name,
-        spindle: 'SP4', category: 'Außen', doppelhalter: false,
-        toolNo: t.tno, toolName: t.name,
+    S.tools = S.tools.filter(t => !importedT.has(t.tno));
+    tools.forEach(t => {
+      S.tools.push({
+        id: 'tool_' + S.nextId++,
+        tno: t.tno,
+        name: t.name,
       });
     });
     save();
@@ -2737,13 +3021,13 @@ function renderWkzTable(){
     const seen = new Set(); const list = [];
     const slots = S.slots[kanal] || [];
     for (let i = 0; i < slots.length; i++) {
-      const id = slots[i]; if (!id) continue;
-      const op = getOp(id); if (!op) continue;
-      const tno = (op.toolNo || '').trim();
-      if (!tno || seen.has(tno)) continue;
-      seen.add(tno);
-      const tname = (op.toolName || '').trim() || (op.title || '').trim();
-      list.push({ tno, name: tname });
+      const s = slots[i];
+      if (!s || !s.toolId) continue;
+      const t = getTool(s.toolId);
+      if (!t) continue;
+      if (seen.has(t.tno)) continue;
+      seen.add(t.tno);
+      list.push({ tno: t.tno, name: t.name });
     }
     return list;
   }
@@ -2783,6 +3067,7 @@ function tick(){
 function init(){
   if(!load()){
     applyState(DEFAULT);
+    migrateOpToolsToTools();
     const id = newProjectId();
     S._activeId = id;
     S._projects = [{ id, ...snapshotProject() }];
@@ -2887,7 +3172,16 @@ function init(){
   $('#btnOpenLib').addEventListener('click',openSheet);
   $('#eClose').addEventListener('click',closeEditor);
   $('#btnNewOp').addEventListener('click',()=>openEditor(null));
-  $('#libNewOp').addEventListener('click',()=>{closeSheet();setTimeout(()=>openEditor(null),200)});
+  $('#libNewOp').addEventListener('click',()=>{
+    closeSheet();
+    setTimeout(()=>{
+      if (S.libTab === 'tool') openToolEditor(null);
+      else openEditor(null);
+    },200);
+  });
+  $$('.lib-tab').forEach(b => {
+    b.addEventListener('click', () => setLibTab(b.dataset.libtab));
+  });
 
   $$('.kanal-tab').forEach(b=>{
     b.classList.toggle('active',b.dataset.k===S.kanal);
@@ -2909,7 +3203,7 @@ function init(){
     window.print();
   });
   $('#btnExport').addEventListener('click',()=>{
-    const blob=new Blob([JSON.stringify({v:1,exportedAt:new Date().toISOString(),data:{kanal:S.kanal,slots:S.slots,library:S.library,nextId:S.nextId,zn:S.zn,bez:S.bez}},null,2)],{type:'application/json'});
+    const blob=new Blob([JSON.stringify({v:2,exportedAt:new Date().toISOString(),data:{kanal:S.kanal,slots:S.slots,library:S.library,tools:S.tools,nextId:S.nextId,zn:S.zn,bez:S.bez}},null,2)],{type:'application/json'});
     const a=document.createElement('a');a.href=URL.createObjectURL(blob);
     a.download=`CitiTool_${new Date().toISOString().slice(0,10)}.json`;
     document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(a.href);
