@@ -2141,24 +2141,24 @@ function init(){
   });
 
   // Custom fields button
-  $('#btnAddCustom').addEventListener('click', () => {
-    S.custom.push({ id:'cf_'+Math.random().toString(16).slice(2), label:'', value:'' });
-    save(); renderCustom(); updatePrintHeader();
-  });
+  const btnAddCustom = document.getElementById('btnAddCustom');
+  if (btnAddCustom) {
+    btnAddCustom.addEventListener('click', () => {
+      S.custom.push({ id:'cf_'+Math.random().toString(16).slice(2), label:'', value:'' });
+      save(); renderCustom(); updatePrintHeader();
+    });
+  }
 
   // PRINT — print only the active view
   $('#btnPrint').addEventListener('click', () => {
-    document.body.classList.add(S.view === 'wkz' ? 'print-wkz' : 'print-plan');
+    // Update everything synchronously BEFORE print
     renderPrintTable();
     renderWkzTable();
     updatePrintHeader();
-    setTimeout(() => {
-      window.print();
-      // Cleanup body class right after print dialog closes
-      setTimeout(() => {
-        document.body.classList.remove('print-plan', 'print-wkz');
-      }, 100);
-    }, 60);
+    document.body.classList.remove('print-plan', 'print-wkz');
+    document.body.classList.add(S.view === 'wkz' ? 'print-wkz' : 'print-plan');
+    // Print synchronously (iOS Safari blocks setTimeout-wrapped print)
+    window.print();
   });
 
   $('#mClose').addEventListener('click',closeModal);
