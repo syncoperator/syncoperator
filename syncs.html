@@ -3546,14 +3546,21 @@ function init(){
 
   // PRINT — print only the active view
   $('#btnPrint').addEventListener('click', () => {
-    // Update everything synchronously BEFORE print
-    renderPrintTable();
-    renderWkzTable();
-    updatePrintHeader();
+    try {
+      renderPrintTable();
+      renderWkzTable();
+      updatePrintHeader();
+    } catch(err) {
+      console.error('Print prep error:', err);
+    }
     document.body.classList.remove('print-plan', 'print-wkz');
     document.body.classList.add(S.view === 'wkz' ? 'print-wkz' : 'print-plan');
     // Print synchronously (iOS Safari blocks setTimeout-wrapped print)
     window.print();
+  });
+  // Cleanup print classes after print finishes (or is cancelled)
+  window.addEventListener('afterprint', () => {
+    document.body.classList.remove('print-plan', 'print-wkz');
   });
 
   $('#mClose').addEventListener('click',closeModal);
