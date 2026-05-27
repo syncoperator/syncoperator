@@ -663,6 +663,113 @@ body {
   font-weight: 600;
 }
 
+/* PAIRING modal */
+.pair-wrap {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  min-height: 60vh;
+}
+.pair-col {
+  border-right: 1px solid var(--line);
+  padding: 0;
+  display: flex; flex-direction: column;
+}
+.pair-col:last-child { border-right: none; }
+.pair-col-head {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg-soft);
+  position: sticky; top: 0; z-index: 5;
+}
+.pair-col-title {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--ink);
+}
+.pair-row {
+  display: grid;
+  grid-template-columns: 70px 1fr 30px 1.4fr;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--bg-2);
+}
+.pair-row:hover { background: var(--bg-soft); }
+.pair-num {
+  display: flex; flex-direction: column; gap: 2px;
+}
+.pair-idx {
+  font-family: var(--mono);
+  font-size: 13px; font-weight: 700;
+  color: var(--ink);
+}
+.pair-lc {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--ink-4);
+}
+.pair-cell { min-width: 0; }
+.pair-op-cell {
+  background: var(--bg-soft);
+  border-radius: var(--r);
+  padding: 6px 10px;
+}
+.pair-code {
+  font-family: var(--mono);
+  font-size: 11.5px; font-weight: 700;
+  color: var(--ink);
+}
+.pair-name {
+  font-size: 12px;
+  color: var(--ink-2);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  margin-top: 2px;
+}
+.pair-warn {
+  color: #b85c00; font-size: 11.5px; font-style: italic;
+}
+.pair-arrow {
+  display: flex; justify-content: center;
+  color: var(--ink-5);
+}
+.pair-arrow svg { width: 22px; height: 12px; }
+.pair-tool-cell {
+  display: flex; gap: 6px; align-items: center;
+}
+.pair-input-wrap {
+  position: relative;
+  flex: 1;
+}
+.pair-input-wrap:first-child {
+  flex: 0 0 80px;
+}
+.pair-input-tno { width: 100%; }
+.pair-input-name { width: 100%; }
+.pair-empty {
+  padding: 30px 18px;
+  color: var(--ink-5);
+  text-align: center;
+  font-style: italic;
+}
+.pair-clear-btn {
+  width: 32px; height: 32px;
+  flex-shrink: 0;
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  color: var(--ink-4);
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all .15s;
+}
+.pair-clear-btn svg { width: 12px; height: 12px; }
+.pair-clear-btn:hover {
+  background: var(--danger-bg);
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
 /* Library tabs */
 .lib-tabs {
   display: flex;
@@ -1065,12 +1172,14 @@ body {
   background: var(--bg);
   border: 1px solid var(--line-2);
   border-radius: var(--r-md);
-  width: 100%; max-width: 540px;
-  max-height: 90vh;
+  width: 100%; max-width: 780px;
+  max-height: 92vh;
   display: flex; flex-direction: column;
   overflow: hidden;
   box-shadow: 0 16px 48px rgba(0,0,0,.18);
 }
+.modal-box.modal-wide { max-width: 1100px; }
+.modal-box.modal-xwide { max-width: 1280px; }
 .modal-head {
   padding: 18px 22px 14px;
   border-bottom: 1px solid var(--line);
@@ -1735,6 +1844,7 @@ body {
       <input type="file" id="fileInput" accept=".json" style="display:none">
       <input type="file" id="mpfInput" style="display:none">
       <button class="btn btn-ghost btn-sm" id="btnToggleLib" title="Library ein-/ausblenden"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 3h12v10H2z"/><path d="M9 3v10"/></svg>Library</button>
+      <button class="btn btn-ghost btn-sm" id="btnPairing" title="Operationen ⇄ Werkzeuge schnell verknüpfen"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5h6"/><path d="M3 11h6"/><path d="M11 3l2 2-2 2"/><path d="M11 9l2 2-2 2"/></svg>Verknüpfen</button>
       <button class="btn btn-primary btn-sm" id="btnPrint"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6V2h8v4"/><path d="M4 12H3a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1h-1"/><rect x="4" y="9" width="8" height="5" rx="1"/></svg>Drucken</button>
     </div>
   </div>
@@ -2299,6 +2409,7 @@ function importMPFFile(text, filename, onDone) {
       if (onDone) onDone(0);
       return;
     }
+    const newOps = [];  // captured during proceed for slot insertion
     const proceed = () => {
       // Remove existing ops with same code (replace)
       const importedCodes = new Set(ops.map(o => o.code));
@@ -2312,7 +2423,7 @@ function importMPFFile(text, filename, onDone) {
         if (/innen|bohrung|bohren/.test(ttl)) cat = 'Innen';
         else if (/radial/.test(ttl)) cat = 'Radial';
         else if (/axial/.test(ttl)) cat = 'Axial';
-        S.library.push({
+        const newOp = {
           id: 'op_mpf_' + S.nextId++,
           code: o.code,
           title: o.title,
@@ -2321,10 +2432,28 @@ function importMPFFile(text, filename, onDone) {
           doppelhalter: false,
           toolNo: '',
           toolName: '',
-        });
+        };
+        S.library.push(newOp);
+        newOps.push({ op: newOp, num: o.num, kanal: o.kanal });
       });
       save();
-      if (onDone) onDone(ops.length);
+      // Now ask if user wants to also insert into slots
+      customConfirm(`${ops.length} Operationen importiert.\n\nAuch in die Slots einfügen?\n(Bestehende Slots werden überschrieben in der Reihenfolge "001:", "002:" …)`, { tag: '[MPF]', title: 'In Slots einfügen?', okText: 'Ja, einfügen' })
+        .then(ok => {
+          if (ok) {
+            // Insert each op into slot at position num-1 of its channel
+            newOps.forEach(({ op, num, kanal }) => {
+              if (!num) return;
+              const idx = num - 1;
+              ensure(kanal, idx + 1);
+              const existing = S.slots[kanal][idx] || {opId:null, toolId:null};
+              S.slots[kanal][idx] = { opId: op.id, toolId: existing.toolId };
+            });
+            save();
+            renderAll();
+          }
+          if (onDone) onDone(ops.length);
+        });
     };
     // Confirm if overlap
     const existing = new Set(S.library.map(o => o.code));
@@ -2576,7 +2705,13 @@ function openModal(tag,title){
   $('#mFoot').innerHTML='';
   $('#modal').classList.add('open');
 }
-function closeModal(){$('#modal').classList.remove('open')}
+function closeModal(){
+  $('#modal').classList.remove('open');
+  const box = $('#modal .modal-box');
+  if (box) box.classList.remove('modal-wide', 'modal-xwide');
+  const mb = $('#mBody');
+  if (mb) mb.style.padding = '';
+}
 function mBtn(label,cls,fn){const b=document.createElement('button');b.type='button';b.className='btn '+cls;b.textContent=label;b.addEventListener('click',fn);return b}
 function mInp(val,ph,mono){const i=document.createElement('input');i.className='field-input'+(mono?' mono':'');i.type='text';i.value=val||'';i.placeholder=ph||'';return i}
 function mSel(opts,val){const s=document.createElement('select');s.className='field-select';opts.forEach(([v,t])=>{const o=new Option(t,v);if(v===val)o.selected=true;s.appendChild(o)});return s}
@@ -2982,7 +3117,214 @@ function openSlotEditor(kanal, index){
   );
 }
 
-/* RENDER SLOTS */
+/* PAIRING MODAL — Quick assignment of tools to operation slots */
+function openPairingModal(){
+  openModal('[PAIR] · Verknüpfen', 'Operation ⇄ Werkzeug schnell zuordnen');
+  // Make modal wider
+  $('#modal .modal-box').classList.add('modal-xwide');
+  const body = $('#mBody');
+  body.style.padding = '0';
+
+  function buildTable() {
+    body.innerHTML = '';
+    const wrap = document.createElement('div');
+    wrap.className = 'pair-wrap';
+
+    // 2 columns side by side: Kanal 1 and Kanal 2
+    ['1','2'].forEach(kanal => {
+      const col = document.createElement('div');
+      col.className = 'pair-col';
+      const head = document.createElement('div');
+      head.className = 'pair-col-head';
+      head.innerHTML = `<div class="pair-col-title">Kanal ${kanal} · ${kanal === '1' ? '1000.MPF' : '2000.MPF'}</div>`;
+      col.appendChild(head);
+
+      const slots = S.slots[kanal] || [];
+      const n = Math.max(slots.length, MIN_SLOTS);
+      for (let i = 0; i < n; i++) {
+        const slot = slots[i];
+        const op = (slot && slot.opId) ? getOp(slot.opId) : null;
+        const tool = (slot && slot.toolId) ? getTool(slot.toolId) : null;
+        if (!op && !tool) continue; // skip empty rows to reduce noise
+
+        const row = document.createElement('div');
+        row.className = 'pair-row';
+
+        const lc = L[kanal](i+1);
+        const numCell = document.createElement('div');
+        numCell.className = 'pair-num';
+        numCell.innerHTML = `<span class="pair-idx">${String(i+1).padStart(2,'0')}</span><span class="pair-lc">${esc(lc)}</span>`;
+        row.appendChild(numCell);
+
+        // Operation cell
+        const opCell = document.createElement('div');
+        opCell.className = 'pair-cell pair-op-cell';
+        if (op) {
+          opCell.innerHTML = `<div class="pair-code">${esc(op.code)}</div><div class="pair-name">${esc(op.title)}</div>`;
+        } else {
+          opCell.innerHTML = `<div class="pair-warn">ohne Operation</div>`;
+        }
+        row.appendChild(opCell);
+
+        // Arrow
+        const arrow = document.createElement('div');
+        arrow.className = 'pair-arrow';
+        arrow.innerHTML = '<svg viewBox="0 0 24 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 6h18M16 2l4 4-4 4"/></svg>';
+        row.appendChild(arrow);
+
+        // Tool input with autocomplete
+        const toolCell = document.createElement('div');
+        toolCell.className = 'pair-cell pair-tool-cell';
+        const tnoIn = document.createElement('input');
+        tnoIn.type = 'text';
+        tnoIn.className = 'field-input mono pair-input-tno';
+        tnoIn.placeholder = 'T-Nr.';
+        tnoIn.value = tool ? tool.tno : '';
+        const nameIn = document.createElement('input');
+        nameIn.type = 'text';
+        nameIn.className = 'field-input pair-input-name';
+        nameIn.placeholder = 'Werkzeug-Name (z.B. Schrupper)';
+        nameIn.value = tool ? tool.name : '';
+
+        // Inline autocomplete for tools — smart: click shows all, typing filters
+        function makeAcDd(input, onPick) {
+          const dd = document.createElement('div');
+          dd.className = 'ac-dropdown';
+          dd.style.display = 'none';
+          const acWrap = document.createElement('div');
+          acWrap.className = 'ac-wrap';
+          acWrap.appendChild(dd);
+          input.parentNode.insertBefore(acWrap, input.nextSibling);
+
+          let userTyped = false;
+
+          function render(showAll) {
+            dd.innerHTML = '';
+            const q = userTyped ? input.value : '';
+            const qq = (q||'').toLowerCase().trim();
+            let items;
+            if (showAll || !qq) {
+              // Show all tools, sorted by T-Nr (numeric)
+              items = S.tools.slice().sort((a,b)=>(a.tno||'').localeCompare(b.tno||'', undefined, {numeric:true}));
+            } else {
+              // Filter: tno starts-with first, then name contains
+              const starts = S.tools.filter(t => (t.tno||'').toLowerCase().startsWith(qq));
+              const startsIds = new Set(starts.map(t=>t.id));
+              const contains = S.tools.filter(t => !startsIds.has(t.id) && (t.tno+' '+t.name).toLowerCase().includes(qq));
+              items = [...starts, ...contains];
+            }
+            if (!items.length) {
+              dd.innerHTML = '<div class="ac-item" style="color:var(--ink-5);font-style:italic;cursor:default;">Keine Werkzeuge</div>';
+              dd.style.display = 'block';
+              return;
+            }
+            items.slice(0, 30).forEach(t => {
+              const r = document.createElement('div');
+              r.className = 'ac-item';
+              r.innerHTML = `<span class="ac-key">${esc(t.tno)}</span><span class="ac-val">${esc(t.name)}</span>`;
+              r.addEventListener('mousedown', e => {
+                e.preventDefault();
+                onPick(t);
+                userTyped = false;
+                dd.style.display = 'none';
+              });
+              dd.appendChild(r);
+            });
+            dd.style.display = 'block';
+          }
+          // On focus/click — always show full list (ignore current value)
+          input.addEventListener('focus', () => { userTyped = false; render(true); });
+          input.addEventListener('click', () => { userTyped = false; render(true); });
+          input.addEventListener('input', () => { userTyped = true; render(false); });
+          input.addEventListener('blur', () => setTimeout(() => { dd.style.display='none'; }, 150));
+        }
+
+        const tnoWrap = document.createElement('div'); tnoWrap.className = 'pair-input-wrap';
+        tnoWrap.appendChild(tnoIn);
+        toolCell.appendChild(tnoWrap);
+        makeAcDd(tnoIn, t => { tnoIn.value = t.tno; nameIn.value = t.name; commit(); });
+
+        const nameWrap = document.createElement('div'); nameWrap.className = 'pair-input-wrap';
+        nameWrap.appendChild(nameIn);
+        toolCell.appendChild(nameWrap);
+        makeAcDd(nameIn, t => { tnoIn.value = t.tno; nameIn.value = t.name; commit(); });
+
+        // Quick clear button (×) that resets tool fields and slot
+        const clearBtn = document.createElement('button');
+        clearBtn.type = 'button';
+        clearBtn.className = 'pair-clear-btn';
+        clearBtn.title = 'Werkzeug entfernen';
+        clearBtn.innerHTML = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3l10 10M13 3L3 13"/></svg>';
+        clearBtn.addEventListener('click', () => {
+          tnoIn.value = '';
+          nameIn.value = '';
+          commit();
+        });
+        toolCell.appendChild(clearBtn);
+
+        // Commit on blur (debounced) — resolve tool / create if needed and update slot
+        function commit() {
+          const tnoRaw = tnoIn.value.trim();
+          const nameVal = nameIn.value.trim();
+          if (!tnoRaw && !nameVal) {
+            // Clear tool from slot
+            const ex = S.slots[kanal][i] || {opId:null,toolId:null};
+            if (!ex.opId) S.slots[kanal][i] = null;
+            else S.slots[kanal][i] = { opId: ex.opId, toolId: null };
+            save();
+            return;
+          }
+          const tno = tnoRaw ? (/^\d+$/.test(tnoRaw) ? 'T' + tnoRaw.padStart(2,'0') : tnoRaw) : '';
+          let toolEnt = S.tools.find(t => t.tno === tno && t.name === nameVal);
+          if (!toolEnt && tno) toolEnt = S.tools.find(t => t.tno === tno);
+          if (!toolEnt) {
+            if (tno && nameVal) {
+              toolEnt = { id: 'tool_'+S.nextId++, tno, name: nameVal };
+              S.tools.push(toolEnt);
+            }
+          } else if (nameVal && toolEnt.name !== nameVal) {
+            toolEnt.name = nameVal;
+          }
+          if (toolEnt) {
+            const ex = S.slots[kanal][i] || {opId:null,toolId:null};
+            S.slots[kanal][i] = { opId: ex.opId, toolId: toolEnt.id };
+            save();
+          }
+        }
+        tnoIn.addEventListener('change', commit);
+        nameIn.addEventListener('change', commit);
+
+        row.appendChild(toolCell);
+        col.appendChild(row);
+      }
+
+      // If no rows added, show empty hint
+      if (col.children.length === 1) {
+        const empty = document.createElement('div');
+        empty.className = 'pair-empty';
+        empty.textContent = 'Keine belegten Slots in diesem Kanal';
+        col.appendChild(empty);
+      }
+
+      wrap.appendChild(col);
+    });
+
+    body.appendChild(wrap);
+  }
+
+  buildTable();
+
+  $('#mFoot').append(
+    mBtn('Aktualisieren','btn-ghost', () => {
+      buildTable();
+    }),
+    mBtn('Fertig','btn-primary', () => {
+      save();
+      renderAll();
+      closeModal();
+    })
+  );
+}
 function renderSlots(){
   const list=$('#slotList');list.innerHTML='';
   const sl=S.slots[S.kanal];
@@ -3373,7 +3715,6 @@ function renderWkzTable(){
   if (!cont) return;
 
   function collectTools(kanal){
-    const seen = new Set();
     const list = [];
     const slots = S.slots[kanal] || [];
     for (let i = 0; i < slots.length; i++) {
@@ -3381,8 +3722,6 @@ function renderWkzTable(){
       if (!s || !s.toolId) continue;
       const t = getTool(s.toolId);
       if (!t) continue;
-      if (seen.has(t.tno)) continue;
-      seen.add(t.tno);
       list.push({ tno: t.tno, name: t.name });
     }
     return list;
@@ -3545,6 +3884,10 @@ function init(){
   if (btnToggleLib) btnToggleLib.classList.add('active');
   if (btnToggleLib) btnToggleLib.addEventListener('click', () => toggleLib());
   if (libClose) libClose.addEventListener('click', () => toggleLib(true));
+
+  // Pairing modal
+  const btnPairing = document.getElementById('btnPairing');
+  if (btnPairing) btnPairing.addEventListener('click', () => openPairingModal());
 
   const btnAddCustom = document.getElementById('btnAddCustom');
   if (btnAddCustom) {
