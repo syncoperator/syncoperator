@@ -689,7 +689,7 @@ body {
 }
 .pair-row {
   display: grid;
-  grid-template-columns: 70px 1fr 30px 1.4fr;
+  grid-template-columns: 60px minmax(0, 1fr) 24px minmax(0, 2fr);
   gap: 10px;
   align-items: center;
   padding: 10px 14px;
@@ -739,11 +739,9 @@ body {
 }
 .pair-input-wrap {
   position: relative;
-  flex: 1;
 }
-.pair-input-wrap:first-child {
-  flex: 0 0 80px;
-}
+.pair-input-wrap:nth-child(1) { flex: 0 0 90px; }
+.pair-input-wrap:nth-child(2) { flex: 1 1 auto; min-width: 0; }
 .pair-input-tno { width: 100%; }
 .pair-input-name { width: 100%; }
 .pair-empty {
@@ -1179,7 +1177,7 @@ body {
   box-shadow: 0 16px 48px rgba(0,0,0,.18);
 }
 .modal-box.modal-wide { max-width: 1100px; }
-.modal-box.modal-xwide { max-width: 1280px; }
+.modal-box.modal-xwide { max-width: 1500px; }
 .modal-head {
   padding: 18px 22px 14px;
   border-bottom: 1px solid var(--line);
@@ -2297,18 +2295,39 @@ function syncMetaInputs(){
 function parseWerkzeugListing(text) {
   const tools = [];
   const lines = text.split(/\r?\n/);
+  let currentSchlitten = null;
+  let currentMagazin = null;
+  let inActiveMagazin = false;
+
   for (let raw of lines) {
     let line = raw.trim();
     if (!line) continue;
     if (line.startsWith(';')) line = line.slice(1).trim();
     if (!line) continue;
     if (/^\*+/.test(line)) continue;
+
+    // Detect Schlitten/Magazin section header
+    // Examples:
+    //   "Schlitten Nr.1        Magazin Nr. 1"
+    //   "Schlitten Nr.2        Magazin Nr.21"
+    //   "Schlitten Nr.1        Magazin Nr. 9998"
+    const sec = line.match(/Schlitten\s*Nr\.?\s*(\d+).*?Magazin\s*Nr\.?\s*(\d+)/i);
+    if (sec) {
+      currentSchlitten = parseInt(sec[1], 10);
+      currentMagazin = parseInt(sec[2], 10);
+      // Active magazines: 1 (Kanal 1) or 21 (Kanal 2). Skip 9998/9999/etc.
+      inActiveMagazin = (currentMagazin === 1 || currentMagazin === 21);
+      continue;
+    }
+    // Header row of the table — skip
     if (/^PL\s+Werkzeug/i.test(line)) continue;
-    if (/^Schlitten/i.test(line)) continue;
-    if (/^Magazin/i.test(line)) continue;
     if (/^Maschinen/i.test(line)) continue;
     if (/^Erstellungs/i.test(line)) continue;
     if (/^Werkzeugdaten/i.test(line)) continue;
+
+    // Only process data lines if we're inside an active magazine
+    if (!inActiveMagazin) continue;
+
     const m = line.match(/^(\d{1,3})\s+(\S+)/);
     if (!m) continue;
     const pl = parseInt(m[1], 10);
@@ -2372,13 +2391,17 @@ function parseOperationsMPF(text) {
 
 /* Detect kanal from filename or content */
 function detectKanalFromMPF(filename, text) {
-  // Filename match: 1000.MPF / 2000.MPF / ch1.MPF / ch2.MPF
+  // Filename: 1000/ch1/kanal1/_k1 → 1; 2000/ch2/kanal2/_k2 → 2
+  // Also TOOLIST_CH1_*, TOOLIST_CH2_*
   if (filename) {
     const lower = filename.toLowerCase();
-    if (/^2000|ch2|kanal2|_k2/.test(lower)) return '2';
-    if (/^1000|ch1|kanal1|_k1/.test(lower)) return '1';
+    if (/2000|ch2|kanal2|_k2|_ch2/.test(lower)) return '2';
+    if (/1000|ch1|kanal1|_k1|_ch1/.test(lower)) return '1';
   }
-  // Content marker: ; ---------- Kanal: N -----
+  // Werkzeug listing: "Schlitten Nr.2  Magazin Nr.21" → kanal 2
+  if (/Schlitten\s*Nr\.?\s*2\b.*Magazin\s*Nr\.?\s*21/i.test(text)) return '2';
+  if (/Schlitten\s*Nr\.?\s*1\b.*Magazin\s*Nr\.?\s*1\b/i.test(text)) return '1';
+  // Op MPF content: ; ---------- Kanal: N -----
   const m = text.match(/Kanal:\s*(\d)/);
   if (m) return m[1] === '2' ? '2' : '1';
   // Or by L-code prefix found in content
@@ -2473,6 +2496,14 @@ function importMPFFile(text, filename, onDone) {
     customAlert('Keine Werkzeuge gefunden. Bitte Datei prüfen.', { tag: '[MPF]', title: 'Import fehlgeschlagen' });
     if (onDone) onDone(0);
     return;
+  }
+  // For Kanal 2: re-number T-Nr to avoid collision with Kanal 1 tools
+  // Kanal 1: PL 1 → T01 (as-is)
+  // Kanal 2: PL 1 → T101 (prefix "1" + zero-padded PL)
+  if (detectedKanal === '2') {
+    tools.forEach(t => {
+      t.tno = 'T1' + String(t.pl).padStart(2, '0');
+    });
   }
   const existingByT = new Set(S.tools.map(t => t.tno));
   const willOverlap = tools.some(t => existingByT.has(t.tno));
