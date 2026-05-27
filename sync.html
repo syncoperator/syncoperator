@@ -1053,6 +1053,78 @@ body {
   font-weight: 600;
 }
 
+/* PAIR sheet */
+.pair-kanal-head {
+  padding: 12px 16px;
+  background: var(--bg-soft);
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  font-weight: 600;
+  font-size: 13px;
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+.pair-row-m {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--bg-2);
+  display: flex; flex-direction: column; gap: 8px;
+}
+.pair-row-head {
+  display: flex; align-items: center; gap: 10px;
+}
+.pair-row-num {
+  font-family: var(--mono);
+  font-size: 13px; font-weight: 700;
+}
+.pair-row-lc {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ink-4);
+}
+.pair-row-op {
+  background: var(--bg-soft);
+  border-radius: var(--r);
+  padding: 8px 12px;
+  font-size: 13px;
+}
+.pair-row-op .pair-code {
+  font-family: var(--mono);
+  font-weight: 700;
+  font-size: 12px;
+}
+.pair-row-op .pair-name {
+  color: var(--ink-2);
+  margin-top: 2px;
+  font-size: 13px;
+}
+.pair-row-tool-row {
+  display: flex; gap: 8px;
+}
+.pair-row-tool-row .pair-input-wrap {
+  position: relative;
+  flex: 1;
+}
+.pair-row-tool-row .pair-input-wrap:first-child {
+  flex: 0 0 90px;
+}
+.pair-row-tool-row .pair-clear-btn {
+  width: 38px; height: 38px;
+  flex-shrink: 0;
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  color: var(--ink-4);
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+.pair-row-tool-row .pair-clear-btn svg { width: 13px; height: 13px; }
+.pair-row-tool-row .pair-clear-btn:active {
+  background: var(--danger-bg);
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
 .view-pane { display: none; }
 .view-pane.active { display: block; }
 
@@ -1798,9 +1870,13 @@ body {
       <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h12M2 8h12M2 13h12"/></svg>
       Library
     </button>
+    <button class="bb-btn" id="btnPairing">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 5h6"/><path d="M3 11h6"/><path d="M11 3l2 2-2 2"/><path d="M11 9l2 2-2 2"/></svg>
+      Verknüpfen
+    </button>
     <button class="bb-btn primary" id="btnNewOp">
       <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3v10M3 8h10"/></svg>
-      Neue Operation
+      Neue Op
     </button>
   </div>
 
@@ -1887,6 +1963,20 @@ body {
       <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 3v10M3 8h10"/></svg>Neues Projekt
     </button>
   </div>
+</div>
+
+<div class="sheet" id="pairSheet">
+  <div class="sheet-grip"></div>
+  <div class="sheet-head">
+    <div class="sheet-head-text">
+      <div class="sheet-tag">[PAIR] · Verknüpfen</div>
+      <div class="sheet-title">Operation ⇄ Werkzeug</div>
+    </div>
+    <button class="icon-btn" id="pairClose">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3l10 10M13 3L3 13"/></svg>
+    </button>
+  </div>
+  <div class="sheet-body" id="pairBody" style="padding:0;"></div>
 </div>
 
 <script>
@@ -2326,6 +2416,171 @@ function openToolEditor(toolId=null){
   }
   $('#editor').classList.add('open');
   document.body.style.overflow='hidden';
+}
+
+function openPairing() {
+  const body = $('#pairBody');
+  body.innerHTML = '';
+
+  ['1','2'].forEach(kanal => {
+    const head = document.createElement('div');
+    head.className = 'pair-kanal-head';
+    head.textContent = `Kanal ${kanal} · ${kanal === '1' ? '1000.MPF' : '2000.MPF'}`;
+    body.appendChild(head);
+
+    const slots = S.slots[kanal] || [];
+    const n = Math.max(slots.length, MIN_SLOTS);
+    let added = 0;
+    for (let i = 0; i < n; i++) {
+      const slot = slots[i];
+      const op = (slot && slot.opId) ? getOp(slot.opId) : null;
+      const tool = (slot && slot.toolId) ? getTool(slot.toolId) : null;
+      if (!op && !tool) continue;
+
+      const row = document.createElement('div');
+      row.className = 'pair-row-m';
+
+      const rh = document.createElement('div');
+      rh.className = 'pair-row-head';
+      rh.innerHTML = `<span class="pair-row-num">${String(i+1).padStart(2,'0')}</span><span class="pair-row-lc">${esc(L[kanal](i+1))}</span>`;
+      row.appendChild(rh);
+
+      const opBlock = document.createElement('div');
+      opBlock.className = 'pair-row-op';
+      if (op) {
+        opBlock.innerHTML = `<div class="pair-code">${esc(op.code)}</div><div class="pair-name">${esc(op.title)}</div>`;
+      } else {
+        opBlock.innerHTML = `<div class="pair-warn">ohne Operation</div>`;
+      }
+      row.appendChild(opBlock);
+
+      const tr = document.createElement('div');
+      tr.className = 'pair-row-tool-row';
+
+      const tnoWrap = document.createElement('div'); tnoWrap.className = 'pair-input-wrap';
+      const tnoIn = document.createElement('input');
+      tnoIn.type = 'text'; tnoIn.className = 'field-input mono';
+      tnoIn.placeholder = 'T-Nr.';
+      tnoIn.value = tool ? tool.tno : '';
+      tnoWrap.appendChild(tnoIn);
+
+      const nameWrap = document.createElement('div'); nameWrap.className = 'pair-input-wrap';
+      const nameIn = document.createElement('input');
+      nameIn.type = 'text'; nameIn.className = 'field-input';
+      nameIn.placeholder = 'Werkzeug-Name';
+      nameIn.value = tool ? tool.name : '';
+      nameWrap.appendChild(nameIn);
+
+      function makeAcDd(input, parent, onPick) {
+        const dd = document.createElement('div');
+        dd.className = 'ac-dropdown';
+        dd.style.display = 'none';
+        parent.appendChild(dd);
+        let userTyped = false;
+        function render(showAll) {
+          dd.innerHTML = '';
+          const q = userTyped ? input.value : '';
+          const qq = (q||'').toLowerCase().trim();
+          let items;
+          if (showAll || !qq) {
+            items = S.tools.slice().sort((a,b)=>(a.tno||'').localeCompare(b.tno||'', undefined, {numeric:true}));
+          } else {
+            const starts = S.tools.filter(t => (t.tno||'').toLowerCase().startsWith(qq));
+            const startsIds = new Set(starts.map(t=>t.id));
+            const contains = S.tools.filter(t => !startsIds.has(t.id) && (t.tno+' '+t.name).toLowerCase().includes(qq));
+            items = [...starts, ...contains];
+          }
+          if (!items.length) {
+            dd.innerHTML = '<div class="ac-item" style="color:var(--ink-5);font-style:italic;cursor:default;">Keine Werkzeuge</div>';
+            dd.style.display = 'block';
+            return;
+          }
+          items.slice(0, 30).forEach(t => {
+            const r = document.createElement('div');
+            r.className = 'ac-item';
+            r.innerHTML = `<span class="ac-key">${esc(t.tno)}</span><span class="ac-val">${esc(t.name)}</span>`;
+            r.addEventListener('mousedown', e => { e.preventDefault(); onPick(t); userTyped=false; dd.style.display='none'; });
+            r.addEventListener('touchstart', e => { onPick(t); userTyped=false; dd.style.display='none'; }, {passive:true});
+            dd.appendChild(r);
+          });
+          dd.style.display = 'block';
+        }
+        input.addEventListener('focus', () => { userTyped=false; render(true); });
+        input.addEventListener('click', () => { userTyped=false; render(true); });
+        input.addEventListener('input', () => { userTyped=true; render(false); });
+        input.addEventListener('blur', () => setTimeout(() => { dd.style.display='none'; }, 200));
+      }
+
+      function commit() {
+        const tnoRaw = tnoIn.value.trim();
+        const nameVal = nameIn.value.trim();
+        if (!tnoRaw && !nameVal) {
+          const ex = S.slots[kanal][i] || {opId:null,toolId:null};
+          if (!ex.opId) S.slots[kanal][i] = null;
+          else S.slots[kanal][i] = { opId: ex.opId, toolId: null };
+          save();
+          return;
+        }
+        const tno = tnoRaw ? (/^\d+$/.test(tnoRaw) ? 'T' + tnoRaw.padStart(2,'0') : tnoRaw) : '';
+        let toolEnt = S.tools.find(t => t.tno === tno && t.name === nameVal);
+        if (!toolEnt && tno) toolEnt = S.tools.find(t => t.tno === tno);
+        if (!toolEnt) {
+          if (tno && nameVal) {
+            toolEnt = { id: 'tool_'+S.nextId++, tno, name: nameVal };
+            S.tools.push(toolEnt);
+          }
+        } else if (nameVal && toolEnt.name !== nameVal) {
+          toolEnt.name = nameVal;
+        }
+        if (toolEnt) {
+          const ex = S.slots[kanal][i] || {opId:null,toolId:null};
+          S.slots[kanal][i] = { opId: ex.opId, toolId: toolEnt.id };
+          save();
+        }
+      }
+
+      makeAcDd(tnoIn, tnoWrap, t => { tnoIn.value = t.tno; nameIn.value = t.name; commit(); });
+      makeAcDd(nameIn, nameWrap, t => { tnoIn.value = t.tno; nameIn.value = t.name; commit(); });
+
+      // Clear button (×)
+      const clearBtn = document.createElement('button');
+      clearBtn.type = 'button';
+      clearBtn.className = 'pair-clear-btn';
+      clearBtn.innerHTML = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3l10 10M13 3L3 13"/></svg>';
+      clearBtn.addEventListener('click', () => {
+        tnoIn.value = '';
+        nameIn.value = '';
+        commit();
+      });
+      tnoIn.addEventListener('change', commit);
+      nameIn.addEventListener('change', commit);
+
+      tr.append(tnoWrap, nameWrap, clearBtn);
+      row.appendChild(tr);
+      body.appendChild(row);
+      added++;
+    }
+    if (!added) {
+      const empty = document.createElement('div');
+      empty.style.padding = '20px 16px';
+      empty.style.color = 'var(--ink-5)';
+      empty.style.fontStyle = 'italic';
+      empty.textContent = 'Keine belegten Slots in diesem Kanal';
+      body.appendChild(empty);
+    }
+  });
+
+  $('#pairSheet').classList.add('open');
+  $('#sheetBackdrop').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closePairing() {
+  $('#pairSheet').classList.remove('open');
+  if (!$('#libSheet').classList.contains('open') && !$('#projSheet').classList.contains('open')) {
+    $('#sheetBackdrop').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+  renderAll();
 }
 
 function openSlotEditor(kanal, index){
@@ -2905,21 +3160,27 @@ function parseOperationsMPF(text) {
   for (let raw of lines) {
     const line = raw.trim();
     if (!line) continue;
-    const g = line.match(/^GROUP_BEGIN\s*\(\s*\d+\s*,\s*"([^"]+)"/);
+    // Allow N-prefix before GROUP_BEGIN; capture 3rd arg = kanal
+    const g = line.match(/(?:^|\s)GROUP_BEGIN\s*\(\s*\d+\s*,\s*"([^"]+)"\s*,\s*(\d+)/);
     if (g) {
       const label = g[1].trim();
+      const kanalArg = g[2];
       const om = label.match(/^(\d{1,3})\s*[:\.]\s*(.+)$/);
-      pending = om ? { num: parseInt(om[1], 10), title: om[2].trim() } : null;
+      pending = om ? {
+        num: parseInt(om[1], 10),
+        title: om[2].trim(),
+        kanal: (kanalArg === '2') ? '2' : '1'
+      } : null;
       continue;
     }
-    if (line.startsWith('GROUP_END')) { pending = null; continue; }
+    if (/(?:^|\s)GROUP_END/.test(line)) { pending = null; continue; }
     if (!pending) continue;
     if (line.startsWith(';')) continue;
-    const lm = line.match(/^L(\d{3,5})\b/);
+    // L-code can have N-prefix or be at line start
+    const lm = line.match(/(?:^|\s)L(\d{3,5})\b/);
     if (lm) {
       const code = 'L' + lm[1];
-      const kanal = lm[1].startsWith('2') ? '2' : '1';
-      ops.push({ num: pending.num, title: pending.title, code, kanal });
+      ops.push({ num: pending.num, title: pending.title, code, kanal: pending.kanal });
       pending = null;
     }
   }
@@ -2956,19 +3217,42 @@ function importMPFFile(text, filename, onDone) {
       customAlert('Keine Operationen gefunden.', { tag: '[MPF]', title: 'Import fehlgeschlagen' });
       if (onDone) onDone(0); return;
     }
+    const newOps = [];
     const proceed = () => {
       const importedCodes = new Set(ops.map(o => o.code));
       S.library = S.library.filter(o => !importedCodes.has(o.code));
       ops.forEach(o => {
-        S.library.push({
+        const sp = (o.kanal === '2') ? 'SP3' : 'SP4';
+        const ttl = (o.title || '').toLowerCase();
+        let cat = 'Außen';
+        if (/innen|bohrung|bohren/.test(ttl)) cat = 'Innen';
+        else if (/radial/.test(ttl)) cat = 'Radial';
+        else if (/axial/.test(ttl)) cat = 'Axial';
+        const newOp = {
           id: 'op_mpf_' + S.nextId++,
           code: o.code, title: o.title,
-          spindle: 'SP4', category: 'Außen', doppelhalter: false,
+          spindle: sp, category: cat, doppelhalter: false,
           toolNo: '', toolName: '',
-        });
+        };
+        S.library.push(newOp);
+        newOps.push({ op: newOp, num: o.num, kanal: o.kanal });
       });
       save();
-      if (onDone) onDone(ops.length);
+      customConfirm(`${ops.length} Operationen importiert.\n\nAuch in die Slots einfügen?`, { tag: '[MPF]', title: 'In Slots einfügen?', okText: 'Ja, einfügen' })
+        .then(ok => {
+          if (ok) {
+            newOps.forEach(({ op, num, kanal }) => {
+              if (!num) return;
+              const idx = num - 1;
+              ensure(kanal, idx + 1);
+              const existing = S.slots[kanal][idx] || {opId:null, toolId:null};
+              S.slots[kanal][idx] = { opId: op.id, toolId: existing.toolId };
+            });
+            save();
+            renderAll();
+          }
+          if (onDone) onDone(ops.length);
+        });
     };
     const existing = new Set(S.library.map(o => o.code));
     const willOverlap = ops.some(o => existing.has(o.code));
@@ -3126,15 +3410,13 @@ function renderWkzTable(){
   const cont = $('#wkzContainer');
   if (!cont) return;
   function collect(kanal){
-    const seen = new Set(); const list = [];
+    const list = [];
     const slots = S.slots[kanal] || [];
     for (let i = 0; i < slots.length; i++) {
       const s = slots[i];
       if (!s || !s.toolId) continue;
       const t = getTool(s.toolId);
       if (!t) continue;
-      if (seen.has(t.tno)) continue;
-      seen.add(t.tno);
       list.push({ tno: t.tno, name: t.name });
     }
     return list;
@@ -3278,6 +3560,8 @@ function init(){
   $('#sheetBackdrop').addEventListener('click',()=>{ closeSheet(); closeProjSheet(); });
   $('#libClose').addEventListener('click',closeSheet);
   $('#btnOpenLib').addEventListener('click',openSheet);
+  $('#btnPairing').addEventListener('click', openPairing);
+  $('#pairClose').addEventListener('click', closePairing);
   $('#eClose').addEventListener('click',closeEditor);
   $('#btnNewOp').addEventListener('click',()=>openEditor(null));
   $('#libNewOp').addEventListener('click',()=>{
