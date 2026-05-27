@@ -2817,6 +2817,23 @@ function openSlotEditor(kanal, index){
   const opLabel = document.createElement('div'); opLabel.className='field-label'; opLabel.textContent='Operation';
   const opCodeIn = mInp(curOp ? curOp.code : '', 'L1101 (oder 1101)', true);
   const opNameIn = mInp(curOp ? curOp.title : '', 'Bezeichnung — z. B. Gewinde');
+  const opSpSel = mSel([['SP4','SP4 · Hauptspindel'],['SP3','SP3 · Gegenspindel']], curOp ? curOp.spindle : 'SP4');
+  const opCatSel = mSel([['Außen','Außen Bearbeitung'],['Innen','Innen Bearbeitung'],['Radial','Radial Bearbeitung'],['Axial','Axial']], curOp ? curOp.category : 'Außen');
+  let opDoppel = curOp ? !!curOp.doppelhalter : false;
+  const opTgEl = document.createElement('div');
+  opTgEl.className='toggle-pill'+(opDoppel?' on':'');
+  opTgEl.innerHTML='<div class="toggle-track"><div class="toggle-thumb"></div></div><span>Doppelhalter aktiv</span>';
+  opTgEl.addEventListener('click',()=>{opDoppel=!opDoppel;opTgEl.classList.toggle('on',opDoppel)});
+
+  // When user picks an existing op from autocomplete, sync ALL fields
+  function applyOpToFields(op) {
+    opCodeIn.value = op.code;
+    opNameIn.value = op.title;
+    opSpSel.value = op.spindle || 'SP4';
+    opCatSel.value = op.category || 'Außen';
+    opDoppel = !!op.doppelhalter;
+    opTgEl.classList.toggle('on', opDoppel);
+  }
 
   // Autocomplete for op CODE input
   const opCodeAc = makeAutocomplete(opCodeIn,
@@ -2826,7 +2843,7 @@ function openSlotEditor(kanal, index){
       return S.library.filter(op => (op.code+' '+op.title).toLowerCase().includes(qq)).map(op => ({item: op}));
     },
     (op) => `<span class="ac-key">${esc(op.code)}</span><span class="ac-val">${esc(op.title)}</span>`,
-    (op) => { opCodeIn.value = op.code; opNameIn.value = op.title; }
+    applyOpToFields
   );
   // Same dropdown logic for NAME input
   const opNameAc = makeAutocomplete(opNameIn,
@@ -2836,7 +2853,7 @@ function openSlotEditor(kanal, index){
       return S.library.filter(op => (op.code+' '+op.title).toLowerCase().includes(qq)).map(op => ({item: op}));
     },
     (op) => `<span class="ac-key">${esc(op.code)}</span><span class="ac-val">${esc(op.title)}</span>`,
-    (op) => { opCodeIn.value = op.code; opNameIn.value = op.title; }
+    applyOpToFields
   );
 
   const opRow = document.createElement('div'); opRow.className='form-row';
@@ -2846,9 +2863,15 @@ function openSlotEditor(kanal, index){
   opNameGrp.appendChild(opNameAc);
   opRow.append(opCodeGrp, opNameGrp);
 
+  const opRow2 = document.createElement('div'); opRow2.className='form-row';
+  opRow2.append(mGrp('Spindel', opSpSel, true), mGrp('Kategorie', opCatSel));
+
+  const opTgRow = document.createElement('div'); opTgRow.className='form-row';
+  opTgRow.appendChild(opTgEl);
+
   const opSection = document.createElement('div');
   opSection.className = 'slot-picker-section';
-  opSection.append(opLabel, opRow);
+  opSection.append(opLabel, opRow, opRow2, opTgRow);
 
   // ── Tool section ──
   const tlLabel = document.createElement('div'); tlLabel.className='field-label'; tlLabel.textContent='Werkzeug';
@@ -2898,6 +2921,9 @@ function openSlotEditor(kanal, index){
       let resolvedOpId = null;
       const codeRaw = opCodeIn.value.trim();
       const titleVal = opNameIn.value.trim();
+      const spVal = opSpSel.value;
+      const catVal = opCatSel.value;
+      const dhVal = opDoppel;
       if (codeRaw || titleVal) {
         const code = /^\d+$/.test(codeRaw) ? 'L' + codeRaw : codeRaw;
         // Try exact match by code+title
@@ -2906,12 +2932,15 @@ function openSlotEditor(kanal, index){
         if (!op) {
           // Create new
           if (code && titleVal) {
-            op = { id: 'op_'+S.nextId++, code, title: titleVal, spindle:'SP4', category:'Außen', doppelhalter:false };
+            op = { id: 'op_'+S.nextId++, code, title: titleVal, spindle: spVal, category: catVal, doppelhalter: dhVal };
             S.library.push(op);
           }
-        } else if (titleVal && op.title !== titleVal) {
-          // Allow inline title edit if user changed name for existing code
-          op.title = titleVal;
+        } else {
+          // Update existing op fields if user changed them
+          if (titleVal && op.title !== titleVal) op.title = titleVal;
+          if (op.spindle !== spVal) op.spindle = spVal;
+          if (op.category !== catVal) op.category = catVal;
+          if (op.doppelhalter !== dhVal) op.doppelhalter = dhVal;
         }
         if (op) resolvedOpId = op.id;
       }
