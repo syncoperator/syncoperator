@@ -2212,46 +2212,48 @@ function parseWerkzeugListing(text) {
 
 /* Parser for Operations MPF (Siemens channel program)
    Looks for:
-     GROUP_BEGIN(0,"001: TITLE",2,0)
+     N250 GROUP_BEGIN(0,"001: TITLE",1,0)   ← 3rd arg = Kanal
        ...
-       L1101   (or L2101 etc.)
+       N290 L1101                            ← L-code (may have N-prefix)
    Returns: [{ num, title, code, kanal }, ...]
 */
 function parseOperationsMPF(text) {
   const ops = [];
   const lines = text.split(/\r?\n/);
-  let pending = null;  // { num, title }
+  let pending = null;  // { num, title, kanal }
   for (let raw of lines) {
     const line = raw.trim();
     if (!line) continue;
-    // Detect group start
-    const g = line.match(/^GROUP_BEGIN\s*\(\s*\d+\s*,\s*"([^"]+)"/);
+    // Detect group start (allow N-prefix before GROUP_BEGIN)
+    const g = line.match(/(?:^|\s)GROUP_BEGIN\s*\(\s*\d+\s*,\s*"([^"]+)"\s*,\s*(\d+)/);
     if (g) {
-      // Skip non-operation groups (INFO, PROLOG, ...)
       const label = g[1].trim();
+      const kanalArg = g[2]; // 3rd arg = kanal (1 or 2)
       // operation groups look like "001: SCHRUPPEN AUSSEN"
       const om = label.match(/^(\d{1,3})\s*[:\.]\s*(.+)$/);
       if (om) {
-        pending = { num: parseInt(om[1], 10), title: om[2].trim() };
+        pending = {
+          num: parseInt(om[1], 10),
+          title: om[2].trim(),
+          kanal: (kanalArg === '2') ? '2' : '1'
+        };
       } else {
         pending = null;
       }
       continue;
     }
-    if (line.startsWith('GROUP_END')) {
+    if (/(?:^|\s)GROUP_END/.test(line)) {
       pending = null;
       continue;
     }
     if (!pending) continue;
-    // Look for L-code call (e.g. ' L1101'). Must be standalone, not commented (;)
+    // Skip comments
     if (line.startsWith(';')) continue;
-    const lm = line.match(/^L(\d{3,5})\b/);
+    // Look for L-code anywhere in the line (may be N290 L1101 or just L1101)
+    const lm = line.match(/(?:^|\s)L(\d{3,5})\b/);
     if (lm) {
       const code = 'L' + lm[1];
-      // derive kanal from code prefix
-      const codeNum = lm[1];
-      const kanal = codeNum.startsWith('2') ? '2' : '1';
-      ops.push({ num: pending.num, title: pending.title, code, kanal });
+      ops.push({ num: pending.num, title: pending.title, code, kanal: pending.kanal });
       pending = null;
     }
   }
@@ -2302,12 +2304,20 @@ function importMPFFile(text, filename, onDone) {
       const importedCodes = new Set(ops.map(o => o.code));
       S.library = S.library.filter(o => !importedCodes.has(o.code));
       ops.forEach(o => {
+        // Spindle: Kanal 1 → SP4 (Hauptspindel), Kanal 2 → SP3 (Gegenspindel)
+        const sp = (o.kanal === '2') ? 'SP3' : 'SP4';
+        // Try to infer category from title text
+        const ttl = (o.title || '').toLowerCase();
+        let cat = 'Außen';
+        if (/innen|bohrung|bohren/.test(ttl)) cat = 'Innen';
+        else if (/radial/.test(ttl)) cat = 'Radial';
+        else if (/axial/.test(ttl)) cat = 'Axial';
         S.library.push({
           id: 'op_mpf_' + S.nextId++,
           code: o.code,
           title: o.title,
-          spindle: 'SP4',
-          category: 'Außen',
+          spindle: sp,
+          category: cat,
           doppelhalter: false,
           toolNo: '',
           toolName: '',
