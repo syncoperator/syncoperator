@@ -146,7 +146,7 @@ body {
   transition: all var(--t);
 }
 .icon-btn:active { background: var(--bg-2); transform: scale(.96); }
-.icon-btn svg { width: 16px; height: 16px; }
+.icon-btn svg { width: 16px; height: 16px; pointer-events: none; }
 
 /* ═══════════════════════════════════════════════════
    GENERIC DIALOG (alert/confirm/prompt)
@@ -757,7 +757,7 @@ body {
   cursor: pointer;
   transition: all var(--t);
 }
-.btn svg { width: 13px; height: 13px; flex-shrink: 0; }
+.btn svg { width: 13px; height: 13px; flex-shrink: 0; pointer-events: none; }
 .add-slot svg { width: 12px; height: 12px; vertical-align: -2px; margin-right: 4px; }
 .btn:active { transform: scale(.97); }
 .btn-primary {
@@ -3164,7 +3164,7 @@ function renderWkzTable(){
     '<div class="wkz-col">' + buildTable('Kanal 2 · 2000.MPF · Revolver Unten', k2, 'wkz-sp3', maxLen) + '</div>';
 }
 
-function renderAll(){renderSlots();renderFilters();renderLib();renderPrintTable()}
+function renderAll(){renderSlots();renderFilters();renderLib();renderPrintTable();renderWkzTable();updatePrintHeader()}
 
 function tick(){
   const d=new Date();
@@ -3302,13 +3302,17 @@ function init(){
   });
 
   $('#btnAddSlot').addEventListener('click',()=>{S.slots[S.kanal].push(null);save();renderSlots();renderPrintTable()});
-  $('#btnPrint').addEventListener('click',()=>{
-    renderPrintTable();
-    renderWkzTable();
-    updatePrintHeader();
+  function doPrint() {
     document.body.classList.remove('print-plan', 'print-wkz');
     document.body.classList.add(S.view === 'wkz' ? 'print-wkz' : 'print-plan');
     window.print();
+  }
+  $('#btnPrint').addEventListener('click', doPrint);
+  // iOS Safari sometimes drops the click event on icon-only buttons.
+  // Provide a touch-end fallback that triggers synchronously.
+  $('#btnPrint').addEventListener('touchend', (e) => {
+    e.preventDefault();
+    doPrint();
   });
   $('#btnExport').addEventListener('click',()=>{
     const blob=new Blob([JSON.stringify({v:2,exportedAt:new Date().toISOString(),data:{kanal:S.kanal,slots:S.slots,library:S.library,tools:S.tools,nextId:S.nextId,zn:S.zn,bez:S.bez}},null,2)],{type:'application/json'});
