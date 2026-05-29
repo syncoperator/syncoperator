@@ -1,0 +1,979 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>QS CENTRAL</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════
+   RESET & VARS
+═══════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+:root {
+  --bg:       #F7F7F5;
+  --bg2:      #EFEFEC;
+  --bg3:      #E8E8E4;
+  --card:     #FFFFFF;
+  --border:   #E2E2DC;
+  --border2:  #D0D0C8;
+  --text:     #1A1A18;
+  --text2:    #6B6B65;
+  --text3:    #A8A8A0;
+  --blue:     #2563EB;
+  --blue-bg:  rgba(37,99,235,0.08);
+  --blue-dim: rgba(37,99,235,0.15);
+  --red:      #DC2626;
+  --green:    #16A34A;
+  --font:     'DM Sans', sans-serif;
+  --mono:     'DM Mono', monospace;
+  --radius:   14px;
+  --radius-sm: 8px;
+  --shadow:   0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04);
+}
+
+html, body { height: 100%; font-family: var(--font); background: var(--bg); color: var(--text); }
+
+/* ═══════════════════════════════════════
+   LAYOUT
+═══════════════════════════════════════ */
+.app { display: flex; height: 100dvh; overflow: hidden; }
+
+/* Sidebar (desktop) */
+.sidebar {
+  width: 300px; flex-shrink: 0;
+  background: var(--card); border-right: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  transition: transform 0.3s ease;
+}
+.sidebar-head {
+  padding: 28px 20px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.brand { display: flex; align-items: baseline; gap: 6px; margin-bottom: 16px; }
+.brand-main { font-size: 20px; font-weight: 700; letter-spacing: -0.5px; }
+.brand-dot { width: 6px; height: 6px; background: var(--blue); border-radius: 50%; margin-bottom: 3px; }
+.brand-sub { font-size: 11px; font-weight: 600; color: var(--text3); letter-spacing: 1.5px; text-transform: uppercase; }
+.btn-new {
+  width: 100%; padding: 11px 16px;
+  background: var(--blue); color: #fff; border: none;
+  border-radius: var(--radius-sm); font-family: var(--font);
+  font-size: 13px; font-weight: 600; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 7px;
+  transition: background 0.15s;
+}
+.btn-new:hover { background: #1d4ed8; }
+.btn-new svg { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 2.5; }
+
+.sidebar-scroll { flex: 1; overflow-y: auto; padding: 12px; }
+.proj-item {
+  padding: 12px 14px; border-radius: var(--radius-sm);
+  cursor: pointer; transition: background 0.1s;
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 2px;
+}
+.proj-item:hover { background: var(--bg2); }
+.proj-item.active { background: var(--blue-bg); }
+.proj-item.active .pi-num { color: var(--blue); }
+.pi-num { font-family: var(--mono); font-size: 14px; font-weight: 500; }
+.pi-name { font-size: 11px; color: var(--text2); margin-top: 1px; }
+.pi-del { background: none; border: none; color: var(--text3); cursor: pointer; padding: 4px; border-radius: 4px; opacity: 0; transition: opacity 0.15s; }
+.proj-item:hover .pi-del { opacity: 1; }
+.pi-del:hover { color: var(--red); }
+.pi-del svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2.5; display: block; }
+
+/* Main panel */
+.main {
+  flex: 1; display: flex; flex-direction: column;
+  min-width: 0; overflow: hidden;
+}
+.topbar {
+  height: 60px; background: var(--card);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; padding: 0 20px; gap: 12px;
+  flex-shrink: 0;
+}
+.topbar-back {
+  display: none; background: none; border: none;
+  color: var(--blue); font-family: var(--font); font-size: 14px;
+  font-weight: 600; cursor: pointer; padding: 6px 10px 6px 0;
+  align-items: center; gap: 5px;
+}
+.topbar-back svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2.5; }
+.topbar-title { flex: 1; }
+.topbar-title .tb-name { font-size: 12px; font-weight: 600; color: var(--text2); }
+.topbar-title .tb-num { font-family: var(--mono); font-size: 16px; font-weight: 500; }
+.topbar-edit {
+  background: none; border: 1px solid var(--border2);
+  color: var(--text2); font-family: var(--font); font-size: 12px;
+  font-weight: 600; padding: 7px 13px; border-radius: var(--radius-sm);
+  cursor: pointer; transition: all 0.15s;
+}
+.topbar-edit:hover { background: var(--bg2); color: var(--text); }
+.btn-pdf {
+  background: var(--text); color: #fff;
+  border: none; font-family: var(--font); font-size: 12px;
+  font-weight: 600; padding: 8px 16px; border-radius: var(--radius-sm);
+  cursor: pointer; display: flex; align-items: center; gap: 6px;
+  transition: background 0.15s;
+}
+.btn-pdf:hover { background: #333; }
+.btn-pdf svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2.5; }
+
+.main-scroll { flex: 1; overflow-y: auto; padding: 20px; }
+
+/* EMPTY STATE */
+.empty-state {
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; height: 100%; text-align: center;
+  color: var(--text3); gap: 12px;
+}
+.empty-state svg { width: 48px; height: 48px; stroke: currentColor; fill: none; stroke-width: 1.5; opacity: 0.4; }
+.empty-state p { font-size: 15px; font-weight: 500; }
+.empty-state small { font-size: 12px; }
+
+/* TOOLBAR STRIP */
+.toolbar-strip {
+  display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap;
+}
+.btn-add-tool {
+  padding: 9px 16px; background: var(--blue); color: #fff;
+  border: none; border-radius: var(--radius-sm); font-family: var(--font);
+  font-size: 13px; font-weight: 600; cursor: pointer;
+  display: flex; align-items: center; gap: 6px; transition: background 0.15s;
+}
+.btn-add-tool:hover { background: #1d4ed8; }
+.btn-add-tool svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2.5; }
+.btn-io {
+  padding: 9px 14px; background: var(--card); color: var(--text2);
+  border: 1px solid var(--border2); border-radius: var(--radius-sm);
+  font-family: var(--font); font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: all 0.15s;
+}
+.btn-io:hover { background: var(--bg2); color: var(--text); }
+
+/* SECTION DIVIDER */
+.section-divider {
+  display: flex; align-items: center; gap: 10px;
+  margin: 8px 0 10px; font-size: 10px; font-weight: 700;
+  letter-spacing: 2px; text-transform: uppercase; color: var(--text3);
+}
+.section-divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+.section-divider.rev { color: var(--blue); }
+.section-divider.rev::after { background: var(--blue-dim); }
+
+/* TOOL CARD */
+.tool-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius); margin-bottom: 6px;
+  cursor: pointer; transition: all 0.15s; overflow: hidden;
+  display: flex; align-items: stretch;
+}
+.tool-card:hover { border-color: var(--border2); box-shadow: var(--shadow); }
+.tool-card.is-rev { border-left: 3px solid var(--blue); }
+.tc-accent { width: 3px; background: transparent; flex-shrink: 0; }
+.tool-card.is-sonder .tc-accent { background: var(--text2); }
+.tc-body { flex: 1; padding: 13px 15px; min-width: 0; }
+.tc-top { display: flex; align-items: flex-start; gap: 10px; }
+.tc-id { font-family: var(--mono); font-size: 12px; font-weight: 500; color: var(--text3); width: 56px; flex-shrink: 0; padding-top: 2px; }
+.tc-nm { font-size: 15px; font-weight: 600; flex: 1; line-height: 1.2; }
+.tc-tags { display: flex; gap: 5px; margin-top: 6px; flex-wrap: wrap; }
+.tag {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.5px;
+  padding: 2px 8px; border-radius: 4px; text-transform: uppercase;
+}
+.tag-std { background: var(--bg3); color: var(--text2); }
+.tag-sonder { background: var(--text); color: #fff; }
+.tag-rev { background: var(--blue-bg); color: var(--blue); }
+.tc-bem { font-size: 12px; color: var(--text2); margin-top: 4px; margin-left: 66px; }
+.tc-dia { font-family: var(--mono); font-size: 12px; color: var(--blue); margin-top: 2px; margin-left: 66px; }
+.tc-reorder { display: flex; flex-direction: column; padding: 8px 6px; gap: 4px; }
+.rbtn {
+  background: none; border: none; cursor: pointer; color: var(--text3);
+  padding: 4px; border-radius: 4px; transition: all 0.1s;
+}
+.rbtn:hover { background: var(--bg2); color: var(--text); }
+.rbtn svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 2.5; display: block; }
+.rbtn.hidden { opacity: 0; pointer-events: none; }
+
+/* PROJ INFO CARD */
+.proj-info-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 18px 20px; margin-bottom: 20px;
+}
+.pic-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px 20px; }
+.pic-item label { display: block; font-size: 10px; font-weight: 700; color: var(--text3); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 2px; }
+.pic-item span { font-size: 14px; font-weight: 600; }
+
+/* ═══════════════════════════════════════
+   MODALS / SHEETS
+═══════════════════════════════════════ */
+.overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.35); backdrop-filter: blur(6px);
+  z-index: 500; align-items: flex-end; justify-content: center;
+}
+.overlay.active { display: flex; }
+.sheet {
+  background: var(--card); width: 100%; max-width: 520px;
+  border-radius: 20px 20px 0 0; padding: 24px 20px 40px;
+  max-height: 92dvh; overflow-y: auto;
+  animation: sheetUp 0.28s cubic-bezier(.16,1,.3,1);
+}
+@keyframes sheetUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+.sheet-bar { width: 36px; height: 4px; background: var(--border2); border-radius: 2px; margin: 0 auto 22px; }
+.sheet-title { font-size: 18px; font-weight: 700; margin-bottom: 18px; }
+
+.field { margin-bottom: 12px; }
+.field label { display: block; font-size: 11px; font-weight: 700; color: var(--text2); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; }
+.field input, .field textarea {
+  width: 100%; padding: 11px 14px;
+  background: var(--bg); border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm); font-family: var(--font);
+  font-size: 15px; font-weight: 500; color: var(--text); outline: none;
+  transition: border-color 0.15s;
+}
+.field input:focus, .field textarea:focus { border-color: var(--blue); background: #fff; }
+.field textarea { resize: none; }
+.field-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+.toggle-pill {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 13px 14px; background: var(--bg);
+  border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+  margin-bottom: 12px; cursor: pointer; transition: all 0.15s;
+}
+.toggle-pill.active { border-color: var(--blue); background: var(--blue-bg); }
+.tp-label { font-size: 13px; font-weight: 600; }
+.tp-sub { font-size: 11px; color: var(--text2); margin-top: 1px; }
+.toggle-switch { position: relative; width: 44px; height: 24px; }
+.toggle-switch input { opacity: 0; width: 0; height: 0; }
+.ts-track {
+  position: absolute; inset: 0; background: var(--border2);
+  border-radius: 12px; transition: background 0.2s; cursor: pointer;
+}
+.ts-track::before {
+  content: ''; position: absolute; width: 18px; height: 18px;
+  background: #fff; border-radius: 50%; left: 3px; top: 3px;
+  transition: transform 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+.toggle-switch input:checked + .ts-track { background: var(--blue); }
+.toggle-switch input:checked + .ts-track::before { transform: translateX(20px); }
+
+.sheet-btns { display: grid; grid-template-columns: 1fr 2fr; gap: 10px; margin-top: 20px; }
+.btn-sheet {
+  padding: 13px; border-radius: var(--radius-sm); border: none;
+  font-family: var(--font); font-size: 14px; font-weight: 600;
+  cursor: pointer; transition: all 0.15s;
+}
+.btn-sheet.del { background: #fff; border: 1.5px solid var(--border); color: var(--red); }
+.btn-sheet.del:hover { background: #fef2f2; }
+.btn-sheet.save { background: var(--blue); color: #fff; }
+.btn-sheet.save:hover { background: #1d4ed8; }
+.btn-sheet.cancel { background: var(--bg2); color: var(--text2); }
+
+/* IO Sheet */
+.io-btns { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+.btn-full {
+  width: 100%; padding: 13px; border-radius: var(--radius-sm);
+  border: none; font-family: var(--font); font-size: 14px;
+  font-weight: 600; cursor: pointer; transition: all 0.15s;
+}
+.btn-full.primary { background: var(--blue); color: #fff; }
+.btn-full.primary:hover { background: #1d4ed8; }
+.btn-full.secondary { background: var(--bg2); color: var(--text); border: 1px solid var(--border); }
+.btn-full.secondary:hover { background: var(--bg3); }
+.file-btn-label {
+  display: flex; align-items: center; justify-content: center;
+  gap: 8px; width: 100%; padding: 13px; border-radius: var(--radius-sm);
+  background: var(--bg2); color: var(--text); border: 1px solid var(--border);
+  font-family: var(--font); font-size: 14px; font-weight: 600; cursor: pointer;
+  transition: all 0.15s;
+}
+.file-btn-label:hover { background: var(--bg3); }
+.file-btn-label input { display: none; }
+.file-btn-label svg { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 2.5; }
+.io-area {
+  width: 100%; padding: 12px; background: var(--bg);
+  border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+  font-family: var(--mono); font-size: 11px; color: var(--text);
+  outline: none; resize: vertical; min-height: 100px;
+}
+.io-area:focus { border-color: var(--blue); }
+
+/* TOAST */
+#toast {
+  position: fixed; bottom: 28px; left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: var(--text); color: #fff;
+  padding: 10px 22px; border-radius: 10px;
+  font-size: 13px; font-weight: 600; z-index: 9999;
+  opacity: 0; transition: all 0.25s; pointer-events: none;
+  white-space: nowrap;
+}
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ═══════════════════════════════════════
+   MOBILE OVERRIDES
+═══════════════════════════════════════ */
+@media (max-width: 700px) {
+  .sidebar { position: fixed; left: 0; top: 0; bottom: 0; z-index: 200; transform: translateX(-100%); }
+  .sidebar.open { transform: translateX(0); box-shadow: 4px 0 20px rgba(0,0,0,0.12); }
+  .topbar-back { display: flex; }
+  .main { width: 100%; }
+  .main-scroll { padding: 14px; }
+  .pic-grid { grid-template-columns: 1fr 1fr; }
+  .toolbar-strip { gap: 6px; }
+}
+@media (min-width: 701px) {
+  .overlay { align-items: center; }
+  .sheet { border-radius: 20px; max-height: 85dvh; margin-bottom: 0; }
+  @keyframes sheetUp { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+}
+
+/* ═══════════════════════════════════════
+   PRINT / PDF
+═══════════════════════════════════════ */
+#print-area { display: none; }
+
+@media print {
+  html, body { background: #fff; height: auto; overflow: visible; }
+  .app, #toast { display: none !important; }
+  #print-area {
+    display: block !important;
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  }
+  @page { size: A4; margin: 0; }
+}
+
+/* Print styles inside print-area */
+.pdf-page {
+  width: 210mm; min-height: 297mm; padding: 12mm 10mm;
+  background: #fff; page-break-after: always;
+  display: flex; flex-direction: column;
+  box-sizing: border-box;
+}
+.pdf-page:last-child { page-break-after: avoid; }
+.pdf-frame {
+  border: 1.5px solid #000; flex: 1;
+  padding: 20px 22px; display: flex; flex-direction: column;
+}
+.pdf-header {
+  display: flex; justify-content: space-between; align-items: flex-end;
+  margin-bottom: 10px; gap: 20px;
+}
+.pdf-title-block {}
+.pdf-name { font-size: 13px; font-weight: 800; text-transform: uppercase; color: #000; letter-spacing: 0.5px; }
+.pdf-number { font-size: 76px; font-weight: 900; line-height: 0.85; letter-spacing: -3px; color: #000; margin-top: 2px; }
+.pdf-meta-table { width: 230px; flex-shrink: 0; }
+.pdf-meta-row {
+  display: flex; justify-content: space-between;
+  border-bottom: 1px solid #ddd; padding: 3px 0;
+  font-size: 10.5px; font-weight: 700;
+}
+.pdf-meta-row:last-child { border-bottom: none; }
+.pdf-meta-row span:first-child { color: #666; }
+.pdf-meta-row span:last-child { color: #000; text-align: right; max-width: 130px; }
+.pdf-rule { border: none; border-top: 6px solid #000; margin: 8px 0 12px; }
+.pdf-section-title { font-size: 20px; font-weight: 900; letter-spacing: -0.3px; margin-bottom: 8px; }
+.pdf-table-head {
+  display: flex; font-size: 9.5px; font-weight: 900; text-transform: uppercase;
+  letter-spacing: 0.5px; padding: 0 2px 4px; border-bottom: 4px solid #000;
+  color: #444;
+}
+.pdf-col-id { width: 80px; flex-shrink: 0; }
+.pdf-col-nm { flex: 1; padding-right: 8px; }
+.pdf-col-dia { width: 130px; flex-shrink: 0; text-align: right; }
+.pdf-row {
+  display: flex; align-items: flex-start;
+  border-bottom: 1px solid #ddd; padding: 7px 2px;
+}
+.pdf-row-id { width: 80px; flex-shrink: 0; font-size: 18px; font-weight: 900; line-height: 1; padding-top: 1px; }
+.pdf-row-nm { flex: 1; padding-right: 8px; }
+.pdf-row-nm-main { font-size: 15px; font-weight: 800; text-transform: uppercase; line-height: 1.15; }
+.pdf-row-nm-sub { font-size: 8.5px; font-weight: 700; color: #555; margin-top: 2px; }
+.pdf-row-dia { width: 130px; flex-shrink: 0; text-align: right; font-size: 13px; font-weight: 900; line-height: 1.3; }
+.pdf-footer {
+  margin-top: auto; border-top: 1px solid #ccc;
+  padding-top: 6px; display: flex; justify-content: space-between;
+  font-size: 9px; font-weight: 700; color: #999; letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.pdf-content { flex: 1; }
+</style>
+</head>
+<body>
+
+<div id="toast"></div>
+<div id="print-area"></div>
+
+<div class="app">
+  <!-- SIDEBAR -->
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-head">
+      <div class="brand">
+        <div class="brand-main">QS Central</div>
+        <div class="brand-dot"></div>
+      </div>
+      <div class="brand-sub" style="margin-bottom:14px">Werkzeugverwaltung</div>
+      <button class="btn-new" onclick="openProjModal()">
+        <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Neues Projekt
+      </button>
+    </div>
+    <div class="sidebar-scroll" id="proj-list"></div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main" id="main-panel">
+    <div class="topbar" id="topbar">
+      <button class="topbar-back" id="back-btn" onclick="goBack()">
+        <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+        Projekte
+      </button>
+      <div class="topbar-title" id="topbar-title">
+        <div class="tb-name">QS CENTRAL</div>
+        <div class="tb-num">Projekt auswählen</div>
+      </div>
+      <button class="topbar-edit" id="topbar-edit-btn" onclick="openProjModal(true)" style="display:none">Bearbeiten</button>
+      <button class="btn-pdf" id="topbar-pdf-btn" onclick="makePDF()" style="display:none">
+        <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        PDF
+      </button>
+    </div>
+
+    <div class="main-scroll" id="main-content">
+      <div class="empty-state" id="empty-state">
+        <svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+        <p>Kein Projekt ausgewählt</p>
+        <small>Wähle ein Projekt aus der Liste oder erstelle ein neues</small>
+      </div>
+      <div id="proj-view" style="display:none">
+        <div class="proj-info-card" id="proj-info-card"></div>
+        <div class="toolbar-strip">
+          <button class="btn-add-tool" onclick="openToolModal()">
+            <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Werkzeug
+          </button>
+          <button class="btn-io" onclick="openIO()">Import / Export</button>
+        </div>
+        <div id="tool-list-container"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PROJECT MODAL -->
+<div class="overlay" id="m-proj" onclick="if(event.target===this)closeOverlay('m-proj')">
+  <div class="sheet">
+    <div class="sheet-bar"></div>
+    <div class="sheet-title" id="proj-modal-title">Neues Projekt</div>
+    <div class="field"><label>Zeichnungsnummer</label><input type="text" id="p-num" placeholder="z.B. 231222"></div>
+    <div class="field"><label>Benennung</label><input type="text" id="p-nam" placeholder="BUCHSE WVP..."></div>
+    <div class="field-grid2">
+      <div class="field"><label>Laufzeit</label><input type="text" id="p-lzf" placeholder="3Min 5Sek"></div>
+      <div class="field"><label>Sägelänge</label><input type="text" id="p-sag" placeholder="1040"></div>
+    </div>
+    <div class="field-grid2">
+      <div class="field"><label>Stück T</label><input type="text" id="p-stt" placeholder="100"></div>
+      <div class="field"><label>Stück N</label><input type="text" id="p-stn" placeholder="70"></div>
+    </div>
+    <div class="field"><label>Material</label><input type="text" id="p-mat" placeholder="1.4104 D28"></div>
+    <div class="field-grid2">
+      <div class="field"><label>Abstand</label><input type="text" id="p-abs" placeholder="13.70MM"></div>
+      <div class="field"><label>Greifbacken</label><input type="text" id="p-grf" placeholder="18-25"></div>
+    </div>
+    <div class="sheet-btns">
+      <button class="btn-sheet del" id="proj-del-btn" style="display:none" onclick="deleteProject()">Löschen</button>
+      <button class="btn-sheet cancel" id="proj-cancel-btn" onclick="closeOverlay('m-proj')" style="display:none">Abbrechen</button>
+      <button class="btn-sheet save" id="proj-save-btn" onclick="saveProject()" style="grid-column: span 2">Speichern</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOOL MODAL -->
+<div class="overlay" id="m-tool" onclick="if(event.target===this)closeOverlay('m-tool')">
+  <div class="sheet">
+    <div class="sheet-bar"></div>
+    <div class="sheet-title" id="tool-modal-title">Werkzeug</div>
+    <div class="field"><label>T-Nr</label><input type="text" id="t-id" placeholder="T0101"></div>
+    <div class="field"><label>Werkzeugname</label><input type="text" id="t-nm" placeholder="KOPIERST. R0.4 VBMT G54"></div>
+    <div class="field"><label>Ø / Toleranz</label><input type="text" id="t-dia" placeholder="24.94 - 24.98"></div>
+    <div class="field"><label>Bemerkung</label><textarea id="t-bem" rows="2" placeholder="FACH B2 | AUSSPANLÄNGE:17MM"></textarea></div>
+    <div class="toggle-pill" id="tp-sonder" onclick="togglePill('sonder')">
+      <div>
+        <div class="tp-label">Sonderwerkzeug</div>
+        <div class="tp-sub">Blaukiste — kein Lagerartikel</div>
+      </div>
+      <label class="toggle-switch" onclick="event.stopPropagation()">
+        <input type="checkbox" id="t-sonder" onchange="syncPill('sonder')">
+        <span class="ts-track"></span>
+      </label>
+    </div>
+    <div class="toggle-pill" id="tp-rev" onclick="togglePill('rev')">
+      <div>
+        <div class="tp-label">Revolver Unten Start</div>
+        <div class="tp-sub">Ab hier: alle folgenden = Revolver Unten</div>
+      </div>
+      <label class="toggle-switch" onclick="event.stopPropagation()">
+        <input type="checkbox" id="t-rev" onchange="syncPill('rev')">
+        <span class="ts-track"></span>
+      </label>
+    </div>
+    <div class="sheet-btns">
+      <button class="btn-sheet del" id="tool-del-btn" onclick="deleteTool()">Löschen</button>
+      <button class="btn-sheet save" onclick="saveTool()">Speichern</button>
+    </div>
+  </div>
+</div>
+
+<!-- IO MODAL -->
+<div class="overlay" id="m-io" onclick="if(event.target===this)closeOverlay('m-io')">
+  <div class="sheet">
+    <div class="sheet-bar"></div>
+    <div class="sheet-title">Import / Export</div>
+    <div class="io-btns">
+      <label class="file-btn-label">
+        <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        JSON Datei laden
+        <input type="file" accept=".json" onchange="loadFile(this)">
+      </label>
+      <button class="btn-full secondary" onclick="exportJSON()">JSON exportieren (alle Projekte)</button>
+      <button class="btn-full secondary" onclick="exportCurrent()">Aktuelles Projekt exportieren</button>
+    </div>
+    <div style="margin-top:14px; font-size:11px; font-weight:700; color:var(--text3); letter-spacing:1px; text-transform:uppercase; margin-bottom:6px">Oder JSON einfügen</div>
+    <textarea class="io-area" id="io-area" placeholder='[ { "num": "...", ... } ]'></textarea>
+    <button class="btn-full primary" style="margin-top:8px" onclick="importPasted()">Importieren</button>
+  </div>
+</div>
+
+<script>
+// ── DATA ──────────────────────────────────────────
+const DB = 'QS_CENTRAL_2026';
+let db = JSON.parse(localStorage.getItem(DB) || '[]');
+let curIdx = null;
+let tEditIdx = null;
+
+function persist() { localStorage.setItem(DB, JSON.stringify(db)); }
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove('show'), 2200);
+}
+function closeOverlay(id) { document.getElementById(id).classList.remove('active'); }
+function openOverlay(id) { document.getElementById(id).classList.add('active'); }
+
+// ── SIDEBAR TOGGLE (mobile) ──────────────────────
+function toggleSidebar(open) {
+  const s = document.getElementById('sidebar');
+  if (open === undefined) s.classList.toggle('open');
+  else open ? s.classList.add('open') : s.classList.remove('open');
+}
+document.getElementById('back-btn').addEventListener('click', () => toggleSidebar(true));
+
+// ── RENDER PROJECTS LIST ─────────────────────────
+function renderProjects() {
+  const list = document.getElementById('proj-list');
+  if (!db.length) {
+    list.innerHTML = '<div style="padding:20px 14px; font-size:12px; color:var(--text3); font-weight:600">Noch keine Projekte</div>';
+    return;
+  }
+  list.innerHTML = db.map((p, i) => `
+    <div class="proj-item ${i === curIdx ? 'active' : ''}" onclick="openProject(${i})">
+      <div>
+        <div class="pi-num">${esc(p.num)}</div>
+        <div class="pi-name">${esc(p.name)}</div>
+      </div>
+      <button class="pi-del" onclick="event.stopPropagation(); confirmDeleteProject(${i})" title="Löschen">
+        <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+  `).join('');
+}
+
+// ── PROJECT MODAL ────────────────────────────────
+let editingProj = false;
+
+function openProjModal(edit = false) {
+  editingProj = edit;
+  const isMobile = window.innerWidth <= 700;
+  if (isMobile) toggleSidebar(false);
+
+  if (edit && curIdx !== null) {
+    const p = db[curIdx];
+    document.getElementById('p-num').value = p.num || '';
+    document.getElementById('p-nam').value = p.name || '';
+    document.getElementById('p-lzf').value = p.lzf || '';
+    document.getElementById('p-sag').value = p.sag || '';
+    document.getElementById('p-stt').value = p.stt || '';
+    document.getElementById('p-stn').value = p.stn || '';
+    document.getElementById('p-mat').value = p.mat || '';
+    document.getElementById('p-abs').value = p.abs || '';
+    document.getElementById('p-grf').value = p.grf || '';
+    document.getElementById('proj-modal-title').textContent = 'Projekt bearbeiten';
+    document.getElementById('proj-del-btn').style.display = 'block';
+    document.getElementById('proj-cancel-btn').style.display = 'block';
+    document.getElementById('proj-save-btn').style.gridColumn = '';
+  } else {
+    document.querySelectorAll('#m-proj input').forEach(i => i.value = '');
+    document.getElementById('proj-modal-title').textContent = 'Neues Projekt';
+    document.getElementById('proj-del-btn').style.display = 'none';
+    document.getElementById('proj-cancel-btn').style.display = 'none';
+    document.getElementById('proj-save-btn').style.gridColumn = 'span 2';
+  }
+  openOverlay('m-proj');
+}
+
+function saveProject() {
+  const p = {
+    num:  document.getElementById('p-num').value.trim(),
+    name: document.getElementById('p-nam').value.toUpperCase().trim(),
+    lzf:  document.getElementById('p-lzf').value.trim(),
+    sag:  document.getElementById('p-sag').value.trim(),
+    stt:  document.getElementById('p-stt').value.trim(),
+    stn:  document.getElementById('p-stn').value.trim(),
+    mat:  document.getElementById('p-mat').value.toUpperCase().trim(),
+    abs:  document.getElementById('p-abs').value.trim(),
+    grf:  document.getElementById('p-grf').value.trim(),
+    tools: (editingProj && curIdx !== null) ? db[curIdx].tools : []
+  };
+  if (!p.num) { toast('Nummer erforderlich'); return; }
+  if (editingProj && curIdx !== null) {
+    db[curIdx] = p;
+  } else {
+    db.push(p); curIdx = db.length - 1;
+  }
+  persist(); closeOverlay('m-proj');
+  renderProjects(); openProject(curIdx);
+}
+
+function deleteProject() {
+  if (!confirm('Projekt löschen?')) return;
+  db.splice(curIdx, 1); curIdx = null; persist();
+  closeOverlay('m-proj');
+  renderProjects(); showEmpty();
+}
+
+function confirmDeleteProject(i) {
+  if (!confirm('Projekt löschen?')) return;
+  if (i === curIdx) { curIdx = null; showEmpty(); }
+  db.splice(i, 1); persist(); renderProjects();
+}
+
+// ── OPEN PROJECT ─────────────────────────────────
+function openProject(i) {
+  curIdx = i;
+  const isMobile = window.innerWidth <= 700;
+  if (isMobile) toggleSidebar(false);
+
+  // topbar
+  const p = db[i];
+  document.querySelector('#topbar-title .tb-name').textContent = p.name;
+  document.querySelector('#topbar-title .tb-num').textContent = p.num;
+  document.getElementById('topbar-edit-btn').style.display = 'block';
+  document.getElementById('topbar-pdf-btn').style.display = 'flex';
+
+  document.getElementById('empty-state').style.display = 'none';
+  document.getElementById('proj-view').style.display = 'block';
+
+  renderProjInfo(); renderTools(); renderProjects();
+}
+
+function showEmpty() {
+  document.querySelector('#topbar-title .tb-name').textContent = 'QS CENTRAL';
+  document.querySelector('#topbar-title .tb-num').textContent = 'Projekt auswählen';
+  document.getElementById('topbar-edit-btn').style.display = 'none';
+  document.getElementById('topbar-pdf-btn').style.display = 'none';
+  document.getElementById('empty-state').style.display = 'flex';
+  document.getElementById('proj-view').style.display = 'none';
+}
+
+function goBack() {
+  const isMobile = window.innerWidth <= 700;
+  if (isMobile) toggleSidebar(true);
+}
+
+// ── PROJ INFO CARD ───────────────────────────────
+function renderProjInfo() {
+  const p = db[curIdx];
+  const items = [
+    { label: 'Laufzeit', val: p.lzf },
+    { label: 'Sägelänge', val: p.sag },
+    { label: 'Material', val: p.mat },
+    { label: 'Abstand', val: p.abs },
+    { label: 'Stück T / N', val: `${p.stt} / ${p.stn}` },
+    { label: 'Greifbacken', val: p.grf },
+  ];
+  document.getElementById('proj-info-card').innerHTML = `
+    <div class="pic-grid">
+      ${items.map(it => `
+        <div class="pic-item">
+          <label>${it.label}</label>
+          <span>${esc(it.val || '—')}</span>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+// ── TOOLS ────────────────────────────────────────
+function getRevStart() {
+  const tools = db[curIdx].tools || [];
+  for (let i = 0; i < tools.length; i++) if (tools[i].rev) return i;
+  return -1;
+}
+
+function renderTools() {
+  const tools = db[curIdx].tools || [];
+  const revStart = getRevStart();
+  const cont = document.getElementById('tool-list-container');
+
+  if (!tools.length) {
+    cont.innerHTML = '<div style="text-align:center; padding:32px 0; color:var(--text3); font-size:13px; font-weight:600">Keine Werkzeuge — füge das erste hinzu</div>';
+    return;
+  }
+
+  let html = '';
+  let divDone = false;
+
+  tools.forEach((t, i) => {
+    const isRev = revStart >= 0 && i >= revStart;
+    if (isRev && !divDone) {
+      html += `<div class="section-divider rev">REVOLVER UNTEN</div>`;
+      divDone = true;
+    }
+    if (!divDone && i === 0) html += `<div class="section-divider">REVOLVER OBEN</div>`;
+
+    html += `
+      <div class="tool-card ${isRev ? 'is-rev' : ''} ${t.isSonder ? 'is-sonder' : ''}" >
+        <div class="tc-accent"></div>
+        <div class="tc-body" onclick="openToolModal(${i})">
+          <div class="tc-top">
+            <div class="tc-id">${esc(t.id)}</div>
+            <div class="tc-nm">${esc(t.nm || 'Leer')}</div>
+          </div>
+          <div class="tc-tags">
+            ${t.isSonder ? '<span class="tag tag-sonder">Sonder</span>' : '<span class="tag tag-std">Standard</span>'}
+            ${isRev ? '<span class="tag tag-rev">Rev ↓</span>' : ''}
+          </div>
+          ${t.bem ? `<div class="tc-bem">${esc(t.bem)}</div>` : ''}
+          ${t.dia ? `<div class="tc-dia">Ø ${esc(t.dia)}</div>` : ''}
+        </div>
+        <div class="tc-reorder">
+          <button class="rbtn ${i === 0 ? 'hidden' : ''}" onclick="event.stopPropagation(); moveTool(${i}, -1)">
+            <svg viewBox="0 0 24 24"><polyline points="18 15 12 9 6 15"/></svg>
+          </button>
+          <button class="rbtn ${i === tools.length - 1 ? 'hidden' : ''}" onclick="event.stopPropagation(); moveTool(${i}, 1)">
+            <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+        </div>
+      </div>`;
+  });
+
+  cont.innerHTML = html;
+}
+
+function moveTool(i, d) {
+  const tools = db[curIdx].tools;
+  if (i + d < 0 || i + d >= tools.length) return;
+  [tools[i], tools[i + d]] = [tools[i + d], tools[i]];
+  persist(); renderTools();
+}
+
+// ── TOOL MODAL ───────────────────────────────────
+function openToolModal(i = null) {
+  tEditIdx = i;
+  if (i !== null) {
+    const t = db[curIdx].tools[i];
+    document.getElementById('t-id').value  = t.id  || '';
+    document.getElementById('t-nm').value  = t.nm  || '';
+    document.getElementById('t-dia').value = t.dia || '';
+    document.getElementById('t-bem').value = t.bem || '';
+    document.getElementById('t-sonder').checked = !!t.isSonder;
+    document.getElementById('t-rev').checked    = !!t.rev;
+    document.getElementById('tool-modal-title').textContent = `Werkzeug ${i + 1}`;
+    document.getElementById('tool-del-btn').style.display = 'block';
+  } else {
+    document.querySelectorAll('#m-tool input, #m-tool textarea').forEach(el => el.value = '');
+    document.getElementById('t-sonder').checked = false;
+    document.getElementById('t-rev').checked    = false;
+    document.getElementById('tool-modal-title').textContent = 'Neues Werkzeug';
+    document.getElementById('tool-del-btn').style.display = 'none';
+  }
+  syncPill('sonder'); syncPill('rev');
+  openOverlay('m-tool');
+}
+
+function togglePill(key) {
+  const cb = document.getElementById('t-' + key);
+  cb.checked = !cb.checked; syncPill(key);
+}
+function syncPill(key) {
+  const cb = document.getElementById('t-' + key);
+  const pill = document.getElementById('tp-' + key);
+  cb.checked ? pill.classList.add('active') : pill.classList.remove('active');
+}
+
+function saveTool() {
+  if (!db[curIdx].tools) db[curIdx].tools = [];
+  const t = {
+    id:       document.getElementById('t-id').value.toUpperCase().trim() || 'T—',
+    nm:       document.getElementById('t-nm').value.toUpperCase().trim(),
+    dia:      document.getElementById('t-dia').value.trim(),
+    bem:      document.getElementById('t-bem').value.toUpperCase().trim(),
+    isSonder: document.getElementById('t-sonder').checked,
+    rev:      document.getElementById('t-rev').checked,
+  };
+  // If setting rev, clear previous rev flags
+  if (t.rev) {
+    db[curIdx].tools.forEach((tool, i) => { if (i !== tEditIdx) tool.rev = false; });
+  }
+  if (tEditIdx === null) db[curIdx].tools.push(t);
+  else db[curIdx].tools[tEditIdx] = t;
+  persist(); closeOverlay('m-tool'); renderTools();
+}
+
+function deleteTool() {
+  if (tEditIdx === null) return;
+  db[curIdx].tools.splice(tEditIdx, 1);
+  persist(); closeOverlay('m-tool'); renderTools();
+}
+
+// ── IO ───────────────────────────────────────────
+function openIO() { openOverlay('m-io'); }
+
+function loadFile(input) {
+  const file = input.files[0]; if (!file) return;
+  const r = new FileReader();
+  r.onload = e => {
+    try {
+      const val = JSON.parse(e.target.result);
+      const arr = Array.isArray(val) ? val : [val];
+      arr.forEach(p => { if (!p.tools) p.tools = []; db.push(p); });
+      persist(); closeOverlay('m-io'); renderProjects();
+      if (arr.length) { openProject(db.length - 1); }
+      toast(`${arr.length} Projekt(e) geladen`);
+    } catch { toast('JSON Fehler'); }
+    input.value = '';
+  };
+  r.readAsText(file);
+}
+
+function exportJSON() {
+  navigator.clipboard.writeText(JSON.stringify(db, null, 2))
+    .then(() => toast('Alle Projekte kopiert'))
+    .catch(() => {
+      document.getElementById('io-area').value = JSON.stringify(db, null, 2);
+      toast('JSON in Feld eingefügt');
+    });
+}
+
+function exportCurrent() {
+  if (curIdx === null) { toast('Kein Projekt aktiv'); return; }
+  const blob = new Blob([JSON.stringify([db[curIdx]], null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `QS_${db[curIdx].num || 'export'}.json`;
+  a.click();
+}
+
+function importPasted() {
+  try {
+    const val = JSON.parse(document.getElementById('io-area').value);
+    const arr = Array.isArray(val) ? val : [val];
+    arr.forEach(p => { if (!p.tools) p.tools = []; db.push(p); });
+    persist(); closeOverlay('m-io');
+    renderProjects();
+    if (arr.length) openProject(db.length - 1);
+    toast(`${arr.length} Projekt(e) importiert`);
+  } catch { toast('JSON Fehler'); }
+}
+
+// ── PDF ──────────────────────────────────────────
+function makePDF() {
+  if (curIdx === null) return;
+  const p = db[curIdx];
+  const tools = p.tools || [];
+
+  const revIdx = tools.findIndex(t => t.rev);
+  const oben  = revIdx === -1 ? tools : tools.slice(0, revIdx);
+  const unten = revIdx === -1 ? [] : tools.slice(revIdx);
+
+  const head = () => `
+    <div class="pdf-header">
+      <div class="pdf-title-block">
+        <div class="pdf-name">${esc(p.name)}</div>
+        <div class="pdf-number">${esc(p.num)}</div>
+      </div>
+      <table class="pdf-meta-table">
+        ${[
+          ['LAUFZEIT',   p.lzf],
+          ['MATERIAL',   p.mat],
+          ['SÄGELÄNGE',  p.sag],
+          ['ABSTAND',    p.abs],
+          ['STÜCKZAHL',  `${p.stt} / ${p.stn}`],
+          ['GREIFBACKEN',p.grf || '—'],
+        ].map(([k,v]) => `
+          <div class="pdf-meta-row">
+            <span>${k}</span><span>${esc(v||'—')}</span>
+          </div>`).join('')}
+      </table>
+    </div>
+    <hr class="pdf-rule">`;
+
+  const tableHead = () => `
+    <div class="pdf-table-head">
+      <div class="pdf-col-id">T-NR</div>
+      <div class="pdf-col-nm">WERKZEUGNAME / KOMMENTAR</div>
+      <div class="pdf-col-dia">Ø / TOLERANZ</div>
+    </div>`;
+
+  const row = (t) => `
+    <div class="pdf-row">
+      <div class="pdf-row-id">${esc(t.id)}</div>
+      <div class="pdf-row-nm">
+        <div class="pdf-row-nm-main">${esc(t.nm)}</div>
+        <div class="pdf-row-nm-sub">
+          ${t.isSonder ? 'SONDERWERKZEUG' : 'STANDARD'}
+          ${t.bem ? ` | ${esc(t.bem)}` : ''}
+        </div>
+      </div>
+      <div class="pdf-row-dia">${esc(t.dia || '')}</div>
+    </div>`;
+
+  const page = (sectionTitle, rows) => `
+    <div class="pdf-page">
+      <div class="pdf-frame">
+        ${head()}
+        <div class="pdf-content">
+          <div class="pdf-section-title">${sectionTitle}</div>
+          ${tableHead()}
+          ${rows.map(row).join('')}
+        </div>
+        <div class="pdf-footer">
+          <span>${esc(p.num)} — ${esc(p.name)}</span>
+          <span>${sectionTitle}</span>
+        </div>
+      </div>
+    </div>`;
+
+  let html = page('REVOLVER OBEN', oben);
+  if (unten.length) html += page('REVOLVER UNTEN', unten);
+
+  document.getElementById('print-area').innerHTML = html;
+  setTimeout(() => window.print(), 200);
+}
+
+// ── UTILS ────────────────────────────────────────
+function esc(s) {
+  return String(s || '')
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── INIT ─────────────────────────────────────────
+renderProjects();
+</script>
+</body>
+</html>
