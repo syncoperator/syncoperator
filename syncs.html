@@ -1078,6 +1078,21 @@ body[data-view="saw"] #kanalSwitch { opacity: 0.4; pointer-events: none; }
   color: var(--bg);
   border-color: var(--ink);
 }
+.toolbar-divider {
+  width: 1px;
+  align-self: stretch;
+  background: var(--line);
+  margin: 4px 4px;
+}
+.btn-ghost.subtle {
+  color: var(--ink-4);
+  border-color: transparent;
+}
+.btn-ghost.subtle:hover {
+  color: var(--ink);
+  border-color: var(--line);
+  background: var(--bg-soft);
+}
 .add-slot svg { width: 12px; height: 12px; vertical-align: -2px; margin-right: 4px; }
 .btn-primary {
   background: var(--ink);
@@ -2121,14 +2136,15 @@ body[data-view="saw"] #kanalSwitch { opacity: 0.4; pointer-events: none; }
         <button class="kanal-btn active" data-k="1">Kanal 1 <span class="kanal-mpf">1000.MPF</span></button>
         <button class="kanal-btn" data-k="2">Kanal 2 <span class="kanal-mpf">2000.MPF</span></button>
       </div>
-      <button class="btn btn-ghost btn-sm" id="btnExport"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v9"/><path d="M4 7l4 4 4-4"/><path d="M2 14h12"/></svg>JSON</button>
-      <button class="btn btn-ghost btn-sm" id="btnImport"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 13V4"/><path d="M4 8l4-4 4 4"/><path d="M2 14h12"/></svg>JSON</button>
-      <button class="btn btn-ghost btn-sm" id="btnImportMPF" title="MPF / TXT importieren (Werkzeugliste oder Programm)"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 13V4"/><path d="M4 8l4-4 4 4"/><path d="M2 14h12"/></svg>MPF</button>
-      <input type="file" id="fileInput" accept=".json" style="display:none">
-      <input type="file" id="mpfInput" style="display:none">
       <button class="btn btn-ghost btn-sm" id="btnToggleLib" title="Library ein-/ausblenden"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 3h12v10H2z"/><path d="M9 3v10"/></svg>Library</button>
       <button class="btn btn-ghost btn-sm" id="btnPairing" title="Operationen ⇄ Werkzeuge schnell verknüpfen"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5h6"/><path d="M3 11h6"/><path d="M11 3l2 2-2 2"/><path d="M11 9l2 2-2 2"/></svg>Verknüpfen</button>
       <button class="btn btn-primary btn-sm" id="btnPrint"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6V2h8v4"/><path d="M4 12H3a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1h-1"/><rect x="4" y="9" width="8" height="5" rx="1"/></svg>Drucken</button>
+      <div class="toolbar-divider"></div>
+      <button class="btn btn-ghost btn-sm subtle" id="btnImportMPF" title="MPF / TXT importieren (Werkzeugliste oder Programm)"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 13V4"/><path d="M4 8l4-4 4 4"/><path d="M2 14h12"/></svg>MPF</button>
+      <button class="btn btn-ghost btn-sm subtle" id="btnExport" title="Projekt als JSON exportieren"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v9"/><path d="M4 7l4 4 4-4"/><path d="M2 14h12"/></svg>Export</button>
+      <button class="btn btn-ghost btn-sm subtle" id="btnImport" title="Projekt aus JSON importieren"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 13V4"/><path d="M4 8l4-4 4 4"/><path d="M2 14h12"/></svg>Import</button>
+      <input type="file" id="fileInput" accept=".json" style="display:none">
+      <input type="file" id="mpfInput" style="display:none">
     </div>
   </div>
 
@@ -3899,23 +3915,22 @@ function renderLib(){
     return;
   }
 
-  // Operation Library (default)
+  // Operation Library (default) — grouped by Kanal (SP4 → K1, SP3 → K2)
   let ops=S.library;
   if(S.catFilter!=='Alle')ops=ops.filter(o=>o.category===S.catFilter);
   if(S.spFilter==='SP3')ops=ops.filter(o=>o.spindle==='SP3');
   if(S.spFilter==='SP4')ops=ops.filter(o=>o.spindle==='SP4');
   if(!ops.length){list.innerHTML='<div class="lib-empty">Keine Operationen in dieser Auswahl</div>';return}
-  ops.forEach(op=>{
+
+  function renderOpCard(op){
     const card=document.createElement('div');card.className='op-card';
     card.setAttribute('draggable','true');
     card.addEventListener('dragstart',e=>{e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',JSON.stringify({kind:'op',id:op.id}))});
     card.addEventListener('click',()=>openEditor(op.id));
-
     const title=document.createElement('div');title.className='op-card-title';
     const titleText=document.createElement('span');titleText.textContent=opName(op);titleText.style.overflow='hidden';titleText.style.textOverflow='ellipsis';titleText.style.whiteSpace='nowrap';
     const lc=document.createElement('span');lc.className='op-card-l';lc.textContent=op.code;
     title.append(titleText,lc);
-
     const meta=document.createElement('div');meta.className='op-card-meta';
     const bsp=document.createElement('span');bsp.className='tag '+(op.spindle==='SP4'?'tag-sp4':'tag-sp3');bsp.textContent=op.spindle;
     const bcat=document.createElement('span');bcat.className='tag tag-cat';bcat.textContent=op.category;
@@ -3923,7 +3938,27 @@ function renderLib(){
     if(op.doppelhalter){const bd=document.createElement('span');bd.className='tag tag-doppel';bd.textContent='DH';meta.appendChild(bd)}
     card.append(title,meta);
     list.appendChild(card);
+  }
+
+  // Group: SP4 = Kanal 1, SP3 = Kanal 2
+  const groups = [
+    { k:'1', label:'Kanal 1', info:'1000.MPF · SP4 · Oben', filter:o=>o.spindle==='SP4' },
+    { k:'2', label:'Kanal 2', info:'2000.MPF · SP3 · Unten', filter:o=>o.spindle==='SP3' },
+  ];
+  let anyShown = false;
+  groups.forEach(g => {
+    const gops = ops.filter(g.filter).sort((a,b)=>(a.code||'').localeCompare(b.code||'', undefined, {numeric:true}));
+    if (!gops.length) return;
+    anyShown = true;
+    const grp = document.createElement('div');
+    grp.className = 'tool-group-head';
+    grp.innerHTML = `<span class="tg-k ${g.k==='1'?'tg-k1':'tg-k2'}">${g.label}</span><span class="tg-info">${g.info} · ${gops.length}</span>`;
+    list.appendChild(grp);
+    gops.forEach(renderOpCard);
   });
+  if (!anyShown) {
+    list.innerHTML='<div class="lib-empty">Keine Operationen in dieser Auswahl</div>';
+  }
 }
 
 function setLibTab(t){
@@ -4104,12 +4139,12 @@ function updatePrintHeader(){
   // Append custom fields to meta-print (remove old custom rows first)
   const mp = document.querySelector('.meta-print');
   if (mp) {
-    mp.querySelectorAll('.meta-print-row.custom, .meta-print-row.span-2, .meta-print-row.span-3').forEach(el => {
-      if (el.classList.contains('custom')) el.remove();
-      else { el.classList.remove('span-2', 'span-3'); }
+    mp.querySelectorAll('.meta-print-row.custom, .meta-print-row.filler').forEach(el => el.remove());
+    mp.querySelectorAll('.meta-print-row.span-2, .meta-print-row.span-3').forEach(el => {
+      el.classList.remove('span-2', 'span-3');
     });
-    S.custom.forEach(cf => {
-      if (!cf.label.trim() && !cf.value.trim()) return;
+    const visibleCustom = S.custom.filter(cf => cf.label.trim() || cf.value.trim());
+    visibleCustom.forEach(cf => {
       const row = document.createElement('div');
       row.className = 'meta-print-row custom';
       const lab = document.createElement('div');
@@ -4125,16 +4160,17 @@ function updatePrintHeader(){
       row.append(lab, val);
       mp.appendChild(row);
     });
-    // Fix odd-count layout: if total rows % 3 != 0, stretch last 1 or 2 rows
-    const rows = mp.querySelectorAll('.meta-print-row');
-    const rem = rows.length % 3;
-    if (rem === 1) {
-      // Last row spans full width
-      rows[rows.length - 1].classList.add('span-3');
-    } else if (rem === 2) {
-      // Last two rows each span half
-      rows[rows.length - 2].classList.add('span-2');
-      rows[rows.length - 1].classList.add('span-2');
+    // Pad with empty filler rows so total is a multiple of 3 (keeps grid edges clean)
+    const total = mp.querySelectorAll('.meta-print-row').length;
+    const rem = total % 3;
+    if (rem !== 0) {
+      const need = 3 - rem;
+      for (let i = 0; i < need; i++) {
+        const filler = document.createElement('div');
+        filler.className = 'meta-print-row filler';
+        filler.innerHTML = '<div class="mpr-label"></div><div class="mpr-value is-empty"></div>';
+        mp.appendChild(filler);
+      }
     }
   }
 }
