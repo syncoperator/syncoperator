@@ -186,6 +186,20 @@ html,body{height:100%;font-family:var(--sans);background:var(--bg);color:var(--i
 
 /* PRINT */
 #print-area{display:none;}
+
+/* SPLASH */
+#splash{position:fixed;inset:0;z-index:99999;background:#0A0A0A;display:flex;align-items:center;justify-content:center;transition:opacity .5s ease;}
+#splash.hide{opacity:0;pointer-events:none;}
+.splash-inner{display:flex;flex-direction:column;align-items:center;}
+.splash-logo{width:88px;height:88px;background:#fff;border-radius:22px;display:flex;align-items:center;justify-content:center;margin-bottom:24px;animation:splashPop .6s cubic-bezier(.16,1.4,.3,1);}
+.splash-logo svg{width:52px;height:52px;}
+.splash-logo svg circle,.splash-logo svg path{stroke:#0A0A0A;}
+.splash-name{font-family:var(--sans);font-size:30px;font-weight:700;letter-spacing:4px;color:#fff;}
+.splash-sub{font-family:var(--mono);font-size:12px;letter-spacing:6px;color:rgba(255,255,255,.4);margin-top:6px;}
+.splash-bar{width:140px;height:3px;background:rgba(255,255,255,.15);border-radius:2px;margin-top:32px;overflow:hidden;}
+.splash-fill{width:0;height:100%;background:#fff;border-radius:2px;animation:splashLoad 1.4s ease forwards;}
+@keyframes splashPop{from{transform:scale(.5);opacity:0}to{transform:scale(1);opacity:1}}
+@keyframes splashLoad{from{width:0}to{width:100%}}
 @media print{
   html,body{background:#fff;height:auto;overflow:visible;}
   .app,#toast{display:none!important;}
@@ -196,6 +210,16 @@ html,body{height:100%;font-family:var(--sans);background:var(--bg);color:var(--i
 </style>
 </head>
 <body>
+<div id="splash">
+  <div class="splash-inner">
+    <div class="splash-logo">
+      <svg viewBox="0 0 32 32" fill="none"><circle cx="16" cy="16" r="13" stroke="#fff" stroke-width="2.5"/><path d="M16 16 L16 5" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/></svg>
+    </div>
+    <div class="splash-name">CITITOOL</div>
+    <div class="splash-sub">SYNCOPERATOR</div>
+    <div class="splash-bar"><div class="splash-fill"></div></div>
+  </div>
+</div>
 <div id="toast"></div>
 <div id="print-area"></div>
 
@@ -393,7 +417,7 @@ brain.nm=brain.nm||[]; brain.bem=brain.bem||[]; brain.pairs=brain.pairs||{}; bra
 let cur=0, kanal='oben', tab='prog', tEdit=null, editingProj=false;
 
 if(!db.length){ db.push(newProject()); }
-function newProject(){return{num:'',name:'',lzf:'',sag:'',stt:'',stn:'',mat:'',abs:'',grf:'',oben:[],unten:[]};}
+function newProject(){return{num:'',name:'',lzf:'',sag:'',stt:'',stn:'',mat:'',abs:'',grf:'',titleOben:'Revolver Oben',titleUnten:'Revolver Unten',oben:[],unten:[]};}
 function P(){return db[cur];}
 function curList(){const p=P(); if(!p.oben)p.oben=[]; if(!p.unten)p.unten=[]; return kanal==='oben'?p.oben:p.unten;}
 function persist(){localStorage.setItem(DB,JSON.stringify(db));}
@@ -454,8 +478,8 @@ function render(){
   document.getElementById('cnt-total').textContent=total;
   if(!total){c.innerHTML=emptyHTML();return;}
   let html='';
-  if(p.oben.length){html+='<div class="revdiv">Revolver Oben</div>'+p.oben.map((t,i)=>opCard(t,i,'oben')).join('');}
-  if(p.unten.length){html+='<div class="revdiv">Revolver Unten</div>'+p.unten.map((t,i)=>opCard(t,i,'unten')).join('');}
+  if(p.oben.length){html+='<div class="revdiv" onclick="renameSection(\'oben\')" style="cursor:pointer">'+esc(p.titleOben||'Revolver Oben')+' ✎</div>'+p.oben.map((t,i)=>opCard(t,i,'oben')).join('');}
+  if(p.unten.length){html+='<div class="revdiv" onclick="renameSection(\'unten\')" style="cursor:pointer">'+esc(p.titleUnten||'Revolver Unten')+' ✎</div>'+p.unten.map((t,i)=>opCard(t,i,'unten')).join('');}
   c.innerHTML=html+'<div style="height:20px"></div>';
 }
 
@@ -466,6 +490,13 @@ function listByName(n){const p=P();if(!p.oben)p.oben=[];if(!p.unten)p.unten=[];r
 function moveIn(n,i,d){const l=listByName(n);if(i+d<0||i+d>=l.length)return;[l[i],l[i+d]]=[l[i+d],l[i]];persist();render();}
 function delIn(n,i){if(!confirm('Werkzeug löschen?'))return;listByName(n).splice(i,1);persist();render();}
 function editIn(n,i){editList=n;openToolModal(i,n);}
+function renameSection(n){
+  const p=P();
+  const key=n==='unten'?'titleUnten':'titleOben';
+  const cur=p[key]||(n==='unten'?'Revolver Unten':'Revolver Oben');
+  const val=prompt('Bezeichnung ändern:',cur);
+  if(val!==null&&val.trim()){p[key]=val.trim();persist();render();}
+}
 
 // ═══ TOOL MODAL ═══
 let editList='oben';
@@ -780,16 +811,18 @@ function makePDF(){
   const getFoot=()=>`<div style="margin-top:auto;"><div style="border-top:.5px solid #000;margin-top:10px;padding-top:6px;font-size:11px;font-weight:900;display:flex;justify-content:space-between;letter-spacing:1px;"><span> </span><span> </span></div></div>`;
   const tableHead=`<div style="display:flex;font-size:11px;font-weight:900;text-transform:uppercase;margin-bottom:5px;padding:0 2px;"><div style="width:95px;">T-NR</div><div style="flex:1;">WERKZEUGNAME / KOMMENTAR</div><div style="width:135px;text-align:right;">Ø / TOLERANZ</div></div><div style="border-bottom:2px solid #000;"></div>`;
   const getRow=t=>`<div style="display:flex;align-items:center;border-bottom:.5px solid #000;padding:8px 0;"><div style="width:95px;font-weight:900;font-size:20px;">${esc(t.id)}</div><div style="flex:1;padding-right:10px;"><div style="font-weight:800;font-size:17px;line-height:1.1;text-transform:uppercase;">${esc(t.nm)}</div><div style="font-size:9px;font-weight:800;margin-top:1px;"><span style="color:#666;">${t.isSonder?'SONDERWERKZEUG':'STANDARD'}</span>${t.bem?' | <span style="color:#000;">'+esc(t.bem)+'</span>':''}</div></div><div style="width:135px;text-align:right;font-weight:900;font-size:16px;line-height:1;">${esc(t.dia||'').replace('/','<br>')}</div></div>`;
-  const page=(title,rows)=>`<div style="width:210mm;padding:10mm;background:#fff;font-family:sans-serif;page-break-after:always;"><div style="border:2px solid #000;padding:25px;min-height:270mm;display:flex;flex-direction:column;box-sizing:border-box;">${getHead()}<div style="flex:1;"><div style="font-size:22px;font-weight:900;margin-bottom:8px;letter-spacing:-.5px;">${title}</div>${tableHead}${rows.map(getRow).join('')}</div>${getFoot()}</div></div>`;
+  const page=(title,rows,last)=>`<div style="width:210mm;height:297mm;padding:8mm;background:#fff;font-family:sans-serif;box-sizing:border-box;overflow:hidden;${last?'':'page-break-after:always;'}"><div style="border:2px solid #000;padding:20px;height:100%;display:flex;flex-direction:column;box-sizing:border-box;">${getHead()}<div style="flex:1;overflow:hidden;"><div style="font-size:22px;font-weight:900;margin-bottom:8px;letter-spacing:-.5px;">${title}</div>${tableHead}${rows.map(getRow).join('')}</div>${getFoot()}</div></div>`;
   const oben=p.oben||[],unten=p.unten||[];
-  let html=page('REVOLVER OBEN',oben);
-  if(unten.length)html+=page('REVOLVER UNTEN',unten);
+  const hasUnten=unten.length>0;
+  let html=page((p.titleOben||'REVOLVER OBEN').toUpperCase(),oben,!hasUnten);
+  if(hasUnten)html+=page((p.titleUnten||'REVOLVER UNTEN').toUpperCase(),unten,true);
   document.getElementById('print-area').innerHTML=html;
   setTimeout(()=>window.print(),250);
 }
 
 // ═══ INIT ═══
 renderHeader();render();
+setTimeout(()=>{const s=document.getElementById('splash');if(s)s.classList.add('hide');setTimeout(()=>{if(s)s.style.display='none';},500);},1500);
 </script>
 </body>
 </html>
