@@ -253,39 +253,14 @@ html,body{height:100%;font-family:var(--sans);background:var(--bg);color:var(--i
 
   <div class="divider"></div>
 
-  <div class="tabs">
-    <div class="tab active" id="tab-prog" onclick="switchTab('prog')">
-      <div class="tab-num">01</div><div class="tab-name">Programmplan</div>
-    </div>
-    <div class="tab" id="tab-tools" onclick="switchTab('tools')">
-      <div class="tab-num">02</div><div class="tab-name">Werkzeugliste</div>
-    </div>
-  </div>
-
-  <div class="kanals" id="kanals">
-    <div class="kanal active" id="k-oben" onclick="switchKanal('oben')">
-      <div class="kanal-name">KANAL 1</div>
-      <div class="kanal-sub">1000.MPF · Oben</div>
-    </div>
-    <div class="kanal" id="k-unten" onclick="switchKanal('unten')">
-      <div class="kanal-name">KANAL 2</div>
-      <div class="kanal-sub">2000.MPF · Unten</div>
-    </div>
-  </div>
-
   <div class="sechead">
     <div>
-      <div class="sechead-title" id="sec-title">Slots-Belegung</div>
+      <div class="sechead-title" id="sec-title">Werkzeugliste</div>
     </div>
     <div class="sechead-count">
       <div><b id="cnt-used">0</b><span> / <span id="cnt-total">0</span></span></div>
-      <small>belegt</small>
+      <small>Werkzeuge</small>
     </div>
-  </div>
-
-  <div class="hint">
-    <div class="hint-i">i</div>
-    <p>Programm-Datei (.O / RO / RU) laden = automatischer Import. ↑↓ für Reihenfolge.</p>
   </div>
 
   <div class="content" id="content"></div>
@@ -446,22 +421,6 @@ function renderHeader(){
   document.getElementById('m-grf').value=p.grf||'';
 }
 
-// ═══ TABS / KANAL ═══
-function switchTab(t){
-  tab=t;
-  document.getElementById('tab-prog').classList.toggle('active',t==='prog');
-  document.getElementById('tab-tools').classList.toggle('active',t==='tools');
-  document.getElementById('kanals').style.display=t==='prog'?'flex':'none';
-  document.getElementById('sec-title').textContent=t==='prog'?'Slots-Belegung':'Werkzeugliste';
-  render();
-}
-function switchKanal(k){
-  kanal=k;
-  document.getElementById('k-oben').classList.toggle('active',k==='oben');
-  document.getElementById('k-unten').classList.toggle('active',k==='unten');
-  render();
-}
-
 // ═══ RENDER ═══
 function opCard(t,i,listName){
   const isRev = listName==='unten';
@@ -470,7 +429,7 @@ function opCard(t,i,listName){
       <div class="op-top">
         <div class="op-slot">
           <div class="op-idx">${String(i+1).padStart(2,'0')}</div>
-          <div class="op-prog">${esc(t.slot||t.id||'—')}</div>
+          <div class="op-prog">${esc(t.id||t.slot||'—')}</div>
         </div>
         <div class="op-ctrls">
           <button class="opc" onclick="moveIn('${listName}',${i},-1)"><svg viewBox="0 0 24 24"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg></button>
@@ -481,7 +440,8 @@ function opCard(t,i,listName){
       <div class="op-title ${t.nm?'':'empty'}" onclick="editIn('${listName}',${i})">${esc(t.nm||'Leer — antippen')}</div>
       <div class="op-tags">
         ${t.isSonder?'<span class="otag sp" style="background:#DBEAFE;color:#1D4ED8">Sonder</span>':'<span class="otag">Standard</span>'}
-        <span class="otag tool" onclick="editIn('${listName}',${i})">${esc(t.id||'T—')} · ${esc(t.nm||'—')}${t.dia?' · Ø '+esc(t.dia):''}</span>
+        ${t.dia?'<span class="otag">Ø '+esc(t.dia)+'</span>':''}
+        ${t.bem?'<span class="otag tool" onclick="editIn(\''+listName+'\','+i+')">'+esc(t.bem)+'</span>':''}
       </div>
     </div>`;
 }
@@ -489,34 +449,22 @@ function opCard(t,i,listName){
 function render(){
   const p=P(); if(!p.oben)p.oben=[]; if(!p.unten)p.unten=[];
   const c=document.getElementById('content');
-
-  if(tab==='tools'){
-    // combined Werkzeugliste with section dividers
-    const total=p.oben.length+p.unten.length;
-    document.getElementById('cnt-used').textContent=p.oben.filter(t=>t.nm).length+p.unten.filter(t=>t.nm).length;
-    document.getElementById('cnt-total').textContent=total;
-    if(!total){c.innerHTML=emptyHTML();return;}
-    let html='';
-    if(p.oben.length){html+='<div class="revdiv">Revolver Oben</div>'+p.oben.map((t,i)=>opCard(t,i,'oben')).join('');}
-    if(p.unten.length){html+='<div class="revdiv">Revolver Unten</div>'+p.unten.map((t,i)=>opCard(t,i,'unten')).join('');}
-    c.innerHTML=html+'<div style="height:20px"></div>';
-    return;
-  }
-
-  // Programmplan — current kanal
-  const list=curList();
-  document.getElementById('cnt-used').textContent=list.filter(t=>t.nm).length;
-  document.getElementById('cnt-total').textContent=Math.max(list.length,kanal==='oben'?17:0)||list.length;
-  if(!list.length){c.innerHTML=emptyHTML();return;}
-  c.innerHTML=list.map((t,i)=>opCard(t,i,kanal)).join('')+'<div style="height:20px"></div>';
+  const total=p.oben.length+p.unten.length;
+  document.getElementById('cnt-used').textContent=p.oben.filter(t=>t.nm).length+p.unten.filter(t=>t.nm).length;
+  document.getElementById('cnt-total').textContent=total;
+  if(!total){c.innerHTML=emptyHTML();return;}
+  let html='';
+  if(p.oben.length){html+='<div class="revdiv">Revolver Oben</div>'+p.oben.map((t,i)=>opCard(t,i,'oben')).join('');}
+  if(p.unten.length){html+='<div class="revdiv">Revolver Unten</div>'+p.unten.map((t,i)=>opCard(t,i,'unten')).join('');}
+  c.innerHTML=html+'<div style="height:20px"></div>';
 }
 
-function emptyHTML(){return '<div class="empty"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h6M9 13h6M9 17h3"/></svg><div style="font-weight:600">Keine Operationen</div><div style="font-family:var(--mono);font-size:12px;margin-top:6px">Datei laden oder „Neue Op"</div></div>';}
+function emptyHTML(){return '<div class="empty"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h6M9 13h6M9 17h3"/></svg><div style="font-weight:600">Keine Werkzeuge</div><div style="font-family:var(--mono);font-size:12px;margin-top:6px">Datei laden oder „Neue Op"</div></div>';}
 
-// list-aware ops (work in both tabs)
+// list-aware ops
 function listByName(n){const p=P();if(!p.oben)p.oben=[];if(!p.unten)p.unten=[];return n==='unten'?p.unten:p.oben;}
 function moveIn(n,i,d){const l=listByName(n);if(i+d<0||i+d>=l.length)return;[l[i],l[i+d]]=[l[i+d],l[i]];persist();render();}
-function delIn(n,i){if(!confirm('Operation löschen?'))return;listByName(n).splice(i,1);persist();render();}
+function delIn(n,i){if(!confirm('Werkzeug löschen?'))return;listByName(n).splice(i,1);persist();render();}
 function editIn(n,i){editList=n;openToolModal(i,n);}
 
 // ═══ TOOL MODAL ═══
@@ -524,7 +472,7 @@ let editList='oben';
 function openToolModal(i=null,listName=null){
   tEdit=i;
   // determine which list we edit
-  editList = listName || (tab==='prog'?kanal:'oben');
+  editList = listName || 'oben';
   const fields=['t-slot','t-id','t-nm','t-dia','t-bem'];
   if(i!==null){
     const t=listByName(editList)[i];
@@ -567,7 +515,7 @@ function saveTool(){
   if(nm){
     if(!brain.nm.includes(nm))brain.nm.push(nm);
     if(bem){if(!brain.bem.includes(bem))brain.bem.push(bem);brain.pairs[nm]=bem;}
-    if(!brain.library.find(x=>x.nm===nm))brain.library.push({nm,bem,dia});
+    if(!brain.library.find(x=>x.nm===nm))brain.library.push({nm,bem,dia,rev:targetList});
     saveBrain();
   }
   if(tEdit===null){
@@ -647,10 +595,8 @@ function delProjectByIdx(i){if(!confirm('Projekt löschen?'))return;db.splice(i,
 
 // ═══ LIBRARY ═══
 function openLibrary(){renderLibrary();open_('m-lib');}
-function renderLibrary(){
-  const body=document.getElementById('lib-body');
-  if(!brain.library.length){body.innerHTML='<div class="empty"><svg viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/></svg><div style="font-weight:600">Bibliothek leer</div><div style="font-family:var(--mono);font-size:12px;margin-top:6px">Werkzeuge werden automatisch gespeichert</div></div>';return;}
-  body.innerHTML=brain.library.map((it,i)=>`
+function libItemHTML(it,i){
+  return `
     <div class="libitem">
       <div class="libmain">
         <div class="libinfo" onclick="useLibItem(${i})">
@@ -658,17 +604,34 @@ function renderLibrary(){
           <div class="libsub">${it.bem?esc(it.bem):'—'}${it.dia?' · Ø '+esc(it.dia):''}</div>
         </div>
         <div class="libacts">
+          <button class="libbtn" onclick="event.stopPropagation();toggleLibRev(${i})" title="Oben/Unten wechseln"><svg viewBox="0 0 24 24"><polyline points="17 11 12 6 7 11"/><polyline points="17 18 12 13 7 18"/></svg></button>
           <button class="libbtn" onclick="event.stopPropagation();editLib(${i})"><svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
           <button class="libbtn del" onclick="event.stopPropagation();delLib(${i})"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg></button>
         </div>
       </div>
       <div class="libedit" id="le-${i}">
-        <input class="f" style="padding:11px 14px;background:var(--field);border:1px solid var(--line2);border-radius:10px;font-family:var(--sans);font-weight:600" id="le-nm-${i}" value="${esc(it.nm)}">
+        <input style="padding:11px 14px;background:var(--field);border:1px solid var(--line2);border-radius:10px;font-family:var(--sans);font-weight:600" id="le-nm-${i}" value="${esc(it.nm)}">
         <input style="padding:11px 14px;background:var(--field);border:1px solid var(--line2);border-radius:10px;font-family:var(--mono);font-size:13px" id="le-bem-${i}" value="${esc(it.bem||'')}" placeholder="Bemerkung">
         <input style="padding:11px 14px;background:var(--field);border:1px solid var(--line2);border-radius:10px;font-family:var(--mono);font-size:13px" id="le-dia-${i}" value="${esc(it.dia||'')}" placeholder="Ø / Toleranz">
         <div style="display:flex;gap:8px"><button class="sbtn sec" style="flex:1;padding:11px" onclick="closeLibEdit(${i})">Abbrechen</button><button class="sbtn save" style="flex:2;padding:11px" onclick="saveLib(${i})">Speichern</button></div>
       </div>
-    </div>`).join('');
+    </div>`;
+}
+function renderLibrary(){
+  const body=document.getElementById('lib-body');
+  if(!brain.library.length){body.innerHTML='<div class="empty"><svg viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/></svg><div style="font-weight:600">Bibliothek leer</div><div style="font-family:var(--mono);font-size:12px;margin-top:6px">Werkzeuge werden automatisch gespeichert</div></div>';return;}
+  const oben=[],unten=[];
+  brain.library.forEach((it,i)=>{ (it.rev==='unten'?unten:oben).push({it,i}); });
+  let html='';
+  html+='<div class="revdiv">Revolver Oben</div>';
+  html+= oben.length ? oben.map(o=>libItemHTML(o.it,o.i)).join('') : '<div style="font-family:var(--mono);font-size:12px;color:var(--ink3);padding:4px 4px 12px">— leer —</div>';
+  html+='<div class="revdiv">Revolver Unten</div>';
+  html+= unten.length ? unten.map(o=>libItemHTML(o.it,o.i)).join('') : '<div style="font-family:var(--mono);font-size:12px;color:var(--ink3);padding:4px 4px 12px">— leer —</div>';
+  body.innerHTML=html;
+}
+function toggleLibRev(i){
+  brain.library[i].rev = (brain.library[i].rev==='unten')?'oben':'unten';
+  saveBrain();renderLibrary();
 }
 function editLib(i){document.querySelectorAll('.libedit').forEach(e=>e.classList.remove('open'));document.getElementById('le-'+i).classList.add('open');}
 function closeLibEdit(i){document.getElementById('le-'+i).classList.remove('open');}
@@ -682,9 +645,9 @@ function saveLib(i){
 function delLib(i){if(!confirm('Eintrag löschen?'))return;brain.library.splice(i,1);saveBrain();renderLibrary();toast('Gelöscht');}
 function useLibItem(i){
   const it=brain.library[i];
-  const target=(tab==='prog'?kanal:'oben');
+  const target=(it.rev==='unten')?'unten':'oben';
   listByName(target).push({slot:'',id:'T—',nm:it.nm,dia:it.dia||'',bem:it.bem||'',isSonder:false});
-  persist();close_('m-lib');render();toast('Hinzugefügt');
+  persist();close_('m-lib');render();toast('Hinzugefügt · '+(target==='unten'?'Unten':'Oben'));
 }
 
 // ═══ PROGRAM PARSER (.O RO/RU) ═══
@@ -753,12 +716,12 @@ function loadProgramFiles(input){
       // learn into library
       ops.forEach(o=>{
         if(o.nm&&!brain.nm.includes(o.nm))brain.nm.push(o.nm);
-        if(o.nm&&!brain.library.find(x=>x.nm===o.nm))brain.library.push({nm:o.nm,bem:'',dia:''});
+        if(o.nm&&!brain.library.find(x=>x.nm===o.nm))brain.library.push({nm:o.nm,bem:'',dia:'',rev:k});
       });
       loaded++;
       if(loaded===total){
         saveBrain();persist();close_('m-io');renderHeader();
-        switchKanal(k);render();
+        render();
         toast(`${total} Datei(en) · ${ops.length} Werkzeuge`);
       }
     };
