@@ -1,0 +1,4537 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>CitiTool · SyncOperator — Workbench</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════════
+   MINIMAL · BLACK / WHITE / GREY
+═══════════════════════════════════════════════════ */
+:root {
+  --bg:        #FFFFFF;
+  --bg-soft:   #FAFAFA;
+  --bg-2:      #F5F5F5;
+  --bg-3:      #EFEFEF;
+
+  --line:      #E5E5E5;
+  --line-2:    #D4D4D4;
+  --line-3:    #A3A3A3;
+
+  --ink:       #0A0A0A;
+  --ink-2:     #262626;
+  --ink-3:     #525252;
+  --ink-4:     #737373;
+  --ink-5:     #A3A3A3;
+
+  /* Plan table colors (matching the reference PDF) */
+  --sp4-bg:    #4FB47A;   /* зелёная шапка SP4 */
+  --sp4-ink:   #FFFFFF;
+  --sp4-cell:  #EAF6EE;
+
+  --sp3-bg:    #5085C4;   /* синяя шапка SP3 */
+  --sp3-ink:   #FFFFFF;
+  --sp3-cell:  #E8EFF8;
+
+  --kanal-bg:  #404040;   /* шапка каналов — тёмная */
+  --kanal-ink: #FFFFFF;
+
+  /* Status accent for live indicators (тонкий, не яркий) */
+  --accent:    #0A0A0A;
+
+  /* Danger */
+  --danger:    #B91C1C;
+  --danger-bg: #FEF2F2;
+
+  --r:    4px;
+  --r-md: 6px;
+  --t:    .12s ease;
+
+  --sans:  'Inter', system-ui, sans-serif;
+  --mono:  'JetBrains Mono', monospace;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; }
+body {
+  font-family: var(--sans);
+  background: var(--bg);
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+.shell { display: flex; flex-direction: column; min-height: 100vh; }
+
+/* ═══════════════════════════════════════════════════
+   STATUSBAR — thin top strip
+═══════════════════════════════════════════════════ */
+.statusbar {
+  background: var(--bg-soft);
+  border-bottom: 1px solid var(--line);
+  height: 26px;
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--ink-4);
+  gap: 16px;
+  letter-spacing: .02em;
+}
+.sb-item { display: flex; align-items: center; gap: 6px; }
+.sb-label { color: var(--ink-5); }
+.sb-value { color: var(--ink-2); }
+.sb-sep { width: 1px; height: 12px; background: var(--line); }
+.sb-live {
+  display: flex; align-items: center; gap: 6px;
+  color: var(--ink);
+  font-weight: 500;
+}
+.sb-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--ink);
+  animation: pulse 2s ease-in-out infinite;
+}
+@keyframes pulse { 50% { opacity: .35; } }
+.sb-spacer { flex: 1; }
+.sb-clock { color: var(--ink); font-weight: 500; }
+
+/* ═══════════════════════════════════════════════════
+   HEADER
+═══════════════════════════════════════════════════ */
+.header {
+  background: var(--bg);
+  border-bottom: 1px solid var(--line);
+  padding: 18px 24px;
+  display: flex;
+  align-items: center;
+  gap: 22px;
+}
+
+.brand { display: flex; align-items: center; gap: 12px; }
+.brand-mark {
+  width: 38px; height: 38px;
+  background: var(--ink);
+  border-radius: var(--r);
+  display: flex; align-items: center; justify-content: center;
+  position: relative;
+}
+.brand-mark::before {
+  content: '';
+  position: absolute; inset: 8px;
+  border: 2px solid var(--bg);
+  border-radius: 50%;
+  border-right-color: transparent;
+}
+.brand-mark::after {
+  content: '';
+  position: absolute; top: 50%; left: 50%;
+  width: 4px; height: 4px;
+  background: var(--bg);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
+.brand-text { display: flex; flex-direction: column; gap: 2px; line-height: 1; }
+.brand-name {
+  font-size: 15px; font-weight: 700;
+  letter-spacing: .14em; text-transform: uppercase;
+  color: var(--ink);
+}
+.brand-sub {
+  font-family: var(--mono);
+  font-size: 10px; font-weight: 500;
+  color: var(--ink-4);
+  letter-spacing: .1em; text-transform: uppercase;
+}
+
+.header-divider { width: 1px; height: 36px; background: var(--line); }
+
+.machine-context {
+  display: flex; flex-direction: column; gap: 3px;
+}
+.mc-label {
+  font-family: var(--mono);
+  font-size: 9.5px; font-weight: 500;
+  color: var(--ink-4);
+  text-transform: uppercase; letter-spacing: .12em;
+}
+.mc-value {
+  font-size: 13.5px; font-weight: 600;
+  color: var(--ink);
+  letter-spacing: .01em;
+}
+
+.header-spacer { flex: 1; }
+
+.header-meta {
+  display: flex; gap: 28px;
+}
+.meta-item { display: flex; flex-direction: column; gap: 3px; }
+.meta-label {
+  font-family: var(--mono);
+  font-size: 9.5px; font-weight: 500;
+  color: var(--ink-4);
+  text-transform: uppercase; letter-spacing: .12em;
+}
+.meta-value {
+  font-family: var(--mono);
+  font-size: 12px; font-weight: 500;
+  color: var(--ink-2);
+}
+.meta-input {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  padding: 4px 8px;
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  width: 110px;
+  transition: all var(--t);
+}
+.meta-input.mono { font-family: var(--mono); font-weight: 500; width: 90px; }
+.meta-input:focus {
+  outline: none;
+  border-color: var(--ink);
+  box-shadow: 0 0 0 2px rgba(0,0,0,.06);
+}
+.meta-item-wide .meta-input { width: 160px; }
+
+/* ZN with menu button */
+.zn-with-menu {
+  display: flex;
+  align-items: stretch;
+  gap: 4px;
+}
+.proj-menu-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px; height: 28px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  color: var(--ink-3);
+  cursor: pointer;
+  transition: all var(--t);
+  padding: 0;
+}
+.proj-menu-btn:hover {
+  background: var(--bg-2);
+  color: var(--ink);
+  border-color: var(--line-3);
+}
+.proj-menu-btn svg { width: 14px; height: 14px; }
+.meta-item-zn { position: relative; }
+
+/* Project dropdown */
+.header { position: relative; }
+.proj-dropdown {
+  display: none;
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 24px;
+  width: 360px;
+  max-height: 480px;
+  background: var(--bg);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-md);
+  box-shadow: 0 16px 48px rgba(0,0,0,.16);
+  z-index: 50;
+  flex-direction: column;
+  overflow: hidden;
+}
+.proj-dropdown.open { display: flex; }
+.proj-dd-head {
+  padding: 14px 16px 12px;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg-soft);
+}
+.proj-dd-tag {
+  font-family: var(--mono);
+  font-size: 9.5px; font-weight: 500;
+  color: var(--ink-4);
+  letter-spacing: .14em; text-transform: uppercase;
+}
+.proj-dd-title {
+  font-size: 14px; font-weight: 600;
+  color: var(--ink);
+  margin-top: 2px;
+}
+.proj-dd-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 6px 0;
+}
+.proj-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  cursor: pointer;
+  transition: background var(--t);
+  border-bottom: 1px solid var(--bg-2);
+}
+.proj-item:last-child { border-bottom: none; }
+.proj-item:hover { background: var(--bg-soft); }
+.proj-item.active { background: var(--bg-2); }
+.proj-item-main { flex: 1; min-width: 0; }
+.proj-item-zn {
+  font-family: var(--mono);
+  font-size: 13px; font-weight: 600;
+  color: var(--ink);
+}
+.proj-item-bez {
+  font-size: 12px;
+  color: var(--ink-3);
+  margin-top: 2px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.proj-item.active .proj-item-zn { color: var(--ink); }
+.proj-item-check {
+  width: 16px; height: 16px;
+  color: var(--ink);
+  opacity: 0;
+}
+.proj-item.active .proj-item-check { opacity: 1; }
+.proj-item-del {
+  width: 26px; height: 26px;
+  background: transparent;
+  border: none;
+  border-radius: 3px;
+  color: var(--ink-4);
+  display: inline-flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transition: all var(--t);
+}
+.proj-item:hover .proj-item-del { opacity: 1; }
+.proj-item-del:hover { background: var(--danger-bg); color: var(--danger); }
+.proj-item-del svg { width: 12px; height: 12px; }
+.proj-dd-foot {
+  padding: 12px 16px;
+  border-top: 1px solid var(--line);
+  background: var(--bg-soft);
+  display: flex;
+  justify-content: stretch;
+}
+.proj-dd-foot .btn { width: 100%; justify-content: center; }
+.proj-empty {
+  padding: 24px 16px;
+  text-align: center;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ink-5);
+}
+
+/* ═══════════════════════════════════════════════════
+   TOOLBAR
+═══════════════════════════════════════════════════ */
+.toolbar {
+  background: var(--bg);
+  border-bottom: 1px solid var(--line);
+  padding: 12px 24px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.section-title { display: flex; flex-direction: column; gap: 3px; }
+.st-tag {
+  font-family: var(--mono);
+  font-size: 9.5px; font-weight: 500;
+  color: var(--ink-4);
+  letter-spacing: .14em; text-transform: uppercase;
+}
+.st-main {
+  font-size: 15px; font-weight: 600;
+  color: var(--ink);
+  letter-spacing: -.005em;
+}
+
+.toolbar-spacer { flex: 1; }
+.toolbar-actions { display: flex; align-items: center; gap: 8px; }
+
+/* View Tabs */
+.view-pane { display: none; }
+.view-pane.active { display: block; }
+
+/* Library picker (in editor) */
+.lib-picker-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin-top: 4px;
+}
+.lib-picker-btn {
+  align-self: flex-start;
+  margin-top: 4px;
+}
+.lib-picker-btn.open {
+  background: var(--ink);
+  color: var(--bg);
+  border-color: var(--ink);
+}
+.lib-picker-list {
+  margin-top: 10px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r);
+  background: var(--bg);
+  max-height: 280px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.lib-picker-search {
+  width: 100% !important;
+  border: none !important;
+  border-bottom: 1px solid var(--line) !important;
+  border-radius: 0 !important;
+  background: var(--bg-soft) !important;
+  font-family: var(--sans) !important;
+  font-size: 13px !important;
+  padding: 9px 12px !important;
+}
+.lib-picker-items {
+  overflow-y: auto;
+  flex: 1;
+  max-height: 220px;
+}
+.lib-picker-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--bg-2);
+  transition: background var(--t);
+}
+.lib-picker-item:last-child { border-bottom: none; }
+.lib-picker-item:hover { background: var(--bg-soft); }
+.lpi-tno {
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink);
+  min-width: 50px;
+  flex-shrink: 0;
+}
+.lpi-name {
+  font-size: 13px;
+  color: var(--ink-2);
+  flex: 1;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.lib-picker-empty {
+  padding: 16px 12px;
+  text-align: center;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ink-5);
+  letter-spacing: .04em;
+}
+
+.custom-fields {
+  margin-top: 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--bg);
+  overflow: hidden;
+}
+.custom-fields-head {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg-soft);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.custom-field-row {
+  display: grid;
+  grid-template-columns: 180px 1fr auto;
+  gap: 8px;
+  align-items: center;
+}
+.custom-field-row .meta-input {
+  background: var(--bg);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r);
+  padding: 7px 11px;
+  font-family: var(--sans);
+  font-size: 13px;
+  color: var(--ink);
+  width: 100%;
+}
+.custom-field-row .label-input {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--ink);
+}
+.custom-field-row .icon-btn { flex-shrink: 0; }
+
+.view-tabs {
+  display: inline-flex;
+  gap: 0;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r);
+  background: var(--bg);
+  overflow: hidden;
+}
+.view-tab {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--bg);
+  border: none;
+  padding: 8px 16px;
+  font-family: var(--sans);
+  font-size: 12.5px; font-weight: 600;
+  color: var(--ink-4);
+  cursor: pointer;
+  transition: all var(--t);
+  border-right: 1px solid var(--line);
+}
+.view-tab:last-child { border-right: none; }
+.view-tab:hover { color: var(--ink); background: var(--bg-2); }
+.view-tab.active {
+  background: var(--ink);
+  color: var(--bg);
+}
+.view-tab .vt-num {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 600;
+  opacity: .6;
+  letter-spacing: .04em;
+}
+.view-tab.active .vt-num { opacity: .7; }
+.view-tab .vt-name { letter-spacing: .01em; }
+
+/* Kanal switcher */
+.kanal-switch {
+  display: inline-flex;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  padding: 2px;
+}
+.kanal-btn {
+  background: transparent;
+  border: none;
+  padding: 6px 14px;
+  font-family: var(--sans);
+  font-size: 11.5px; font-weight: 600;
+  color: var(--ink-4);
+  cursor: pointer;
+  border-radius: 3px;
+  display: flex; align-items: center; gap: 8px;
+  transition: all var(--t);
+  letter-spacing: .02em;
+}
+.kanal-btn:hover { color: var(--ink); }
+.kanal-btn.active {
+  background: var(--ink);
+  color: var(--bg);
+}
+.kanal-mpf {
+  font-family: var(--mono);
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 2px;
+  background: rgba(0,0,0,.06);
+  color: inherit;
+  font-weight: 500;
+}
+.kanal-btn.active .kanal-mpf { background: rgba(255,255,255,.18); }
+
+/* Buttons */
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-family: var(--sans);
+  font-size: 11.5px; font-weight: 600;
+  letter-spacing: .01em;
+  padding: 7px 13px;
+  border-radius: var(--r);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all var(--t);
+}
+.btn svg { width: 13px; height: 13px; flex-shrink: 0; }
+
+/* Slot editor sections */
+.slot-picker-section {
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line);
+}
+.slot-picker-section:last-of-type { border-bottom: none; }
+.slot-picker-current {
+  background: var(--bg-soft);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  padding: 10px 12px;
+  margin: 8px 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 38px;
+}
+.spc-main { flex: 1; min-width: 0; }
+.spc-code {
+  font-family: var(--mono);
+  font-size: 12px; font-weight: 700;
+  color: var(--ink);
+}
+.spc-title {
+  font-size: 13px;
+  color: var(--ink-2);
+  margin-top: 2px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.spc-empty {
+  color: var(--ink-5);
+  font-style: italic;
+  font-size: 13px;
+}
+.spc-clear {
+  width: 24px; height: 24px;
+  background: transparent;
+  border: none;
+  color: var(--ink-4);
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+  border-radius: 3px;
+}
+.spc-clear:hover { background: var(--danger-bg); color: var(--danger); }
+
+/* Inline autocomplete (under text input) */
+.ac-wrap {
+  position: relative;
+  width: 100%;
+}
+.ac-dropdown {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: var(--bg);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r);
+  box-shadow: 0 8px 24px rgba(0,0,0,.12);
+  max-height: 240px;
+  overflow-y: auto;
+  z-index: 100;
+  margin-top: 2px;
+}
+.ac-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--bg-2);
+  font-size: 13px;
+}
+.ac-item:last-child { border-bottom: none; }
+.ac-item:hover { background: var(--bg-soft); }
+.ac-key {
+  font-family: var(--mono);
+  font-weight: 700;
+  color: var(--ink);
+  min-width: 60px;
+  flex-shrink: 0;
+  font-size: 12px;
+}
+.ac-val {
+  color: var(--ink-2);
+  flex: 1;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+.tag-warn {
+  background: #fff4e5;
+  color: #b85c00;
+  font-weight: 600;
+}
+
+/* Hide kanal/library controls when viewing Sägelänge */
+body[data-view="saw"] .kanal-switch,
+body[data-view="saw"] #kanalSwitch { opacity: 0.4; pointer-events: none; }
+
+/* ═══════════════════════════════════════════════════
+   SÄGELÄNGE TAB
+═══════════════════════════════════════════════════ */
+.saw-wrap {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 4px 0;
+}
+.saw-card {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  padding: 24px;
+}
+.saw-card-head {
+  margin-bottom: 22px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--line);
+}
+.saw-tag {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  color: var(--ink-4);
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+.saw-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.saw-inputs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+.saw-input-grp { display: flex; flex-direction: column; gap: 6px; }
+.saw-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: var(--ink-4);
+  text-transform: uppercase;
+  font-weight: 600;
+}
+.saw-input, .saw-param-input {
+  padding: 12px 14px;
+  border: 1.5px solid var(--line);
+  border-radius: var(--r);
+  font-family: var(--mono);
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--ink);
+  background: var(--bg);
+  outline: none;
+  transition: border-color .15s;
+}
+.saw-input:focus, .saw-param-input:focus {
+  border-color: var(--ink);
+}
+.saw-mode {
+  background: var(--bg-soft);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  padding: 16px;
+  margin-bottom: 22px;
+}
+.saw-mode-head {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 12px;
+}
+.saw-badge {
+  padding: 3px 10px;
+  border-radius: 4px;
+  font-family: var(--mono);
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  background: #dbeafe;
+  color: #1e40af;
+}
+.saw-badge.manual {
+  background: #fef3c7;
+  color: #b45309;
+}
+.saw-slider-row {
+  display: flex; align-items: center; gap: 14px;
+}
+.saw-step-btn {
+  width: 44px; height: 44px;
+  border-radius: 10px;
+  border: 1.5px solid var(--line);
+  background: var(--bg);
+  font-size: 22px;
+  font-weight: 600;
+  font-family: var(--mono);
+  color: var(--ink);
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  user-select: none;
+  flex-shrink: 0;
+}
+.saw-step-btn:hover { background: var(--bg-soft); border-color: var(--ink-5); }
+.saw-step-btn:active { transform: scale(0.95); }
+.saw-slider {
+  flex: 1;
+  -webkit-appearance: none;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--line-2);
+  outline: none;
+}
+.saw-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  background: var(--ink);
+  cursor: pointer;
+  border: 2px solid var(--bg);
+  box-shadow: 0 2px 6px rgba(0,0,0,.18);
+}
+.saw-slider::-moz-range-thumb {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  background: var(--ink);
+  cursor: pointer;
+  border: 2px solid var(--bg);
+}
+.saw-teile-display {
+  width: 52px; height: 52px;
+  background: var(--ink);
+  color: var(--bg);
+  border-radius: var(--r-md);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--mono);
+  font-size: 22px;
+  font-weight: 800;
+}
+.saw-hint {
+  margin-top: 10px;
+  font-size: 11.5px;
+  color: var(--ink-5);
+  font-style: italic;
+}
+.saw-result-card {
+  background: var(--ink);
+  color: var(--bg);
+  border-radius: var(--r-md);
+  padding: 24px;
+  margin-bottom: 22px;
+}
+.saw-result-tag {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  color: rgba(255,255,255,.5);
+  text-transform: uppercase;
+  font-weight: 600;
+}
+.saw-result-main {
+  display: flex; align-items: baseline; gap: 8px;
+  margin-top: 6px; margin-bottom: 18px;
+}
+.saw-result-num {
+  font-family: var(--mono);
+  font-size: 64px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+.saw-result-unit {
+  font-size: 20px;
+  font-weight: 700;
+  color: rgba(255,255,255,.5);
+  text-transform: uppercase;
+}
+.saw-result-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(255,255,255,.12);
+}
+.saw-result-cell-label {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.12em;
+  color: rgba(255,255,255,.5);
+  text-transform: uppercase;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.saw-result-cell-val {
+  font-size: 15px;
+  font-weight: 700;
+}
+.saw-result-cell-val.mono { font-family: var(--mono); }
+.saw-robot-badge {
+  margin-top: 18px;
+  padding: 10px 14px;
+  border-radius: var(--r);
+  background: rgba(34,197,94,.18);
+  color: #4ade80;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-align: center;
+}
+.saw-robot-badge.warn {
+  background: rgba(239,68,68,.2);
+  color: #fca5a5;
+}
+.saw-params {
+  background: var(--bg-soft);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  padding: 16px;
+}
+.saw-params-head {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  color: var(--ink-4);
+  text-transform: uppercase;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+.saw-params-grid {
+  display: flex; flex-direction: column; gap: 8px;
+}
+.saw-param-row {
+  display: grid;
+  grid-template-columns: 1fr 110px 40px;
+  gap: 10px;
+  align-items: center;
+}
+.saw-param-label {
+  font-size: 12.5px;
+  color: var(--ink-2);
+}
+.saw-param-input {
+  padding: 8px 10px;
+  font-size: 13px;
+  text-align: right;
+}
+.saw-param-unit {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ink-5);
+}
+
+/* PAIRING modal */
+.pair-wrap {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  min-height: 60vh;
+}
+.pair-col {
+  border-right: 1px solid var(--line);
+  padding: 0;
+  display: flex; flex-direction: column;
+}
+.pair-col:last-child { border-right: none; }
+.pair-col-head {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg-soft);
+  position: sticky; top: 0; z-index: 5;
+}
+.pair-col-title {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--ink);
+}
+.pair-row {
+  display: grid;
+  grid-template-columns: 60px minmax(0, 1fr) 24px minmax(0, 2fr);
+  gap: 10px;
+  align-items: center;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--bg-2);
+}
+.pair-row:hover { background: var(--bg-soft); }
+.pair-num {
+  display: flex; flex-direction: column; gap: 2px;
+}
+.pair-idx {
+  font-family: var(--mono);
+  font-size: 13px; font-weight: 700;
+  color: var(--ink);
+}
+.pair-lc {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--ink-4);
+}
+.pair-cell { min-width: 0; }
+.pair-op-cell {
+  background: var(--bg-soft);
+  border-radius: var(--r);
+  padding: 6px 10px;
+}
+.pair-code {
+  font-family: var(--mono);
+  font-size: 11.5px; font-weight: 700;
+  color: var(--ink);
+}
+.pair-name {
+  font-size: 12px;
+  color: var(--ink-2);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  margin-top: 2px;
+}
+.pair-warn {
+  color: #b85c00; font-size: 11.5px; font-style: italic;
+}
+.pair-arrow {
+  display: flex; justify-content: center;
+  color: var(--ink-5);
+}
+.pair-arrow svg { width: 22px; height: 12px; }
+.pair-tool-cell {
+  display: flex; gap: 6px; align-items: center;
+}
+.pair-input-wrap {
+  position: relative;
+}
+.pair-input-wrap:nth-child(1) { flex: 0 0 90px; }
+.pair-input-wrap:nth-child(2) { flex: 1 1 auto; min-width: 0; }
+.pair-input-tno { width: 100%; }
+.pair-input-name { width: 100%; }
+.pair-empty {
+  padding: 30px 18px;
+  color: var(--ink-5);
+  text-align: center;
+  font-style: italic;
+}
+.pair-clear-btn {
+  width: 32px; height: 32px;
+  flex-shrink: 0;
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  color: var(--ink-4);
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all .15s;
+}
+.pair-clear-btn svg { width: 12px; height: 12px; }
+.pair-clear-btn:hover {
+  background: var(--danger-bg);
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+/* Library tabs */
+.tool-group-head {
+  display: flex; align-items: center; gap: 8px;
+  padding: 12px 4px 8px;
+  margin-top: 4px;
+}
+.tg-k {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 3px 9px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+.tg-k1 { background: #d6f0e0; color: #1c7a4a; }
+.tg-k2 { background: #d9e6f7; color: #2860a8; }
+.tg-info {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--ink-5);
+}
+.lib-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg);
+  padding: 0 18px;
+  gap: 4px;
+}
+.lib-tab {
+  background: transparent;
+  border: none;
+  padding: 12px 14px 11px;
+  font-family: var(--sans);
+  font-size: 12.5px; font-weight: 600;
+  color: var(--ink-4);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+.lib-tab:hover { color: var(--ink); }
+.lib-tab.active {
+  color: var(--ink);
+  border-bottom-color: var(--ink);
+}
+.btn-ghost.active {
+  background: var(--ink);
+  color: var(--bg);
+  border-color: var(--ink);
+}
+.toolbar-divider {
+  width: 1px;
+  align-self: stretch;
+  background: var(--line);
+  margin: 4px 4px;
+}
+.btn-ghost.subtle {
+  color: var(--ink-4);
+  border-color: transparent;
+}
+.btn-ghost.subtle:hover {
+  color: var(--ink);
+  border-color: var(--line);
+  background: var(--bg-soft);
+}
+.add-slot svg { width: 12px; height: 12px; vertical-align: -2px; margin-right: 4px; }
+.btn-primary {
+  background: var(--ink);
+  color: var(--bg);
+  border-color: var(--ink);
+}
+.btn-primary:hover { background: var(--ink-2); }
+.btn-primary:active { transform: translateY(1px); }
+.btn-ghost {
+  background: var(--bg);
+  color: var(--ink-2);
+  border-color: var(--line-2);
+}
+.btn-ghost:hover {
+  background: var(--bg-2);
+  color: var(--ink);
+  border-color: var(--line-3);
+}
+.btn-danger {
+  background: var(--bg);
+  color: var(--danger);
+  border-color: var(--line-2);
+}
+.btn-danger:hover {
+  background: var(--danger-bg);
+  border-color: var(--danger);
+}
+.btn-sm { padding: 5px 11px; font-size: 11px; }
+
+.icon-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 30px; height: 30px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--r);
+  color: var(--ink-3);
+  cursor: pointer;
+  transition: all var(--t);
+}
+.icon-btn:hover { background: var(--bg-2); color: var(--ink); border-color: var(--line); }
+.icon-btn.danger:hover { color: var(--danger); border-color: var(--danger); background: var(--danger-bg); }
+.icon-btn svg { width: 14px; height: 14px; }
+
+/* ═══════════════════════════════════════════════════
+   MAIN LAYOUT
+═══════════════════════════════════════════════════ */
+.main {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  transition: grid-template-columns var(--t);
+}
+.main.lib-closed {
+  grid-template-columns: 1fr 0px;
+}
+.sidebar { transition: opacity var(--t), visibility var(--t); }
+.main.lib-closed .sidebar {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.workspace {
+  background: var(--bg);
+  padding: 22px 24px 28px;
+  overflow-y: auto;
+  border-right: 1px solid var(--line);
+}
+
+.sidebar {
+  background: var(--bg-soft);
+  display: flex; flex-direction: column;
+}
+
+/* ═══════════════════════════════════════════════════
+   SECTION SUBHEADER
+═══════════════════════════════════════════════════ */
+.section-sub {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 16px;
+}
+.ss-hint {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--ink-4);
+  letter-spacing: .02em;
+}
+.ss-hint strong { color: var(--ink); font-weight: 600; }
+.ss-spacer { flex: 1; }
+.ss-count {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--ink-3);
+  letter-spacing: .04em;
+  display: flex; align-items: center; gap: 8px;
+}
+.ss-count .sc-val { color: var(--ink); font-weight: 600; }
+
+/* ═══════════════════════════════════════════════════
+   SLOT LIST
+═══════════════════════════════════════════════════ */
+.slot-list {
+  display: flex; flex-direction: column;
+  gap: 4px;
+}
+
+.slot-row {
+  display: grid;
+  grid-template-columns: 44px 1fr auto;
+  align-items: center;
+  gap: 14px;
+  padding: 11px 14px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  cursor: pointer;
+  transition: all var(--t);
+  position: relative;
+}
+.slot-row.filled:hover {
+  background: var(--bg-soft);
+  border-color: var(--line-2);
+}
+.slot-row.empty {
+  background: var(--bg-soft);
+  border-style: dashed;
+}
+.slot-row.empty:hover {
+  border-color: var(--ink-3);
+  background: var(--bg);
+}
+.slot-row.drag-over {
+  border-color: var(--ink);
+  background: var(--bg-2);
+  box-shadow: 0 0 0 2px var(--line);
+}
+
+.slot-num {
+  font-family: var(--mono);
+  font-size: 13px; font-weight: 600;
+  color: var(--ink-4);
+  text-align: center;
+  border-right: 1px solid var(--line);
+  padding-right: 14px;
+  margin-right: -14px;
+}
+.slot-row.filled .slot-num { color: var(--ink); }
+
+.slot-main { min-width: 0; }
+.slot-title {
+  font-size: 13.5px; font-weight: 600;
+  color: var(--ink);
+  letter-spacing: -.005em;
+  margin-bottom: 5px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  display: flex; align-items: center; gap: 10px;
+}
+.slot-l-code {
+  font-family: var(--mono);
+  font-size: 10.5px; font-weight: 600;
+  color: var(--ink);
+  background: var(--bg-2);
+  border: 1px solid var(--line-2);
+  padding: 2px 7px;
+  border-radius: 2px;
+  letter-spacing: .04em;
+  flex-shrink: 0;
+}
+.slot-meta {
+  display: flex; align-items: center;
+  gap: 6px; flex-wrap: wrap;
+}
+.slot-placeholder {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ink-4);
+  letter-spacing: .02em;
+}
+
+.slot-actions { display: flex; align-items: center; gap: 4px; }
+
+/* Tags */
+.tag {
+  display: inline-flex; align-items: center;
+  font-family: var(--mono);
+  font-size: 10px; font-weight: 600;
+  letter-spacing: .04em;
+  padding: 2px 7px;
+  border-radius: 2px;
+  border: 1px solid;
+}
+.tag-sp4 {
+  color: #2D6B47;
+  border-color: #B5DEC7;
+  background: #EAF6EE;
+}
+.tag-sp3 {
+  color: #2D4F8A;
+  border-color: #B8CEEA;
+  background: #E8EFF8;
+}
+.tag-cat {
+  color: var(--ink-3);
+  border-color: var(--line-2);
+  background: var(--bg-2);
+}
+.tag-doppel {
+  color: #92500D;
+  border-color: #E8C896;
+  background: #FBF1E0;
+}
+.tag-tool {
+  color: var(--ink);
+  border-color: var(--line-2);
+  background: var(--bg);
+  font-weight: 500;
+}
+
+/* Add slot */
+.add-slot {
+  margin-top: 8px;
+  padding: 11px;
+  width: 100%;
+  background: transparent;
+  border: 1px dashed var(--line-2);
+  border-radius: var(--r);
+  color: var(--ink-4);
+  font-family: var(--mono);
+  font-size: 11px; font-weight: 500;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all var(--t);
+}
+.add-slot:hover {
+  border-color: var(--ink);
+  color: var(--ink);
+  background: var(--bg-soft);
+}
+
+/* ═══════════════════════════════════════════════════
+   SIDEBAR — Library
+═══════════════════════════════════════════════════ */
+.lib-head {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--line);
+  display: flex; align-items: center; gap: 12px;
+  background: var(--bg);
+}
+.lib-title-block { flex: 1; }
+.lib-tag {
+  font-family: var(--mono);
+  font-size: 9.5px; font-weight: 500;
+  color: var(--ink-4);
+  letter-spacing: .14em; text-transform: uppercase;
+}
+.lib-name {
+  font-size: 14px; font-weight: 600;
+  color: var(--ink);
+  margin-top: 2px;
+}
+
+.lib-filters {
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--line);
+  display: flex; flex-direction: column; gap: 12px;
+  background: var(--bg);
+}
+.filter-row { display: flex; flex-wrap: wrap; gap: 4px; }
+.filter-label {
+  font-family: var(--mono);
+  font-size: 9.5px; font-weight: 500;
+  color: var(--ink-4);
+  letter-spacing: .14em; text-transform: uppercase;
+  margin-bottom: 6px;
+}
+.pill {
+  font-family: var(--mono);
+  font-size: 10.5px; font-weight: 600;
+  color: var(--ink-3);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  padding: 4px 10px;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: all var(--t);
+  letter-spacing: .04em;
+}
+.pill:hover { color: var(--ink); border-color: var(--line-3); }
+.pill.active {
+  background: var(--ink);
+  color: var(--bg);
+  border-color: var(--ink);
+}
+
+.lib-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px 20px;
+  display: flex; flex-direction: column; gap: 6px;
+}
+
+.op-card {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  padding: 10px 12px;
+  cursor: grab;
+  transition: all var(--t);
+}
+.op-card:hover {
+  border-color: var(--ink-3);
+  background: var(--bg);
+}
+.op-card:active { cursor: grabbing; }
+.op-card-title {
+  font-size: 12.5px; font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 6px;
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+}
+.op-card-l {
+  font-family: var(--mono);
+  font-size: 10px; font-weight: 600;
+  color: var(--ink-4);
+  letter-spacing: .04em;
+}
+.op-card-meta {
+  display: flex; align-items: center; gap: 5px;
+  flex-wrap: wrap;
+}
+
+.lib-empty {
+  padding: 32px 12px;
+  text-align: center;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ink-5);
+  letter-spacing: .04em;
+}
+
+/* Scrollbar */
+.lib-list::-webkit-scrollbar,
+.workspace::-webkit-scrollbar { width: 8px; }
+.lib-list::-webkit-scrollbar-track,
+.workspace::-webkit-scrollbar-track { background: transparent; }
+.lib-list::-webkit-scrollbar-thumb,
+.workspace::-webkit-scrollbar-thumb {
+  background: var(--line-2);
+  border-radius: 4px;
+}
+.lib-list::-webkit-scrollbar-thumb:hover,
+.workspace::-webkit-scrollbar-thumb:hover { background: var(--ink-5); }
+
+/* ═══════════════════════════════════════════════════
+   MODAL
+═══════════════════════════════════════════════════ */
+.modal-overlay {
+  position: fixed; inset: 0; z-index: 999;
+  display: none;
+  align-items: center; justify-content: center;
+  padding: 20px;
+  background: rgba(0,0,0,.4);
+}
+.modal-overlay.open { display: flex; }
+.modal-box {
+  background: var(--bg);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-md);
+  width: 100%; max-width: 780px;
+  max-height: 92vh;
+  display: flex; flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 16px 48px rgba(0,0,0,.18);
+}
+.modal-box.modal-wide { max-width: 1100px; }
+.modal-box.modal-xwide { max-width: 1500px; }
+.modal-head {
+  padding: 18px 22px 14px;
+  border-bottom: 1px solid var(--line);
+  display: flex; align-items: flex-start; gap: 14px;
+}
+.modal-head-tag {
+  font-family: var(--mono);
+  font-size: 9.5px; font-weight: 500;
+  color: var(--ink-4);
+  letter-spacing: .14em; text-transform: uppercase;
+}
+.modal-title {
+  font-size: 16px; font-weight: 600;
+  color: var(--ink);
+  margin-top: 3px;
+}
+.modal-body { padding: 18px 22px; overflow-y: auto; flex: 1; }
+.modal-foot {
+  padding: 14px 22px;
+  border-top: 1px solid var(--line);
+  display: flex; justify-content: flex-end; gap: 8px;
+  background: var(--bg-soft);
+}
+
+/* Form */
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field-label {
+  font-family: var(--mono);
+  font-size: 9.5px; font-weight: 500;
+  color: var(--ink-4);
+  letter-spacing: .12em; text-transform: uppercase;
+}
+.field-input, .field-select {
+  background: var(--bg);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r);
+  padding: 9px 12px;
+  font-family: var(--sans);
+  font-size: 13px;
+  color: var(--ink);
+  width: 100%;
+  transition: all var(--t);
+}
+.field-input.mono { font-family: var(--mono); }
+.field-input:focus, .field-select:focus {
+  outline: none;
+  border-color: var(--ink);
+  box-shadow: 0 0 0 3px rgba(0,0,0,.06);
+}
+.field-select {
+  appearance: none; cursor: pointer;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path d='M1 1l4 4 4-4' stroke='%23525252' stroke-width='1.5' fill='none'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 32px;
+}
+.form-row { display: flex; gap: 12px; margin-bottom: 14px; }
+.form-row:last-child { margin-bottom: 0; }
+.form-group { flex: 1; min-width: 0; }
+.form-group.narrow { flex: 0 0 130px; }
+
+/* Toggle */
+.toggle-pill {
+  display: inline-flex; align-items: center; gap: 10px;
+  padding: 9px 14px;
+  background: var(--bg);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r);
+  cursor: pointer;
+  user-select: none;
+  font-size: 12.5px; font-weight: 500;
+  color: var(--ink-2);
+  transition: all var(--t);
+}
+.toggle-pill:hover { border-color: var(--line-3); }
+.toggle-pill.on {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--bg);
+}
+.toggle-track {
+  width: 32px; height: 18px;
+  background: var(--bg-3);
+  border-radius: 99px;
+  position: relative;
+  transition: background var(--t);
+}
+.toggle-pill.on .toggle-track { background: var(--bg); }
+.toggle-thumb {
+  position: absolute; top: 2px; left: 2px;
+  width: 14px; height: 14px;
+  background: var(--ink-4);
+  border-radius: 50%;
+  transition: all var(--t);
+}
+.toggle-pill.on .toggle-thumb { transform: translateX(14px); background: var(--ink); }
+
+/* ═══════════════════════════════════════════════════
+   FOOTER
+═══════════════════════════════════════════════════ */
+.footer {
+  background: var(--bg-soft);
+  border-top: 1px solid var(--line);
+  padding: 10px 24px;
+  display: flex; align-items: center;
+  gap: 16px;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--ink-4);
+  letter-spacing: .04em;
+}
+.footer-spacer { flex: 1; }
+.footer strong { color: var(--ink-2); font-weight: 600; }
+
+/* ═══════════════════════════════════════════════════
+   META PANEL (UI)
+═══════════════════════════════════════════════════ */
+.meta-panel {
+  margin-top: 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--bg);
+  overflow: hidden;
+}
+.meta-panel-head {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg-soft);
+}
+.mph-tag {
+  font-family: var(--mono);
+  font-size: 9.5px; font-weight: 500;
+  color: var(--ink-4);
+  letter-spacing: .14em; text-transform: uppercase;
+}
+.mph-title {
+  font-size: 14px; font-weight: 600;
+  color: var(--ink);
+  margin-top: 2px;
+}
+.meta-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px 16px;
+  padding: 14px 16px;
+}
+.meta-field { display: flex; flex-direction: column; gap: 4px; }
+.meta-label {
+  font-family: var(--mono);
+  font-size: 9.5px; font-weight: 500;
+  color: var(--ink-4);
+  letter-spacing: .12em; text-transform: uppercase;
+}
+.meta-input {
+  background: var(--bg);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r);
+  padding: 7px 11px;
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink);
+  width: 100%;
+  transition: all var(--t);
+}
+.meta-input:focus {
+  outline: none;
+  border-color: var(--ink);
+  box-shadow: 0 0 0 2px rgba(0,0,0,.06);
+}
+
+/* Print-only page 2 hidden on screen via wrapper */
+.print-page2 { display: none; }
+
+/* ═══════════════════════════════════════════════════
+   PRINT — DIN A4 — TABLE FORMAT (matching reference PDF)
+═══════════════════════════════════════════════════ */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 10mm 7mm 10mm 7mm;
+  }
+  html, body {
+    background: #fff !important;
+    color: #000 !important;
+    font-family: 'Inter', sans-serif;
+    font-size: 8.5pt;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* When view=plan → hide page2; when view=wkz → hide page1 */
+  body.print-plan .print-page2,
+  body.print-plan .print-header2,
+  body.print-plan .meta-print,
+  body.print-plan .wkz-grid { display: none !important; }
+
+  body.print-wkz .print-header,
+  body.print-wkz .print-table { display: none !important; }
+  body.print-wkz .print-page2 {
+    page-break-before: auto !important;
+    break-before: auto !important;
+  }
+  body.print-wkz .print-header2 {
+    page-break-before: auto !important;
+    break-before: auto !important;
+  }
+
+  /* Hide ALL interactive/UI elements */
+  .statusbar, .toolbar, .sidebar, .footer,
+  .modal-overlay, .slot-actions, .add-slot,
+  .slot-list, .section-sub,
+  .header, .header-meta, .header-spacer,
+  .h-actions, .brand, .brand-mark, .brand-text,
+  .header-divider, .machine-context { display: none !important; }
+
+  .shell { display: block; }
+  .main { display: block; }
+  .workspace { padding: 0 !important; overflow: visible; border: none; }
+
+  /* PRINT HEADER — only Zeichnungsnummer + Bezeichnung, no extra label */
+  .print-header {
+    display: block !important;
+    width: 100%;
+    border-bottom: 2px solid #000;
+    padding-bottom: 3mm;
+    margin-bottom: 4mm;
+  }
+  .ph-row {
+    display: flex !important;
+    align-items: baseline;
+    gap: 6mm;
+  }
+  .ph-zn {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 18pt;
+    font-weight: 700;
+    color: #000;
+    letter-spacing: .02em;
+  }
+  .ph-bez {
+    font-family: 'Inter', sans-serif;
+    font-size: 18pt;
+    font-weight: 500;
+    color: #000;
+    letter-spacing: -.005em;
+  }
+  .ph-sub { display: none !important; }
+
+  /* THE PROGRAM PLAN TABLE */
+  .print-table {
+    display: table !important;
+    width: 100%;
+    max-width: 100%;
+    border-collapse: collapse;
+    font-size: 8pt;
+    line-height: 1.15;
+    table-layout: fixed;
+    box-sizing: border-box;
+    margin: 0;
+  }
+  .print-table * { box-sizing: border-box; }
+  .workspace { width: 100%; max-width: 100%; box-sizing: border-box; }
+  .print-table thead { display: table-header-group; }
+  .print-table tbody { display: table-row-group; }
+  .print-table tr {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  /* === CORNER cells in header (top-left, above # column) === */
+  .print-table .pt-corner {
+    background: #fff !important;
+    border: 1px solid #000 !important;
+    width: 7mm;
+  }
+
+  /* Header rows */
+  .print-table .ptr-kanal-head td {
+    background: #fff !important;
+    color: #000 !important;
+    font-weight: 700;
+    text-align: center;
+    padding: 2mm 2mm;
+    font-size: 9pt;
+    letter-spacing: .03em;
+    border: 1px solid #000;
+    height: 6mm;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .print-table .ptr-spindle-head td {
+    font-weight: 600;
+    text-align: center;
+    padding: 1.5mm 2mm;
+    font-size: 8.5pt;
+    border: 1px solid #000;
+    height: 5mm;
+    color: #fff;
+  }
+  .print-table .pt-sp4-head {
+    background: #4FB47A !important;
+  }
+  .print-table .pt-sp3-head {
+    background: #5085C4 !important;
+  }
+
+  /* Body cells — fixed height, white */
+  .print-table tbody tr { height: 7mm; }
+
+  .print-table .pt-idx {
+    width: 7mm;
+    text-align: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 600;
+    background: #fff !important;
+    border: 1px solid #000;
+    padding: 0 1mm;
+    color: #000;
+    font-size: 9pt;
+    vertical-align: middle;
+    height: 7mm;
+  }
+  .print-table .pt-cell {
+    border: 1px solid #000;
+    padding: 1mm 2mm;
+    vertical-align: middle;
+    color: #000;
+    background: #fff !important;
+    font-size: 8pt;
+    height: 7mm;
+    overflow: hidden;
+    word-break: break-word;
+  }
+
+  /* Cell content layout: text left, codes right */
+  .print-table .pt-content {
+    display: flex !important;
+    align-items: center;
+    justify-content: space-between;
+    gap: 2mm;
+    width: 100%;
+  }
+  .print-table .pt-text {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: 500;
+    font-size: 8pt;
+  }
+  .print-table .pt-codes {
+    flex-shrink: 0;
+    display: flex;
+    gap: 2.5mm;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 7.5pt;
+    font-weight: 600;
+    color: #000;
+    letter-spacing: .01em;
+  }
+  .print-table .pt-l { color: #000; }
+  .print-table .pt-t { color: #666; }
+
+  /* Column widths */
+  .print-table col.col-idx { width: 7mm; }
+  .print-table col.col-cell { width: auto; }
+
+  .print-foot { display: none !important; }
+
+  /* hide UI meta panel in print */
+  .meta-panel { display: none !important; }
+
+  /* ═══════ PAGE 2 — Werkzeugliste ═══════ */
+  .print-page2 {
+    display: block !important;
+    page-break-before: always !important;
+    break-before: page !important;
+    page-break-inside: auto;
+    padding-top: 0;
+    margin-top: 0;
+  }
+  .print-header2 {
+    display: flex !important;
+    align-items: flex-end;
+    justify-content: space-between;
+    width: 100%;
+    border-bottom: 1.5px solid #000;
+    padding-bottom: 2mm;
+    margin-bottom: 3mm;
+    gap: 6mm;
+    page-break-before: always !important;
+    break-before: page !important;
+  }
+  .print-header2 .ph-row {
+    display: flex !important;
+    align-items: baseline;
+    gap: 5mm;
+    flex: 1;
+  }
+  .print-header2 .ph-zn { font-size: 14pt; }
+  .print-header2 .ph-bez { font-size: 14pt; }
+  .ph-sub2 {
+    margin-top: 0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8pt;
+    font-weight: 600;
+    color: #666;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+  }
+
+  /* Meta block — compact 3-column grid */
+  .meta-print {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 0;
+    border: 1px solid #000;
+    margin-bottom: 4mm;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+  .meta-print-row {
+    display: flex !important;
+    align-items: stretch;
+    border-bottom: 1px solid #000;
+    border-right: 1px solid #000;
+    min-height: 6mm;
+  }
+  .meta-print-row:nth-child(3n) { border-right: none; }
+  .meta-print-row:nth-last-child(-n+3) { border-bottom: none; }
+  .meta-print-row.span-2 { grid-column: span 2 !important; }
+  .meta-print-row.span-3 { grid-column: span 3 !important; border-right: none !important; }
+  /* if last row is alone (9 % 3 == 0 → ok), else span */
+  .mpr-label {
+    width: 30mm;
+    padding: 1mm 2mm;
+    background: #fafafa !important;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 6.5pt;
+    font-weight: 600;
+    color: #333 !important;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    border-right: 1px solid #e5e5e5;
+    display: flex;
+    align-items: center;
+  }
+  .mpr-value {
+    flex: 1;
+    padding: 1mm 2mm;
+    font-family: 'Inter', sans-serif;
+    font-size: 8.5pt;
+    font-weight: 600;
+    color: #000;
+    display: flex;
+    align-items: center;
+    background: #fff !important;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .mpr-value.is-empty::after {
+    content: '';
+    flex: 1;
+    border-bottom: 1px solid #bbb;
+    margin-bottom: 1mm;
+    align-self: flex-end;
+    height: 0;
+  }
+  .mpr-value.is-empty { color: transparent; }
+
+  /* Werkzeugliste — 2-column grid */
+  .wkz-grid {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr;
+    gap: 4mm;
+    align-items: start;
+  }
+  .wkz-col { page-break-inside: avoid; }
+
+  .wkz-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 9.5pt;
+    table-layout: fixed;
+  }
+  .wkz-table col.wkz-c-tno { width: 20mm; }
+  .wkz-table col.wkz-c-name { width: auto; }
+  .wkz-table thead { display: table-header-group; }
+  .wkz-table tr { page-break-inside: avoid !important; break-inside: avoid !important; }
+
+  /* Section heads — coloured by spindel */
+  .wkz-table .wkz-section-head td {
+    text-align: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    font-size: 8pt;
+    letter-spacing: .08em;
+    padding: 2mm;
+    height: 7mm;
+    text-transform: uppercase;
+    color: #fff !important;
+    border: 1px solid #000;
+  }
+  .wkz-table.wkz-sp4 .wkz-section-head td {
+    background: #4FB47A !important;
+  }
+  .wkz-table.wkz-sp3 .wkz-section-head td {
+    background: #5085C4 !important;
+  }
+
+  /* Column heads — WHITE, left aligned */
+  .wkz-table .wkz-head-row th {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 7.5pt;
+    font-weight: 700;
+    color: #000 !important;
+    background: #fff !important;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    padding: 1.5mm 2.5mm;
+    height: 6mm;
+    border: 1px solid #000;
+    text-align: left;
+  }
+
+  /* Body cells */
+  .wkz-table td {
+    border: 1px solid #000;
+    padding: 2mm 3mm;
+    vertical-align: middle;
+    font-size: 9.5pt;
+    color: #000;
+    background: #fff !important;
+    height: 7.5mm;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .wkz-table .wkz-tno,
+  .wkz-table th.wkz-tno {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    text-align: left;
+    background: #fff !important;
+    font-size: 9.5pt;
+  }
+  .wkz-table .wkz-name,
+  .wkz-table th.wkz-name-h {
+    font-weight: 500;
+    font-size: 9.5pt;
+    text-align: left;
+  }
+  .wkz-table .wkz-empty {
+    text-align: center !important;
+    color: #888 !important;
+    font-style: italic;
+    padding: 5mm 2mm !important;
+    font-size: 8pt;
+    background: #fff !important;
+  }
+}
+
+/* Hide print-only on screen */
+.print-table, .print-header { display: none; }
+@media screen {
+  .print-only { display: none !important; }
+}
+</style>
+</head>
+<body>
+
+<div class="shell">
+
+  <!-- STATUSBAR -->
+  <div class="statusbar">
+    <div class="sb-live">
+      <div class="sb-dot"></div>
+      <span>CONNECTED</span>
+    </div>
+    <div class="sb-sep"></div>
+    <div class="sb-item">
+      <span class="sb-label">MODE</span>
+      <span class="sb-value">EDIT</span>
+    </div>
+    <div class="sb-sep"></div>
+    <div class="sb-item">
+      <span class="sb-label">USER</span>
+      <span class="sb-value">EINRICHTER</span>
+    </div>
+    <div class="sb-spacer"></div>
+    <div class="sb-clock" id="sbClock">--:--:--</div>
+  </div>
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="brand">
+      <div class="brand-mark"></div>
+      <div class="brand-text">
+        <div class="brand-name">CitiTool</div>
+        <div class="brand-sub">SyncOperator</div>
+      </div>
+    </div>
+    <div class="header-spacer"></div>
+    <div class="header-meta">
+      <div class="meta-item meta-item-zn">
+        <div class="meta-label">Zeichnung-Nr.</div>
+        <div class="zn-with-menu">
+          <input class="meta-input mono" id="inZN" type="text" placeholder="231850" />
+          <button class="proj-menu-btn" id="projMenuBtn" type="button" aria-label="Projekte" title="Projekt-Bibliothek">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 4h12M2 8h12M2 12h12"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="meta-item meta-item-wide">
+        <div class="meta-label">Bezeichnung</div>
+        <input class="meta-input" id="inBez" type="text" placeholder="Buchse" />
+      </div>
+      <div class="meta-item">
+        <div class="meta-label">Datum</div>
+        <div class="meta-value" id="metaDate">—</div>
+      </div>
+    </div>
+
+    <!-- Project Dropdown -->
+    <div class="proj-dropdown" id="projDropdown">
+      <div class="proj-dd-head">
+        <div class="proj-dd-tag">[PROJEKTE]</div>
+        <div class="proj-dd-title">Zeichnungs-Bibliothek</div>
+      </div>
+      <div class="proj-dd-list" id="projList"></div>
+      <div class="proj-dd-foot">
+        <button class="btn btn-primary btn-sm" id="btnNewProject">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 3v10M3 8h10"/></svg>Neues Projekt
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOOLBAR -->
+  <div class="toolbar">
+    <div class="view-tabs">
+      <button class="view-tab active" data-view="plan">
+        <span class="vt-num">01</span>
+        <span class="vt-name">Programmplan</span>
+      </button>
+      <button class="view-tab" data-view="wkz">
+        <span class="vt-num">02</span>
+        <span class="vt-name">Werkzeugliste</span>
+      </button>
+      <button class="view-tab" data-view="saw">
+        <span class="vt-num">03</span>
+        <span class="vt-name">Sägelänge</span>
+      </button>
+    </div>
+    <div class="toolbar-spacer"></div>
+    <div class="toolbar-actions">
+      <div class="kanal-switch" id="kanalSwitch">
+        <button class="kanal-btn active" data-k="1">Kanal 1 <span class="kanal-mpf">1000.MPF</span></button>
+        <button class="kanal-btn" data-k="2">Kanal 2 <span class="kanal-mpf">2000.MPF</span></button>
+      </div>
+      <button class="btn btn-ghost btn-sm" id="btnToggleLib" title="Library ein-/ausblenden"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 3h12v10H2z"/><path d="M9 3v10"/></svg>Library</button>
+      <button class="btn btn-ghost btn-sm" id="btnPairing" title="Operationen ⇄ Werkzeuge schnell verknüpfen"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5h6"/><path d="M3 11h6"/><path d="M11 3l2 2-2 2"/><path d="M11 9l2 2-2 2"/></svg>Verknüpfen</button>
+      <button class="btn btn-primary btn-sm" id="btnPrint"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6V2h8v4"/><path d="M4 12H3a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1h-1"/><rect x="4" y="9" width="8" height="5" rx="1"/></svg>Drucken</button>
+      <div class="toolbar-divider"></div>
+      <button class="btn btn-ghost btn-sm subtle" id="btnImportMPF" title="MPF / TXT importieren (Werkzeugliste oder Programm)"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 13V4"/><path d="M4 8l4-4 4 4"/><path d="M2 14h12"/></svg>MPF</button>
+      <button class="btn btn-ghost btn-sm subtle" id="btnExport" title="Projekt als JSON exportieren"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v9"/><path d="M4 7l4 4 4-4"/><path d="M2 14h12"/></svg>Export</button>
+      <button class="btn btn-ghost btn-sm subtle" id="btnImport" title="Projekt aus JSON importieren"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 13V4"/><path d="M4 8l4-4 4 4"/><path d="M2 14h12"/></svg>Import</button>
+      <input type="file" id="fileInput" accept=".json" style="display:none">
+      <input type="file" id="mpfInput" style="display:none">
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main" id="main">
+
+    <!-- WORKSPACE -->
+    <div class="workspace">
+
+      <!-- VIEW: Programmplan -->
+      <div class="view-pane active" data-pane="plan">
+        <div class="section-sub">
+          <div class="ss-hint">Klick auf leeren Slot = <strong>Neue Operation</strong> · Drag &amp; Drop zwischen Slots</div>
+          <div class="ss-spacer"></div>
+          <div class="ss-count">
+            <span>Slots belegt:</span>
+            <span class="sc-val" id="slotCount">0 / 5</span>
+          </div>
+        </div>
+
+        <div id="slotList" class="slot-list"></div>
+        <button class="add-slot" id="btnAddSlot"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 3v10M3 8h10"/></svg> Slot hinzufügen</button>
+      </div>
+
+      <!-- VIEW: Werkzeugliste (meta + custom fields) -->
+      <div class="view-pane" data-pane="wkz">
+      <!-- ═══════ METADATA PANEL ═══════ -->
+      <div class="meta-panel">
+        <div class="meta-panel-head">
+          <div class="mph-tag">[META] · Werkzeugliste</div>
+          <div class="mph-title">Bauteil-Daten &amp; Spannmittel</div>
+        </div>
+        <div class="meta-grid">
+          <div class="meta-field">
+            <label class="meta-label">Laufzeit</label>
+            <input class="meta-input" id="inLaufzeit" type="text" placeholder="z.B. 4 Min 00 Sek" />
+          </div>
+          <div class="meta-field">
+            <label class="meta-label">Material</label>
+            <input class="meta-input" id="inMaterial" type="text" placeholder="z.B. F75 D42" />
+          </div>
+          <div class="meta-field">
+            <label class="meta-label">Sägelänge</label>
+            <input class="meta-input" id="inSaege" type="text" placeholder="z.B. 1000 mm" />
+          </div>
+          <div class="meta-field">
+            <label class="meta-label">Ausspannlänge</label>
+            <input class="meta-input" id="inAusspann" type="text" placeholder="mm" />
+          </div>
+          <div class="meta-field">
+            <label class="meta-label">Reststücklänge</label>
+            <input class="meta-input" id="inReststueck" type="text" placeholder="mm" />
+          </div>
+          <div class="meta-field">
+            <label class="meta-label">Backen-Nr.</label>
+            <input class="meta-input" id="inBackenNr" type="text" placeholder="z.B. BK-01" />
+          </div>
+          <div class="meta-field">
+            <label class="meta-label">Backen-Abstand</label>
+            <input class="meta-input" id="inBackenAbst" type="text" placeholder="z.B. 12 mm" />
+          </div>
+          <div class="meta-field">
+            <label class="meta-label">Robo2Go Greifer A · Abstand</label>
+            <input class="meta-input" id="inRoboA" type="text" placeholder="mm" />
+          </div>
+          <div class="meta-field">
+            <label class="meta-label">Robo2Go Greifer B · Abstand</label>
+            <input class="meta-input" id="inRoboB" type="text" placeholder="mm" />
+          </div>
+        </div>
+
+        <!-- Custom user fields -->
+        <div class="custom-fields">
+          <div class="custom-fields-head">
+            <div class="mph-tag">[CUSTOM] · Eigene Felder</div>
+            <button class="btn btn-ghost btn-sm" id="btnAddCustom"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 3v10M3 8h10"/></svg>Feld hinzufügen</button>
+          </div>
+          <div class="meta-grid" id="customFieldsGrid"></div>
+        </div>
+      </div>
+      <!-- end view-pane wkz -->
+      </div>
+
+      <!-- ═══════ VIEW: SÄGELÄNGE ═══════ -->
+      <div class="view-pane" data-pane="saw">
+        <div class="saw-wrap">
+          <div class="saw-card">
+            <div class="saw-card-head">
+              <div class="saw-tag">[SAW] · Sägelänge-Rechner</div>
+              <div class="saw-title">Zuschnitt für Roboter berechnen</div>
+            </div>
+
+            <div class="saw-inputs">
+              <div class="saw-input-grp">
+                <label class="saw-label">Fertigteil-Länge (mm)</label>
+                <input type="number" id="sawFertig" class="saw-input" value="51" step="0.1" oninput="sawCalculate(false)">
+              </div>
+              <div class="saw-input-grp">
+                <label class="saw-label">Ausspann-Länge (mm)</label>
+                <input type="number" id="sawAuss" class="saw-input" value="55" step="0.1" oninput="sawCalculate(false)">
+              </div>
+            </div>
+
+            <div class="saw-mode">
+              <div class="saw-mode-head">
+                <label class="saw-label">Stückzahl pro Zuschnitt</label>
+                <span class="saw-badge" id="sawBadge">Automatik</span>
+              </div>
+              <div class="saw-slider-row">
+                <button type="button" class="saw-step-btn" onclick="sawStep(-1)" aria-label="weniger">−</button>
+                <input type="range" id="sawTeile" class="saw-slider" min="1" max="50" value="2" oninput="sawCalculate(true)">
+                <button type="button" class="saw-step-btn" onclick="sawStep(1)" aria-label="mehr">+</button>
+                <div class="saw-teile-display" id="sawTeileDisp">2</div>
+              </div>
+              <div class="saw-hint" id="sawHint">Berechnet automatisch das Maximum für &lt;1000 mm Robot-Greifbereich.</div>
+              <button class="btn btn-ghost btn-sm" onclick="sawAuto=true;sawCalculate(false)" style="margin-top:10px;">
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 8a4 4 0 0 1 8 0M4 8l-2 -2M4 8l2 -2"/><path d="M12 8a4 4 0 0 1 -8 0M12 8l2 2M12 8l-2 2"/></svg>
+                Auf Automatik zurücksetzen
+              </button>
+            </div>
+
+            <div class="saw-result-card">
+              <div class="saw-result-head">
+                <span class="saw-result-tag">Säge-Maß (Zuschnitt)</span>
+              </div>
+              <div class="saw-result-main">
+                <span class="saw-result-num" id="sawResMain">173</span>
+                <span class="saw-result-unit">mm</span>
+              </div>
+              <div class="saw-result-grid">
+                <div class="saw-result-cell">
+                  <div class="saw-result-cell-label">Butzen (Rest)</div>
+                  <div class="saw-result-cell-val mono" id="sawResBut">115 mm</div>
+                </div>
+                <div class="saw-result-cell">
+                  <div class="saw-result-cell-label">Aus 3 m Stange</div>
+                  <div class="saw-result-cell-val mono" id="sawResGes">34 Stk</div>
+                </div>
+                <div class="saw-result-cell">
+                  <div class="saw-result-cell-label">1× Durchlauf</div>
+                  <div class="saw-result-cell-val mono" id="sawResDur">54 mm</div>
+                </div>
+                <div class="saw-result-cell">
+                  <div class="saw-result-cell-label">Formel</div>
+                  <div class="saw-result-cell-val mono" id="sawResFormel" style="font-size:11px;">2×54 + 115</div>
+                </div>
+              </div>
+              <div class="saw-robot-badge" id="sawRobot">Robot Safe ( &lt; 1000 mm )</div>
+            </div>
+
+            <div class="saw-params">
+              <div class="saw-params-head">Parameter</div>
+              <div class="saw-params-grid">
+                <div class="saw-param-row">
+                  <span class="saw-param-label">Schnitt-Verlust (Sägeblatt)</span>
+                  <input type="number" id="sawSchnitt" class="saw-param-input mono" value="3" step="0.1" oninput="sawCalculate(false)">
+                  <span class="saw-param-unit">mm</span>
+                </div>
+                <div class="saw-param-row">
+                  <span class="saw-param-label">Zange (Spannbacken)</span>
+                  <input type="number" id="sawZange" class="saw-param-input mono" value="50" step="0.5" oninput="sawCalculate(false)">
+                  <span class="saw-param-unit">mm</span>
+                </div>
+                <div class="saw-param-row">
+                  <span class="saw-param-label">Toleranz</span>
+                  <input type="number" id="sawTol" class="saw-param-input mono" value="10" step="1" oninput="sawCalculate(false)">
+                  <span class="saw-param-unit">mm</span>
+                </div>
+                <div class="saw-param-row">
+                  <span class="saw-param-label">Max. Roboter-Greifbereich</span>
+                  <input type="number" id="sawMax" class="saw-param-input mono" value="1000" step="10" oninput="sawCalculate(false)">
+                  <span class="saw-param-unit">mm</span>
+                </div>
+                <div class="saw-param-row">
+                  <span class="saw-param-label">Stangenlänge</span>
+                  <input type="number" id="sawStange" class="saw-param-input mono" value="3000" step="100" oninput="sawCalculate(false)">
+                  <span class="saw-param-unit">mm</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- end view-pane saw -->
+
+      <!-- ═══════ PRINT — PAGE 1: PROGRAMMPLAN ═══════ -->
+      <div class="print-header" id="printHeader">
+        <div class="ph-row">
+          <div class="ph-zn" id="phZN">—</div>
+          <div class="ph-bez" id="phBez">—</div>
+        </div>
+      </div>
+      <table class="print-table print-only" id="printTable"></table>
+
+      <!-- ═══════ PRINT — PAGE 2: WERKZEUGLISTE ═══════ -->
+      <div class="print-page2">
+        <div class="print-header2">
+          <div class="ph-row">
+            <div class="ph-zn" id="phZN2">—</div>
+            <div class="ph-bez" id="phBez2">—</div>
+          </div>
+          <div class="ph-sub2">Werkzeugliste</div>
+        </div>
+
+        <div class="meta-print">
+          <div class="meta-print-row">
+            <div class="mpr-label">Laufzeit</div>
+            <div class="mpr-value" id="phLaufzeit">—</div>
+          </div>
+          <div class="meta-print-row">
+            <div class="mpr-label">Material</div>
+            <div class="mpr-value" id="phMaterial">—</div>
+          </div>
+          <div class="meta-print-row">
+            <div class="mpr-label">Sägelänge</div>
+            <div class="mpr-value" id="phSaege">—</div>
+          </div>
+          <div class="meta-print-row">
+            <div class="mpr-label">Ausspannlänge</div>
+            <div class="mpr-value" id="phAusspann">—</div>
+          </div>
+          <div class="meta-print-row">
+            <div class="mpr-label">Reststücklänge</div>
+            <div class="mpr-value" id="phReststueck">—</div>
+          </div>
+          <div class="meta-print-row">
+            <div class="mpr-label">Backen-Nr.</div>
+            <div class="mpr-value" id="phBackenNr">—</div>
+          </div>
+          <div class="meta-print-row">
+            <div class="mpr-label">Backen-Abstand</div>
+            <div class="mpr-value" id="phBackenAbst">—</div>
+          </div>
+          <div class="meta-print-row">
+            <div class="mpr-label">Robo2Go Greifer A · Abstand</div>
+            <div class="mpr-value" id="phRoboA">—</div>
+          </div>
+          <div class="meta-print-row">
+            <div class="mpr-label">Robo2Go Greifer B · Abstand</div>
+            <div class="mpr-value" id="phRoboB">—</div>
+          </div>
+        </div>
+
+        <div class="wkz-grid" id="wkzContainer"></div>
+      </div>
+
+      <div class="print-foot print-only">
+        <span></span>
+        <span></span>
+      </div>
+    </div>
+
+    <!-- SIDEBAR / LIBRARY -->
+    <div class="sidebar" id="sidebar">
+      <div class="lib-head">
+        <div class="lib-title-block">
+          <div class="lib-tag">[LIB] · Library</div>
+          <div class="lib-name" id="libName">Operation-Library</div>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <button class="btn btn-primary btn-sm" id="btnAddOp"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 3v10M3 8h10"/></svg>Neu</button>
+          <button class="icon-btn" id="libClose" title="Library schließen" style="width:30px;height:30px;">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3l10 10M13 3L3 13"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="lib-tabs">
+        <button class="lib-tab active" data-libtab="op">Operationen</button>
+        <button class="lib-tab" data-libtab="tool">Werkzeuge</button>
+      </div>
+      <div class="lib-filters">
+        <div>
+          <div class="filter-label">Kategorie</div>
+          <div class="filter-row" id="catFilters"></div>
+        </div>
+        <div>
+          <div class="filter-label">Spindel</div>
+          <div class="filter-row" id="spFilters"></div>
+        </div>
+      </div>
+      <div class="lib-list" id="libList"></div>
+    </div>
+
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <strong>F5</strong> Library
+    <strong>STRG+P</strong> Drucken
+    <div class="footer-spacer"></div>
+    <span>CitiTool · SyncOperator</span>
+  </div>
+
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <div>
+        <div class="modal-head-tag" id="mTag">[OP]</div>
+        <div class="modal-title" id="mTitle"></div>
+      </div>
+      <button class="icon-btn" id="mClose" style="margin-left:auto" aria-label="Schließen">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3l10 10M13 3L3 13"/></svg>
+      </button>
+    </div>
+    <div class="modal-body" id="mBody"></div>
+    <div class="modal-foot" id="mFoot"></div>
+  </div>
+</div>
+
+<script>
+const MIN_SLOTS=5, SK='CitiTool_SO_v12';
+const S={
+  /* Active project's data (slice) */
+  kanal:'1',
+  view:'plan',     /* 'plan' | 'wkz' */
+  slots:{'1':Array(MIN_SLOTS).fill(null),'2':Array(MIN_SLOTS).fill(null)},
+  library:[],   /* operations: {id, code, title, spindle, category, doppelhalter} */
+  tools:[],     /* tools (Werkzeuge): {id, tno, name} */
+  nextId:1,
+  catFilter:'Alle', spFilter:'ALL',
+  libTab:'op',  /* 'op' | 'tool' — which library tab is active */
+  zn:'', bez:'',
+  /* metadata for Werkzeugliste */
+  laufzeit:'', material:'', saegelaenge:'',
+  ausspannlaenge:'', reststuecklaenge:'',
+  backenNr:'', backenAbstand:'',
+  roboA:'', roboB:'',
+  custom:[],   /* [{id, label, value}, ...] */
+  /* PROJECTS — list of all parts, with snapshot of all above per item */
+  _projects:[],
+  _activeId:null,
+};
+
+/* fields that belong to a single project snapshot (everything except _projects, _activeId) */
+const PROJECT_FIELDS = [
+  'kanal','view','slots','library','tools','nextId','catFilter','spFilter','libTab',
+  'zn','bez',
+  'laufzeit','material','saegelaenge','ausspannlaenge','reststuecklaenge',
+  'backenNr','backenAbstand','roboA','roboB','custom'
+];
+
+function snapshotProject() {
+  const snap = {};
+  PROJECT_FIELDS.forEach(k => {
+    snap[k] = (k === 'slots' || k === 'library' || k === 'tools' || k === 'custom')
+      ? JSON.parse(JSON.stringify(S[k]))
+      : S[k];
+  });
+  return snap;
+}
+function normalizeSlot(s) {
+  /* Convert legacy slot (string opId or null) into new {opId, toolId} format */
+  if (s === null || s === undefined) return null;
+  if (typeof s === 'string') return { opId: s, toolId: null };
+  if (typeof s === 'object') {
+    return { opId: s.opId || null, toolId: s.toolId || null };
+  }
+  return null;
+}
+function applyProjectSnapshot(snap) {
+  if (!snap) return;
+  PROJECT_FIELDS.forEach(k => {
+    if (snap[k] !== undefined) S[k] = snap[k];
+  });
+  if (!S.tools) S.tools = [];
+  if (!S.libTab) S.libTab = 'op';
+  // Defensive: ensure slots arrays exist
+  if (!S.slots || !S.slots['1']) S.slots = {'1':Array(MIN_SLOTS).fill(null), '2':Array(MIN_SLOTS).fill(null)};
+  // Normalize slots from any legacy format
+  ['1','2'].forEach(k=>{
+    S.slots[k] = S.slots[k].map(normalizeSlot);
+    while(S.slots[k].length<MIN_SLOTS)S.slots[k].push(null);
+  });
+  // Migration: if op has old toolNo/toolName fields, auto-create matching tool entries
+  migrateOpToolsToTools();
+}
+
+function migrateOpToolsToTools() {
+  // For every op with a legacy toolNo, create a Tool entry if not exists; attach to slots
+  const tnoToId = new Map();
+  S.tools.forEach(t => { if (t.tno) tnoToId.set((t.kanal||'1') + ':' + t.tno, t.id); });
+  S.library.forEach(op => {
+    const tno = (op.toolNo || '').trim();
+    if (!tno) return;
+    // derive kanal from op spindle: SP4 → Kanal 1, SP3 → Kanal 2
+    const k = (op.spindle === 'SP3') ? '2' : '1';
+    const key = k + ':' + tno;
+    if (!tnoToId.has(key)) {
+      const id = 'tool_' + S.nextId++;
+      const name = (op.toolName || '').trim() || op.title || tno;
+      S.tools.push({ id, tno, name, kanal: k });
+      tnoToId.set(key, id);
+    }
+    ['1','2'].forEach(kk => {
+      S.slots[kk] = S.slots[kk].map(s => {
+        if (!s || s.opId !== op.id) return s;
+        if (s.toolId) return s;
+        return { opId: s.opId, toolId: tnoToId.get(key) };
+      });
+    });
+  });
+}
+function findProject(id) {
+  return S._projects.find(p => p.id === id) || null;
+}
+function persistActive() {
+  if (!S._activeId) return;
+  const i = S._projects.findIndex(p => p.id === S._activeId);
+  const snap = snapshotProject();
+  if (i >= 0) S._projects[i] = { ...S._projects[i], ...snap };
+  else S._projects.push({ id: S._activeId, ...snap });
+}
+function newProjectId() { return 'p_' + Math.random().toString(16).slice(2,10); }
+
+function createProject(zn = '', bez = '', clone = false) {
+  // First persist current state
+  if (S._activeId) persistActive();
+  const id = newProjectId();
+  let snap;
+  if (clone) {
+    snap = snapshotProject();
+    snap.zn = zn; snap.bez = bez;
+  } else {
+    snap = {
+      kanal:'1', view:'plan',
+      slots:{'1':Array(MIN_SLOTS).fill(null),'2':Array(MIN_SLOTS).fill(null)},
+      library:[], tools:[], nextId:1,
+      catFilter:'Alle', spFilter:'ALL', libTab:'op',
+      zn, bez,
+      laufzeit:'', material:'', saegelaenge:'',
+      ausspannlaenge:'', reststuecklaenge:'',
+      backenNr:'', backenAbstand:'',
+      roboA:'', roboB:'',
+      custom:[]
+    };
+  }
+  S._projects.push({ id, ...snap });
+  S._activeId = id;
+  applyProjectSnapshot(snap);
+  saveAll();
+  return id;
+}
+
+function switchProject(id) {
+  if (S._activeId === id) return;
+  persistActive();
+  const p = findProject(id);
+  if (!p) return;
+  S._activeId = id;
+  applyProjectSnapshot(p);
+  saveAll();
+}
+
+function renderProjList(){
+  const list = document.getElementById('projList');
+  if (!list) return;
+  list.innerHTML = '';
+  if (!S._projects.length) {
+    list.innerHTML = '<div class="proj-empty">— noch keine Projekte —</div>';
+    return;
+  }
+  S._projects.forEach(p => {
+    const row = document.createElement('div');
+    row.className = 'proj-item' + (p.id === S._activeId ? ' active' : '');
+    const check = document.createElement('div');
+    check.className = 'proj-item-check';
+    check.innerHTML = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8l3 3 7-7"/></svg>';
+    const main = document.createElement('div');
+    main.className = 'proj-item-main';
+    const zn = document.createElement('div');
+    zn.className = 'proj-item-zn';
+    zn.textContent = (p.zn || '—');
+    const bez = document.createElement('div');
+    bez.className = 'proj-item-bez';
+    bez.textContent = (p.bez || 'ohne Bezeichnung');
+    main.append(zn, bez);
+    const del = document.createElement('button');
+    del.className = 'proj-item-del';
+    del.title = 'Projekt löschen';
+    del.innerHTML = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3l10 10M13 3L3 13"/></svg>';
+    del.addEventListener('click', async e => {
+      e.stopPropagation();
+      const label = (p.zn ? p.zn + ' ' : '') + (p.bez || '');
+      const ok = await customConfirm(`Projekt "${label.trim() || 'unbenannt'}" wirklich löschen?`, { danger: true, okText: 'Löschen', tag: '[PROJEKT]', title: 'Projekt löschen' });
+      if (!ok) return;
+      deleteProject(p.id);
+      renderProjList();
+      // Re-render whole UI as active project may have changed
+      $('#inZN').value = S.zn;
+      $('#inBez').value = S.bez;
+      syncMetaInputs();
+      renderAll();
+      renderCustom();
+      updatePrintHeader();
+    });
+    row.append(check, main, del);
+    row.addEventListener('click', () => {
+      if (p.id === S._activeId) { closeProjDropdown(); return; }
+      switchProject(p.id);
+      $('#inZN').value = S.zn;
+      $('#inBez').value = S.bez;
+      syncMetaInputs();
+      renderAll();
+      renderCustom();
+      updatePrintHeader();
+      renderProjList();
+      closeProjDropdown();
+    });
+    list.appendChild(row);
+  });
+}
+
+function openProjDropdown(){
+  const dd = document.getElementById('projDropdown');
+  if (!dd) return;
+  renderProjList();
+  dd.classList.add('open');
+}
+function closeProjDropdown(){
+  const dd = document.getElementById('projDropdown');
+  if (dd) dd.classList.remove('open');
+}
+function toggleProjDropdown(){
+  const dd = document.getElementById('projDropdown');
+  if (!dd) return;
+  if (dd.classList.contains('open')) closeProjDropdown();
+  else openProjDropdown();
+}
+
+/* Sync all meta input fields to S */
+function syncMetaInputs(){
+  const map = {
+    inLaufzeit:'laufzeit', inMaterial:'material', inSaege:'saegelaenge',
+    inAusspann:'ausspannlaenge', inReststueck:'reststuecklaenge',
+    inBackenNr:'backenNr', inBackenAbst:'backenAbstand',
+    inRoboA:'roboA', inRoboB:'roboB',
+  };
+  Object.keys(map).forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = S[map[id]] || '';
+  });
+}
+
+/* Parser for Werkzeugdatenlisting (CTX tool list)
+   Lines: ;1  DREHBOHRER-14-31   1 ...
+*/
+function parseWerkzeugListing(text) {
+  const tools = [];
+  const lines = text.split(/\r?\n/);
+  let currentSchlitten = null;
+  let currentMagazin = null;
+  let inActiveMagazin = false;
+
+  for (let raw of lines) {
+    let line = raw.trim();
+    if (!line) continue;
+    if (line.startsWith(';')) line = line.slice(1).trim();
+    if (!line) continue;
+    if (/^\*+/.test(line)) continue;
+
+    // Detect Schlitten/Magazin section header
+    // Examples:
+    //   "Schlitten Nr.1        Magazin Nr. 1"
+    //   "Schlitten Nr.2        Magazin Nr.21"
+    //   "Schlitten Nr.1        Magazin Nr. 9998"
+    const sec = line.match(/Schlitten\s*Nr\.?\s*(\d+).*?Magazin\s*Nr\.?\s*(\d+)/i);
+    if (sec) {
+      currentSchlitten = parseInt(sec[1], 10);
+      currentMagazin = parseInt(sec[2], 10);
+      // Active magazines: 1 (Kanal 1) or 21 (Kanal 2). Skip 9998/9999/etc.
+      inActiveMagazin = (currentMagazin === 1 || currentMagazin === 21);
+      continue;
+    }
+    // Header row of the table — skip
+    if (/^PL\s+Werkzeug/i.test(line)) continue;
+    if (/^Maschinen/i.test(line)) continue;
+    if (/^Erstellungs/i.test(line)) continue;
+    if (/^Werkzeugdaten/i.test(line)) continue;
+
+    // Only process data lines if we're inside an active magazine
+    if (!inActiveMagazin) continue;
+
+    const m = line.match(/^(\d{1,3})\s+(\S+)/);
+    if (!m) continue;
+    const pl = parseInt(m[1], 10);
+    if (isNaN(pl) || pl < 1 || pl > 99) continue;
+    let name = m[2].replace(/&+$/, '');
+    if (!name) continue;
+    tools.push({ pl, tno: 'T' + String(pl).padStart(2, '0'), name });
+  }
+  return tools;
+}
+
+/* Parser for Operations MPF (Siemens channel program)
+   Looks for:
+     N250 GROUP_BEGIN(0,"001: TITLE",1,0)   ← 3rd arg = Kanal
+       ...
+       N290 L1101                            ← L-code (may have N-prefix)
+   Returns: [{ num, title, code, kanal }, ...]
+*/
+function parseOperationsMPF(text) {
+  const ops = [];
+  const lines = text.split(/\r?\n/);
+  let pending = null;  // { num, title, kanal }
+  for (let raw of lines) {
+    const line = raw.trim();
+    if (!line) continue;
+    // Detect group start (allow N-prefix before GROUP_BEGIN)
+    const g = line.match(/(?:^|\s)GROUP_BEGIN\s*\(\s*\d+\s*,\s*"([^"]+)"\s*,\s*(\d+)/);
+    if (g) {
+      const label = g[1].trim();
+      const kanalArg = g[2]; // 3rd arg = kanal (1 or 2)
+      // operation groups look like "001: SCHRUPPEN AUSSEN"
+      const om = label.match(/^(\d{1,3})\s*[:\.]\s*(.+)$/);
+      if (om) {
+        pending = {
+          num: parseInt(om[1], 10),
+          title: om[2].trim(),
+          kanal: (kanalArg === '2') ? '2' : '1'
+        };
+      } else {
+        pending = null;
+      }
+      continue;
+    }
+    if (/(?:^|\s)GROUP_END/.test(line)) {
+      pending = null;
+      continue;
+    }
+    if (!pending) continue;
+    // Skip comments
+    if (line.startsWith(';')) continue;
+    // Look for L-code anywhere in the line (may be N290 L1101 or just L1101)
+    const lm = line.match(/(?:^|\s)L(\d{3,5})\b/);
+    if (lm) {
+      const code = 'L' + lm[1];
+      ops.push({ num: pending.num, title: pending.title, code, kanal: pending.kanal });
+      pending = null;
+    }
+  }
+  return ops;
+}
+
+/* Detect kanal from filename or content */
+function detectKanalFromMPF(filename, text) {
+  // Filename: 1000/ch1/kanal1/_k1 → 1; 2000/ch2/kanal2/_k2 → 2
+  // Also TOOLIST_CH1_*, TOOLIST_CH2_*
+  if (filename) {
+    const lower = filename.toLowerCase();
+    if (/2000|ch2|kanal2|_k2|_ch2/.test(lower)) return '2';
+    if (/1000|ch1|kanal1|_k1|_ch1/.test(lower)) return '1';
+  }
+  // Werkzeug listing: "Schlitten Nr.2  Magazin Nr.21" → kanal 2
+  if (/Schlitten\s*Nr\.?\s*2\b.*Magazin\s*Nr\.?\s*21/i.test(text)) return '2';
+  if (/Schlitten\s*Nr\.?\s*1\b.*Magazin\s*Nr\.?\s*1\b/i.test(text)) return '1';
+  // Op MPF content: ; ---------- Kanal: N -----
+  const m = text.match(/Kanal:\s*(\d)/);
+  if (m) return m[1] === '2' ? '2' : '1';
+  // Or by L-code prefix found in content
+  const lm = text.match(/\bL(\d)/);
+  if (lm) return lm[1] === '2' ? '2' : '1';
+  return null;
+}
+
+/* Detect content type: 'werkzeug' (PL list) or 'operations' (GROUP_BEGIN/L-codes) */
+function detectMPFType(text) {
+  if (/GROUP_BEGIN\s*\(/.test(text)) return 'operations';
+  if (/Werkzeugdaten|PL\s+Werkzeugname/i.test(text)) return 'werkzeug';
+  // Heuristic fallback
+  if (/^L\d{3,5}\b/m.test(text)) return 'operations';
+  return 'werkzeug';
+}
+
+/* Import MPF text into Library for given kanal */
+/* Universal MPF import — auto-detects file type */
+function importMPFFile(text, filename, onDone) {
+  const type = detectMPFType(text);
+  const detectedKanal = detectKanalFromMPF(filename, text) || S.kanal;
+
+  if (type === 'operations') {
+    const ops = parseOperationsMPF(text);
+    if (!ops.length) {
+      customAlert('Keine Operationen gefunden.\n\nDatei enthält keine GROUP_BEGIN/L-Code Blöcke.', { tag: '[MPF]', title: 'Import fehlgeschlagen' });
+      if (onDone) onDone(0);
+      return;
+    }
+    const newOps = [];  // captured during proceed for slot insertion
+    const proceed = () => {
+      // Remove existing ops with same code (replace)
+      const importedCodes = new Set(ops.map(o => o.code));
+      S.library = S.library.filter(o => !importedCodes.has(o.code));
+      ops.forEach(o => {
+        // Spindle: Kanal 1 → SP4 (Hauptspindel), Kanal 2 → SP3 (Gegenspindel)
+        const sp = (o.kanal === '2') ? 'SP3' : 'SP4';
+        // Try to infer category from title text
+        const ttl = (o.title || '').toLowerCase();
+        let cat = 'Außen';
+        if (/innen|bohrung|bohren/.test(ttl)) cat = 'Innen';
+        else if (/radial/.test(ttl)) cat = 'Radial';
+        else if (/axial/.test(ttl)) cat = 'Axial';
+        const newOp = {
+          id: 'op_mpf_' + S.nextId++,
+          code: o.code,
+          title: o.title,
+          spindle: sp,
+          category: cat,
+          doppelhalter: false,
+          toolNo: '',
+          toolName: '',
+        };
+        S.library.push(newOp);
+        newOps.push({ op: newOp, num: o.num, kanal: o.kanal });
+      });
+      save();
+      // Now ask if user wants to also insert into slots
+      customConfirm(`${ops.length} Operationen importiert.\n\nAuch in die Slots einfügen?\n(Bestehende Slots werden überschrieben in der Reihenfolge "001:", "002:" …)`, { tag: '[MPF]', title: 'In Slots einfügen?', okText: 'Ja, einfügen' })
+        .then(ok => {
+          if (ok) {
+            // Insert each op into slot at position num-1 of its channel
+            newOps.forEach(({ op, num, kanal }) => {
+              if (!num) return;
+              const idx = num - 1;
+              ensure(kanal, idx + 1);
+              const existing = S.slots[kanal][idx] || {opId:null, toolId:null};
+              S.slots[kanal][idx] = { opId: op.id, toolId: existing.toolId };
+            });
+            save();
+            renderAll();
+          }
+          if (onDone) onDone(ops.length);
+        });
+    };
+    // Confirm if overlap
+    const existing = new Set(S.library.map(o => o.code));
+    const willOverlap = ops.some(o => existing.has(o.code));
+    if (willOverlap) {
+      customConfirm(`${ops.length} Operationen gefunden (Kanal ${detectedKanal}).\nVorhandene mit gleichem L-Code werden überschrieben.\n\nFortfahren?`, { tag: '[MPF]', title: 'Operationen importieren', okText: 'Importieren', danger: true })
+        .then(ok => { if (ok) proceed(); else if (onDone) onDone(0); });
+    } else {
+      proceed();
+    }
+    return;
+  }
+
+  // Werkzeugdatenlisting (tool list) → S.tools
+  const tools = parseWerkzeugListing(text);
+  if (!tools.length) {
+    customAlert('Keine Werkzeuge gefunden. Bitte Datei prüfen.', { tag: '[MPF]', title: 'Import fehlgeschlagen' });
+    if (onDone) onDone(0);
+    return;
+  }
+  // Keep T-Nr exactly as in file (T13 stays T13).
+  // Distinguish channels via the tool's 'kanal' field instead of renumbering.
+  const tk = (detectedKanal === '2') ? '2' : '1';
+  // Overlap = same T-Nr AND same kanal
+  const existingKeys = new Set(S.tools.map(t => (t.kanal || '1') + ':' + t.tno));
+  const willOverlap = tools.some(t => existingKeys.has(tk + ':' + t.tno));
+  const proceed = () => {
+    const importedKeys = new Set(tools.map(t => tk + ':' + t.tno));
+    // Remove existing tools with same T-Nr in the SAME channel (overwrite)
+    S.tools = S.tools.filter(t => !importedKeys.has((t.kanal || '1') + ':' + t.tno));
+    tools.forEach(t => {
+      S.tools.push({
+        id: 'tool_' + S.nextId++,
+        tno: t.tno,
+        name: t.name,
+        kanal: tk,
+      });
+    });
+    save();
+    if (onDone) onDone(tools.length);
+  };
+  if (willOverlap) {
+    customConfirm(`${tools.length} Werkzeuge gefunden (Kanal ${detectedKanal}).\nVorhandene mit gleicher T-Nr. im selben Kanal werden überschrieben.\n\nFortfahren?`, { tag: '[MPF]', title: 'Werkzeuge importieren', okText: 'Überschreiben', danger: true })
+      .then(ok => { if (ok) proceed(); else if (onDone) onDone(0); });
+  } else {
+    proceed();
+  }
+}
+
+/* Backwards-compat wrapper */
+function importMPF(text, kanal, onDone) {
+  importMPFFile(text, '', onDone);
+}
+
+function deleteProject(id) {
+  const i = S._projects.findIndex(p => p.id === id);
+  if (i < 0) return;
+  S._projects.splice(i, 1);
+  if (S._activeId === id) {
+    if (S._projects.length === 0) {
+      // create blank fallback
+      createProject('', '');
+      return;
+    }
+    S._activeId = S._projects[0].id;
+    applyProjectSnapshot(S._projects[0]);
+  }
+  saveAll();
+}
+
+function saveAll() {
+  persistActive();
+  try {
+    localStorage.setItem(SK, JSON.stringify({
+      v: 2,
+      activeId: S._activeId,
+      projects: S._projects
+    }));
+  } catch(_) {}
+}
+const L={1:n=>'L11'+String(n).padStart(2,'0'),2:n=>'L21'+String(n).padStart(2,'0')};
+const CATS=['Alle','Außen','Innen','Radial','Axial'];
+
+/* Default = real example from PDF reference */
+const DEFAULT={
+  kanal:'1',
+  zn:'231850',
+  bez:'Buchse',
+  laufzeit:'4 Min 00 Sek',
+  material:'F75 D42',
+  saegelaenge:'1000 mm',
+  ausspannlaenge:'', reststuecklaenge:'',
+  backenNr:'', backenAbstand:'',
+  roboA:'', roboB:'',
+  slots:{
+    '1':['op1','op2','op3','op4','op5','op6','op7','op8','op9','op10','op11','op12','op13',null,null,null,'op17'],
+    '2':['op51','op52','op53','op54','op55','op56','op57','op58',null,null,null,null,null,'op64','op65','op66',null]
+  },
+  library:[
+    // Kanal 1
+    {id:'op1',code:'L1101',title:'Planen / Vordrehen',spindle:'SP4',category:'Außen',doppelhalter:false,toolNo:'T0101',toolName:''},
+    {id:'op2',code:'L1102',title:'Außen Schlichten',spindle:'SP4',category:'Außen',doppelhalter:false,toolNo:'T0202',toolName:''},
+    {id:'op3',code:'L1103',title:'Bohren / Ausdrehen Ø20 Ø27 Ø32',spindle:'SP4',category:'Innen',doppelhalter:false,toolNo:'T0303',toolName:''},
+    {id:'op4',code:'L1104',title:'N_O_P',spindle:'SP4',category:'Außen',doppelhalter:false,toolNo:'',toolName:''},
+    {id:'op5',code:'L1105',title:'Nut-2xd43 Stechen',spindle:'SP4',category:'Radial',doppelhalter:false,toolNo:'T0505',toolName:''},
+    {id:'op6',code:'L1106',title:'N_O_P',spindle:'SP4',category:'Außen',doppelhalter:false,toolNo:'',toolName:''},
+    {id:'op7',code:'L1107',title:'Lochkreis Bohren Radial Ø5',spindle:'SP4',category:'Radial',doppelhalter:false,toolNo:'T0707',toolName:''},
+    {id:'op8',code:'L1108',title:'6-Kant Fräsen',spindle:'SP4',category:'Radial',doppelhalter:false,toolNo:'T0808',toolName:''},
+    {id:'op9',code:'L1109',title:'Bohrungen Ø20 Ø27 Ø32 FertigDrehen',spindle:'SP4',category:'Innen',doppelhalter:false,toolNo:'T0909',toolName:''},
+    {id:'op10',code:'L1110',title:'I– Bohrung Ø13 – Fertig drehen',spindle:'SP4',category:'Innen',doppelhalter:false,toolNo:'T1010',toolName:''},
+    {id:'op11',code:'L1111',title:'I-Nut 2xØ17.9 Vorstechen',spindle:'SP4',category:'Innen',doppelhalter:false,toolNo:'T1111',toolName:''},
+    {id:'op12',code:'L1112',title:'I–Nut 2×Ø17.9 FertigStechen',spindle:'SP4',category:'Innen',doppelhalter:false,toolNo:'T1212',toolName:''},
+    {id:'op13',code:'L1113',title:'I–Gewinde M26×1',spindle:'SP4',category:'Innen',doppelhalter:false,toolNo:'T1313',toolName:''},
+    {id:'op17',code:'L1117',title:'Y-Abstechen',spindle:'SP4',category:'Axial',doppelhalter:false,toolNo:'T1717',toolName:''},
+    // Kanal 2
+    {id:'op51',code:'L2101',title:'A– Planen / Vordrehen',spindle:'SP3',category:'Außen',doppelhalter:false,toolNo:'T0303',toolName:''},
+    {id:'op52',code:'L2102',title:'A– Schlichten',spindle:'SP3',category:'Außen',doppelhalter:false,toolNo:'T0404',toolName:''},
+    {id:'op53',code:'L2103',title:'I– Freistich Ø16 stechen',spindle:'SP3',category:'Innen',doppelhalter:true,toolNo:'T0505',toolName:''},
+    {id:'op54',code:'L2104',title:'I– Bohren Ø12.5',spindle:'SP3',category:'Innen',doppelhalter:false,toolNo:'T0606',toolName:''},
+    {id:'op55',code:'L2105',title:'A– Bohrungen Ø5 Bürsten',spindle:'SP3',category:'Radial',doppelhalter:false,toolNo:'T0707',toolName:''},
+    {id:'op56',code:'L2106',title:'A_Gewinde_M40×2',spindle:'SP3',category:'Außen',doppelhalter:false,toolNo:'T0808',toolName:''},
+    {id:'op57',code:'L2107',title:'A–Gewinde M40 × 1.5',spindle:'SP3',category:'Außen',doppelhalter:false,toolNo:'T0909',toolName:''},
+    {id:'op58',code:'L2108',title:'A– Gew. Gang Wegfräsen',spindle:'SP3',category:'Außen',doppelhalter:false,toolNo:'T1010',toolName:''},
+    {id:'op64',code:'L2114',title:'Senker_Lochkreis_Ø5_Entgraten',spindle:'SP3',category:'Radial',doppelhalter:false,toolNo:'T1414',toolName:''},
+    {id:'op65',code:'L2115',title:'A– Gew. Gang Wegfräsen',spindle:'SP3',category:'Außen',doppelhalter:false,toolNo:'T1515',toolName:''},
+    {id:'op66',code:'L2116',title:'I– Bohrungen Ø5 Bürsten',spindle:'SP3',category:'Innen',doppelhalter:false,toolNo:'T1616',toolName:''},
+  ],
+  nextId:100,
+  catFilter:'Alle', spFilter:'ALL',
+};
+
+function esc(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function $(s){return document.querySelector(s)}
+function $$(s){return[...document.querySelectorAll(s)]}
+function getOp(id){return S.library.find(o=>o.id===id)||null}
+function getTool(id){return S.tools.find(t=>t.id===id)||null}
+function getSlot(k,i){const s=S.slots[k][i];return s?{opId:s.opId||null,toolId:s.toolId||null}:null}
+function slotIsEmpty(s){return !s || (!s.opId && !s.toolId)}
+function opName(op){return(op.title||'').trim()||(op.code||'').trim()||''}
+function toolName(t){return(t.name||'').trim()||(t.tno||'').trim()||''}
+function ensure(k,n){while(S.slots[k].length<n)S.slots[k].push(null)}
+
+function applyState(raw){
+  if(!raw)return false;
+  const sl=raw.slots||{};
+  S.slots={
+    '1':Array.isArray(sl['1'])?sl['1'].map(normalizeSlot):Array(MIN_SLOTS).fill(null),
+    '2':Array.isArray(sl['2'])?sl['2'].map(normalizeSlot):Array(MIN_SLOTS).fill(null)
+  };
+  ['1','2'].forEach(k=>{while(S.slots[k].length<MIN_SLOTS)S.slots[k].push(null)});
+  S.library=(Array.isArray(raw.library)?raw.library:[]).map(o=>({
+    id:o.id||'op_'+Math.random().toString(16).slice(2),
+    code:o.code||'',title:o.title||'',
+    spindle:o.spindle==='SP3'?'SP3':'SP4',
+    category:CATS.slice(1).includes(o.category)?o.category:'Außen',
+    doppelhalter:!!o.doppelhalter,
+    toolNo:o.toolNo||'',toolName:o.toolName||'',
+  }));
+  S.tools=(Array.isArray(raw.tools)?raw.tools:[]).map(t=>({
+    id:t.id||'tool_'+Math.random().toString(16).slice(2),
+    tno:t.tno||'',name:t.name||'',kanal:t.kanal==='2'?'2':'1',
+  }));
+  S.nextId=raw.nextId>0?raw.nextId:Math.max(S.library.length, S.tools.length)+1;
+  S.kanal=raw.kanal==='2'?'2':'1';
+  S.catFilter=raw.catFilter||'Alle';
+  S.spFilter=raw.spFilter||'ALL';
+  S.libTab=raw.libTab==='tool'?'tool':'op';
+  S.zn=raw.zn||'';
+  S.bez=raw.bez||'';
+  S.laufzeit=raw.laufzeit||'';
+  S.material=raw.material||'';
+  S.saegelaenge=raw.saegelaenge||'';
+  S.ausspannlaenge=raw.ausspannlaenge||'';
+  S.reststuecklaenge=raw.reststuecklaenge||'';
+  S.backenNr=raw.backenNr||'';
+  S.backenAbstand=raw.backenAbstand||'';
+  S.roboA=raw.roboA||'';
+  S.roboB=raw.roboB||'';
+  S.view=raw.view==='wkz'?'wkz':'plan';
+  S.custom=Array.isArray(raw.custom)?raw.custom.map(c=>({
+    id:c.id||'cf_'+Math.random().toString(16).slice(2),
+    label:c.label||'',
+    value:c.value||''
+  })):[];
+  return true;
+}
+
+function save(){ saveAll(); }
+
+function load(){
+  try {
+    const raw = localStorage.getItem(SK);
+    if (!raw) return false;
+    const parsed = JSON.parse(raw);
+    // v2 format: { v:2, activeId, projects:[...] }
+    if (parsed && parsed.v === 2 && Array.isArray(parsed.projects)) {
+      S._projects = parsed.projects.map(normalizeProject);
+      if (!S._projects.length) return false;
+      const activeId = parsed.activeId && findProjectById(parsed.activeId, S._projects) ? parsed.activeId : S._projects[0].id;
+      S._activeId = activeId;
+      applyProjectSnapshot(findProjectById(activeId, S._projects));
+      return true;
+    }
+    // Legacy v1 format: applyState
+    if (parsed && parsed.v === 1 && parsed.data) {
+      const ok = applyState(parsed.data);
+      if (ok) {
+        // wrap as a single project
+        const id = newProjectId();
+        S._activeId = id;
+        S._projects = [{ id, ...snapshotProject() }];
+        saveAll();
+      }
+      return ok;
+    }
+  } catch(_) {}
+  return false;
+}
+
+function findProjectById(id, arr) { return arr.find(p => p.id === id) || null; }
+
+function normalizeProject(p) {
+  return {
+    id: p.id || newProjectId(),
+    kanal: p.kanal === '2' ? '2' : '1',
+    view: p.view === 'wkz' ? 'wkz' : 'plan',
+    slots: (p.slots && p.slots['1']) ? p.slots : {'1':Array(MIN_SLOTS).fill(null),'2':Array(MIN_SLOTS).fill(null)},
+    library: Array.isArray(p.library) ? p.library : [],
+    tools: Array.isArray(p.tools) ? p.tools : [],
+    nextId: p.nextId || 1,
+    catFilter: p.catFilter || 'Alle',
+    spFilter: p.spFilter || 'ALL',
+    libTab: p.libTab === 'tool' ? 'tool' : 'op',
+    zn: p.zn || '',
+    bez: p.bez || '',
+    laufzeit: p.laufzeit || '',
+    material: p.material || '',
+    saegelaenge: p.saegelaenge || '',
+    ausspannlaenge: p.ausspannlaenge || '',
+    reststuecklaenge: p.reststuecklaenge || '',
+    backenNr: p.backenNr || '',
+    backenAbstand: p.backenAbstand || '',
+    roboA: p.roboA || '',
+    roboB: p.roboB || '',
+    custom: Array.isArray(p.custom) ? p.custom : [],
+  };
+}
+
+/* MODAL */
+function openModal(tag,title){
+  $('#mTag').textContent=tag;
+  $('#mTitle').textContent=title;
+  $('#mBody').innerHTML='';
+  $('#mFoot').innerHTML='';
+  $('#modal').classList.add('open');
+}
+function closeModal(){
+  $('#modal').classList.remove('open');
+  const box = $('#modal .modal-box');
+  if (box) box.classList.remove('modal-wide', 'modal-xwide');
+  const mb = $('#mBody');
+  if (mb) mb.style.padding = '';
+}
+function mBtn(label,cls,fn){const b=document.createElement('button');b.type='button';b.className='btn '+cls;b.textContent=label;b.addEventListener('click',fn);return b}
+function mInp(val,ph,mono){const i=document.createElement('input');i.className='field-input'+(mono?' mono':'');i.type='text';i.value=val||'';i.placeholder=ph||'';return i}
+function mSel(opts,val){const s=document.createElement('select');s.className='field-select';opts.forEach(([v,t])=>{const o=new Option(t,v);if(v===val)o.selected=true;s.appendChild(o)});return s}
+function mGrp(label,el,narrow){const g=document.createElement('div');g.className='form-group'+(narrow?' narrow':'');const l=document.createElement('div');l.className='field-label';l.textContent=label;g.append(l,el);return g}
+function mRow(...ch){const r=document.createElement('div');r.className='form-row';ch.forEach(c=>r.appendChild(c));return r}
+
+/* ──── Custom dialogs (replace native alert/confirm/prompt) ──── */
+function customAlert(message, opts = {}) {
+  return new Promise(resolve => {
+    openModal(opts.tag || '[INFO]', opts.title || 'Hinweis');
+    const body = $('#mBody');
+    const p = document.createElement('p');
+    p.style.cssText = 'font-size:13.5px;line-height:1.5;color:var(--ink-2);white-space:pre-wrap;margin:4px 0;';
+    p.textContent = message;
+    body.append(p);
+    $('#mFoot').append(
+      mBtn(opts.okText || 'OK', 'btn-primary', () => { closeModal(); resolve(); })
+    );
+  });
+}
+
+function customConfirm(message, opts = {}) {
+  return new Promise(resolve => {
+    openModal(opts.tag || '[BESTÄTIGEN]', opts.title || 'Bestätigung');
+    const body = $('#mBody');
+    const p = document.createElement('p');
+    p.style.cssText = 'font-size:13.5px;line-height:1.5;color:var(--ink-2);white-space:pre-wrap;margin:4px 0;';
+    p.textContent = message;
+    body.append(p);
+    $('#mFoot').append(
+      mBtn(opts.cancelText || 'Abbrechen', 'btn-ghost', () => { closeModal(); resolve(false); }),
+      mBtn(opts.okText || 'Bestätigen', opts.danger ? 'btn-danger' : 'btn-primary', () => { closeModal(); resolve(true); })
+    );
+  });
+}
+
+function customPrompt(opts = {}) {
+  // opts: { tag, title, fields:[{label, placeholder, value, mono}], okText, cancelText }
+  return new Promise(resolve => {
+    openModal(opts.tag || '[EINGABE]', opts.title || 'Eingabe');
+    const body = $('#mBody');
+    if (opts.message) {
+      const p = document.createElement('p');
+      p.style.cssText = 'font-size:13px;color:var(--ink-3);margin-bottom:14px;';
+      p.textContent = opts.message;
+      body.append(p);
+    }
+    const inputs = [];
+    (opts.fields || []).forEach(f => {
+      const inp = mInp(f.value || '', f.placeholder || '', f.mono);
+      inputs.push(inp);
+      body.append(mGrp(f.label || '', inp));
+    });
+    // Submit on Enter from any input
+    inputs.forEach(inp => {
+      inp.addEventListener('keydown', e => { if (e.key === 'Enter') submitBtn.click(); });
+    });
+    setTimeout(() => { if (inputs[0]) inputs[0].focus(); }, 50);
+    const submitBtn = mBtn(opts.okText || 'OK', 'btn-primary', () => {
+      const values = inputs.map(i => i.value.trim());
+      closeModal();
+      resolve(values);
+    });
+    $('#mFoot').append(
+      mBtn(opts.cancelText || 'Abbrechen', 'btn-ghost', () => { closeModal(); resolve(null); }),
+      submitBtn
+    );
+  });
+}
+
+function openEditor(opId=null, assignSlot=null){
+  const isEdit=!!opId, ex=isEdit?getOp(opId):null;
+  if(isEdit&&!ex)return;
+  openModal(isEdit?'[OP] · Bearbeiten':'[OP] · Neu anlegen', isEdit?'Operation bearbeiten':'Neue Operation anlegen');
+  const body=$('#mBody');
+  const codeIn=mInp(isEdit?ex.code:'','L1101 (oder nur 1101)',true);
+  const nameIn=mInp(isEdit?ex.title:'','Plandrehen');
+  const spSel=mSel([['SP4','SP4 · Hauptspindel'],['SP3','SP3 · Gegenspindel']], isEdit?ex.spindle:'SP4');
+  const catSel=mSel([['Außen','Außen Bearbeitung'],['Innen','Innen Bearbeitung'],['Radial','Radial Bearbeitung'],['Axial','Axial']], isEdit?ex.category:'Außen');
+  let doppel=isEdit?!!ex.doppelhalter:false;
+  const toggleEl=document.createElement('div');
+  toggleEl.className='toggle-pill'+(doppel?' on':'');
+  toggleEl.innerHTML='<div class="toggle-track"><div class="toggle-thumb"></div></div><span>Doppelhalter aktiv</span>';
+  toggleEl.addEventListener('click',()=>{doppel=!doppel;toggleEl.classList.toggle('on',doppel)});
+  const tgRow=document.createElement('div');tgRow.className='form-row';tgRow.appendChild(toggleEl);
+
+  body.append(
+    mRow(mGrp('L-Code · Basis',codeIn,true),mGrp('Bezeichnung',nameIn)),
+    mRow(mGrp('Spindel',spSel,true),mGrp('Kategorie',catSel)),
+    tgRow,
+  );
+
+  $('#mFoot').append(
+    mBtn('Abbrechen','btn-ghost',closeModal),
+    mBtn(isEdit?'Speichern':'Anlegen','btn-primary',()=>{
+      const codeRaw = codeIn.value.trim();
+      const code = /^\d+$/.test(codeRaw) ? 'L' + codeRaw : codeRaw;
+      const title = nameIn.value.trim();
+      if(!code){codeIn.focus();return}
+      if(!title){nameIn.focus();return}
+      const data={code,title,spindle:spSel.value,category:catSel.value,doppelhalter:doppel};
+      if(isEdit){Object.assign(ex,data)}
+      else{
+        const nop={id:'op_'+S.nextId++,...data};
+        S.library.push(nop);
+        if(assignSlot){ensure(assignSlot.kanal,assignSlot.index+1);S.slots[assignSlot.kanal][assignSlot.index]={opId:nop.id,toolId:null}}
+      }
+      closeModal();save();renderAll();
+    })
+  );
+
+  if(isEdit){
+    let delConfirm = false;
+    let delTimer = null;
+    const delBtn = mBtn('Löschen','btn-danger',()=>{
+      if (!delConfirm) {
+        delConfirm = true;
+        delBtn.textContent = 'Wirklich löschen?';
+        delBtn.style.background = 'var(--danger)';
+        delBtn.style.color = '#fff';
+        delBtn.style.borderColor = 'var(--danger)';
+        delTimer = setTimeout(() => {
+          delConfirm = false;
+          delBtn.textContent = 'Löschen';
+          delBtn.style.background = '';
+          delBtn.style.color = '';
+          delBtn.style.borderColor = '';
+        }, 3000);
+        return;
+      }
+      clearTimeout(delTimer);
+      // Remove op references from slots
+      ['1','2'].forEach(k=>{
+        S.slots[k] = S.slots[k].map(s => {
+          if (!s || s.opId !== opId) return s;
+          // Keep tool, drop op
+          return s.toolId ? { opId: null, toolId: s.toolId } : null;
+        });
+      });
+      S.library=S.library.filter(x=>x.id!==opId);
+      closeModal();save();renderAll();
+    });
+    $('#mFoot').prepend(delBtn);
+  }
+}
+
+/* Tool editor */
+function openToolEditor(toolId=null){
+  const isEdit=!!toolId, ex=isEdit?getTool(toolId):null;
+  if(isEdit&&!ex)return;
+  openModal(isEdit?'[TOOL] · Bearbeiten':'[TOOL] · Neu anlegen', isEdit?'Werkzeug bearbeiten':'Neues Werkzeug anlegen');
+  const body=$('#mBody');
+  const tnoIn=mInp(isEdit?ex.tno:'','T01 (oder nur 1)',true);
+  const nameIn=mInp(isEdit?ex.name:'','Plan-Drehstahl');
+  const kanalSel=mSel([['1','Revolver 1 · 1000.MPF · Oben'],['2','Revolver 2 · 2000.MPF · Unten']], isEdit?(ex.kanal||'1'):'1');
+  body.append(
+    mRow(mGrp('T-Nr.',tnoIn,true),mGrp('Werkzeug-Name',nameIn)),
+    mRow(mGrp('Revolver / Kanal',kanalSel,true)),
+  );
+  $('#mFoot').append(
+    mBtn('Abbrechen','btn-ghost',closeModal),
+    mBtn(isEdit?'Speichern':'Anlegen','btn-primary',()=>{
+      const tnoRaw = tnoIn.value.trim();
+      const tno = tnoRaw ? (/^\d+$/.test(tnoRaw) ? 'T' + tnoRaw.padStart(2,'0') : tnoRaw) : '';
+      const name = nameIn.value.trim();
+      const kanal = kanalSel.value === '2' ? '2' : '1';
+      if(!tno){tnoIn.focus();return}
+      if(!name){nameIn.focus();return}
+      if(isEdit){Object.assign(ex,{tno,name,kanal})}
+      else{S.tools.push({id:'tool_'+S.nextId++,tno,name,kanal})}
+      closeModal();save();renderAll();
+    })
+  );
+  if(isEdit){
+    let delConfirm = false; let delTimer = null;
+    const delBtn = mBtn('Löschen','btn-danger',()=>{
+      if (!delConfirm) {
+        delConfirm = true;
+        delBtn.textContent = 'Wirklich löschen?';
+        delBtn.style.background = 'var(--danger)';
+        delBtn.style.color = '#fff';
+        delBtn.style.borderColor = 'var(--danger)';
+        delTimer = setTimeout(() => {
+          delConfirm = false;
+          delBtn.textContent = 'Löschen';
+          delBtn.style.background = '';
+          delBtn.style.color = '';
+          delBtn.style.borderColor = '';
+        }, 3000);
+        return;
+      }
+      clearTimeout(delTimer);
+      // Remove tool references from slots
+      ['1','2'].forEach(k=>{
+        S.slots[k] = S.slots[k].map(s => {
+          if (!s || s.toolId !== toolId) return s;
+          return s.opId ? { opId: s.opId, toolId: null } : null;
+        });
+      });
+      S.tools=S.tools.filter(x=>x.id!==toolId);
+      closeModal();save();renderAll();
+    });
+    $('#mFoot').prepend(delBtn);
+  }
+}
+
+/* Slot editor — pick op + tool for a slot */
+function openSlotEditor(kanal, index){
+  ensure(kanal, index+1);
+  const cur = S.slots[kanal][index] || {opId:null, toolId:null};
+  // pre-fill from existing op/tool but allow manual editing
+  const curOp = cur.opId ? getOp(cur.opId) : null;
+  const curTool = cur.toolId ? getTool(cur.toolId) : null;
+
+  openModal('[SLOT] · Bearbeiten', `Slot ${index+1} · Kanal ${kanal}`);
+  const body=$('#mBody');
+
+  /* Generic autocomplete helper */
+  function makeAutocomplete(input, getItems, formatItem, onPick) {
+    // getItems(q) returns [{display, value, item}, ...]
+    const wrap = document.createElement('div');
+    wrap.className = 'ac-wrap';
+    const dd = document.createElement('div');
+    dd.className = 'ac-dropdown';
+    dd.style.display = 'none';
+    wrap.appendChild(dd);
+    function render(q){
+      dd.innerHTML = '';
+      const items = getItems(q);
+      if(!items.length){ dd.style.display='none'; return; }
+      items.slice(0, 12).forEach(it => {
+        const r = document.createElement('div');
+        r.className = 'ac-item';
+        r.innerHTML = formatItem(it.item);
+        r.addEventListener('mousedown', e => {
+          e.preventDefault();
+          onPick(it.item);
+          dd.style.display = 'none';
+        });
+        dd.appendChild(r);
+      });
+      dd.style.display = 'block';
+    }
+    input.addEventListener('focus', ()=>render(input.value));
+    input.addEventListener('input', ()=>render(input.value));
+    input.addEventListener('blur', ()=>{ setTimeout(()=>{ dd.style.display='none'; }, 150); });
+    return wrap;
+  }
+
+  // ── Operation section ──
+  const opLabel = document.createElement('div'); opLabel.className='field-label'; opLabel.textContent='Operation';
+  const opCodeIn = mInp(curOp ? curOp.code : '', 'L1101 (oder 1101)', true);
+  const opNameIn = mInp(curOp ? curOp.title : '', 'Bezeichnung — z. B. Gewinde');
+  const opSpSel = mSel([['SP4','SP4 · Hauptspindel'],['SP3','SP3 · Gegenspindel']], curOp ? curOp.spindle : 'SP4');
+  const opCatSel = mSel([['Außen','Außen Bearbeitung'],['Innen','Innen Bearbeitung'],['Radial','Radial Bearbeitung'],['Axial','Axial']], curOp ? curOp.category : 'Außen');
+  let opDoppel = curOp ? !!curOp.doppelhalter : false;
+  const opTgEl = document.createElement('div');
+  opTgEl.className='toggle-pill'+(opDoppel?' on':'');
+  opTgEl.innerHTML='<div class="toggle-track"><div class="toggle-thumb"></div></div><span>Doppelhalter aktiv</span>';
+  opTgEl.addEventListener('click',()=>{opDoppel=!opDoppel;opTgEl.classList.toggle('on',opDoppel)});
+
+  // When user picks an existing op from autocomplete, sync ALL fields
+  function applyOpToFields(op) {
+    opCodeIn.value = op.code;
+    opNameIn.value = op.title;
+    opSpSel.value = op.spindle || 'SP4';
+    opCatSel.value = op.category || 'Außen';
+    opDoppel = !!op.doppelhalter;
+    opTgEl.classList.toggle('on', opDoppel);
+  }
+
+  // Autocomplete for op CODE input
+  const opCodeAc = makeAutocomplete(opCodeIn,
+    (q) => {
+      const qq = (q||'').toLowerCase().trim();
+      if (!qq) return S.library.slice(0, 12).map(op => ({item: op}));
+      return S.library.filter(op => (op.code+' '+op.title).toLowerCase().includes(qq)).map(op => ({item: op}));
+    },
+    (op) => `<span class="ac-key">${esc(op.code)}</span><span class="ac-val">${esc(op.title)}</span>`,
+    applyOpToFields
+  );
+  // Same dropdown logic for NAME input
+  const opNameAc = makeAutocomplete(opNameIn,
+    (q) => {
+      const qq = (q||'').toLowerCase().trim();
+      if (!qq) return [];
+      return S.library.filter(op => (op.code+' '+op.title).toLowerCase().includes(qq)).map(op => ({item: op}));
+    },
+    (op) => `<span class="ac-key">${esc(op.code)}</span><span class="ac-val">${esc(op.title)}</span>`,
+    applyOpToFields
+  );
+
+  const opRow = document.createElement('div'); opRow.className='form-row';
+  const opCodeGrp = mGrp('L-Code', opCodeIn, true);
+  opCodeGrp.appendChild(opCodeAc);
+  const opNameGrp = mGrp('Bezeichnung', opNameIn);
+  opNameGrp.appendChild(opNameAc);
+  opRow.append(opCodeGrp, opNameGrp);
+
+  const opRow2 = document.createElement('div'); opRow2.className='form-row';
+  opRow2.append(mGrp('Spindel', opSpSel, true), mGrp('Kategorie', opCatSel));
+
+  const opTgRow = document.createElement('div'); opTgRow.className='form-row';
+  opTgRow.appendChild(opTgEl);
+
+  const opSection = document.createElement('div');
+  opSection.className = 'slot-picker-section';
+  opSection.append(opLabel, opRow, opRow2, opTgRow);
+
+  // ── Tool section ──
+  const tlLabel = document.createElement('div'); tlLabel.className='field-label'; tlLabel.textContent='Werkzeug';
+  const tlNoIn = mInp(curTool ? curTool.tno : '', 'T01 (oder 1)', true);
+  const tlNameIn = mInp(curTool ? curTool.name : '', 'Werkzeug-Name — z. B. Gewinde');
+
+  const tlNoAc = makeAutocomplete(tlNoIn,
+    (q) => {
+      const qq = (q||'').toLowerCase().trim();
+      if (!qq) return S.tools.slice(0, 12).map(t => ({item: t}));
+      return S.tools.filter(t => (t.tno+' '+t.name).toLowerCase().includes(qq)).map(t => ({item: t}));
+    },
+    (t) => `<span class="ac-key">${esc(t.tno)}</span><span class="ac-val">${esc(t.name)}</span>`,
+    (t) => { tlNoIn.value = t.tno; tlNameIn.value = t.name; }
+  );
+  const tlNameAc = makeAutocomplete(tlNameIn,
+    (q) => {
+      const qq = (q||'').toLowerCase().trim();
+      if (!qq) return [];
+      return S.tools.filter(t => (t.tno+' '+t.name).toLowerCase().includes(qq)).map(t => ({item: t}));
+    },
+    (t) => `<span class="ac-key">${esc(t.tno)}</span><span class="ac-val">${esc(t.name)}</span>`,
+    (t) => { tlNoIn.value = t.tno; tlNameIn.value = t.name; }
+  );
+
+  const tlRow = document.createElement('div'); tlRow.className='form-row';
+  const tlNoGrp = mGrp('T-Nr.', tlNoIn, true);
+  tlNoGrp.appendChild(tlNoAc);
+  const tlNameGrp = mGrp('Werkzeug-Name', tlNameIn);
+  tlNameGrp.appendChild(tlNameAc);
+  tlRow.append(tlNoGrp, tlNameGrp);
+
+  const tlSection = document.createElement('div');
+  tlSection.className = 'slot-picker-section';
+  tlSection.append(tlLabel, tlRow);
+
+  body.append(opSection, tlSection);
+
+  $('#mFoot').append(
+    mBtn('Abbrechen','btn-ghost',closeModal),
+    mBtn('Slot leeren','btn-ghost',()=>{
+      S.slots[kanal][index] = null;
+      closeModal();save();renderAll();
+    }),
+    mBtn('Speichern','btn-primary',()=>{
+      // Resolve op: by exact code, or auto-prefix, or create new
+      let resolvedOpId = null;
+      const codeRaw = opCodeIn.value.trim();
+      const titleVal = opNameIn.value.trim();
+      const spVal = opSpSel.value;
+      const catVal = opCatSel.value;
+      const dhVal = opDoppel;
+      if (codeRaw || titleVal) {
+        const code = /^\d+$/.test(codeRaw) ? 'L' + codeRaw : codeRaw;
+        // Try exact match by code+title
+        let op = S.library.find(o => o.code === code && o.title === titleVal);
+        if (!op && code) op = S.library.find(o => o.code === code);
+        if (!op) {
+          // Create new
+          if (code && titleVal) {
+            op = { id: 'op_'+S.nextId++, code, title: titleVal, spindle: spVal, category: catVal, doppelhalter: dhVal };
+            S.library.push(op);
+          }
+        } else {
+          // Update existing op fields if user changed them
+          if (titleVal && op.title !== titleVal) op.title = titleVal;
+          if (op.spindle !== spVal) op.spindle = spVal;
+          if (op.category !== catVal) op.category = catVal;
+          if (op.doppelhalter !== dhVal) op.doppelhalter = dhVal;
+        }
+        if (op) resolvedOpId = op.id;
+      }
+      // Resolve tool
+      let resolvedToolId = null;
+      const tnoRaw = tlNoIn.value.trim();
+      const tnameVal = tlNameIn.value.trim();
+      if (tnoRaw || tnameVal) {
+        const tno = tnoRaw ? (/^\d+$/.test(tnoRaw) ? 'T' + tnoRaw.padStart(2,'0') : tnoRaw) : '';
+        let tool = S.tools.find(t => t.tno === tno && t.name === tnameVal);
+        if (!tool && tno) tool = S.tools.find(t => t.tno === tno);
+        if (!tool) {
+          if (tno && tnameVal) {
+            tool = { id: 'tool_'+S.nextId++, tno, name: tnameVal };
+            S.tools.push(tool);
+          }
+        } else if (tnameVal && tool.name !== tnameVal) {
+          tool.name = tnameVal;
+        }
+        if (tool) resolvedToolId = tool.id;
+      }
+      if (!resolvedOpId && !resolvedToolId) {
+        S.slots[kanal][index] = null;
+      } else {
+        S.slots[kanal][index] = { opId: resolvedOpId, toolId: resolvedToolId };
+      }
+      closeModal();save();renderAll();
+    })
+  );
+}
+
+/* PAIRING MODAL — Quick assignment of tools to operation slots */
+function openPairingModal(){
+  openModal('[PAIR] · Verknüpfen', 'Operation ⇄ Werkzeug schnell zuordnen');
+  // Make modal wider
+  $('#modal .modal-box').classList.add('modal-xwide');
+  const body = $('#mBody');
+  body.style.padding = '0';
+
+  function buildTable() {
+    body.innerHTML = '';
+    const wrap = document.createElement('div');
+    wrap.className = 'pair-wrap';
+
+    // 2 columns side by side: Kanal 1 and Kanal 2
+    ['1','2'].forEach(kanal => {
+      const col = document.createElement('div');
+      col.className = 'pair-col';
+      const head = document.createElement('div');
+      head.className = 'pair-col-head';
+      head.innerHTML = `<div class="pair-col-title">Kanal ${kanal} · ${kanal === '1' ? '1000.MPF' : '2000.MPF'}</div>`;
+      col.appendChild(head);
+
+      const slots = S.slots[kanal] || [];
+      const n = Math.max(slots.length, MIN_SLOTS);
+      for (let i = 0; i < n; i++) {
+        const slot = slots[i];
+        const op = (slot && slot.opId) ? getOp(slot.opId) : null;
+        const tool = (slot && slot.toolId) ? getTool(slot.toolId) : null;
+        if (!op && !tool) continue; // skip empty rows to reduce noise
+
+        const row = document.createElement('div');
+        row.className = 'pair-row';
+
+        const lc = L[kanal](i+1);
+        const numCell = document.createElement('div');
+        numCell.className = 'pair-num';
+        numCell.innerHTML = `<span class="pair-idx">${String(i+1).padStart(2,'0')}</span><span class="pair-lc">${esc(lc)}</span>`;
+        row.appendChild(numCell);
+
+        // Operation cell
+        const opCell = document.createElement('div');
+        opCell.className = 'pair-cell pair-op-cell';
+        if (op) {
+          opCell.innerHTML = `<div class="pair-code">${esc(op.code)}</div><div class="pair-name">${esc(op.title)}</div>`;
+        } else {
+          opCell.innerHTML = `<div class="pair-warn">ohne Operation</div>`;
+        }
+        row.appendChild(opCell);
+
+        // Arrow
+        const arrow = document.createElement('div');
+        arrow.className = 'pair-arrow';
+        arrow.innerHTML = '<svg viewBox="0 0 24 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 6h18M16 2l4 4-4 4"/></svg>';
+        row.appendChild(arrow);
+
+        // Tool input with autocomplete
+        const toolCell = document.createElement('div');
+        toolCell.className = 'pair-cell pair-tool-cell';
+        const tnoIn = document.createElement('input');
+        tnoIn.type = 'text';
+        tnoIn.className = 'field-input mono pair-input-tno';
+        tnoIn.placeholder = 'T-Nr.';
+        tnoIn.value = tool ? tool.tno : '';
+        const nameIn = document.createElement('input');
+        nameIn.type = 'text';
+        nameIn.className = 'field-input pair-input-name';
+        nameIn.placeholder = 'Werkzeug-Name (z.B. Schrupper)';
+        nameIn.value = tool ? tool.name : '';
+
+        // Inline autocomplete for tools — smart: click shows all, typing filters
+        function makeAcDd(input, onPick) {
+          const dd = document.createElement('div');
+          dd.className = 'ac-dropdown';
+          dd.style.display = 'none';
+          const acWrap = document.createElement('div');
+          acWrap.className = 'ac-wrap';
+          acWrap.appendChild(dd);
+          input.parentNode.insertBefore(acWrap, input.nextSibling);
+
+          let userTyped = false;
+
+          function render(showAll) {
+            dd.innerHTML = '';
+            const q = userTyped ? input.value : '';
+            const qq = (q||'').toLowerCase().trim();
+            let items;
+            if (showAll || !qq) {
+              // Show all tools, sorted by T-Nr (numeric)
+              items = S.tools.slice().sort((a,b)=>(a.tno||'').localeCompare(b.tno||'', undefined, {numeric:true}));
+            } else {
+              // Filter: tno starts-with first, then name contains
+              const starts = S.tools.filter(t => (t.tno||'').toLowerCase().startsWith(qq));
+              const startsIds = new Set(starts.map(t=>t.id));
+              const contains = S.tools.filter(t => !startsIds.has(t.id) && (t.tno+' '+t.name).toLowerCase().includes(qq));
+              items = [...starts, ...contains];
+            }
+            if (!items.length) {
+              dd.innerHTML = '<div class="ac-item" style="color:var(--ink-5);font-style:italic;cursor:default;">Keine Werkzeuge</div>';
+              dd.style.display = 'block';
+              return;
+            }
+            items.slice(0, 30).forEach(t => {
+              const r = document.createElement('div');
+              r.className = 'ac-item';
+              r.innerHTML = `<span class="ac-key">${esc(t.tno)}</span><span class="ac-val">${esc(t.name)}</span>`;
+              r.addEventListener('mousedown', e => {
+                e.preventDefault();
+                onPick(t);
+                userTyped = false;
+                dd.style.display = 'none';
+              });
+              dd.appendChild(r);
+            });
+            dd.style.display = 'block';
+          }
+          // On focus/click — always show full list (ignore current value)
+          input.addEventListener('focus', () => { userTyped = false; render(true); });
+          input.addEventListener('click', () => { userTyped = false; render(true); });
+          input.addEventListener('input', () => { userTyped = true; render(false); });
+          input.addEventListener('blur', () => setTimeout(() => { dd.style.display='none'; }, 150));
+        }
+
+        const tnoWrap = document.createElement('div'); tnoWrap.className = 'pair-input-wrap';
+        tnoWrap.appendChild(tnoIn);
+        toolCell.appendChild(tnoWrap);
+        makeAcDd(tnoIn, t => { tnoIn.value = t.tno; nameIn.value = t.name; commit(); });
+
+        const nameWrap = document.createElement('div'); nameWrap.className = 'pair-input-wrap';
+        nameWrap.appendChild(nameIn);
+        toolCell.appendChild(nameWrap);
+        makeAcDd(nameIn, t => { tnoIn.value = t.tno; nameIn.value = t.name; commit(); });
+
+        // Quick clear button (×) that resets tool fields and slot
+        const clearBtn = document.createElement('button');
+        clearBtn.type = 'button';
+        clearBtn.className = 'pair-clear-btn';
+        clearBtn.title = 'Werkzeug entfernen';
+        clearBtn.innerHTML = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3l10 10M13 3L3 13"/></svg>';
+        clearBtn.addEventListener('click', () => {
+          tnoIn.value = '';
+          nameIn.value = '';
+          commit();
+        });
+        toolCell.appendChild(clearBtn);
+
+        // Commit on blur (debounced) — resolve tool / create if needed and update slot
+        function commit() {
+          const tnoRaw = tnoIn.value.trim();
+          const nameVal = nameIn.value.trim();
+          if (!tnoRaw && !nameVal) {
+            // Clear tool from slot
+            const ex = S.slots[kanal][i] || {opId:null,toolId:null};
+            if (!ex.opId) S.slots[kanal][i] = null;
+            else S.slots[kanal][i] = { opId: ex.opId, toolId: null };
+            save();
+            return;
+          }
+          const tno = tnoRaw ? (/^\d+$/.test(tnoRaw) ? 'T' + tnoRaw.padStart(2,'0') : tnoRaw) : '';
+          let toolEnt = S.tools.find(t => t.tno === tno && t.name === nameVal);
+          if (!toolEnt && tno) toolEnt = S.tools.find(t => t.tno === tno);
+          if (!toolEnt) {
+            if (tno && nameVal) {
+              toolEnt = { id: 'tool_'+S.nextId++, tno, name: nameVal };
+              S.tools.push(toolEnt);
+            }
+          } else if (nameVal && toolEnt.name !== nameVal) {
+            toolEnt.name = nameVal;
+          }
+          if (toolEnt) {
+            const ex = S.slots[kanal][i] || {opId:null,toolId:null};
+            S.slots[kanal][i] = { opId: ex.opId, toolId: toolEnt.id };
+            save();
+          }
+        }
+        tnoIn.addEventListener('change', commit);
+        nameIn.addEventListener('change', commit);
+
+        row.appendChild(toolCell);
+        col.appendChild(row);
+      }
+
+      // If no rows added, show empty hint
+      if (col.children.length === 1) {
+        const empty = document.createElement('div');
+        empty.className = 'pair-empty';
+        empty.textContent = 'Keine belegten Slots in diesem Kanal';
+        col.appendChild(empty);
+      }
+
+      wrap.appendChild(col);
+    });
+
+    body.appendChild(wrap);
+  }
+
+  buildTable();
+
+  $('#mFoot').append(
+    mBtn('Aktualisieren','btn-ghost', () => {
+      buildTable();
+    }),
+    mBtn('Fertig','btn-primary', () => {
+      save();
+      renderAll();
+      closeModal();
+    })
+  );
+}
+function renderSlots(){
+  const list=$('#slotList');list.innerHTML='';
+  const sl=S.slots[S.kanal];
+  const n=Math.max(MIN_SLOTS,sl.length);
+  for(let i=0;i<n;i++){
+    const slotData = sl[i];
+    const isEmpty = slotIsEmpty(slotData);
+    const op = (slotData && slotData.opId) ? getOp(slotData.opId) : null;
+    const tool = (slotData && slotData.toolId) ? getTool(slotData.toolId) : null;
+
+    const row=document.createElement('div');
+    row.className='slot-row '+(isEmpty?'empty':'filled');
+    row.dataset.index=i;
+    row.addEventListener('dragover',e=>{e.preventDefault();row.classList.add('drag-over')});
+    row.addEventListener('dragleave',()=>row.classList.remove('drag-over'));
+    row.addEventListener('drop',e=>{
+      e.preventDefault();row.classList.remove('drag-over');
+      const raw=e.dataTransfer.getData('text/plain');if(!raw)return;
+      let p;try{p=JSON.parse(raw)}catch{return}
+      const ti=Number(row.dataset.index);
+      if(p.kind==='op'){
+        ensure(S.kanal,ti+1);
+        const existing = S.slots[S.kanal][ti] || {opId:null,toolId:null};
+        S.slots[S.kanal][ti]={opId:p.id, toolId:existing.toolId};
+      } else if(p.kind==='tool'){
+        ensure(S.kanal,ti+1);
+        const existing = S.slots[S.kanal][ti] || {opId:null,toolId:null};
+        S.slots[S.kanal][ti]={opId:existing.opId, toolId:p.id};
+      } else if(p.kind==='slot'){
+        const fi=Number(p.index);
+        if(isNaN(fi)||fi===ti)return;
+        const[m]=S.slots[S.kanal].splice(fi,1);
+        S.slots[S.kanal].splice(ti,0,m);
+      }
+      save();renderSlots();renderPrintTable();renderWkzTable();
+    });
+
+    const num=document.createElement('div');num.className='slot-num';num.textContent=String(i+1).padStart(2,'0');
+    const main=document.createElement('div');main.className='slot-main';
+
+    if(!isEmpty){
+      row.setAttribute('draggable','true');
+      row.addEventListener('dragstart',e=>{e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',JSON.stringify({kind:'slot',index:i}))});
+      row.addEventListener('click',e=>{if(e.target.closest('.slot-actions'))return;openSlotEditor(S.kanal,i)});
+
+      const lCode=L[S.kanal](i+1);
+      const title=document.createElement('div');title.className='slot-title';
+      const titleText=document.createElement('span');
+      titleText.style.overflow='hidden';titleText.style.textOverflow='ellipsis';titleText.style.whiteSpace='nowrap';
+      titleText.textContent = op ? opName(op) : (tool ? toolName(tool) : '— leer —');
+      const lc=document.createElement('span');lc.className='slot-l-code';lc.textContent=lCode;
+      title.append(titleText,lc);
+
+      const meta=document.createElement('div');meta.className='slot-meta';
+      if (op) {
+        const bsp=document.createElement('span');bsp.className='tag '+(op.spindle==='SP4'?'tag-sp4':'tag-sp3');bsp.textContent=op.spindle;
+        meta.appendChild(bsp);
+        const bcat=document.createElement('span');bcat.className='tag tag-cat';bcat.textContent=op.category;
+        meta.appendChild(bcat);
+        if(op.doppelhalter){const bd=document.createElement('span');bd.className='tag tag-doppel';bd.textContent='Doppelhalter';meta.appendChild(bd)}
+      } else {
+        const bnop=document.createElement('span');bnop.className='tag tag-warn';bnop.textContent='ohne Operation';
+        meta.appendChild(bnop);
+      }
+      if(tool){
+        const bt=document.createElement('span');bt.className='tag tag-tool';bt.textContent=tool.tno+' · '+tool.name;
+        meta.appendChild(bt);
+      } else {
+        const bnt=document.createElement('span');bnt.className='tag tag-warn';bnt.textContent='ohne Werkzeug';
+        meta.appendChild(bnt);
+      }
+      main.append(title,meta);
+    } else {
+      const ph=document.createElement('div');ph.className='slot-placeholder';
+      ph.textContent='[ leer ] · Klick = Slot anlegen';
+      main.appendChild(ph);
+      row.addEventListener('click',()=>openSlotEditor(S.kanal,i));
+    }
+
+    const actions=document.createElement('div');actions.className='slot-actions';
+    if(!isEmpty){
+      const clr=document.createElement('button');clr.className='icon-btn danger';clr.title='Slot leeren';
+      clr.innerHTML='<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3l10 10M13 3L3 13"/></svg>';
+      clr.addEventListener('click',e=>{e.stopPropagation();S.slots[S.kanal][i]=null;save();renderSlots();renderPrintTable();renderWkzTable()});
+      actions.appendChild(clr);
+    }
+    row.append(num,main,actions);
+    list.appendChild(row);
+  }
+  const filled=S.slots[S.kanal].filter(s=>!slotIsEmpty(s)).length;
+  $('#slotCount').textContent=`${filled} / ${n}`;
+}
+
+function renderFilters(){
+  // Only show category/spindle filters in Operationen tab
+  const fbox = document.querySelector('.lib-filters');
+  if (fbox) fbox.style.display = (S.libTab === 'tool') ? 'none' : '';
+  const cf=$('#catFilters');cf.innerHTML='';
+  CATS.forEach(cat=>{
+    const p=document.createElement('button');p.type='button';p.className='pill'+(S.catFilter===cat?' active':'');
+    p.textContent=cat==='Alle'?'Alle':cat;
+    p.addEventListener('click',()=>{S.catFilter=cat;save();renderFilters();renderLib()});
+    cf.appendChild(p);
+  });
+  const sf=$('#spFilters');sf.innerHTML='';
+  [['ALL','Alle'],['SP4','SP4'],['SP3','SP3']].forEach(([v,t])=>{
+    const p=document.createElement('button');p.type='button';p.className='pill'+(S.spFilter===v?' active':'');
+    p.textContent=t;
+    p.addEventListener('click',()=>{S.spFilter=v;save();renderFilters();renderLib()});
+    sf.appendChild(p);
+  });
+  // Sync library tab buttons too
+  $$('.lib-tab').forEach(b => b.classList.toggle('active', b.dataset.libtab === S.libTab));
+  // Update header title + Neu button label
+  const lname = document.getElementById('libName');
+  if (lname) lname.textContent = (S.libTab === 'tool') ? 'Werkzeug-Library' : 'Operation-Library';
+  const addBtn = document.getElementById('btnAddOp');
+  if (addBtn) {
+    const span = addBtn.querySelector('.btn-label') || addBtn;
+    // Recreate button content with appropriate icon+label
+    addBtn.innerHTML = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 3v10M3 8h10"/></svg>Neu';
+  }
+}
+
+function renderLib(){
+  const list=$('#libList');list.innerHTML='';
+  if (S.libTab === 'tool') {
+    // Werkzeug Library — grouped by Kanal (Revolver)
+    if (!S.tools.length) {
+      list.innerHTML='<div class="lib-empty">Keine Werkzeuge.<br>MPF-Werkzeugliste importieren oder „+ Neu".</div>';
+      return;
+    }
+    ['1','2'].forEach(k => {
+      const tools = S.tools
+        .filter(t => (t.kanal || '1') === k)
+        .sort((a,b)=>(a.tno||'').localeCompare(b.tno||'', undefined, {numeric:true}));
+      if (!tools.length) return;
+      const grp = document.createElement('div');
+      grp.className = 'tool-group-head';
+      grp.innerHTML = `<span class="tg-k ${k==='1'?'tg-k1':'tg-k2'}">Revolver ${k}</span><span class="tg-info">${k==='1'?'1000.MPF · Oben':'2000.MPF · Unten'} · ${tools.length}</span>`;
+      list.appendChild(grp);
+      tools.forEach(t=>{
+        const card=document.createElement('div');card.className='op-card';
+        card.setAttribute('draggable','true');
+        card.addEventListener('dragstart',e=>{e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',JSON.stringify({kind:'tool',id:t.id}))});
+        card.addEventListener('click',()=>openToolEditor(t.id));
+        const title=document.createElement('div');title.className='op-card-title';
+        const titleText=document.createElement('span');titleText.textContent=t.name;titleText.style.overflow='hidden';titleText.style.textOverflow='ellipsis';titleText.style.whiteSpace='nowrap';
+        const lc=document.createElement('span');lc.className='op-card-l';lc.textContent=t.tno;
+        title.append(titleText,lc);
+        card.append(title);
+        list.appendChild(card);
+      });
+    });
+    return;
+  }
+
+  // Operation Library (default) — grouped by Kanal (SP4 → K1, SP3 → K2)
+  let ops=S.library;
+  if(S.catFilter!=='Alle')ops=ops.filter(o=>o.category===S.catFilter);
+  if(S.spFilter==='SP3')ops=ops.filter(o=>o.spindle==='SP3');
+  if(S.spFilter==='SP4')ops=ops.filter(o=>o.spindle==='SP4');
+  if(!ops.length){list.innerHTML='<div class="lib-empty">Keine Operationen in dieser Auswahl</div>';return}
+
+  function renderOpCard(op){
+    const card=document.createElement('div');card.className='op-card';
+    card.setAttribute('draggable','true');
+    card.addEventListener('dragstart',e=>{e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',JSON.stringify({kind:'op',id:op.id}))});
+    card.addEventListener('click',()=>openEditor(op.id));
+    const title=document.createElement('div');title.className='op-card-title';
+    const titleText=document.createElement('span');titleText.textContent=opName(op);titleText.style.overflow='hidden';titleText.style.textOverflow='ellipsis';titleText.style.whiteSpace='nowrap';
+    const lc=document.createElement('span');lc.className='op-card-l';lc.textContent=op.code;
+    title.append(titleText,lc);
+    const meta=document.createElement('div');meta.className='op-card-meta';
+    const bsp=document.createElement('span');bsp.className='tag '+(op.spindle==='SP4'?'tag-sp4':'tag-sp3');bsp.textContent=op.spindle;
+    const bcat=document.createElement('span');bcat.className='tag tag-cat';bcat.textContent=op.category;
+    meta.append(bsp,bcat);
+    if(op.doppelhalter){const bd=document.createElement('span');bd.className='tag tag-doppel';bd.textContent='DH';meta.appendChild(bd)}
+    card.append(title,meta);
+    list.appendChild(card);
+  }
+
+  // Group: SP4 = Kanal 1, SP3 = Kanal 2
+  const groups = [
+    { k:'1', label:'Kanal 1', info:'1000.MPF · SP4 · Oben', filter:o=>o.spindle==='SP4' },
+    { k:'2', label:'Kanal 2', info:'2000.MPF · SP3 · Unten', filter:o=>o.spindle==='SP3' },
+  ];
+  let anyShown = false;
+  groups.forEach(g => {
+    const gops = ops.filter(g.filter).sort((a,b)=>(a.code||'').localeCompare(b.code||'', undefined, {numeric:true}));
+    if (!gops.length) return;
+    anyShown = true;
+    const grp = document.createElement('div');
+    grp.className = 'tool-group-head';
+    grp.innerHTML = `<span class="tg-k ${g.k==='1'?'tg-k1':'tg-k2'}">${g.label}</span><span class="tg-info">${g.info} · ${gops.length}</span>`;
+    list.appendChild(grp);
+    gops.forEach(renderOpCard);
+  });
+  if (!anyShown) {
+    list.innerHTML='<div class="lib-empty">Keine Operationen in dieser Auswahl</div>';
+  }
+}
+
+function setLibTab(t){
+  S.libTab = (t === 'tool') ? 'tool' : 'op';
+  save();
+  renderFilters();
+  renderLib();
+}
+
+/* ═══════════════════════════════════════════════════
+   PRINT TABLE — matches reference PDF exactly
+   Layout: [#] [K1·SP4] [K1·SP3] [K2·SP4] [K2·SP3]
+═══════════════════════════════════════════════════ */
+function renderPrintTable(){
+  const tbl=$('#printTable');
+  const s1=S.slots['1'], s2=S.slots['2'];
+  const n=Math.max(s1.length, s2.length, MIN_SLOTS);
+
+  let h = '';
+  // Column groups
+  h += '<colgroup>';
+  h += '<col class="col-idx">';
+  h += '<col class="col-cell">';  // K1 SP4
+  h += '<col class="col-cell">';  // K1 SP3
+  h += '<col class="col-cell">';  // K2 SP4
+  h += '<col class="col-cell">';  // K2 SP3
+  h += '</colgroup>';
+
+  h += '<thead>';
+  // Row 1: corner + Kanal headers
+  h += '<tr class="ptr-kanal-head">';
+  h += '<td class="pt-corner"></td>';
+  h += '<td colspan="2">Kanal 1 · 1000.MPF</td>';
+  h += '<td colspan="2">Kanal 2 · 2000.MPF</td>';
+  h += '</tr>';
+  // Row 2: corner + Spindle headers — coloured
+  h += '<tr class="ptr-spindle-head">';
+  h += '<td class="pt-corner"></td>';
+  h += '<td class="pt-sp4-head">Spindel 4</td>';
+  h += '<td class="pt-sp3-head">Spindel 3</td>';
+  h += '<td class="pt-sp4-head">Spindel 4</td>';
+  h += '<td class="pt-sp3-head">Spindel 3</td>';
+  h += '</tr>';
+  h += '</thead><tbody>';
+
+  for (let i = 0; i < n; i++) {
+    const slot1 = s1[i] || null;
+    const slot2 = s2[i] || null;
+    const op1 = (slot1 && slot1.opId) ? getOp(slot1.opId) : null;
+    const op2 = (slot2 && slot2.opId) ? getOp(slot2.opId) : null;
+    const t1 = (slot1 && slot1.toolId) ? getTool(slot1.toolId) : null;
+    const t2 = (slot2 && slot2.toolId) ? getTool(slot2.toolId) : null;
+    const lc1 = L[1](i+1), lc2 = L[2](i+1);
+
+    function cellHTML(op, tool, lc) {
+      if (!op && !tool) return '';
+      let codes = `<span class="pt-l">${esc(lc)}</span>`;
+      if (tool && tool.tno) codes += `<span class="pt-t">${esc(tool.tno)}</span>`;
+      const text = op ? opName(op) : (tool ? tool.name : '');
+      return `<div class="pt-content"><span class="pt-text">${esc(text)}</span><span class="pt-codes">${codes}</span></div>`;
+    }
+
+    // Determine spindle for placement:
+    // - If op exists, use op.spindle
+    // - If only tool, default to SP4
+    const spOf = (op) => op ? op.spindle : 'SP4';
+    const sp1 = spOf(op1);
+    const sp2 = spOf(op2);
+
+    const k1sp4 = (op1 || t1) && sp1 === 'SP4' ? cellHTML(op1, t1, lc1) : '';
+    const k1sp3 = (op1 || t1) && sp1 === 'SP3' ? cellHTML(op1, t1, lc1) : '';
+    const k2sp4 = (op2 || t2) && sp2 === 'SP4' ? cellHTML(op2, t2, lc2) : '';
+    const k2sp3 = (op2 || t2) && sp2 === 'SP3' ? cellHTML(op2, t2, lc2) : '';
+
+    h += '<tr>';
+    h += `<td class="pt-idx">${i+1}</td>`;
+    h += `<td class="pt-cell">${k1sp4}</td>`;
+    h += `<td class="pt-cell">${k1sp3}</td>`;
+    h += `<td class="pt-cell">${k2sp4}</td>`;
+    h += `<td class="pt-cell">${k2sp3}</td>`;
+    h += '</tr>';
+  }
+
+  h += '</tbody>';
+  tbl.innerHTML = h;
+}
+
+function renderAll(){renderSlots();renderFilters();renderLib();renderPrintTable()}
+
+/* CLOCK */
+function tick(){
+  const d=new Date();
+  const pad=n=>String(n).padStart(2,'0');
+  $('#sbClock').textContent=`${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+  $('#metaDate').textContent=`${pad(d.getDate())}.${pad(d.getMonth()+1)}.${d.getFullYear()}`;
+}
+
+function renderCustom(){
+  const grid = $('#customFieldsGrid');
+  if (!grid) return;
+  grid.innerHTML = '';
+  if (!S.custom.length) {
+    grid.innerHTML = '<div class="lib-empty" style="grid-column:1/-1;padding:20px 8px;">Noch keine eigenen Felder. Mit „+ Feld hinzufügen" anlegen.</div>';
+    return;
+  }
+  // 2-column layout same as meta-grid; each row has label input + value input + delete
+  grid.style.gridTemplateColumns = '1fr';
+  S.custom.forEach(cf => {
+    const row = document.createElement('div');
+    row.className = 'custom-field-row';
+    const labelIn = document.createElement('input');
+    labelIn.type = 'text';
+    labelIn.className = 'meta-input label-input';
+    labelIn.placeholder = 'Feldname (z.B. Spannmittel)';
+    labelIn.value = cf.label;
+    labelIn.addEventListener('input', e => { cf.label = e.target.value; save(); updatePrintHeader(); });
+    const valIn = document.createElement('input');
+    valIn.type = 'text';
+    valIn.className = 'meta-input';
+    valIn.placeholder = 'Wert';
+    valIn.value = cf.value;
+    valIn.addEventListener('input', e => { cf.value = e.target.value; save(); updatePrintHeader(); });
+    const del = document.createElement('button');
+    del.className = 'icon-btn danger';
+    del.title = 'Feld löschen';
+    del.innerHTML = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3l10 10M13 3L3 13"/></svg>';
+    del.addEventListener('click', () => {
+      S.custom = S.custom.filter(x => x.id !== cf.id);
+      save(); renderCustom(); updatePrintHeader();
+    });
+    row.append(labelIn, valIn, del);
+    grid.appendChild(row);
+  });
+}
+
+function setView(v){
+  S.view = (v === 'wkz' || v === 'saw') ? v : 'plan';
+  document.body.setAttribute('data-view', S.view);
+  $$('.view-tab').forEach(b => b.classList.toggle('active', b.dataset.view === S.view));
+  $$('.view-pane').forEach(p => p.classList.toggle('active', p.dataset.pane === S.view));
+  if (S.view === 'saw' && typeof sawCalculate === 'function') {
+    try { sawCalculate(false); } catch(e) { console.error(e); }
+  }
+  save();
+}
+
+function updatePrintHeader(){
+  const d=new Date();
+  const pad=n=>String(n).padStart(2,'0');
+  // Page 1
+  $('#phZN').textContent = S.zn || '—';
+  $('#phBez').textContent = S.bez || '—';
+  // Page 2 header
+  $('#phZN2').textContent = S.zn || '—';
+  $('#phBez2').textContent = S.bez || '—';
+  // Page 2 meta block
+  function setMeta(id, val){
+    const el = $('#'+id);
+    if (!el) return;
+    if (val && val.trim()) {
+      el.textContent = val;
+      el.classList.remove('is-empty');
+    } else {
+      el.textContent = '';
+      el.classList.add('is-empty');
+    }
+  }
+  setMeta('phLaufzeit', S.laufzeit);
+  setMeta('phMaterial', S.material);
+  setMeta('phSaege', S.saegelaenge);
+  setMeta('phAusspann', S.ausspannlaenge);
+  setMeta('phReststueck', S.reststuecklaenge);
+  setMeta('phBackenNr', S.backenNr);
+  setMeta('phBackenAbst', S.backenAbstand);
+  setMeta('phRoboA', S.roboA);
+  setMeta('phRoboB', S.roboB);
+
+  // Append custom fields to meta-print (remove old custom rows first)
+  const mp = document.querySelector('.meta-print');
+  if (mp) {
+    mp.querySelectorAll('.meta-print-row.custom, .meta-print-row.filler').forEach(el => el.remove());
+    mp.querySelectorAll('.meta-print-row.span-2, .meta-print-row.span-3').forEach(el => {
+      el.classList.remove('span-2', 'span-3');
+    });
+    const visibleCustom = S.custom.filter(cf => cf.label.trim() || cf.value.trim());
+    visibleCustom.forEach(cf => {
+      const row = document.createElement('div');
+      row.className = 'meta-print-row custom';
+      const lab = document.createElement('div');
+      lab.className = 'mpr-label';
+      lab.textContent = cf.label || '—';
+      const val = document.createElement('div');
+      val.className = 'mpr-value';
+      if (cf.value.trim()) {
+        val.textContent = cf.value;
+      } else {
+        val.classList.add('is-empty');
+      }
+      row.append(lab, val);
+      mp.appendChild(row);
+    });
+    // Pad with empty filler rows so total is a multiple of 3 (keeps grid edges clean)
+    const total = mp.querySelectorAll('.meta-print-row').length;
+    const rem = total % 3;
+    if (rem !== 0) {
+      const need = 3 - rem;
+      for (let i = 0; i < need; i++) {
+        const filler = document.createElement('div');
+        filler.className = 'meta-print-row filler';
+        filler.innerHTML = '<div class="mpr-label"></div><div class="mpr-value is-empty"></div>';
+        mp.appendChild(filler);
+      }
+    }
+  }
+}
+
+/* Werkzeugliste — list tools ONLY from current slots */
+function renderWkzTable(){
+  const cont = $('#wkzContainer');
+  if (!cont) return;
+
+  function collectTools(kanal){
+    const list = [];
+    const slots = S.slots[kanal] || [];
+    for (let i = 0; i < slots.length; i++) {
+      const s = slots[i];
+      if (!s || !s.toolId) continue;
+      const t = getTool(s.toolId);
+      if (!t) continue;
+      list.push({ tno: t.tno, name: t.name });
+    }
+    return list;
+  }
+
+  const k1 = collectTools('1');
+  const k2 = collectTools('2');
+
+  function buildTable(title, list, spClass, padTo) {
+    let h = `<table class="wkz-table ${spClass}">`;
+    h += '<colgroup><col class="wkz-c-tno"><col class="wkz-c-name"></colgroup>';
+    h += '<thead>';
+    h += `<tr class="wkz-section-head"><td colspan="2">${esc(title)}</td></tr>`;
+    h += '</thead><tbody>';
+    if (!list.length && padTo === 0) {
+      h += '<tr><td colspan="2" class="wkz-empty">— keine Werkzeuge zugeordnet —</td></tr>';
+    } else {
+      list.forEach(t => {
+        h += `<tr><td class="wkz-tno">${esc(t.tno)}</td><td class="wkz-name">${esc(t.name)}</td></tr>`;
+      });
+      const need = Math.max(0, padTo - list.length);
+      for (let i = 0; i < need; i++) {
+        h += '<tr><td class="wkz-tno">&nbsp;</td><td class="wkz-name">&nbsp;</td></tr>';
+      }
+    }
+    h += '</tbody></table>';
+    return h;
+  }
+
+  const maxLen = Math.max(k1.length, k2.length);
+  cont.innerHTML =
+    '<div class="wkz-col">' + buildTable('Kanal 1 · 1000.MPF · Revolver Oben', k1, 'wkz-sp4', maxLen) + '</div>' +
+    '<div class="wkz-col">' + buildTable('Kanal 2 · 2000.MPF · Revolver Unten', k2, 'wkz-sp3', maxLen) + '</div>';
+}
+
+/* ════════════════════════════════════════════
+   SÄGELÄNGE CALCULATOR
+═══════════════════════════════════════════════ */
+let sawAuto = true;
+function sawSet(id, val) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = val;
+}
+function sawCalculate(manualSlider) {
+  try {
+    if (manualSlider) sawAuto = false;
+    const fertigEl = document.getElementById('sawFertig');
+    const aussEl = document.getElementById('sawAuss');
+    if (!fertigEl || !aussEl) return;
+    const f = parseFloat(fertigEl.value) || 0;
+    const a = parseFloat(aussEl.value) || 0;
+    const schnittEl = document.getElementById('sawSchnitt');
+    const zangeEl = document.getElementById('sawZange');
+    const tolEl = document.getElementById('sawTol');
+    const maxEl = document.getElementById('sawMax');
+    const stangeEl = document.getElementById('sawStange');
+    const schnitt = schnittEl ? (parseFloat(schnittEl.value) || 0) : 3;
+    const zange = zangeEl ? (parseFloat(zangeEl.value) || 0) : 50;
+    const tol = tolEl ? (parseFloat(tolEl.value) || 0) : 10;
+    const maxRobo = maxEl ? (parseFloat(maxEl.value) || 1000) : 1000;
+    const stange = stangeEl ? (parseFloat(stangeEl.value) || 3000) : 3000;
+    const durchlauf = f + schnitt;
+    const butzen = zange + a + tol;
+    const teileSlider = document.getElementById('sawTeile');
+    if (!teileSlider) return;
+    if (sawAuto) {
+      const maxTeile = Math.max(1, Math.floor((maxRobo - butzen) / Math.max(durchlauf, 0.001)));
+      teileSlider.value = maxTeile;
+      sawSet('sawBadge', 'Automatik');
+      const badgeEl = document.getElementById('sawBadge');
+      if (badgeEl) badgeEl.classList.remove('manual');
+      sawSet('sawHint', 'Berechnet automatisch das Maximum für < ' + maxRobo + ' mm Robot-Greifbereich.');
+    } else {
+      sawSet('sawBadge', 'Manuell');
+      const badgeEl = document.getElementById('sawBadge');
+      if (badgeEl) badgeEl.classList.add('manual');
+      sawSet('sawHint', 'Klicke auf „Auf Automatik zurücksetzen" für max. Auslastung.');
+    }
+    const teile = parseInt(teileSlider.value, 10) || 1;
+    sawSet('sawTeileDisp', teile);
+    const saegeMass = (teile * durchlauf) + butzen;
+    sawSet('sawResMain', Math.round(saegeMass));
+    sawSet('sawResBut', Math.round(butzen) + ' mm');
+    sawSet('sawResDur', (Math.round(durchlauf * 10) / 10) + ' mm');
+    sawSet('sawResFormel', teile + '×' + (Math.round(durchlauf*10)/10) + ' + ' + Math.round(butzen));
+    const ges = saegeMass > 0 ? Math.floor(stange / saegeMass) * teile : 0;
+    sawSet('sawResGes', ges + ' Stk');
+    const badge = document.getElementById('sawRobot');
+    if (badge) {
+      if (saegeMass > maxRobo) {
+        badge.textContent = 'Zu lang für Roboter ( > ' + maxRobo + ' mm )';
+        badge.classList.add('warn');
+      } else {
+        badge.textContent = 'Robot Safe ( < ' + maxRobo + ' mm )';
+        badge.classList.remove('warn');
+      }
+    }
+  } catch (err) {
+    console.error('sawCalculate error:', err);
+  }
+}
+
+// Global sawStep for inline onclick
+function sawStep(delta) {
+  sawAuto = false;
+  const s = document.getElementById('sawTeile');
+  if (!s) return;
+  let v = parseInt(s.value, 10) || 1;
+  v = Math.max(1, Math.min(50, v + delta));
+  s.value = v;
+  sawCalculate(true);
+}
+
+function initSaw() {
+  try {
+    sawCalculate(false);
+  } catch (err) {
+    console.error('initSaw error:', err);
+  }
+}
+
+/* INIT */
+function init(){
+  if(!load()){
+    // Bootstrap DEFAULT as first project
+    applyState(DEFAULT);
+    migrateOpToolsToTools();
+    const id = newProjectId();
+    S._activeId = id;
+    S._projects = [{ id, ...snapshotProject() }];
+    saveAll();
+  }
+
+  // ZN / Bez fields
+  $('#inZN').value = S.zn;
+  $('#inBez').value = S.bez;
+  $('#inZN').addEventListener('input', e => { S.zn = e.target.value; save(); updatePrintHeader(); renderProjList(); });
+  $('#inBez').addEventListener('input', e => { S.bez = e.target.value; save(); updatePrintHeader(); renderProjList(); });
+
+  // Meta fields (Werkzeugliste)
+  const metaMap = {
+    inLaufzeit: 'laufzeit',
+    inMaterial: 'material',
+    inSaege: 'saegelaenge',
+    inAusspann: 'ausspannlaenge',
+    inReststueck: 'reststuecklaenge',
+    inBackenNr: 'backenNr',
+    inBackenAbst: 'backenAbstand',
+    inRoboA: 'roboA',
+    inRoboB: 'roboB',
+  };
+  Object.keys(metaMap).forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.value = S[metaMap[id]] || '';
+    el.addEventListener('input', e => {
+      S[metaMap[id]] = e.target.value;
+      save();
+      updatePrintHeader();
+    });
+  });
+
+  // VIEW TABS
+  setView(S.view);
+  $$('.view-tab').forEach(b => {
+    b.addEventListener('click', () => setView(b.dataset.view));
+  });
+
+  // Project menu
+  const projBtn = document.getElementById('projMenuBtn');
+  if (projBtn) {
+    projBtn.addEventListener('click', e => {
+      e.stopPropagation();
+      toggleProjDropdown();
+    });
+  }
+  // Click outside closes dropdown
+  document.addEventListener('click', e => {
+    const dd = document.getElementById('projDropdown');
+    if (!dd || !dd.classList.contains('open')) return;
+    if (e.target.closest('#projDropdown') || e.target.closest('#projMenuBtn')) return;
+    closeProjDropdown();
+  });
+  const btnNewProject = document.getElementById('btnNewProject');
+  if (btnNewProject) {
+    btnNewProject.addEventListener('click', async () => {
+      const values = await customPrompt({
+        tag: '[PROJEKT]',
+        title: 'Neues Projekt anlegen',
+        fields: [
+          { label: 'Zeichnungs-Nr.', placeholder: '231850', mono: true },
+          { label: 'Bezeichnung', placeholder: 'Buchse' }
+        ],
+        okText: 'Anlegen'
+      });
+      if (!values) return;
+      const [zn, bez] = values;
+      createProject(zn, bez, false);
+      $('#inZN').value = S.zn;
+      $('#inBez').value = S.bez;
+      syncMetaInputs();
+      renderAll();
+      renderCustom();
+      updatePrintHeader();
+      renderProjList();
+    });
+  }
+
+  // MPF import
+  const btnImportMPF = document.getElementById('btnImportMPF');
+  if (btnImportMPF) {
+    btnImportMPF.addEventListener('click', async () => {
+      const ok = await customConfirm(`MPF-Datei importieren?\n\nKann eine Werkzeugliste (PL ... <Name>) oder ein Programm-MPF (GROUP_BEGIN ... L-Code) sein. Der Kanal wird automatisch erkannt.`, { tag: '[MPF]', title: 'MPF-Datei importieren', okText: 'Datei wählen' });
+      if (!ok) return;
+      document.getElementById('mpfInput').value = '';
+      document.getElementById('mpfInput').click();
+    });
+    document.getElementById('mpfInput').addEventListener('change', e => {
+      const f = e.target.files[0]; if (!f) return;
+      const r = new FileReader();
+      r.onload = ev => {
+        importMPFFile(ev.target.result, f.name, n => {
+          if (n > 0) {
+            customAlert(`${n} Einträge importiert.`, { tag: '[MPF]', title: 'Import erfolgreich' });
+            renderAll();
+          }
+        });
+      };
+      r.onerror = () => customAlert('Datei konnte nicht gelesen werden.', { tag: '[MPF]', title: 'Fehler' });
+      r.readAsText(f);
+    });
+  }
+
+  // Custom fields button
+  // Library toggle
+  const btnToggleLib = document.getElementById('btnToggleLib');
+  const libClose = document.getElementById('libClose');
+  const mainEl = document.getElementById('main');
+  function toggleLib(force) {
+    if (force === true) mainEl.classList.add('lib-closed');
+    else if (force === false) mainEl.classList.remove('lib-closed');
+    else mainEl.classList.toggle('lib-closed');
+    if (btnToggleLib) btnToggleLib.classList.toggle('active', !mainEl.classList.contains('lib-closed'));
+  }
+  // Mark active initially (sidebar is open by default)
+  if (btnToggleLib) btnToggleLib.classList.add('active');
+  if (btnToggleLib) btnToggleLib.addEventListener('click', () => toggleLib());
+  if (libClose) libClose.addEventListener('click', () => toggleLib(true));
+
+  // Pairing modal
+  const btnPairing = document.getElementById('btnPairing');
+  if (btnPairing) btnPairing.addEventListener('click', () => openPairingModal());
+
+  const btnAddCustom = document.getElementById('btnAddCustom');
+  if (btnAddCustom) {
+    btnAddCustom.addEventListener('click', () => {
+      S.custom.push({ id:'cf_'+Math.random().toString(16).slice(2), label:'', value:'' });
+      save(); renderCustom(); updatePrintHeader();
+    });
+  }
+
+  // PRINT — print only the active view
+  $('#btnPrint').addEventListener('click', () => {
+    if (S.view === 'saw') {
+      // Sägelänge tab is interactive only — print Programmplan by default
+      try { renderPrintTable(); renderWkzTable(); updatePrintHeader(); } catch(err) { console.error(err); }
+      document.body.classList.remove('print-plan', 'print-wkz');
+      document.body.classList.add('print-plan');
+      window.print();
+      return;
+    }
+    try {
+      renderPrintTable();
+      renderWkzTable();
+      updatePrintHeader();
+    } catch(err) {
+      console.error('Print prep error:', err);
+    }
+    document.body.classList.remove('print-plan', 'print-wkz');
+    document.body.classList.add(S.view === 'wkz' ? 'print-wkz' : 'print-plan');
+    // Print synchronously (iOS Safari blocks setTimeout-wrapped print)
+    window.print();
+  });
+  // Cleanup print classes after print finishes (or is cancelled)
+  window.addEventListener('afterprint', () => {
+    document.body.classList.remove('print-plan', 'print-wkz');
+  });
+
+  $('#mClose').addEventListener('click',closeModal);
+  $('#modal').addEventListener('click',e=>{if(e.target.id==='modal')closeModal()});
+  document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});
+
+  $$('#kanalSwitch .kanal-btn').forEach(b=>{
+    b.classList.toggle('active',b.dataset.k===S.kanal);
+    b.addEventListener('click',()=>{
+      const k=b.dataset.k;if(k===S.kanal)return;
+      S.kanal=k;
+      $$('#kanalSwitch .kanal-btn').forEach(x=>x.classList.toggle('active',x.dataset.k===S.kanal));
+      save();renderSlots();
+    });
+  });
+
+  $('#btnAddOp').addEventListener('click',()=>{
+    if (S.libTab === 'tool') openToolEditor(null);
+    else openEditor(null);
+  });
+  // Library tab buttons
+  $$('.lib-tab').forEach(b => {
+    b.addEventListener('click', () => setLibTab(b.dataset.libtab));
+  });
+  $('#btnAddSlot').addEventListener('click',()=>{S.slots[S.kanal].push(null);save();renderSlots();renderPrintTable()});
+  $('#btnExport').addEventListener('click',()=>{
+    const blob=new Blob([JSON.stringify({v:2,exportedAt:new Date().toISOString(),data:{kanal:S.kanal,slots:S.slots,library:S.library,tools:S.tools,nextId:S.nextId,zn:S.zn,bez:S.bez}},null,2)],{type:'application/json'});
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+    a.download=`CitiTool_${(S.zn||'export').replace(/[^A-Za-z0-9_-]/g,'_')}_${new Date().toISOString().slice(0,10)}.json`;
+    document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(a.href);
+  });
+  $('#btnImport').addEventListener('click',()=>{$('#fileInput').value='';$('#fileInput').click()});
+  $('#fileInput').addEventListener('change',e=>{
+    const f=e.target.files[0];if(!f)return;
+    const r=new FileReader();
+    r.onload=ev=>{try{const p=JSON.parse(ev.target.result);if(applyState(p&&p.data?p.data:p)){save();renderAll()}}catch(_){customAlert('Ungültige JSON-Datei',{tag:'[JSON]',title:'Import fehlgeschlagen'})}};
+    r.readAsText(f);
+  });
+
+  // ensure print table & header are updated right before printing
+  window.addEventListener('beforeprint',()=>{
+    if (!document.body.classList.contains('print-plan') && !document.body.classList.contains('print-wkz')) {
+      document.body.classList.add(S.view === 'wkz' ? 'print-wkz' : 'print-plan');
+    }
+    renderPrintTable(); renderWkzTable(); updatePrintHeader();
+  });
+  window.addEventListener('afterprint',()=>{
+    document.body.classList.remove('print-plan', 'print-wkz');
+  });
+
+  renderAll();
+  updatePrintHeader();
+  renderWkzTable();
+  renderCustom();
+  tick();setInterval(tick,1000);
+  try { initSaw(); } catch(e) { console.error('initSaw outer:', e); }
+}
+document.addEventListener('DOMContentLoaded',init);
+</script>
+</body>
+</html>
