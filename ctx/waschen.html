@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TEILE ZUM WASCHEN | Editor</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bw: 1px;            /* Linienstärke / толщина линий */
+    --bc: #BBBBBB;        /* Linienfarbe / цвет линий */
+    --head-bg: #F9F9F9;   /* Kopfzeile Hintergrund */
+    --row-h: 26px;        /* Zeilenhöhe */
+  }
+  *{ box-sizing:border-box; }
+  body{
+    background:#e9eaec;
+    color:#000;
+    font-family:'Inter',sans-serif;
+    margin:0; padding:0;
+  }
+
+  /* ====== STEUERLEISTE (wird beim Drucken ausgeblendet) ====== */
+  .panel{
+    position:sticky; top:0; z-index:50;
+    background:#111; color:#fff;
+    border-bottom:3px solid #ffd400;
+    padding:14px 16px;
+  }
+  .panel h2{
+    margin:0 0 12px; font-size:13px; letter-spacing:2px;
+    text-transform:uppercase; font-weight:900; color:#ffd400;
+  }
+  .grid{ display:flex; flex-wrap:wrap; gap:14px 20px; align-items:flex-end; }
+  .fld{ display:flex; flex-direction:column; gap:4px; }
+  .fld label{ font-size:10px; letter-spacing:1px; text-transform:uppercase; font-weight:700; color:#9aa0a6; }
+  .fld input[type=text],
+  .fld input[type=number]{
+    background:#1e1e1e; border:1px solid #3a3a3a; color:#fff;
+    padding:8px 10px; font-size:15px; font-family:inherit; border-radius:4px;
+    min-width:90px;
+  }
+  .fld input[type=color]{
+    width:46px; height:38px; border:1px solid #3a3a3a; border-radius:4px;
+    background:#1e1e1e; padding:3px; cursor:pointer;
+  }
+  .fld input:focus{ outline:none; border-color:#ffd400; }
+  .row-range{ display:flex; align-items:center; gap:10px; }
+  .row-range input[type=range]{ width:130px; accent-color:#ffd400; }
+  .row-range .val{ font-variant-numeric:tabular-nums; font-weight:700; min-width:48px; font-size:14px; }
+
+  /* Spalten-Editor */
+  .cols-wrap{ margin-top:14px; border-top:1px solid #2a2a2a; padding-top:12px; }
+  .cols-head{ display:flex; align-items:center; gap:10px; margin-bottom:8px; }
+  .cols-head .lab{ font-size:10px; letter-spacing:1px; text-transform:uppercase; font-weight:700; color:#9aa0a6; }
+  .col-row{ display:flex; gap:8px; align-items:center; margin-bottom:6px; flex-wrap:wrap; }
+  .col-row .idx{ width:20px; text-align:center; color:#ffd400; font-weight:900; font-size:13px; }
+  .col-row input[type=text]{ flex:1 1 200px; }
+  .col-row .w{ width:88px !important; min-width:0 !important; }
+  .col-row .unit{ color:#9aa0a6; font-size:12px; }
+
+  .btn{
+    background:#ffd400; color:#111; border:none; cursor:pointer;
+    font-family:inherit; font-weight:800; font-size:12px; letter-spacing:.5px;
+    padding:9px 14px; border-radius:4px; text-transform:uppercase;
+  }
+  .btn.ghost{ background:transparent; color:#ffd400; border:1px solid #ffd400; }
+  .btn.tiny{ padding:6px 10px; font-size:11px; }
+  .btn.del{ background:#3a1f1f; color:#ff8a8a; border:1px solid #5a2a2a; }
+  .btn-row{ display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; }
+  .hint{ font-size:11px; color:#9aa0a6; margin-top:8px; }
+  .hint b{ color:#fff; }
+
+  /* ====== DRUCK-BEREICH ====== */
+  .stage{ display:flex; justify-content:center; padding:24px 12px 80px; }
+  .page-wrapper{
+    width:210mm; min-height:297mm; background:#fff;
+    padding:25mm 15mm 10mm 15mm;
+    box-shadow:0 8px 30px rgba(0,0,0,.18);
+    display:flex; flex-direction:column;
+  }
+  header.doc{ margin-bottom:15px; border-bottom:2px solid #000; padding-bottom:6px; }
+  header.doc h1{
+    margin:0; font-size:24px; font-weight:900;
+    text-transform:uppercase; letter-spacing:-0.5px;
+  }
+
+  table{
+    width:100%; border-collapse:collapse; table-layout:fixed;
+    border:var(--bw) solid var(--bc);
+  }
+  th{
+    border:var(--bw) solid var(--bc);
+    padding:8px; font-size:9px; text-transform:uppercase;
+    font-weight:800; text-align:left; background:var(--head-bg);
+  }
+  td{
+    border:var(--bw) solid var(--bc);
+    height:var(--row-h);
+  }
+
+  /* ====== PRINT ====== */
+  @media print{
+    .panel{ display:none !important; }
+    body{ background:#fff; margin:0; padding:0; }
+    .stage{ padding:0; }
+    .page-wrapper{
+      width:100%; min-height:auto; box-shadow:none;
+      padding:20mm 12mm 10mm 12mm;
+    }
+    @page{ size:A4 portrait; margin:0; }
+    table, th, td{
+      border:var(--bw) solid var(--bc) !important;
+      -webkit-print-color-adjust:exact;
+      print-color-adjust:exact;
+    }
+    th{ -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ================= STEUERLEISTE ================= -->
+<div class="panel">
+  <h2>Tabellen-Editor</h2>
+
+  <div class="grid">
+    <div class="fld">
+      <label>Titel</label>
+      <input id="title" type="text" value="TEILE ZUM WASCHEN" style="min-width:240px">
+    </div>
+
+    <div class="fld">
+      <label>Zeilen</label>
+      <input id="rows" type="number" min="1" max="60" value="30" style="width:80px">
+    </div>
+
+    <div class="fld">
+      <label>Linienstärke</label>
+      <div class="row-range">
+        <input id="bw" type="range" min="0.5" max="4" step="0.5" value="1">
+        <span class="val" id="bwVal">1.0 px</span>
+      </div>
+    </div>
+
+    <div class="fld">
+      <label>Linienfarbe</label>
+      <input id="bc" type="color" value="#bbbbbb">
+    </div>
+
+    <div class="fld">
+      <label>Kopf-Hintergrund</label>
+      <input id="headbg" type="color" value="#f9f9f9">
+    </div>
+
+    <div class="fld">
+      <label>Zeilenhöhe</label>
+      <div class="row-range">
+        <input id="rh" type="range" min="18" max="44" step="1" value="26">
+        <span class="val" id="rhVal">26 px</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Spalten -->
+  <div class="cols-wrap">
+    <div class="cols-head">
+      <span class="lab">Spalten (Name + Breite %)</span>
+      <button class="btn tiny ghost" id="addCol">+ Spalte</button>
+      <button class="btn tiny ghost" id="evenCol">Gleichmäßig verteilen</button>
+      <span class="lab" id="sumLab"></span>
+    </div>
+    <div id="colList"></div>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn" onclick="window.print()">Drucken / PDF</button>
+    <button class="btn ghost" id="reset">Zurücksetzen</button>
+  </div>
+  <div class="hint">Beim Drucken wird diese Leiste ausgeblendet — das PDF zeigt nur die Tabelle. Breiten sollten zusammen <b>100&nbsp;%</b> ergeben.</div>
+</div>
+
+<!-- ================= DRUCK-BEREICH ================= -->
+<div class="stage">
+  <div class="page-wrapper">
+    <header class="doc"><h1 id="docTitle">TEILE ZUM WASCHEN</h1></header>
+    <table>
+      <colgroup id="colgroup"></colgroup>
+      <thead><tr id="headRow"></tr></thead>
+      <tbody id="body"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+  const DEFAULTS = {
+    title: 'TEILE ZUM WASCHEN',
+    rows: 30,
+    bw: 1,
+    bc: '#bbbbbb',
+    headbg: '#f9f9f9',
+    rh: 26,
+    columns: [
+      { name:'Zeichnungsnummer', width:30 },
+      { name:'Auftragsnummer',   width:30 },
+      { name:'Stückzahl',        width:15 },
+      { name:'Datum',            width:25 },
+    ]
+  };
+
+  // tiefe Kopie des Anfangszustands
+  let state = JSON.parse(JSON.stringify(DEFAULTS));
+
+  const $ = id => document.getElementById(id);
+
+  function renderColEditor(){
+    const list = $('colList');
+    list.innerHTML = '';
+    state.columns.forEach((c, i) => {
+      const row = document.createElement('div');
+      row.className = 'col-row';
+      row.innerHTML =
+        '<span class="idx">'+(i+1)+'</span>' +
+        '<input type="text" value="'+ c.name.replace(/"/g,'&quot;') +'" data-i="'+i+'" data-k="name">' +
+        '<input type="number" class="w" min="1" max="100" value="'+ c.width +'" data-i="'+i+'" data-k="width"><span class="unit">%</span>' +
+        '<button class="btn tiny del" data-del="'+i+'">×</button>';
+      list.appendChild(row);
+    });
+
+    list.querySelectorAll('input').forEach(inp=>{
+      inp.addEventListener('input', e=>{
+        const i = +e.target.dataset.i, k = e.target.dataset.k;
+        state.columns[i][k] = (k==='width') ? (parseFloat(e.target.value)||0) : e.target.value;
+        renderTable();
+      });
+    });
+    list.querySelectorAll('[data-del]').forEach(b=>{
+      b.addEventListener('click', e=>{
+        if(state.columns.length<=1) return;
+        state.columns.splice(+e.target.dataset.del,1);
+        renderColEditor(); renderTable();
+      });
+    });
+    updateSum();
+  }
+
+  function updateSum(){
+    const sum = state.columns.reduce((a,c)=>a+(parseFloat(c.width)||0),0);
+    const lab = $('sumLab');
+    lab.textContent = 'Summe: ' + (Math.round(sum*10)/10) + ' %';
+    lab.style.color = (Math.abs(sum-100) < 0.5) ? '#7CFC7C' : '#ff8a8a';
+  }
+
+  function renderTable(){
+    // Variablen setzen
+    document.documentElement.style.setProperty('--bw', state.bw + 'px');
+    document.documentElement.style.setProperty('--bc', state.bc);
+    document.documentElement.style.setProperty('--head-bg', state.headbg);
+    document.documentElement.style.setProperty('--row-h', state.rh + 'px');
+
+    // Titel
+    $('docTitle').textContent = state.title;
+
+    // colgroup
+    const cg = $('colgroup');
+    cg.innerHTML = state.columns.map(c=>'<col style="width:'+c.width+'%">').join('');
+
+    // Kopfzeile
+    $('headRow').innerHTML = state.columns
+      .map(c=>'<th>'+ (c.name||'').replace(/</g,'&lt;') +'</th>').join('');
+
+    // Körper
+    const cells = '<td></td>'.repeat(state.columns.length);
+    let body = '';
+    for(let r=0; r<state.rows; r++){ body += '<tr>'+cells+'</tr>'; }
+    $('body').innerHTML = body;
+
+    updateSum();
+  }
+
+  // ---- Steuerelemente verbinden ----
+  $('title').addEventListener('input', e=>{ state.title=e.target.value; renderTable(); });
+  $('rows').addEventListener('input', e=>{ state.rows=Math.max(1,parseInt(e.target.value)||1); renderTable(); });
+
+  $('bw').addEventListener('input', e=>{
+    state.bw=parseFloat(e.target.value); $('bwVal').textContent=state.bw.toFixed(1)+' px'; renderTable();
+  });
+  $('bc').addEventListener('input', e=>{ state.bc=e.target.value; renderTable(); });
+  $('headbg').addEventListener('input', e=>{ state.headbg=e.target.value; renderTable(); });
+  $('rh').addEventListener('input', e=>{
+    state.rh=parseInt(e.target.value); $('rhVal').textContent=state.rh+' px'; renderTable();
+  });
+
+  $('addCol').addEventListener('click', ()=>{
+    state.columns.push({ name:'Spalte '+(state.columns.length+1), width:10 });
+    renderColEditor(); renderTable();
+  });
+  $('evenCol').addEventListener('click', ()=>{
+    const w = Math.round((100/state.columns.length)*10)/10;
+    state.columns.forEach((c,i)=> c.width = (i===state.columns.length-1)
+        ? Math.round((100 - w*(state.columns.length-1))*10)/10
+        : w);
+    renderColEditor(); renderTable();
+  });
+
+  $('reset').addEventListener('click', ()=>{
+    state = JSON.parse(JSON.stringify(DEFAULTS));
+    $('title').value=state.title; $('rows').value=state.rows;
+    $('bw').value=state.bw; $('bwVal').textContent=state.bw.toFixed(1)+' px';
+    $('bc').value=state.bc; $('headbg').value=state.headbg;
+    $('rh').value=state.rh; $('rhVal').textContent=state.rh+' px';
+    renderColEditor(); renderTable();
+  });
+
+  // ---- Start ----
+  renderColEditor();
+  renderTable();
+</script>
+</body>
+</html>
