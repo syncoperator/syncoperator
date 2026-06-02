@@ -2,242 +2,252 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>TEILE ZUM WASCHEN | Editor</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
   :root{
-    --bw: 1px;            /* Linienstärke / толщина линий */
-    --bc: #BBBBBB;        /* Linienfarbe / цвет линий */
-    --head-bg: #F9F9F9;   /* Kopfzeile Hintergrund */
-    --row-h: 26px;        /* Zeilenhöhe */
+    --bw:1px; --bc:#BBBBBB; --head-bg:#F9F9F9; --row-h:26px;   /* Formular-Tokens */
+    --ink:#0A0A0A; --muted:#9A9A9A; --line:#E8E8E8; --bg:#F3F3F4; --card:#FFFFFF;
+    --green-bg:#E8F3EA; --green-ink:#2F6B3A;
+    --mono:'JetBrains Mono',ui-monospace,monospace;
+    --sans:'Hanken Grotesk',system-ui,sans-serif;
   }
-  *{ box-sizing:border-box; }
-  body{
-    background:#e9eaec;
-    color:#000;
-    font-family:'Inter',sans-serif;
-    margin:0; padding:0;
-  }
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body{ margin:0; padding:0; }
+  body{ background:var(--bg); color:var(--ink); font-family:var(--sans); }
 
-  /* ====== STEUERLEISTE (wird beim Drucken ausgeblendet) ====== */
-  .panel{
-    position:sticky; top:0; z-index:50;
-    background:#111; color:#fff;
-    border-bottom:3px solid #ffd400;
-    padding:14px 16px;
+  /* ===== STATUSLEISTE ===== */
+  .topbar{
+    position:sticky; top:0; z-index:20; background:#fff;
+    display:flex; align-items:center; justify-content:space-between;
+    padding:13px 18px; border-bottom:1px solid var(--line);
+    font-family:var(--mono); font-size:11px; letter-spacing:1.5px;
+    text-transform:uppercase; color:var(--muted);
   }
-  .panel h2{
-    margin:0 0 12px; font-size:13px; letter-spacing:2px;
-    text-transform:uppercase; font-weight:900; color:#ffd400;
-  }
-  .grid{ display:flex; flex-wrap:wrap; gap:14px 20px; align-items:flex-end; }
-  .fld{ display:flex; flex-direction:column; gap:4px; }
-  .fld label{ font-size:10px; letter-spacing:1px; text-transform:uppercase; font-weight:700; color:#9aa0a6; }
-  .fld input[type=text],
-  .fld input[type=number]{
-    background:#1e1e1e; border:1px solid #3a3a3a; color:#fff;
-    padding:8px 10px; font-size:15px; font-family:inherit; border-radius:4px;
-    min-width:90px;
-  }
-  .fld input[type=color]{
-    width:46px; height:38px; border:1px solid #3a3a3a; border-radius:4px;
-    background:#1e1e1e; padding:3px; cursor:pointer;
-  }
-  .fld input:focus{ outline:none; border-color:#ffd400; }
-  .row-range{ display:flex; align-items:center; gap:10px; }
-  .row-range input[type=range]{ width:130px; accent-color:#ffd400; }
-  .row-range .val{ font-variant-numeric:tabular-nums; font-weight:700; min-width:48px; font-size:14px; }
+  .topbar .dot{ width:8px; height:8px; border-radius:50%; background:var(--ink); display:inline-block; margin-right:8px; vertical-align:middle; }
 
-  /* Spalten-Editor */
-  .cols-wrap{ margin-top:14px; border-top:1px solid #2a2a2a; padding-top:12px; }
-  .cols-head{ display:flex; align-items:center; gap:10px; margin-bottom:8px; }
-  .cols-head .lab{ font-size:10px; letter-spacing:1px; text-transform:uppercase; font-weight:700; color:#9aa0a6; }
-  .col-row{ display:flex; gap:8px; align-items:center; margin-bottom:6px; flex-wrap:wrap; }
-  .col-row .idx{ width:20px; text-align:center; color:#ffd400; font-weight:900; font-size:13px; }
-  .col-row input[type=text]{ flex:1 1 200px; }
-  .col-row .w{ width:88px !important; min-width:0 !important; }
-  .col-row .unit{ color:#9aa0a6; font-size:12px; }
+  /* ===== MARKEN-LEISTE ===== */
+  .brandbar{ display:flex; align-items:center; gap:14px; padding:18px; background:#fff; border-bottom:1px solid var(--line); }
+  .mark{ width:52px; height:52px; border-radius:14px; background:var(--ink); display:flex; align-items:center; justify-content:center; flex:0 0 auto; }
+  .mark svg{ width:24px; height:24px; stroke:#fff; fill:none; stroke-width:2; stroke-linecap:round; }
+  .brand-txt{ flex:1 1 auto; min-width:0; }
+  .brand-txt .b1{ font-weight:900; font-size:19px; letter-spacing:-0.4px; line-height:1; }
+  .brand-txt .b2{ font-family:var(--mono); font-size:10px; letter-spacing:2px; color:var(--muted); text-transform:uppercase; margin-top:5px; }
+  .icon-btn{ width:52px; height:52px; border-radius:14px; background:#fff; border:1px solid var(--line); display:flex; align-items:center; justify-content:center; cursor:pointer; flex:0 0 auto; }
+  .icon-btn svg{ width:22px; height:22px; stroke:var(--ink); fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+  .icon-btn:active{ background:#f2f2f2; }
 
-  .btn{
-    background:#ffd400; color:#111; border:none; cursor:pointer;
-    font-family:inherit; font-weight:800; font-size:12px; letter-spacing:.5px;
-    padding:9px 14px; border-radius:4px; text-transform:uppercase;
-  }
-  .btn.ghost{ background:transparent; color:#ffd400; border:1px solid #ffd400; }
-  .btn.tiny{ padding:6px 10px; font-size:11px; }
-  .btn.del{ background:#3a1f1f; color:#ff8a8a; border:1px solid #5a2a2a; }
-  .btn-row{ display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; }
-  .hint{ font-size:11px; color:#9aa0a6; margin-top:8px; }
-  .hint b{ color:#fff; }
+  /* ===== EINSTELLUNGEN (Hauptinhalt) ===== */
+  .wrap{ max-width:560px; margin:0 auto; padding:18px 16px 120px; }
+  .card{ background:var(--card); border:1px solid var(--line); border-radius:18px; padding:18px; margin-bottom:14px; }
+  .card-lbl{ font-family:var(--mono); font-size:11px; letter-spacing:2px; text-transform:uppercase; color:var(--muted); margin-bottom:14px; }
+  .card-lbl b{ color:var(--ink); }
 
-  /* ====== DRUCK-BEREICH ====== */
-  .stage{ display:flex; justify-content:center; padding:24px 12px 80px; }
-  .page-wrapper{
-    width:210mm; min-height:297mm; background:#fff;
-    padding:25mm 15mm 10mm 15mm;
-    box-shadow:0 8px 30px rgba(0,0,0,.18);
-    display:flex; flex-direction:column;
-  }
+  .fields{ display:flex; flex-wrap:wrap; gap:14px; }
+  .fld{ display:flex; flex-direction:column; gap:7px; }
+  .fld.grow{ flex:1 1 200px; }
+  .fld label{ font-family:var(--mono); font-size:10px; letter-spacing:1.5px; text-transform:uppercase; color:var(--muted); }
+  .inp{ background:#fff; border:1px solid var(--line); color:var(--ink); padding:13px 14px; font-size:16px; font-family:var(--sans); border-radius:13px; width:100%; }
+  .inp:focus{ outline:none; border-color:var(--ink); }
+  input[type=number].inp{ font-family:var(--mono); width:100%; }
+
+  .range-box{ display:flex; align-items:center; gap:12px; border:1px solid var(--line); border-radius:13px; padding:11px 14px; }
+  .range-box input[type=range]{ flex:1; accent-color:var(--ink); }
+  .range-box .v{ font-family:var(--mono); font-size:13px; font-weight:700; min-width:54px; text-align:right; }
+
+  .color-box{ display:flex; align-items:center; gap:12px; border:1px solid var(--line); border-radius:13px; padding:8px 12px; }
+  .color-box input[type=color]{ width:38px; height:38px; border:none; border-radius:10px; background:none; padding:0; cursor:pointer; }
+  .color-box .v{ font-family:var(--mono); font-size:13px; text-transform:uppercase; color:var(--muted); }
+
+  /* Spalten */
+  .col-top{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:14px; }
+  .col-card{ display:flex; align-items:center; gap:10px; border:1px solid var(--line); border-radius:14px; padding:10px; margin-bottom:10px; }
+  .col-card .idx{ width:36px; height:36px; flex:0 0 auto; border:1px solid var(--line); border-radius:10px; display:flex; align-items:center; justify-content:center; font-family:var(--mono); font-weight:700; font-size:14px; }
+  .col-card .name{ flex:1 1 auto; min-width:0; }
+  .col-card .wbox{ display:flex; align-items:center; gap:4px; border:1px solid var(--line); border-radius:10px; padding:7px 10px; flex:0 0 auto; }
+  .col-card .wbox input{ width:46px; border:none; outline:none; font-family:var(--mono); font-size:15px; text-align:right; background:none; }
+  .col-card .wbox .pct{ font-family:var(--mono); color:var(--muted); font-size:14px; }
+
+  .btn{ font-family:var(--sans); font-weight:800; font-size:14px; padding:13px 18px; border-radius:13px; cursor:pointer; border:1px solid var(--ink); background:var(--ink); color:#fff; display:inline-flex; align-items:center; gap:8px; justify-content:center; }
+  .btn.ghost{ background:#fff; color:var(--ink); border-color:var(--line); }
+  .btn.tiny{ padding:9px 13px; font-size:13px; border-radius:11px; }
+  .btn.del{ background:#fff; border:1px solid var(--line); color:#C23; width:36px; height:36px; padding:0; font-size:19px; border-radius:10px; flex:0 0 auto; }
+  .btn svg{ width:18px; height:18px; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+  .btn:active{ opacity:.85; }
+
+  .sum-tag{ font-family:var(--mono); font-size:12px; padding:7px 11px; border-radius:10px; }
+  .actions{ display:flex; gap:10px; }
+  .actions .btn{ flex:1; }
+  .note{ font-family:var(--mono); font-size:11px; color:var(--muted); line-height:1.6; margin-top:14px; text-align:center; }
+  .note b{ color:var(--ink); }
+
+  /* ===== VORSCHAU-OVERLAY ===== */
+  .overlay{ position:fixed; inset:0; z-index:80; background:rgba(20,20,22,.55); display:none; }
+  .overlay.open{ display:block; }
+  .ov-bar{ position:sticky; top:0; z-index:2; display:flex; align-items:center; justify-content:space-between; gap:12px; padding:14px 16px; background:#fff; border-bottom:1px solid var(--line); }
+  .ov-bar .t{ font-family:var(--mono); font-size:12px; letter-spacing:1.5px; text-transform:uppercase; color:var(--muted); }
+  .ov-bar .grp{ display:flex; gap:10px; }
+  .ov-scroll{ height:100%; overflow:auto; -webkit-overflow-scrolling:touch; background:#dadbdd; }
+  .stage{ display:flex; justify-content:center; padding:20px 12px 60px; }
+  .page-wrapper{ width:210mm; min-height:297mm; background:#fff; padding:25mm 15mm 10mm 15mm; box-shadow:0 10px 34px rgba(0,0,0,.18); display:flex; flex-direction:column; }
   header.doc{ margin-bottom:15px; border-bottom:2px solid #000; padding-bottom:6px; }
-  header.doc h1{
-    margin:0; font-size:24px; font-weight:900;
-    text-transform:uppercase; letter-spacing:-0.5px;
-  }
+  header.doc h1{ margin:0; font-family:'Inter',var(--sans); font-size:24px; font-weight:900; text-transform:uppercase; letter-spacing:-0.5px; }
+  table{ width:100%; border-collapse:collapse; table-layout:fixed; border:var(--bw) solid var(--bc); }
+  th{ border:var(--bw) solid var(--bc); padding:8px; font-family:'Inter',var(--sans); font-size:9px; text-transform:uppercase; font-weight:800; text-align:left; background:var(--head-bg); }
+  td{ border:var(--bw) solid var(--bc); height:var(--row-h); }
 
-  table{
-    width:100%; border-collapse:collapse; table-layout:fixed;
-    border:var(--bw) solid var(--bc);
-  }
-  th{
-    border:var(--bw) solid var(--bc);
-    padding:8px; font-size:9px; text-transform:uppercase;
-    font-weight:800; text-align:left; background:var(--head-bg);
-  }
-  td{
-    border:var(--bw) solid var(--bc);
-    height:var(--row-h);
-  }
-
-  /* ====== PRINT ====== */
+  /* ===== DRUCK ===== */
   @media print{
-    .panel{ display:none !important; }
-    body{ background:#fff; margin:0; padding:0; }
+    .topbar, .brandbar, .wrap, .ov-bar{ display:none !important; }
+    body{ background:#fff; }
+    .overlay{ display:block !important; position:static; background:none; inset:auto; }
+    .ov-scroll{ height:auto; overflow:visible; background:none; }
     .stage{ padding:0; }
-    .page-wrapper{
-      width:100%; min-height:auto; box-shadow:none;
-      padding:20mm 12mm 10mm 12mm;
-    }
+    .page-wrapper{ width:100%; min-height:auto; box-shadow:none; padding:20mm 12mm 10mm 12mm; }
     @page{ size:A4 portrait; margin:0; }
-    table, th, td{
-      border:var(--bw) solid var(--bc) !important;
-      -webkit-print-color-adjust:exact;
-      print-color-adjust:exact;
-    }
-    th{ -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+    table, th, td{ border:var(--bw) solid var(--bc) !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
   }
 </style>
 </head>
 <body>
 
-<!-- ================= STEUERLEISTE ================= -->
-<div class="panel">
-  <h2>Tabellen-Editor</h2>
+<div class="topbar">
+  <span><span class="dot"></span> Bereit</span>
+  <span id="statSummary">Spalten 4 · Zeilen 30</span>
+</div>
 
-  <div class="grid">
-    <div class="fld">
-      <label>Titel</label>
-      <input id="title" type="text" value="TEILE ZUM WASCHEN" style="min-width:240px">
-    </div>
+<div class="brandbar">
+  <div class="mark"><svg viewBox="0 0 24 24"><path d="M3 8c2-2 4-2 6 0s4 2 6 0 4-2 6 0M3 14c2-2 4-2 6 0s4 2 6 0 4-2 6 0"/></svg></div>
+  <div class="brand-txt">
+    <div class="b1">EDITOR</div>
+    <div class="b2">Teile zum Waschen</div>
+  </div>
+  <div class="icon-btn" id="previewBtn" title="Vorschau">
+    <svg viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+  </div>
+</div>
 
-    <div class="fld">
-      <label>Zeilen</label>
-      <input id="rows" type="number" min="1" max="60" value="30" style="width:80px">
-    </div>
+<!-- EINSTELLUNGEN -->
+<div class="wrap">
 
-    <div class="fld">
-      <label>Linienstärke</label>
-      <div class="row-range">
-        <input id="bw" type="range" min="0.5" max="4" step="0.5" value="1">
-        <span class="val" id="bwVal">1.0 px</span>
+  <div class="card">
+    <div class="card-lbl">[01] · <b>Allgemein</b></div>
+    <div class="fields">
+      <div class="fld grow">
+        <label>Titel</label>
+        <input id="title" class="inp" type="text" value="TEILE ZUM WASCHEN">
       </div>
-    </div>
-
-    <div class="fld">
-      <label>Linienfarbe</label>
-      <input id="bc" type="color" value="#bbbbbb">
-    </div>
-
-    <div class="fld">
-      <label>Kopf-Hintergrund</label>
-      <input id="headbg" type="color" value="#f9f9f9">
-    </div>
-
-    <div class="fld">
-      <label>Zeilenhöhe</label>
-      <div class="row-range">
-        <input id="rh" type="range" min="18" max="44" step="1" value="26">
-        <span class="val" id="rhVal">26 px</span>
+      <div class="fld" style="flex:0 0 110px">
+        <label>Zeilen</label>
+        <input id="rows" class="inp" type="number" min="1" max="60" value="30">
       </div>
     </div>
   </div>
 
-  <!-- Spalten -->
-  <div class="cols-wrap">
-    <div class="cols-head">
-      <span class="lab">Spalten (Name + Breite %)</span>
-      <button class="btn tiny ghost" id="addCol">+ Spalte</button>
-      <button class="btn tiny ghost" id="evenCol">Gleichmäßig verteilen</button>
-      <span class="lab" id="sumLab"></span>
+  <div class="card">
+    <div class="card-lbl">[02] · <b>Linien &amp; Layout</b></div>
+    <div class="fields">
+      <div class="fld grow">
+        <label>Linienstärke</label>
+        <div class="range-box"><input id="bw" type="range" min="0.5" max="4" step="0.5" value="1"><span class="v" id="bwVal">1.0 px</span></div>
+      </div>
+      <div class="fld grow">
+        <label>Zeilenhöhe</label>
+        <div class="range-box"><input id="rh" type="range" min="18" max="44" step="1" value="26"><span class="v" id="rhVal">26 px</span></div>
+      </div>
+      <div class="fld grow">
+        <label>Linienfarbe</label>
+        <div class="color-box"><input id="bc" type="color" value="#bbbbbb"><span class="v" id="bcVal">#BBBBBB</span></div>
+      </div>
+      <div class="fld grow">
+        <label>Kopf-Hintergrund</label>
+        <div class="color-box"><input id="headbg" type="color" value="#f9f9f9"><span class="v" id="hbVal">#F9F9F9</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-lbl">[03] · <b>Spalten</b></div>
+    <div class="col-top">
+      <button class="btn tiny" id="addCol">+ Spalte</button>
+      <button class="btn tiny ghost" id="evenCol">Gleichmäßig</button>
+      <span class="sum-tag" id="sumLab"></span>
     </div>
     <div id="colList"></div>
   </div>
 
-  <div class="btn-row">
-    <button class="btn" onclick="window.print()">Drucken / PDF</button>
+  <div class="actions">
+    <button class="btn" id="openPreview">
+      <svg viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+      Vorschau &amp; Drucken
+    </button>
     <button class="btn ghost" id="reset">Zurücksetzen</button>
   </div>
-  <div class="hint">Beim Drucken wird diese Leiste ausgeblendet — das PDF zeigt nur die Tabelle. Breiten sollten zusammen <b>100&nbsp;%</b> ergeben.</div>
+  <div class="note">Vorschau zeigt das echte A4-Blatt. Spaltenbreiten sollten zusammen <b>100&nbsp;%</b> ergeben.</div>
 </div>
 
-<!-- ================= DRUCK-BEREICH ================= -->
-<div class="stage">
-  <div class="page-wrapper">
-    <header class="doc"><h1 id="docTitle">TEILE ZUM WASCHEN</h1></header>
-    <table>
-      <colgroup id="colgroup"></colgroup>
-      <thead><tr id="headRow"></tr></thead>
-      <tbody id="body"></tbody>
-    </table>
+<!-- VORSCHAU-OVERLAY -->
+<div class="overlay" id="overlay">
+  <div class="ov-bar">
+    <span class="t">A4 · Vorschau</span>
+    <div class="grp">
+      <button class="btn tiny" onclick="window.print()">
+        <svg viewBox="0 0 24 24"><path d="M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="7" rx="1" fill="none"/></svg>
+        Drucken
+      </button>
+      <button class="btn tiny ghost" id="closePreview">Schließen</button>
+    </div>
+  </div>
+  <div class="ov-scroll">
+    <div class="stage">
+      <div class="page-wrapper">
+        <header class="doc"><h1 id="docTitle">TEILE ZUM WASCHEN</h1></header>
+        <table>
+          <colgroup id="colgroup"></colgroup>
+          <thead><tr id="headRow"></tr></thead>
+          <tbody id="body"></tbody>
+        </table>
+      </div>
+    </div>
   </div>
 </div>
 
 <script>
   const DEFAULTS = {
-    title: 'TEILE ZUM WASCHEN',
-    rows: 30,
-    bw: 1,
-    bc: '#bbbbbb',
-    headbg: '#f9f9f9',
-    rh: 26,
-    columns: [
+    title:'TEILE ZUM WASCHEN', rows:30, bw:1, bc:'#bbbbbb', headbg:'#f9f9f9', rh:26,
+    columns:[
       { name:'Zeichnungsnummer', width:30 },
       { name:'Auftragsnummer',   width:30 },
       { name:'Stückzahl',        width:15 },
       { name:'Datum',            width:25 },
     ]
   };
-
-  // tiefe Kopie des Anfangszustands
   let state = JSON.parse(JSON.stringify(DEFAULTS));
-
   const $ = id => document.getElementById(id);
 
   function renderColEditor(){
-    const list = $('colList');
-    list.innerHTML = '';
-    state.columns.forEach((c, i) => {
-      const row = document.createElement('div');
-      row.className = 'col-row';
+    const list=$('colList'); list.innerHTML='';
+    state.columns.forEach((c,i)=>{
+      const row=document.createElement('div'); row.className='col-card';
       row.innerHTML =
-        '<span class="idx">'+(i+1)+'</span>' +
-        '<input type="text" value="'+ c.name.replace(/"/g,'&quot;') +'" data-i="'+i+'" data-k="name">' +
-        '<input type="number" class="w" min="1" max="100" value="'+ c.width +'" data-i="'+i+'" data-k="width"><span class="unit">%</span>' +
-        '<button class="btn tiny del" data-del="'+i+'">×</button>';
+        '<span class="idx">'+(i+1)+'</span>'+
+        '<input type="text" class="inp name" value="'+c.name.replace(/"/g,'&quot;')+'" data-i="'+i+'" data-k="name">'+
+        '<span class="wbox"><input type="number" min="1" max="100" value="'+c.width+'" data-i="'+i+'" data-k="width"><span class="pct">%</span></span>'+
+        '<button class="btn del" data-del="'+i+'">×</button>';
       list.appendChild(row);
     });
-
     list.querySelectorAll('input').forEach(inp=>{
-      inp.addEventListener('input', e=>{
-        const i = +e.target.dataset.i, k = e.target.dataset.k;
-        state.columns[i][k] = (k==='width') ? (parseFloat(e.target.value)||0) : e.target.value;
+      inp.addEventListener('input',e=>{
+        const i=+e.target.dataset.i, k=e.target.dataset.k;
+        state.columns[i][k]=(k==='width')?(parseFloat(e.target.value)||0):e.target.value;
         renderTable();
       });
     });
     list.querySelectorAll('[data-del]').forEach(b=>{
-      b.addEventListener('click', e=>{
+      b.addEventListener('click',e=>{
         if(state.columns.length<=1) return;
-        state.columns.splice(+e.target.dataset.del,1);
+        state.columns.splice(+e.currentTarget.dataset.del,1);
         renderColEditor(); renderTable();
       });
     });
@@ -245,76 +255,59 @@
   }
 
   function updateSum(){
-    const sum = state.columns.reduce((a,c)=>a+(parseFloat(c.width)||0),0);
-    const lab = $('sumLab');
-    lab.textContent = 'Summe: ' + (Math.round(sum*10)/10) + ' %';
-    lab.style.color = (Math.abs(sum-100) < 0.5) ? '#7CFC7C' : '#ff8a8a';
+    const sum=state.columns.reduce((a,c)=>a+(parseFloat(c.width)||0),0);
+    const lab=$('sumLab'); const ok=Math.abs(sum-100)<0.5;
+    lab.textContent='Summe '+(Math.round(sum*10)/10)+' %';
+    lab.style.background=ok?'var(--green-bg)':'#FBEAEA';
+    lab.style.color=ok?'var(--green-ink)':'#B23';
   }
 
   function renderTable(){
-    // Variablen setzen
-    document.documentElement.style.setProperty('--bw', state.bw + 'px');
+    document.documentElement.style.setProperty('--bw', state.bw+'px');
     document.documentElement.style.setProperty('--bc', state.bc);
     document.documentElement.style.setProperty('--head-bg', state.headbg);
-    document.documentElement.style.setProperty('--row-h', state.rh + 'px');
-
-    // Titel
-    $('docTitle').textContent = state.title;
-
-    // colgroup
-    const cg = $('colgroup');
-    cg.innerHTML = state.columns.map(c=>'<col style="width:'+c.width+'%">').join('');
-
-    // Kopfzeile
-    $('headRow').innerHTML = state.columns
-      .map(c=>'<th>'+ (c.name||'').replace(/</g,'&lt;') +'</th>').join('');
-
-    // Körper
-    const cells = '<td></td>'.repeat(state.columns.length);
-    let body = '';
-    for(let r=0; r<state.rows; r++){ body += '<tr>'+cells+'</tr>'; }
-    $('body').innerHTML = body;
-
+    document.documentElement.style.setProperty('--row-h', state.rh+'px');
+    $('docTitle').textContent=state.title;
+    $('colgroup').innerHTML=state.columns.map(c=>'<col style="width:'+c.width+'%">').join('');
+    $('headRow').innerHTML=state.columns.map(c=>'<th>'+(c.name||'').replace(/</g,'&lt;')+'</th>').join('');
+    const cells='<td></td>'.repeat(state.columns.length);
+    let body=''; for(let r=0;r<state.rows;r++){ body+='<tr>'+cells+'</tr>'; }
+    $('body').innerHTML=body;
+    $('statSummary').textContent='Spalten '+state.columns.length+' · Zeilen '+state.rows;
     updateSum();
   }
 
-  // ---- Steuerelemente verbinden ----
-  $('title').addEventListener('input', e=>{ state.title=e.target.value; renderTable(); });
-  $('rows').addEventListener('input', e=>{ state.rows=Math.max(1,parseInt(e.target.value)||1); renderTable(); });
+  $('title').addEventListener('input',e=>{ state.title=e.target.value; renderTable(); });
+  $('rows').addEventListener('input',e=>{ state.rows=Math.max(1,parseInt(e.target.value)||1); renderTable(); });
+  $('bw').addEventListener('input',e=>{ state.bw=parseFloat(e.target.value); $('bwVal').textContent=state.bw.toFixed(1)+' px'; renderTable(); });
+  $('rh').addEventListener('input',e=>{ state.rh=parseInt(e.target.value); $('rhVal').textContent=state.rh+' px'; renderTable(); });
+  $('bc').addEventListener('input',e=>{ state.bc=e.target.value; $('bcVal').textContent=e.target.value.toUpperCase(); renderTable(); });
+  $('headbg').addEventListener('input',e=>{ state.headbg=e.target.value; $('hbVal').textContent=e.target.value.toUpperCase(); renderTable(); });
 
-  $('bw').addEventListener('input', e=>{
-    state.bw=parseFloat(e.target.value); $('bwVal').textContent=state.bw.toFixed(1)+' px'; renderTable();
-  });
-  $('bc').addEventListener('input', e=>{ state.bc=e.target.value; renderTable(); });
-  $('headbg').addEventListener('input', e=>{ state.headbg=e.target.value; renderTable(); });
-  $('rh').addEventListener('input', e=>{
-    state.rh=parseInt(e.target.value); $('rhVal').textContent=state.rh+' px'; renderTable();
-  });
-
-  $('addCol').addEventListener('click', ()=>{
-    state.columns.push({ name:'Spalte '+(state.columns.length+1), width:10 });
+  $('addCol').addEventListener('click',()=>{ state.columns.push({name:'Spalte '+(state.columns.length+1),width:10}); renderColEditor(); renderTable(); });
+  $('evenCol').addEventListener('click',()=>{
+    const n=state.columns.length, w=Math.round((100/n)*10)/10;
+    state.columns.forEach((c,i)=> c.width=(i===n-1)?Math.round((100-w*(n-1))*10)/10:w);
     renderColEditor(); renderTable();
   });
-  $('evenCol').addEventListener('click', ()=>{
-    const w = Math.round((100/state.columns.length)*10)/10;
-    state.columns.forEach((c,i)=> c.width = (i===state.columns.length-1)
-        ? Math.round((100 - w*(state.columns.length-1))*10)/10
-        : w);
-    renderColEditor(); renderTable();
-  });
-
-  $('reset').addEventListener('click', ()=>{
-    state = JSON.parse(JSON.stringify(DEFAULTS));
+  $('reset').addEventListener('click',()=>{
+    state=JSON.parse(JSON.stringify(DEFAULTS));
     $('title').value=state.title; $('rows').value=state.rows;
     $('bw').value=state.bw; $('bwVal').textContent=state.bw.toFixed(1)+' px';
-    $('bc').value=state.bc; $('headbg').value=state.headbg;
     $('rh').value=state.rh; $('rhVal').textContent=state.rh+' px';
+    $('bc').value=state.bc; $('bcVal').textContent=state.bc.toUpperCase();
+    $('headbg').value=state.headbg; $('hbVal').textContent=state.headbg.toUpperCase();
     renderColEditor(); renderTable();
   });
 
-  // ---- Start ----
-  renderColEditor();
-  renderTable();
+  const overlay=$('overlay');
+  function openOv(){ overlay.classList.add('open'); document.body.style.overflow='hidden'; }
+  function closeOv(){ overlay.classList.remove('open'); document.body.style.overflow=''; }
+  $('previewBtn').addEventListener('click',openOv);
+  $('openPreview').addEventListener('click',openOv);
+  $('closePreview').addEventListener('click',closeOv);
+
+  renderColEditor(); renderTable();
 </script>
 </body>
 </html>
