@@ -651,6 +651,16 @@ body {
   flex-shrink: 0;
   font-size: 12px;
 }
+.ac-kbadge {
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+.ac-k1 { background: #d6f0e0; color: #1c7a4a; }
+.ac-k2 { background: #d9e6f7; color: #2860a8; }
 .ac-val {
   color: var(--ink-2);
   flex: 1;
@@ -1821,14 +1831,14 @@ body[data-view="saw"] #kanalSwitch { opacity: 0.4; pointer-events: none; }
     text-overflow: ellipsis;
     white-space: nowrap;
     font-weight: 500;
-    font-size: 8pt;
+    font-size: 10pt;
   }
   .print-table .pt-codes {
     flex-shrink: 0;
     display: flex;
     gap: 2.5mm;
     font-family: 'JetBrains Mono', monospace;
-    font-size: 7.5pt;
+    font-size: 9.5pt;
     font-weight: 600;
     color: #000;
     letter-spacing: .01em;
@@ -2019,12 +2029,12 @@ body[data-view="saw"] #kanalSwitch { opacity: 0.4; pointer-events: none; }
     font-weight: 700;
     text-align: left;
     background: #fff !important;
-    font-size: 9.5pt;
+    font-size: 11pt;
   }
   .wkz-table .wkz-name,
   .wkz-table th.wkz-name-h {
     font-weight: 500;
-    font-size: 9.5pt;
+    font-size: 11pt;
     text-align: left;
   }
   .wkz-table .wkz-empty {
@@ -2144,7 +2154,7 @@ body[data-view="saw"] #kanalSwitch { opacity: 0.4; pointer-events: none; }
       <button class="btn btn-ghost btn-sm subtle" id="btnExport" title="Projekt als JSON exportieren"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v9"/><path d="M4 7l4 4 4-4"/><path d="M2 14h12"/></svg>Export</button>
       <button class="btn btn-ghost btn-sm subtle" id="btnImport" title="Projekt aus JSON importieren"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 13V4"/><path d="M4 8l4-4 4 4"/><path d="M2 14h12"/></svg>Import</button>
       <input type="file" id="fileInput" accept=".json" style="display:none">
-      <input type="file" id="mpfInput" style="display:none">
+      <input type="file" id="mpfInput" multiple style="display:none">
     </div>
   </div>
 
@@ -3456,22 +3466,35 @@ function openSlotEditor(kanal, index){
   const tlNoIn = mInp(curTool ? curTool.tno : '', 'T01 (oder 1)', true);
   const tlNameIn = mInp(curTool ? curTool.name : '', 'Werkzeug-Name — z. B. Gewinde');
 
+  // This slot belongs to `kanal`. Prefer tools of the same revolver, but allow all.
+  function toolsForSlot(qq) {
+    const all = S.tools.slice();
+    const matches = qq
+      ? all.filter(t => (t.tno+' '+t.name).toLowerCase().includes(qq))
+      : all;
+    // Sort: same-channel first, then by T-Nr
+    matches.sort((a,b) => {
+      const ak = (a.kanal||'1')===kanal ? 0 : 1;
+      const bk = (b.kanal||'1')===kanal ? 0 : 1;
+      if (ak !== bk) return ak - bk;
+      return (a.tno||'').localeCompare(b.tno||'', undefined, {numeric:true});
+    });
+    return matches.map(t => ({item: t}));
+  }
+  function toolItemHTML(t) {
+    const k = t.kanal || '1';
+    const badge = `<span class="ac-kbadge ${k==='1'?'ac-k1':'ac-k2'}">K${k}</span>`;
+    return `${badge}<span class="ac-key">${esc(t.tno)}</span><span class="ac-val">${esc(t.name)}</span>`;
+  }
+
   const tlNoAc = makeAutocomplete(tlNoIn,
-    (q) => {
-      const qq = (q||'').toLowerCase().trim();
-      if (!qq) return S.tools.slice(0, 12).map(t => ({item: t}));
-      return S.tools.filter(t => (t.tno+' '+t.name).toLowerCase().includes(qq)).map(t => ({item: t}));
-    },
-    (t) => `<span class="ac-key">${esc(t.tno)}</span><span class="ac-val">${esc(t.name)}</span>`,
+    (q) => toolsForSlot((q||'').toLowerCase().trim()).slice(0, 30),
+    toolItemHTML,
     (t) => { tlNoIn.value = t.tno; tlNameIn.value = t.name; }
   );
   const tlNameAc = makeAutocomplete(tlNameIn,
-    (q) => {
-      const qq = (q||'').toLowerCase().trim();
-      if (!qq) return [];
-      return S.tools.filter(t => (t.tno+' '+t.name).toLowerCase().includes(qq)).map(t => ({item: t}));
-    },
-    (t) => `<span class="ac-key">${esc(t.tno)}</span><span class="ac-val">${esc(t.name)}</span>`,
+    (q) => { const qq=(q||'').toLowerCase().trim(); return qq ? toolsForSlot(qq).slice(0,30) : []; },
+    toolItemHTML,
     (t) => { tlNoIn.value = t.tno; tlNameIn.value = t.name; }
   );
 
@@ -3522,17 +3545,20 @@ function openSlotEditor(kanal, index){
         }
         if (op) resolvedOpId = op.id;
       }
-      // Resolve tool
+      // Resolve tool — prefer same channel as this slot
       let resolvedToolId = null;
       const tnoRaw = tlNoIn.value.trim();
       const tnameVal = tlNameIn.value.trim();
       if (tnoRaw || tnameVal) {
         const tno = tnoRaw ? (/^\d+$/.test(tnoRaw) ? 'T' + tnoRaw.padStart(2,'0') : tnoRaw) : '';
-        let tool = S.tools.find(t => t.tno === tno && t.name === tnameVal);
+        // exact match in same channel, then same channel by tno, then any
+        let tool = S.tools.find(t => (t.kanal||'1')===kanal && t.tno === tno && t.name === tnameVal);
+        if (!tool && tno) tool = S.tools.find(t => (t.kanal||'1')===kanal && t.tno === tno);
+        if (!tool) tool = S.tools.find(t => t.tno === tno && t.name === tnameVal);
         if (!tool && tno) tool = S.tools.find(t => t.tno === tno);
         if (!tool) {
           if (tno && tnameVal) {
-            tool = { id: 'tool_'+S.nextId++, tno, name: tnameVal };
+            tool = { id: 'tool_'+S.nextId++, tno, name: tnameVal, kanal };
             S.tools.push(tool);
           }
         } else if (tnameVal && tool.name !== tnameVal) {
@@ -3635,16 +3661,23 @@ function openPairingModal(){
             dd.innerHTML = '';
             const q = userTyped ? input.value : '';
             const qq = (q||'').toLowerCase().trim();
+            // Prefer tools of this row's revolver (kanal), then others
+            function sortByKanal(arr) {
+              return arr.sort((a,b) => {
+                const ak = (a.kanal||'1')===kanal ? 0 : 1;
+                const bk = (b.kanal||'1')===kanal ? 0 : 1;
+                if (ak !== bk) return ak - bk;
+                return (a.tno||'').localeCompare(b.tno||'', undefined, {numeric:true});
+              });
+            }
             let items;
             if (showAll || !qq) {
-              // Show all tools, sorted by T-Nr (numeric)
-              items = S.tools.slice().sort((a,b)=>(a.tno||'').localeCompare(b.tno||'', undefined, {numeric:true}));
+              items = sortByKanal(S.tools.slice());
             } else {
-              // Filter: tno starts-with first, then name contains
               const starts = S.tools.filter(t => (t.tno||'').toLowerCase().startsWith(qq));
               const startsIds = new Set(starts.map(t=>t.id));
               const contains = S.tools.filter(t => !startsIds.has(t.id) && (t.tno+' '+t.name).toLowerCase().includes(qq));
-              items = [...starts, ...contains];
+              items = sortByKanal(starts).concat(sortByKanal(contains));
             }
             if (!items.length) {
               dd.innerHTML = '<div class="ac-item" style="color:var(--ink-5);font-style:italic;cursor:default;">Keine Werkzeuge</div>';
@@ -3654,7 +3687,9 @@ function openPairingModal(){
             items.slice(0, 30).forEach(t => {
               const r = document.createElement('div');
               r.className = 'ac-item';
-              r.innerHTML = `<span class="ac-key">${esc(t.tno)}</span><span class="ac-val">${esc(t.name)}</span>`;
+              const tk = t.kanal || '1';
+              const badge = `<span class="ac-kbadge ${tk==='1'?'ac-k1':'ac-k2'}">K${tk}</span>`;
+              r.innerHTML = `${badge}<span class="ac-key">${esc(t.tno)}</span><span class="ac-val">${esc(t.name)}</span>`;
               r.addEventListener('mousedown', e => {
                 e.preventDefault();
                 onPick(t);
@@ -3708,11 +3743,13 @@ function openPairingModal(){
             return;
           }
           const tno = tnoRaw ? (/^\d+$/.test(tnoRaw) ? 'T' + tnoRaw.padStart(2,'0') : tnoRaw) : '';
-          let toolEnt = S.tools.find(t => t.tno === tno && t.name === nameVal);
+          let toolEnt = S.tools.find(t => (t.kanal||'1')===kanal && t.tno === tno && t.name === nameVal);
+          if (!toolEnt && tno) toolEnt = S.tools.find(t => (t.kanal||'1')===kanal && t.tno === tno);
+          if (!toolEnt) toolEnt = S.tools.find(t => t.tno === tno && t.name === nameVal);
           if (!toolEnt && tno) toolEnt = S.tools.find(t => t.tno === tno);
           if (!toolEnt) {
             if (tno && nameVal) {
-              toolEnt = { id: 'tool_'+S.nextId++, tno, name: nameVal };
+              toolEnt = { id: 'tool_'+S.nextId++, tno, name: nameVal, kanal };
               S.tools.push(toolEnt);
             }
           } else if (nameVal && toolEnt.name !== nameVal) {
@@ -3975,7 +4012,8 @@ function setLibTab(t){
 function renderPrintTable(){
   const tbl=$('#printTable');
   const s1=S.slots['1'], s2=S.slots['2'];
-  const n=Math.max(s1.length, s2.length, MIN_SLOTS);
+  const PRINT_ROWS = 22;
+  const n=Math.max(s1.length, s2.length, PRINT_ROWS);
 
   let h = '';
   // Column groups
@@ -4202,25 +4240,23 @@ function renderWkzTable(){
     h += '<thead>';
     h += `<tr class="wkz-section-head"><td colspan="2">${esc(title)}</td></tr>`;
     h += '</thead><tbody>';
-    if (!list.length && padTo === 0) {
-      h += '<tr><td colspan="2" class="wkz-empty">— keine Werkzeuge zugeordnet —</td></tr>';
-    } else {
-      list.forEach(t => {
-        h += `<tr><td class="wkz-tno">${esc(t.tno)}</td><td class="wkz-name">${esc(t.name)}</td></tr>`;
-      });
-      const need = Math.max(0, padTo - list.length);
-      for (let i = 0; i < need; i++) {
-        h += '<tr><td class="wkz-tno">&nbsp;</td><td class="wkz-name">&nbsp;</td></tr>';
-      }
+    list.forEach(t => {
+      h += `<tr><td class="wkz-tno">${esc(t.tno)}</td><td class="wkz-name">${esc(t.name)}</td></tr>`;
+    });
+    const need = Math.max(0, padTo - list.length);
+    for (let i = 0; i < need; i++) {
+      h += '<tr><td class="wkz-tno">&nbsp;</td><td class="wkz-name">&nbsp;</td></tr>';
     }
     h += '</tbody></table>';
     return h;
   }
 
-  const maxLen = Math.max(k1.length, k2.length);
+  // Always show at least 24 rows per revolver (empty rows padded)
+  const WKZ_ROWS = 24;
+  const padTo = Math.max(k1.length, k2.length, WKZ_ROWS);
   cont.innerHTML =
-    '<div class="wkz-col">' + buildTable('Kanal 1 · 1000.MPF · Revolver Oben', k1, 'wkz-sp4', maxLen) + '</div>' +
-    '<div class="wkz-col">' + buildTable('Kanal 2 · 2000.MPF · Revolver Unten', k2, 'wkz-sp3', maxLen) + '</div>';
+    '<div class="wkz-col">' + buildTable('Kanal 1 · 1000.MPF · Revolver Oben', k1, 'wkz-sp4', padTo) + '</div>' +
+    '<div class="wkz-col">' + buildTable('Kanal 2 · 2000.MPF · Revolver Unten', k2, 'wkz-sp3', padTo) + '</div>';
 }
 
 /* ════════════════════════════════════════════
@@ -4400,24 +4436,47 @@ function init(){
   const btnImportMPF = document.getElementById('btnImportMPF');
   if (btnImportMPF) {
     btnImportMPF.addEventListener('click', async () => {
-      const ok = await customConfirm(`MPF-Datei importieren?\n\nKann eine Werkzeugliste (PL ... <Name>) oder ein Programm-MPF (GROUP_BEGIN ... L-Code) sein. Der Kanal wird automatisch erkannt.`, { tag: '[MPF]', title: 'MPF-Datei importieren', okText: 'Datei wählen' });
+      const ok = await customConfirm(`MPF / TXT importieren?\n\nDu kannst auch mehrere Dateien gleichzeitig wählen (z. B. 1000.MPF, 2000.MPF, TOOLIST_CH1, TOOLIST_CH2). Typ und Kanal werden automatisch erkannt.`, { tag: '[MPF]', title: 'Dateien importieren', okText: 'Dateien wählen' });
       if (!ok) return;
       document.getElementById('mpfInput').value = '';
       document.getElementById('mpfInput').click();
     });
     document.getElementById('mpfInput').addEventListener('change', e => {
-      const f = e.target.files[0]; if (!f) return;
-      const r = new FileReader();
-      r.onload = ev => {
-        importMPFFile(ev.target.result, f.name, n => {
-          if (n > 0) {
-            customAlert(`${n} Einträge importiert.`, { tag: '[MPF]', title: 'Import erfolgreich' });
-            renderAll();
-          }
+      const files = Array.from(e.target.files || []);
+      if (!files.length) return;
+
+      // Read one file as text (Promise)
+      function readFile(f) {
+        return new Promise((resolve, reject) => {
+          const r = new FileReader();
+          r.onload = ev => resolve(ev.target.result);
+          r.onerror = () => reject(new Error('read failed'));
+          r.readAsText(f);
         });
-      };
-      r.onerror = () => customAlert('Datei konnte nicht gelesen werden.', { tag: '[MPF]', title: 'Fehler' });
-      r.readAsText(f);
+      }
+      // importMPFFile uses callback; wrap as Promise
+      function importOne(text, name) {
+        return new Promise(resolve => {
+          importMPFFile(text, name, n => resolve({ name, n: n || 0 }));
+        });
+      }
+
+      (async () => {
+        const results = [];
+        for (const f of files) {
+          try {
+            const text = await readFile(f);
+            const res = await importOne(text, f.name);
+            results.push(res);
+          } catch (err) {
+            results.push({ name: f.name, n: 0, error: true });
+          }
+        }
+        renderAll();
+        const total = results.reduce((s, r) => s + r.n, 0);
+        const lines = results.map(r => `• ${r.name}: ${r.error ? 'Fehler' : r.n + ' Einträge'}`).join('\n');
+        customAlert(`${files.length} Datei(en) verarbeitet · ${total} Einträge gesamt:\n\n${lines}`, { tag: '[MPF]', title: 'Import abgeschlossen' });
+      })();
     });
   }
 
