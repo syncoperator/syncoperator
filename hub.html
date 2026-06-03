@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>SYNCOPERATOR · HUB</title>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0A0A0A; --muted:#9A9A9A; --faint:#C7C8CD; --line:#E8E8E8; --line2:#EFEFF1;
+    --bg:#F3F3F4; --card:#FFFFFF;
+    --green-bg:#E8F3EA; --green-ink:#2F6B3A; --green-line:#BFE0C6;
+    --draw:#E1E2E6;  /* helle Zeichnungslinien */
+    --mono:'JetBrains Mono',ui-monospace,monospace;
+    --sans:'Hanken Grotesk',system-ui,sans-serif;
+  }
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html{ scroll-behavior:smooth; background:var(--bg); }
+  body{ margin:0; background:transparent; color:var(--ink); font-family:var(--sans); overflow-x:hidden; }
+
+  /* ===== GLOBALER ANIMIERTER HINTERGRUND ===== */
+  #bg{ position:fixed; inset:0; z-index:-1; overflow:hidden; pointer-events:none; }
+  #bg .grid{ position:absolute; inset:-12%;
+    background-image:linear-gradient(rgba(10,10,10,.032) 1px,transparent 1px),linear-gradient(90deg,rgba(10,10,10,.032) 1px,transparent 1px);
+    background-size:46px 46px; animation:gridDrift 16s linear infinite;
+    -webkit-mask-image:radial-gradient(circle at 60% 22%, #000 0%, #000 38%, transparent 88%);
+    mask-image:radial-gradient(circle at 60% 22%, #000 0%, #000 38%, transparent 88%); }
+  @keyframes gridDrift{ to{ background-position:46px 46px, 46px 46px; } }
+  #bg .glow{ position:absolute; inset:0; animation:breathe 8s ease-in-out infinite;
+    background:radial-gradient(circle at 80% 14%, rgba(47,107,58,.07), transparent 48%),
+               radial-gradient(circle at 12% 82%, rgba(10,10,10,.05), transparent 50%); }
+  @keyframes breathe{ 0%,100%{ opacity:.45; } 50%{ opacity:1; } }
+  #bg .layer{ position:absolute; color:var(--draw); will-change:transform; }
+  #bg .layer svg{ width:100%; height:auto; display:block; }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+  @keyframes flow{ to{ stroke-dashoffset:-26; } }
+  #bg .chuck{ top:-7vh; right:-9vw; width:min(58vw,500px); }
+  #bg .chuck svg{ animation:spin 130s linear infinite; }
+  #bg .gearA{ bottom:-9vh; left:-8vw; width:min(46vw,320px); color:#E6E7EA; }
+  #bg .gearA svg{ animation:spin 95s linear infinite reverse; }
+  #bg .gearB{ top:34vh; left:-6vw; width:min(30vw,190px); color:#ECEDF0; }
+  #bg .gearB svg{ animation:spin 72s linear infinite; }
+  #bg .gearC{ top:54vh; right:4vw; width:min(22vw,150px); color:#EAEBEE; }
+  #bg .gearC svg{ animation:spin 60s linear infinite reverse; }
+  #bg .topo{ inset:0; }
+  #bg .topo svg{ width:100%; height:100%; }
+  #bg .topo path{ stroke-dasharray:18 12; animation:flow 4.2s linear infinite; }
+  #bg .ticks{ top:18vh; right:5vw; width:34vw; color:#D7D8DD; }
+  #bg .ticks path{ stroke-dasharray:6 6; animation:flow 2.6s linear infinite; }
+
+  /* ===== STATUS ===== */
+  .topbar{
+    position:sticky; top:0; z-index:40; background:rgba(255,255,255,.86); backdrop-filter:blur(12px);
+    display:flex; align-items:center; justify-content:space-between;
+    padding:13px 18px; border-bottom:1px solid var(--line);
+    font-family:var(--mono); font-size:11px; letter-spacing:1.5px; text-transform:uppercase; color:var(--muted);
+  }
+  .topbar .dot{ width:8px; height:8px; border-radius:50%; background:#34C759; display:inline-block; margin-right:8px; vertical-align:middle; box-shadow:0 0 7px rgba(52,199,89,.6); }
+  .topbar .r{ display:flex; gap:16px; align-items:center; }
+
+  /* ===== MARKE ===== */
+  .brandbar{ display:flex; align-items:center; gap:14px; padding:18px; background:rgba(255,255,255,.82); backdrop-filter:blur(12px); border-bottom:1px solid var(--line); position:relative; z-index:30; }
+  .mark{ width:54px; height:54px; border-radius:14px; background:var(--ink); display:flex; align-items:center; justify-content:center; flex:0 0 auto; }
+  .mark svg{ width:30px; height:30px; }
+  .brand-txt{ flex:1 1 auto; min-width:0; }
+  .brand-txt .b1{ font-weight:900; font-size:20px; letter-spacing:-0.4px; line-height:1; }
+  .brand-txt .b2{ font-family:var(--mono); font-size:11px; letter-spacing:2px; color:var(--muted); text-transform:uppercase; margin-top:5px; }
+  .icon-btn{ width:54px; height:54px; border-radius:14px; background:#fff; border:1px solid var(--line); display:flex; align-items:center; justify-content:center; cursor:pointer; flex:0 0 auto; }
+  .icon-btn svg{ width:22px; height:22px; stroke:var(--ink); fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+  .icon-btn:active{ background:#f2f2f2; }
+
+  /* ===== HERO ===== */
+  .hero{ position:relative; overflow:hidden; background:transparent; border-bottom:1px solid var(--line);
+    padding:46px 22px 56px; }
+
+  .hero-in{ position:relative; z-index:2; max-width:980px; margin:0 auto; }
+  .eyebrow{ font-family:var(--mono); font-size:11px; letter-spacing:3px; text-transform:uppercase; color:var(--muted);
+    display:flex; align-items:center; gap:10px; margin-bottom:16px; }
+  .eyebrow .ln{ height:1px; width:34px; background:var(--ink); opacity:.5; }
+  .hero h1{ font-family:var(--sans); font-weight:900; font-size:clamp(40px,11vw,76px); line-height:.92;
+    letter-spacing:-2.5px; margin:0; text-transform:uppercase; }
+  .hero h1 .g{ color:var(--muted); }
+  .hero .sub{ margin:18px 0 0; font-size:clamp(14px,4vw,17px); color:#5c5c61; max-width:440px; line-height:1.55; }
+  .hero .chips{ display:flex; flex-wrap:wrap; gap:9px; margin-top:24px; }
+  .chip{ font-family:var(--mono); font-size:11px; letter-spacing:.6px; text-transform:uppercase; color:var(--ink);
+    border:1px solid var(--line); border-radius:999px; padding:8px 13px; background:#fff; }
+  .chip b{ color:var(--green-ink); }
+
+  /* ===== INHALT ===== */
+  .wrap{ max-width:980px; margin:0 auto; padding:24px 16px 70px; }
+
+  .nav{ display:flex; gap:20px; margin-top:26px; overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
+  .nav::-webkit-scrollbar{ display:none; }
+  .nav a{ position:relative; flex:0 0 auto; text-decoration:none; color:var(--muted); font-weight:800; font-size:14px;
+    display:flex; align-items:baseline; gap:6px; padding-bottom:8px; white-space:nowrap; transition:color .2s; }
+  .nav a .n{ font-family:var(--mono); font-size:10px; font-weight:700; color:var(--faint); transition:color .2s; }
+  .nav a::after{ content:''; position:absolute; left:0; right:0; bottom:0; height:2px; border-radius:2px; background:var(--ink);
+    transform:scaleX(0); transform-origin:left; transition:transform .25s ease; }
+  .nav a:hover{ color:var(--ink); }
+  .nav a.active{ color:var(--ink); }
+  .nav a.active .n{ color:var(--green-ink); }
+  .nav a.active::after{ transform:scaleX(1); }
+
+  .section{ scroll-margin-top:70px; }
+
+  .searchbar{ display:flex; align-items:center; gap:12px; background:rgba(255,255,255,.72); backdrop-filter:blur(10px); border:1px solid var(--line);
+    border-radius:14px; padding:13px 15px; margin-bottom:24px; }
+  .searchbar svg{ width:20px; height:20px; stroke:var(--muted); fill:none; stroke-width:2; flex:0 0 auto; }
+  .searchbar input{ flex:1; background:none; border:none; outline:none; color:var(--ink); font-family:var(--sans); font-size:16px; }
+  .searchbar input::placeholder{ color:var(--faint); }
+  .searchbar .cnt{ font-family:var(--mono); font-size:12px; color:var(--faint); white-space:nowrap; }
+
+  .sec-head{ display:flex; align-items:baseline; gap:12px; margin:26px 2px 14px; }
+  .sec-head .no{ font-family:var(--mono); font-size:12px; color:var(--muted); letter-spacing:1px; }
+  .sec-head h2{ font-weight:900; font-size:19px; letter-spacing:-.4px; margin:0; }
+  .sec-head .rule{ flex:1; height:1px; background:var(--line); }
+
+  .list{ background:rgba(255,255,255,.72); backdrop-filter:blur(10px); border:1px solid var(--line); border-radius:18px; overflow:hidden; }
+  .row{ position:relative; display:flex; align-items:center; gap:14px; padding:15px 16px; text-decoration:none; color:inherit;
+    border-top:1px solid var(--line); transform:translateY(10px); opacity:0; }
+  .row:first-child{ border-top:none; }
+  .row.in{ transform:none; opacity:1; transition:transform .5s cubic-bezier(.2,.7,.2,1), opacity .5s, background .18s; }
+  .row::before{ content:''; position:absolute; left:0; top:0; bottom:0; width:3px; background:var(--ink); transform:scaleY(0); transition:transform .2s; }
+  .row:hover{ background:#FAFAFA; }
+  .row:hover::before{ transform:scaleY(1); }
+  .row .num{ font-family:var(--mono); font-size:12px; color:var(--muted); width:24px; flex:0 0 auto; text-align:center; }
+  .row:hover .num{ color:var(--ink); }
+  .row .ico{ width:44px; height:44px; border-radius:12px; border:1px solid var(--line); background:#fff; display:flex; align-items:center; justify-content:center; flex:0 0 auto; transition:border-color .18s; }
+  .row .ico svg{ width:22px; height:22px; stroke:var(--ink); fill:none; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round; }
+  .row:hover .ico{ border-color:var(--ink); }
+  .row .meta{ flex:1 1 auto; min-width:0; }
+  .row .meta .t{ font-weight:800; font-size:16px; letter-spacing:-.2px; margin-bottom:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .row .meta .file{ font-family:var(--mono); font-size:11px; color:var(--muted); letter-spacing:.3px; }
+  .row .tag{ font-family:var(--mono); font-size:10px; letter-spacing:.5px; text-transform:uppercase; padding:5px 9px; border-radius:7px;
+    background:var(--green-bg); border:1px solid var(--green-line); color:var(--green-ink); flex:0 0 auto; }
+  .row .go{ width:30px; height:30px; border-radius:50%; border:1px solid var(--line); display:flex; align-items:center; justify-content:center; flex:0 0 auto; transition:.2s; }
+  .row .go svg{ width:13px; height:13px; stroke:var(--muted); fill:none; stroke-width:2.4; }
+  .row:hover .go{ background:var(--ink); border-color:var(--ink); }
+  .row:hover .go svg{ stroke:#fff; }
+  @media (max-width:520px){ .row .tag{ display:none; } .row .meta .t{ white-space:normal; } .row{ gap:11px; } }
+
+  .noresult{ font-family:var(--mono); font-size:13px; color:var(--faint); text-align:center; padding:50px 0; display:none; }
+
+  footer{ max-width:980px; margin:50px auto 0; padding:24px 4px 0; border-top:1px solid var(--line);
+    display:flex; flex-wrap:wrap; gap:8px 16px; align-items:center; justify-content:space-between;
+    font-family:var(--mono); font-size:11px; letter-spacing:1px; text-transform:uppercase; color:var(--faint); }
+
+  @media (prefers-reduced-motion:reduce){ .chuck svg,.gear svg{ animation:none !important; } .row{ transition:none; } }
+
+  /* ===== SPLASH / LADESCREEN ===== */
+  #splash{ position:fixed; inset:0; z-index:200; background:#fff; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; gap:30px; transition:opacity .5s ease, background .7s ease; }
+  #splash.done{ opacity:0; pointer-events:none; }
+  #splash .sbg{ position:absolute; inset:0; overflow:hidden; pointer-events:none; color:#ECECEF; }
+  #splash .sbg .g{ position:absolute; }
+  #splash .sbg .g svg{ width:100%; height:auto; display:block; }
+  #splash .sbg .g1{ top:-7vh; right:-6vw; width:min(52vw,380px); }
+  #splash .sbg .g1 svg{ animation:spin 17s linear infinite; }
+  #splash .sbg .g2{ bottom:-9vh; left:-8vw; width:min(48vw,320px); color:#E5E6EA; }
+  #splash .sbg .g2 svg{ animation:spin 12s linear infinite reverse; }
+  #splash .sbg .g3{ top:13vh; left:9vw; width:120px; color:#E9EAED; }
+  #splash .sbg .g3 svg{ animation:spin 8s linear infinite; }
+  #splashBrand, #splashBar{ position:relative; z-index:1; }
+  #splashBrand{ display:flex; align-items:center; gap:18px; transform-origin:top left; will-change:transform; }
+  #splashBrand .mark{ width:70px; height:70px; border-radius:18px; background:var(--ink); display:flex; align-items:center; justify-content:center; flex:0 0 auto; }
+  #splashBrand .mark svg{ width:40px; height:40px; }
+  #splashBrand .b1{ font-weight:900; font-size:26px; letter-spacing:-.5px; line-height:1; }
+  #splashBrand .b2{ font-family:var(--mono); font-size:14px; letter-spacing:2.6px; color:var(--muted); text-transform:uppercase; margin-top:6px; }
+  #splashBar{ width:120px; height:3px; border-radius:3px; background:var(--line); overflow:hidden; transition:opacity .35s ease; }
+  #splashBar i{ display:block; height:100%; width:38%; background:var(--ink); border-radius:3px; animation:load 1.05s ease-in-out infinite; }
+  @keyframes load{ 0%{ transform:translateX(-120%);} 100%{ transform:translateX(330%);} }
+
+  /* Header-Teile blenden beim Splash sanft ein */
+  .topbar, .brandbar .mark, .brandbar .brand-txt, .brandbar .icon-btn{ transition:opacity .45s ease; }
+</style>
+</head>
+<body>
+
+<!-- SPLASH -->
+<div id="splash">
+  <div class="sbg">
+    <div class="g g1"><svg viewBox="0 0 120 120" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M60 8l5 12 13-3 1 13 13 4-6 12 9 9-11 7 3 13-13 1-4 13-12-6-9 9-7-11-13 3-1-13-13-4 6-12-9-9 11-7-3-13 13-1 4-13 12 6z"/><circle cx="60" cy="60" r="20"/><circle cx="60" cy="60" r="6"/></svg></div>
+    <div class="g g2"><svg viewBox="0 0 120 120" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M60 8l5 12 13-3 1 13 13 4-6 12 9 9-11 7 3 13-13 1-4 13-12-6-9 9-7-11-13 3-1-13-13-4 6-12-9-9 11-7-3-13 13-1 4-13 12 6z"/><circle cx="60" cy="60" r="20"/><circle cx="60" cy="60" r="6"/></svg></div>
+    <div class="g g3"><svg viewBox="0 0 200 200" fill="none" stroke="currentColor" stroke-width="2"><circle cx="100" cy="100" r="92"/><circle cx="100" cy="100" r="60"/><circle cx="100" cy="100" r="24"/><path d="M100 8v28M100 164v28M8 100h28M164 100h28"/></svg></div>
+  </div>
+  <div id="splashBrand">
+    <div class="mark">
+      <svg viewBox="0 0 32 32" fill="none">
+        <path d="M23 9.5A9 9 0 1 0 23 22.5" stroke="#fff" stroke-width="3.4" stroke-linecap="round"/>
+        <circle cx="20.5" cy="11" r="2.4" fill="#fff"/>
+      </svg>
+    </div>
+    <div class="brand-txt">
+      <div class="b1">SYNCOPERATOR</div>
+      <div class="b2">Operations Hub</div>
+    </div>
+  </div>
+  <div id="splashBar"><i></i></div>
+</div>
+
+<!-- GLOBALER HINTERGRUND -->
+<div id="bg" aria-hidden="true">
+  <div class="grid"></div>
+  <div class="glow"></div>
+
+  <div class="layer chuck" data-speed="0.18">
+    <svg viewBox="0 0 200 200" fill="none" stroke="currentColor" stroke-width="1">
+      <circle cx="100" cy="100" r="96"/><circle cx="100" cy="100" r="74"/><circle cx="100" cy="100" r="40"/><circle cx="100" cy="100" r="18"/>
+      <g stroke-width="1.3"><path d="M100 4v22M100 174v22M4 100h22M174 100h22"/><path d="M32 32l16 16M168 32l-16 16M32 168l16-16M168 168l-16-16"/></g>
+      <g><rect x="86" y="20" width="28" height="26" rx="3"/><rect x="86" y="154" width="28" height="26" rx="3"/><rect x="20" y="86" width="26" height="28" rx="3"/><rect x="154" y="86" width="26" height="28" rx="3"/></g>
+    </svg>
+  </div>
+
+  <div class="layer gearA" data-speed="0.30">
+    <svg viewBox="0 0 120 120" fill="none" stroke="currentColor" stroke-width="2.4">
+      <path d="M60 8l5 12 13-3 1 13 13 4-6 12 9 9-11 7 3 13-13 1-4 13-12-6-9 9-7-11-13 3-1-13-13-4 6-12-9-9 11-7-3-13 13-1 4-13 12 6z"/><circle cx="60" cy="60" r="20"/><circle cx="60" cy="60" r="6"/>
+    </svg>
+  </div>
+
+  <div class="layer gearB" data-speed="0.40">
+    <svg viewBox="0 0 120 120" fill="none" stroke="currentColor" stroke-width="2.6">
+      <path d="M60 8l5 12 13-3 1 13 13 4-6 12 9 9-11 7 3 13-13 1-4 13-12-6-9 9-7-11-13 3-1-13-13-4 6-12-9-9 11-7-3-13 13-1 4-13 12 6z"/><circle cx="60" cy="60" r="20"/><circle cx="60" cy="60" r="6"/>
+    </svg>
+  </div>
+
+  <div class="layer gearC" data-speed="0.50">
+    <svg viewBox="0 0 120 120" fill="none" stroke="currentColor" stroke-width="3">
+      <path d="M60 8l5 12 13-3 1 13 13 4-6 12 9 9-11 7 3 13-13 1-4 13-12-6-9 9-7-11-13 3-1-13-13-4 6-12-9-9 11-7-3-13 13-1 4-13 12 6z"/><circle cx="60" cy="60" r="20"/><circle cx="60" cy="60" r="6"/>
+    </svg>
+  </div>
+
+  <div class="layer topo" data-speed="0.10">
+    <svg viewBox="0 0 1200 900" preserveAspectRatio="xMidYMid slice" fill="none" stroke="currentColor" stroke-width="1">
+      <path d="M-50 300 C 200 230 360 360 600 280 S 1000 180 1260 260"/>
+      <path d="M-50 360 C 220 290 380 410 620 330 S 1020 230 1260 310"/>
+      <path d="M-50 600 C 200 530 360 690 600 600 S 1000 470 1260 560"/>
+      <path d="M-50 660 C 220 600 380 760 620 660 S 1020 540 1260 630"/>
+    </svg>
+  </div>
+
+  <div class="layer ticks" data-speed="0.46">
+    <svg viewBox="0 0 600 200" preserveAspectRatio="xMidYMid meet" fill="none" stroke="currentColor" stroke-width="1.1">
+      <path d="M20 40v14M50 40v8M80 40v8M110 40v8M140 40v14M170 40v8M200 40v8M20 40h190"/>
+    </svg>
+  </div>
+</div>
+
+<!-- STATUS -->
+<div class="topbar">
+  <span><span class="dot"></span> Connected</span>
+  <span class="r"><span id="modCount">– Module</span><span id="clock">--:--</span></span>
+</div>
+
+<!-- MARKE -->
+<div class="brandbar">
+  <div class="mark">
+    <svg viewBox="0 0 32 32" fill="none">
+      <path d="M23 9.5A9 9 0 1 0 23 22.5" stroke="#fff" stroke-width="3.4" stroke-linecap="round"/>
+      <circle cx="20.5" cy="11" r="2.4" fill="#fff"/>
+    </svg>
+  </div>
+  <div class="brand-txt">
+    <div class="b1">SYNCOPERATOR</div>
+    <div class="b2">Operations Hub</div>
+  </div>
+  <div class="icon-btn" id="searchBtn" title="Suchen">
+    <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+  </div>
+  <a class="icon-btn" href="https://syncoperator.github.io/syncoperator/" title="Repository" style="text-decoration:none">
+    <svg viewBox="0 0 24 24"><path d="M9 19c-4 1.5-4-2.5-6-3m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.3 4.3 0 0 0-.1-3.2s-1-.3-3.4 1.3a11.5 11.5 0 0 0-6 0C6.3 3.3 5.3 3.6 5.3 3.6a4.3 4.3 0 0 0-.1 3.2A4.6 4.6 0 0 0 4 10c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V22"/></svg>
+  </a>
+</div>
+
+<!-- HERO -->
+<section class="hero" id="hero">
+  <div class="hero-in">
+    <h1>Sync<span class="g">Operator</span></h1>
+    <p class="sub">Zentrale für Programmplanung, Werkzeuglisten und Schnittberechnung. Alle Module an einem Ort.</p>
+    <div class="chips">
+      <span class="chip"><b id="chipCount">–</b> Module</span>
+    </div>
+    <nav class="nav" id="nav"></nav>
+  </div>
+</section>
+
+<!-- INHALT -->
+<div class="wrap" id="module">
+
+  <div class="searchbar">
+    <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+    <input id="search" type="text" placeholder="Modul suchen …" autocomplete="off">
+    <span class="cnt" id="searchCnt"></span>
+  </div>
+
+  <div id="sections"></div>
+  <div class="noresult" id="noresult">Kein Modul gefunden.</div>
+
+  <footer>
+    <span>© SyncOperator</span>
+    <span>github.io / syncoperator</span>
+  </footer>
+</div>
+
+<script>
+  const BASE = 'https://syncoperator.github.io/syncoperator/';   // Pfad — hier ggf. ändern
+
+  const ICONS = {
+    saw:'<path d="M3 14h18M3 14l2-3h14l2 3M5 14v3M9 14v3M13 14v3M17 14v3"/>',
+    lathe:'<path d="M3 12h6M21 12h-4"/><rect x="9" y="8" width="8" height="8" rx="1"/><path d="M3 9v6M19 6l2 2-2 2"/>',
+    gauge:'<path d="M4 18a8 8 0 1 1 16 0"/><path d="M12 18l4-5"/><circle cx="12" cy="18" r="1.4"/>',
+    chart:'<path d="M4 20V10M10 20V4M16 20v-8M22 20H2"/>',
+    line:'<path d="M3 17l5-6 4 3 6-8M3 21h18"/>',
+    thread:'<path d="M9 3h6M9 21h6M8 7h8M8 11h8M8 15h8M8 19h8M16 5l-8 4M16 9l-8 4M16 13l-8 4"/>',
+    contour:'<path d="M3 16c3 0 3-8 6-8s3 8 6 8 3-8 6-8M3 20h18"/>',
+    angle:'<path d="M4 4v16h16"/><path d="M4 20 18 6"/><path d="M9 20a8 8 0 0 0-5-8"/>',
+    hex:'<path d="M12 3l7 4v8l-7 4-7-4V7z"/><circle cx="12" cy="11" r="3"/>',
+    sync:'<path d="M4 9a8 8 0 0 1 13-3l3 3M20 15a8 8 0 0 1-13 3l-3-3"/><path d="M20 4v5h-5M4 20v-5h5"/>',
+    channels:'<rect x="3" y="5" width="18" height="6" rx="1.5"/><rect x="3" y="13" width="18" height="6" rx="1.5"/><path d="M7 8h2M7 16h2"/>',
+    plan:'<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 3v3h6V3M8 11h8M8 15h5"/>',
+    grid:'<rect x="4" y="4" width="7" height="7" rx="1.4"/><rect x="13" y="4" width="7" height="7" rx="1.4"/><rect x="4" y="13" width="7" height="7" rx="1.4"/><rect x="13" y="13" width="7" height="7" rx="1.4"/>',
+    bar:'<ellipse cx="6" cy="12" rx="2.5" ry="7"/><path d="M6 5h12M6 19h12"/><ellipse cx="18" cy="12" rx="2.5" ry="7"/>',
+    swap:'<path d="M4 8h13l-3-3M4 8l3 3M20 16H7l3 3M20 16l-3-3"/>',
+    flask:'<path d="M9 3h6M10 3v6l-5 9a1.5 1.5 0 0 0 1.4 2h11.2a1.5 1.5 0 0 0 1.4-2l-5-9V3"/><path d="M7.5 15h9"/>',
+    list:'<path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/>',
+    drop:'<path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/><path d="M9 14a3 3 0 0 0 3 3"/>',
+    cabinet:'<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M4 9h16M4 15h16M10 6h.01M10 12h.01M10 18h.01"/>',
+    caliper:'<path d="M3 5h18v4H3zM6 9v6M18 9v6M6 15h12"/><path d="M9 9v3"/>',
+    pencil:'<path d="M4 20l4-1L19 8a2 2 0 0 0-3-3L5 16z"/><path d="M14 7l3 3"/>',
+    spark:'<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 16l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7z"/>',
+    doc:'<path d="M7 3h7l5 5v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M14 3v5h5"/>'
+  };
+
+  const SECTIONS = [
+    { no:'01', key:'rechner', title:'Rechner', items:[
+      { f:'saegelaenge.html', t:'Sägelänge', i:'saw' },
+      { f:'nakamura.html', t:'Nakamura', i:'lathe' },
+      { f:'optimieren.html', t:'Optimieren', i:'gauge' },
+      { f:'eff.html', t:'Effizienz', i:'chart' },
+      { f:'eff2.html', t:'Effizienz II', i:'line' },
+      { f:'gewinde.html', t:'Gewinde', i:'thread' },
+      { f:'kontur.html', t:'Kontur', i:'contour' },
+      { f:'angle.html', t:'Winkel', i:'angle' },
+      { f:'6kant.html', t:'Sechskant', i:'hex' },
+    ]},
+    { no:'02', key:'programm', title:'Programm & Sync', items:[
+      { f:'sync.html', t:'SyncOperator', i:'sync' },
+      { f:'syncs.html', t:'Sync Slots', i:'channels' },
+      { f:'prog.html', t:'Programmplan', i:'plan' },
+      { f:'index2.html', t:'Übersicht', i:'grid' },
+      { f:'citizen.html', t:'Citizen', i:'lathe' },
+      { f:'stange.html', t:'Stangenmaterial', i:'bar' },
+      { f:'tausch.html', t:'Werkzeugtausch', i:'swap' },
+      { f:'test45.html', t:'Test 45', i:'flask' },
+    ]},
+    { no:'03', key:'werkzeuge', title:'Werkzeuge & Listen', items:[
+      { f:'liste.html', t:'Werkzeugliste', i:'list' },
+      { f:'waschen.html', t:'Teile zum Waschen', i:'drop' },
+      { f:'schrank.html', t:'Werkzeugschrank', i:'cabinet' },
+      { f:'mess.html', t:'Messen', i:'caliper' },
+      { f:'editor.html', t:'Editor', i:'pencil' },
+      { f:'editor2.html', t:'Editor II', i:'pencil' },
+      { f:'editor3.html', t:'Editor III', i:'pencil' },
+      { f:'claude.html', t:'Claude', i:'spark' },
+    ]},
+  ];
+
+  const total = SECTIONS.reduce((a,s)=>a+s.items.length,0);
+  document.getElementById('chipCount').textContent = total;
+  document.getElementById('modCount').textContent = total + ' Module';
+  document.getElementById('searchCnt').textContent = total + ' Module';
+
+  // Nav-Links
+  const navEl = document.getElementById('nav');
+  let navHtml = '<a href="#module" data-target="all" class="active"><span class="n">·</span> Alle</a>';
+  SECTIONS.forEach(s=> navHtml += `<a href="#sec-${s.key}" data-target="sec-${s.key}"><span class="n">${s.no}</span> ${s.title}</a>`);
+  navEl.innerHTML = navHtml;
+
+  function row(it, n, secTitle){
+    const ic = ICONS[it.i] || ICONS.doc;
+    return `<a class="row" href="${BASE}${it.f}" data-name="${(it.t+' '+it.f).toLowerCase()}">
+      <span class="num">${String(n).padStart(2,'0')}</span>
+      <span class="ico"><svg viewBox="0 0 24 24">${ic}</svg></span>
+      <span class="meta"><span class="t">${it.t}</span><span class="file">${it.f}</span></span>
+      <span class="tag">${secTitle}</span>
+      <span class="go"><svg viewBox="0 0 24 24"><path d="M7 17 17 7M9 7h8v8"/></svg></span>
+    </a>`;
+  }
+
+  document.getElementById('sections').innerHTML = SECTIONS.map(s=>
+    `<div class="section" id="sec-${s.key}" data-cat="${s.key}">
+      <div class="sec-head"><span class="no">[${s.no}]</span><h2>${s.title}</h2><span class="rule"></span></div>
+      <div class="list">${s.items.map((it,idx)=>row(it, idx+1, s.title.split(' ')[0])).join('')}</div>
+    </div>`).join('');
+
+  // reveal
+  const io = new IntersectionObserver((es)=>{
+    es.forEach((e,k)=>{ if(e.isIntersecting){ e.target.style.transitionDelay=(Math.min(k,8)*30)+'ms'; e.target.classList.add('in'); io.unobserve(e.target); } });
+  },{ threshold:.06 });
+  document.querySelectorAll('.row').forEach(c=>io.observe(c));
+
+  // search filter
+  const search = document.getElementById('search');
+  const noresult = document.getElementById('noresult');
+  const sectionEls = [...document.querySelectorAll('.section')];
+
+  function applyFilter(){
+    const q = search.value.trim().toLowerCase();
+    let shown = 0;
+    sectionEls.forEach(sec=>{
+      let s=0;
+      sec.querySelectorAll('.row').forEach(c=>{ const hit=!q||c.dataset.name.includes(q); c.style.display=hit?'':'none'; if(hit){shown++;s++;} });
+      sec.style.display = s ? '' : 'none';
+    });
+    document.getElementById('searchCnt').textContent = shown + ' Module';
+    noresult.style.display = shown ? 'none' : 'block';
+  }
+  search.addEventListener('input', applyFilter);
+  document.getElementById('searchBtn').addEventListener('click', ()=>{
+    document.getElementById('module').scrollIntoView({behavior:'smooth'}); setTimeout(()=>search.focus(),350);
+  });
+
+  // Scroll-Spy für Nav
+  const navLinks = [...navEl.querySelectorAll('a')];
+  function setActive(t){ navLinks.forEach(a=>a.classList.toggle('active', a.dataset.target===t)); }
+  function spy(){
+    const y = window.scrollY + 130;
+    let cur = 'all';
+    sectionEls.forEach(sec=>{ if(sec.style.display!=='none' && sec.offsetTop <= y) cur = sec.id; });
+    if(sectionEls[0] && window.scrollY < sectionEls[0].offsetTop - 180) cur='all';
+    setActive(cur);
+  }
+  window.addEventListener('scroll', spy, {passive:true});
+  spy();
+
+  // clock
+  function tick(){ const d=new Date(); document.getElementById('clock').textContent =
+    String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'); }
+  tick(); setInterval(tick,10000);
+
+  // parallax (Hintergrund global)
+  const layers=[...document.querySelectorAll('#bg .layer')];
+  let sy=0, mx=0, my=0, raf=0;
+  function apply(){ raf=0; layers.forEach(l=>{ const sp=parseFloat(l.dataset.speed)||0;
+    l.style.transform=`translate3d(${mx*sp*26}px, ${(sy*sp*0.18)+(my*sp*22)}px, 0)`; }); }
+  function req(){ if(!raf) raf=requestAnimationFrame(apply); }
+  window.addEventListener('scroll', ()=>{ sy=window.scrollY; req(); }, {passive:true});
+  window.addEventListener('pointermove', e=>{ mx=(e.clientX/innerWidth-0.5); my=(e.clientY/innerHeight-0.5); req(); }, {passive:true});
+  apply();
+
+  // ===== SPLASH → ganze Kopfzeile montiert sich =====
+  (function(){
+    const splash=document.getElementById('splash');
+    if(!splash) return;
+    const sBrand=document.getElementById('splashBrand');
+    const bar=document.getElementById('splashBar');
+    const topbar=document.querySelector('.topbar');
+    const hMark=document.querySelector('.brandbar .mark');
+    const hTxt=document.querySelector('.brandbar .brand-txt');
+    const hIcons=[...document.querySelectorAll('.brandbar .icon-btn')];
+    const reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
+
+    // Header-Inhalt zunächst unsichtbar (Layout bleibt für Messung erhalten)
+    [topbar,hMark,hTxt,...hIcons].forEach(el=> el && (el.style.opacity='0'));
+
+    function revealHeader(){ [topbar,hMark,hTxt,...hIcons].forEach(el=> el && (el.style.opacity='1')); }
+    function finish(){ setTimeout(()=>{ splash.remove(); document.body.style.overflow=''; }, 520); }
+
+    window.addEventListener('load', ()=>{
+      window.scrollTo(0,0);
+      document.body.style.overflow='hidden';
+
+      if(reduce){ revealHeader(); splash.classList.add('done'); finish(); return; }
+
+      setTimeout(()=>{
+        const from=sBrand.getBoundingClientRect();
+        const mr=hMark.getBoundingClientRect();
+        const tr=hTxt.getBoundingClientRect();
+        const to={ left:mr.left, top:mr.top, width:(tr.right-mr.left) };
+        const scale=to.width/from.width;
+        const dx=to.left-from.left, dy=to.top-from.top;
+
+        bar.style.opacity='0';
+        sBrand.style.transition='transform .85s cubic-bezier(.65,0,.18,1)';
+        sBrand.style.transform=`translate(${dx}px, ${dy}px) scale(${scale})`;
+        splash.style.background='rgba(255,255,255,0)';
+
+        // Kopfzeile gegen Ende sanft einblenden
+        setTimeout(revealHeader, 540);
+
+        sBrand.addEventListener('transitionend', ()=>{
+          splash.classList.add('done');
+          finish();
+        }, {once:true});
+      }, 720);
+    });
+  })();
+</script>
+</body>
+</html>
