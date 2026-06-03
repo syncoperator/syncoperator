@@ -1653,7 +1653,6 @@ body[data-view="saw"] #kanalSwitch { opacity: 0.4; pointer-events: none; }
 ═══════════════════════════════════════════════════ */
 @media print {
   @page {
-    size: A4 portrait;
     margin: 10mm 7mm 10mm 7mm;
   }
   html, body {
@@ -2044,6 +2043,7 @@ body[data-view="saw"] #kanalSwitch { opacity: 0.4; pointer-events: none; }
   .print-only { display: none !important; }
 }
 </style>
+<style id="pageOrient">@page { size: A4 portrait; }</style>
 </head>
 <body>
 
@@ -4450,12 +4450,17 @@ function init(){
   }
 
   // PRINT — print only the active view
+  function setPageOrientation(orient) {
+    const st = document.getElementById('pageOrient');
+    if (st) st.textContent = '@page { size: A4 ' + (orient === 'landscape' ? 'landscape' : 'portrait') + '; }';
+  }
   $('#btnPrint').addEventListener('click', () => {
     if (S.view === 'saw') {
-      // Sägelänge tab is interactive only — print Programmplan by default
+      // Sägelänge tab is interactive only — print Programmplan (landscape) by default
       try { renderPrintTable(); renderWkzTable(); updatePrintHeader(); } catch(err) { console.error(err); }
       document.body.classList.remove('print-plan', 'print-wkz');
       document.body.classList.add('print-plan');
+      setPageOrientation('landscape');
       window.print();
       return;
     }
@@ -4467,7 +4472,15 @@ function init(){
       console.error('Print prep error:', err);
     }
     document.body.classList.remove('print-plan', 'print-wkz');
-    document.body.classList.add(S.view === 'wkz' ? 'print-wkz' : 'print-plan');
+    if (S.view === 'wkz') {
+      // Werkzeugliste → Hochformat (portrait)
+      document.body.classList.add('print-wkz');
+      setPageOrientation('portrait');
+    } else {
+      // Programmplan → Querformat (landscape)
+      document.body.classList.add('print-plan');
+      setPageOrientation('landscape');
+    }
     // Print synchronously (iOS Safari blocks setTimeout-wrapped print)
     window.print();
   });
