@@ -3277,38 +3277,27 @@ function openEditor(opId=null, assignSlot=null){
   const tlNoIn = mInp(curDefTool ? curDefTool.tno : '', 'T01 (optional)', true);
   const tlNameIn = mInp(curDefTool ? curDefTool.name : '', 'Werkzeug-Name (optional)');
   function opKanal() { return spSel.value === 'SP3' ? '2' : '1'; }
-  function toolItemHTML(t) {
-    const k = t.kanal || '1';
-    return `<span class="ac-kbadge ${k==='1'?'ac-k1':'ac-k2'}">K${k}</span><span class="ac-key">${esc(t.tno)}</span><span class="ac-val">${esc(t.name)}</span>`;
-  }
-  function sortToolsKanalFirst(arr) {
+  // Simple datalist-based suggestions (robust, no custom autocomplete)
+  const tlDataList = document.createElement('datalist');
+  tlDataList.id = 'opToolList_' + Math.random().toString(16).slice(2);
+  S.tools.forEach(t => {
+    const o = document.createElement('option');
+    o.value = t.tno;
+    o.label = t.name + ' · K' + (t.kanal||'1');
+    tlDataList.appendChild(o);
+  });
+  tlNoIn.setAttribute('list', tlDataList.id);
+  // When T-Nr entered, auto-fill name from matching same-channel tool
+  tlNoIn.addEventListener('input', () => {
+    const raw = tlNoIn.value.trim();
+    if (!raw) return;
+    const tno = /^\d+$/.test(raw) ? 'T' + raw.padStart(2,'0') : raw;
     const kanal = opKanal();
-    return arr.sort((a,b) => {
-      const ak=(a.kanal||'1')===kanal?0:1, bk=(b.kanal||'1')===kanal?0:1;
-      if (ak!==bk) return ak-bk;
-      return (a.tno||'').localeCompare(b.tno||'', undefined, {numeric:true});
-    });
-  }
-  const tlNoAc = makeAutocomplete(tlNoIn,
-    (q) => {
-      const qq=(q||'').toLowerCase().trim();
-      const matches = qq ? S.tools.filter(t=>(t.tno+' '+t.name).toLowerCase().includes(qq)) : S.tools.slice();
-      return sortToolsKanalFirst(matches).map(t=>({item:t}));
-    },
-    toolItemHTML,
-    (t)=>{ tlNoIn.value=t.tno; tlNameIn.value=t.name; }
-  );
-  const tlNameAc = makeAutocomplete(tlNameIn,
-    (q) => {
-      const qq=(q||'').toLowerCase().trim();
-      if(!qq) return [];
-      return sortToolsKanalFirst(S.tools.filter(t=>(t.tno+' '+t.name).toLowerCase().includes(qq))).map(t=>({item:t}));
-    },
-    toolItemHTML,
-    (t)=>{ tlNoIn.value=t.tno; tlNameIn.value=t.name; }
-  );
-  const tlNoGrp = mGrp('Werkzeug T-Nr.', tlNoIn, true); tlNoGrp.appendChild(tlNoAc);
-  const tlNameGrp = mGrp('Werkzeug-Name', tlNameIn); tlNameGrp.appendChild(tlNameAc);
+    let t = S.tools.find(x => (x.kanal||'1')===kanal && x.tno===tno) || S.tools.find(x => x.tno===tno);
+    if (t && !tlNameIn.value.trim()) tlNameIn.value = t.name;
+  });
+  const tlNoGrp = mGrp('Werkzeug T-Nr.', tlNoIn, true); tlNoGrp.appendChild(tlDataList);
+  const tlNameGrp = mGrp('Werkzeug-Name', tlNameIn);
   const toolHint = document.createElement('div');
   toolHint.style.cssText = 'font-size:11px;color:var(--ink-5);margin-top:-4px;';
   toolHint.textContent = 'Optional — wird beim Einfügen in einen Slot automatisch mitgesetzt.';
