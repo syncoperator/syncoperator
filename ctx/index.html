@@ -3225,6 +3225,37 @@ function customPrompt(opts = {}) {
   });
 }
 
+/* Shared autocomplete builder (used by op editor, slot editor, tool fields) */
+function makeAutocomplete(input, getItems, formatItem, onPick) {
+  const wrap = document.createElement('div');
+  wrap.className = 'ac-wrap';
+  const dd = document.createElement('div');
+  dd.className = 'ac-dropdown';
+  dd.style.display = 'none';
+  wrap.appendChild(dd);
+  function render(q){
+    dd.innerHTML = '';
+    const items = getItems(q);
+    if(!items.length){ dd.style.display='none'; return; }
+    items.slice(0, 30).forEach(it => {
+      const r = document.createElement('div');
+      r.className = 'ac-item';
+      r.innerHTML = formatItem(it.item);
+      r.addEventListener('mousedown', e => {
+        e.preventDefault();
+        onPick(it.item);
+        dd.style.display = 'none';
+      });
+      dd.appendChild(r);
+    });
+    dd.style.display = 'block';
+  }
+  input.addEventListener('focus', ()=>render(input.value));
+  input.addEventListener('input', ()=>render(input.value));
+  input.addEventListener('blur', ()=>{ setTimeout(()=>{ dd.style.display='none'; }, 150); });
+  return wrap;
+}
+
 function openEditor(opId=null, assignSlot=null){
   const isEdit=!!opId, ex=isEdit?getOp(opId):null;
   if(isEdit&&!ex)return;
@@ -3435,36 +3466,7 @@ function openSlotEditor(kanal, index){
   const body=$('#mBody');
 
   /* Generic autocomplete helper */
-  function makeAutocomplete(input, getItems, formatItem, onPick) {
-    // getItems(q) returns [{display, value, item}, ...]
-    const wrap = document.createElement('div');
-    wrap.className = 'ac-wrap';
-    const dd = document.createElement('div');
-    dd.className = 'ac-dropdown';
-    dd.style.display = 'none';
-    wrap.appendChild(dd);
-    function render(q){
-      dd.innerHTML = '';
-      const items = getItems(q);
-      if(!items.length){ dd.style.display='none'; return; }
-      items.slice(0, 12).forEach(it => {
-        const r = document.createElement('div');
-        r.className = 'ac-item';
-        r.innerHTML = formatItem(it.item);
-        r.addEventListener('mousedown', e => {
-          e.preventDefault();
-          onPick(it.item);
-          dd.style.display = 'none';
-        });
-        dd.appendChild(r);
-      });
-      dd.style.display = 'block';
-    }
-    input.addEventListener('focus', ()=>render(input.value));
-    input.addEventListener('input', ()=>render(input.value));
-    input.addEventListener('blur', ()=>{ setTimeout(()=>{ dd.style.display='none'; }, 150); });
-    return wrap;
-  }
+  function makeAutocompleteUNUSED() {}
 
   // ── Operation section ──
   const opLabel = document.createElement('div'); opLabel.className='field-label'; opLabel.textContent='Operation';
