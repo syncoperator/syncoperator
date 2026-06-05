@@ -3048,6 +3048,7 @@ function applyState(raw){
     category:CATS.slice(1).includes(o.category)?o.category:'Außen',
     doppelhalter:!!o.doppelhalter,
     toolNo:o.toolNo||'',toolName:o.toolName||'',
+    defaultToolId:o.defaultToolId||null,
   }));
   S.tools=(Array.isArray(raw.tools)?raw.tools:[]).map(t=>({
     id:t.id||'tool_'+Math.random().toString(16).slice(2),
@@ -3240,10 +3241,53 @@ function openEditor(opId=null, assignSlot=null){
   toggleEl.addEventListener('click',()=>{doppel=!doppel;toggleEl.classList.toggle('on',doppel)});
   const tgRow=document.createElement('div');tgRow.className='form-row';tgRow.appendChild(toggleEl);
 
+  // ── Optional default tool for this operation ──
+  const curDefTool = (isEdit && ex.defaultToolId) ? getTool(ex.defaultToolId) : null;
+  const tlNoIn = mInp(curDefTool ? curDefTool.tno : '', 'T01 (optional)', true);
+  const tlNameIn = mInp(curDefTool ? curDefTool.name : '', 'Werkzeug-Name (optional)');
+  function opKanal() { return spSel.value === 'SP3' ? '2' : '1'; }
+  function toolItemHTML(t) {
+    const k = t.kanal || '1';
+    return `<span class="ac-kbadge ${k==='1'?'ac-k1':'ac-k2'}">K${k}</span><span class="ac-key">${esc(t.tno)}</span><span class="ac-val">${esc(t.name)}</span>`;
+  }
+  function sortToolsKanalFirst(arr) {
+    const kanal = opKanal();
+    return arr.sort((a,b) => {
+      const ak=(a.kanal||'1')===kanal?0:1, bk=(b.kanal||'1')===kanal?0:1;
+      if (ak!==bk) return ak-bk;
+      return (a.tno||'').localeCompare(b.tno||'', undefined, {numeric:true});
+    });
+  }
+  const tlNoAc = makeAutocomplete(tlNoIn,
+    (q) => {
+      const qq=(q||'').toLowerCase().trim();
+      const matches = qq ? S.tools.filter(t=>(t.tno+' '+t.name).toLowerCase().includes(qq)) : S.tools.slice();
+      return sortToolsKanalFirst(matches).map(t=>({item:t}));
+    },
+    toolItemHTML,
+    (t)=>{ tlNoIn.value=t.tno; tlNameIn.value=t.name; }
+  );
+  const tlNameAc = makeAutocomplete(tlNameIn,
+    (q) => {
+      const qq=(q||'').toLowerCase().trim();
+      if(!qq) return [];
+      return sortToolsKanalFirst(S.tools.filter(t=>(t.tno+' '+t.name).toLowerCase().includes(qq))).map(t=>({item:t}));
+    },
+    toolItemHTML,
+    (t)=>{ tlNoIn.value=t.tno; tlNameIn.value=t.name; }
+  );
+  const tlNoGrp = mGrp('Werkzeug T-Nr.', tlNoIn, true); tlNoGrp.appendChild(tlNoAc);
+  const tlNameGrp = mGrp('Werkzeug-Name', tlNameIn); tlNameGrp.appendChild(tlNameAc);
+  const toolHint = document.createElement('div');
+  toolHint.style.cssText = 'font-size:11px;color:var(--ink-5);margin-top:-4px;';
+  toolHint.textContent = 'Optional — wird beim Einfügen in einen Slot automatisch mitgesetzt.';
+
   body.append(
     mRow(mGrp('L-Code · Basis',codeIn,true),mGrp('Bezeichnung',nameIn)),
     mRow(mGrp('Spindel',spSel,true),mGrp('Kategorie',catSel)),
     tgRow,
+    mRow(tlNoGrp, tlNameGrp),
+    toolHint,
   );
 
   $('#mFoot').append(
@@ -3254,12 +3298,31 @@ function openEditor(opId=null, assignSlot=null){
       const title = nameIn.value.trim();
       if(!code){codeIn.focus();return}
       if(!title){nameIn.focus();return}
-      const data={code,title,spindle:spSel.value,category:catSel.value,doppelhalter:doppel};
+      // Resolve optional tool
+      let defaultToolId = null;
+      const tnoRaw = tlNoIn.value.trim();
+      const tnameVal = tlNameIn.value.trim();
+      if (tnoRaw || tnameVal) {
+        const kanal = opKanal();
+        const tno = tnoRaw ? (/^\d+$/.test(tnoRaw) ? 'T'+tnoRaw.padStart(2,'0') : tnoRaw) : '';
+        let tool = S.tools.find(t => (t.kanal||'1')===kanal && t.tno===tno && t.name===tnameVal);
+        if (!tool && tno) tool = S.tools.find(t => (t.kanal||'1')===kanal && t.tno===tno);
+        if (!tool) tool = S.tools.find(t => t.tno===tno && t.name===tnameVal);
+        if (!tool && tno) tool = S.tools.find(t => t.tno===tno);
+        if (!tool && tno && tnameVal) {
+          tool = { id:'tool_'+S.nextId++, tno, name:tnameVal, kanal };
+          S.tools.push(tool);
+        } else if (tool && tnameVal && tool.name !== tnameVal) {
+          tool.name = tnameVal;
+        }
+        if (tool) defaultToolId = tool.id;
+      }
+      const data={code,title,spindle:spSel.value,category:catSel.value,doppelhalter:doppel,defaultToolId};
       if(isEdit){Object.assign(ex,data)}
       else{
         const nop={id:'op_'+S.nextId++,...data};
         S.library.push(nop);
-        if(assignSlot){ensure(assignSlot.kanal,assignSlot.index+1);S.slots[assignSlot.kanal][assignSlot.index]={opId:nop.id,toolId:null}}
+        if(assignSlot){ensure(assignSlot.kanal,assignSlot.index+1);S.slots[assignSlot.kanal][assignSlot.index]={opId:nop.id,toolId:defaultToolId}}
       }
       closeModal();save();renderAll();
     })
@@ -3822,7 +3885,10 @@ function renderSlots(){
       if(p.kind==='op'){
         ensure(S.kanal,ti+1);
         const existing = S.slots[S.kanal][ti] || {opId:null,toolId:null};
-        S.slots[S.kanal][ti]={opId:p.id, toolId:existing.toolId};
+        const op = getOp(p.id);
+        // If slot has no tool yet and op has a default tool, use it
+        const toolId = existing.toolId || (op && op.defaultToolId ? op.defaultToolId : null);
+        S.slots[S.kanal][ti]={opId:p.id, toolId};
       } else if(p.kind==='tool'){
         ensure(S.kanal,ti+1);
         const existing = S.slots[S.kanal][ti] || {opId:null,toolId:null};
