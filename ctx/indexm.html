@@ -1056,6 +1056,16 @@ body {
   flex-shrink: 0;
   font-size: 12.5px;
 }
+.ac-kbadge {
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+.ac-k1 { background: #d6f0e0; color: #1c7a4a; }
+.ac-k2 { background: #d9e6f7; color: #2860a8; }
 .ac-val {
   color: var(--ink-2);
   flex: 1;
@@ -1573,7 +1583,6 @@ body[data-view="saw"] .kanal-bar { display: none; }
 ═══════════════════════════════════════════════════ */
 @media print {
   @page {
-    size: A4 portrait;
     margin: 10mm 7mm 10mm 7mm;
   }
   html, body {
@@ -1676,26 +1685,26 @@ body[data-view="saw"] .kanal-bar { display: none; }
     color: #000 !important;
     font-weight: 700;
     text-align: center;
-    padding: 2mm 2mm;
+    padding: 1mm 2mm;
     font-size: 9pt;
     letter-spacing: .03em;
     border: 1px solid #000;
-    height: 6mm;
+    height: 5mm;
     font-family: 'JetBrains Mono', monospace;
   }
   .print-table .ptr-spindle-head td {
     font-weight: 600;
     text-align: center;
-    padding: 1.5mm 2mm;
+    padding: 0.6mm 2mm;
     font-size: 8.5pt;
     border: 1px solid #000;
-    height: 5mm;
+    height: 4mm;
     color: #fff;
   }
   .print-table .pt-sp4-head { background: #4FB47A !important; }
   .print-table .pt-sp3-head { background: #5085C4 !important; }
 
-  .print-table tbody tr { height: 7mm; }
+  .print-table tbody tr { height: 5.2mm; }
   .print-table .pt-idx {
     width: 7mm;
     text-align: center;
@@ -1705,45 +1714,48 @@ body[data-view="saw"] .kanal-bar { display: none; }
     border: 1px solid #000;
     padding: 0 1mm;
     color: #000;
-    font-size: 9pt;
+    font-size: 8.5pt;
     vertical-align: middle;
-    height: 7mm;
+    height: 5.2mm;
   }
   .print-table .pt-cell {
     border: 1px solid #000;
-    padding: 1mm 2mm;
+    padding: 0.3mm 2mm;
     vertical-align: middle;
     color: #000;
     background: #fff !important;
     font-size: 8pt;
-    height: 7mm;
+    height: 5.2mm;
+    line-height: 1.1;
     overflow: hidden;
     word-break: break-word;
   }
+  .print-table tr { break-inside: avoid; page-break-inside: avoid; }
 
   .print-table .pt-content {
     display: flex !important;
     align-items: center;
     justify-content: space-between;
-    gap: 2mm;
+    gap: 1.5mm;
     width: 100%;
   }
   .print-table .pt-text {
-    flex: 1;
+    flex: 1 1 auto;
+    min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    font-weight: 500;
-    font-size: 8pt;
+    font-weight: 600;
+    font-size: 9pt;
   }
   .print-table .pt-codes {
-    flex-shrink: 0;
+    flex: 0 0 auto;
     display: flex;
-    gap: 2.5mm;
+    gap: 1.5mm;
     font-family: 'JetBrains Mono', monospace;
-    font-size: 7.5pt;
+    font-size: 7pt;
     font-weight: 600;
-    letter-spacing: .01em;
+    letter-spacing: 0;
   }
   .print-table .pt-l { color: #000; }
   .print-table .pt-t { color: #666; }
@@ -1917,12 +1929,12 @@ body[data-view="saw"] .kanal-bar { display: none; }
     font-weight: 700;
     text-align: left;
     background: #fff !important;
-    font-size: 9.5pt;
+    font-size: 11pt;
   }
   .wkz-table .wkz-name,
   .wkz-table th.wkz-name-h {
     font-weight: 500;
-    font-size: 9.5pt;
+    font-size: 11pt;
     text-align: left;
   }
   .wkz-table .wkz-empty {
@@ -1937,6 +1949,7 @@ body[data-view="saw"] .kanal-bar { display: none; }
 
 .print-table, .print-header { display: none; }
 </style>
+<style id="pageOrient">@page { size: A4 portrait; }</style>
 </head>
 <body>
 
@@ -2321,7 +2334,7 @@ body[data-view="saw"] .kanal-bar { display: none; }
 </div>
 
 <input type="file" id="fileInput" accept=".json" style="display:none">
-<input type="file" id="mpfInput" style="display:none">
+<input type="file" id="mpfInput" multiple style="display:none">
 
 <!-- PROJECT SHEET -->
 <div class="sheet" id="projSheet">
@@ -2601,6 +2614,7 @@ function applyState(raw){
     category:CATS.slice(1).includes(o.category)?o.category:'Außen',
     doppelhalter:!!o.doppelhalter,
     toolNo:o.toolNo||'',toolName:o.toolName||'',
+    defaultToolId:o.defaultToolId||null,
   }));
   S.tools=(Array.isArray(raw.tools)?raw.tools:[]).map(t=>({
     id:t.id||'tool_'+Math.random().toString(16).slice(2),
@@ -2663,6 +2677,41 @@ function load(){
 function openSheet(){$('#libSheet').classList.add('open');$('#sheetBackdrop').classList.add('open');document.body.style.overflow='hidden';renderFilters();renderLib()}
 function closeSheet(){$('#libSheet').classList.remove('open');$('#sheetBackdrop').classList.remove('open');document.body.style.overflow=''}
 
+/* Shared autocomplete builder */
+function makeAutocomplete(input, getItems, formatItem, onPick) {
+  const wrap = document.createElement('div');
+  wrap.className = 'ac-wrap';
+  const dd = document.createElement('div');
+  dd.className = 'ac-dropdown';
+  dd.style.display = 'none';
+  wrap.appendChild(dd);
+  function render(q){
+    dd.innerHTML = '';
+    const items = getItems(q);
+    if(!items.length){ dd.style.display='none'; return; }
+    items.slice(0, 30).forEach(it => {
+      const r = document.createElement('div');
+      r.className = 'ac-item';
+      r.innerHTML = formatItem(it.item);
+      r.addEventListener('mousedown', e => {
+        e.preventDefault();
+        onPick(it.item);
+        dd.style.display = 'none';
+      });
+      r.addEventListener('touchstart', e => {
+        onPick(it.item);
+        dd.style.display = 'none';
+      }, {passive:true});
+      dd.appendChild(r);
+    });
+    dd.style.display = 'block';
+  }
+  input.addEventListener('focus', ()=>render(input.value));
+  input.addEventListener('input', ()=>render(input.value));
+  input.addEventListener('blur', ()=>{ setTimeout(()=>{ dd.style.display='none'; }, 200); });
+  return wrap;
+}
+
 function openEditor(opId=null, assignSlot=null){
   const isEdit=!!opId, ex=isEdit?getOp(opId):null;
   if(isEdit&&!ex)return;
@@ -2689,7 +2738,34 @@ function openEditor(opId=null, assignSlot=null){
   const fName=field('Bezeichnung',nameIn);
   const fSp=field('Spindel',spSel);
   const fCat=field('Kategorie',catSel);
-  body.append(row(fCode,fName),row(fSp,fCat),tg);
+
+  // Optional default tool
+  const curDefTool = (isEdit && ex.defaultToolId) ? getTool(ex.defaultToolId) : null;
+  const tlNoIn = inp(curDefTool ? curDefTool.tno : '', 'T01 (optional)', true);
+  const tlNameIn = inp(curDefTool ? curDefTool.name : '', 'Werkzeug-Name (optional)');
+  function opKanal(){ return spSel.value==='SP3' ? '2' : '1'; }
+  const tlDataList = document.createElement('datalist');
+  tlDataList.id = 'opToolList_' + Math.random().toString(16).slice(2);
+  S.tools.forEach(t => {
+    const o = document.createElement('option');
+    o.value = t.tno;
+    o.label = t.name + ' · K' + (t.kanal||'1');
+    tlDataList.appendChild(o);
+  });
+  tlNoIn.setAttribute('list', tlDataList.id);
+  tlNoIn.addEventListener('input', () => {
+    const raw = tlNoIn.value.trim();
+    if (!raw) return;
+    const tno = /^\d+$/.test(raw) ? 'T'+raw.padStart(2,'0') : raw;
+    const kanal = opKanal();
+    let t = S.tools.find(x=>(x.kanal||'1')===kanal&&x.tno===tno) || S.tools.find(x=>x.tno===tno);
+    if (t && !tlNameIn.value.trim()) tlNameIn.value = t.name;
+  });
+  const fTlNo=field('Werkzeug T-Nr.',tlNoIn);fTlNo.classList.add('narrow');fTlNo.style.flex='0 0 120px';fTlNo.appendChild(tlDataList);
+  const fTlName=field('Werkzeug-Name',tlNameIn);
+  const toolHint=document.createElement('div');toolHint.style.cssText='font-size:11px;color:var(--ink-5);margin:-2px 0 4px;';toolHint.textContent='Optional — wird beim Einfügen in Slot mitgesetzt.';
+
+  body.append(row(fCode,fName),row(fSp,fCat),tg,row(fTlNo,fTlName),toolHint);
 
   const cancel=document.createElement('button');cancel.className='btn btn-ghost';cancel.textContent='Abbrechen';
   cancel.addEventListener('click',closeEditor);
@@ -2700,12 +2776,26 @@ function openEditor(opId=null, assignSlot=null){
     const title = nameIn.value.trim();
     if(!code){codeIn.focus();return}
     if(!title){nameIn.focus();return}
-    const data={code,title,spindle:spSel.value,category:catSel.value,doppelhalter:doppel};
+    // Resolve optional tool
+    let defaultToolId=null;
+    const tnoRaw=tlNoIn.value.trim(), tnameVal=tlNameIn.value.trim();
+    if(tnoRaw||tnameVal){
+      const kanal=opKanal();
+      const tno=tnoRaw?(/^\d+$/.test(tnoRaw)?'T'+tnoRaw.padStart(2,'0'):tnoRaw):'';
+      let tool=S.tools.find(t=>(t.kanal||'1')===kanal&&t.tno===tno&&t.name===tnameVal);
+      if(!tool&&tno)tool=S.tools.find(t=>(t.kanal||'1')===kanal&&t.tno===tno);
+      if(!tool)tool=S.tools.find(t=>t.tno===tno&&t.name===tnameVal);
+      if(!tool&&tno)tool=S.tools.find(t=>t.tno===tno);
+      if(!tool&&tno&&tnameVal){tool={id:'tool_'+S.nextId++,tno,name:tnameVal,kanal};S.tools.push(tool)}
+      else if(tool&&tnameVal&&tool.name!==tnameVal){tool.name=tnameVal}
+      if(tool)defaultToolId=tool.id;
+    }
+    const data={code,title,spindle:spSel.value,category:catSel.value,doppelhalter:doppel,defaultToolId};
     if(isEdit){Object.assign(ex,data)}
     else{
       const nop={id:'op_'+S.nextId++,...data};
       S.library.push(nop);
-      if(assignSlot){ensure(assignSlot.kanal,assignSlot.index+1);S.slots[assignSlot.kanal][assignSlot.index]={opId:nop.id,toolId:null}}
+      if(assignSlot){ensure(assignSlot.kanal,assignSlot.index+1);S.slots[assignSlot.kanal][assignSlot.index]={opId:nop.id,toolId:defaultToolId}}
     }
     closeEditor();save();renderAll();
   });
@@ -2865,14 +2955,21 @@ function openPairing() {
           dd.innerHTML = '';
           const q = userTyped ? input.value : '';
           const qq = (q||'').toLowerCase().trim();
+          function sortByKanal(arr){
+            return arr.sort((a,b)=>{
+              const ak=(a.kanal||'1')===kanal?0:1, bk=(b.kanal||'1')===kanal?0:1;
+              if(ak!==bk) return ak-bk;
+              return (a.tno||'').localeCompare(b.tno||'', undefined, {numeric:true});
+            });
+          }
           let items;
           if (showAll || !qq) {
-            items = S.tools.slice().sort((a,b)=>(a.tno||'').localeCompare(b.tno||'', undefined, {numeric:true}));
+            items = sortByKanal(S.tools.slice());
           } else {
             const starts = S.tools.filter(t => (t.tno||'').toLowerCase().startsWith(qq));
             const startsIds = new Set(starts.map(t=>t.id));
             const contains = S.tools.filter(t => !startsIds.has(t.id) && (t.tno+' '+t.name).toLowerCase().includes(qq));
-            items = [...starts, ...contains];
+            items = sortByKanal(starts).concat(sortByKanal(contains));
           }
           if (!items.length) {
             dd.innerHTML = '<div class="ac-item" style="color:var(--ink-5);font-style:italic;cursor:default;">Keine Werkzeuge</div>';
@@ -2882,7 +2979,8 @@ function openPairing() {
           items.slice(0, 30).forEach(t => {
             const r = document.createElement('div');
             r.className = 'ac-item';
-            r.innerHTML = `<span class="ac-key">${esc(t.tno)}</span><span class="ac-val">${esc(t.name)}</span>`;
+            const tk=t.kanal||'1';
+            r.innerHTML = `<span class="ac-kbadge ${tk==='1'?'ac-k1':'ac-k2'}">K${tk}</span><span class="ac-key">${esc(t.tno)}</span><span class="ac-val">${esc(t.name)}</span>`;
             r.addEventListener('mousedown', e => { e.preventDefault(); onPick(t); userTyped=false; dd.style.display='none'; });
             r.addEventListener('touchstart', e => { onPick(t); userTyped=false; dd.style.display='none'; }, {passive:true});
             dd.appendChild(r);
@@ -2906,11 +3004,13 @@ function openPairing() {
           return;
         }
         const tno = tnoRaw ? (/^\d+$/.test(tnoRaw) ? 'T' + tnoRaw.padStart(2,'0') : tnoRaw) : '';
-        let toolEnt = S.tools.find(t => t.tno === tno && t.name === nameVal);
+        let toolEnt = S.tools.find(t => (t.kanal||'1')===kanal && t.tno === tno && t.name === nameVal);
+        if (!toolEnt && tno) toolEnt = S.tools.find(t => (t.kanal||'1')===kanal && t.tno === tno);
+        if (!toolEnt) toolEnt = S.tools.find(t => t.tno === tno && t.name === nameVal);
         if (!toolEnt && tno) toolEnt = S.tools.find(t => t.tno === tno);
         if (!toolEnt) {
           if (tno && nameVal) {
-            toolEnt = { id: 'tool_'+S.nextId++, tno, name: nameVal };
+            toolEnt = { id: 'tool_'+S.nextId++, tno, name: nameVal, kanal };
             S.tools.push(toolEnt);
           }
         } else if (nameVal && toolEnt.name !== nameVal) {
@@ -2982,40 +3082,7 @@ function openSlotEditor(kanal, index){
   function inp(val,ph,mono){const i=document.createElement('input');i.className='field-input'+(mono?' mono':'');i.type='text';i.value=val||'';i.placeholder=ph||'';return i}
   function row(...ch){const r=document.createElement('div');r.className='editor-row';ch.forEach(c=>r.appendChild(c));return r}
 
-  function makeAutocomplete(input, getItems, formatItem, onPick) {
-    const wrap = document.createElement('div');
-    wrap.className = 'ac-wrap';
-    const dd = document.createElement('div');
-    dd.className = 'ac-dropdown';
-    dd.style.display = 'none';
-    wrap.appendChild(dd);
-    function render(q){
-      dd.innerHTML = '';
-      const items = getItems(q);
-      if(!items.length){ dd.style.display='none'; return; }
-      items.slice(0, 12).forEach(it => {
-        const r = document.createElement('div');
-        r.className = 'ac-item';
-        r.innerHTML = formatItem(it.item);
-        r.addEventListener('mousedown', e => {
-          e.preventDefault();
-          onPick(it.item);
-          dd.style.display = 'none';
-        });
-        // also support touchstart for mobile
-        r.addEventListener('touchstart', e => {
-          onPick(it.item);
-          dd.style.display = 'none';
-        }, {passive:true});
-        dd.appendChild(r);
-      });
-      dd.style.display = 'block';
-    }
-    input.addEventListener('focus', ()=>render(input.value));
-    input.addEventListener('input', ()=>render(input.value));
-    input.addEventListener('blur', ()=>{ setTimeout(()=>{ dd.style.display='none'; }, 200); });
-    return wrap;
-  }
+  // (makeAutocomplete is defined globally above)
 
   // ── Operation ──
   const opCodeIn = inp(curOp ? curOp.code : '', 'L1101 (oder 1101)', true);
@@ -3075,22 +3142,35 @@ function openSlotEditor(kanal, index){
   const tlNoIn = inp(curTool ? curTool.tno : '', 'T01 (oder 1)', true);
   const tlNameIn = inp(curTool ? curTool.name : '', 'Werkzeug-Name (z.B. Gewinde)');
 
+  function toolItemHTML(t) {
+    const k=t.kanal||'1';
+    return `<span class="ac-kbadge ${k==='1'?'ac-k1':'ac-k2'}">K${k}</span><span class="ac-key">${esc(t.tno)}</span><span class="ac-val">${esc(t.name)}</span>`;
+  }
+  function sortToolsKanalFirst(arr) {
+    return arr.sort((a,b) => {
+      const ak=(a.kanal||'1')===kanal?0:1, bk=(b.kanal||'1')===kanal?0:1;
+      if (ak!==bk) return ak-bk;
+      return (a.tno||'').localeCompare(b.tno||'', undefined, {numeric:true});
+    });
+  }
+
   const tlNoAc = makeAutocomplete(tlNoIn,
     (q) => {
       const qq = (q||'').toLowerCase().trim();
-      if (!qq) return S.tools.slice(0, 12).map(t => ({item: t}));
-      return S.tools.filter(t => (t.tno+' '+t.name).toLowerCase().includes(qq)).map(t => ({item: t}));
+      const matches = qq ? S.tools.filter(t => (t.tno+' '+t.name).toLowerCase().includes(qq)) : S.tools.slice();
+      return sortToolsKanalFirst(matches).map(t => ({item: t}));
     },
-    (t) => `<span class="ac-key">${esc(t.tno)}</span><span class="ac-val">${esc(t.name)}</span>`,
+    toolItemHTML,
     (t) => { tlNoIn.value = t.tno; tlNameIn.value = t.name; }
   );
   const tlNameAc = makeAutocomplete(tlNameIn,
     (q) => {
       const qq = (q||'').toLowerCase().trim();
       if (!qq) return [];
-      return S.tools.filter(t => (t.tno+' '+t.name).toLowerCase().includes(qq)).map(t => ({item: t}));
+      const matches = S.tools.filter(t => (t.tno+' '+t.name).toLowerCase().includes(qq));
+      return sortToolsKanalFirst(matches).map(t => ({item: t}));
     },
-    (t) => `<span class="ac-key">${esc(t.tno)}</span><span class="ac-val">${esc(t.name)}</span>`,
+    toolItemHTML,
     (t) => { tlNoIn.value = t.tno; tlNameIn.value = t.name; }
   );
 
@@ -3141,11 +3221,13 @@ function openSlotEditor(kanal, index){
     const tnameVal = tlNameIn.value.trim();
     if (tnoRaw || tnameVal) {
       const tno = tnoRaw ? (/^\d+$/.test(tnoRaw) ? 'T' + tnoRaw.padStart(2,'0') : tnoRaw) : '';
-      let tool = S.tools.find(t => t.tno === tno && t.name === tnameVal);
+      let tool = S.tools.find(t => (t.kanal||'1')===kanal && t.tno === tno && t.name === tnameVal);
+      if (!tool && tno) tool = S.tools.find(t => (t.kanal||'1')===kanal && t.tno === tno);
+      if (!tool) tool = S.tools.find(t => t.tno === tno && t.name === tnameVal);
       if (!tool && tno) tool = S.tools.find(t => t.tno === tno);
       if (!tool) {
         if (tno && tnameVal) {
-          tool = { id: 'tool_'+S.nextId++, tno, name: tnameVal };
+          tool = { id: 'tool_'+S.nextId++, tno, name: tnameVal, kanal };
           S.tools.push(tool);
         }
       } else if (tnameVal && tool.name !== tnameVal) {
@@ -3335,7 +3417,7 @@ function setLibTab(t){
 function renderPrintTable(){
   const tbl=$('#printTable');
   const s1=S.slots['1'], s2=S.slots['2'];
-  const n=Math.max(s1.length, s2.length, MIN_SLOTS);
+  const n=Math.max(s1.length, s2.length, 22);
 
   let h = '';
   h += '<colgroup>';
@@ -3868,7 +3950,7 @@ function renderWkzTable(){
     return h;
   }
   const k1 = collect('1'), k2 = collect('2');
-  const maxLen = Math.max(k1.length, k2.length);
+  const maxLen = Math.max(k1.length, k2.length, 24);
   cont.innerHTML =
     '<div class="wkz-col">' + buildTable('Kanal 1 · 1000.MPF · Revolver Oben', k1, 'wkz-sp4', maxLen) + '</div>' +
     '<div class="wkz-col">' + buildTable('Kanal 2 · 2000.MPF · Revolver Unten', k2, 'wkz-sp3', maxLen) + '</div>';
@@ -4006,27 +4088,46 @@ function init(){
   const btnImportMPF = document.getElementById('btnImportMPF');
   if (btnImportMPF) {
     btnImportMPF.addEventListener('click', async () => {
-      const ok = await customConfirm('MPF-Datei importieren?\n\nKann Werkzeugliste oder Programm-MPF sein. Kanal wird automatisch erkannt.', { tag: '[MPF]', title: 'MPF-Datei importieren', okText: 'Datei wählen' });
+      const ok = await customConfirm('MPF / TXT importieren?\n\nMehrere Dateien gleichzeitig möglich (1000.MPF, 2000.MPF, TOOLIST_CH1, TOOLIST_CH2). Typ und Kanal werden automatisch erkannt.', { tag: '[MPF]', title: 'Dateien importieren', okText: 'Dateien wählen' });
       if (!ok) return;
       const inp = document.getElementById('mpfInput');
       inp.value = '';
       inp.click();
     });
     document.getElementById('mpfInput').addEventListener('change', e => {
-      const f = e.target.files[0]; if (!f) return;
-      const r = new FileReader();
-      r.onload = ev => {
-        importMPFFile(ev.target.result, f.name, n => {
-          if (n > 0) {
-            customAlert(`${n} Einträge importiert.`, { tag: '[MPF]', title: 'Import erfolgreich' });
-            renderLib();
-            closeSheet();
-            renderAll();
-          }
+      const files = Array.from(e.target.files || []);
+      if (!files.length) return;
+      function readFile(f) {
+        return new Promise((resolve, reject) => {
+          const r = new FileReader();
+          r.onload = ev => resolve(ev.target.result);
+          r.onerror = () => reject(new Error('read failed'));
+          r.readAsText(f);
         });
-      };
-      r.onerror = () => customAlert('Datei konnte nicht gelesen werden.', { tag: '[MPF]', title: 'Fehler' });
-      r.readAsText(f);
+      }
+      function importOne(text, name) {
+        return new Promise(resolve => {
+          importMPFFile(text, name, n => resolve({ name, n: n || 0 }));
+        });
+      }
+      (async () => {
+        const results = [];
+        for (const f of files) {
+          try {
+            const text = await readFile(f);
+            const res = await importOne(text, f.name);
+            results.push(res);
+          } catch (err) {
+            results.push({ name: f.name, n: 0, error: true });
+          }
+        }
+        renderLib();
+        closeSheet();
+        renderAll();
+        const total = results.reduce((s, r) => s + r.n, 0);
+        const lines = results.map(r => `• ${r.name}: ${r.error ? 'Fehler' : r.n + ' Einträge'}`).join('\n');
+        customAlert(`${files.length} Datei(en) · ${total} Einträge gesamt:\n\n${lines}`, { tag: '[MPF]', title: 'Import abgeschlossen' });
+      })();
     });
   }
 
@@ -4090,7 +4191,16 @@ function init(){
   $('#btnAddSlot').addEventListener('click',()=>{S.slots[S.kanal].push(null);save();renderSlots();renderPrintTable()});
   function doPrint() {
     document.body.classList.remove('print-plan', 'print-wkz');
-    document.body.classList.add(S.view === 'wkz' ? 'print-wkz' : 'print-plan');
+    const st = document.getElementById('pageOrient');
+    if (S.view === 'wkz') {
+      // Werkzeugliste → Hochformat
+      document.body.classList.add('print-wkz');
+      if (st) st.textContent = '@page { size: A4 portrait; }';
+    } else {
+      // Programmplan (or saw fallback) → Querformat
+      document.body.classList.add('print-plan');
+      if (st) st.textContent = '@page { size: A4 landscape; }';
+    }
     window.print();
   }
   $('#btnPrint').addEventListener('click', doPrint);
