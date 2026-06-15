@@ -3,93 +3,80 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>MPF Generator · Visual Prototype</title>
+<title>MPF Generator · Visual v2</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#fff; --bg-soft:#FAFAFA; --bg-2:#F5F5F5; --line:#E5E5E5; --line-2:#D4D4D4;
-  --ink:#0A0A0A; --ink-3:#525252; --ink-4:#737373; --ink-5:#A3A3A3;
+  --bg:#fff; --bg-soft:#FAFAFA; --bg-2:#F5F5F5; --bg-3:#EFEFEF; --line:#E5E5E5; --line-2:#D4D4D4; --line-3:#A3A3A3;
+  --ink:#0A0A0A; --ink-2:#262626; --ink-3:#525252; --ink-4:#737373; --ink-5:#A3A3A3;
   --sp4:#2D6B47; --sp4-bg:#EAF6EE; --sp4-bd:#B5DEC7;
   --sp3:#2D4F8A; --sp3-bg:#E8EFF8; --sp3-bd:#B8CEEA;
   --amber:#92500D; --amber-bg:#FBF1E0; --amber-bd:#E8C896;
+  --danger:#B91C1C; --danger-bg:#FEF2F2;
   --sans:'Inter',system-ui,sans-serif; --mono:'JetBrains Mono',monospace;
-  --r:6px;
+  --r:6px; --r-sm:4px; --t:.12s ease;
 }
-*{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:var(--sans);background:var(--bg-soft);color:var(--ink);font-size:13px;line-height:1.5;padding:16px;}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+body{font-family:var(--sans);background:var(--bg-soft);color:var(--ink);font-size:13px;line-height:1.5;padding:16px;-webkit-font-smoothing:antialiased;}
 h1{font-size:17px;font-weight:700;letter-spacing:-.01em;}
-.sub{color:var(--ink-4);font-size:12px;margin:4px 0 16px;}
-.wrap{max-width:1400px;margin:0 auto;}
+.sub{color:var(--ink-4);font-size:12px;margin:4px 0 14px;}
+.wrap{max-width:1400px;margin:0 auto;padding-bottom:80px;}
 
 /* Toolbar */
-.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:14px;}
-.btn{font-family:var(--sans);font-size:12px;font-weight:600;padding:8px 14px;border-radius:var(--r);border:1px solid var(--ink);background:var(--ink);color:#fff;cursor:pointer;display:inline-flex;align-items:center;gap:6px;}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:16px;}
+.btn{font-family:var(--sans);font-size:12px;font-weight:600;padding:8px 14px;border-radius:var(--r);border:1px solid var(--ink);background:var(--ink);color:#fff;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:var(--t);}
 .btn.ghost{background:#fff;color:var(--ink);border-color:var(--line-2);}
 .btn.ghost:hover{background:var(--bg-2);}
+.btn svg{width:14px;height:14px;}
 .btn:active{transform:translateY(1px);}
 .bar-spacer{flex:1;}
-.seg{display:inline-flex;border:1px solid var(--line-2);border-radius:var(--r);overflow:hidden;}
-.seg button{border:none;border-right:1px solid var(--line);background:#fff;color:var(--ink-4);font-family:var(--sans);font-size:12px;font-weight:600;padding:8px 14px;cursor:pointer;}
-.seg button:last-child{border-right:none;}
-.seg button.on{background:var(--ink);color:#fff;}
 
-/* Layout: schema | code */
-.cols{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;}
-@media(max-width:900px){ .cols{grid-template-columns:1fr;} }
+/* Mode switch */
+.modeseg{display:inline-flex;background:var(--bg-2);border:1px solid var(--line);border-radius:var(--r);padding:3px;}
+.modeseg button{border:none;background:transparent;color:var(--ink-4);font-family:var(--sans);font-size:12px;font-weight:600;padding:7px 16px;cursor:pointer;border-radius:var(--r-sm);transition:var(--t);display:flex;align-items:center;gap:7px;}
+.modeseg button .mf{font-family:var(--mono);font-size:10px;opacity:.65;}
+.modeseg button.on{background:var(--ink);color:#fff;}
+.modeseg button.on .mf{opacity:.8;}
+
+/* Schema columns */
+.cols{display:grid;gap:16px;align-items:start;}
+.cols.single{grid-template-columns:minmax(0,720px);just-content:center;}
+.cols.dual{grid-template-columns:1fr 1fr;}
+@media(max-width:820px){ .cols.dual{grid-template-columns:1fr;} }
 
 .panel{background:#fff;border:1px solid var(--line);border-radius:var(--r);overflow:hidden;}
 .panel-head{padding:11px 14px;border-bottom:1px solid var(--line);background:var(--bg-soft);display:flex;align-items:center;gap:10px;}
 .panel-tag{font-family:var(--mono);font-size:9.5px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-4);}
 .panel-title{font-size:13px;font-weight:600;}
 .panel-head .sp{flex:1;}
+.panel-reg{font-family:var(--mono);font-size:9.5px;font-weight:700;padding:2px 8px;border-radius:3px;}
+.reg4{background:var(--sp4-bg);color:var(--sp4);border:1px solid var(--sp4-bd);}
+.reg3{background:var(--sp3-bg);color:var(--sp3);border:1px solid var(--sp3-bd);}
 
-/* ── Slot editor table ── */
-.editor{margin-bottom:16px;}
-.kanal-tabs{display:flex;gap:8px;margin-bottom:10px;}
-.kanal-tab{flex:1;border:1px solid var(--line-2);border-radius:var(--r);background:#fff;padding:10px;cursor:pointer;text-align:left;transition:.12s;}
-.kanal-tab.on{border-color:var(--ink);box-shadow:0 0 0 2px rgba(0,0,0,.05);}
-.kanal-tab .kt-name{font-weight:700;font-size:13px;}
-.kanal-tab .kt-file{font-family:var(--mono);font-size:10.5px;color:var(--ink-4);margin-top:2px;}
-.kanal-tab .kt-reg{display:inline-block;margin-top:6px;font-family:var(--mono);font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:3px;}
-
-tbl,.tbl{width:100%;}
-.tbl{border-collapse:collapse;}
-.tbl th{font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-4);text-align:left;padding:6px;border-bottom:1px solid var(--line);}
-.tbl td{padding:5px 6px;border-bottom:1px solid var(--bg-2);vertical-align:middle;}
-.tbl input[type=text]{width:100%;font-family:var(--mono);font-size:12px;padding:5px 7px;border:1px solid var(--line-2);border-radius:4px;}
-.tbl input.title-in{font-family:var(--sans);}
-.tbl select{font-family:var(--mono);font-size:12px;padding:5px;border:1px solid var(--line-2);border-radius:4px;width:100%;}
-.rn{font-family:var(--mono);font-size:12px;font-weight:600;color:var(--ink-4);width:24px;text-align:center;}
-.mv{display:flex;flex-direction:column;gap:1px;}
-.mv button,.xbtn{border:1px solid var(--line-2);background:#fff;border-radius:4px;cursor:pointer;font-size:10px;color:var(--ink-3);padding:2px 6px;}
-.mv button:hover,.xbtn:hover{background:var(--bg-2);}
-.mv button:disabled{opacity:.25;}
-.xbtn{padding:4px 8px;color:var(--amber);}
-.add-row{margin-top:8px;font-family:var(--mono);font-size:11px;color:var(--ink-4);border:1px dashed var(--line-2);background:transparent;border-radius:4px;padding:8px;width:100%;cursor:pointer;text-transform:uppercase;letter-spacing:.05em;}
-.add-row:hover{border-color:var(--ink);color:var(--ink);}
-
-/* ── Visual chain ── */
-.chain{padding:14px;display:flex;flex-direction:column;gap:0;}
-.lane-legend{display:flex;gap:14px;margin-bottom:12px;flex-wrap:wrap;}
+.lane-legend{display:flex;gap:14px;padding:10px 14px 0;flex-wrap:wrap;}
 .lane-legend .ll{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--ink-3);}
 .ll .dot{width:11px;height:11px;border-radius:3px;}
 .dot-sp4{background:var(--sp4);} .dot-sp3{background:var(--sp3);}
 
-.step{position:relative;display:flex;gap:0;}
+.chain{padding:12px 14px 16px;display:flex;flex-direction:column;}
+
+.endcap{margin-left:62px;padding:5px 12px;font-family:var(--mono);font-size:10.5px;color:var(--ink-3);}
+
+.step{position:relative;display:flex;}
 .step-rail{flex:0 0 56px;display:flex;flex-direction:column;align-items:center;}
 .rail-line{width:2px;flex:1;background:var(--line-2);}
-.rail-line.top{min-height:8px;}
-.rail-line.bot{min-height:8px;}
+.rail-line.top,.rail-line.bot{min-height:8px;}
 .rail-node{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:11px;font-weight:700;color:#fff;flex-shrink:0;z-index:1;}
 .rail-node.sp4{background:var(--sp4);}
 .rail-node.sp3{background:var(--sp3);}
 .step:first-child .rail-line.top{background:transparent;}
-.step:last-child .rail-line.bot{background:transparent;}
+.step.laststep .rail-line.bot{background:transparent;}
 
-.card{flex:1;margin:0 0 0 6px;border:1px solid var(--line);border-radius:var(--r);padding:10px 12px;background:#fff;transition:.12s;position:relative;}
+.card{flex:1;margin-left:6px;border:1px solid var(--line);border-radius:var(--r);padding:10px 12px;background:#fff;transition:box-shadow var(--t),border-color var(--t);position:relative;cursor:pointer;}
 .card.sp4{border-left:3px solid var(--sp4);}
 .card.sp3{border-left:3px solid var(--sp3);}
-.card.hl{box-shadow:0 0 0 2px var(--ink);}
+.card:hover{border-color:var(--line-3);}
+.card.hl{box-shadow:0 0 0 2px var(--ink);border-color:var(--ink);}
 .card-top{display:flex;align-items:center;gap:8px;margin-bottom:7px;}
 .card-pos{font-family:var(--mono);font-size:10px;font-weight:700;color:var(--ink-4);}
 .card-title{font-weight:600;font-size:13px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
@@ -97,254 +84,202 @@ tbl,.tbl{width:100%;}
 .card-sp{font-family:var(--mono);font-size:9px;font-weight:700;padding:2px 7px;border-radius:3px;}
 .sp-badge4{background:var(--sp4-bg);color:var(--sp4);border:1px solid var(--sp4-bd);}
 .sp-badge3{background:var(--sp3-bg);color:var(--sp3);border:1px solid var(--sp3-bd);}
+.card-tool{font-family:var(--mono);font-size:9px;font-weight:600;padding:2px 6px;border-radius:3px;background:#fff;border:1px solid var(--line-2);color:var(--ink-3);}
 
-/* Register flow line inside card */
-.flow{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11px;flex-wrap:wrap;}
-.chip{display:inline-flex;align-items:center;gap:5px;padding:3px 8px;border-radius:4px;font-weight:600;white-space:nowrap;}
+.flow{display:flex;align-items:center;gap:7px;font-family:var(--mono);font-size:11px;flex-wrap:wrap;}
+.chip{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:4px;font-weight:600;white-space:nowrap;}
 .chip-if{background:var(--bg-2);border:1px solid var(--line-2);color:var(--ink);}
-.chip-reg4{color:var(--sp4);}
-.chip-reg3{color:var(--sp3);}
+.chip-reg3{color:var(--sp3);} .chip-reg4{color:var(--sp4);}
 .chip-set{border:1px solid;}
 .chip-set.r4{background:var(--sp4-bg);border-color:var(--sp4-bd);color:var(--sp4);}
 .chip-set.r3{background:var(--sp3-bg);border-color:var(--sp3-bd);color:var(--sp3);}
 .flow .arr{color:var(--ink-5);font-size:13px;}
 .flow .val{font-weight:700;}
+.chip-fertig{color:var(--amber);border:1px solid var(--amber-bd);background:var(--amber-bg);}
 
-/* Handoff highlight between steps */
-.handoff{flex:0 0 56px;display:flex;justify-content:center;align-items:center;position:relative;}
-.handoff .ho-badge{position:absolute;font-family:var(--mono);font-size:8.5px;font-weight:700;padding:2px 6px;border-radius:10px;background:var(--amber-bg);border:1px solid var(--amber-bd);color:var(--amber);white-space:nowrap;z-index:2;}
+.handoff-row{display:flex;height:20px;}
+.handoff-row .ho-rail{flex:0 0 56px;display:flex;justify-content:center;align-items:center;}
+.ho-badge{font-family:var(--mono);font-size:8.5px;font-weight:700;padding:2px 7px;border-radius:10px;background:var(--amber-bg);border:1px solid var(--amber-bd);color:var(--amber);white-space:nowrap;}
 
-.endcap{flex:1;margin-left:62px;padding:6px 12px;font-family:var(--mono);font-size:10.5px;color:var(--ink-4);}
-.endcap.start{color:var(--ink-3);}
+.add-card{margin-left:62px;margin-top:4px;border:1px dashed var(--line-2);border-radius:var(--r);background:transparent;color:var(--ink-4);font-family:var(--mono);font-size:11px;padding:9px;cursor:pointer;text-transform:uppercase;letter-spacing:.05em;width:calc(100% - 62px);transition:var(--t);}
+.add-card:hover{border-color:var(--ink);color:var(--ink);}
 
-/* Code panel */
-.code-wrap{position:relative;}
-pre.code{margin:0;background:#0d0d0d;color:#e5e5e5;padding:14px;font-family:var(--mono);font-size:11px;line-height:1.55;overflow:auto;max-height:70vh;white-space:pre;}
+.empty-note{padding:28px 14px;text-align:center;color:var(--ink-5);font-family:var(--mono);font-size:11px;}
+
+/* FAB */
+.fab{position:fixed;right:20px;bottom:20px;z-index:80;background:var(--ink);color:#fff;border:none;border-radius:30px;padding:13px 20px;font-family:var(--sans);font-size:13px;font-weight:600;cursor:pointer;box-shadow:0 8px 24px rgba(0,0,0,.22);display:flex;align-items:center;gap:8px;}
+.fab svg{width:16px;height:16px;}
+.fab:active{transform:translateY(1px);}
+
+/* Modal */
+.ov{position:fixed;inset:0;z-index:999;display:none;align-items:center;justify-content:center;padding:18px;background:rgba(0,0,0,.4);}
+.ov.open{display:flex;}
+.modal{background:#fff;border:1px solid var(--line-2);border-radius:var(--r);width:100%;max-width:560px;max-height:92vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 16px 48px rgba(0,0,0,.18);}
+.modal.wide{max-width:1100px;}
+.modal-head{padding:16px 20px 13px;border-bottom:1px solid var(--line);display:flex;align-items:flex-start;gap:12px;}
+.mh-tag{font-family:var(--mono);font-size:9.5px;font-weight:500;color:var(--ink-4);letter-spacing:.14em;text-transform:uppercase;}
+.mh-title{font-size:16px;font-weight:600;margin-top:3px;}
+.mh-x{margin-left:auto;width:30px;height:30px;border:none;background:transparent;cursor:pointer;color:var(--ink-3);border-radius:var(--r-sm);font-size:18px;}
+.mh-x:hover{background:var(--bg-2);color:var(--ink);}
+.modal-body{padding:18px 20px;overflow:auto;flex:1;}
+.modal-foot{padding:13px 20px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:8px;background:var(--bg-soft);}
+
+.frow{display:flex;gap:12px;margin-bottom:14px;}
+.frow:last-child{margin-bottom:0;}
+.fg{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px;}
+.fg.narrow{flex:0 0 150px;}
+.flabel{font-family:var(--mono);font-size:9.5px;font-weight:500;color:var(--ink-4);letter-spacing:.12em;text-transform:uppercase;}
+.finput,.fselect{background:#fff;border:1px solid var(--line-2);border-radius:var(--r-sm);padding:9px 12px;font-family:var(--sans);font-size:13px;color:var(--ink);width:100%;transition:var(--t);}
+.finput.mono{font-family:var(--mono);}
+.finput:focus,.fselect:focus{outline:none;border-color:var(--ink);box-shadow:0 0 0 3px rgba(0,0,0,.06);}
+.fselect{appearance:none;cursor:pointer;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path d='M1 1l4 4 4-4' stroke='%23525252' stroke-width='1.5' fill='none'/></svg>");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px;}
+.toggle{display:inline-flex;align-items:center;gap:10px;padding:9px 14px;background:#fff;border:1px solid var(--line-2);border-radius:var(--r-sm);cursor:pointer;user-select:none;font-size:12.5px;font-weight:500;color:var(--ink-2);}
+.toggle.on{background:var(--ink);border-color:var(--ink);color:#fff;}
+.ttrack{width:32px;height:18px;background:var(--bg-3);border-radius:99px;position:relative;transition:var(--t);}
+.toggle.on .ttrack{background:#fff;}
+.tthumb{position:absolute;top:2px;left:2px;width:14px;height:14px;background:var(--ink-4);border-radius:50%;transition:var(--t);}
+.toggle.on .tthumb{transform:translateX(14px);background:var(--ink);}
+
+/* Code modal */
+.code-tabs{display:flex;gap:0;border:1px solid var(--line-2);border-radius:var(--r-sm);overflow:hidden;margin-bottom:12px;width:max-content;}
+.code-tabs button{border:none;border-right:1px solid var(--line);background:#fff;color:var(--ink-4);font-family:var(--sans);font-size:12px;font-weight:600;padding:8px 16px;cursor:pointer;}
+.code-tabs button:last-child{border-right:none;}
+.code-tabs button.on{background:var(--ink);color:#fff;}
+.code-info{font-family:var(--mono);font-size:10.5px;color:var(--ink-4);padding:7px 11px;background:var(--bg-2);border-radius:var(--r-sm);margin-bottom:10px;}
+.code-grid{display:grid;gap:12px;}
+.code-grid.dual{grid-template-columns:1fr 1fr;}
+@media(max-width:820px){.code-grid.dual{grid-template-columns:1fr;}}
+pre.code{margin:0;background:#0d0d0d;color:#e5e5e5;padding:13px;font-family:var(--mono);font-size:10.5px;line-height:1.55;overflow:auto;max-height:60vh;white-space:pre;border-radius:var(--r-sm);}
 pre.code .ln{display:block;padding:0 4px;border-radius:2px;}
 pre.code .ln.if{color:#9ece6a;}
 pre.code .ln.set{color:#7aa2f7;}
 pre.code .ln.code{color:#e0af68;}
 pre.code .ln.grp{color:#bb9af7;}
 pre.code .ln.cmt{color:#565f89;}
-pre.code .ln.hlrow{background:rgba(255,255,255,.09);}
-.code-foot{display:flex;gap:8px;padding:10px 14px;border-top:1px solid var(--line);background:var(--bg-soft);}
-
-.empty-note{padding:30px 14px;text-align:center;color:var(--ink-5);font-family:var(--mono);font-size:11px;}
-.info-strip{font-family:var(--mono);font-size:10.5px;color:var(--ink-4);padding:8px 14px;background:var(--bg-2);border-bottom:1px solid var(--line);}
+pre.code .ln.hlrow{background:rgba(255,255,255,.10);}
+.code-col-head{font-family:var(--mono);font-size:10px;font-weight:700;color:var(--ink-4);margin-bottom:6px;letter-spacing:.06em;}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <h1>MPF Generator — Visual Prototype</h1>
-  <div class="sub">Schema (links) + Live-Code (rechts). Bearbeite Slots oben, alles aktualisiert sich sofort. Bei Spindel-Wechsel wird die <b>Übergabe</b> zwischen RG704 ↔ RG703 markiert.</div>
+  <h1>MPF Generator — Visual v2</h1>
+  <div class="sub">Klicke auf eine Operation, um sie zu bearbeiten. Oben den Modus wählen. „Code anzeigen" zeigt das fertige MPF.</div>
 
   <div class="bar">
-    <div class="seg" id="kanalSeg">
-      <button class="on" data-k="1">Kanal 1 · 1000.MPF</button>
-      <button data-k="2">Kanal 2 · 2000.MPF</button>
+    <div class="modeseg" id="modeSeg">
+      <button data-m="1" class="on">Kanal 1 <span class="mf">1000</span></button>
+      <button data-m="2">Kanal 2 <span class="mf">2000</span></button>
+      <button data-m="sync">Synchron <span class="mf">1000+2000</span></button>
     </div>
     <div class="bar-spacer"></div>
-    <button class="btn ghost" id="btnReset">↺ Beispiel laden</button>
-    <button class="btn" id="btnDl">⬇ Aktuelle MPF</button>
+    <button class="btn ghost" id="btnCode"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4L2 8l3 4"/><path d="M11 4l3 4-3 4"/></svg>Code anzeigen</button>
+    <button class="btn ghost" id="btnReset">↺ Beispiel</button>
   </div>
 
-  <!-- Editor -->
-  <div class="editor panel">
-    <div class="panel-head">
-      <span class="panel-tag">Editor</span>
-      <span class="panel-title" id="edTitle">Slots · Kanal 1</span>
-      <span class="sp"></span>
-      <span class="panel-tag" id="edReg"></span>
+  <div class="cols single" id="cols"></div>
+</div>
+
+<button class="fab" id="fab"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4L2 8l3 4"/><path d="M11 4l3 4-3 4"/></svg>Code</button>
+
+<!-- Edit modal -->
+<div class="ov" id="editOv">
+  <div class="modal">
+    <div class="modal-head">
+      <div>
+        <div class="mh-tag" id="edTag">[OP] · BEARBEITEN</div>
+        <div class="mh-title" id="edTitle">Operation bearbeiten</div>
+      </div>
+      <button class="mh-x" id="edClose">✕</button>
     </div>
-    <div style="padding:12px 14px;">
-      <table class="tbl">
-        <thead><tr><th></th><th>#</th><th>L-Code</th><th>Bezeichnung</th><th>Spindel</th><th></th></tr></thead>
-        <tbody id="edBody"></tbody>
-      </table>
-      <button class="add-row" id="btnAdd">+ Slot hinzufügen</button>
-    </div>
+    <div class="modal-body" id="edBody"></div>
+    <div class="modal-foot" id="edFoot"></div>
   </div>
+</div>
 
-  <!-- Schema + Code -->
-  <div class="cols">
-    <div class="panel">
-      <div class="panel-head">
-        <span class="panel-tag">Schema</span>
-        <span class="panel-title">Ablauf &amp; Register-Kette</span>
+<!-- Code modal -->
+<div class="ov" id="codeOv">
+  <div class="modal wide">
+    <div class="modal-head">
+      <div>
+        <div class="mh-tag">[MPF] · CODE</div>
+        <div class="mh-title">Generiertes NC-Programm</div>
       </div>
-      <div class="lane-legend" style="padding:12px 14px 0;">
-        <div class="ll"><span class="dot dot-sp4"></span> SP4 · Hauptspindel → <b style="color:var(--sp4);margin-left:3px;">RG704</b></div>
-        <div class="ll"><span class="dot dot-sp3"></span> SP3 · Gegenspindel → <b style="color:var(--sp3);margin-left:3px;">RG703</b></div>
-      </div>
-      <div class="chain" id="chain"></div>
+      <button class="mh-x" id="codeClose">✕</button>
     </div>
-
-    <div class="panel">
-      <div class="panel-head">
-        <span class="panel-tag">Code</span>
-        <span class="panel-title" id="codeTitle">1000.MPF</span>
-        <span class="sp"></span>
-        <span class="panel-tag" id="codeMeta"></span>
-      </div>
-      <div class="info-strip" id="codeInfo"></div>
-      <div class="code-wrap"><pre class="code" id="codePre"></pre></div>
-    </div>
+    <div class="modal-body" id="codeBody"></div>
+    <div class="modal-foot" id="codeFoot"></div>
   </div>
 </div>
 
 <script>
-/* ───────────── Generator core (final rules) ───────────── */
-function codeState(code){const m=String(code||'').match(/(\d+)/);const d=m?m[1]:'';if(!d)return 0;return d.length<=3?(parseInt(d,10)||0):parseInt(d.slice(1),10);}
-function digits(code){const m=String(code||'').match(/(\d+)/);return m?m[1]:'';}
-function genUUID(){let d=Date.now();return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=(d+Math.random()*16)%16|0;d=Math.floor(d/16);return (c==='x'?r:(r&0x3|0x8)).toString(16);});}
+/* ───────── model ───────── */
+function codeState(c){const m=String(c||'').match(/(\d+)/);const d=m?m[1]:'';if(!d)return 0;return d.length<=3?(parseInt(d,10)||0):parseInt(d.slice(1),10);}
+function digits(c){const m=String(c||'').match(/(\d+)/);return m?m[1]:'';}
+function genUUID(){let d=Date.now();return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,ch=>{const r=(d+Math.random()*16)%16|0;d=Math.floor(d/16);return (ch==='x'?r:(r&0x3|0x8)).toString(16);});}
 function slotEmpty(s){return !s || (!s.code && !s.title);}
+function esc(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 
-/* slots model: { '1':[{code,title,spindle}|null,...], '2':[...] } */
-let DATA = sampleData();
-let activeK = '1';
-const UUID = { '1': genUUID(), '2': genUUID() };
+const CATS=['Außen','Innen','Radial','Axial'];
+let DATA=sampleData();
+let mode='1';
+const UUID={'1':genUUID(),'2':genUUID()};
 
-function sampleData(){
-  return {
-    '1':[
-      {code:'L1101',title:'Schruppen Außen',spindle:'SP4'},
-      {code:'L1102',title:'Schlichten Außen',spindle:'SP3'},
-      {code:'L1103',title:'Leer',spindle:'SP4'},
-      {code:'L1104',title:'Gewinde',spindle:'SP4'},
-    ],
-    '2':[
-      {code:'L2101',title:'Schruppen Außen',spindle:'SP4'},
-      {code:'L2102',title:'Bohren D20',spindle:'SP4'},
-      {code:'L2103',title:'Einstechen',spindle:'SP3'},
-      {code:'L2104',title:'Schlichten Außen',spindle:'SP4'},
-    ],
-  };
-}
+function sampleData(){return{
+  '1':[
+    {code:'L1101',title:'Schruppen Außen',spindle:'SP4',category:'Außen',doppel:false,tno:'T01',tname:'Schrupper'},
+    {code:'L1102',title:'Schlichten Außen',spindle:'SP3',category:'Außen',doppel:false,tno:'T02',tname:'Schlichter'},
+    {code:'L1103',title:'Leer',spindle:'SP4',category:'Außen',doppel:false,tno:'',tname:''},
+    {code:'L1104',title:'Gewinde',spindle:'SP4',category:'Innen',doppel:false,tno:'T13',tname:'Gewindebohrer'},
+  ],
+  '2':[
+    {code:'L2101',title:'Schruppen Außen',spindle:'SP4',category:'Außen',doppel:false,tno:'T03',tname:'Schrupper'},
+    {code:'L2102',title:'Bohren D20',spindle:'SP4',category:'Innen',doppel:false,tno:'T04',tname:'Bohrer D20'},
+    {code:'L2103',title:'Einstechen',spindle:'SP3',category:'Radial',doppel:true,tno:'T05',tname:'Stechschwert'},
+    {code:'L2104',title:'Schlichten Außen',spindle:'SP4',category:'Außen',doppel:false,tno:'T06',tname:'Schlichter'},
+  ],
+};}
 
-function recode(k){
-  const prefix = (k==='2')?'L21':'L11';
-  DATA[k].forEach((s,i)=>{ if(s) s.code = prefix+String(i+1).padStart(2,'0'); });
-}
+function recode(k){const p=(k==='2')?'L21':'L11';DATA[k].forEach((s,i)=>{if(s)s.code=p+String(i+1).padStart(2,'0');});}
 
-/* collect filled steps with computed IF/assign registers+values */
 function steps(k){
-  const arr = DATA[k].filter(s=>!slotEmpty(s));
-  return arr.map((s,i,a)=>{
-    const ifReg = s.spindle==='SP3'?'RG703':'RG704';
-    const ifVal = (i===0)?1:codeState(s.code);
-    const last = i===a.length-1;
-    const nextSp = last?s.spindle:a[i+1].spindle;
-    const assignReg = last?ifReg:(nextSp==='SP3'?'RG703':'RG704');
-    const assignVal = last?2:codeState(a[i+1].code);
-    return {
-      pos:i+1, code:s.code, title:s.title, spindle:s.spindle,
-      ifReg, ifVal, assignReg, assignVal, last,
-      handoff: !last && (s.spindle!==nextSp)
-    };
+  const a=DATA[k].filter(s=>!slotEmpty(s));
+  return a.map((s,i)=>{
+    const ifReg=s.spindle==='SP3'?'RG703':'RG704';
+    const ifVal=(i===0)?1:codeState(s.code);
+    const last=i===a.length-1;
+    const nextSp=last?s.spindle:a[i+1].spindle;
+    const assignReg=last?ifReg:(nextSp==='SP3'?'RG703':'RG704');
+    const assignVal=last?2:codeState(a[i+1].code);
+    return {idx:DATA[k].indexOf(s),pos:i+1,...s,ifReg,ifVal,assignReg,assignVal,last,handoff:!last&&s.spindle!==nextSp};
   });
 }
 
 function buildBlock(k){
-  const st = steps(k);
   let out='';
-  st.forEach(s=>{
+  steps(k).forEach(s=>{
     const num=String(s.pos).padStart(3,'0');
-    out+=`GROUP_BEGIN(0,"${num}: ${s.title.toUpperCase()}",${s.spindle==='SP3'?2:1},0)\n`;
-    out+=`;Id=${UUID[k]}\n`;
-    out+=`WAITM(${s.pos},1,2)\n`;
-    out+=`STOPRE\n`;
-    out+=`IF ${s.ifReg}==${s.ifVal}\n`;
-    out+=` ${s.code}\n`;
-    out+=` STOPRE\n`;
-    out+=` ${s.assignReg}=${s.assignVal}\n`;
-    out+=`ELSE\n`;
-    out+=` ;DUMMY("${digits(s.code)}")\n`;
-    out+=`ENDIF\n`;
-    out+=`GROUP_END(0,${s.spindle==='SP3'?2:1})\n`;
+    const sp=s.spindle==='SP3'?2:1;
+    out+=`GROUP_BEGIN(0,"${num}: ${(s.title||s.code).toUpperCase()}",${sp},0)\n;Id=${UUID[k]}\nWAITM(${s.pos},1,2)\nSTOPRE\nIF ${s.ifReg}==${s.ifVal}\n ${s.code}\n STOPRE\n ${s.assignReg}=${s.assignVal}\nELSE\n ;DUMMY("${digits(s.code)}")\nENDIF\nGROUP_END(0,${sp})\n`;
   });
   return out;
 }
 
-/* ───────────── Rendering ───────────── */
-function regClass(reg){ return reg==='RG703'?'chip-reg3':'chip-reg4'; }
-
-function renderEditor(){
-  document.getElementById('edTitle').textContent = 'Slots · Kanal '+activeK;
-  const reg = document.getElementById('edReg');
-  reg.innerHTML = activeK==='1' ? '1000.MPF' : '2000.MPF';
-  const body = document.getElementById('edBody');
-  body.innerHTML='';
-  DATA[activeK].forEach((s,i)=>{
-    const tr=document.createElement('tr');
-    const last = DATA[activeK].length-1;
-    tr.innerHTML = `
-      <td><div class="mv">
-        <button ${i===0?'disabled':''} data-mv="up" data-i="${i}">▲</button>
-        <button ${i===last?'disabled':''} data-mv="down" data-i="${i}">▼</button>
-      </div></td>
-      <td class="rn">${i+1}</td>
-      <td><input type="text" data-f="code" data-i="${i}" value="${s?s.code:''}" placeholder="L${activeK==='2'?'21':'11'}0${i+1}"></td>
-      <td><input type="text" class="title-in" data-f="title" data-i="${i}" value="${s?s.title:''}" placeholder="Bezeichnung"></td>
-      <td><select data-f="spindle" data-i="${i}">
-        <option value="SP4" ${(!s||s.spindle==='SP4')?'selected':''}>SP4</option>
-        <option value="SP3" ${(s&&s.spindle==='SP3')?'selected':''}>SP3</option>
-      </select></td>
-      <td><button class="xbtn" data-x="${i}">✕</button></td>`;
-    body.appendChild(tr);
-  });
-  // bind
-  body.querySelectorAll('input,select').forEach(el=>{
-    el.addEventListener('input',onEdit); el.addEventListener('change',onEdit);
-  });
-  body.querySelectorAll('[data-mv]').forEach(b=>b.addEventListener('click',()=>{
-    move(+b.dataset.i, b.dataset.mv==='up'?-1:1);
-  }));
-  body.querySelectorAll('[data-x]').forEach(b=>b.addEventListener('click',()=>{
-    DATA[activeK].splice(+b.dataset.x,1); recode(activeK); renderAll();
-  }));
-}
-
-function onEdit(e){
-  const i=+e.target.dataset.i, f=e.target.dataset.f, v=e.target.value;
-  if(!DATA[activeK][i]) DATA[activeK][i]={code:'',title:'',spindle:'SP4'};
-  DATA[activeK][i][f]=v;
-  // re-derive code by position when code emptied
-  if(f==='code' && !v.trim()){ recode(activeK); }
-  renderSchema(); renderCode(); // editor not re-rendered to keep focus
-}
-
-function move(i,dir){
-  const j=i+dir; if(j<0||j>=DATA[activeK].length)return;
-  const a=DATA[activeK]; [a[i],a[j]]=[a[j],a[i]]; recode(activeK); renderAll();
-}
-
-function renderSchema(){
-  const st = steps(activeK);
-  const c = document.getElementById('chain');
-  c.innerHTML='';
-  if(!st.length){ c.innerHTML='<div class="empty-note">Keine belegten Slots</div>'; return; }
-
-  // start cap (Rohteil)
-  const start=document.createElement('div');
-  start.className='endcap start';
-  start.innerHTML=`▼ Rohteil — ${st[0].ifReg}==1`;
-  c.appendChild(start);
-
-  st.forEach((s,idx)=>{
-    const step=document.createElement('div'); step.className='step'; step.dataset.pos=s.pos;
-    const spCls = s.spindle==='SP3'?'sp3':'sp4';
-    const setCls = s.assignReg==='RG703'?'r3':'r4';
-    const ifRegCls = regClass(s.ifReg);
-    step.innerHTML = `
-      <div class="step-rail">
-        <div class="rail-line top"></div>
-        <div class="rail-node ${spCls}">${String(s.pos).padStart(2,'0')}</div>
-        <div class="rail-line bot"></div>
-      </div>
-      <div class="card ${spCls}" data-pos="${s.pos}">
+/* ───────── schema render ───────── */
+function chainHTML(k){
+  const st=steps(k);
+  if(!st.length) return '<div class="empty-note">Keine belegten Slots<br>— unten „+ Slot" —</div>';
+  let h=`<div class="endcap">▼ Rohteil — ${st[0].ifReg}==1</div>`;
+  st.forEach((s,i)=>{
+    const spCls=s.spindle==='SP3'?'sp3':'sp4';
+    const setCls=s.assignReg==='RG703'?'r3':'r4';
+    const ifRegCls=s.ifReg==='RG703'?'chip-reg3':'chip-reg4';
+    h+=`<div class="step ${s.last?'laststep':''}" data-k="${k}" data-pos="${s.pos}">
+      <div class="step-rail"><div class="rail-line top"></div><div class="rail-node ${spCls}">${String(s.pos).padStart(2,'0')}</div><div class="rail-line bot"></div></div>
+      <div class="card ${spCls}" data-k="${k}" data-idx="${s.idx}" data-pos="${s.pos}">
         <div class="card-top">
           <span class="card-pos">#${String(s.pos).padStart(2,'0')}</span>
-          <span class="card-title">${escapeHtml(s.title||s.code)}</span>
+          <span class="card-title">${esc(s.title||s.code)}</span>
+          ${s.tno?`<span class="card-tool">${esc(s.tno)}</span>`:''}
           <span class="card-lcode">${s.code}</span>
           <span class="card-sp ${s.spindle==='SP3'?'sp-badge3':'sp-badge4'}">${s.spindle}</span>
         </div>
@@ -352,94 +287,228 @@ function renderSchema(){
           <span class="chip chip-if">IF <b class="${ifRegCls}">${s.ifReg}</b>==<span class="val">${s.ifVal}</span></span>
           <span class="arr">→</span>
           <span class="chip chip-set ${setCls}">${s.assignReg}=<span class="val">${s.assignVal}</span></span>
-          ${s.last?'<span class="arr">→</span><span class="chip chip-if" style="color:var(--amber);border-color:var(--amber-bd);background:var(--amber-bg);">Fertigteil</span>':''}
+          ${s.last?'<span class="arr">→</span><span class="chip chip-fertig">Fertigteil</span>':''}
         </div>
-      </div>`;
-    c.appendChild(step);
-
-    // handoff badge between this and next
+      </div></div>`;
     if(s.handoff){
-      const ho=document.createElement('div'); ho.className='step';
-      ho.innerHTML=`<div class="handoff"><span class="ho-badge">⇄ Übergabe → ${s.assignReg}</span></div><div style="flex:1;"></div>`;
-      ho.style.height='18px';
-      c.appendChild(ho);
+      h+=`<div class="handoff-row"><div class="ho-rail"><span class="ho-badge">⇄ → ${s.assignReg}</span></div><div style="flex:1;"></div></div>`;
     }
   });
+  h+=`<button class="add-card" data-add="${k}">+ Slot</button>`;
+  return h;
+}
 
-  // hover sync card → code
-  c.querySelectorAll('.card').forEach(card=>{
-    card.addEventListener('mouseenter',()=>highlight(+card.dataset.pos));
-    card.addEventListener('mouseleave',()=>highlight(null));
+function panelHTML(k){
+  const fn=k==='1'?'1000.MPF':'2000.MPF';
+  return `<div class="panel">
+    <div class="panel-head">
+      <span class="panel-tag">Kanal ${k}</span>
+      <span class="panel-title">${fn}</span>
+      <span class="sp"></span>
+    </div>
+    <div class="lane-legend">
+      <div class="ll"><span class="dot dot-sp4"></span> SP4 → <b style="color:var(--sp4);margin-left:3px;">RG704</b></div>
+      <div class="ll"><span class="dot dot-sp3"></span> SP3 → <b style="color:var(--sp3);margin-left:3px;">RG703</b></div>
+    </div>
+    <div class="chain" data-chain="${k}">${chainHTML(k)}</div>
+  </div>`;
+}
+
+function render(){
+  const cols=document.getElementById('cols');
+  if(mode==='sync'){
+    cols.className='cols dual';
+    cols.innerHTML=panelHTML('1')+panelHTML('2');
+  }else{
+    cols.className='cols single';
+    cols.innerHTML=panelHTML(mode);
+  }
+  bindSchema();
+}
+
+function bindSchema(){
+  document.querySelectorAll('.card').forEach(c=>{
+    c.addEventListener('click',()=>openEdit(c.dataset.k,+c.dataset.idx));
+    c.addEventListener('mouseenter',()=>hoverPos(+c.dataset.pos));
+    c.addEventListener('mouseleave',()=>hoverPos(null));
+  });
+  document.querySelectorAll('[data-add]').forEach(b=>{
+    b.addEventListener('click',()=>{
+      const k=b.dataset.add;
+      DATA[k].push({code:'',title:'',spindle:'SP4',category:'Außen',doppel:false,tno:'',tname:''});
+      recode(k);render();
+    });
   });
 }
 
-let codeLineMap = {}; // pos -> [lineIndices]
-function renderCode(){
-  const k=activeK;
-  document.getElementById('codeTitle').textContent = k==='1'?'1000.MPF':'2000.MPF';
-  const st=steps(k);
-  document.getElementById('codeMeta').textContent = st.length+' Schritte';
-  const info=document.getElementById('codeInfo');
-  if(!st.length){ info.textContent='Keine belegten Slots'; document.getElementById('codePre').innerHTML=''; return; }
-  const reg4=st.filter(s=>s.spindle==='SP4').length, reg3=st.filter(s=>s.spindle==='SP3').length;
-  info.textContent = `SP4→RG704: ${reg4} · SP3→RG703: ${reg3} · Übergaben: ${st.filter(s=>s.handoff).length}`;
+/* sync highlight by position */
+function hoverPos(pos){
+  document.querySelectorAll('.card').forEach(c=>{
+    c.classList.toggle('hl', pos!==null && +c.dataset.pos===pos);
+  });
+}
 
-  const block = buildBlock(k);
-  const lines = block.split('\n');
-  const pre=document.getElementById('codePre');
+/* ───────── edit modal ───────── */
+let editRef=null;
+function openEdit(k,idx){
+  editRef={k,idx};
+  const s=DATA[k][idx]||{code:'',title:'',spindle:'SP4',category:'Außen',doppel:false,tno:'',tname:''};
+  document.getElementById('edTitle').textContent='Operation bearbeiten';
+  const body=document.getElementById('edBody');
+  body.innerHTML=`
+    <div class="frow">
+      <div class="fg narrow"><label class="flabel">L-Code</label><input class="finput mono" id="e_code" value="${esc(s.code)}" placeholder="L${k==='2'?'21':'11'}0${idx+1}"></div>
+      <div class="fg"><label class="flabel">Bezeichnung</label><input class="finput" id="e_title" value="${esc(s.title)}" placeholder="Bezeichnung"></div>
+    </div>
+    <div class="frow">
+      <div class="fg narrow"><label class="flabel">Spindel</label><select class="fselect" id="e_sp">
+        <option value="SP4" ${s.spindle==='SP4'?'selected':''}>SP4 · Hauptspindel</option>
+        <option value="SP3" ${s.spindle==='SP3'?'selected':''}>SP3 · Gegenspindel</option>
+      </select></div>
+      <div class="fg"><label class="flabel">Kategorie</label><select class="fselect" id="e_cat">
+        ${CATS.map(c=>`<option ${s.category===c?'selected':''}>${c}</option>`).join('')}
+      </select></div>
+    </div>
+    <div class="frow">
+      <div class="toggle ${s.doppel?'on':''}" id="e_dop"><div class="ttrack"><div class="tthumb"></div></div><span>Doppelhalter aktiv</span></div>
+    </div>
+    <div class="frow">
+      <div class="fg narrow"><label class="flabel">Werkzeug T-Nr.</label><input class="finput mono" id="e_tno" value="${esc(s.tno)}" placeholder="T01"></div>
+      <div class="fg"><label class="flabel">Werkzeug-Name</label><input class="finput" id="e_tname" value="${esc(s.tname)}" placeholder="optional"></div>
+    </div>`;
+  let dop=!!s.doppel;
+  document.getElementById('e_dop').addEventListener('click',function(){dop=!dop;this.classList.toggle('on',dop);});
+  const foot=document.getElementById('edFoot');
+  foot.innerHTML='';
+  const del=mkBtn('Löschen','danger',()=>{DATA[k].splice(idx,1);recode(k);closeEdit();render();});
+  const cancel=mkBtn('Abbrechen','ghost',closeEdit);
+  const save=mkBtn('Speichern','primary',()=>{
+    const codeRaw=document.getElementById('e_code').value.trim();
+    const code=/^\d+$/.test(codeRaw)?'L'+codeRaw:codeRaw;
+    const o={
+      code,
+      title:document.getElementById('e_title').value.trim(),
+      spindle:document.getElementById('e_sp').value,
+      category:document.getElementById('e_cat').value,
+      doppel:dop,
+      tno:(()=>{const r=document.getElementById('e_tno').value.trim();return r?(/^\d+$/.test(r)?'T'+r.padStart(2,'0'):r):'';})(),
+      tname:document.getElementById('e_tname').value.trim(),
+    };
+    DATA[k][idx]=o;
+    closeEdit();render();
+  });
+  foot.append(del,cancel,save);
+  document.getElementById('editOv').classList.add('open');
+}
+function closeEdit(){document.getElementById('editOv').classList.remove('open');editRef=null;}
+function mkBtn(label,kind,fn){
+  const b=document.createElement('button');b.type='button';
+  b.className='btn '+(kind==='ghost'?'ghost':kind==='danger'?'ghost':'');
+  if(kind==='danger'){b.style.color='var(--danger)';b.style.borderColor='var(--line-2)';b.style.background='#fff';}
+  if(kind==='primary'){/* default dark */}
+  b.textContent=label;b.addEventListener('click',fn);return b;
+}
+
+/* ───────── code modal ───────── */
+let codeTab='1', codeSync=false;
+function openCode(){
+  codeSync=(mode==='sync');
+  codeTab=(mode==='sync')?'1':mode;
+  const body=document.getElementById('codeBody');
+  const foot=document.getElementById('codeFoot');
+
+  function renderCodeBody(){
+    if(codeSync){
+      body.innerHTML=`<div class="code-info" id="ci"></div><div class="code-grid dual">
+        <div><div class="code-col-head">KANAL 1 · 1000.MPF</div><pre class="code" id="pre1"></pre></div>
+        <div><div class="code-col-head">KANAL 2 · 2000.MPF</div><pre class="code" id="pre2"></pre></div>
+      </div>`;
+      paintCode('1',document.getElementById('pre1'));
+      paintCode('2',document.getElementById('pre2'));
+      const s1=steps('1').length,s2=steps('2').length;
+      document.getElementById('ci').textContent=`Synchron · 1000.MPF: ${s1} Schritte · 2000.MPF: ${s2} Schritte · Hover synchronisiert nach Position`;
+      bindCodeHover();
+    }else{
+      body.innerHTML=`<div class="code-tabs" id="ctabs">
+        <button data-t="1" class="${codeTab==='1'?'on':''}">1000.MPF</button>
+        <button data-t="2" class="${codeTab==='2'?'on':''}">2000.MPF</button>
+      </div><div class="code-info" id="ci"></div><pre class="code" id="pre1"></pre>`;
+      paintCode(codeTab,document.getElementById('pre1'));
+      const st=steps(codeTab);
+      document.getElementById('ci').textContent=`${codeTab==='1'?'1000.MPF':'2000.MPF'} · ${st.length} Schritte · SP4→RG704, SP3→RG703`;
+      document.querySelectorAll('#ctabs button').forEach(b=>b.addEventListener('click',()=>{codeTab=b.dataset.t;renderCodeBody();}));
+      bindCodeHover();
+    }
+  }
+  renderCodeBody();
+
+  foot.innerHTML='';
+  const close=mkBtn('Schließen','ghost',closeCode);
+  const dl1=mkBtn('1000.MPF ⬇','ghost',()=>dl('1'));
+  const dl2=mkBtn('2000.MPF ⬇','primary',()=>dl('2'));
+  foot.append(close,dl1,dl2);
+  document.getElementById('codeOv').classList.add('open');
+}
+function closeCode(){document.getElementById('codeOv').classList.remove('open');}
+
+const codeMap={'1':{},'2':{}};
+function paintCode(k,pre){
+  codeMap[k]={};
+  const lines=buildBlock(k).split('\n');
   pre.innerHTML='';
-  codeLineMap={};
-  let curPos=0;
-  lines.forEach((ln)=>{
-    if(ln==='') return;
-    const div=document.createElement('span'); div.className='ln';
+  let cur=0;
+  lines.forEach(ln=>{
+    if(ln==='')return;
+    const sp=document.createElement('span');sp.className='ln';
     const g=ln.match(/GROUP_BEGIN\(0,"(\d+):/);
-    if(g){ curPos=parseInt(g[1],10); div.classList.add('grp'); }
-    else if(/^IF /.test(ln)) div.classList.add('if');
-    else if(/^\s*RG70[34]=/.test(ln)) div.classList.add('set');
-    else if(/^\s*L\d+\s*$/.test(ln)) div.classList.add('code');
-    else if(/GROUP_(BEGIN|END)/.test(ln)) div.classList.add('grp');
-    else if(/^\s*;/.test(ln)||/^ELSE|^ENDIF|^STOPRE|^WAITM/.test(ln)) div.classList.add('cmt');
-    div.textContent=ln;
-    div.dataset.pos=curPos;
-    if(!codeLineMap[curPos]) codeLineMap[curPos]=[];
-    codeLineMap[curPos].push(div);
-    pre.appendChild(div);
+    if(g){cur=parseInt(g[1],10);sp.classList.add('grp');}
+    else if(/^IF /.test(ln))sp.classList.add('if');
+    else if(/^\s*RG70[34]=/.test(ln))sp.classList.add('set');
+    else if(/^\s*L\d+\s*$/.test(ln))sp.classList.add('code');
+    else if(/GROUP_(BEGIN|END)/.test(ln))sp.classList.add('grp');
+    else sp.classList.add('cmt');
+    sp.textContent=ln;sp.dataset.pos=cur;sp.dataset.k=k;
+    (codeMap[k][cur]=codeMap[k][cur]||[]).push(sp);
+    pre.appendChild(sp);
   });
 }
-
-function highlight(pos){
-  document.querySelectorAll('.card').forEach(c=>c.classList.toggle('hl', pos!==null && +c.dataset.pos===pos));
-  document.querySelectorAll('pre.code .ln').forEach(l=>l.classList.remove('hlrow'));
-  if(pos!==null && codeLineMap[pos]) codeLineMap[pos].forEach(l=>l.classList.add('hlrow'));
+function bindCodeHover(){
+  document.querySelectorAll('pre.code .ln').forEach(l=>{
+    l.addEventListener('mouseenter',()=>codeHover(+l.dataset.pos));
+    l.addEventListener('mouseleave',()=>codeHover(null));
+  });
 }
-
-function escapeHtml(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
-
-function renderAll(){ renderEditor(); renderSchema(); renderCode(); }
-
-/* ───────────── Events ───────────── */
-document.getElementById('kanalSeg').addEventListener('click',e=>{
-  const b=e.target.closest('button'); if(!b)return;
-  activeK=b.dataset.k;
-  [...e.currentTarget.children].forEach(x=>x.classList.toggle('on',x===b));
-  renderAll();
-});
-document.getElementById('btnAdd').addEventListener('click',()=>{
-  DATA[activeK].push({code:'',title:'',spindle:'SP4'}); recode(activeK); renderAll();
-});
-document.getElementById('btnReset').addEventListener('click',()=>{
-  DATA=sampleData(); renderAll();
-});
-document.getElementById('btnDl').addEventListener('click',()=>{
-  const fn=activeK==='1'?'1000.MPF':'2000.MPF';
-  const blob=new Blob([buildBlock(activeK)],{type:'text/plain'});
+function codeHover(pos){
+  ['1','2'].forEach(k=>{
+    Object.keys(codeMap[k]).forEach(p=>{
+      codeMap[k][p].forEach(l=>l.classList.toggle('hlrow', pos!==null && +p===pos));
+    });
+  });
+}
+function dl(k){
+  const fn=k==='1'?'1000.MPF':'2000.MPF';
+  const blob=new Blob([buildBlock(k)],{type:'text/plain'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=fn;
   document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(a.href);
-});
+}
 
-recode('1'); recode('2');
-renderAll();
+/* ───────── events ───────── */
+document.getElementById('modeSeg').addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b)return;
+  mode=b.dataset.m;
+  [...e.currentTarget.children].forEach(x=>x.classList.toggle('on',x===b));
+  render();
+});
+document.getElementById('btnCode').addEventListener('click',openCode);
+document.getElementById('fab').addEventListener('click',openCode);
+document.getElementById('btnReset').addEventListener('click',()=>{DATA=sampleData();recode('1');recode('2');render();});
+document.getElementById('edClose').addEventListener('click',closeEdit);
+document.getElementById('codeClose').addEventListener('click',closeCode);
+document.getElementById('editOv').addEventListener('click',e=>{if(e.target.id==='editOv')closeEdit();});
+document.getElementById('codeOv').addEventListener('click',e=>{if(e.target.id==='codeOv')closeCode();});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeEdit();closeCode();}});
+
+recode('1');recode('2');render();
 </script>
 </body>
 </html>
