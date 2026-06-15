@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>MPF Generator · Visual Prototype</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#fff; --bg-soft:#FAFAFA; --bg-2:#F5F5F5; --line:#E5E5E5; --line-2:#D4D4D4;
+  --ink:#0A0A0A; --ink-3:#525252; --ink-4:#737373; --ink-5:#A3A3A3;
+  --sp4:#2D6B47; --sp4-bg:#EAF6EE; --sp4-bd:#B5DEC7;
+  --sp3:#2D4F8A; --sp3-bg:#E8EFF8; --sp3-bd:#B8CEEA;
+  --amber:#92500D; --amber-bg:#FBF1E0; --amber-bd:#E8C896;
+  --sans:'Inter',system-ui,sans-serif; --mono:'JetBrains Mono',monospace;
+  --r:6px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:var(--sans);background:var(--bg-soft);color:var(--ink);font-size:13px;line-height:1.5;padding:16px;}
+h1{font-size:17px;font-weight:700;letter-spacing:-.01em;}
+.sub{color:var(--ink-4);font-size:12px;margin:4px 0 16px;}
+.wrap{max-width:1400px;margin:0 auto;}
+
+/* Toolbar */
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:14px;}
+.btn{font-family:var(--sans);font-size:12px;font-weight:600;padding:8px 14px;border-radius:var(--r);border:1px solid var(--ink);background:var(--ink);color:#fff;cursor:pointer;display:inline-flex;align-items:center;gap:6px;}
+.btn.ghost{background:#fff;color:var(--ink);border-color:var(--line-2);}
+.btn.ghost:hover{background:var(--bg-2);}
+.btn:active{transform:translateY(1px);}
+.bar-spacer{flex:1;}
+.seg{display:inline-flex;border:1px solid var(--line-2);border-radius:var(--r);overflow:hidden;}
+.seg button{border:none;border-right:1px solid var(--line);background:#fff;color:var(--ink-4);font-family:var(--sans);font-size:12px;font-weight:600;padding:8px 14px;cursor:pointer;}
+.seg button:last-child{border-right:none;}
+.seg button.on{background:var(--ink);color:#fff;}
+
+/* Layout: schema | code */
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;}
+@media(max-width:900px){ .cols{grid-template-columns:1fr;} }
+
+.panel{background:#fff;border:1px solid var(--line);border-radius:var(--r);overflow:hidden;}
+.panel-head{padding:11px 14px;border-bottom:1px solid var(--line);background:var(--bg-soft);display:flex;align-items:center;gap:10px;}
+.panel-tag{font-family:var(--mono);font-size:9.5px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-4);}
+.panel-title{font-size:13px;font-weight:600;}
+.panel-head .sp{flex:1;}
+
+/* ── Slot editor table ── */
+.editor{margin-bottom:16px;}
+.kanal-tabs{display:flex;gap:8px;margin-bottom:10px;}
+.kanal-tab{flex:1;border:1px solid var(--line-2);border-radius:var(--r);background:#fff;padding:10px;cursor:pointer;text-align:left;transition:.12s;}
+.kanal-tab.on{border-color:var(--ink);box-shadow:0 0 0 2px rgba(0,0,0,.05);}
+.kanal-tab .kt-name{font-weight:700;font-size:13px;}
+.kanal-tab .kt-file{font-family:var(--mono);font-size:10.5px;color:var(--ink-4);margin-top:2px;}
+.kanal-tab .kt-reg{display:inline-block;margin-top:6px;font-family:var(--mono);font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:3px;}
+
+tbl,.tbl{width:100%;}
+.tbl{border-collapse:collapse;}
+.tbl th{font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-4);text-align:left;padding:6px;border-bottom:1px solid var(--line);}
+.tbl td{padding:5px 6px;border-bottom:1px solid var(--bg-2);vertical-align:middle;}
+.tbl input[type=text]{width:100%;font-family:var(--mono);font-size:12px;padding:5px 7px;border:1px solid var(--line-2);border-radius:4px;}
+.tbl input.title-in{font-family:var(--sans);}
+.tbl select{font-family:var(--mono);font-size:12px;padding:5px;border:1px solid var(--line-2);border-radius:4px;width:100%;}
+.rn{font-family:var(--mono);font-size:12px;font-weight:600;color:var(--ink-4);width:24px;text-align:center;}
+.mv{display:flex;flex-direction:column;gap:1px;}
+.mv button,.xbtn{border:1px solid var(--line-2);background:#fff;border-radius:4px;cursor:pointer;font-size:10px;color:var(--ink-3);padding:2px 6px;}
+.mv button:hover,.xbtn:hover{background:var(--bg-2);}
+.mv button:disabled{opacity:.25;}
+.xbtn{padding:4px 8px;color:var(--amber);}
+.add-row{margin-top:8px;font-family:var(--mono);font-size:11px;color:var(--ink-4);border:1px dashed var(--line-2);background:transparent;border-radius:4px;padding:8px;width:100%;cursor:pointer;text-transform:uppercase;letter-spacing:.05em;}
+.add-row:hover{border-color:var(--ink);color:var(--ink);}
+
+/* ── Visual chain ── */
+.chain{padding:14px;display:flex;flex-direction:column;gap:0;}
+.lane-legend{display:flex;gap:14px;margin-bottom:12px;flex-wrap:wrap;}
+.lane-legend .ll{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--ink-3);}
+.ll .dot{width:11px;height:11px;border-radius:3px;}
+.dot-sp4{background:var(--sp4);} .dot-sp3{background:var(--sp3);}
+
+.step{position:relative;display:flex;gap:0;}
+.step-rail{flex:0 0 56px;display:flex;flex-direction:column;align-items:center;}
+.rail-line{width:2px;flex:1;background:var(--line-2);}
+.rail-line.top{min-height:8px;}
+.rail-line.bot{min-height:8px;}
+.rail-node{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:11px;font-weight:700;color:#fff;flex-shrink:0;z-index:1;}
+.rail-node.sp4{background:var(--sp4);}
+.rail-node.sp3{background:var(--sp3);}
+.step:first-child .rail-line.top{background:transparent;}
+.step:last-child .rail-line.bot{background:transparent;}
+
+.card{flex:1;margin:0 0 0 6px;border:1px solid var(--line);border-radius:var(--r);padding:10px 12px;background:#fff;transition:.12s;position:relative;}
+.card.sp4{border-left:3px solid var(--sp4);}
+.card.sp3{border-left:3px solid var(--sp3);}
+.card.hl{box-shadow:0 0 0 2px var(--ink);}
+.card-top{display:flex;align-items:center;gap:8px;margin-bottom:7px;}
+.card-pos{font-family:var(--mono);font-size:10px;font-weight:700;color:var(--ink-4);}
+.card-title{font-weight:600;font-size:13px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.card-lcode{font-family:var(--mono);font-size:10.5px;font-weight:600;background:var(--bg-2);border:1px solid var(--line-2);padding:1px 6px;border-radius:3px;}
+.card-sp{font-family:var(--mono);font-size:9px;font-weight:700;padding:2px 7px;border-radius:3px;}
+.sp-badge4{background:var(--sp4-bg);color:var(--sp4);border:1px solid var(--sp4-bd);}
+.sp-badge3{background:var(--sp3-bg);color:var(--sp3);border:1px solid var(--sp3-bd);}
+
+/* Register flow line inside card */
+.flow{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11px;flex-wrap:wrap;}
+.chip{display:inline-flex;align-items:center;gap:5px;padding:3px 8px;border-radius:4px;font-weight:600;white-space:nowrap;}
+.chip-if{background:var(--bg-2);border:1px solid var(--line-2);color:var(--ink);}
+.chip-reg4{color:var(--sp4);}
+.chip-reg3{color:var(--sp3);}
+.chip-set{border:1px solid;}
+.chip-set.r4{background:var(--sp4-bg);border-color:var(--sp4-bd);color:var(--sp4);}
+.chip-set.r3{background:var(--sp3-bg);border-color:var(--sp3-bd);color:var(--sp3);}
+.flow .arr{color:var(--ink-5);font-size:13px;}
+.flow .val{font-weight:700;}
+
+/* Handoff highlight between steps */
+.handoff{flex:0 0 56px;display:flex;justify-content:center;align-items:center;position:relative;}
+.handoff .ho-badge{position:absolute;font-family:var(--mono);font-size:8.5px;font-weight:700;padding:2px 6px;border-radius:10px;background:var(--amber-bg);border:1px solid var(--amber-bd);color:var(--amber);white-space:nowrap;z-index:2;}
+
+.endcap{flex:1;margin-left:62px;padding:6px 12px;font-family:var(--mono);font-size:10.5px;color:var(--ink-4);}
+.endcap.start{color:var(--ink-3);}
+
+/* Code panel */
+.code-wrap{position:relative;}
+pre.code{margin:0;background:#0d0d0d;color:#e5e5e5;padding:14px;font-family:var(--mono);font-size:11px;line-height:1.55;overflow:auto;max-height:70vh;white-space:pre;}
+pre.code .ln{display:block;padding:0 4px;border-radius:2px;}
+pre.code .ln.if{color:#9ece6a;}
+pre.code .ln.set{color:#7aa2f7;}
+pre.code .ln.code{color:#e0af68;}
+pre.code .ln.grp{color:#bb9af7;}
+pre.code .ln.cmt{color:#565f89;}
+pre.code .ln.hlrow{background:rgba(255,255,255,.09);}
+.code-foot{display:flex;gap:8px;padding:10px 14px;border-top:1px solid var(--line);background:var(--bg-soft);}
+
+.empty-note{padding:30px 14px;text-align:center;color:var(--ink-5);font-family:var(--mono);font-size:11px;}
+.info-strip{font-family:var(--mono);font-size:10.5px;color:var(--ink-4);padding:8px 14px;background:var(--bg-2);border-bottom:1px solid var(--line);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>MPF Generator — Visual Prototype</h1>
+  <div class="sub">Schema (links) + Live-Code (rechts). Bearbeite Slots oben, alles aktualisiert sich sofort. Bei Spindel-Wechsel wird die <b>Übergabe</b> zwischen RG704 ↔ RG703 markiert.</div>
+
+  <div class="bar">
+    <div class="seg" id="kanalSeg">
+      <button class="on" data-k="1">Kanal 1 · 1000.MPF</button>
+      <button data-k="2">Kanal 2 · 2000.MPF</button>
+    </div>
+    <div class="bar-spacer"></div>
+    <button class="btn ghost" id="btnReset">↺ Beispiel laden</button>
+    <button class="btn" id="btnDl">⬇ Aktuelle MPF</button>
+  </div>
+
+  <!-- Editor -->
+  <div class="editor panel">
+    <div class="panel-head">
+      <span class="panel-tag">Editor</span>
+      <span class="panel-title" id="edTitle">Slots · Kanal 1</span>
+      <span class="sp"></span>
+      <span class="panel-tag" id="edReg"></span>
+    </div>
+    <div style="padding:12px 14px;">
+      <table class="tbl">
+        <thead><tr><th></th><th>#</th><th>L-Code</th><th>Bezeichnung</th><th>Spindel</th><th></th></tr></thead>
+        <tbody id="edBody"></tbody>
+      </table>
+      <button class="add-row" id="btnAdd">+ Slot hinzufügen</button>
+    </div>
+  </div>
+
+  <!-- Schema + Code -->
+  <div class="cols">
+    <div class="panel">
+      <div class="panel-head">
+        <span class="panel-tag">Schema</span>
+        <span class="panel-title">Ablauf &amp; Register-Kette</span>
+      </div>
+      <div class="lane-legend" style="padding:12px 14px 0;">
+        <div class="ll"><span class="dot dot-sp4"></span> SP4 · Hauptspindel → <b style="color:var(--sp4);margin-left:3px;">RG704</b></div>
+        <div class="ll"><span class="dot dot-sp3"></span> SP3 · Gegenspindel → <b style="color:var(--sp3);margin-left:3px;">RG703</b></div>
+      </div>
+      <div class="chain" id="chain"></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <span class="panel-tag">Code</span>
+        <span class="panel-title" id="codeTitle">1000.MPF</span>
+        <span class="sp"></span>
+        <span class="panel-tag" id="codeMeta"></span>
+      </div>
+      <div class="info-strip" id="codeInfo"></div>
+      <div class="code-wrap"><pre class="code" id="codePre"></pre></div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ───────────── Generator core (final rules) ───────────── */
+function codeState(code){const m=String(code||'').match(/(\d+)/);const d=m?m[1]:'';if(!d)return 0;return d.length<=3?(parseInt(d,10)||0):parseInt(d.slice(1),10);}
+function digits(code){const m=String(code||'').match(/(\d+)/);return m?m[1]:'';}
+function genUUID(){let d=Date.now();return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=(d+Math.random()*16)%16|0;d=Math.floor(d/16);return (c==='x'?r:(r&0x3|0x8)).toString(16);});}
+function slotEmpty(s){return !s || (!s.code && !s.title);}
+
+/* slots model: { '1':[{code,title,spindle}|null,...], '2':[...] } */
+let DATA = sampleData();
+let activeK = '1';
+const UUID = { '1': genUUID(), '2': genUUID() };
+
+function sampleData(){
+  return {
+    '1':[
+      {code:'L1101',title:'Schruppen Außen',spindle:'SP4'},
+      {code:'L1102',title:'Schlichten Außen',spindle:'SP3'},
+      {code:'L1103',title:'Leer',spindle:'SP4'},
+      {code:'L1104',title:'Gewinde',spindle:'SP4'},
+    ],
+    '2':[
+      {code:'L2101',title:'Schruppen Außen',spindle:'SP4'},
+      {code:'L2102',title:'Bohren D20',spindle:'SP4'},
+      {code:'L2103',title:'Einstechen',spindle:'SP3'},
+      {code:'L2104',title:'Schlichten Außen',spindle:'SP4'},
+    ],
+  };
+}
+
+function recode(k){
+  const prefix = (k==='2')?'L21':'L11';
+  DATA[k].forEach((s,i)=>{ if(s) s.code = prefix+String(i+1).padStart(2,'0'); });
+}
+
+/* collect filled steps with computed IF/assign registers+values */
+function steps(k){
+  const arr = DATA[k].filter(s=>!slotEmpty(s));
+  return arr.map((s,i,a)=>{
+    const ifReg = s.spindle==='SP3'?'RG703':'RG704';
+    const ifVal = (i===0)?1:codeState(s.code);
+    const last = i===a.length-1;
+    const nextSp = last?s.spindle:a[i+1].spindle;
+    const assignReg = last?ifReg:(nextSp==='SP3'?'RG703':'RG704');
+    const assignVal = last?2:codeState(a[i+1].code);
+    return {
+      pos:i+1, code:s.code, title:s.title, spindle:s.spindle,
+      ifReg, ifVal, assignReg, assignVal, last,
+      handoff: !last && (s.spindle!==nextSp)
+    };
+  });
+}
+
+function buildBlock(k){
+  const st = steps(k);
+  let out='';
+  st.forEach(s=>{
+    const num=String(s.pos).padStart(3,'0');
+    out+=`GROUP_BEGIN(0,"${num}: ${s.title.toUpperCase()}",${s.spindle==='SP3'?2:1},0)\n`;
+    out+=`;Id=${UUID[k]}\n`;
+    out+=`WAITM(${s.pos},1,2)\n`;
+    out+=`STOPRE\n`;
+    out+=`IF ${s.ifReg}==${s.ifVal}\n`;
+    out+=` ${s.code}\n`;
+    out+=` STOPRE\n`;
+    out+=` ${s.assignReg}=${s.assignVal}\n`;
+    out+=`ELSE\n`;
+    out+=` ;DUMMY("${digits(s.code)}")\n`;
+    out+=`ENDIF\n`;
+    out+=`GROUP_END(0,${s.spindle==='SP3'?2:1})\n`;
+  });
+  return out;
+}
+
+/* ───────────── Rendering ───────────── */
+function regClass(reg){ return reg==='RG703'?'chip-reg3':'chip-reg4'; }
+
+function renderEditor(){
+  document.getElementById('edTitle').textContent = 'Slots · Kanal '+activeK;
+  const reg = document.getElementById('edReg');
+  reg.innerHTML = activeK==='1' ? '1000.MPF' : '2000.MPF';
+  const body = document.getElementById('edBody');
+  body.innerHTML='';
+  DATA[activeK].forEach((s,i)=>{
+    const tr=document.createElement('tr');
+    const last = DATA[activeK].length-1;
+    tr.innerHTML = `
+      <td><div class="mv">
+        <button ${i===0?'disabled':''} data-mv="up" data-i="${i}">▲</button>
+        <button ${i===last?'disabled':''} data-mv="down" data-i="${i}">▼</button>
+      </div></td>
+      <td class="rn">${i+1}</td>
+      <td><input type="text" data-f="code" data-i="${i}" value="${s?s.code:''}" placeholder="L${activeK==='2'?'21':'11'}0${i+1}"></td>
+      <td><input type="text" class="title-in" data-f="title" data-i="${i}" value="${s?s.title:''}" placeholder="Bezeichnung"></td>
+      <td><select data-f="spindle" data-i="${i}">
+        <option value="SP4" ${(!s||s.spindle==='SP4')?'selected':''}>SP4</option>
+        <option value="SP3" ${(s&&s.spindle==='SP3')?'selected':''}>SP3</option>
+      </select></td>
+      <td><button class="xbtn" data-x="${i}">✕</button></td>`;
+    body.appendChild(tr);
+  });
+  // bind
+  body.querySelectorAll('input,select').forEach(el=>{
+    el.addEventListener('input',onEdit); el.addEventListener('change',onEdit);
+  });
+  body.querySelectorAll('[data-mv]').forEach(b=>b.addEventListener('click',()=>{
+    move(+b.dataset.i, b.dataset.mv==='up'?-1:1);
+  }));
+  body.querySelectorAll('[data-x]').forEach(b=>b.addEventListener('click',()=>{
+    DATA[activeK].splice(+b.dataset.x,1); recode(activeK); renderAll();
+  }));
+}
+
+function onEdit(e){
+  const i=+e.target.dataset.i, f=e.target.dataset.f, v=e.target.value;
+  if(!DATA[activeK][i]) DATA[activeK][i]={code:'',title:'',spindle:'SP4'};
+  DATA[activeK][i][f]=v;
+  // re-derive code by position when code emptied
+  if(f==='code' && !v.trim()){ recode(activeK); }
+  renderSchema(); renderCode(); // editor not re-rendered to keep focus
+}
+
+function move(i,dir){
+  const j=i+dir; if(j<0||j>=DATA[activeK].length)return;
+  const a=DATA[activeK]; [a[i],a[j]]=[a[j],a[i]]; recode(activeK); renderAll();
+}
+
+function renderSchema(){
+  const st = steps(activeK);
+  const c = document.getElementById('chain');
+  c.innerHTML='';
+  if(!st.length){ c.innerHTML='<div class="empty-note">Keine belegten Slots</div>'; return; }
+
+  // start cap (Rohteil)
+  const start=document.createElement('div');
+  start.className='endcap start';
+  start.innerHTML=`▼ Rohteil — ${st[0].ifReg}==1`;
+  c.appendChild(start);
+
+  st.forEach((s,idx)=>{
+    const step=document.createElement('div'); step.className='step'; step.dataset.pos=s.pos;
+    const spCls = s.spindle==='SP3'?'sp3':'sp4';
+    const setCls = s.assignReg==='RG703'?'r3':'r4';
+    const ifRegCls = regClass(s.ifReg);
+    step.innerHTML = `
+      <div class="step-rail">
+        <div class="rail-line top"></div>
+        <div class="rail-node ${spCls}">${String(s.pos).padStart(2,'0')}</div>
+        <div class="rail-line bot"></div>
+      </div>
+      <div class="card ${spCls}" data-pos="${s.pos}">
+        <div class="card-top">
+          <span class="card-pos">#${String(s.pos).padStart(2,'0')}</span>
+          <span class="card-title">${escapeHtml(s.title||s.code)}</span>
+          <span class="card-lcode">${s.code}</span>
+          <span class="card-sp ${s.spindle==='SP3'?'sp-badge3':'sp-badge4'}">${s.spindle}</span>
+        </div>
+        <div class="flow">
+          <span class="chip chip-if">IF <b class="${ifRegCls}">${s.ifReg}</b>==<span class="val">${s.ifVal}</span></span>
+          <span class="arr">→</span>
+          <span class="chip chip-set ${setCls}">${s.assignReg}=<span class="val">${s.assignVal}</span></span>
+          ${s.last?'<span class="arr">→</span><span class="chip chip-if" style="color:var(--amber);border-color:var(--amber-bd);background:var(--amber-bg);">Fertigteil</span>':''}
+        </div>
+      </div>`;
+    c.appendChild(step);
+
+    // handoff badge between this and next
+    if(s.handoff){
+      const ho=document.createElement('div'); ho.className='step';
+      ho.innerHTML=`<div class="handoff"><span class="ho-badge">⇄ Übergabe → ${s.assignReg}</span></div><div style="flex:1;"></div>`;
+      ho.style.height='18px';
+      c.appendChild(ho);
+    }
+  });
+
+  // hover sync card → code
+  c.querySelectorAll('.card').forEach(card=>{
+    card.addEventListener('mouseenter',()=>highlight(+card.dataset.pos));
+    card.addEventListener('mouseleave',()=>highlight(null));
+  });
+}
+
+let codeLineMap = {}; // pos -> [lineIndices]
+function renderCode(){
+  const k=activeK;
+  document.getElementById('codeTitle').textContent = k==='1'?'1000.MPF':'2000.MPF';
+  const st=steps(k);
+  document.getElementById('codeMeta').textContent = st.length+' Schritte';
+  const info=document.getElementById('codeInfo');
+  if(!st.length){ info.textContent='Keine belegten Slots'; document.getElementById('codePre').innerHTML=''; return; }
+  const reg4=st.filter(s=>s.spindle==='SP4').length, reg3=st.filter(s=>s.spindle==='SP3').length;
+  info.textContent = `SP4→RG704: ${reg4} · SP3→RG703: ${reg3} · Übergaben: ${st.filter(s=>s.handoff).length}`;
+
+  const block = buildBlock(k);
+  const lines = block.split('\n');
+  const pre=document.getElementById('codePre');
+  pre.innerHTML='';
+  codeLineMap={};
+  let curPos=0;
+  lines.forEach((ln)=>{
+    if(ln==='') return;
+    const div=document.createElement('span'); div.className='ln';
+    const g=ln.match(/GROUP_BEGIN\(0,"(\d+):/);
+    if(g){ curPos=parseInt(g[1],10); div.classList.add('grp'); }
+    else if(/^IF /.test(ln)) div.classList.add('if');
+    else if(/^\s*RG70[34]=/.test(ln)) div.classList.add('set');
+    else if(/^\s*L\d+\s*$/.test(ln)) div.classList.add('code');
+    else if(/GROUP_(BEGIN|END)/.test(ln)) div.classList.add('grp');
+    else if(/^\s*;/.test(ln)||/^ELSE|^ENDIF|^STOPRE|^WAITM/.test(ln)) div.classList.add('cmt');
+    div.textContent=ln;
+    div.dataset.pos=curPos;
+    if(!codeLineMap[curPos]) codeLineMap[curPos]=[];
+    codeLineMap[curPos].push(div);
+    pre.appendChild(div);
+  });
+}
+
+function highlight(pos){
+  document.querySelectorAll('.card').forEach(c=>c.classList.toggle('hl', pos!==null && +c.dataset.pos===pos));
+  document.querySelectorAll('pre.code .ln').forEach(l=>l.classList.remove('hlrow'));
+  if(pos!==null && codeLineMap[pos]) codeLineMap[pos].forEach(l=>l.classList.add('hlrow'));
+}
+
+function escapeHtml(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+function renderAll(){ renderEditor(); renderSchema(); renderCode(); }
+
+/* ───────────── Events ───────────── */
+document.getElementById('kanalSeg').addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(!b)return;
+  activeK=b.dataset.k;
+  [...e.currentTarget.children].forEach(x=>x.classList.toggle('on',x===b));
+  renderAll();
+});
+document.getElementById('btnAdd').addEventListener('click',()=>{
+  DATA[activeK].push({code:'',title:'',spindle:'SP4'}); recode(activeK); renderAll();
+});
+document.getElementById('btnReset').addEventListener('click',()=>{
+  DATA=sampleData(); renderAll();
+});
+document.getElementById('btnDl').addEventListener('click',()=>{
+  const fn=activeK==='1'?'1000.MPF':'2000.MPF';
+  const blob=new Blob([buildBlock(activeK)],{type:'text/plain'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=fn;
+  document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(a.href);
+});
+
+recode('1'); recode('2');
+renderAll();
+</script>
+</body>
+</html>
