@@ -170,6 +170,10 @@ body{font-family:var(--sans);background:var(--bg-soft);color:var(--ink);font-siz
 .chip-fertig{color:var(--amber);border:1px solid var(--amber-bd);background:var(--amber-bg);}
 .card-foot{display:flex;align-items:center;gap:8px;margin-top:8px;}
 .card-waitm{font-family:var(--mono);font-size:9.5px;color:var(--ink-5);flex:1;}
+.m-reg{font-family:var(--mono);font-size:10.5px;font-weight:700;border:1px solid var(--line-2);border-radius:3px;padding:1px 3px;background:#fff;cursor:pointer;}
+.m-reg.chip-reg3{color:var(--sp3);} .m-reg.chip-reg4{color:var(--sp4);}
+.m-val{font-family:var(--mono);font-size:11px;font-weight:700;width:46px;text-align:center;border:1px solid var(--line-2);border-radius:3px;padding:1px 3px;background:#fff;}
+.m-val:focus,.m-reg:focus{outline:none;border-color:var(--ink);box-shadow:0 0 0 2px rgba(0,0,0,.06);}
 .card-mv{display:flex;gap:3px;}
 .mv-btn{width:24px;height:22px;border:1px solid var(--line-2);background:#fff;border-radius:4px;cursor:pointer;color:var(--ink-3);font-size:10px;}
 .mv-btn:hover{background:var(--bg-2);}
@@ -324,6 +328,10 @@ pre.code .ln.hlrow{background:rgba(255,255,255,.10);}
       <button data-m="2">Kanal 2 <span class="mf">2000</span></button>
       <button data-m="sync" class="on">Synchron <span class="mf">1000+2000</span></button>
     </div>
+    <div class="modeseg" id="calcSeg" style="margin-left:8px;">
+      <button data-c="auto" class="on">Auto</button>
+      <button data-c="manuell">Manuell</button>
+    </div>
     <div class="bar-spacer"></div>
     <button class="btn ghost" id="btnCode"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4L2 8l3 4M11 4l3 4-3 4"/></svg>Code anzeigen</button>
     <button class="btn ghost" id="btnReset">↺ Beispiel</button>
@@ -365,7 +373,7 @@ function genUUID(){let d=Date.now();return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx
 function slotEmpty(s){return !s || (!s.code && !s.title);}
 function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 const CATS=['Außen','Innen','Radial','Axial'];
-let DATA, mode='sync';
+let DATA, mode='sync', calcMode='auto';
 const UUID={'1':genUUID(),'2':genUUID()};
 function sampleData(){return{
   '1':[
@@ -385,13 +393,23 @@ function recode(k){const p=(k==='2')?'L21':'L11';DATA[k].forEach((s,i)=>{if(s)s.
 function steps(k){
   const a=DATA[k].filter(s=>!slotEmpty(s));
   return a.map((s,i)=>{
-    const ifReg=s.spindle==='SP3'?'RG703':'RG704';
-    const ifVal=(i===0)?1:codeState(s.code);
     const last=i===a.length-1;
     const nextSp=last?s.spindle:a[i+1].spindle;
-    const assignReg=last?ifReg:(nextSp==='SP3'?'RG703':'RG704');
-    const assignVal=last?2:codeState(a[i+1].code);
-    return Object.assign({},s,{idx:DATA[k].indexOf(s),pos:i+1,state:codeState(s.code),ifReg,ifVal,assignReg,assignVal,last,handoff:!last&&s.spindle!==nextSp});
+    // AUTO defaults
+    const autoIfReg=s.spindle==='SP3'?'RG703':'RG704';
+    const autoIfVal=(i===0)?1:codeState(s.code);
+    const autoAssignReg=last?autoIfReg:(nextSp==='SP3'?'RG703':'RG704');
+    const autoAssignVal=last?2:codeState(a[i+1].code);
+    // MANUELL: use per-op overrides if present, else fall back to auto
+    let ifReg=autoIfReg, ifVal=autoIfVal, assignReg=autoAssignReg, assignVal=autoAssignVal;
+    if(calcMode==='manuell'){
+      if(s.mIfReg) ifReg=s.mIfReg;
+      if(s.mIfVal!==undefined&&s.mIfVal!=='') ifVal=s.mIfVal;
+      if(s.mAsReg) assignReg=s.mAsReg;
+      if(s.mAsVal!==undefined&&s.mAsVal!=='') assignVal=s.mAsVal;
+    }
+    return Object.assign({},s,{idx:DATA[k].indexOf(s),pos:i+1,state:codeState(s.code),ifReg,ifVal,assignReg,assignVal,last,
+      handoff:!last&&assignReg!==ifReg, autoIfReg,autoIfVal,autoAssignReg,autoAssignVal});
   });
 }
 function wmv(s,key,def){return (s[key]!==undefined&&s[key]!=='')?s[key]:def;}
@@ -421,6 +439,25 @@ function chainHTML(k){
     const ifRegCls=s.ifReg==='RG703'?'chip-reg3':'chip-reg4';
     const posLbl=String(s.pos).padStart(2,'0');
     const last2=st[st.length-1];
+    const manual = calcMode==='manuell';
+    let flowInner;
+    if(manual){
+      flowInner =
+        '<span class="chip chip-if">IF '
+          +'<select class="m-reg '+ifRegCls+'" data-mf="ifReg" data-k="'+k+'" data-idx="'+s.idx+'"><option value="RG704"'+(s.ifReg==='RG704'?' selected':'')+'>RG704</option><option value="RG703"'+(s.ifReg==='RG703'?' selected':'')+'>RG703</option></select>'
+          +'==<input class="m-val" data-mf="ifVal" data-k="'+k+'" data-idx="'+s.idx+'" value="'+s.ifVal+'"></span>'
+        +'<span class="arr">→</span>'
+        +'<span class="chip chip-set '+setCls+'">'
+          +'<select class="m-reg" data-mf="asReg" data-k="'+k+'" data-idx="'+s.idx+'"><option value="RG704"'+(s.assignReg==='RG704'?' selected':'')+'>RG704</option><option value="RG703"'+(s.assignReg==='RG703'?' selected':'')+'>RG703</option></select>'
+          +'=<input class="m-val" data-mf="asVal" data-k="'+k+'" data-idx="'+s.idx+'" value="'+s.assignVal+'"></span>'
+        +(s.last?'<span class="arr">→</span><span class="chip chip-fertig">Fertigteil</span>':'');
+    }else{
+      flowInner =
+        '<span class="chip chip-if">IF <b class="'+ifRegCls+'">'+s.ifReg+'</b>==<span class="val">'+s.ifVal+'</span></span>'
+        +'<span class="arr">→</span>'
+        +'<span class="chip chip-set '+setCls+'">'+s.assignReg+'=<span class="val">'+s.assignVal+'</span></span>'
+        +(s.last?'<span class="arr">→</span><span class="chip chip-fertig">Fertigteil</span>':'');
+    }
     h+='<div class="step '+(s.last?'laststep':'')+'" draggable="true" data-k="'+k+'" data-idx="'+s.idx+'" data-pos="'+s.pos+'">'
       +'<div class="step-rail"><div class="rail-line top"></div><div class="rail-node '+spCls+'">'+posLbl+'</div><div class="rail-line bot"></div></div>'
       +'<div class="card '+spCls+'" data-k="'+k+'" data-idx="'+s.idx+'" data-pos="'+s.pos+'">'
@@ -433,12 +470,7 @@ function chainHTML(k){
           +'<span class="card-sp '+(s.spindle==='SP3'?'sp-badge3':'sp-badge4')+'">'+s.spindle+'</span>'
           +'<button class="card-edit" data-edit="'+k+':'+s.idx+'" title="Bearbeiten"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M11.5 2.5l2 2L6 12l-2.5.5L4 10z"/><path d="M10.5 3.5l2 2"/></svg></button>'
         +'</div>'
-        +'<div class="flow" data-edit="'+k+':'+s.idx+'">'
-          +'<span class="chip chip-if">IF <b class="'+ifRegCls+'">'+s.ifReg+'</b>==<span class="val">'+s.ifVal+'</span></span>'
-          +'<span class="arr">→</span>'
-          +'<span class="chip chip-set '+setCls+'">'+s.assignReg+'=<span class="val">'+s.assignVal+'</span></span>'
-          +(s.last?'<span class="arr">→</span><span class="chip chip-fertig">Fertigteil</span>':'')
-        +'</div>'
+        +'<div class="flow"'+(manual?'':' data-edit="'+k+':'+s.idx+'"')+'>'+flowInner+'</div>'
         +'<div class="card-foot">'
           +'<span class="card-waitm">WAITM('+wmv(s,'w1',s.pos)+','+wmv(s,'w2',1)+','+wmv(s,'w3',2)+')</span>'
           +'<span class="card-mv"><button class="mv-btn" data-mv="up" data-k="'+k+'" data-idx="'+s.idx+'"'+(s.pos===1?' disabled':'')+'>▲</button><button class="mv-btn" data-mv="down" data-k="'+k+'" data-idx="'+s.idx+'"'+(s.pos===st.length?' disabled':'')+'>▼</button></span>'
@@ -471,6 +503,20 @@ function paintInline(k){
 function bindSchema(){
   document.querySelectorAll('[data-edit]').forEach(el=>{
     el.addEventListener('click',e=>{e.stopPropagation();const[k,i]=el.dataset.edit.split(':');openEdit(k,+i);});
+  });
+  // manual inline flow controls
+  document.querySelectorAll('.m-reg,.m-val').forEach(inp=>{
+    inp.addEventListener('click',e=>e.stopPropagation());
+    const handler=()=>{
+      const k=inp.dataset.k, idx=+inp.dataset.idx, f=inp.dataset.mf, v=inp.value.trim();
+      const op=DATA[k][idx]; if(!op)return;
+      if(f==='ifReg')op.mIfReg=v;
+      else if(f==='ifVal')op.mIfVal=v;
+      else if(f==='asReg')op.mAsReg=v;
+      else if(f==='asVal')op.mAsVal=v;
+      render();
+    };
+    inp.addEventListener('change',handler);
   });
   document.querySelectorAll('[data-add]').forEach(b=>{
     b.addEventListener('click',()=>{const k=b.dataset.add;openEdit(k,DATA[k].length,true);});
@@ -509,6 +555,23 @@ function openEdit(k,idx,isNew){
   document.getElementById('edTitle').textContent=isNew?'Operation hinzufügen':'Operation bearbeiten';
   const body=document.getElementById('edBody');
   const defW1=(s.w1!==undefined&&s.w1!=='')?s.w1:(idx+1);
+  let eff=null;
+  if(!isNew){ const st=steps(k); eff=st.find(x=>x.idx===idx)||null; }
+  const curIfReg = (s.mIfReg||(eff?eff.ifReg:(s.spindle==='SP3'?'RG703':'RG704')));
+  const curIfVal = (s.mIfVal!==undefined&&s.mIfVal!=='')?s.mIfVal:(eff?eff.ifVal:'');
+  const curAsReg = (s.mAsReg||(eff?eff.assignReg:'RG704'));
+  const curAsVal = (s.mAsVal!==undefined&&s.mAsVal!=='')?s.mAsVal:(eff?eff.assignVal:'');
+  const manualBlock = (calcMode==='manuell') ?
+    ('<div class="frow"><div class="fg"><label class="flabel">Zustand · Manuell ( IF-Register == Wert → Zuweisung-Register = Wert )</label><div class="waitm-grid">'
+      +'<span class="wm-paren">IF</span>'
+      +'<select class="fselect" id="e_ifreg" style="flex:0 0 90px;">'+['RG704','RG703'].map(r=>'<option'+(curIfReg===r?' selected':'')+'>'+r+'</option>').join('')+'</select>'
+      +'<span class="wm-paren">==</span>'
+      +'<div class="fg tiny"><input class="finput mono" id="e_ifval" value="'+esc(curIfVal)+'" placeholder="101"></div>'
+      +'<span class="wm-paren">→</span>'
+      +'<select class="fselect" id="e_asreg" style="flex:0 0 90px;">'+['RG704','RG703'].map(r=>'<option'+(curAsReg===r?' selected':'')+'>'+r+'</option>').join('')+'</select>'
+      +'<span class="wm-paren">=</span>'
+      +'<div class="fg tiny"><input class="finput mono" id="e_asval" value="'+esc(curAsVal)+'" placeholder="104"></div>'
+    +'</div><div style="font-size:11px;color:var(--ink-5);margin-top:6px;">Zustand-Werte: 0 / 1 / 2 / 101 / 102 … (leer = automatisch)</div></div>') : '';
   body.innerHTML=
     '<div class="frow">'
       +'<div class="fg narrow"><label class="flabel">L-Code · Basis</label><input class="finput mono" id="e_code" value="'+esc(s.code)+'" placeholder="L'+(k==='2'?'21':'11')+'0'+(idx+1)+'"></div>'
@@ -528,7 +591,8 @@ function openEdit(k,idx,isNew){
       +'<div class="fg tiny"><input class="finput mono" id="e_w1" value="'+defW1+'"></div><span class="wm-paren">,</span>'
       +'<div class="fg tiny"><input class="finput mono" id="e_w2" value="'+((s.w2!==undefined&&s.w2!=='')?s.w2:1)+'"></div><span class="wm-paren">,</span>'
       +'<div class="fg tiny"><input class="finput mono" id="e_w3" value="'+((s.w3!==undefined&&s.w3!=='')?s.w3:2)+'"></div><span class="wm-paren">)</span>'
-    +'</div></div></div>';
+    +'</div></div></div>'
+    +manualBlock;
   let dop=!!s.doppel;
   document.getElementById('e_dop').addEventListener('click',function(){dop=!dop;this.classList.toggle('on',dop);});
   const foot=document.getElementById('edFoot');foot.innerHTML='';
@@ -546,6 +610,17 @@ function openEdit(k,idx,isNew){
         tname:document.getElementById('e_tname').value.trim(),
         w1:numOr(document.getElementById('e_w1').value,''),w2:numOr(document.getElementById('e_w2').value,1),w3:numOr(document.getElementById('e_w3').value,2)
       };
+      // carry over existing manual overrides
+      if(s.mIfReg!==undefined)obj.mIfReg=s.mIfReg;
+      if(s.mIfVal!==undefined)obj.mIfVal=s.mIfVal;
+      if(s.mAsReg!==undefined)obj.mAsReg=s.mAsReg;
+      if(s.mAsVal!==undefined)obj.mAsVal=s.mAsVal;
+      // capture manual fields if present (Manuell mode)
+      const ir=document.getElementById('e_ifreg'), iv=document.getElementById('e_ifval'), ar=document.getElementById('e_asreg'), av=document.getElementById('e_asval');
+      if(ir)obj.mIfReg=ir.value;
+      if(iv)obj.mIfVal=iv.value.trim();
+      if(ar)obj.mAsReg=ar.value;
+      if(av)obj.mAsVal=av.value.trim();
       if(isNew){DATA[k].push(obj);}else{DATA[k][idx]=obj;}
       recode(k);closeEdit();render();
     })
@@ -622,6 +697,7 @@ function closeDrawer(){document.getElementById('drawer').classList.remove('open'
 function boot(){
   DATA=sampleData();recode('1');recode('2');render();
   document.getElementById('modeSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;mode=b.dataset.m;[...e.currentTarget.children].forEach(x=>x.classList.toggle('on',x===b));render();});
+  document.getElementById('calcSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;calcMode=b.dataset.c;[...e.currentTarget.children].forEach(x=>x.classList.toggle('on',x===b));render();});
   document.getElementById('btnCode').addEventListener('click',()=>openCode());
   document.getElementById('fab').addEventListener('click',()=>openCode());
   document.getElementById('btnReset').addEventListener('click',()=>{DATA=sampleData();recode('1');recode('2');render();});
