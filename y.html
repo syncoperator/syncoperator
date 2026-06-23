@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Fanuc CNC Simulator - Точный контур</title>
+    <title>Fanuc CNC Simulator - Точный чертеж 234185</title>
     <style>
         body {
             background-color: #1a1a1a;
@@ -12,6 +12,8 @@
             padding: 20px;
             gap: 20px;
             margin: 0;
+            height: 100vh;
+            overflow: hidden;
         }
         #panel {
             width: 380px;
@@ -19,6 +21,8 @@
             border: 3px solid #444;
             padding: 15px;
             box-shadow: inset 0 0 10px #000;
+            display: flex;
+            flex-direction: column;
         }
         #screen {
             flex-grow: 1;
@@ -36,7 +40,7 @@
         }
         .gcode-container {
             width: 100%;
-            height: 320px;
+            height: 350px;
             overflow-y: auto;
             background: #111;
             padding: 10px;
@@ -48,6 +52,7 @@
             line-height: 1.4;
             font-size: 13px;
             color: #888;
+            white-space: pre;
         }
         .active-line {
             background: #004400;
@@ -57,6 +62,7 @@
         .btn-group {
             display: flex;
             gap: 10px;
+            margin-top: auto;
         }
         button {
             flex: 1;
@@ -83,7 +89,7 @@
     <div id="panel">
         <h3>FANUC Series 21i-M</h3>
         <hr style="border-color: #444;">
-        <h4>ПРОГРАММА G-КОДА:</h4>
+        <h4>ПРОГРАММА G-КОДА (Чертеж №234185):</h4>
         <div class="gcode-container" id="gcodeDisplay"></div>
         <div class="btn-group">
             <button onclick="runSimulation()">CYCLE START</button>
@@ -93,52 +99,58 @@
     </div>
 
     <div id="screen">
-        <div style="color: #fff; margin-bottom: 10px; font-size: 16px; font-weight: bold;">
-            ТРАЕКТОРИЯ ФРЕЗЫ (Фреза ø2.0мм)
+        <div style="color: #fff; margin-bottom: 10px; font-size: 16px; font-weight: bold; text-align: center;">
+            ТРАЕКТОРИЯ ФРЕЗЫ (ø2.0мм / R1.0)<br>
+            Масштаб: 1мм = 30px
         </div>
-        <canvas id="cncCanvas" width="550" height="550"></canvas>
+        <canvas id="cncCanvas" width="600" height="600"></canvas>
     </div>
 
     <script>
         const canvas = document.getElementById('cncCanvas');
         const ctx = canvas.getContext('2d');
-        const scale = 25; // Увеличили масштаб для лучшей видимости пазов
+        const scale = 30; // Увеличенный масштаб для четкости
         const centerX = canvas.width / 2;
         const centerY = canvas.height / 2;
 
-        // Построчные команды для вывода на экран стола
+        // Построчные команды G-кода для вывода на панель
         const gCodeProg = [
-            "O234185 (EINSCHRAUBNIPPEL)",
+            "O234185 (OBRABOTKA USHKA)",
             "G21 G90 G40 G17",
-            "T01 M06 (POCKET MILL D2.0)",
-            "S3000 M03",
+            "T01 M06 (POCKET MILL ø2.0)",
+            "S4000 M03",
             "G00 X0 Y0 Z5.0",
-            "G01 Z-2.0 F150 (VREZANIE)",
-            "G01 X4.0 F200 (ZAEZD NA D8.0)",
-            "G03 X4.0 Y0 I-4.0 J0 (RABOROT D8.0)",
-            "G01 X0 Y0 (CENTR)",
-            "G01 X4.75 (VIHOD NA LEVOE USHKO R11.5)",
-            "G01 Y1.4 (VVERH PO USHKU)",
-            "G02 X5.75 Y0 R1.0 (RAD_2.4 S UCHETOM FR)",
-            "G01 Y-1.4",
+            "G01 Z-3.0 F200 (VREZANIE)",
+            "G01 X5.75 Y0 F300 (POZICIIA OSI USHKA)",
+            "G01 Y-1.4 (NA NIZ USHKA)",
+            "G02 X7.15 Y0 I0 J1.4 (R2.4/CR=1.4 S UTCH FR)",
+            "G01 X5.75 (NA OSIY)",
+            "G02 X5.75 Y0 I1.4 J0 R-1.4",
+            "G01 Y1.4 (NA VERH USHKA)",
+            "G01 X7.15 (RAZVOROT)",
+            "G02 X7.15 Y-1.4 I0 J-1.4",
+            "G01 X5.75",
             "G01 X0 Y0 (CENTR)",
             "M30"
         ];
 
         // Массив точек для точной пошаговой отрисовки в Canvas
+        // Расчет: ø2 фреза, ушко d11.5+0.2 (берем 11.6/2=5.8), внешний d24.98
+        // Центр фрезы для дуги ушка R2.4 должен идти по дуге R = 2.4 - 1.0 = 1.4.
         const motionPath = [
             { type: 'G0', x: 0, y: 0, line: 4 },
             { type: 'G1', x: 0, y: 0, line: 5 },
-            { type: 'G1', x: 4.0, y: 0, line: 6 },
-            // Полный оборот по D8
-            { type: 'G3_FULL', cx: 0, cy: 0, r: 4.0, line: 7 },
-            { type: 'G1', x: 0, y: 0, line: 8 },
-            // Движение к ушку (к оси паза 11.5 / 2 = 5.75 минус радиус фрезы 1.0 = 4.75)
-            { type: 'G1', x: 4.75, y: 0, line: 9 },
-            { type: 'G1', x: 4.75, y: 1.4, line: 10 },
-            // Дуга ушка на X5.75
-            { type: 'G2_ARC', cx: 4.75, cy: 0, r: 1.4, sAngle: -Math.PI/2, eAngle: Math.PI/2, line: 11 },
-            { type: 'G1', x: 5.75, y: -1.4, line: 12 },
+            // Едем на ось ушка: 11.5 / 2 = 5.75
+            { type: 'G1', x: 5.75, y: 0, line: 6 },
+            // Вниз до полки
+            { type: 'G1', x: 5.75, y: -1.4, line: 7 },
+            // Дуга R1.4 (фреза ø2.0мм). Центр дуги в (5.75, 0)
+            { type: 'G2_ARC', cx: 5.75, cy: 0, r: 1.4, sAngle: -Math.PI/2, eAngle: 0, clockwise: true, line: 8 },
+            // Обратно на полку
+            { type: 'G1', x: 5.75, y: 0, line: 9 },
+            { type: 'G1', x: 7.15, y: 0, line: 10 },
+            { type: 'G1', x: 7.15, y: 1.4, line: 11 },
+            { type: 'G1', x: 5.75, y: 1.4, line: 12 },
             { type: 'G1', x: 0, y: 0, line: 13 }
         ];
 
@@ -158,7 +170,7 @@
             // Сетка
             ctx.strokeStyle = '#222';
             ctx.lineWidth = 0.5;
-            for(let i=0; i<canvas.width; i+=25) {
+            for(let i=0; i<canvas.width; i+=scale) {
                 ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, canvas.height); ctx.stroke();
                 ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(canvas.width, i); ctx.stroke();
             }
@@ -169,27 +181,34 @@
             ctx.beginPath(); ctx.moveTo(centerX, 0); ctx.lineTo(centerX, canvas.height); ctx.stroke();
             ctx.beginPath(); ctx.moveTo(0, centerY); ctx.lineTo(canvas.width, centerY); ctx.stroke();
 
-            // Контур детали по чертежу (Синий)
-            ctx.strokeStyle = '#0055ff';
-            ctx.lineWidth = 1.5;
+            // ЧЕРТЕЖ ДЕТАЛИ (Справочные линии)
+            ctx.lineWidth = 1.0;
             
-            // Центральный диаметр d12.8 (радиус 6.4)
+            // Внутренний диаметр d12.8 (синий)
+            ctx.strokeStyle = '#0055ff';
             ctx.beginPath();
             ctx.arc(centerX, centerY, 6.4 * scale, 0, 2 * Math.PI);
             ctx.stroke();
 
-            // Наружный контур 24.98
-            ctx.strokeStyle = '#444';
+            // Внешний контур 24.98 (серый)
+            ctx.strokeStyle = '#555';
             ctx.beginPath();
             ctx.arc(centerX, centerY, (24.98/2) * scale, 0, 2 * Math.PI);
             ctx.stroke();
+
+            // Габариты ушка 11.5 (пунктир)
+            ctx.strokeStyle = '#333';
+            ctx.setLineDash([5, 5]);
+            ctx.beginPath(); ctx.moveTo(centerX + 5.75 * scale, centerY - 100); ctx.lineTo(centerX + 5.75 * scale, centerY + 100); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(centerX - 5.75 * scale, centerY - 100); ctx.lineTo(centerX - 5.75 * scale, centerY + 100); ctx.stroke();
+            ctx.setLineDash([]);
         }
 
         function runSimulation() {
             if (animId) cancelAnimationFrame(animId);
             step = 0;
             animPercent = 0;
-            document.getElementById('statusBar').innerText = "STATUS: RUNNING";
+            document.getElementById('statusBar').innerText = "STATUS: EXECUTING";
             animateCNC();
         }
 
@@ -222,9 +241,9 @@
                 currentLineEl.scrollIntoView({ block: 'nearest' });
             }
 
-            // Отрисовка старых пройденных участков
+            // Отрисовка старых пройденных участков (Зеленым)
             ctx.strokeStyle = '#00ff00';
-            ctx.lineWidth = 2;
+            ctx.lineWidth = 1.5;
             for (let i = 0; i < step; i++) {
                 drawHistorySegment(motionPath[i]);
             }
@@ -232,16 +251,16 @@
             // Отрисовка текущего движущегося участка
             let toolPos = drawCurrentSegment(current, animPercent);
 
-            // Отрисовка фрезы на конце вектора движения
+            // Отрисовка фрезы на конце вектора движения (Красным)
             ctx.fillStyle = 'rgba(255, 0, 0, 0.5)';
             ctx.strokeStyle = '#ff0000';
             ctx.lineWidth = 1;
             ctx.beginPath();
-            ctx.arc(toolPos.x, toolPos.y, 1.0 * scale, 0, 2 * Math.PI); // Фреза радиусом 1мм (D2)
+            ctx.arc(toolPos.x, toolPos.y, 1.0 * scale, 0, 2 * Math.PI); // Фреза ø2.0 -> R1.0
             ctx.fill();
             ctx.stroke();
 
-            animPercent += 0.04; // Скорость перемещения
+            animPercent += 0.05; // Скорость анимации
             if (animPercent >= 1) {
                 animPercent = 0;
                 step++;
@@ -252,23 +271,25 @@
 
         function drawHistorySegment(p) {
             ctx.beginPath();
+            let prevIndex = motionPath.indexOf(p) - 1;
+            if (prevIndex < 0) return;
+            let prev = motionPath[prevIndex];
+
             if (p.type === 'G1' || p.type === 'G0') {
-                let prev = motionPath[motionPath.indexOf(p) - 1] || {x:0, y:0};
                 ctx.moveTo(centerX + prev.x * scale, centerY - prev.y * scale);
                 ctx.lineTo(centerX + p.x * scale, centerY - p.y * scale);
                 ctx.stroke();
-            } else if (p.type === 'G3_FULL') {
-                ctx.arc(centerX + p.cx * scale, centerY - p.cy * scale, p.r * scale, 0, 2 * Math.PI);
-                ctx.stroke();
-            } else if (p.type === 'G2_ARC') {
-                ctx.arc(centerX + p.cx * scale, centerY - p.cy * scale, p.r * scale, p.sAngle, p.eAngle, false);
+            } else if (p.type === 'G2_ARC' || p.type === 'G3_ARC') {
+                ctx.arc(centerX + p.cx * scale, centerY - p.cy * scale, p.r * scale, p.sAngle, p.eAngle, !p.clockwise);
                 ctx.stroke();
             }
         }
 
         function drawCurrentSegment(p, t) {
             let tx = 0, ty = 0;
-            let prev = motionPath[motionPath.indexOf(p) - 1] || {x:0, y:0};
+            let prevIndex = motionPath.indexOf(p) - 1;
+            let prev = prevIndex < 0 ? {x:0, y:0} : motionPath[prevIndex];
+            
             ctx.beginPath();
 
             if (p.type === 'G1' || p.type === 'G0') {
@@ -283,25 +304,14 @@
                 ctx.moveTo(x1, y1);
                 ctx.lineTo(tx, ty);
                 ctx.stroke();
-            } else if (p.type === 'G3_FULL') {
-                let cx = centerX + p.cx * scale;
-                let cy = centerY - p.cy * scale;
-                let r = p.r * scale;
-                let currentAngle = (2 * Math.PI) * t;
-                
-                ctx.arc(cx, cy, r, 0, currentAngle, false);
-                ctx.stroke();
-                
-                tx = cx + r * Math.cos(currentAngle);
-                ty = cy + r * Math.sin(currentAngle);
-            } else if (p.type === 'G2_ARC') {
+            } else if (p.type === 'G2_ARC' || p.type === 'G3_ARC') {
                 let cx = centerX + p.cx * scale;
                 let cy = centerY - p.cy * scale;
                 let r = p.r * scale;
                 let totalAngle = p.eAngle - p.sAngle;
                 let currentAngle = p.sAngle + totalAngle * t;
 
-                ctx.arc(cx, cy, r, p.sAngle, currentAngle, false);
+                ctx.arc(cx, cy, r, p.sAngle, currentAngle, !p.clockwise);
                 ctx.stroke();
 
                 tx = cx + r * Math.cos(currentAngle);
