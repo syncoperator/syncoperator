@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Nakamura Y-Axis Parametric</title>
+    <title>Nakamura True Y-Axis</title>
     <style>
         :root {
             --bg-color: #f2f2f7;
             --card-bg: #ffffff;
             --text-color: #1c1c1e;
-            --accent-color: #007aff;
+            --accent-color: #ff9500;
             --border-color: #e5e5ea;
         }
 
@@ -24,41 +24,33 @@
             align-items: center;
         }
 
-        h2 { font-size: 1.25rem; margin: 4px 0; color: var(--text-color); }
+        h2 { font-size: 1.3rem; margin: 4px 0 2px 0; font-weight: 700; }
+        .sub { font-size: 0.8rem; color: #8e8e93; margin-bottom: 12px; }
         
-        /* Панель ввода параметров */
-        .param-grid {
+        .macro-panel {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
             gap: 8px;
             width: 100%;
             max-width: 350px;
             background: var(--card-bg);
-            padding: 10px;
-            border-radius: 12px;
+            padding: 12px;
+            border-radius: 14px;
             box-sizing: border-box;
             border: 1px solid var(--border-color);
             margin-bottom: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.02);
         }
 
-        .param-cell {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .param-cell label {
-            font-size: 0.75rem;
-            color: #8e8e93;
-            margin-bottom: 2px;
-        }
-
-        .param-cell input {
-            padding: 6px;
+        .input-block { display: flex; flex-direction: column; }
+        .input-block label { font-size: 0.75rem; color: #8e8e93; margin-bottom: 3px; font-weight: 500; }
+        .input-block input {
+            padding: 8px;
             border: 1px solid var(--border-color);
-            border-radius: 6px;
+            border-radius: 8px;
             background: #f2f2f7;
-            font-size: 0.9rem;
-            font-weight: bold;
+            font-size: 0.95rem;
+            font-weight: 600;
             color: var(--text-color);
         }
 
@@ -70,43 +62,42 @@
             border-radius: 16px;
             overflow: hidden;
             border: 1px solid var(--border-color);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
         }
 
         canvas { width: 100%; height: 100%; display: block; }
 
         .hud {
-            margin-top: 10px;
+            margin-top: 12px;
             background: var(--card-bg);
             border-radius: 10px;
-            padding: 10px;
+            padding: 12px;
             width: 100%;
             max-width: 350px;
             box-sizing: border-box;
             border: 1px solid var(--border-color);
-            font-size: 0.8rem;
         }
 
-        .hud-line { display: flex; justify-content: space-between; margin: 4px 0; }
-        .code-val { font-family: monospace; font-weight: bold; color: var(--accent-color); }
+        .hud-line { display: flex; justify-content: space-between; margin: 4px 0; font-size: 0.85rem; }
+        .code-val { font-family: monospace; font-weight: bold; color: #007aff; }
+        .axis-val { font-family: monospace; font-weight: bold; color: #5856d6; }
 
         .controls {
-            margin-top: 12px;
+            margin-top: 14px;
             width: 100%;
             max-width: 350px;
             display: flex;
-            gap: 10px;
-            padding-bottom: 30px; 
+            gap: 12px;
+            padding-bottom: 35px; 
         }
 
         button {
             flex: 1;
             border: none;
             color: white;
-            padding: 14px;
-            font-size: 0.95rem;
+            padding: 15px;
+            font-size: 1rem;
             font-weight: bold;
-            border-radius: 10px;
+            border-radius: 12px;
             cursor: pointer;
         }
 
@@ -116,13 +107,14 @@
 </head>
 <body>
 
-    <h2>Nakamura Y-Axis CNC</h2>
+    <h2>Nakamura True Y-Axis</h2>
+    <div class="sub">Режим обработки: Физические оси X-Y-Z (Без G12)</div>
 
-    <div class="param-grid">
-        <div class="param-cell"><label>#101 Фреза Ø</label><input type="number" id="pMill" value="2.0" step="0.1"></div>
-        <div class="param-cell"><label>#102 Отверстия Ø</label><input type="number" id="pHole" value="2.4" step="0.1"></div>
-        <div class="param-cell"><label>#103 Центр Ø</label><input type="number" id="pCenter" value="8.0" step="0.1"></div>
-        <div class="param-cell"><label>#104 Глубина Z</label><input type="number" id="pDepth" value="-3.0" step="0.5"></div>
+    <div class="macro-panel">
+        <div class="input-block"><label>#101 Фреза Ø (мм)</label><input type="number" id="mMill" value="2.0" step="0.1"></div>
+        <div class="input-block"><label>#102 Отверстия Ø</label><input type="number" id="mHole" value="2.4" step="0.1"></div>
+        <div class="input-block"><label>#103 Центр Ø</label><input type="number" id="mCenter" value="8.0" step="0.1"></div>
+        <div class="input-block"><label>#104 Глубина Z</label><input type="number" id="mDepth" value="-3.0" step="0.5"></div>
     </div>
 
     <div id="canvasContainer">
@@ -130,12 +122,12 @@
     </div>
 
     <div class="hud">
-        <div class="hud-line"><span>Кадр ЧПУ:</span> <span id="gcode" class="code-val">G00 X5.95 Y0 Z2.0</span></div>
-        <div class="hud-line"><span>Расчетный J (Инкр.):</span> <span id="calcJ" class="code-val">J-0.20</span></div>
+        <div class="hud-line"><span>Кадр ЧПУ:</span> <span id="gcode" class="code-val">G00 X5.95 Y0.0 Z2.0</span></div>
+        <div class="hud-line"><span>Текущие координаты:</span> <span id="axes" class="axis-val">X: 5.95 Y: 0.00 Z: 2.0</span></div>
     </div>
 
     <div class="controls">
-        <button id="startBtn">СТАРТ</button>
+        <button id="startBtn">СТАРТ ЦИКЛА</button>
         <button id="resetBtn">СБРОС</button>
     </div>
 
@@ -143,48 +135,52 @@
 const canvas = document.getElementById('cncCanvas');
 const ctx = canvas.getContext('2d');
 const gcodeTxt = document.getElementById('gcode');
-const calcJTxt = document.getElementById('calcJ');
+const axesTxt = document.getElementById('axes');
 
 const cx = 350, cy = 350;
-let scale = 45;
+const scale = 45; 
 
 let animationId;
 let step = 0, t = 0, cuts = [];
-
-// Динамические макро-параметры
 let dMill, dHole, dCenter, zDepth;
-let radX595 = 2.975 * scale;
 
-function updateParameters() {
-    dMill = parseFloat(document.getElementById('pMill').value);
-    dHole = parseFloat(document.getElementById('pHole').value);
-    dCenter = parseFloat(document.getElementById('pCenter').value);
-    zDepth = parseFloat(document.getElementById('pDepth').value);
-    
-    // Вывод расчетного инкремента макроса в HUD
-    let macroJ = (dHole - dMill) / 2;
-    calcJTxt.innerText = `J -${macroJ.toFixed(2)} (Радиус дуги)`;
+// Координата X5.95 пересчитанная в физический радиус заготовки на экране
+const radX595 = 2.975 * scale;
+
+function readMacros() {
+    dMill = parseFloat(document.getElementById('mMill').value);
+    dHole = parseFloat(document.getElementById('mHole').value);
+    dCenter = parseFloat(document.getElementById('mCenter').value);
+    zDepth = parseFloat(document.getElementById('mDepth').value);
 }
 
-function drawScene() {
+function drawPart() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
-    // Заготовка
+    // Стальной торец детали
     ctx.beginPath();
     ctx.arc(cx, cy, 7.2 * scale, 0, 2 * Math.PI);
     ctx.fillStyle = '#2c2c2e';
     ctx.fill();
     ctx.strokeStyle = '#3a3a3c';
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 2.5;
     ctx.stroke();
 
-    // Заданные динамические контуры отверстий
+    // Оси X и Y
+    ctx.beginPath();
+    ctx.moveTo(cx - 300, cy); ctx.lineTo(cx + 300, cy);
+    ctx.moveTo(cx, cy - 300); ctx.lineTo(cx, cy + 300);
+    ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // Целевые контуры из макросов
     ctx.lineWidth = 2;
     ctx.strokeStyle = '#007aff';
-    // Отверстия С0 и С180
+    // Отверстия на С0 и С180
     ctx.beginPath(); ctx.arc(cx + radX595, cy, (dHole/2)*scale, 0, 2*Math.PI); ctx.stroke();
     ctx.beginPath(); ctx.arc(cx - radX595, cy, (dHole/2)*scale, 0, 2*Math.PI); ctx.stroke();
-    // Центр
+    // Центральный Ø8
     ctx.strokeStyle = '#34c759';
     ctx.beginPath(); ctx.arc(cx, cy, (dCenter/2)*scale, 0, 2*Math.PI); ctx.stroke();
 }
@@ -198,7 +194,10 @@ function drawCuts() {
     });
 }
 
-function drawTool(x, y, z) {
+function drawTool(x, y, z, codeDisp, xDisp, yDisp) {
+    gcodeTxt.innerText = codeDisp;
+    axesTxt.innerText = `X: ${xDisp} Y: ${yDisp} Z: ${z.toFixed(1)}`;
+
     ctx.beginPath();
     ctx.arc(x, y, (dMill/2)*scale, 0, 2 * Math.PI);
     ctx.fillStyle = z <= 0 ? 'rgba(255, 59, 48, 0.8)' : 'rgba(255, 214, 10, 0.7)';
@@ -208,140 +207,129 @@ function drawTool(x, y, z) {
     ctx.stroke();
 }
 
-function simEngine() {
-    drawScene();
+function runEngine() {
+    drawPart();
     drawCuts();
 
     let tx = cx, ty = cy, tz = 2.0;
-    let radHoleArc = ((dHole - dMill) / 2) * scale;
-    let radCenterArc = ((dCenter - dMill) / 2) * scale;
+    let jHoleOffset = ((dHole - dMill) / 2) * scale;
+    let jCenterOffset = ((dCenter - dMill) / 2) * scale;
 
+    // --- БЛОК 1: ОТВЕРСТИЕ С0 И ПАЗ ---
     if (step === 0) {
-        gcodeTxt.innerText = "G00 X5.95 Y0.0 C0.0";
         tx = cx + radX595; ty = cy;
-        drawTool(tx, ty, tz);
+        drawTool(tx, ty, tz, "G00 X5.95 Y0.0 C0.0", "5.95", "0.00");
         setTimeout(() => { step = 1; }, 500);
     }
-    // HELIX C0 по оси Y
     else if (step === 1) {
         t += 0.02; if(t > 1) t = 1;
         let angle = (t * Math.PI * 2) - Math.PI/2;
-        tx = (cx + radX595) + Math.cos(angle) * radHoleArc;
-        ty = cy + Math.sin(angle) * radHoleArc + radHoleArc; 
+        tx = (cx + radX595) + Math.cos(angle) * jHoleOffset;
+        ty = cy + Math.sin(angle) * jHoleOffset + jHoleOffset;
         tz = 2.0 - ((2.0 - zDepth) * t);
         
         if(tz <= 0) cuts.push({x: tx, y: ty});
-        gcodeTxt.innerText = `G03 Z${zDepth.toFixed(1)} J-${((dHole-dMill)/2).toFixed(2)}`;
-        drawTool(tx, ty, tz);
+        let curX = (5.95 + (Math.cos(angle)*((dHole-dMill))).toFixed(2));
+        drawTool(tx, ty, tz, `G03 Z${zDepth.toFixed(1)} J-${((dHole-dMill)/2).toFixed(2)}`, curX, (ty-cy).toFixed(2));
         if(t === 1) { step = 2; t = 0; }
     }
-    // ПАЗ В ЦЕНТР C0
     else if (step === 2) {
         t += 0.02; if(t > 1) t = 1;
         tx = (cx + radX595) - (radX595 * t);
         ty = cy; tz = zDepth;
         cuts.push({x: tx, y: ty});
-        gcodeTxt.innerText = "G01 X0.0 Y0.0";
-        drawTool(tx, ty, tz);
+        drawTool(tx, ty, tz, "G01 X0.0 Y0.0 (Паз к центру)", (5.95*(1-t)).toFixed(2), "0.00");
         if(t === 1) { step = 3; }
     }
     else if (step === 3) {
-        gcodeTxt.innerText = "G00 Z5.0";
-        drawTool(cx, cy, 5.0);
+        drawTool(cx, cy, 5.0, "G00 Z5.0", "0.00", "0.00");
         setTimeout(() => { step = 4; t = 0; }, 400);
     }
-    // ПОДВОД C180
+    // --- БЛОК 2: ОТВЕРСТИЕ С180 И ПАЗ ---
     else if (step === 4) {
-        gcodeTxt.innerText = "G00 X5.95 Y0.0 C180.0";
         tx = cx - radX595; ty = cy;
-        drawTool(tx, ty, 2.0);
+        drawTool(tx, ty, 2.0, "G00 X5.95 Y0.0 C180.0", "5.95", "0.00");
         setTimeout(() => { step = 5; }, 500);
     }
-    // HELIX C180
     else if (step === 5) {
         t += 0.02; if(t > 1) t = 1;
         let angle = (t * Math.PI * 2) - Math.PI/2;
-        tx = (cx - radX595) + Math.cos(angle) * radHoleArc;
-        ty = cy + Math.sin(angle) * radHoleArc + radHoleArc;
+        tx = (cx - radX595) + Math.cos(angle) * jHoleOffset;
+        ty = cy + Math.sin(angle) * jHoleOffset + jHoleOffset;
         tz = 2.0 - ((2.0 - zDepth) * t);
         
         if(tz <= 0) cuts.push({x: tx, y: ty});
-        drawTool(tx, ty, tz);
+        drawTool(tx, ty, tz, "G03 Физический Helix Y-Z", (-5.95 + (Math.cos(angle)*((dHole-dMill))).toFixed(2)), (ty-cy).toFixed(2));
         if(t === 1) { step = 6; t = 0; }
     }
-    // ПАЗ В ЦЕНТР C180
     else if (step === 6) {
         t += 0.02; if(t > 1) t = 1;
         tx = (cx - radX595) + (radX595 * t);
         ty = cy; tz = zDepth;
         cuts.push({x: tx, y: ty});
-        drawTool(tx, ty, tz);
+        drawTool(tx, ty, tz, "G01 X0.0 Y0.0", (-5.95*(1-t)).toFixed(2), "0.00");
         if(t === 1) { step = 7; }
     }
     else if (step === 7) {
-        gcodeTxt.innerText = "G00 Z5.0";
-        drawTool(cx, cy, 5.0);
+        drawTool(cx, cy, 5.0, "G00 Z5.0", "0.00", "0.00");
         setTimeout(() => { step = 8; t = 0; }, 400);
     }
-    // ЦЕНТРАЛЬНЫЙ HELIX Ø8 (или заданный параметр)
+    // --- БЛОК 3: ЦЕНТРАЛЬНЫЙ HELIX Ø8 ---
     else if (step === 8) {
         t += 0.008; if(t > 1) t = 1;
-        let cycles = (t * Math.PI * 6) - Math.PI/2; // 3 прохода вниз
-        let current_rad = radCenterArc * Math.min(t*3, 1);
+        let helicalTurns = (t * Math.PI * 6) - Math.PI/2; 
+        let dynRad = jCenterOffset * Math.min(t*3, 1);
         
-        tx = cx + Math.cos(cycles) * current_rad;
-        ty = cy + Math.sin(cycles) * current_rad + current_rad;
+        tx = cx + Math.cos(helicalTurns) * dynRad;
+        ty = cy + Math.sin(helicalTurns) * dynRad + dynRad;
         tz = 0.0 - (Math.abs(zDepth) * t);
         
         cuts.push({x: tx, y: ty});
-        gcodeTxt.innerText = `G03 X0 Y${(current_rad/scale).toFixed(2)} J-${((dCenter-dMill)/2).toFixed(2)}`;
-        drawTool(tx, ty, tz);
+        drawTool(tx, ty, tz, `G03 X0 Y${(dynRad/scale).toFixed(2)} J-${((dCenter-dMill)/2).toFixed(2)}`, ((dynRad/scale)*2).toFixed(2), (ty-cy).toFixed(2));
         if(t === 1) { step = 9; t = 0; }
     }
     else if (step === 9) {
         t += 0.02; if(t > 1) t = 1;
         let angle = (t * Math.PI * 2) - Math.PI/2;
-        tx = cx + Math.cos(angle) * radCenterArc;
-        ty = cy + Math.sin(angle) * radCenterArc + radCenterArc;
+        tx = cx + Math.cos(angle) * jCenterOffset;
+        ty = cy + Math.sin(angle) * jCenterOffset + jCenterOffset;
         
         cuts.push({x: tx, y: ty});
-        gcodeTxt.innerText = "G03 Чистовой проход";
-        drawTool(tx, ty, zDepth);
+        drawTool(tx, ty, zDepth, "G03 Чистовой проход центра", (dCenter).toFixed(2), "0.00");
         if(t === 1) { step = 10; }
     }
     else if (step === 10) {
-        gcodeTxt.innerText = "G01 G40 X0 Y0 Z20.0";
-        drawTool(cx, cy, 20.0);
+        drawTool(cx, cy, 20.0, "G01 G40 X0.0 Y0.0 Z20.0", "0.00", "0.00");
         cancelAnimationFrame(animationId);
         return;
     }
 
-    animationId = requestAnimationFrame(simEngine);
+    animationId = requestAnimationFrame(runEngine);
 }
 
 const startBtn = document.getElementById('startBtn');
-const runAction = () => {
-    updateParameters();
+const actionTrigger = () => {
+    readMacros();
     if(step === 0 || step === 10) {
         step = 0; t = 0; cuts = [];
-        simEngine();
+        runEngine();
     }
 };
 
-startBtn.addEventListener('click', runAction);
-startBtn.addEventListener('touchstart', (e) => { e.preventDefault(); runAction(); });
+startBtn.addEventListener('click', actionTrigger);
+startBtn.addEventListener('touchstart', (e) => { e.preventDefault(); actionTrigger(); });
 
 document.getElementById('resetBtn').addEventListener('click', () => {
     cancelAnimationFrame(animationId);
     step = 0; t = 0; cuts = [];
-    updateParameters();
-    drawScene();
-    gcodeTxt.innerText = "G00 X5.95 Y0 Z2.0";
+    readMacros();
+    drawPart();
+    gcodeTxt.innerText = "G00 X5.95 Y0.0 Z2.0";
+    axesTxt.innerText = "X: 5.95 Y: 0.00 Z: 2.0";
 });
 
-// Первичный запуск механики сцены
-updateParameters();
-drawScene();
+readMacros();
+drawPart();
 </script>
 </body>
 </html>
