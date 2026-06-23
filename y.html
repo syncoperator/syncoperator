@@ -13,10 +13,10 @@
             gap: 20px;
             margin: 0;
             height: 100vh;
-            overflow: hidden;
+            box-sizing: border-box;
         }
         #panel {
-            width: 380px;
+            width: 400px;
             background: #2b2b2b;
             border: 3px solid #444;
             padding: 15px;
@@ -40,7 +40,7 @@
         }
         .gcode-container {
             width: 100%;
-            height: 350px;
+            height: 380px;
             overflow-y: auto;
             background: #111;
             padding: 10px;
@@ -59,6 +59,17 @@
             color: #00ff00;
             font-weight: bold;
         }
+        .mode-switch {
+            background: #3a3a3a;
+            padding: 8px;
+            border: 1px solid #555;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: #fff;
+            font-size: 12px;
+        }
         .btn-group {
             display: flex;
             gap: 10px;
@@ -69,13 +80,18 @@
             background: #444;
             color: #fff;
             border: 1px solid #666;
-            padding: 10px;
+            padding: 12px;
             cursor: pointer;
             font-weight: bold;
             font-family: inherit;
         }
         button:hover {
             background: #555;
+        }
+        button:disabled {
+            background: #222;
+            color: #555;
+            cursor: not-allowed;
         }
         .status-bar {
             color: #00bfff;
@@ -89,79 +105,87 @@
     <div id="panel">
         <h3>FANUC Series 21i-M</h3>
         <hr style="border-color: #444;">
-        <h4>ПРОГРАММА G-КОДА (Чертеж №234185):</h4>
+        
+        <div class="mode-switch">
+            <span>EINZELSATZ (Single Block):</span>
+            <input type="checkbox" id="singleBlockCheck" onchange="toggleSingleBlock()">
+        </div>
+
+        <h4>ПРОГРАММА G-КОДА:</h4>
         <div class="gcode-container" id="gcodeDisplay"></div>
+        
         <div class="btn-group">
-            <button onclick="runSimulation()">CYCLE START</button>
+            <button id="startBtn" onclick="runSimulation()">CYCLE START</button>
+            <button id="nextBtn" onclick="nextBlock()" disabled>CYCLE START (1 Satz)</button>
             <button onclick="resetSimulation()">RESET</button>
         </div>
         <div class="status-bar" id="statusBar">STATUS: READY</div>
     </div>
 
     <div id="screen">
-        <div style="color: #fff; margin-bottom: 10px; font-size: 16px; font-weight: bold; text-align: center;">
-            ТРАЕКТОРИЯ ФРЕЗЫ (ø2.0мм / R1.0)<br>
-            Масштаб: 1мм = 30px
+        <div style="color: #fff; margin-bottom: 10px; font-size: 15px; font-weight: bold; text-align: center;">
+            ОБРАБОТКА ДВУХ УШЕК (Фреза ø2.0мм / R1.0)<br>
+            Масштаб: 1мм = 35px
         </div>
-        <canvas id="cncCanvas" width="600" height="600"></canvas>
+        <canvas id="cncCanvas" width="550" height="550"></canvas>
     </div>
 
     <script>
         const canvas = document.getElementById('cncCanvas');
         const ctx = canvas.getContext('2d');
-        const scale = 30; // Увеличенный масштаб для четкости
+        const scale = 35; 
         const centerX = canvas.width / 2;
         const centerY = canvas.height / 2;
 
-        // Построчные команды G-кода для вывода на панель
+        // Корректный G-код для стола Fanuc на оба ушка
         const gCodeProg = [
-            "O234185 (OBRABOTKA USHKA)",
+            "O234185 (EINSCHRAUBNIPPEL)",
             "G21 G90 G40 G17",
-            "T01 M06 (POCKET MILL ø2.0)",
+            "T01 M06 (POCKET MILL D2.0)",
             "S4000 M03",
             "G00 X0 Y0 Z5.0",
-            "G01 Z-3.0 F200 (VREZANIE)",
-            "G01 X5.75 Y0 F300 (POZICIIA OSI USHKA)",
-            "G01 Y-1.4 (NA NIZ USHKA)",
-            "G02 X7.15 Y0 I0 J1.4 (R2.4/CR=1.4 S UTCH FR)",
-            "G01 X5.75 (NA OSIY)",
-            "G02 X5.75 Y0 I1.4 J0 R-1.4",
-            "G01 Y1.4 (NA VERH USHKA)",
-            "G01 X7.15 (RAZVOROT)",
-            "G02 X7.15 Y-1.4 I0 J-1.4",
-            "G01 X5.75",
-            "G01 X0 Y0 (CENTR)",
+            "G01 Z-2.0 F150 (VREZANIE V CENTR)",
+            "G01 X5.75 F200 (K CENTRU PRAVOGO USHKA)",
+            "G02 X5.75 Y0 I-5.75 J0 R2.4 (DUGA R2.4)",
+            "G01 X0 Y0 (VOZVRAT V CENTR)",
+            "G01 X-5.75 (K CENTRU LEVOGO USHKA)",
+            "G02 X-5.75 Y0 I5.75 J0 R2.4 (DUGA R2.4)",
+            "G01 X0 Y0 (VOZVRAT V CENTR)",
+            "G00 Z5.0 M05",
             "M30"
         ];
 
-        // Массив точек для точной пошаговой отрисовки в Canvas
-        // Расчет: ø2 фреза, ушко d11.5+0.2 (берем 11.6/2=5.8), внешний d24.98
-        // Центр фрезы для дуги ушка R2.4 должен идти по дуге R = 2.4 - 1.0 = 1.4.
+        // Траектория движения центра фрезы
+        // 11.5 / 2 = 5.75 (координата центра ушка). Фреза ø2 (R1). Дуга паза R2.4.
+        // Радиус траектории фрезы при обкате ушка: 2.4 - 1.0 = 1.4 мм.
         const motionPath = [
             { type: 'G0', x: 0, y: 0, line: 4 },
             { type: 'G1', x: 0, y: 0, line: 5 },
-            // Едем на ось ушка: 11.5 / 2 = 5.75
+            // Правое ушко
             { type: 'G1', x: 5.75, y: 0, line: 6 },
-            // Вниз до полки
-            { type: 'G1', x: 5.75, y: -1.4, line: 7 },
-            // Дуга R1.4 (фреза ø2.0мм). Центр дуги в (5.75, 0)
-            { type: 'G2_ARC', cx: 5.75, cy: 0, r: 1.4, sAngle: -Math.PI/2, eAngle: 0, clockwise: true, line: 8 },
-            // Обратно на полку
-            { type: 'G1', x: 5.75, y: 0, line: 9 },
-            { type: 'G1', x: 7.15, y: 0, line: 10 },
-            { type: 'G1', x: 7.15, y: 1.4, line: 11 },
-            { type: 'G1', x: 5.75, y: 1.4, line: 12 },
-            { type: 'G1', x: 0, y: 0, line: 13 }
+            { type: 'G2_ARC', cx: 5.75, cy: 0, r: 1.4, sAngle: 0, eAngle: 2*Math.PI, clockwise: true, line: 7 },
+            { type: 'G1', x: 0, y: 0, line: 8 },
+            // Левое ушко
+            { type: 'G1', x: -5.75, y: 0, line: 9 },
+            { type: 'G2_ARC', cx: -5.75, cy: 0, r: 1.4, sAngle: Math.PI, eAngle: 3*Math.PI, clockwise: true, line: 10 },
+            { type: 'G1', x: 0, y: 0, line: 11 }
         ];
 
         let step = 0;
         let animPercent = 0;
         let animId = null;
+        let isSingleBlock = false;
+        let blockWaiting = false;
 
         function init() {
             const display = document.getElementById('gcodeDisplay');
             display.innerHTML = gCodeProg.map((l, i) => `<div class="line" id="l-${i}">${l}</div>`).join('');
             renderStatic();
+        }
+
+        function toggleSingleBlock() {
+            isSingleBlock = document.getElementById('singleBlockCheck').checked;
+            resetSimulation();
         }
 
         function renderStatic() {
@@ -175,49 +199,53 @@
                 ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(canvas.width, i); ctx.stroke();
             }
 
-            // Оси координат X / Y
+            // Оси координат
             ctx.strokeStyle = '#333';
             ctx.lineWidth = 1;
             ctx.beginPath(); ctx.moveTo(centerX, 0); ctx.lineTo(centerX, canvas.height); ctx.stroke();
             ctx.beginPath(); ctx.moveTo(0, centerY); ctx.lineTo(canvas.width, centerY); ctx.stroke();
 
-            // ЧЕРТЕЖ ДЕТАЛИ (Справочные линии)
-            ctx.lineWidth = 1.0;
+            // КОНТУР ДЕТАЛИ ПО ЧЕРТЕЖУ
+            ctx.lineWidth = 1.2;
             
-            // Внутренний диаметр d12.8 (синий)
+            // Внутреннее отверстие d12.8 (R6.4)
             ctx.strokeStyle = '#0055ff';
-            ctx.beginPath();
-            ctx.arc(centerX, centerY, 6.4 * scale, 0, 2 * Math.PI);
-            ctx.stroke();
+            ctx.beginPath(); ctx.arc(centerX, centerY, 6.4 * scale, 0, 2 * Math.PI); ctx.stroke();
 
-            // Внешний контур 24.98 (серый)
-            ctx.strokeStyle = '#555';
-            ctx.beginPath();
-            ctx.arc(centerX, centerY, (24.98/2) * scale, 0, 2 * Math.PI);
-            ctx.stroke();
-
-            // Габариты ушка 11.5 (пунктир)
-            ctx.strokeStyle = '#333';
-            ctx.setLineDash([5, 5]);
-            ctx.beginPath(); ctx.moveTo(centerX + 5.75 * scale, centerY - 100); ctx.lineTo(centerX + 5.75 * scale, centerY + 100); ctx.stroke();
-            ctx.beginPath(); ctx.moveTo(centerX - 5.75 * scale, centerY - 100); ctx.lineTo(centerX - 5.75 * scale, centerY + 100); ctx.stroke();
-            ctx.setLineDash([]);
+            // Левое и правое ушко (центры на 5.75, радиус паза 2.4)
+            ctx.strokeStyle = '#0055ff';
+            ctx.beginPath(); ctx.arc(centerX + 5.75 * scale, centerY, 2.4 * scale, 0, 2 * Math.PI); ctx.stroke();
+            ctx.beginPath(); ctx.arc(centerX - 5.75 * scale, centerY, 2.4 * scale, 0, 2 * Math.PI); ctx.stroke();
         }
 
         function runSimulation() {
+            if (isSingleBlock) return;
             if (animId) cancelAnimationFrame(animId);
-            step = 0;
-            animPercent = 0;
-            document.getElementById('statusBar').innerText = "STATUS: EXECUTING";
+            step = 0; animPercent = 0;
+            document.getElementById('statusBar').innerText = "STATUS: AUTOMATIC RUN";
+            animateCNC();
+        }
+
+        function nextBlock() {
+            if (!isSingleBlock) return;
+            if (step >= motionPath.length) {
+                document.getElementById('statusBar').innerText = "STATUS: M30 (DONE)";
+                document.getElementById('nextBtn').disabled = true;
+                return;
+            }
+            blockWaiting = false;
+            document.getElementById('nextBtn').disabled = true;
+            document.getElementById('statusBar').innerText = "STATUS: EXECUTING Sblock...";
             animateCNC();
         }
 
         function resetSimulation() {
             cancelAnimationFrame(animId);
-            step = 0;
-            animPercent = 0;
+            step = 0; animPercent = 0; blockWaiting = false;
             renderStatic();
             document.getElementById('statusBar').innerText = "STATUS: READY";
+            document.getElementById('startBtn').disabled = isSingleBlock;
+            document.getElementById('nextBtn').disabled = !isSingleBlock;
             const active = document.querySelector('.active-line');
             if(active) active.classList.remove('active-line');
         }
@@ -229,57 +257,55 @@
             }
 
             renderStatic();
-
             const current = motionPath[step];
             
-            // Подсветка кода в стойке
             const prevActive = document.querySelector('.active-line');
             if (prevActive) prevActive.classList.remove('active-line');
             const currentLineEl = document.getElementById(`l-${current.line}`);
-            if (currentLineEl) {
-                currentLineEl.classList.add('active-line');
-                currentLineEl.scrollIntoView({ block: 'nearest' });
-            }
+            if (currentLineEl) currentLineEl.classList.add('active-line');
 
-            // Отрисовка старых пройденных участков (Зеленым)
-            ctx.strokeStyle = '#00ff00';
-            ctx.lineWidth = 1.5;
+            // Отрисовка старых участков
+            ctx.strokeStyle = '#00ff00'; ctx.lineWidth = 2;
             for (let i = 0; i < step; i++) {
                 drawHistorySegment(motionPath[i]);
             }
 
-            // Отрисовка текущего движущегося участка
+            // Отрисовка текущего движения
             let toolPos = drawCurrentSegment(current, animPercent);
 
-            // Отрисовка фрезы на конце вектора движения (Красным)
+            // Отрисовка фрезы ø2 (R1)
             ctx.fillStyle = 'rgba(255, 0, 0, 0.5)';
-            ctx.strokeStyle = '#ff0000';
-            ctx.lineWidth = 1;
-            ctx.beginPath();
-            ctx.arc(toolPos.x, toolPos.y, 1.0 * scale, 0, 2 * Math.PI); // Фреза ø2.0 -> R1.0
-            ctx.fill();
-            ctx.stroke();
+            ctx.strokeStyle = '#ff0000'; ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.arc(toolPos.x, toolPos.y, 1.0 * scale, 0, 2 * Math.PI); ctx.fill(); ctx.stroke();
 
-            animPercent += 0.05; // Скорость анимации
+            animPercent += 0.04;
+
             if (animPercent >= 1) {
                 animPercent = 0;
                 step++;
+                if (isSingleBlock) {
+                    blockWaiting = true;
+                    document.getElementById('nextBtn').disabled = false;
+                    document.getElementById('statusBar').innerText = "STATUS: STOPPED (SINGLE BLOCK)";
+                    return; // Остановка до следующего нажатия кнопки
+                }
             }
 
-            animId = requestAnimationFrame(animateCNC);
+            if (!blockWaiting) {
+                animId = requestAnimationFrame(animateCNC);
+            }
         }
 
         function drawHistorySegment(p) {
             ctx.beginPath();
             let prevIndex = motionPath.indexOf(p) - 1;
-            if (prevIndex < 0) return;
-            let prev = motionPath[prevIndex];
+            let prev = prevIndex < 0 ? {x:0, y:0} : motionPath[prevIndex];
 
             if (p.type === 'G1' || p.type === 'G0') {
                 ctx.moveTo(centerX + prev.x * scale, centerY - prev.y * scale);
                 ctx.lineTo(centerX + p.x * scale, centerY - p.y * scale);
                 ctx.stroke();
-            } else if (p.type === 'G2_ARC' || p.type === 'G3_ARC') {
+            } else if (p.type === 'G2_ARC') {
                 ctx.arc(centerX + p.cx * scale, centerY - p.cy * scale, p.r * scale, p.sAngle, p.eAngle, !p.clockwise);
                 ctx.stroke();
             }
@@ -289,35 +315,21 @@
             let tx = 0, ty = 0;
             let prevIndex = motionPath.indexOf(p) - 1;
             let prev = prevIndex < 0 ? {x:0, y:0} : motionPath[prevIndex];
-            
             ctx.beginPath();
 
             if (p.type === 'G1' || p.type === 'G0') {
-                let x1 = centerX + prev.x * scale;
-                let y1 = centerY - prev.y * scale;
-                let x2 = centerX + p.x * scale;
-                let y2 = centerY - p.y * scale;
-                
-                tx = x1 + (x2 - x1) * t;
-                ty = y1 + (y2 - y1) * t;
-                
-                ctx.moveTo(x1, y1);
-                ctx.lineTo(tx, ty);
-                ctx.stroke();
-            } else if (p.type === 'G2_ARC' || p.type === 'G3_ARC') {
-                let cx = centerX + p.cx * scale;
-                let cy = centerY - p.cy * scale;
+                let x1 = centerX + prev.x * scale; let y1 = centerY - prev.y * scale;
+                let x2 = centerX + p.x * scale; let y2 = centerY - p.y * scale;
+                tx = x1 + (x2 - x1) * t; ty = y1 + (y2 - y1) * t;
+                ctx.moveTo(x1, y1); ctx.lineTo(tx, ty); ctx.stroke();
+            } else if (p.type === 'G2_ARC') {
+                let cx = centerX + p.cx * scale; let cy = centerY - p.cy * scale;
                 let r = p.r * scale;
                 let totalAngle = p.eAngle - p.sAngle;
                 let currentAngle = p.sAngle + totalAngle * t;
-
-                ctx.arc(cx, cy, r, p.sAngle, currentAngle, !p.clockwise);
-                ctx.stroke();
-
-                tx = cx + r * Math.cos(currentAngle);
-                ty = cy + r * Math.sin(currentAngle);
+                ctx.arc(cx, cy, r, p.sAngle, currentAngle, !p.clockwise); ctx.stroke();
+                tx = cx + r * Math.cos(currentAngle); ty = cy + r * Math.sin(currentAngle);
             }
-
             return { x: tx, y: ty };
         }
 
