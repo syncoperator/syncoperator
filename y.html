@@ -1,339 +1,270 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="de">
 <head>
     <meta charset="UTF-8">
-    <title>Fanuc CNC Simulator - Точный чертеж 234185</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>CNC Simulation Nakamura</title>
     <style>
         body {
-            background-color: #1a1a1a;
-            color: #00ff00;
-            font-family: 'Courier New', Courier, monospace;
-            display: flex;
-            padding: 20px;
-            gap: 20px;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #1c1c1e;
+            color: #ffffff;
             margin: 0;
-            height: 100vh;
-            box-sizing: border-box;
-        }
-        #panel {
-            width: 400px;
-            background: #2b2b2b;
-            border: 3px solid #444;
             padding: 15px;
-            box-shadow: inset 0 0 10px #000;
-            display: flex;
-            flex-direction: column;
-        }
-        #screen {
-            flex-grow: 1;
-            background: #000;
-            border: 5px solid #333;
-            border-radius: 5px;
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding: 10px;
         }
-        canvas {
-            background: #050505;
-            border: 1px solid #222;
-        }
-        .gcode-container {
+        h2 { margin-bottom: 5px; color: #0a84ff; font-size: 1.2rem; }
+        .info { font-size: 0.85rem; color: #eaeaea; margin-bottom: 15px; text-align: center; }
+        #canvasContainer {
+            position: relative;
             width: 100%;
-            height: 380px;
-            overflow-y: auto;
-            background: #111;
-            padding: 10px;
-            border: 1px solid #333;
-            box-sizing: border-box;
-            margin-bottom: 15px;
+            max-width: 350px;
+            aspect-ratio: 1;
+            background: #2c2c2e;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            overflow: hidden;
         }
-        .line {
-            line-height: 1.4;
-            font-size: 13px;
-            color: #888;
-            white-space: pre;
-        }
-        .active-line {
-            background: #004400;
-            color: #00ff00;
-            font-weight: bold;
-        }
-        .mode-switch {
-            background: #3a3a3a;
-            padding: 8px;
-            border: 1px solid #555;
-            margin-bottom: 10px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            color: #fff;
-            font-size: 12px;
-        }
-        .btn-group {
+        canvas { width: 100%; height: 100%; display: block; }
+        .controls {
+            margin-top: 15px;
+            width: 100%;
+            max-width: 350px;
             display: flex;
             gap: 10px;
-            margin-top: auto;
         }
         button {
             flex: 1;
-            background: #444;
-            color: #fff;
-            border: 1px solid #666;
+            background-color: #30d158;
+            border: none;
+            color: white;
             padding: 12px;
-            cursor: pointer;
+            font-size: 1rem;
             font-weight: bold;
-            font-family: inherit;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(48,209,88,0.4);
         }
-        button:hover {
-            background: #555;
-        }
-        button:disabled {
-            background: #222;
-            color: #555;
-            cursor: not-allowed;
-        }
-        .status-bar {
-            color: #00bfff;
+        button:active { background-color: #24a142; }
+        #resetBtn { background-color: #ff453a; box-shadow: 0 2px 8px rgba(255,69,58,0.4); }
+        #resetBtn:active { background-color: #d63629; }
+        .hud {
             margin-top: 10px;
-            font-size: 14px;
+            font-family: monospace;
+            font-size: 0.9rem;
+            background: #2c2c2e;
+            padding: 8px 12px;
+            border-radius: 6px;
+            width: 100%;
+            max-width: 326px;
+            box-sizing: border-box;
         }
+        .hud-line { display: flex; justify-content: space-between; margin: 2px 0; }
+        .val { color: #ffd60a; }
     </style>
 </head>
 <body>
 
-    <div id="panel">
-        <h3>FANUC Series 21i-M</h3>
-        <hr style="border-color: #444;">
-        
-        <div class="mode-switch">
-            <span>EINZELSATZ (Single Block):</span>
-            <input type="checkbox" id="singleBlockCheck" onchange="toggleSingleBlock()">
-        </div>
+    <h2>Nakamura Planflächenfräsen</h2>
+    <div class="info">Simulation: Helix-Ausräumen von Ø2.0 auf Ø2.4 (X5.95)</div>
 
-        <h4>ПРОГРАММА G-КОДА:</h4>
-        <div class="gcode-container" id="gcodeDisplay"></div>
-        
-        <div class="btn-group">
-            <button id="startBtn" onclick="runSimulation()">CYCLE START</button>
-            <button id="nextBtn" onclick="nextBlock()" disabled>CYCLE START (1 Satz)</button>
-            <button onclick="resetSimulation()">RESET</button>
-        </div>
-        <div class="status-bar" id="statusBar">STATUS: READY</div>
+    <div id="canvasContainer">
+        <canvas id="cncCanvas" width="700" height="700"></canvas>
     </div>
 
-    <div id="screen">
-        <div style="color: #fff; margin-bottom: 10px; font-size: 15px; font-weight: bold; text-align: center;">
-            ОБРАБОТКА ДВУХ УШЕК (Фреза ø2.0мм / R1.0)<br>
-            Масштаб: 1мм = 35px
-        </div>
-        <canvas id="cncCanvas" width="550" height="550"></canvas>
+    <div class="hud">
+        <div class="hud-line"><span>Aktueller Code:</span> <span id="gcode" class="val">G00 X5.95 Z2.0 C0</span></div>
+        <div class="hud-line"><span>Werkzeug-Ø:</span> <span class="val">2.0 mm</span></div>
+        <div class="hud-line"><span>Bohrung-Ø:</span> <span class="val">2.4 mm</span></div>
     </div>
 
-    <script>
-        const canvas = document.getElementById('cncCanvas');
-        const ctx = canvas.getContext('2d');
-        const scale = 35; 
-        const centerX = canvas.width / 2;
-        const centerY = canvas.height / 2;
+    <div class="controls">
+        <button id="startBtn">Zyklus Start</button>
+        <button id="resetBtn">Reset</button>
+    </div>
 
-        // Корректный G-код для стола Fanuc на оба ушка
-        const gCodeProg = [
-            "O234185 (EINSCHRAUBNIPPEL)",
-            "G21 G90 G40 G17",
-            "T01 M06 (POCKET MILL D2.0)",
-            "S4000 M03",
-            "G00 X0 Y0 Z5.0",
-            "G01 Z-2.0 F150 (VREZANIE V CENTR)",
-            "G01 X5.75 F200 (K CENTRU PRAVOGO USHKA)",
-            "G02 X5.75 Y0 I-5.75 J0 R2.4 (DUGA R2.4)",
-            "G01 X0 Y0 (VOZVRAT V CENTR)",
-            "G01 X-5.75 (K CENTRU LEVOGO USHKA)",
-            "G02 X-5.75 Y0 I5.75 J0 R2.4 (DUGA R2.4)",
-            "G01 X0 Y0 (VOZVRAT V CENTR)",
-            "G00 Z5.0 M05",
-            "M30"
-        ];
+<script>
+const canvas = document.getElementById('cncCanvas');
+const ctx = canvas.getContext('2d');
+const gcodeTxt = document.getElementById('gcode');
 
-        // Траектория движения центра фрезы
-        // 11.5 / 2 = 5.75 (координата центра ушка). Фреза ø2 (R1). Дуга паза R2.4.
-        // Радиус траектории фрезы при обкате ушка: 2.4 - 1.0 = 1.4 мм.
-        const motionPath = [
-            { type: 'G0', x: 0, y: 0, line: 4 },
-            { type: 'G1', x: 0, y: 0, line: 5 },
-            // Правое ушко
-            { type: 'G1', x: 5.75, y: 0, line: 6 },
-            { type: 'G2_ARC', cx: 5.75, cy: 0, r: 1.4, sAngle: 0, eAngle: 2*Math.PI, clockwise: true, line: 7 },
-            { type: 'G1', x: 0, y: 0, line: 8 },
-            // Левое ушко
-            { type: 'G1', x: -5.75, y: 0, line: 9 },
-            { type: 'G2_ARC', cx: -5.75, cy: 0, r: 1.4, sAngle: Math.PI, eAngle: 3*Math.PI, clockwise: true, line: 10 },
-            { type: 'G1', x: 0, y: 0, line: 11 }
-        ];
+// Simulationsparameter Scale (Zentrum ist bei 350, 350)
+const cx = 350, cy = 350;
+const scale = 45; // 1mm = 45 Pixel
 
-        let step = 0;
-        let animPercent = 0;
-        let animId = null;
-        let isSingleBlock = false;
-        let blockWaiting = false;
+let animationId;
+let step = 0;
+let t = 0;
 
-        function init() {
-            const display = document.getElementById('gcodeDisplay');
-            display.innerHTML = gCodeProg.map((l, i) => `<div class="line" id="l-${i}">${l}</div>`).join('');
-            renderStatic();
-        }
+// Bohrungspositionen im Raum (X5.95 bedeutet Radius=2.975 auf dem Bauteil)
+const targetRadius = 2.975 * scale; 
 
-        function toggleSingleBlock() {
-            isSingleBlock = document.getElementById('singleBlockCheck').checked;
-            resetSimulation();
-        }
+function drawBackground() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // Hauptbauteil (Planansicht)
+    ctx.beginPath();
+    ctx.arc(cx, cy, 7 * scale, 0, 2 * Math.PI);
+    ctx.fillStyle = '#3a3a3c';
+    ctx.fill();
+    ctx.strokeStyle = '#48484a';
+    ctx.lineWidth = 2;
+    ctx.stroke();
 
-        function renderStatic() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            
-            // Сетка
-            ctx.strokeStyle = '#222';
-            ctx.lineWidth = 0.5;
-            for(let i=0; i<canvas.width; i+=scale) {
-                ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, canvas.height); ctx.stroke();
-                ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(canvas.width, i); ctx.stroke();
-            }
+    // Achsenkreuz
+    ctx.beginPath();
+    ctx.moveTo(cx - 320, cy); ctx.lineTo(cx + 320, cy);
+    ctx.moveTo(cx, cy - 320); ctx.lineTo(cx, cy + 320);
+    ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
 
-            // Оси координат
-            ctx.strokeStyle = '#333';
-            ctx.lineWidth = 1;
-            ctx.beginPath(); ctx.moveTo(centerX, 0); ctx.lineTo(centerX, canvas.height); ctx.stroke();
-            ctx.beginPath(); ctx.moveTo(0, centerY); ctx.lineTo(canvas.width, centerY); ctx.stroke();
+    // Soll-Bohrungen Ø2.40 mm zeichnen
+    drawTargetHole(cx + targetRadius, cy);  // C0
+    drawTargetHole(cx - targetRadius, cy);  // C180
+}
 
-            // КОНТУР ДЕТАЛИ ПО ЧЕРТЕЖУ
-            ctx.lineWidth = 1.2;
-            
-            // Внутреннее отверстие d12.8 (R6.4)
-            ctx.strokeStyle = '#0055ff';
-            ctx.beginPath(); ctx.arc(centerX, centerY, 6.4 * scale, 0, 2 * Math.PI); ctx.stroke();
+function drawTargetHole(hx, hy) {
+    ctx.beginPath();
+    ctx.arc(hx, hy, (2.4 / 2) * scale, 0, 2 * Math.PI);
+    ctx.strokeStyle = '#0a84ff';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+}
 
-            // Левое и правое ушко (центры на 5.75, радиус паза 2.4)
-            ctx.strokeStyle = '#0055ff';
-            ctx.beginPath(); ctx.arc(centerX + 5.75 * scale, centerY, 2.4 * scale, 0, 2 * Math.PI); ctx.stroke();
-            ctx.beginPath(); ctx.arc(centerX - 5.75 * scale, centerY, 2.4 * scale, 0, 2 * Math.PI); ctx.stroke();
-        }
+function drawTool(x, y, color = 'rgba(255, 214, 10, 0.6)') {
+    ctx.beginPath();
+    ctx.arc(x, y, (2.0 / 2) * scale, 0, 2 * Math.PI);
+    ctx.fillStyle = color;
+    ctx.fill();
+    ctx.strokeStyle = '#ffd60a';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+}
 
-        function runSimulation() {
-            if (isSingleBlock) return;
-            if (animId) cancelAnimationFrame(animId);
-            step = 0; animPercent = 0;
-            document.getElementById('statusBar').innerText = "STATUS: AUTOMATIC RUN";
-            animateCNC();
-        }
+// Abgetragenes Material Array
+let cuts = [];
 
-        function nextBlock() {
-            if (!isSingleBlock) return;
-            if (step >= motionPath.length) {
-                document.getElementById('statusBar').innerText = "STATUS: M30 (DONE)";
-                document.getElementById('nextBtn').disabled = true;
-                return;
-            }
-            blockWaiting = false;
-            document.getElementById('nextBtn').disabled = true;
-            document.getElementById('statusBar').innerText = "STATUS: EXECUTING Sblock...";
-            animateCNC();
-        }
+function drawCuts() {
+    ctx.fillStyle = '#1c1c1e';
+    cuts.forEach(c => {
+        ctx.beginPath();
+        ctx.arc(c.x, c.y, (2.0 / 2) * scale, 0, 2 * Math.PI);
+        ctx.fill();
+    });
+}
 
-        function resetSimulation() {
-            cancelAnimationFrame(animId);
-            step = 0; animPercent = 0; blockWaiting = false;
-            renderStatic();
-            document.getElementById('statusBar').innerText = "STATUS: READY";
-            document.getElementById('startBtn').disabled = isSingleBlock;
-            document.getElementById('nextBtn').disabled = !isSingleBlock;
-            const active = document.querySelector('.active-line');
-            if(active) active.classList.remove('active-line');
-        }
+function animate() {
+    drawBackground();
+    drawCuts();
 
-        function animateCNC() {
-            if (step >= motionPath.length) {
-                document.getElementById('statusBar').innerText = "STATUS: M30 (DONE)";
-                return;
-            }
+    let tx = cx, ty = cy; // Fräser-Position absolute Pixels
 
-            renderStatic();
-            const current = motionPath[step];
-            
-            const prevActive = document.querySelector('.active-line');
-            if (prevActive) prevActive.classList.remove('active-line');
-            const currentLineEl = document.getElementById(`l-${current.line}`);
-            if (currentLineEl) currentLineEl.classList.add('active-line');
+    if (step === 0) {
+        gcodeTxt.innerText = "G00 X5.95 Z2.0 C0.0";
+        tx = cx + targetRadius;
+        ty = cy;
+        drawTool(tx, ty);
+        setTimeout(() => { step = 1; }, 1000);
+    } 
+    else if (step === 1) {
+        gcodeTxt.innerText = "G01 G41 X6.35 F80";
+        t += 0.05;
+        if(t > 1) t = 1;
+        // Bewegung radial nach außen um 0.2mm (Radiusdifferenz)
+        let offset = 0.2 * scale * t;
+        tx = cx + targetRadius + offset;
+        ty = cy;
+        drawTool(tx, ty);
+        cuts.push({x: tx, y: ty});
+        if(t === 1) { step = 2; t = 0; }
+    } 
+    else if (step === 2) {
+        gcodeTxt.innerText = "G03 I-0.2 Z-3.0 (Helix)";
+        t += 0.03; // Rotationsfortschritt
+        let angle = t * Math.PI * 2;
+        let h_radius = 0.2 * scale; // Kreisradius der Helix
+        
+        tx = (cx + targetRadius) + Math.cos(angle) * h_radius;
+        ty = cy + Math.sin(angle) * h_radius;
+        
+        drawTool(tx, ty);
+        cuts.push({x: tx, y: ty});
+        
+        if(t >= 1) { step = 3; t = 0; }
+    }
+    else if (step === 3) {
+        gcodeTxt.innerText = "G01 G40 X5.95 (Zentrum C0)";
+        tx = cx + targetRadius;
+        ty = cy;
+        drawTool(tx, ty);
+        setTimeout(() => { step = 4; }, 800);
+    }
+    else if (step === 4) {
+        gcodeTxt.innerText = "G00 C180.0";
+        tx = cx - targetRadius;
+        ty = cy;
+        drawTool(tx, ty, 'rgba(255,255,255,0.4)');
+        setTimeout(() => { step = 5; }, 1000);
+    }
+    else if (step === 5) {
+        gcodeTxt.innerText = "G01 G41 X6.35 (C180)";
+        t += 0.05; if(t > 1) t = 1;
+        let offset = 0.2 * scale * t;
+        tx = cx - targetRadius - offset; // nach links außen weg
+        ty = cy;
+        drawTool(tx, ty);
+        cuts.push({x: tx, y: ty});
+        if(t === 1) { step = 6; t = 0; }
+    }
+    else if (step === 6) {
+        gcodeTxt.innerText = "G03 I0.2 Z-3.0 (Helix C180)";
+        t += 0.03;
+        let angle = t * Math.PI * 2;
+        let h_radius = 0.2 * scale;
+        
+        // I0.2 zeigt hier in Richtung Bauteilmitte, Start ist links außen
+        tx = (cx - targetRadius) - Math.cos(angle) * h_radius;
+        ty = cy - Math.sin(angle) * h_radius;
+        
+        drawTool(tx, ty);
+        cuts.push({x: tx, y: ty});
+        if(t >= 1) { step = 7; }
+    }
+    else if (step === 7) {
+        gcodeTxt.innerText = "G00 Z20.0 (Fertig)";
+        drawTool(cx - targetRadius, cy);
+        cancelAnimationFrame(animationId);
+        return;
+    }
 
-            // Отрисовка старых участков
-            ctx.strokeStyle = '#00ff00'; ctx.lineWidth = 2;
-            for (let i = 0; i < step; i++) {
-                drawHistorySegment(motionPath[i]);
-            }
+    animationId = requestAnimationFrame(animate);
+}
 
-            // Отрисовка текущего движения
-            let toolPos = drawCurrentSegment(current, animPercent);
+document.getElementById('startBtn').addEventListener('touchstart', () => {
+    if(step === 0 || step === 7) {
+        step = 0; t = 0; cuts = [];
+        animate();
+    }
+});
+document.getElementById('startBtn').addEventListener('click', () => {
+    if(step === 0 || step === 7) {
+        step = 0; t = 0; cuts = [];
+        animate();
+    }
+});
 
-            // Отрисовка фрезы ø2 (R1)
-            ctx.fillStyle = 'rgba(255, 0, 0, 0.5)';
-            ctx.strokeStyle = '#ff0000'; ctx.lineWidth = 1;
-            ctx.beginPath(); ctx.arc(toolPos.x, toolPos.y, 1.0 * scale, 0, 2 * Math.PI); ctx.fill(); ctx.stroke();
+document.getElementById('resetBtn').addEventListener('click', () => {
+    cancelAnimationFrame(animationId);
+    step = 0; t = 0; cuts = [];
+    gcodeTxt.innerText = "G00 X5.95 Z2.0 C0";
+    drawBackground();
+});
 
-            animPercent += 0.04;
-
-            if (animPercent >= 1) {
-                animPercent = 0;
-                step++;
-                if (isSingleBlock) {
-                    blockWaiting = true;
-                    document.getElementById('nextBtn').disabled = false;
-                    document.getElementById('statusBar').innerText = "STATUS: STOPPED (SINGLE BLOCK)";
-                    return; // Остановка до следующего нажатия кнопки
-                }
-            }
-
-            if (!blockWaiting) {
-                animId = requestAnimationFrame(animateCNC);
-            }
-        }
-
-        function drawHistorySegment(p) {
-            ctx.beginPath();
-            let prevIndex = motionPath.indexOf(p) - 1;
-            let prev = prevIndex < 0 ? {x:0, y:0} : motionPath[prevIndex];
-
-            if (p.type === 'G1' || p.type === 'G0') {
-                ctx.moveTo(centerX + prev.x * scale, centerY - prev.y * scale);
-                ctx.lineTo(centerX + p.x * scale, centerY - p.y * scale);
-                ctx.stroke();
-            } else if (p.type === 'G2_ARC') {
-                ctx.arc(centerX + p.cx * scale, centerY - p.cy * scale, p.r * scale, p.sAngle, p.eAngle, !p.clockwise);
-                ctx.stroke();
-            }
-        }
-
-        function drawCurrentSegment(p, t) {
-            let tx = 0, ty = 0;
-            let prevIndex = motionPath.indexOf(p) - 1;
-            let prev = prevIndex < 0 ? {x:0, y:0} : motionPath[prevIndex];
-            ctx.beginPath();
-
-            if (p.type === 'G1' || p.type === 'G0') {
-                let x1 = centerX + prev.x * scale; let y1 = centerY - prev.y * scale;
-                let x2 = centerX + p.x * scale; let y2 = centerY - p.y * scale;
-                tx = x1 + (x2 - x1) * t; ty = y1 + (y2 - y1) * t;
-                ctx.moveTo(x1, y1); ctx.lineTo(tx, ty); ctx.stroke();
-            } else if (p.type === 'G2_ARC') {
-                let cx = centerX + p.cx * scale; let cy = centerY - p.cy * scale;
-                let r = p.r * scale;
-                let totalAngle = p.eAngle - p.sAngle;
-                let currentAngle = p.sAngle + totalAngle * t;
-                ctx.arc(cx, cy, r, p.sAngle, currentAngle, !p.clockwise); ctx.stroke();
-                tx = cx + r * Math.cos(currentAngle); ty = cy + r * Math.sin(currentAngle);
-            }
-            return { x: tx, y: ty };
-        }
-
-        init();
-    </script>
+// Initiale Zeichnung
+drawBackground();
+</script>
 </body>
 </html>
