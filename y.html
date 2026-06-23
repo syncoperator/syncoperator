@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Nakamura Light Premium Fixed</title>
+    <title>Nakamura Premium Monitor</title>
     <style>
         :root {
             --bg-page: #f2f2f7;
@@ -11,6 +11,7 @@
             --text-dark: #1c1c1e;
             --text-gray: #8e8e93;
             --blue: #007aff;
+            --green: #34c759;
             --border-line: #e5e5ea;
         }
 
@@ -19,81 +20,105 @@
             background-color: var(--bg-page);
             color: var(--text-dark);
             margin: 0;
-            padding: 16px;
+            padding: 12px;
             display: flex;
             flex-direction: column;
             align-items: center;
+            -webkit-user-select: none;
+            user-select: none;
         }
 
-        h2 { font-size: 1.3rem; margin: 8px 0 2px 0; font-weight: 700; text-align: center; }
-        .subtext { font-size: 0.85rem; color: var(--text-gray); margin-bottom: 20px; text-align: center; }
+        h2 { font-size: 1.2rem; margin: 4px 0 2px 0; font-weight: 700; }
+        .subtext { font-size: 0.8rem; color: var(--text-gray); margin-bottom: 12px; }
 
+        /* Элемент симулятора */
         #canvasContainer {
             width: 100%;
             max-width: 350px;
-            aspect-ratio: 1;
+            aspect-ratio: 1.1;
             background: #1c1c1e;
-            border-radius: 20px;
+            border-radius: 16px;
             overflow: hidden;
             border: 1px solid var(--border-line);
-            box-shadow: 0 6px 20px rgba(0,0,0,0.05);
+            position: relative;
         }
 
         canvas { width: 100%; height: 100%; display: block; }
 
+        /* Окно терминала ЧПУ (Вывод всего кода) */
+        .cnc-monitor {
+            width: 100%;
+            max-width: 350px;
+            height: 130px;
+            background: #2c2c2e;
+            border-radius: 12px;
+            margin-top: 10px;
+            padding: 8px;
+            box-sizing: border-box;
+            overflow-y: auto;
+            border: 1px solid #3a3a3c;
+            font-family: "SF Mono", Menlo, Monaco, Consolas, monospace;
+            font-size: 0.75rem;
+            color: #aeaeae;
+        }
+
+        .code-line { padding: 2px 6px; border-radius: 4px; }
+        .code-line.active { background: #48484a; color: #fff; font-weight: bold; border-left: 3px solid var(--blue); }
+        .code-comment { color: #34c759; }
+
+        /* HUD панель */
         .hud {
-            margin-top: 16px;
+            margin-top: 10px;
             background: var(--bg-card);
-            border-radius: 14px;
-            padding: 14px;
+            border-radius: 12px;
+            padding: 10px;
             width: 100%;
             max-width: 350px;
             box-sizing: border-box;
             border: 1px solid var(--border-line);
+            font-size: 0.8rem;
         }
 
-        .hud-line { display: flex; justify-content: space-between; margin: 5px 0; font-size: 0.85rem; }
-        .cnc-block { font-family: monospace; font-weight: bold; color: var(--blue); }
+        .hud-line { display: flex; justify-content: space-between; margin: 3px 0; }
         .axis-block { font-family: monospace; font-weight: bold; color: #5856d6; }
 
         .controls {
-            margin-top: 20px;
+            margin-top: 12px;
             width: 100%;
             max-width: 350px;
             display: flex;
-            gap: 12px;
-            padding-bottom: 40px; /* Фикс перекрытия нижней полосы iOS */
+            gap: 10px;
+            padding-bottom: 34px; /* Отступ под челку/полосу iOS */
         }
 
         button {
             flex: 1;
             border: none;
             color: white;
-            padding: 16px;
-            font-size: 1rem;
+            padding: 14px;
+            font-size: 0.95rem;
             font-weight: 700;
-            border-radius: 14px;
+            border-radius: 12px;
             cursor: pointer;
         }
 
-        #startBtn { background-color: #34c759; }
-        #startBtn:active { background-color: #28a745; }
+        #startBtn { background-color: var(--green); }
         #resetBtn { background-color: #ff3b30; }
-        #resetBtn:active { background-color: #dc3545; }
     </style>
 </head>
 <body>
 
-    <h2>Nakamura Fixed XYZ</h2>
-    <div class="subtext">Пазы в центр + Расточка по радиусу R без переменных</div>
+    <h2>Nakamura True Monitor</h2>
+    <div class="subtext">Пазы в центр + Расточка R (Честная кинематика оси C)</div>
 
     <div id="canvasContainer">
-        <canvas id="cncCanvas" width="700" height="700"></canvas>
+        <canvas id="cncCanvas" width="700" height="770"></canvas>
     </div>
 
+    <div class="cnc-monitor" id="cncMonitor"></div>
+
     <div class="hud">
-        <div class="hud-line"><span>Кадр ЧПУ:</span> <span id="gcode" class="cnc-block">G00 X5.95 Y0.0 Z2.0</span></div>
-        <div class="hud-line"><span>Позиция осей:</span> <span id="axes" class="axis-block">X: 5.95 Y: 0.00 Z: 2.0</span></div>
+        <div class="hud-line"><span>Позиция осей:</span> <span id="axes" class="axis-block">X: 5.95 Y: 0.00 Z: 2.0 C: 0.00</span></div>
     </div>
 
     <div class="controls">
@@ -102,198 +127,282 @@
     </div>
 
 <script>
+const gcodeProgram = [
+    { text: "O2026 (NAKAMURA REWORKED)", type: "comment" },
+    { text: "G18 G98 G40 M200", type: "code" },
+    { text: "T0101 (MILL D2.0)", type: "code" },
+    { text: "G00 X5.95 Y0.0 Z2.0 C0.0", type: "code" },
+    { text: "G01 Z0.0 F150", type: "code" },
+    { text: "G01 Y0.2 F120", type: "code" },
+    { text: "G03 Y0.2 Z-3.0 R0.2 F80", type: "code" },
+    { text: "G03 Y0.2 R0.2", type: "code" },
+    { text: "G01 Y0.0", type: "code" },
+    { text: "G01 X0.0 F150 (SLOT 1)", type: "code" },
+    { text: "G00 Z5.0", type: "code" },
+    { text: "G00 X5.95 Y0.0 Z2.0 C180.0", type: "code" },
+    { text: "G01 Z0.0 F150", type: "code" },
+    { text: "G01 Y0.2 F120", type: "code" },
+    { text: "G03 Y0.2 Z-3.0 R0.2 F80", type: "code" },
+    { text: "G03 Y0.2 R0.2", type: "code" },
+    { text: "G01 Y0.0", type: "code" },
+    { text: "G01 X0.0 F150 (SLOT 2)", type: "code" },
+    { text: "G00 Z5.0", type: "code" },
+    { text: "G00 X0.0 Y0.0 Z2.0", type: "code" },
+    { text: "G01 Z0.0 F150", type: "code" },
+    { text: "G01 Y3.0 F120", type: "code" },
+    { text: "G03 Y3.0 Z-3.0 R3.0 F90", type: "code" },
+    { text: "G03 Y3.0 R3.0 (CENTER HOLE)", type: "code" },
+    { text: "G01 Y0.0", type: "code" },
+    { text: "G00 Z20.0 M30", type: "code" }
+];
+
 const canvas = document.getElementById('cncCanvas');
 const ctx = canvas.getContext('2d');
-const gcodeTxt = document.getElementById('gcode');
+const monitor = document.getElementById('cncMonitor');
 const axesTxt = document.getElementById('axes');
 
 const cx = 350, cy = 350;
-const scale = 45; 
+const scale = 42;
 
 let animationId;
-let step = 0, t = 0, cuts = [];
+let step = 0, t = 0, currentLineIndex = 0;
+let currentRotC = 0; 
+let cuts = []; 
 
-// Константные технологические размеры
-const dMill = 2.0;
-const dHole = 2.4;
-const dCenter = 8.0;
-const zDepth = -3.0;
-const radX595 = 2.975 * scale;
-
-function drawPart() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
-    // Заготовка
-    ctx.beginPath();
-    ctx.arc(cx, cy, 7.2 * scale, 0, 2 * Math.PI);
-    ctx.fillStyle = '#2c2c2e';
-    ctx.fill();
-    ctx.strokeStyle = '#3a3a3c';
-    ctx.lineWidth = 2.5;
-    ctx.stroke();
-
-    // Сетка осей X-Y
-    ctx.beginPath();
-    ctx.moveTo(cx - 300, cy); ctx.lineTo(cx + 300, cy);
-    ctx.moveTo(cx, cy - 300); ctx.lineTo(cx, cy + 300);
-    ctx.strokeStyle = 'rgba(255,255,255,0.08)';
-    ctx.lineWidth = 1;
-    ctx.stroke();
-
-    // Фиксированные чертежные окружности
-    ctx.lineWidth = 2;
-    ctx.strokeStyle = '#007aff'; // Боковые Ø2.4
-    ctx.beginPath(); ctx.arc(cx + radX595, cy, (dHole/2)*scale, 0, 2*Math.PI); ctx.stroke();
-    ctx.beginPath(); ctx.arc(cx - radX595, cy, (dHole/2)*scale, 0, 2*Math.PI); ctx.stroke();
-    
-    ctx.strokeStyle = '#34c759'; // Центральная Ø8
-    ctx.beginPath(); ctx.arc(cx, cy, (dCenter/2)*scale, 0, 2*Math.PI); ctx.stroke();
-}
-
-function drawCuts() {
-    ctx.fillStyle = '#1c1c1e';
-    cuts.forEach(c => {
-        ctx.beginPath();
-        ctx.arc(c.x, c.y, (dMill/2)*scale, 0, 2*Math.PI);
-        ctx.fill();
+// Загрузка программы в монитор при старте
+function initMonitor() {
+    monitor.innerHTML = "";
+    gcodeProgram.forEach((line, idx) => {
+        const div = document.createElement('div');
+        div.className = 'code-line';
+        div.id = `line-${idx}`;
+        if (line.type === 'comment') {
+            div.innerHTML = `<span class="code-comment">${line.text}</span>`;
+        } else {
+            div.innerText = line.text;
+        }
+        monitor.appendChild(div);
     });
 }
 
-function drawTool(x, y, z, codeText, xDisp, yDisp) {
-    gcodeTxt.innerText = codeText;
-    axesTxt.innerText = `X: ${xDisp} Y: ${yDisp} Z: ${z.toFixed(1)}`;
-
-    ctx.beginPath();
-    ctx.arc(x, y, (dMill/2)*scale, 0, 2 * Math.PI);
-    ctx.fillStyle = z <= 0 ? 'rgba(255, 59, 48, 0.85)' : 'rgba(255, 214, 10, 0.7)';
-    ctx.fill();
-    ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
+function updateActiveLine(index) {
+    document.querySelectorAll('.code-line').forEach(el => el.classList.remove('active'));
+    const activeEl = document.getElementById(`line-${index}`);
+    if (activeEl) {
+        activeEl.classList.add('active');
+        monitor.scrollTop = activeEl.offsetTop - monitor.offsetTop - 40;
+    }
 }
 
-function cycleEngine() {
-    drawPart();
-    drawCuts();
+function drawScene(rotC) {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(-rotC); // Поворот шпинделя (ось С)
 
+    // Деталь
+    ctx.beginPath(); ctx.arc(0, 0, 7.5 * scale, 0, 2 * Math.PI);
+    ctx.fillStyle = '#2c2c2e'; ctx.fill();
+    ctx.strokeStyle = '#3a3a3c'; ctx.lineWidth = 3; ctx.stroke();
+
+    // Сетка детали
+    ctx.beginPath();
+    ctx.moveTo(-300, 0); ctx.lineTo(300, 0);
+    ctx.moveTo(0, -300); ctx.lineTo(0, 300);
+    ctx.strokeStyle = 'rgba(255,255,255,0.05)'; ctx.lineWidth = 1; ctx.stroke();
+
+    // Контуры обработки
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = '#007aff';
+    ctx.beginPath(); ctx.arc(2.975 * scale, 0, 1.2 * scale, 0, 2 * Math.PI); ctx.stroke(); // Отверстие 1
+    ctx.beginPath(); ctx.arc(-2.975 * scale, 0, 1.2 * scale, 0, 2 * Math.PI); ctx.stroke(); // Отверстие 2
+    ctx.strokeStyle = '#34c759';
+    ctx.beginPath(); ctx.arc(0, 0, 4.0 * scale, 0, 2 * Math.PI); ctx.stroke(); // Центр
+
+    // Отрисовка срезанного материала
+    ctx.fillStyle = '#1c1c1e';
+    cuts.forEach(c => {
+        ctx.beginPath(); ctx.arc(c.x, c.y, 1.0 * scale, 0, 2 * Math.PI); ctx.fill();
+    });
+
+    ctx.restore();
+}
+
+function drawTool(toolX, toolY, toolZ, rotC, dispX, dispY) {
+    axesTxt.innerText = `X: ${dispX} Y: ${dispY} Z: ${toolZ.toFixed(1)} C: ${(rotC * 180 / Math.PI).toFixed(1)}`;
+    
+    // Инструмент всегда находится сверху над деталью в физических координатах суппорта
+    ctx.beginPath();
+    ctx.arc(toolX, toolY, 1.0 * scale, 0, 2 * Math.PI);
+    ctx.fillStyle = toolZ <= 0 ? 'rgba(255, 59, 48, 0.85)' : 'rgba(255, 214, 10, 0.7)';
+    ctx.fill();
+    ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2; ctx.stroke();
+}
+
+function mainEngine() {
     let tx = cx, ty = cy, tz = 2.0;
-    let rHoleOffset = ((dHole - dMill) / 2) * scale;     // 0.2мм в пикселях
-    let rCenterOffset = ((dCenter - dMill) / 2) * scale; // 3.0мм в пикселях
+    let dx = "0.00", dy = "0.00";
 
-    // --- БЛОК 1: С0 ---
+    // Логика шагов
     if (step === 0) {
-        tx = cx + radX595; ty = cy;
-        drawTool(tx, ty, tz, "G00 X5.95 Y0.0 C0.0", "5.95", "0.00");
-        setTimeout(() => { step = 1; }, 500);
+        updateActiveLine(3); // G00 X5.95 Y0.0 Z2.0 C0.0
+        currentRotC = 0;
+        tx = cx + 2.975 * scale; ty = cy;
+        drawScene(currentRotC);
+        drawTool(tx, ty, tz, currentRotC, "5.95", "0.00");
+        setTimeout(() => { step = 1; }, 600);
     }
     else if (step === 1) {
-        // Helix Ø2.4 с использованием фиксированного радиуса R0.2
-        t += 0.02; if(t > 1) t = 1;
-        let angle = (t * Math.PI * 2) - Math.PI/2;
-        tx = cx + radX595; 
-        ty = cy + Math.cos(angle) * rHoleOffset + rHoleOffset; 
-        tz = 2.0 - (5.0 * t); if(tz < -3.0) tz = -3.0;
-        
-        if(tz <= 0) cuts.push({x: tx, y: ty});
-        drawTool(tx, ty, tz, "G03 Y0.2 Z-3.0 R0.2", "5.95", ((ty-cy)/scale).toFixed(2));
-        if(t === 1) { step = 2; t = 0; }
+        updateActiveLine(6); // G03 Y0.2 Z-3.0 R0.2
+        t += 0.02; if (t > 1) t = 1;
+        let ang = (t * Math.PI * 2) - Math.PI / 2;
+        let r_off = 0.2 * scale;
+        tx = cx + 2.975 * scale;
+        ty = cy + Math.cos(ang) * r_off + r_off;
+        tz = 2.0 - 5.0 * t; if (tz < -3.0) tz = -3.0;
+
+        // Пересчет следа в координаты вращающейся детали
+        if (tz <= 0) {
+            let rx = (tx - cx) * Math.cos(currentRotC) - (ty - cy) * Math.sin(currentRotC);
+            let ry = (tx - cx) * Math.sin(currentRotC) + (ty - cy) * Math.cos(currentRotC);
+            cuts.push({ x: rx, y: ry });
+        }
+        drawScene(currentRotC);
+        drawTool(tx, ty, tz, currentRotC, "5.95", ((ty - cy) / scale).toFixed(2));
+        if (t === 1) { step = 2; t = 0; }
     }
     else if (step === 2) {
-        // Движение фрезы к центру детали
-        t += 0.02; if(t > 1) t = 1;
-        tx = (cx + radX595) - (radX595 * t);
-        ty = cy; tz = zDepth;
-        cuts.push({x: tx, y: ty});
-        drawTool(tx, ty, tz, "G01 X0.0 F150 (Паз)", (5.95*(1-t)).toFixed(2), "0.00");
-        if(t === 1) { step = 3; }
+        updateActiveLine(9); // G01 X0.0 F150 (Паз 1)
+        t += 0.02; if (t > 1) t = 1;
+        tx = (cx + 2.975 * scale) - (2.975 * scale * t);
+        ty = cy; tz = -3.0;
+
+        let rx = (tx - cx) * Math.cos(currentRotC) - (ty - cy) * Math.sin(currentRotC);
+        let ry = (tx - cx) * Math.sin(currentRotC) + (ty - cy) * Math.cos(currentRotC);
+        cuts.push({ x: rx, y: ry });
+
+        drawScene(currentRotC);
+        drawTool(tx, ty, tz, currentRotC, (5.95 * (1 - t)).toFixed(2), "0.00");
+        if (t === 1) { step = 3; }
     }
     else if (step === 3) {
-        drawTool(cx, cy, 5.0, "G00 Z5.0", "0.00", "0.00");
+        updateActiveLine(10); // G00 Z5.0
+        drawScene(currentRotC);
+        drawTool(cx, cy, 5.0, currentRotC, "0.00", "0.00");
         setTimeout(() => { step = 4; t = 0; }, 400);
     }
-    // --- БЛОК 2: С180 ---
     else if (step === 4) {
-        tx = cx - radX595; ty = cy;
-        drawTool(tx, ty, 2.0, "G00 X5.95 Y0.0 C180.0", "5.95", "0.00");
-        setTimeout(() => { step = 5; }, 500);
+        updateActiveLine(11); // G00 X5.95 Y0.0 Z2.0 C180.0
+        t += 0.04; if (t > 1) t = 1;
+        currentRotC = t * Math.PI; // Поворот заготовки на 180 градусов
+        tx = cx + 2.975 * scale; ty = cy;
+        drawScene(currentRotC);
+        drawTool(tx, ty, 2.0, currentRotC, "5.95", "0.00");
+        if (t === 1) { step = 5; t = 0; }
     }
     else if (step === 5) {
-        t += 0.02; if(t > 1) t = 1;
-        let angle = (t * Math.PI * 2) - Math.PI/2;
-        tx = cx - radX595;
-        ty = cy + Math.cos(angle) * rHoleOffset + rHoleOffset;
-        tz = 2.0 - (5.0 * t); if(tz < -3.0) tz = -3.0;
-        
-        if(tz <= 0) cuts.push({x: tx, y: ty});
-        drawTool(tx, ty, tz, "G03 Y0.2 Z-3.0 R0.2", "5.95", ((ty-cy)/scale).toFixed(2));
-        if(t === 1) { step = 6; t = 0; }
+        updateActiveLine(14); // Helix отверстия 2
+        t += 0.02; if (t > 1) t = 1;
+        let ang = (t * Math.PI * 2) - Math.PI / 2;
+        let r_off = 0.2 * scale;
+        tx = cx + 2.975 * scale;
+        ty = cy + Math.cos(ang) * r_off + r_off;
+        tz = 2.0 - 5.0 * t; if (tz < -3.0) tz = -3.0;
+
+        if (tz <= 0) {
+            let rx = (tx - cx) * Math.cos(currentRotC) - (ty - cy) * Math.sin(currentRotC);
+            let ry = (tx - cx) * Math.sin(currentRotC) + (ty - cy) * Math.cos(currentRotC);
+            cuts.push({ x: rx, y: ry });
+        }
+        drawScene(currentRotC);
+        drawTool(tx, ty, tz, currentRotC, "5.95", ((ty - cy) / scale).toFixed(2));
+        if (t === 1) { step = 6; t = 0; }
     }
     else if (step === 6) {
-        t += 0.02; if(t > 1) t = 1;
-        tx = (cx - radX595) + (radX595 * t);
-        ty = cy; tz = zDepth;
-        cuts.push({x: tx, y: ty});
-        drawTool(tx, ty, tz, "G01 X0.0", (-5.95*(1-t)).toFixed(2), "0.00");
-        if(t === 1) { step = 7; }
+        updateActiveLine(17); // Паз 2 в центр
+        t += 0.02; if (t > 1) t = 1;
+        tx = (cx + 2.975 * scale) - (2.975 * scale * t);
+        ty = cy; tz = -3.0;
+
+        let rx = (tx - cx) * Math.cos(currentRotC) - (ty - cy) * Math.sin(currentRotC);
+        let ry = (tx - cx) * Math.sin(currentRotC) + (ty - cy) * Math.cos(currentRotC);
+        cuts.push({ x: rx, y: ry });
+
+        drawScene(currentRotC);
+        drawTool(tx, ty, tz, currentRotC, (5.95 * (1 - t)).toFixed(2), "0.00");
+        if (t === 1) { step = 7; }
     }
     else if (step === 7) {
-        drawTool(cx, cy, 5.0, "G00 Z5.0", "0.00", "0.00");
+        updateActiveLine(18);
+        drawScene(currentRotC);
+        drawTool(cx, cy, 5.0, currentRotC, "0.00", "0.00");
         setTimeout(() => { step = 8; t = 0; }, 400);
     }
-    // --- БЛОК 3: ЦЕНТР Ø8 ---
     else if (step === 8) {
-        // Тройная спираль Helix до глубины Z-3 по фиксированному R3.0
-        t += 0.008; if(t > 1) t = 1;
-        let helixAngle = (t * Math.PI * 6) - Math.PI/2; 
-        let dynRad = rCenterOffset * Math.min(t*3, 1);
-        
+        updateActiveLine(22); // Центральный Helix Ø8
+        t += 0.008; if (t > 1) t = 1;
+        let helixAng = (t * Math.PI * 6) - Math.PI / 2;
+        let dynR = 3.0 * scale * Math.min(t * 3, 1);
         tx = cx;
-        ty = cy + Math.cos(helixAngle) * dynRad + dynRad;
-        tz = 0.0 - (Math.abs(zDepth) * t);
-        
-        cuts.push({x: tx, y: ty});
-        drawTool(tx, ty, tz, "G03 Y3.0 Z-3.0 R3.0", "0.00", ((ty-cy)/scale).toFixed(2));
-        if(t === 1) { step = 9; t = 0; }
+        ty = cy + Math.cos(helixAng) * dynR + dynR;
+        tz = 0.0 - 3.0 * t;
+
+        let rx = (tx - cx) * Math.cos(currentRotC) - (ty - cy) * Math.sin(currentRotC);
+        let ry = (tx - cx) * Math.sin(currentRotC) + (ty - cy) * Math.cos(currentRotC);
+        cuts.push({ x: rx, y: ry });
+
+        drawScene(currentRotC);
+        drawTool(tx, ty, tz, currentRotC, "0.00", ((ty - cy) / scale).toFixed(2));
+        if (t === 1) { step = 9; t = 0; }
     }
     else if (step === 9) {
-        t += 0.02; if(t > 1) t = 1;
-        let angle = (t * Math.PI * 2) - Math.PI/2;
+        updateActiveLine(23); // Чистовой круг центра
+        t += 0.02; if (t > 1) t = 1;
+        let ang = (t * Math.PI * 2) - Math.PI / 2;
         tx = cx;
-        ty = cy + Math.cos(angle) * rCenterOffset + rCenterOffset;
+        ty = cy + Math.cos(ang) * (3.0 * scale) + (3.0 * scale);
         
-        cuts.push({x: tx, y: ty});
-        drawTool(tx, ty, zDepth, "G03 Y3.0 R3.0 (Чистовой круг)", "0.00", ((ty-cy)/scale).toFixed(2));
-        if(t === 1) { step = 10; }
+        let rx = (tx - cx) * Math.cos(currentRotC) - (ty - cy) * Math.sin(currentRotC);
+        let ry = (tx - cx) * Math.sin(currentRotC) + (ty - cy) * Math.cos(currentRotC);
+        cuts.push({ x: rx, y: ry });
+
+        drawScene(currentRotC);
+        drawTool(tx, ty, -3.0, currentRotC, "0.00", "3.00");
+        if (t === 1) { step = 10; }
     }
     else if (step === 10) {
-        drawTool(cx, cy, 20.0, "G00 Z20.0 (Цикл Завершен)", "0.00", "0.00");
+        updateActiveLine(25); // Конец программы
+        drawScene(currentRotC);
+        drawTool(cx, cy, 20.0, currentRotC, "0.00", "0.00");
         cancelAnimationFrame(animationId);
         return;
     }
 
-    animationId = requestAnimationFrame(cycleEngine);
+    animationId = requestAnimationFrame(mainEngine);
 }
 
 const startBtn = document.getElementById('startBtn');
-const runEvent = () => {
-    if(step === 0 || step === 10) {
+const trigger = () => {
+    if (step === 0 || step === 10) {
         step = 0; t = 0; cuts = [];
-        cycleEngine();
+        mainEngine();
     }
 };
 
-startBtn.addEventListener('click', runEvent);
-startBtn.addEventListener('touchstart', (e) => { e.preventDefault(); runEvent(); });
+startBtn.addEventListener('click', trigger);
+startBtn.addEventListener('touchstart', (e) => { e.preventDefault(); trigger(); });
 
 document.getElementById('resetBtn').addEventListener('click', () => {
     cancelAnimationFrame(animationId);
-    step = 0; t = 0; cuts = [];
-    drawPart();
-    gcodeTxt.innerText = "G00 X5.95 Y0.0 Z2.0";
-    axesTxt.innerText = "X: 5.95 Y: 0.00 Z: 2.0";
+    step = 0; t = 0; cuts = []; currentRotC = 0;
+    initMonitor();
+    drawScene(0);
+    axesTxt.innerText = "X: 5.95 Y: 0.00 Z: 2.0 C: 0.0";
 });
 
-drawPart();
+initMonitor();
+drawScene(0);
 </script>
 </body>
 </html>
