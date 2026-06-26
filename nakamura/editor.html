@@ -164,11 +164,12 @@ html,body{height:100%;font-family:var(--sans);background:var(--bg);color:var(--i
 .fr-ic.del:hover{background:rgba(220,38,38,.14);color:var(--red);}
 .fr-ic svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;}
 .fr-lineedit{width:100%;background:#fff;border:1px solid #5B8CFF;border-radius:8px;color:#000;font-family:var(--mono);font-size:16px;padding:10px 12px;outline:none;margin:4px 0;}
-/* TOOL-CODE SECTION EDITOR */
-.tce-sec{margin-bottom:14px;}
-.tce-sec label{display:block;font-family:var(--mono);font-size:11px;letter-spacing:1.5px;color:var(--ink2);text-transform:uppercase;margin-bottom:6px;font-weight:600;}
-.tce-area{width:100%;background:var(--card-soft);border:1px solid var(--line2);border-radius:10px;padding:11px 13px;font-family:var(--mono);font-size:15px;line-height:1.6;color:var(--ink);outline:none;resize:none;overflow:hidden;}
-.tce-area:focus{border-color:var(--ink);background:#fff;}
+/* TOOL-CODE SECTION EDITOR — Operation style */
+.tce-lbl{display:flex;align-items:center;justify-content:space-between;gap:8px;font-family:var(--mono);font-size:11px;letter-spacing:2px;color:var(--ink3);margin-bottom:6px;text-transform:uppercase;}
+.tce-mark{display:flex;align-items:center;gap:5px;letter-spacing:.5px;cursor:pointer;color:var(--ink2);font-size:10px;text-transform:none;}
+.tce-mark input{width:16px;height:16px;accent-color:var(--ink);cursor:pointer;}
+.tce-area{width:100%;padding:14px 16px;background:var(--field);border:1px solid transparent;border-radius:12px;font-family:var(--mono);font-size:15px;line-height:1.6;font-weight:600;color:var(--ink);outline:none;resize:none;overflow:hidden;}
+.tce-area:focus{border-color:var(--ink);background:var(--card);}
 .tce-area::placeholder{color:var(--ink3);}
 /* toolbar + quick + tjump */
 .fr-toolrow{display:flex;gap:6px;}
@@ -1207,49 +1208,62 @@ function openToolCodeByLine(kanal,lineIdx){
 // ═══ TOOL-CODE SECTION EDITOR ═══
 let tce={kanal:'oben',toolIdx:-1,startLine:0,endLine:0};
 const TCE_SECTIONS=['wkznr','wechsel','tech','kommentar','anfahren','kontur','abfahren'];
-const TCE_LABELS={wkznr:'Werkzeugnummer',wechsel:'Werkzeugwechsel / Referenzpunkt',tech:'Technologische Daten',kommentar:'Kommentar',anfahren:'Anfahren',kontur:'Kontur',abfahren:'Abfahren'};
+const TCE_LABELS={wkznr:'Werkzeugnummer',wechsel:'Werkzeugwechsel / Referenzpunkt',tech:'Technologische Daten',kommentar:'Werkzeug Name',anfahren:'Anfahren',kontur:'Kontur',abfahren:'Abfahren'};
 
 function classifyToolBlock(lines,start,end){
-  // returns {wkznr:[], wechsel:[], tech:[], kommentar:[], anfahren:[], kontur:[], abfahren:[]}
   const sec={wkznr:[],wechsel:[],tech:[],kommentar:[],anfahren:[],kontur:[],abfahren:[]};
-  let konturStarted=false, konturDone=false;
+  // collect raw lines (non-empty) with their classification stage
+  const motion=[]; // {raw, isContour}
   for(let i=start;i<end;i++){
     const raw=lines[i];
     const l=raw.trim();
-    if(l===''){continue;}
+    if(l==='')continue;
     const U=l.toUpperCase();
-    // T-number line / frame number
+    // tool number / frame
     if(/T\d{4}/.test(U)&&!/^\(/.test(U)){sec.wkznr.push(raw);continue;}
     if(/^N\d+G5[0-9]/.test(U)||/^N\d+\s*$/.test(U)){sec.wkznr.push(raw);continue;}
-    // pure comment
+    // comments + names + waits → Werkzeug Name section
     if(/^\(/.test(l)){sec.kommentar.push(raw);continue;}
-    // wait codes M120-M122 with comment = kommentar
     if(/^M1[0-9][0-9]/.test(U)){sec.kommentar.push(raw);continue;}
-    // reference / change point: G28, G30, B-axis G344, G53
-    if(/G2[8]|G30|G53|G344|G333|M471|M470|G28U|G28W|G28V/.test(U)){
-      if(konturStarted){sec.abfahren.push(raw);} else {sec.wechsel.push(raw);}
-      continue;
-    }
-    // technological: spindle/feed/coolant/gear
-    if(/G9[678]|^S\d|M0?[3489]\b|M41|M42|G50|G99|G98|G344B/.test(U)&&!/X|Z\-?\d|,A|,R/.test(U)){
-      if(!konturStarted){sec.tech.push(raw);} else {sec.kontur.push(raw);}
-      continue;
-    }
-    // motion lines
-    const isMotion=/^G0?[0-3]/.test(U)||/^G1\b|^G0\b/.test(U);
-    const hasContour=/,A|,R/.test(U)||(/[XZ]-?[\d.]/.test(U)&&/G0?1|G0?2|G0?3/.test(U));
-    if(hasContour){konturStarted=true;sec.kontur.push(raw);continue;}
-    if(/^G0/.test(U)&&/[XZ]/.test(U)){
-      // rapid positioning: anfahren before kontur, abfahren after
-      if(!konturStarted)sec.anfahren.push(raw); else sec.abfahren.push(raw);
-      continue;
-    }
-    if(isMotion){
-      if(!konturStarted)sec.anfahren.push(raw); else sec.kontur.push(raw);
-      continue;
-    }
-    // fallback
-    if(!konturStarted)sec.tech.push(raw); else sec.kontur.push(raw);
+    // reference / change point (only before motion → wechsel)
+    if(/G2[8]|G30|G53|G344|G333|M471|M470/.test(U)&&!motion.length){sec.wechsel.push(raw);continue;}
+    // technological (before any motion)
+    if(/G9[678]|^S\d|M0?[3489]\b|M41|M42|G50|G99|G98/.test(U)&&!/[XZ]-?[\d.]|,A|,R/.test(U)&&!motion.length){sec.tech.push(raw);continue;}
+    // everything else with coordinate/motion → motion stream
+    motion.push(raw);
+  }
+  // Now split motion stream into Anfahren / Kontur / Abfahren
+  // Anfahren = leading rapids/approach up to & including first "touch" (Z near 0 or Z.x or Z-0.x small, or first ,A/,R contour move)
+  // Abfahren = trailing 1-2 lines, typically G0 retract + before G28 (G28 already captured if before motion; if after, it's here)
+  let firstTouch=-1;
+  for(let k=0;k<motion.length;k++){
+    const U=motion[k].trim().toUpperCase();
+    // contour begins at first angle/radius, or first feed move G1 with Z cut, or Z value <= ~0.2
+    const zmatch=U.match(/Z(-?\d*\.?\d+)/);
+    const zval=zmatch?parseFloat(zmatch[1]):null;
+    const isFeed=/G0?1|G0?2|G0?3/.test(U);
+    const hasAR=/,A|,R/.test(U);
+    if(hasAR){firstTouch=k;break;}
+    if(isFeed&&zval!=null&&zval<=0.2){firstTouch=k;break;}
+    if(isFeed&&/X-?\d/.test(U)&&zval==null){firstTouch=k;break;} // facing cut G1 X..
+  }
+  if(firstTouch<0)firstTouch=motion.length; // no contour detected → all anfahren
+  // find abfahren: trailing retract (G0/G28), skipping trailing M-codes (M9,M1,M5...)
+  let abStart=motion.length;
+  let k=motion.length-1;
+  // skip trailing pure M-code lines (they stay in abfahren too)
+  while(k>=firstTouch){
+    const U=motion[k].trim().toUpperCase();
+    if(/^M\d/.test(U)&&!/[XZ]-?[\d.]/.test(U)){abStart=k;k--;continue;}
+    if(/G2[8]|G30/.test(U)||(/^G0/.test(U)&&/[XZ]/.test(U))){abStart=k;k--;continue;}
+    break;
+  }
+  // keep abfahren compact (last ~4 incl. M codes)
+  if(motion.length-abStart>4)abStart=motion.length-3;
+  for(let k=0;k<motion.length;k++){
+    if(k<firstTouch)sec.anfahren.push(motion[k]);
+    else if(k>=abStart)sec.abfahren.push(motion[k]);
+    else sec.kontur.push(motion[k]);
   }
   return sec;
 }
@@ -1273,9 +1287,12 @@ function openToolCodeEditorRaw(kanal,start,end,tid,nm){
   const sec=classifyToolBlock(lines,start,end);
   const body=document.getElementById('tce-body');
   body.innerHTML=TCE_SECTIONS.map(k=>`
-    <div class="tce-sec">
-      <label>${TCE_LABELS[k]}</label>
-      <textarea class="tce-area" id="tce-${k}" rows="${Math.max(1,sec[k].length)}" oninput="autoGrow(this)">${esc(sec[k].join('\n'))}</textarea>
+    <div class="f">
+      <label class="tce-lbl">
+        <span>${TCE_LABELS[k]}</span>
+        <span class="tce-mark"><input type="checkbox" id="tce-mark-${k}"><span>Titel</span></span>
+      </label>
+      <textarea class="tce-area" id="tce-${k}" rows="${Math.max(1,sec[k].length)}" oninput="autoGrow(this)" placeholder="—">${esc(sec[k].join('\n'))}</textarea>
     </div>`).join('');
   setTimeout(()=>document.querySelectorAll('.tce-area').forEach(autoGrow),10);
   open_('m-tce');
@@ -1284,23 +1301,25 @@ function autoGrow(el){el.style.height='auto';el.style.height=(el.scrollHeight+4)
 
 function saveToolCode(){
   const lines=getCode(tce.kanal).split(/\r?\n/);
-  // rebuild block in section order
   let block=[];
   TCE_SECTIONS.forEach(k=>{
     const v=document.getElementById('tce-'+k).value;
-    v.split(/\r?\n/).forEach(line=>{if(line.trim()!=='')block.push(line);});
-    // keep a blank separator after sections (optional)
+    const secLines=v.split(/\r?\n/).filter(line=>line.trim()!=='');
+    if(secLines.length){
+      const mark=document.getElementById('tce-mark-'+k);
+      if(mark&&mark.checked)block.push('(---'+TCE_LABELS[k].toUpperCase()+'---)');
+      secLines.forEach(line=>block.push(line));
+    }
   });
-  // replace lines[start..end) with block
   const before=lines.slice(0,tce.startLine);
   const after=lines.slice(tce.endLine);
-  const newLines=before.concat(block,['' ],after);
+  const newLines=before.concat(block,[''],after);
   setCode(tce.kanal,newLines.join('\n'));
-  // re-parse
   const ops=parseProgram(getCode(tce.kanal));
   if(tce.kanal==='unten')P().unten=ops;else P().oben=ops;
   persist();close_('m-tce');render();
-  // refresh code view if open
+  // refresh code view if still open
+  if(document.getElementById('m-code').classList.contains('active'))renderCodeView();
   toast('Werkzeug-Code gespeichert');
 }
 
