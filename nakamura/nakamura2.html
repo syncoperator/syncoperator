@@ -678,7 +678,7 @@ T0404 ; A_STECHST.3MM ; 20.90-21.10"></textarea></div>
         <button class="kz-sp" id="kz-ru" onclick="kzSetSpindel('ru')">RU · G55</button>
       </div>
     </div>
-    <div style="font-family:var(--mono);font-size:11px;color:var(--ink3);margin-bottom:10px">Tippen = Punkt setzen · Z− = Spindel rechts (RO) / links gespiegelt (RU)</div>
+    <div style="font-family:var(--mono);font-size:11px;color:var(--ink3);margin-bottom:10px">Punkte in RO eingeben · RU spiegelt automatisch: Z→−Z, ,A→180−A</div>
     <canvas id="kz-canvas" style="width:100%;height:300px;background:var(--card-soft);border:1px solid var(--line2);border-radius:12px;touch-action:none"></canvas>
     <div class="kz-coords" id="kz-coords">X 0.0 · Z 0.0</div>
     <div class="kz-controls">
@@ -1855,11 +1855,14 @@ function kzRender(){
 function kzClear(){kzPoints=[];kzSel=-1;kzClearFields();document.getElementById('kz-addbtn').textContent='+ Punkt';kzRender();}
 function kzGenCode(){
   const lines=[];
+  const ru=(kzSpindel==='ru');
   kzPoints.forEach((p)=>{
     let l='G1';
     if(p.x!=null)l+='X'+kzFmt(p.x);
-    if(p.z!=null)l+='Z'+kzFmt(p.z);
-    if(p.a!=null)l+=',A'+p.a;
+    // RU mirrors Z sign (RO Z- ↔ RU Z+)
+    if(p.z!=null)l+='Z'+kzFmt(ru?-p.z:p.z);
+    // RU mirrors angle: A' = (180 - A) mod 360
+    if(p.a!=null){let a=ru?((180-p.a)%360+360)%360:p.a;l+=',A'+a;}
     if(p.r!=null)l+=',R'+kzFmtR(p.r);
     if(p.f!=null&&p.f!=='')l+='F'+p.f;
     lines.push(l);
