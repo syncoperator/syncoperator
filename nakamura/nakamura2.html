@@ -181,10 +181,17 @@ html,body{height:100%;font-family:var(--sans);background:var(--bg);color:var(--i
 .kz-sp{font-family:var(--mono);font-size:12px;font-weight:600;padding:7px 11px;border:1px solid var(--line2);background:var(--card);color:var(--ink2);border-radius:8px;cursor:pointer;}
 .kz-sp.on{background:var(--ink);color:#fff;border-color:var(--ink);}
 .kz-coords{font-family:var(--mono);font-size:13px;color:var(--ink2);text-align:center;margin:8px 0;}
-.kz-controls{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-bottom:10px;}
-.kz-field label{display:block;font-family:var(--mono);font-size:9px;letter-spacing:1px;color:var(--ink3);margin-bottom:3px;}
-.kz-field input{width:100%;padding:10px;background:var(--field);border:1px solid var(--line2);border-radius:9px;font-family:var(--mono);font-size:15px;font-weight:600;color:var(--ink);outline:none;}
+.kz-controls{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:10px;}
+.kz-field label{display:block;font-family:var(--mono);font-size:9px;letter-spacing:.5px;color:var(--ink3);margin-bottom:3px;}
+.kz-field input{width:100%;padding:10px 6px;background:var(--field);border:1px solid var(--line2);border-radius:9px;font-family:var(--mono);font-size:14px;font-weight:600;color:var(--ink);outline:none;text-align:center;}
 .kz-field input:focus{border-color:var(--ink);background:#fff;}
+.kz-list{display:flex;flex-direction:column;gap:5px;margin-bottom:10px;max-height:160px;overflow-y:auto;}
+.kz-prow{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--card-soft);border:1px solid var(--line);border-radius:9px;cursor:pointer;}
+.kz-prow.sel{border-color:var(--ink);background:var(--card);}
+.kz-prow .pi{font-family:var(--mono);font-size:11px;color:var(--ink3);width:20px;flex-shrink:0;}
+.kz-prow .pc{flex:1;font-family:var(--mono);font-size:13px;font-weight:600;color:var(--ink);}
+.kz-prow .pd{width:26px;height:26px;border-radius:6px;background:var(--bg2);color:var(--ink2);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:15px;}
+.kz-prow .pd:hover{background:rgba(220,38,38,.14);color:var(--red);}
 .kz-preview{background:var(--card-soft);border:1px solid var(--line);border-radius:10px;padding:12px;font-family:var(--mono);font-size:13px;line-height:1.6;color:var(--ink);max-height:120px;overflow-y:auto;margin-bottom:12px;white-space:pre;}
 /* toolbar + quick + tjump */
 .fr-toolrow{display:flex;gap:6px;}
@@ -679,12 +686,13 @@ T0404 ; A_STECHST.3MM ; 20.90-21.10"></textarea></div>
       <div class="kz-field"><label>Z</label><input id="kz-z" type="number" step="0.1" inputmode="decimal"></div>
       <div class="kz-field"><label>,A Winkel</label><input id="kz-a" type="number" step="1" inputmode="numeric" placeholder="—"></div>
       <div class="kz-field"><label>,R Radius</label><input id="kz-r" type="number" step="0.1" inputmode="decimal" placeholder="—"></div>
+      <div class="kz-field"><label>F</label><input id="kz-f" type="text" inputmode="decimal" placeholder="—"></div>
     </div>
     <div style="display:flex;gap:8px;margin-bottom:10px">
-      <button class="sbtn sec" style="flex:1" onclick="kzAddPoint()">+ Punkt</button>
-      <button class="sbtn sec" style="flex:1" onclick="kzUndo()">↶ Zurück</button>
+      <button class="sbtn save" style="flex:1" id="kz-addbtn" onclick="kzAddPoint()">+ Punkt</button>
       <button class="sbtn sec" style="flex:1" onclick="kzClear()">Leeren</button>
     </div>
+    <div class="kz-list" id="kz-list"></div>
     <div class="kz-preview" id="kz-preview"></div>
     <div class="sheet-btns">
       <button class="sbtn sec" onclick="close_('m-kontur')">Abbrechen</button>
@@ -1715,16 +1723,53 @@ function saveCodeEdit(){
 }
 
 // ═══ KONTUR ZEICHNEN ═══
-let kzPoints=[];     // {x, z, a, r}
-let kzSpindel='ro';  // ro=G54 (Z- rechts), ru=G55 (gespiegelt links)
+let kzPoints=[];     // {x, z, a, r, f}
+let kzSpindel='ro';
 let kzCanvas,kzCtx;
+let kzSel=-1;        // selected point index for editing
 
 function openKonturDraw(){
-  kzPoints=[];
+  kzPoints=[];kzSel=-1;
   kzSpindel='ro';
   kzSetSpindel('ro');
   open_('m-kontur');
   setTimeout(()=>{kzInitCanvas();kzRender();},60);
+}
+function kzReadFields(){
+  const g=id=>{const v=document.getElementById(id).value;return v!==''?v:null;};
+  const num=v=>v!=null?parseFloat(v):null;
+  return {
+    x:(()=>{const v=num(g('kz-x'));return v!=null?Math.abs(v):null;})(),
+    z:num(g('kz-z')),
+    a:num(g('kz-a')),
+    r:num(g('kz-r')),
+    f:g('kz-f') // keep as string (.05, .1)
+  };
+}
+function kzClearFields(){['kz-x','kz-z','kz-a','kz-r','kz-f'].forEach(id=>document.getElementById(id).value='');}
+function kzAddPoint(){
+  const p=kzReadFields();
+  if(p.x==null&&p.z==null&&p.a==null&&p.r==null){toast('Werte eingeben');return;}
+  if(kzSel>=0){kzPoints[kzSel]=p;kzSel=-1;document.getElementById('kz-addbtn').textContent='+ Punkt';}
+  else{kzPoints.push(p);}
+  kzClearFields();kzRender();
+}
+function kzSelectPoint(i){
+  kzSel=i;
+  const p=kzPoints[i];
+  document.getElementById('kz-x').value=p.x!=null?p.x:'';
+  document.getElementById('kz-z').value=p.z!=null?p.z:'';
+  document.getElementById('kz-a').value=p.a!=null?p.a:'';
+  document.getElementById('kz-r').value=p.r!=null?p.r:'';
+  document.getElementById('kz-f').value=p.f!=null?p.f:'';
+  document.getElementById('kz-addbtn').textContent='✓ Ändern';
+  kzRenderList();
+}
+function kzDelPoint(i,ev){
+  if(ev)ev.stopPropagation();
+  kzPoints.splice(i,1);
+  if(kzSel===i){kzSel=-1;kzClearFields();document.getElementById('kz-addbtn').textContent='+ Punkt';}
+  kzRender();
 }
 function kzSetSpindel(s){
   kzSpindel=s;
@@ -1807,36 +1852,27 @@ function kzRender(){
   }
   kzUpdatePreview();
 }
-function kzAddPoint(){
-  const xRaw=document.getElementById('kz-x').value;
-  const zRaw=document.getElementById('kz-z').value;
-  const x=xRaw!==''?parseFloat(xRaw):null;
-  const z=zRaw!==''?parseFloat(zRaw):null;
-  if(x==null&&z==null){toast('X oder Z eingeben');return;}
-  const aRaw=document.getElementById('kz-a').value;
-  const rRaw=document.getElementById('kz-r').value;
-  const a=aRaw!==''?parseFloat(aRaw):null;
-  const r=rRaw!==''?parseFloat(rRaw):null;
-  kzPoints.push({x:(x!=null?Math.abs(x):null),z,a,r});
-  document.getElementById('kz-x').value='';
-  document.getElementById('kz-z').value='';
-  document.getElementById('kz-a').value='';
-  document.getElementById('kz-r').value='';
-  kzRender();
-}
-function kzUndo(){kzPoints.pop();kzRender();}
-function kzClear(){kzPoints=[];kzRender();}
+function kzClear(){kzPoints=[];kzSel=-1;kzClearFields();document.getElementById('kz-addbtn').textContent='+ Punkt';kzRender();}
 function kzGenCode(){
   const lines=[];
   kzPoints.forEach((p)=>{
     let l='G1';
-    if(p.x!=null)l+='X'+p.x.toFixed(2);
-    if(p.z!=null)l+='Z'+p.z.toFixed(2);
+    if(p.x!=null)l+='X'+kzFmt(p.x);
+    if(p.z!=null)l+='Z'+kzFmt(p.z);
     if(p.a!=null)l+=',A'+p.a;
-    if(p.r!=null)l+=',R'+p.r;
+    if(p.r!=null)l+=',R'+kzFmtR(p.r);
+    if(p.f!=null&&p.f!=='')l+='F'+p.f;
     lines.push(l);
   });
   return lines;
+}
+function kzFmt(v){ // CNC style: 40.5, 5., -2., 23.93
+  if(Number.isInteger(v))return v+'.';
+  return v.toString();
+}
+function kzFmtR(v){ // radius: drop leading zero (0.9 -> .9, 0.5 -> .5)
+  let s=v.toString();
+  return s.replace(/^0\./,'.').replace(/^-0\./,'-.');
 }
 // resolve effective x,z for drawing (carry forward last known)
 function kzResolved(){
@@ -1847,9 +1883,21 @@ function kzResolved(){
     return {x:lastX,z:lastZ,a:p.a,r:p.r};
   });
 }
+function kzRenderList(){
+  const list=document.getElementById('kz-list');
+  if(!list)return;
+  const code=kzGenCode();
+  list.innerHTML=kzPoints.map((p,i)=>`
+    <div class="kz-prow ${i===kzSel?'sel':''}" onclick="kzSelectPoint(${i})">
+      <span class="pi">${i+1}</span>
+      <span class="pc">${esc(code[i])}</span>
+      <span class="pd" onclick="kzDelPoint(${i},event)">✕</span>
+    </div>`).join('');
+}
 function kzUpdatePreview(){
   const code=kzGenCode();
   document.getElementById('kz-preview').textContent=code.length?code.join('\n'):'— Punkte hinzufügen —';
+  kzRenderList();
 }
 function kzApply(){
   const code=kzGenCode();
