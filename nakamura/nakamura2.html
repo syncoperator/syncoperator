@@ -204,6 +204,16 @@ html,body{height:100%;font-family:var(--sans);background:var(--bg);color:var(--i
 #m-kzpoint .kz-field input{font-size:18px;padding:14px 10px;}
 .pchip{font-family:var(--mono);font-size:12px;font-weight:600;padding:8px 12px;border:1px solid var(--line2);border-radius:8px;background:var(--card);color:var(--ink);cursor:pointer;}
 .pchip:hover{background:var(--ink);color:#fff;border-color:var(--ink);}
+/* KONTUR FULLSCREEN */
+#m-kontur.kfull .sheet{max-width:100%!important;min-width:100%!important;width:100%;height:100dvh;max-height:100dvh;border-radius:0;margin:0;}
+#m-kontur.kfull #kz-canvas{height:calc(100dvh - 340px)!important;}
+/* CURSOR INPUT BOX */
+#kz-cursor-box{position:absolute;pointer-events:auto;display:none;background:var(--ink);border-radius:8px;padding:5px;gap:4px;transform:translate(-50%,-130%);z-index:6;box-shadow:0 6px 20px rgba(0,0,0,.3);}
+#kz-cursor-box input{width:58px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);border-radius:5px;color:#fff;font-family:var(--mono);font-size:13px;font-weight:600;padding:6px 5px;outline:none;text-align:center;}
+#kz-cursor-box input:focus{background:rgba(255,255,255,.28);border-color:#fff;}
+#kz-cursor-box input::placeholder{color:rgba(255,255,255,.5);}
+#kz-cursor-box .cb-lbl{color:rgba(255,255,255,.6);font-family:var(--mono);font-size:9px;align-self:center;padding:0 2px;}
+#kz-cursor-box .cb-ok{background:#fff;color:var(--ink);border:none;border-radius:5px;font-size:14px;font-weight:700;width:30px;cursor:pointer;}
 /* toolbar + quick + tjump */
 .fr-toolrow{display:flex;gap:6px;}
 .fr-quick{display:flex;flex-wrap:wrap;gap:5px;}
@@ -712,6 +722,7 @@ T0404 ; A_STECHST.3MM ; 20.90-21.10"></textarea></div>
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
       <div class="sheet-title" style="margin:0">Kontur zeichnen</div>
       <div style="display:flex;gap:6px">
+        <button class="kz-sp" id="kz-fs" onclick="kzToggleFull()" title="Vollbild">⛶</button>
         <button class="kz-sp" id="kz-ro" onclick="kzSetSpindel('ro')">RO · G54</button>
         <button class="kz-sp" id="kz-ru" onclick="kzSetSpindel('ru')">RU · G55</button>
       </div>
@@ -726,6 +737,11 @@ T0404 ; A_STECHST.3MM ; 20.90-21.10"></textarea></div>
     <div style="position:relative">
       <canvas id="kz-canvas" style="width:100%;height:340px;background:var(--card-soft);border:1px solid var(--line2);border-radius:12px;touch-action:none;display:block"></canvas>
       <div id="kz-cursor-tag" style="position:absolute;pointer-events:none;display:none;background:var(--ink);color:#fff;font-family:var(--mono);font-size:12px;font-weight:600;padding:4px 8px;border-radius:6px;white-space:nowrap;transform:translate(-50%,-140%);z-index:5"></div>
+      <div id="kz-cursor-box" style="display:none">
+        <span class="cb-lbl">Ø</span><input id="kz-cb-x" type="number" step="0.001" inputmode="decimal" placeholder="X" onkeydown="if(event.key==='Enter')kzCbAdd()">
+        <span class="cb-lbl">Z</span><input id="kz-cb-z" type="number" step="0.001" inputmode="decimal" placeholder="Z" onkeydown="if(event.key==='Enter')kzCbAdd()">
+        <button class="cb-ok" onclick="kzCbAdd()">✓</button>
+      </div>
     </div>
     <div class="kz-controls" style="display:none">
       <div class="kz-field"><label>X (Ø)</label><input id="kz-x" type="number" step="0.1" inputmode="decimal"></div>
@@ -1922,11 +1938,12 @@ function kzInitCanvas(){
     x=Math.abs(x);
     if(kzSnap){x=kzSnapVal(x);z=kzSnapVal(z);}
     kzHoverXZ={x,z,px,py};
-    // cursor tag
     const tag=document.getElementById('kz-cursor-tag');
-    tag.style.display='block';
-    tag.style.left=px+'px';tag.style.top=py+'px';
-    tag.textContent='Ø'+kzShort(x)+'  Z'+kzShort(z);
+    if(document.getElementById('kz-cursor-box').style.display==='none'||!document.getElementById('kz-cursor-box').style.display){
+      tag.style.display='block';
+      tag.style.left=px+'px';tag.style.top=py+'px';
+      tag.textContent='Ø'+kzShort(x)+'  Z'+kzShort(z);
+    }
     kzRender();
   };
   kzCanvas.onpointerleave=()=>{kzHoverXZ=null;document.getElementById('kz-cursor-tag').style.display='none';kzRender();};
@@ -1935,9 +1952,41 @@ function kzInitCanvas(){
     let {x,z}=kzPixelToCoord(px,py,w,h);
     x=Math.abs(x);
     if(kzSnap){x=kzSnapVal(x);z=kzSnapVal(z);}
+    // add point immediately
     kzPoints.push({x:kzRound(x),z:kzRound(z),a:null,r:null,f:null});
     kzRender();
+    // show editable box at that point to fine-tune
+    kzShowCursorBox(px,py,kzPoints.length-1);
   };
+}
+function kzShowCursorBox(px,py,idx){
+  const box=document.getElementById('kz-cursor-box');
+  document.getElementById('kz-cursor-tag').style.display='none';
+  box.style.display='flex';
+  box.style.left=px+'px';box.style.top=py+'px';
+  box.dataset.idx=idx;
+  const p=kzPoints[idx];
+  document.getElementById('kz-cb-x').value=p.x!=null?p.x:'';
+  document.getElementById('kz-cb-z').value=p.z!=null?p.z:'';
+  setTimeout(()=>{const el=document.getElementById('kz-cb-x');el.focus();el.select();},50);
+}
+function kzCbAdd(){
+  const box=document.getElementById('kz-cursor-box');
+  const idx=parseInt(box.dataset.idx,10);
+  const xv=document.getElementById('kz-cb-x').value;
+  const zv=document.getElementById('kz-cb-z').value;
+  if(!isNaN(idx)&&kzPoints[idx]){
+    kzPoints[idx].x=xv!==''?Math.abs(kzRound(parseFloat(xv))):null;
+    kzPoints[idx].z=zv!==''?kzRound(parseFloat(zv)):null;
+  }
+  box.style.display='none';
+  kzRender();
+}
+function kzToggleFull(){
+  const m=document.getElementById('m-kontur');
+  m.classList.toggle('kfull');
+  document.getElementById('kz-fs').classList.toggle('on',m.classList.contains('kfull'));
+  setTimeout(()=>{kzInitCanvas();kzRender();},80);
 }
 function kzSnapVal(v){return Math.round(v/kzGrid)*kzGrid;}
 function kzShort(v){return (Math.round(v*100)/100).toString();}
