@@ -483,6 +483,32 @@ input[type=range]{accent-color:var(--green);}
 
 /* CODE ALWAYS UPPERCASE */
 .tce-area,.codearea,.fr-lineedit,#code-edit,.ioarea,#kz-cb-x,#kz-cb-z{text-transform:uppercase;}
+
+/* TCE FULLSCREEN */
+#m-tce.tfull .sheet{max-width:100%!important;min-width:100%!important;width:100%;height:100dvh;max-height:100dvh;border-radius:0;margin:0;}
+
+/* CODE TOOL-BLOCK TILES */
+.cblock{position:relative;margin:0 8px 12px;padding:14px 0 8px;background:#fff;border:1px solid var(--line2);border-left:4px solid var(--ink);border-radius:12px;box-shadow:0 2px 0 var(--ksh);}
+.cblock.alt{border-left-color:#C2670B;background:var(--card-soft);}
+.cblock-tab{position:absolute;top:-1px;left:-4px;background:var(--ink);color:#fff;font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:1px;padding:3px 10px;border-radius:0 0 8px 0;}
+.cblock.alt .cblock-tab{background:#C2670B;}
+.cblock .codeline{padding-left:2px;}
+.cblock .codeline .ln{background:transparent;border-right-color:var(--line);}
+
+/* PER-LINE COLORED TILES */
+.codeline{border-radius:7px;margin:2px 8px 2px 0;transition:background .1s;}
+.cblock .codeline{margin-right:8px;}
+.cl-feed{background:#EAF3EE;box-shadow:inset 3px 0 0 #0E9F5A;}      /* G1 cut - green */
+.cl-kontur{background:#EAF3EE;box-shadow:inset 3px 0 0 #0A7A44;}    /* contour */
+.cl-rapid{background:#F0F1F3;box-shadow:inset 3px 0 0 #9DA1AD;}     /* G0 rapid - grey */
+.cl-ref{background:#FAE9E7;box-shadow:inset 3px 0 0 #D6453D;}       /* G28 return - red */
+.cl-wcs{background:#FBF2DD;box-shadow:inset 3px 0 0 #B8860B;}       /* G54/55 - gold */
+.cl-tech{background:#E7F5F6;box-shadow:inset 3px 0 0 #0A8B99;}      /* spindle/feed */
+.cl-m{background:#F5EEE4;box-shadow:inset 3px 0 0 #C2670B;}         /* M codes */
+.cl-c{background:transparent;}                                      /* comments plain */
+.codeline.hl{background:#ECEDEF!important;box-shadow:inset 3px 0 0 #111318!important;}
+.codeline.match{background:#FBF2DD!important;}
+.codeline.match-active{background:#F7E3B4!important;box-shadow:inset 3px 0 0 #D98E04!important;}
 </style>
 </head>
 <body>
@@ -799,7 +825,10 @@ T0404 ; A_STECHST.3MM ; 20.90-21.10"></textarea></div>
 <div class="overlay" id="m-tce" onclick="if(event.target===this)close_('m-tce')">
   <div class="sheet">
     <div class="sheet-bar"></div>
-    <div class="sheet-title" id="tce-title" style="margin-bottom:6px">Werkzeug-Code</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+      <div class="sheet-title" id="tce-title" style="margin:0">Werkzeug-Code</div>
+      <button class="kz-sp" id="tce-fs" onclick="tceToggleFull()" title="Vollbild">⛶</button>
+    </div>
     <div style="font-family:var(--mono);font-size:11px;color:var(--ink3);margin-bottom:16px">Jede Sektion einzeln bearbeiten · Reihenfolge wird beim Speichern übernommen</div>
     <div id="tce-body"></div>
     <div class="sheet-btns">
@@ -1413,12 +1442,12 @@ function makePDF(){
   const meta=ensureMeta(p);
   const metaRows=meta.map((f,idx)=>`<div style="display:flex;justify-content:space-between;${idx<meta.length-1?'border-bottom:.5px solid #000;':''}"><span>${esc(f.label)}</span><span>${esc(f.value)||'-'}</span></div>`).join('');
   const getHead=()=>`
-    <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:10px;min-height:100px;">
-      <div>
-        <div style="font-size:18px;font-weight:900;text-transform:uppercase;color:#000;">${esc(p.name)}</div>
-        <div style="font-size:90px;font-weight:900;line-height:.8;letter-spacing:-4px;margin-left:-4px;">${esc(p.num)}</div>
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;min-height:100px;">
+      <div style="padding-top:2px;">
+        <div style="font-size:18px;font-weight:900;text-transform:uppercase;color:#000;letter-spacing:.5px;">${esc(p.name)}</div>
+        <div style="font-size:88px;font-weight:900;line-height:.85;letter-spacing:-4px;margin-left:-4px;margin-top:2px;">${esc(p.num)}</div>
       </div>
-      <div style="width:250px;font-size:12px;font-weight:800;line-height:1.7;margin-bottom:5px;">
+      <div style="width:250px;font-size:12px;font-weight:800;line-height:1.7;">
         ${metaRows}
       </div>
     </div><div style="border-bottom:2px solid #000;margin-bottom:12px;"></div>`;
@@ -1640,11 +1669,46 @@ function renderCodeView(){
       if(new RegExp('T0*'+idNum+'\\b').test(l)&&!/^\(/.test(l)){jumpIdx=i;break;}
     }
   }
+  // group into tool blocks: a new block starts at a line containing T####
   const view=document.getElementById('code-view');
-  view.innerHTML=lines.map((l,i)=>{
+  let html='';
+  let blockOpen=false, blockIdx=-1, jumpBlockId=null;
+  const lineHTML=(l,i)=>{
     const isT=/T\d{4}/.test(l)&&!/^\s*\(/.test(l);
-    return `<div class="codeline${i===jumpIdx?' hl':''}${isT?' code-t':''}" id="cl-${i}"${isT?` onclick="openToolCodeByLine('${codeCtx.kanal}',${i})"`:''}><span class="ln">${i+1}</span><span class="lc">${hlLine(l)||' '}</span>${isT?'<span class="code-edit-tag">✎</span>':''}</div>`;
-  }).join('');
+    const U=l.trim().toUpperCase();
+    let t='';
+    if(/^\(/.test(l.trim()))t='c';
+    else if(/G2[8]|G30|G53/.test(U))t='ref';
+    else if(/G5[4-9]/.test(U))t='wcs';
+    else if(/,A|,R/.test(U)||/G0?[123].*[XZ]-?[\d.]/.test(U)&&/,A|,R|Z-/.test(U))t='kontur';
+    else if(/^G0?1|G0?2|G0?3/.test(U)&&/[XZ]-?[\d.]/.test(U))t='feed';
+    else if(/^G0[XZ]|^G00[XZ]|^G0\s/.test(U)&&/[XZ]/.test(U))t='rapid';
+    else if(/G9[678]|^S\d|M0?[34]\b|M8|M9|M41/.test(U))t='tech';
+    else if(/^M\d/.test(U))t='m';
+    return `<div class="codeline cl-${t}${i===jumpIdx?' hl':''}${isT?' code-t':''}" id="cl-${i}"${isT?` onclick="openToolCodeByLine('${codeCtx.kanal}',${i})"`:''}><span class="ln">${i+1}</span><span class="lc">${hlLine(l)||' '}</span>${isT?'<span class="code-edit-tag">✎</span>':''}</div>`;
+  };
+  lines.forEach((l,i)=>{
+    const U=l.trim().toUpperCase();
+    // new tool block starts at frame line N<num>G54/G55...  (or a bare T#### line)
+    const isFrameStart=/^N\d+G5[0-9]/.test(U);
+    const isTLine=/T\d{4}/.test(l)&&!/^\s*\(/.test(l);
+    if(isFrameStart||(isTLine&&!blockOpen)){
+      if(blockOpen)html+='</div>';
+      blockIdx++;
+      // label: prefer T-number found in this or next few lines
+      let tid='';
+      const tm=U.match(/T(\d{4})/);
+      if(tm)tid='T'+tm[1];
+      else{for(let j=i;j<Math.min(lines.length,i+4);j++){const t2=lines[j].match(/T(\d{4})/);if(t2&&!/^\s*\(/.test(lines[j])){tid='T'+t2[1];break;}}}
+      const wcs=/G55/.test(U)?'ru':(/G54/.test(U)?'ro':'');
+      if(i===jumpIdx)jumpBlockId=blockIdx;
+      html+=`<div class="cblock ${blockIdx%2?'alt':''} ${wcs}" data-b="${blockIdx}"><div class="cblock-tab">${tid||('#'+(blockIdx+1))}${wcs?' · '+wcs.toUpperCase():''}</div>`;
+      blockOpen=true;
+    }
+    html+=lineHTML(l,i);
+  });
+  if(blockOpen)html+='</div>';
+  view.innerHTML=html;
   if(jumpIdx>=0){
     setTimeout(()=>{const el=document.getElementById('cl-'+jumpIdx);if(el)el.scrollIntoView({block:'center',behavior:'smooth'});},120);
   }
@@ -1725,12 +1789,20 @@ function renderSplit(){
   const ob=getCode('oben').split(/\r?\n/), un=getCode('unten').split(/\r?\n/);
   const html=(lines)=>lines.map((l,i)=>`<div class="codeline" data-i="${i}"><span class="ln">${i+1}</span><span class="lc">${hlLine(l)||' '}</span></div>`).join('');
   const vo=document.getElementById('code-view-o'), vu=document.getElementById('code-view-u');
-  vo.innerHTML=getCode('oben')?html(ob):'<div style="color:#7A8290;padding:8px">Kein Code</div>';
-  vu.innerHTML=getCode('unten')?html(un):'<div style="color:#7A8290;padding:8px">Kein Code</div>';
-  // synchronized scroll
+  vo.innerHTML=getCode('oben')?html(ob):'<div style="color:var(--ink3);padding:8px">Kein Code</div>';
+  vu.innerHTML=getCode('unten')?html(un):'<div style="color:var(--ink3);padding:8px">Kein Code</div>';
+  // synchronized scroll (proportional, both axes)
   let lock=false;
-  vo.onscroll=()=>{if(lock)return;lock=true;vu.scrollTop=vo.scrollTop;requestAnimationFrame(()=>lock=false);};
-  vu.onscroll=()=>{if(lock)return;lock=true;vo.scrollTop=vu.scrollTop;requestAnimationFrame(()=>lock=false);};
+  const sync=(from,to)=>{
+    if(lock)return;lock=true;
+    const denom=(from.scrollHeight-from.clientHeight)||1;
+    const ratio=from.scrollTop/denom;
+    to.scrollTop=ratio*((to.scrollHeight-to.clientHeight)||1);
+    to.scrollLeft=from.scrollLeft;
+    setTimeout(()=>lock=false,20);
+  };
+  vo.onscroll=()=>sync(vo,vu);
+  vu.onscroll=()=>sync(vu,vo);
 }
 
 // SEARCH
@@ -2475,6 +2547,11 @@ function simSaveCode(){
 renderHeader();render();
 // splash stays until correct PIN entered
 setTimeout(()=>{const inp=document.getElementById('pin-input');if(inp)inp.focus();},300);
+function tceToggleFull(){
+  const m=document.getElementById('m-tce');
+  m.classList.toggle('tfull');
+  document.getElementById('tce-fs').classList.toggle('on',m.classList.contains('tfull'));
+}
 function checkPin(){
   const inp=document.getElementById('pin-input');
   const box=document.getElementById('pin-box');
