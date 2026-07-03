@@ -13,19 +13,19 @@
    ════════════════════════════════════════════════════════════════ */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
 :root{
-  --bg:#F2F2ED; --bg2:#E9E9E2;
-  --card:#FFFFFF; --card-soft:#FAFAF6; --field:#EFEFEA;
-  --line:#E3E3DB; --line2:#D2D2C8;
-  --ink:#141412; --ink2:#54544C; --ink3:#9B9B90;
-  --green:#0E9F5A; --green-deep:#0A7A44; --green-bg:#E1F4EA;
+  --bg:#F2F3F5; --bg2:#E8EAED;
+  --card:#FFFFFF; --card-soft:#FAFBFC; --field:#F0F1F3;
+  --line:#E7E8EC; --line2:#D8DAE0;
+  --ink:#111318; --ink2:#5A5E6B; --ink3:#9DA1AD;
+  --green:#111318; --green-deep:#000000; --green-bg:#ECEDEF;
   --amber:#D98E04; --amber-bg:#FBF2DD;
   --red:#D6453D; --red-bg:#FAE9E7;
-  --ksh:#D8D8CD;            /* keycap hard shadow */
+  --ksh:#DEE0E5;            /* keycap hard shadow */
   --sans:'Space Grotesk',sans-serif; --mono:'JetBrains Mono',monospace;
   --r-lg:18px; --r-md:12px; --r-sm:9px;
-  --focus:0 0 0 3px rgba(14,159,90,.30);
+  --focus:0 0 0 3px rgba(17,19,24,.22);
   --tick:repeating-linear-gradient(90deg,var(--line2) 0 1px,transparent 1px 7px);
-  --tick-strong:repeating-linear-gradient(90deg,#B9B9AD 0 1px,transparent 1px 6px);
+  --tick-strong:repeating-linear-gradient(90deg,#C4C7CE 0 1px,transparent 1px 6px);
 }
 html,body{height:100%;font-family:var(--sans);background:var(--bg);color:var(--ink);font-size:15px;-webkit-font-smoothing:antialiased;}
 .app{max-width:520px;margin:0 auto;min-height:100dvh;background:var(--bg);display:flex;flex-direction:column;}
@@ -184,7 +184,7 @@ button{font-family:var(--sans);}
 .tok-c{color:#8B8B82;font-style:italic;}
 .tok-o{color:#8A3FC6;font-weight:700;}
 .tok-wcs{color:#B8860B;font-weight:700;}
-.tok-motion{color:var(--green-deep);font-weight:700;}
+.tok-motion{color:#111318;font-weight:700;}
 .tok-axis{color:#C81E63;font-weight:700;}
 .tok-x{color:#C81E63;font-weight:700;}
 .tok-z{color:#0E8AA0;font-weight:700;}
@@ -192,7 +192,7 @@ button{font-family:var(--sans);}
 .tok-val{color:#1A1A17;}
 .tok-minus{color:var(--red);font-weight:700;}
 .tok-fs{color:#8A3FC6;font-weight:600;}
-.tok-ar{color:var(--green-deep);font-weight:600;}
+.tok-ar{color:#5A5E6B;font-weight:600;}
 
 /* ── KEYCAPS ────────────────────────────────────────────────── */
 .key{font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:.5px;padding:11px 14px;border:1px solid var(--line2);border-radius:var(--r-sm);background:#fff;color:var(--ink);cursor:pointer;box-shadow:0 2px 0 var(--ksh);transition:transform .08s,box-shadow .08s,background .15s;user-select:none;white-space:nowrap;}
@@ -470,7 +470,7 @@ input[type=range]{accent-color:var(--green);}
 .splash-fill{width:0;height:100%;background:#fff;border-radius:2px;animation:splashLoad 1.4s ease forwards;}
 #pin-box{margin-top:34px;display:flex;flex-direction:column;align-items:center;gap:14px;animation:fadeUp .6s ease .5s both;}
 #pin-input{width:180px;text-align:center;font-family:var(--mono);font-size:30px;letter-spacing:16px;padding:16px 10px 16px 26px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.2);border-radius:14px;color:#fff;outline:none;transition:.2s;box-shadow:none;}
-#pin-input:focus{border-color:var(--green);background:rgba(255,255,255,.12);box-shadow:0 0 24px rgba(14,159,90,.22);}
+#pin-input:focus{border-color:var(--green);background:rgba(255,255,255,.12);box-shadow:0 0 24px rgba(17,19,24,.18);}
 #pin-input::placeholder{color:rgba(255,255,255,.25);letter-spacing:16px;}
 #pin-btn{font-family:var(--sans);font-size:15px;font-weight:700;padding:14px 44px;background:#fff;color:#000;border:none;border-radius:12px;cursor:pointer;transition:.15s;}
 #pin-btn:hover{box-shadow:0 0 28px rgba(14,159,90,.4);}
@@ -480,6 +480,9 @@ input[type=range]{accent-color:var(--green);}
 @keyframes pinShake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-9px)}40%,80%{transform:translateX(9px)}}
 @keyframes splashPop{from{transform:scale(.5);opacity:0}to{transform:scale(1);opacity:1}}
 @keyframes splashLoad{from{width:0}to{width:100%}}
+
+/* CODE ALWAYS UPPERCASE */
+.tce-area,.codearea,.fr-lineedit,#code-edit,.ioarea,#kz-cb-x,#kz-cb-z{text-transform:uppercase;}
 </style>
 </head>
 <body>
@@ -1300,22 +1303,31 @@ const SERVICE_RE=/^(WARTEN|ENTSPANEN|BOHREN|ABFRAGE|FERTIGTEIL|G5[45]-|BACKEN|AU
 function parseProgram(text){
   const lines=text.split(/\r?\n/);
   const ops=[];
-  let pendingT=null, pendingLine=-1;
+  let pendingT=null, pendingLine=-1, pendingName=null;
+  const commit=()=>{
+    if(pendingT!==null){
+      ops.push({slot:'',id:pendingT,nm:(pendingName||pendingT).toUpperCase(),dia:'',bem:'',isSonder:false,line:pendingLine});
+      pendingT=null;pendingName=null;
+    }
+  };
   for(let idx=0;idx<lines.length;idx++){
     const line=lines[idx].trim();
     const tm=line.match(/T(\d{4})/);
     if(tm && /T\d{4}/.test(line) && !/^\(/.test(line)){
-      pendingT='T'+tm[1]; pendingLine=idx;
+      commit(); // close previous tool (even if it only had a service comment)
+      pendingT='T'+tm[1]; pendingLine=idx; pendingName=null;
       continue;
     }
     const cm=line.match(/^\((.+?)\)/);
-    if(cm && pendingT){
+    if(cm && pendingT!==null && pendingName===null){
       const comment=cm[1].trim();
-      if(SERVICE_RE.test(comment)){continue;}
-      ops.push({slot:'',id:pendingT,nm:comment.toUpperCase(),dia:'',bem:'',isSonder:false,line:pendingLine});
-      pendingT=null;
+      if(/^-{2,}.*-{2,}$/.test(comment)){continue;} // our section label, not a name
+      if(SERVICE_RE.test(comment)){continue;} // skip as name, but keep tool pending
+      pendingName=comment;
+      commit();
     }
   }
+  commit();
   return ops;
 }
 
@@ -1508,6 +1520,8 @@ function classifyToolBlock(lines,start,end){
     const l=raw.trim();
     if(l==='')continue;
     const U=l.toUpperCase();
+    // skip our own section-label comments (---ANFAHREN---) etc.
+    if(/^\(-{2,}.*-{2,}\)$/.test(l)||/^\(---/.test(l))continue;
     // tool number / frame
     if(/T\d{4}/.test(U)&&!/^\(/.test(U)){sec.wkznr.push(raw);continue;}
     if(/^N\d+G5[0-9]/.test(U)||/^N\d+\s*$/.test(U)){sec.wkznr.push(raw);continue;}
@@ -1597,7 +1611,7 @@ function saveToolCode(){
     if(secLines.length){
       const mark=document.getElementById('tce-mark-'+k);
       if(mark&&mark.checked)block.push('(---'+TCE_LABELS[k].toUpperCase()+'---)');
-      secLines.forEach(line=>block.push(line));
+      secLines.forEach(line=>block.push(upCode(line)));
     }
   });
   const before=lines.slice(0,tce.startLine);
@@ -1928,8 +1942,12 @@ function toggleDiff(){
   renderFrList();
 }
 
+function upCode(line){
+  // uppercase everything except inside (comments) — comments stay as typed
+  return line.replace(/\([^)]*\)|[^()]+/g,seg=>seg.startsWith('(')?seg:seg.toUpperCase());
+}
 function saveCodeEdit(){
-  const txt=frLines.join('\n');
+  const txt=frLines.map(upCode).join('\n');
   setCode(codeCtx.kanal,txt);
   const ops=parseProgram(txt);
   if(codeCtx.kanal==='unten')P().unten=ops;else P().oben=ops;
@@ -2150,7 +2168,7 @@ function kzRender(){
     pts.forEach((p,i)=>{const {px,py}=kzCoordToPixel(p.x,p.z,w,h);
       kzCtx.fillStyle='#141412';kzCtx.beginPath();kzCtx.arc(px,py,4.5,0,7);kzCtx.fill();
       kzCtx.fillStyle='#fff';kzCtx.font='8px monospace';kzCtx.textAlign='center';kzCtx.fillText(i+1,px,py+3);kzCtx.textAlign='left';
-      if(p.a!=null){kzCtx.fillStyle='#0A7A44';kzCtx.font='10px monospace';kzCtx.fillText('A'+p.a,px+7,py-5);}
+      if(p.a!=null){kzCtx.fillStyle='#111318';kzCtx.font='10px monospace';kzCtx.fillText('A'+p.a,px+7,py-5);}
       if(p.r!=null){kzCtx.fillStyle='#C2670B';kzCtx.font='10px monospace';kzCtx.fillText('R'+p.r,px+7,py+12);}
     });
   }
@@ -2349,7 +2367,7 @@ function simDraw(){
       // G2/G3 arc through scaled radius
       const sc=simScale(w,h);
       drawArc(p0,p1,arcR*sc,s.g,false);
-      simCtx.strokeStyle=rapid?'rgba(150,150,140,.22)':'rgba(14,159,90,.22)';simCtx.lineWidth=1;
+      simCtx.strokeStyle=rapid?'rgba(150,150,140,.22)':'rgba(17,19,24,.18)';simCtx.lineWidth=1;
       drawArc({px:p0.px,py:h-p0.py},{px:p1.px,py:h-p1.py},arcR*sc,s.g,true);
     }else if(!rapid&&arcR>0&&i<simSegs.length-1){
       // ,R corner rounding using next segment
@@ -2357,12 +2375,12 @@ function simDraw(){
       const pc=simC2P(next.x1,next.z1,w,h);
       const sc=simScale(w,h); const rPx=arcR*sc;
       cornerRound(p0,p1,pc,rPx,false);
-      simCtx.strokeStyle='rgba(14,159,90,.22)';simCtx.lineWidth=1;
+      simCtx.strokeStyle='rgba(17,19,24,.18)';simCtx.lineWidth=1;
       cornerRound({px:p0.px,py:h-p0.py},{px:p1.px,py:h-p1.py},{px:pc.px,py:h-pc.py},rPx,true);
     }else{
       simCtx.beginPath();simCtx.moveTo(p0.px,p0.py);simCtx.lineTo(p1.px,p1.py);simCtx.stroke();
       simCtx.setLineDash([]);
-      simCtx.strokeStyle=rapid?'rgba(150,150,140,.22)':'rgba(14,159,90,.22)';simCtx.lineWidth=1;
+      simCtx.strokeStyle=rapid?'rgba(150,150,140,.22)':'rgba(17,19,24,.18)';simCtx.lineWidth=1;
       simCtx.beginPath();simCtx.moveTo(p0.px,h-p0.py);simCtx.lineTo(p1.px,h-p1.py);simCtx.stroke();
     }
     simCtx.setLineDash([]);
@@ -2464,7 +2482,7 @@ function checkPin(){
   if(inp.value==='3504'){
     const s=document.getElementById('splash');
     s.classList.add('hide');
-    setTimeout(()=>{s.style.display='none';},500);
+    setTimeout(()=>{s.style.display='none';},400);
   }else{
     err.textContent='Falscher Code';
     box.classList.add('shake');
@@ -2474,6 +2492,11 @@ function checkPin(){
     inp.focus();
   }
 }
+// auto-submit as soon as 4 digits entered
+document.addEventListener('DOMContentLoaded',()=>{
+  const pi=document.getElementById('pin-input');
+  if(pi)pi.addEventListener('input',()=>{if(pi.value.length===4)checkPin();});
+});
 </script>
 </body>
 </html>
