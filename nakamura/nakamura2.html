@@ -82,10 +82,6 @@ button{font-family:var(--sans);}
 
 /* ── HEAD FIELDS · plates ───────────────────────────────────── */
 .headrow{display:flex;gap:10px;padding:2px 18px 14px;align-items:flex-end;}
-.menu-btn{width:60px;height:60px;border:1px solid var(--line2);border-radius:var(--r-md);background:var(--card);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;box-shadow:var(--sh-1);transition:transform .1s,box-shadow .15s,border-color .15s;}
-.menu-btn:hover{border-color:var(--ink3);}
-.menu-btn:active{transform:translateY(1px);box-shadow:none;}
-.menu-btn svg{width:23px;height:23px;stroke:var(--ink);fill:none;stroke-width:1.9;}
 .fieldbox{flex:1;min-width:0;}
 .fieldbox label{display:block;font-family:var(--mono);font-size:9.5px;letter-spacing:2px;color:var(--ink3);margin-bottom:7px;padding-left:2px;}
 .fieldbox input{width:100%;height:60px;border:1px solid var(--line2);border-radius:var(--r-md);background:var(--card);padding:0 16px;font-family:var(--mono);font-size:21px;font-weight:700;color:var(--ink);outline:none;box-shadow:var(--sh-1);transition:border-color .15s,box-shadow .15s;}
@@ -679,9 +675,6 @@ input[type=range]{accent-color:var(--green);}
       <button class="icon-btn" onclick="openIO()" title="Import" aria-label="Import">
         <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
       </button>
-      <button class="icon-btn" onclick="exportCurrent()" title="Export" aria-label="Export">
-        <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-      </button>
       <button class="icon-btn" onclick="makePDF()" title="Als PDF drucken" aria-label="Als PDF drucken">
         <svg viewBox="0 0 24 24"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
       </button>
@@ -1141,6 +1134,31 @@ T0404 ; A_STECHST.3MM ; 20.90-21.10"></textarea></div>
   </div>
 </div>
 
+<!-- CONFIRM MODAL -->
+<div class="overlay" id="m-confirm" onclick="if(event.target===this)close_('m-confirm')">
+  <div class="sheet" style="max-width:400px">
+    <div class="sheet-bar"></div>
+    <div class="sheet-title" id="confirm-msg" style="margin-bottom:20px">Löschen?</div>
+    <div class="sheet-btns">
+      <button class="sbtn sec" onclick="close_('m-confirm')">Abbrechen</button>
+      <button class="sbtn save" onclick="confirmYes()">OK</button>
+    </div>
+  </div>
+</div>
+
+<!-- PROMPT MODAL -->
+<div class="overlay" id="m-prompt" onclick="if(event.target===this)close_('m-prompt')">
+  <div class="sheet" style="max-width:420px">
+    <div class="sheet-bar"></div>
+    <div class="sheet-title" id="prompt-msg">Eingabe</div>
+    <div class="f"><input id="prompt-input" onkeydown="if(event.key==='Enter')promptOk()"></div>
+    <div class="sheet-btns">
+      <button class="sbtn sec" onclick="close_('m-prompt')">Abbrechen</button>
+      <button class="sbtn save" onclick="promptOk()">OK</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ═══ DATA ═══
 const DB='CITITOOL_2026';
@@ -1156,7 +1174,6 @@ if(!db.length){ db.push(newProject()); }
 function defaultMeta(){return[
   {label:'LAUFZEIT',value:''},{label:'MATERIAL',value:''},
   {label:'SÄGELÄNGE',value:''},{label:'ABSTAND',value:''},
-  {label:'STÜCK T',value:''},{label:'STÜCK N',value:''},
   {label:'GREIFBACKEN',value:'',wide:true}
 ];}
 function newProject(){return{num:'',name:'',titleOben:'Revolver Oben',titleUnten:'Revolver Unten',meta:defaultMeta(),oben:[],unten:[]};}
@@ -1167,10 +1184,11 @@ function ensureMeta(p){
     p.meta=[
       {label:'LAUFZEIT',value:p.lzf||''},{label:'MATERIAL',value:p.mat||''},
       {label:'SÄGELÄNGE',value:p.sag||''},{label:'ABSTAND',value:p.abs||''},
-      {label:'STÜCK T',value:p.stt||''},{label:'STÜCK N',value:p.stn||''},
       {label:'GREIFBACKEN',value:p.grf||'',wide:true}
     ];
   }
+  // strip removed fields
+  p.meta=p.meta.filter(f=>f.label!=='STÜCK T'&&f.label!=='STÜCK N');
   return p.meta;
 }
 function curList(){const p=P(); if(!p.oben)p.oben=[]; if(!p.unten)p.unten=[]; return kanal==='oben'?p.oben:p.unten;}
@@ -1180,6 +1198,18 @@ function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2200);}
 function close_(id){document.getElementById(id).classList.remove('active');}
 function open_(id){document.getElementById(id).classList.add('active');}
+// ── custom dialogs (no native confirm/prompt) ──
+let _confirmCb=null;
+function uiConfirm(msg,cb){document.getElementById('confirm-msg').textContent=msg;_confirmCb=cb;open_('m-confirm');}
+function confirmYes(){close_('m-confirm');const cb=_confirmCb;_confirmCb=null;if(cb)cb();}
+let _promptCb=null;
+function uiPrompt(msg,val,cb){
+  document.getElementById('prompt-msg').textContent=msg;
+  document.getElementById('prompt-input').value=val||'';
+  _promptCb=cb;open_('m-prompt');
+  setTimeout(()=>{const el=document.getElementById('prompt-input');if(el){el.focus();el.select();}},80);
+}
+function promptOk(){const v=document.getElementById('prompt-input').value;close_('m-prompt');const cb=_promptCb;_promptCb=null;if(cb)cb(v);}
 // ── side drawer ──
 function openDrawer(){document.getElementById('drawer').classList.add('open');}
 function closeDrawer(){document.getElementById('drawer').classList.remove('open');}
@@ -1212,9 +1242,7 @@ function addMetaField(){
   persist();renderMeta();
 }
 function delMetaField(i){
-  const meta=ensureMeta(P());
-  if(!confirm('Feld löschen?'))return;
-  meta.splice(i,1);persist();renderMeta();
+  uiConfirm('Feld löschen?',()=>{const meta=ensureMeta(P());meta.splice(i,1);persist();renderMeta();});
 }
 
 // ═══ RENDER ═══
@@ -1300,7 +1328,7 @@ function applyMoveTo(){
   if(pos!==i){const [item]=l.splice(i,1);l.splice(pos,0,item);persist();render();}
   close_('m-movepos');moveCtx=null;
 }
-function delIn(n,i){if(!confirm('Werkzeug löschen?'))return;listByName(n).splice(i,1);persist();render();}
+function delIn(n,i){uiConfirm('Werkzeug löschen?',()=>{listByName(n).splice(i,1);persist();render();});}
 function editIn(n,i){editList=n;openToolModal(i,n);}
 
 function addListBatch(target){
@@ -1340,8 +1368,7 @@ function renameSection(n){
   const p=P();
   const key=n==='unten'?'titleUnten':'titleOben';
   const cur=p[key]||(n==='unten'?'Revolver Unten':'Revolver Oben');
-  const val=prompt('Bezeichnung ändern:',cur);
-  if(val!==null&&val.trim()){p[key]=val.trim();persist();render();}
+  uiPrompt('Bezeichnung ändern:',cur,(val)=>{if(val!=null&&val.trim()){p[key]=val.trim();persist();render();}});
 }
 
 // ═══ TOOL MODAL ═══
@@ -1451,9 +1478,10 @@ function saveProject(){
   persist();close_('m-proj');renderHeader();render();
 }
 function deleteProject(){
-  if(!confirm('Projekt löschen?'))return;
-  db.splice(cur,1);if(!db.length)db.push(newProject());cur=0;
-  persist();close_('m-proj');renderHeader();render();
+  uiConfirm('Projekt löschen?',()=>{
+    db.splice(cur,1);if(!db.length)db.push(newProject());cur=0;
+    persist();close_('m-proj');renderHeader();render();
+  });
 }
 function openProjList(){
   const body=document.getElementById('projlist-body');
@@ -1468,7 +1496,7 @@ function openProjList(){
   open_('m-projlist');
 }
 function selectProject(i){cur=i;close_('m-projlist');renderHeader();render();}
-function delProjectByIdx(i){if(!confirm('Projekt löschen?'))return;db.splice(i,1);if(!db.length)db.push(newProject());if(cur>=db.length)cur=0;persist();openProjList();renderHeader();render();}
+function delProjectByIdx(i){uiConfirm('Projekt löschen?',()=>{db.splice(i,1);if(!db.length)db.push(newProject());if(cur>=db.length)cur=0;persist();openProjList();renderHeader();render();});}
 
 // ═══ LIBRARY ═══
 function openLibrary(){renderLibrary();open_('m-lib');}
@@ -1519,7 +1547,7 @@ function saveLib(i){
   if(brain.library[i].nm&&!brain.nm.includes(brain.library[i].nm))brain.nm.push(brain.library[i].nm);
   saveBrain();renderLibrary();toast('Gespeichert');
 }
-function delLib(i){if(!confirm('Eintrag löschen?'))return;brain.library.splice(i,1);saveBrain();renderLibrary();toast('Gelöscht');}
+function delLib(i){uiConfirm('Eintrag löschen?',()=>{brain.library.splice(i,1);saveBrain();renderLibrary();toast('Gelöscht');});}
 function useLibItem(i){
   const it=brain.library[i];
   const target=(it.rev==='unten')?'unten':'oben';
@@ -2855,13 +2883,13 @@ const VLG_ZYKLUS=[
    p:[{k:'u',label:'U Aufmaß X',def:'0.4'},{k:'w',label:'W Aufmaß Z',def:'0.1'},{k:'d',label:'D Zustellung',def:'1.0'},{k:'f',label:'F Vorschub',def:'0.15'},{k:'ns',label:'Kontur Start N',def:'10'},{k:'nf',label:'Kontur End N',def:'20'}],
    gen:v=>['G72W'+v.d+'R0.5','G72P'+v.ns+'Q'+v.nf+'U'+v.u+'W'+v.w+'F'+v.f,'(--- KONTUR N'+v.ns+'-N'+v.nf+' ---)','G70P'+v.ns+'Q'+v.nf]},
   {id:'nutr',name:'Nut stechen (Außenradius)',desc:'Nb + Stecher → Stiche & Z2 automatisch',
-   long:'<b>Nut stechen mit Außenradius</b> – nur Startkante und Nutbreite eingeben. Anzahl der Stiche und zweite Flanke <b>Z2 = Z1 − Nb</b> werden aus <b>Stecherbreite</b> und <b>Nutbreite</b> berechnet. Schruppen in Stichen, Schlicht mit Mündungsradius Ra.<br><b>Z1</b>=Startflanke · <b>Nb</b>=Nutbreite · <b>Xa</b>=Aussen-Ø · <b>Xg</b>=Grund-Ø · <b>Br</b>=Stecherbreite · <b>Ra</b>=Außenradius · <b>Rg</b>=Grundradius (0=aus) · <b>F</b>=Vorschub.',
+   long:'<b>Nut stechen mit Außenradius</b> – <b>Z1</b> = gewünschte Vorderflanke (Zeichnung). Da die Schneide vorne sitzt (Kante = Befehl + Br), rechnet der Zyklus den <b>Z-Befehl = Z1 − Br</b>, damit die Vorderflanke exakt auf Z1 landet. Zweite Flanke <b>Z2 = Z1 − Nb</b>. Schruppen in Stichen, Schlicht mit Mündungsradius Ra.<br><b>Z1</b>=Vorderflanke · <b>Nb</b>=Nutbreite · <b>Xa</b>=Aussen-Ø · <b>Xg</b>=Grund-Ø · <b>Br</b>=Stecherbreite · <b>Ra</b>=Außenradius · <b>Rg</b>=Grundradius (0=aus) · <b>F</b>=Vorschub.',
    p:[{k:'z1',label:'Z1 Start',def:'-10'},{k:'nb',label:'Nb Nutbreite',def:'8'},{k:'xa',label:'Xa Aussen-Ø',def:'40'},{k:'xg',label:'Xg Grund-Ø',def:'30'},{k:'br',label:'Br Stecherbreite',def:'4'},{k:'ra',label:'Ra Außenradius',def:'0.5'},{k:'rg',label:'Rg Grundradius',def:'0'},{k:'f',label:'F Vorschub',def:'0.05'}],
    gen:v=>{
      const r=x=>Math.round(x*1000)/1000;
      const fr=x=>(''+x).replace(/^0\./,'.').replace(/^-0\./,'-.');
      const z1=parseFloat(v.z1),nb=parseFloat(v.nb),xa=parseFloat(v.xa),xg=parseFloat(v.xg),br=parseFloat(v.br),rA=parseFloat(v.ra||0),rG=parseFloat(v.rg||0),f=v.f;
-     const zf=z1,zb=r(z1-nb),clr=r(xa+2),floor=r(xg+0.3),out=[];
+     const zf=r(z1-br),zb=Math.min(zf,r(z1-nb)),clr=r(xa+2),floor=r(xg+0.3),out=[];
      if(nb>br+0.01){
        out.push('(--- SCHRUPPEN ---)');
        const step=br*0.75,stops=[];
@@ -3036,6 +3064,7 @@ function vlgInsert(){
 }
 
 // ═══ INIT ═══
+db.forEach(p=>ensureMeta(p));persist();
 renderHeader();render();
 // splash stays until correct PIN entered (keypad)
 function tceToggleFull(){
