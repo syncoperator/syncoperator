@@ -1685,12 +1685,23 @@ function makePDF(){
   const getFoot=()=>`<div style="margin-top:auto;"><div style="border-top:.5px solid #000;margin-top:10px;padding-top:6px;font-size:11px;font-weight:900;display:flex;justify-content:space-between;letter-spacing:1px;"><span> </span><span> </span></div></div>`;
   const tableHead=`<div style="display:flex;font-size:11px;font-weight:900;text-transform:uppercase;margin-bottom:5px;padding:0 2px;"><div style="width:95px;">T-NR</div><div style="flex:1;">WERKZEUGNAME / KOMMENTAR</div><div style="width:135px;text-align:right;">Ø / TOLERANZ</div></div><div style="border-bottom:2px solid #000;"></div>`;
   const getRow=t=>`<div style="display:flex;align-items:center;border-bottom:.5px solid #000;padding:8px 0;"><div style="width:95px;font-weight:900;font-size:20px;">${esc(t.id)}</div><div style="flex:1;padding-right:10px;"><div style="font-weight:800;font-size:17px;line-height:1.1;text-transform:uppercase;">${esc(t.nm)}</div><div style="font-size:9px;font-weight:800;margin-top:1px;"><span style="color:#666;">${t.isSonder?'SONDERWERKZEUG':'STANDARD'}</span>${t.bem?' | <span style="color:#000;">'+esc(t.bem)+'</span>':''}</div></div><div style="width:135px;text-align:right;font-weight:900;font-size:16px;line-height:1;">${esc(t.dia||'').replace('/','<br>')}</div></div>`;
-  const page=(title,rows,last)=>`<div style="width:210mm;padding:6mm;background:#fff;font-family:sans-serif;box-sizing:border-box;${last?'':'page-break-after:always;'}"><div style="border:2px solid #000;padding:16px;min-height:232mm;display:flex;flex-direction:column;box-sizing:border-box;">${getHead()}<div style="flex:1;"><div style="font-size:22px;font-weight:900;margin-bottom:8px;letter-spacing:-.5px;">${title}</div>${tableHead}${rows.map(getRow).join('')}</div>${getFoot()}</div></div>`;
+  const page=(title,rows,last)=>`<div style="width:210mm;height:270mm;overflow:hidden;padding:6mm;background:#fff;font-family:sans-serif;box-sizing:border-box;${last?'':'page-break-after:always;'}"><div style="border:2px solid #000;padding:16px;height:100%;display:flex;flex-direction:column;box-sizing:border-box;">${getHead()}<div style="flex:1;overflow:hidden;"><div style="font-size:22px;font-weight:900;margin-bottom:8px;letter-spacing:-.5px;">${title}</div>${tableHead}${rows.map(getRow).join('')}</div>${getFoot()}</div></div>`;
+  // paginate: max rows per A4 page so the frame never overflows
+  const PER_PAGE=13;
+  const pages=[];
+  const addSection=(title,rows)=>{
+    if(!rows.length){pages.push({title,rows:[]});return;}
+    for(let i=0;i<rows.length;i+=PER_PAGE){
+      pages.push({title:i===0?title:title+' (FORTSETZUNG)',rows:rows.slice(i,i+PER_PAGE)});
+    }
+  };
   const oben=p.oben||[],unten=p.unten||[];
-  const hasUnten=unten.length>0;
-  let html=page((p.titleOben||'REVOLVER OBEN').toUpperCase(),oben,!hasUnten);
-  if(hasUnten)html+=page((p.titleUnten||'REVOLVER UNTEN').toUpperCase(),unten,true);
+  addSection((p.titleOben||'REVOLVER OBEN').toUpperCase(),oben);
+  if(unten.length)addSection((p.titleUnten||'REVOLVER UNTEN').toUpperCase(),unten);
+  const html=pages.map((pg,i)=>page(pg.title,pg.rows,i===pages.length-1)).join('');
   document.getElementById('print-area').innerHTML=html;
+  const cleanup=()=>{document.getElementById('print-area').innerHTML='';window.removeEventListener('afterprint',cleanup);};
+  window.addEventListener('afterprint',cleanup);
   setTimeout(()=>window.print(),250);
 }
 
