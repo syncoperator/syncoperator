@@ -764,6 +764,9 @@ input[type=range]{accent-color:var(--green);}
       <button class="drawer-row" onclick="dNav(openCodeChooser)"><span class="drawer-ic"><svg viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></span><span class="drawer-lbl">Code anzeigen</span></button>
       <button class="drawer-row" onclick="dNav(openVorlagen)"><span class="drawer-ic"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg></span><span class="drawer-lbl">Vorlagen</span></button>
       <button class="drawer-row" onclick="dNav(openSim)"><span class="drawer-ic"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg></span><span class="drawer-lbl">Simulation</span></button>
+
+      <div class="drawer-sec">Notizen</div>
+      <button class="drawer-row" onclick="dNav(openNotizen)"><span class="drawer-ic"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></span><span class="drawer-lbl">Notizen &amp; Skizzen</span></button>
     </div>
 
     <div class="drawer-foot"><span class="drawer-tick"></span>SYNCOPERATOR · CNC</div>
@@ -1155,6 +1158,42 @@ T0404 ; A_STECHST.3MM ; 20.90-21.10"></textarea></div>
     <div class="sheet-btns">
       <button class="sbtn sec" onclick="close_('m-prompt')">Abbrechen</button>
       <button class="sbtn save" onclick="promptOk()">OK</button>
+    </div>
+  </div>
+</div>
+
+<!-- NOTIZEN MODAL -->
+<div class="overlay" id="m-notizen" onclick="if(event.target===this)close_('m-notizen')">
+  <div class="sheet" style="max-width:560px">
+    <div class="sheet-bar"></div>
+    <div class="sheet-title" style="margin-bottom:14px">Notizen</div>
+    <button class="filelbl" onclick="openNote(-1)">
+      <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Neue Notiz
+    </button>
+    <div id="notizen-body"></div>
+  </div>
+</div>
+
+<!-- NOTE EDITOR MODAL -->
+<div class="overlay" id="m-note" onclick="if(event.target===this)close_('m-note')">
+  <div class="sheet" style="max-width:560px">
+    <div class="sheet-bar"></div>
+    <div class="sheet-title" style="margin-bottom:14px">Notiz</div>
+    <div class="f"><label>TITEL</label><input id="note-title" placeholder="z.B. Einstellwerte T0303"></div>
+    <div class="f"><label>NOTIZ</label><textarea id="note-text" rows="4" placeholder="Text..." style="font-family:var(--sans);font-size:15px;resize:vertical"></textarea></div>
+    <div class="f" style="margin-bottom:8px"><label>SKIZZE</label>
+      <div style="display:flex;gap:6px;margin-bottom:8px">
+        <button class="kz-sp on" id="nd-pen" onclick="ndTool('pen')"><span class="ic-lbl"><svg class="ic" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg><span>Stift</span></span></button>
+        <button class="kz-sp" id="nd-eraser" onclick="ndTool('eraser')"><span class="ic-lbl"><svg class="ic" viewBox="0 0 24 24"><path d="M20 20H7L3 16a1.4 1.4 0 0 1 0-2L13 4a1.4 1.4 0 0 1 2 0l6 6a1.4 1.4 0 0 1 0 2l-8 8"/></svg><span>Radierer</span></span></button>
+        <button class="kz-sp" onclick="ndUndo()"><span class="ic-lbl"><svg class="ic" viewBox="0 0 24 24"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg><span>Zurück</span></span></button>
+        <button class="kz-sp" onclick="ndClear()"><span class="ic-lbl"><svg class="ic" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg><span>Leeren</span></span></button>
+      </div>
+      <canvas id="note-canvas" style="width:100%;height:260px;background:#fff;border:1px solid var(--line2);border-radius:14px;touch-action:none;display:block;cursor:crosshair;box-shadow:var(--sh-1)"></canvas>
+    </div>
+    <div class="sheet-btns">
+      <button class="sbtn del" id="note-del" style="display:none" onclick="deleteNote()">Löschen</button>
+      <button class="sbtn save" id="note-save" onclick="saveNote()" style="grid-column:span 2">Speichern</button>
     </div>
   </div>
 </div>
@@ -1664,6 +1703,105 @@ function importPasted(){
     cur=db.length-1;persist();close_('m-io');renderHeader();render();
     document.getElementById('io-area').value='';toast('Importiert');
   }catch{toast('JSON Fehler');}
+}
+
+// ═══ NOTIZEN ═══
+function notesList(){const p=P();if(!p.notes)p.notes=[];return p.notes;}
+function openNotizen(){renderNotes();open_('m-notizen');}
+function renderNotes(){
+  const c=document.getElementById('notizen-body');
+  const notes=notesList();
+  let html='';
+  if(!notes.length){
+    html='<div class="empty"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg><div style="font-weight:600">Keine Notizen</div><div style="font-family:var(--mono);font-size:12px;margin-top:6px">Skizzen, Einstellwerte, Merkzettel</div></div>';
+  }else{
+    html+=notes.map((n,i)=>`
+      <div class="libitem">
+        <div class="libmain">
+          ${n.ink?`<img src="${n.ink}" style="width:64px;height:48px;object-fit:cover;border:1px solid var(--line2);border-radius:9px;background:#fff;flex-shrink:0" alt="">`:''}
+          <div class="libinfo" onclick="openNote(${i})">
+            <div class="libnm">${esc(n.title||'Ohne Titel')}</div>
+            <div class="libsub">${esc((n.text||'').split('\n')[0].slice(0,60))||(n.ink?'Skizze':'—')}</div>
+          </div>
+          <div class="libacts">
+            <button class="libbtn" onclick="event.stopPropagation();openNote(${i})"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>
+            <button class="libbtn del" onclick="event.stopPropagation();delNote(${i})"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg></button>
+          </div>
+        </div>
+      </div>`).join('');
+  }
+  c.innerHTML=html+'<div style="height:20px"></div>';
+}
+function delNote(i){uiConfirm('Notiz löschen?',()=>{notesList().splice(i,1);persist();renderNotes();});}
+
+let noteIdx=-1, ndCanvas, ndCtx, ndDrawing=false, ndMode='pen', ndUndoStack=[];
+function openNote(i){
+  noteIdx=i;
+  const n=i>=0?notesList()[i]:null;
+  document.getElementById('note-title').value=n?(n.title||''):'';
+  document.getElementById('note-text').value=n?(n.text||''):'';
+  document.getElementById('note-del').style.display=i>=0?'block':'none';
+  document.getElementById('note-save').style.gridColumn=i>=0?'':'span 2';
+  open_('m-note');
+  setTimeout(()=>{ndInit(n&&n.ink?n.ink:null);},80);
+}
+function ndInit(dataURL){
+  ndCanvas=document.getElementById('note-canvas');
+  const rect=ndCanvas.getBoundingClientRect();
+  ndCanvas.width=rect.width*2;ndCanvas.height=rect.height*2;
+  ndCtx=ndCanvas.getContext('2d');ndCtx.scale(2,2);
+  ndCtx.lineCap='round';ndCtx.lineJoin='round';
+  ndUndoStack=[];ndMode='pen';ndSyncTools();
+  if(dataURL){const img=new Image();img.onload=()=>{ndCtx.drawImage(img,0,0,rect.width,rect.height);};img.src=dataURL;}
+  const pos=e=>{const r=ndCanvas.getBoundingClientRect();const t=e.touches?e.touches[0]:e;return{x:t.clientX-r.left,y:t.clientY-r.top};};
+  ndCanvas.onpointerdown=e=>{
+    e.preventDefault();ndCanvas.setPointerCapture(e.pointerId);
+    ndUndoStack.push(ndCanvas.toDataURL());if(ndUndoStack.length>25)ndUndoStack.shift();
+    ndDrawing=true;const{x,y}=pos(e);
+    ndCtx.beginPath();ndCtx.moveTo(x,y);
+    ndCtx.strokeStyle=ndMode==='eraser'?'#FFFFFF':'#15161A';
+    ndCtx.lineWidth=ndMode==='eraser'?18:2.4;
+  };
+  ndCanvas.onpointermove=e=>{if(!ndDrawing)return;e.preventDefault();const{x,y}=pos(e);ndCtx.lineTo(x,y);ndCtx.stroke();};
+  ndCanvas.onpointerup=ndCanvas.onpointercancel=()=>{ndDrawing=false;};
+}
+function ndTool(m){ndMode=m;ndSyncTools();}
+function ndSyncTools(){
+  document.getElementById('nd-pen').classList.toggle('on',ndMode==='pen');
+  document.getElementById('nd-eraser').classList.toggle('on',ndMode==='eraser');
+}
+function ndUndo(){
+  if(!ndUndoStack.length)return;
+  const url=ndUndoStack.pop();
+  const rect=ndCanvas.getBoundingClientRect();
+  const img=new Image();
+  img.onload=()=>{ndCtx.clearRect(0,0,rect.width,rect.height);ndCtx.drawImage(img,0,0,rect.width,rect.height);};
+  img.src=url;
+}
+function ndClear(){
+  ndUndoStack.push(ndCanvas.toDataURL());
+  const rect=ndCanvas.getBoundingClientRect();
+  ndCtx.clearRect(0,0,rect.width,rect.height);
+}
+function ndIsEmpty(){
+  const d=ndCtx.getImageData(0,0,ndCanvas.width,ndCanvas.height).data;
+  for(let i=3;i<d.length;i+=4){if(d[i]!==0)return false;}
+  return true;
+}
+function saveNote(){
+  const title=document.getElementById('note-title').value.trim();
+  const text=document.getElementById('note-text').value;
+  const ink=ndIsEmpty()?'':ndCanvas.toDataURL('image/png');
+  if(!title&&!text.trim()&&!ink){toast('Notiz ist leer');return;}
+  const n={title,text,ink,ts:Date.now()};
+  const notes=notesList();
+  if(noteIdx>=0)notes[noteIdx]=Object.assign(notes[noteIdx],n);
+  else notes.unshift(n);
+  persist();close_('m-note');renderNotes();toast('Notiz gespeichert');
+}
+function deleteNote(){
+  if(noteIdx<0)return;
+  uiConfirm('Notiz löschen?',()=>{notesList().splice(noteIdx,1);persist();close_('m-note');renderNotes();});
 }
 
 // ═══ PDF ═══
