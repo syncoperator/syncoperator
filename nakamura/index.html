@@ -1136,6 +1136,10 @@ T0404 ; A_STECHST.3MM ; 20.90-21.10"></textarea></div>
       <button class="sbtn sec" style="flex:1;font-size:13px" onclick="vlgExport()"><span class="ic-lbl"><svg class="ic" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg><span>Vorlagen exportieren</span></span></button>
       <label class="sbtn sec" style="flex:1;font-size:13px;text-align:center;cursor:pointer"><span class="ic-lbl"><svg class="ic" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg><span>Importieren</span></span><input type="file" accept=".json" style="display:none" onchange="vlgImport(this)"></label>
     </div>
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <button class="sbtn sec" style="flex:1;font-size:13px" onclick="vlgCloudPush()"><span class="ic-lbl"><svg class="ic" viewBox="0 0 24 24"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg><span>In Cloud</span></span></button>
+      <button class="sbtn sec" style="flex:1;font-size:13px" onclick="vlgCloudPull()"><span class="ic-lbl"><svg class="ic" viewBox="0 0 24 24"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/><polyline points="9 13 12 16 15 13"/></svg><span>Aus Cloud</span></span></button>
+    </div>
   </div>
 </div>
 
@@ -1227,6 +1231,10 @@ T0404 ; A_STECHST.3MM ; 20.90-21.10"></textarea></div>
     <div class="pill" id="pill-autosync" onclick="toggleAutoSync()">
       <div><div class="pill-l">Auto-Sync</div><div class="pill-s">Änderungen automatisch in die Cloud</div></div>
       <label class="sw" onclick="event.stopPropagation();toggleAutoSync()"><input type="checkbox" id="autosync-cb" onclick="event.stopPropagation()"><span class="sw-t"></span></label>
+    </div>
+    <div class="pill" id="pill-autoref" onclick="toggleAutoRefresh()">
+      <div><div class="pill-l">Auto-Refresh</div><div class="pill-s">Änderungen vom anderen Gerät holen</div></div>
+      <label class="sw" onclick="event.stopPropagation();toggleAutoRefresh()"><input type="checkbox" id="autoref-cb" onclick="event.stopPropagation()"><span class="sw-t"></span></label>
     </div>
     <div style="display:flex;gap:8px;margin-bottom:14px">
       <button class="sbtn save" style="flex:1" onclick="cloudSave()">Projekt speichern</button>
@@ -1896,6 +1904,91 @@ function openCloud(){
   if(!cloudSecret()){askSecret(()=>cloudLoadList());return;}
   cloudLoadList();
 }
+// ── Vorlagen in der Cloud ──
+async function vlgCloudPush(){
+  const c=sbClient();if(!c)return;
+  if(!cloudSecret()){askSecret(()=>vlgCloudPush());return;}
+  const own=brain.vorlagen||[];
+  if(!own.length){toast('Keine eigenen Vorlagen');return;}
+  let n=0;
+  for(const v of own){
+    try{
+      const {data,error}=await c.rpc('save_template',{
+        p_secret:cloudSecret(),
+        p_id:v.cloudId||null,
+        p_kind:v.kind||'tool',
+        p_name:v.name,
+        p_descr:v.desc||'',
+        p_code:v.code
+      });
+      if(error)throw error;
+      v.cloudId=data;n++;
+    }catch(e){
+      if(/secret/i.test(e.message||'')){toast('Falscher Zugangscode');return;}
+    }
+  }
+  localStorage.setItem(BRAIN,JSON.stringify(brain));
+  toast(n+' Vorlage(n) in Cloud');
+}
+async function vlgCloudPull(){
+  const c=sbClient();if(!c)return;
+  if(!cloudSecret()){askSecret(()=>vlgCloudPull());return;}
+  try{
+    const {data,error}=await c.rpc('load_templates',{p_secret:cloudSecret()});
+    if(error)throw error;
+    let n=0;
+    (data||[]).forEach(r=>{
+      const exist=brain.vorlagen.find(v=>v.cloudId===r.id);
+      if(exist){exist.name=r.name;exist.desc=r.descr||'';exist.code=r.code;exist.kind=r.kind||'tool';}
+      else{brain.vorlagen.push({id:'v'+Date.now()+n,cloudId:r.id,kind:r.kind||'tool',name:r.name,desc:r.descr||'',code:r.code});n++;}
+    });
+    localStorage.setItem(BRAIN,JSON.stringify(brain));
+    vlgRenderList();
+    toast((data||[]).length+' Vorlage(n) geladen');
+  }catch(e){
+    if(/secret/i.test(e.message||''))toast('Falscher Zugangscode');
+    else toast('Fehler beim Laden');
+  }
+}
+
+// ── auto refresh (poll stamp) ──
+const AUTOREFRESH_KEY='CITITOOL_AUTOREFRESH';
+let lastStamp=null,_pollTimer=null;
+function autoRefreshOn(){return localStorage.getItem(AUTOREFRESH_KEY)==='1';}
+function toggleAutoRefresh(){
+  const on=!autoRefreshOn();
+  if(on&&!cloudSecret()){askSecret(()=>{localStorage.setItem(AUTOREFRESH_KEY,'1');syncAutoUI();startPoll();toast('Auto-Refresh an');});return;}
+  localStorage.setItem(AUTOREFRESH_KEY,on?'1':'0');
+  syncAutoUI();
+  toast(on?'Auto-Refresh an':'Auto-Refresh aus');
+  on?startPoll():stopPoll();
+}
+function stopPoll(){clearInterval(_pollTimer);_pollTimer=null;}
+function startPoll(){
+  stopPoll();
+  if(!autoRefreshOn())return;
+  _pollTimer=setInterval(pollStamp,8000);
+}
+async function pollStamp(){
+  if(document.hidden||!autoRefreshOn()||!cloudSecret())return;
+  const c=sbClient();if(!c)return;
+  try{
+    const {data,error}=await c.rpc('projects_stamp',{p_secret:cloudSecret()});
+    if(error)throw error;
+    if(!data)return;
+    if(lastStamp&&data!==lastStamp){
+      if(document.getElementById('m-cloud').classList.contains('active')){
+        cloudLoadList();
+        cloudStatus('Cloud aktualisiert');
+      }else{
+        toast('Cloud hat neue Änderungen');
+      }
+    }
+    lastStamp=data;
+  }catch(e){/* silent */}
+}
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&autoRefreshOn())pollStamp();});
+
 // ── auto sync ──
 const AUTOSYNC_KEY='CITITOOL_AUTOSYNC';
 function autoSyncOn(){return localStorage.getItem(AUTOSYNC_KEY)==='1';}
@@ -1912,6 +2005,10 @@ function syncAutoUI(){
   if(cb)cb.checked=autoSyncOn();
   const pill=document.getElementById('pill-autosync');
   if(pill)pill.classList.toggle('on',autoSyncOn());
+  const cb2=document.getElementById('autoref-cb');
+  if(cb2)cb2.checked=autoRefreshOn();
+  const pill2=document.getElementById('pill-autoref');
+  if(pill2)pill2.classList.toggle('on',autoRefreshOn());
 }
 let _syncTimer=null;
 function scheduleCloudSync(){
@@ -1926,18 +2023,27 @@ async function cloudSaveSilent(){
   try{
     const {data,error}=await c.rpc('save_project',{
       p_secret:cloudSecret(),p_id:p.cloudId||null,
-      p_num:p.num||'',p_name:p.name||'',p_data:p
+      p_num:p.num||'',p_name:p.name||'',p_data:p,
+      p_expected:p.cloudTs||null
     });
     if(error)throw error;
-    if(!p.cloudId){p.cloudId=data;localStorage.setItem(DB,JSON.stringify(db));}
+    const row=Array.isArray(data)?data[0]:data;
+    if(row){p.cloudId=row.id;p.cloudTs=row.updated_at;localStorage.setItem(DB,JSON.stringify(db));}
+    lastStamp=p.cloudTs||lastStamp;
     const st=document.getElementById('cloud-status');
     if(st&&document.getElementById('m-cloud').classList.contains('active'))st.textContent='Auto-Sync: gespeichert';
-  }catch(e){/* silent */}
+  }catch(e){
+    if(/conflict/i.test(e.message||'')){
+      const st=document.getElementById('cloud-status');
+      if(st)st.textContent='Konflikt — Cloud ist neuer';
+      toast('Konflikt: Cloud-Version ist neuer');
+    }
+  }
 }
 
-async function cloudSave(){
+async function cloudSave(force){
   const c=sbClient();if(!c)return;
-  if(!cloudSecret()){askSecret(()=>cloudSave());return;}
+  if(!cloudSecret()){askSecret(()=>cloudSave(force));return;}
   const p=P();
   cloudStatus('Speichert...');
   try{
@@ -1946,16 +2052,25 @@ async function cloudSave(){
       p_id:p.cloudId||null,
       p_num:p.num||'',
       p_name:p.name||'',
-      p_data:p
+      p_data:p,
+      p_expected:force?null:(p.cloudTs||null)
     });
     if(error)throw error;
-    p.cloudId=data;persist();
+    const row=Array.isArray(data)?data[0]:data;
+    if(row){p.cloudId=row.id;p.cloudTs=row.updated_at;}
+    persist();
     cloudStatus('Gespeichert');
     toast('In Cloud gespeichert');
     cloudLoadList();
   }catch(e){
-    cloudStatus('Fehler: '+(e.message||'unbekannt'));
-    if(/secret/i.test(e.message||''))toast('Falscher Zugangscode');
+    const msg=e.message||'';
+    if(/conflict/i.test(msg)){
+      cloudStatus('Konflikt: Cloud-Version ist neuer');
+      uiConfirm('Cloud-Version ist neuer. Überschreiben?',()=>cloudSave(true));
+      return;
+    }
+    cloudStatus('Fehler: '+(msg||'unbekannt'));
+    if(/secret/i.test(msg))toast('Falscher Zugangscode');
   }
 }
 async function cloudLoadList(){
@@ -1997,6 +2112,7 @@ function cloudPull(i){
   uiConfirm('Projekt aus Cloud laden?',()=>{
     const p=Object.assign({},r.data);
     p.cloudId=r.id;
+    p.cloudTs=r.updated_at;
     if(!p.oben)p.oben=[];if(!p.unten)p.unten=[];
     ensureMeta(p);
     db.push(p);cur=db.length-1;
@@ -3443,6 +3559,7 @@ function vlgInsert(){
 
 // ═══ INIT ═══
 db.forEach(p=>ensureMeta(p));persist();
+if(autoRefreshOn()&&cloudSecret())startPoll();
 renderHeader();render();
 // splash stays until correct PIN entered (keypad)
 function tceToggleFull(){
