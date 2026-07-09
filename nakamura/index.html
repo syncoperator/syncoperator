@@ -768,6 +768,7 @@ input[type=range]{accent-color:var(--green);}
       <button class="menucard" onclick="dNav(openNotizen)"><span class="mc-ic"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></span><span class="mc-lbl">Notizen</span><span class="mc-sub">Skizzen &amp; Merkzettel</span></button>
       <button class="menucard" onclick="dNav(openIO)"><span class="mc-ic"><svg viewBox="0 0 24 24"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg></span><span class="mc-lbl">Import / Export</span><span class="mc-sub">Dateien &amp; JSON</span></button>
       <button class="menucard" onclick="dNav(makePDF)"><span class="mc-ic"><svg viewBox="0 0 24 24"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></span><span class="mc-lbl">PDF drucken</span><span class="mc-sub">Werkzeugliste A4</span></button>
+      <button class="menucard" onclick="dNav(openCloud)"><span class="mc-ic"><svg viewBox="0 0 24 24"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg></span><span class="mc-lbl">Cloud</span><span class="mc-sub">Sync mit Supabase</span></button>
     </div>
 
     <div class="drawer-foot"><span class="drawer-tick"></span>SYNCOPERATOR · CNC<span class="drawer-tick"></span></div>
@@ -1199,6 +1200,39 @@ T0404 ; A_STECHST.3MM ; 20.90-21.10"></textarea></div>
   </div>
 </div>
 
+<!-- CLOUD MODAL -->
+<div class="overlay" id="m-cloud" onclick="if(event.target===this)close_('m-cloud')">
+  <div class="sheet" style="max-width:520px">
+    <div class="sheet-bar"></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+      <div class="sheet-title" style="margin:0">Cloud</div>
+      <button class="kz-sp" onclick="cloudForgetSecret()" title="Zugangscode ändern"><span class="ic-lbl"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg><span>Code</span></span></button>
+    </div>
+    <div style="font-family:var(--mono);font-size:11px;color:var(--ink3);margin-bottom:14px">Projekte zwischen Handy und PC synchronisieren</div>
+    <div style="display:flex;gap:8px;margin-bottom:14px">
+      <button class="sbtn save" style="flex:1" onclick="cloudSave()">Projekt speichern</button>
+      <button class="sbtn sec" style="flex:1" onclick="cloudLoadList()">Aktualisieren</button>
+    </div>
+    <div id="cloud-status" style="font-family:var(--mono);font-size:12px;color:var(--ink2);margin-bottom:10px;min-height:16px"></div>
+    <div id="cloud-list"></div>
+  </div>
+</div>
+
+<!-- CLOUD SECRET MODAL -->
+<div class="overlay" id="m-secret" onclick="if(event.target===this)close_('m-secret')">
+  <div class="sheet" style="max-width:400px">
+    <div class="sheet-bar"></div>
+    <div class="sheet-title">Cloud-Zugangscode</div>
+    <div style="font-family:var(--mono);font-size:11px;color:var(--ink3);margin-bottom:14px">Wird nur lokal gespeichert</div>
+    <div class="f"><input id="secret-input" type="password" inputmode="numeric" placeholder="••••" onkeydown="if(event.key==='Enter')secretOk()"></div>
+    <div class="sheet-btns">
+      <button class="sbtn sec" onclick="close_('m-secret')">Abbrechen</button>
+      <button class="sbtn save" onclick="secretOk()">OK</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ═══ DATA ═══
 const DB='CITITOOL_2026';
@@ -1803,6 +1837,124 @@ function saveNote(){
 function deleteNote(){
   if(noteIdx<0)return;
   uiConfirm('Notiz löschen?',()=>{notesList().splice(noteIdx,1);persist();close_('m-note');renderNotes();});
+}
+
+// ═══ CLOUD · SUPABASE ═══
+const SB_URL='https://anoeghqgxyxgkvpbjfof.supabase.co';
+const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFub2VnaHFneHl4Z2t2cGJqZm9mIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM1NTMxOTksImV4cCI6MjA5OTEyOTE5OX0.YmvC2iMc_ZL_zIdAX8cQACdcZLavmc91ziJ02knJEqs';
+const SECRET_KEY='CITITOOL_CLOUD_SECRET';
+let sb=null;
+function sbClient(){
+  if(!sb){
+    if(typeof supabase==='undefined'){toast('Supabase nicht geladen');return null;}
+    sb=supabase.createClient(SB_URL,SB_KEY);
+  }
+  return sb;
+}
+function cloudSecret(){return localStorage.getItem(SECRET_KEY)||'';}
+function cloudForgetSecret(){localStorage.removeItem(SECRET_KEY);toast('Code gelöscht');askSecret();}
+let _secretCb=null;
+function askSecret(cb){
+  _secretCb=cb||null;
+  document.getElementById('secret-input').value='';
+  open_('m-secret');
+  setTimeout(()=>{const el=document.getElementById('secret-input');if(el)el.focus();},80);
+}
+function secretOk(){
+  const v=document.getElementById('secret-input').value.trim();
+  if(!v)return;
+  localStorage.setItem(SECRET_KEY,v);
+  close_('m-secret');
+  const cb=_secretCb;_secretCb=null;
+  if(cb)cb();else cloudLoadList();
+}
+function cloudStatus(msg){document.getElementById('cloud-status').textContent=msg||'';}
+function openCloud(){
+  open_('m-cloud');
+  document.getElementById('cloud-list').innerHTML='';
+  cloudStatus('');
+  if(!cloudSecret()){askSecret(()=>cloudLoadList());return;}
+  cloudLoadList();
+}
+async function cloudSave(){
+  const c=sbClient();if(!c)return;
+  if(!cloudSecret()){askSecret(()=>cloudSave());return;}
+  const p=P();
+  cloudStatus('Speichert...');
+  try{
+    const {data,error}=await c.rpc('save_project',{
+      p_secret:cloudSecret(),
+      p_id:p.cloudId||null,
+      p_num:p.num||'',
+      p_name:p.name||'',
+      p_data:p
+    });
+    if(error)throw error;
+    p.cloudId=data;persist();
+    cloudStatus('Gespeichert');
+    toast('In Cloud gespeichert');
+    cloudLoadList();
+  }catch(e){
+    cloudStatus('Fehler: '+(e.message||'unbekannt'));
+    if(/secret/i.test(e.message||''))toast('Falscher Zugangscode');
+  }
+}
+async function cloudLoadList(){
+  const c=sbClient();if(!c)return;
+  if(!cloudSecret()){askSecret(()=>cloudLoadList());return;}
+  cloudStatus('Lädt...');
+  try{
+    const {data,error}=await c.rpc('load_projects',{p_secret:cloudSecret()});
+    if(error)throw error;
+    cloudStatus((data||[]).length+' Projekt(e) in der Cloud');
+    renderCloudList(data||[]);
+  }catch(e){
+    cloudStatus('Fehler: '+(e.message||'unbekannt'));
+    document.getElementById('cloud-list').innerHTML='';
+    if(/secret/i.test(e.message||''))toast('Falscher Zugangscode');
+  }
+}
+let cloudCache=[];
+function renderCloudList(rows){
+  cloudCache=rows;
+  const body=document.getElementById('cloud-list');
+  if(!rows.length){body.innerHTML='<div class="empty"><svg viewBox="0 0 24 24"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg><div style="font-weight:600">Cloud ist leer</div></div>';return;}
+  body.innerHTML=rows.map((r,i)=>{
+    const d=r.updated_at?new Date(r.updated_at).toLocaleString('de-DE',{day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'}):'';
+    const tools=((r.data&&r.data.oben)||[]).length+((r.data&&r.data.unten)||[]).length;
+    return `<div class="libitem"><div class="libmain">
+      <div class="libinfo" onclick="cloudPull(${i})">
+        <div class="libnm">${esc(r.num||'(ohne Nr)')}</div>
+        <div class="libsub">${esc(r.name||'—')} · ${tools} Ops · ${esc(d)}</div>
+      </div>
+      <div class="libacts">
+        <button class="libbtn del" onclick="event.stopPropagation();cloudDelete(${i})"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg></button>
+      </div>
+    </div></div>`;
+  }).join('');
+}
+function cloudPull(i){
+  const r=cloudCache[i];if(!r||!r.data)return;
+  uiConfirm('Projekt aus Cloud laden?',()=>{
+    const p=Object.assign({},r.data);
+    p.cloudId=r.id;
+    if(!p.oben)p.oben=[];if(!p.unten)p.unten=[];
+    ensureMeta(p);
+    db.push(p);cur=db.length-1;
+    persist();close_('m-cloud');renderHeader();render();
+    toast('Aus Cloud geladen');
+  });
+}
+function cloudDelete(i){
+  const r=cloudCache[i];if(!r)return;
+  uiConfirm('Aus Cloud löschen?',async()=>{
+    const c=sbClient();if(!c)return;
+    try{
+      const {error}=await c.rpc('delete_project',{p_secret:cloudSecret(),p_id:r.id});
+      if(error)throw error;
+      toast('Gelöscht');cloudLoadList();
+    }catch(e){cloudStatus('Fehler: '+(e.message||'unbekannt'));}
+  });
 }
 
 // ═══ PDF ═══
@@ -3234,7 +3386,7 @@ function pinPush(d){
 }
 function pinDel(){pinVal=pinVal.slice(0,-1);pinRender();document.getElementById('pin-err').textContent='';}
 function pinCheck(){
-  if(pinVal==='3504'){
+  if(pinVal==='1234'){
     const s=document.getElementById('splash');
     s.classList.add('hide');
     setTimeout(()=>{s.style.display='none';},400);
