@@ -290,8 +290,16 @@ button{font-family:var(--sans);}
 .tce-mark:has(input:checked){background:var(--ink);color:#fff;border-color:var(--ink);box-shadow:var(--sh-2);}
 /* compact collapsible tool-code sections */
 .tsec{--sec:#15161A;border:1px solid var(--line2);border-radius:12px;background:#fff;margin-bottom:8px;overflow:hidden;box-shadow:var(--sh-1);flex:0 0 auto;align-self:flex-start;height:auto;}
-.fr-text{width:100%;min-height:46vh;max-height:60vh;padding:14px;background:#fff;border:1px solid var(--line2);border-radius:12px;font-family:var(--mono);font-size:16px;line-height:1.7;font-weight:600;color:var(--ink);outline:none;resize:vertical;box-shadow:var(--sh-1);letter-spacing:.3px;white-space:pre;overflow:auto;}
-.fr-text:focus{border-color:var(--ink);box-shadow:var(--focus);}
+.tsec:not(.open){max-height:58px;}
+.fr-edit{position:relative;border:1px solid var(--line2);border-radius:12px;overflow:hidden;box-shadow:var(--sh-1);background:#fff;}
+.fr-edit:focus-within{border-color:var(--ink);box-shadow:var(--focus);}
+.fr-hl,.fr-text{margin:0;padding:14px;font-family:var(--mono);font-size:15px;line-height:1.6;font-weight:600;letter-spacing:.3px;white-space:pre;word-wrap:normal;box-sizing:border-box;border:0;tab-size:2;}
+.fr-hl{position:absolute;inset:0;overflow:auto;pointer-events:none;color:var(--ink);background:#fff;}
+.fr-hl .hl-line{display:block;height:1.6em;}
+.fr-hl .hl-tsep{background:#EEF0F3;box-shadow:inset 3px 0 0 var(--ink);font-weight:800;}
+.fr-text{position:relative;display:block;width:100%;min-height:46vh;max-height:60vh;background:transparent;color:transparent;-webkit-text-fill-color:transparent;caret-color:var(--ink);outline:none;resize:vertical;overflow:auto;}
+.fr-text::selection{background:rgba(21,22,26,.22);}
+.fr-text::placeholder{color:var(--ink3);-webkit-text-fill-color:var(--ink3);}
 .fr-keysbar{display:flex;gap:6px;overflow-x:auto;padding:2px 0 4px;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
 .fr-keysbar::-webkit-scrollbar{display:none;}
 .fr-keysbar button{flex:0 0 auto;font-family:var(--mono);font-size:13px;font-weight:700;padding:9px 13px;border:1px solid var(--line2);border-radius:9px;background:#fff;color:var(--ink);cursor:pointer;box-shadow:var(--sh-1);transition:transform .1s,border-color .15s;}
@@ -1029,7 +1037,10 @@ T0404 ; A_STECHST.3MM ; 20.90-21.10"></textarea></div>
             <button onclick="quickInsert('G0')">G0</button><button onclick="quickInsert('G1')">G1</button><button onclick="quickInsert('G2')">G2</button><button onclick="quickInsert('G3')">G3</button><button onclick="quickInsert('X')">X</button><button onclick="quickInsert('Z')">Z</button><button onclick="quickInsert('F')">F</button><button onclick="quickInsert('S')">S</button><button onclick="quickInsert('M3')">M3</button><button onclick="quickInsert('M8')">M8</button><button onclick="quickInsert('M9')">M9</button><button onclick="quickInsert('G54')">G54</button><button onclick="quickInsert('G55')">G55</button><button onclick="quickInsert(',A')">,A</button><button onclick="quickInsert(',R')">,R</button><button onclick="quickInsert('\n')">↵</button>
           </div>
         </div>
-        <textarea id="fr-text" class="fr-text" spellcheck="false" autocapitalize="characters" oninput="frTextChanged()" placeholder="Programm..."></textarea>
+        <div class="fr-edit">
+          <pre id="fr-hl" class="fr-hl" aria-hidden="true"></pre>
+          <textarea id="fr-text" class="fr-text" spellcheck="false" autocapitalize="characters" oninput="frTextChanged();frHighlight()" onscroll="frSyncScroll()" placeholder="Programm..."></textarea>
+        </div>
       </div>
     </div>
     <div id="code-split" style="display:none;gap:8px">
@@ -2406,15 +2417,12 @@ function makePDF(){
         ${metaRows}
       </div>
     </div><div style="border-bottom:2px solid #000;margin-bottom:12px;"></div>`;
-  const getFoot=()=>`<div style="margin-top:auto;"><div style="border-top:.5px solid #000;margin-top:10px;"></div></div>`;
+  const getFoot=()=>'';
   const tableHead=`<div style="display:flex;font-size:11px;font-weight:900;text-transform:uppercase;margin-bottom:5px;padding:0 2px;"><div style="width:95px;">T-NR</div><div style="flex:1;">WERKZEUGNAME / KOMMENTAR</div><div style="width:135px;text-align:right;">Ø / TOLERANZ</div></div><div style="border-bottom:2px solid #000;"></div>`;
   const getRow=t=>`<div style="display:flex;align-items:center;border-bottom:.5px solid #000;padding:8px 0;height:54px;box-sizing:border-box;"><div style="width:95px;font-weight:900;font-size:20px;">${esc(t.id)}</div><div style="flex:1;padding-right:10px;"><div style="font-weight:800;font-size:17px;line-height:1.1;text-transform:uppercase;">${esc(t.nm)}</div><div style="font-size:9px;font-weight:800;margin-top:1px;"><span style="color:#666;">${t.isSonder?'SONDERWERKZEUG':'STANDARD'}</span>${t.bem?' | <span style="color:#000;">'+esc(t.bem)+'</span>':''}</div></div><div style="width:135px;text-align:right;font-weight:900;font-size:16px;line-height:1;">${esc(t.dia||'').replace('/','<br>')}</div></div>`;
-  const emptyRow=`<div style="height:54px;border-bottom:.5px solid #CCC;box-sizing:border-box;"></div>`;
   const PER_PAGE=14;
   const page=(title,rows,pg,tot)=>{
-    const fill=Math.max(0,PER_PAGE-rows.length);
-    const filler=fill?emptyRow.repeat(fill):'';
-    return `<div style="width:210mm;height:270mm;overflow:hidden;padding:6mm;background:#fff;font-family:sans-serif;box-sizing:border-box;${pg<tot?'page-break-after:always;':''}"><div style="border:2px solid #000;padding:16px;height:100%;display:flex;flex-direction:column;box-sizing:border-box;">${getHead()}<div style="flex:1;overflow:hidden;"><div style="font-size:22px;font-weight:900;margin-bottom:8px;letter-spacing:-.5px;">${title}</div>${tableHead}${rows.map(getRow).join('')}${filler}</div>${getFoot()}</div></div>`;
+    return `<div style="width:210mm;height:270mm;overflow:hidden;padding:6mm;background:#fff;font-family:sans-serif;box-sizing:border-box;${pg<tot?'page-break-after:always;':''}"><div style="border:2px solid #000;padding:16px;height:100%;display:flex;flex-direction:column;box-sizing:border-box;">${getHead()}<div style="flex:1;overflow:hidden;"><div style="font-size:22px;font-weight:900;margin-bottom:8px;letter-spacing:-.5px;">${title}</div>${tableHead}${rows.map(getRow).join('')}</div>${getFoot()}</div></div>`;
   };
   // paginate: fixed rows per A4 page, frame never overflows
   const pages=[];
@@ -2915,6 +2923,21 @@ function nextMatch(){
 
 // ═══ CODE-EDITOR (Textarea + Suchen/Ersetzen) ═══
 let frMatches=[], frPos=-1, frUndoSnap=null;
+function toggleCodeEdit(){
+  const editing=document.getElementById('code-editor').style.display!=='none';
+  if(editing){exitEditor();return;}
+  const ta=document.getElementById('fr-text');
+  ta.value=getCode(codeCtx.kanal);
+  frMatches=[];frPos=-1;frUndoSnap=null;
+  document.getElementById('code-view').style.display='none';
+  document.getElementById('code-editor').style.display='block';
+  document.getElementById('code-save-row').style.display='grid';
+  document.getElementById('code-toggle').textContent='Ansicht';
+  document.getElementById('fr-find').value='';
+  document.getElementById('fr-repl').value='';
+  document.getElementById('fr-cnt').textContent='0/0';
+  frHighlight();
+}
 function exitEditor(){
   document.getElementById('code-editor').style.display='none';
   document.getElementById('code-view').style.display='block';
@@ -2925,7 +2948,21 @@ function exitEditor(){
 }
 function cancelCodeEdit(){ exitEditor(); }
 function frText(){return document.getElementById('fr-text');}
-function frTextChanged(){frMatches=[];frPos=-1;document.getElementById('fr-cnt').textContent='0/0';if(typeof miniOn!=='undefined'&&miniOn){/* live-ish */}}
+function frHighlight(){
+  const ta=frText(), hl=document.getElementById('fr-hl');
+  if(!ta||!hl)return;
+  const lines=ta.value.split('\n');
+  hl.innerHTML=lines.map(l=>{
+    const isT=/T\d{2,4}/.test(l)&&!/^\s*\(/.test(l);
+    return `<span class="hl-line${isT?' hl-tsep':''}">${hlLine(l)||' '}</span>`;
+  }).join('');
+  frSyncScroll();
+}
+function frSyncScroll(){
+  const ta=frText(), hl=document.getElementById('fr-hl');
+  if(ta&&hl){hl.scrollTop=ta.scrollTop;hl.scrollLeft=ta.scrollLeft;}
+}
+function frTextChanged(){frMatches=[];frPos=-1;document.getElementById('fr-cnt').textContent='0/0';}
 function frCollect(q){
   const s=frText().value.toUpperCase(), Q=q.toUpperCase(), m=[];
   if(!Q)return m;
@@ -2956,7 +2993,7 @@ function frReplaceOne(){
   const r=upCode(document.getElementById('fr-repl').value);
   const start=frMatches[frPos];
   ta.value=ta.value.slice(0,start)+r+ta.value.slice(start+q.length);
-  frSearch(); toast('Ersetzt');
+  frHighlight(); frSearch(); toast('Ersetzt');
 }
 function frReplaceAll(){
   const q=document.getElementById('fr-find').value.trim();
@@ -2967,14 +3004,14 @@ function frReplaceAll(){
   const n=(ta.value.match(re)||[]).length;
   if(!n){toast('Nichts gefunden');return;}
   ta.value=ta.value.replace(re,r);
-  frSearch(); toast(n+' ersetzt');
+  frHighlight(); frSearch(); toast(n+' ersetzt');
 }
-function frUndoRepl(){const ta=frText();if(frUndoSnap!=null){ta.value=frUndoSnap;frUndoSnap=null;frSearch();toast('Rückgängig');}else toast('Nichts rückgängig');}
+function frUndoRepl(){const ta=frText();if(frUndoSnap!=null){ta.value=frUndoSnap;frUndoSnap=null;frHighlight();frSearch();toast('Rückgängig');}else toast('Nichts rückgängig');}
 function quickInsert(tok){
   const ta=frText(), s=ta.selectionStart||0, e=ta.selectionEnd||0;
   ta.value=ta.value.slice(0,s)+tok+ta.value.slice(e);
   ta.focus(); ta.selectionStart=ta.selectionEnd=s+tok.length;
-  frTextChanged();
+  frTextChanged();frHighlight();
 }
 
 function upCode(line){
