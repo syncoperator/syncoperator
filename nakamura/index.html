@@ -289,7 +289,14 @@ button{font-family:var(--sans);}
 .tce-mark:active{transform:translateY(1px);box-shadow:none;}
 .tce-mark:has(input:checked){background:var(--ink);color:#fff;border-color:var(--ink);box-shadow:var(--sh-2);}
 /* compact collapsible tool-code sections */
-.tsec{--sec:#15161A;border:1px solid var(--line2);border-radius:12px;background:#fff;margin-bottom:8px;overflow:hidden;box-shadow:var(--sh-1);}
+.tsec{--sec:#15161A;border:1px solid var(--line2);border-radius:12px;background:#fff;margin-bottom:8px;overflow:hidden;box-shadow:var(--sh-1);flex:0 0 auto;align-self:flex-start;height:auto;}
+.fr-text{width:100%;min-height:46vh;max-height:60vh;padding:14px;background:#fff;border:1px solid var(--line2);border-radius:12px;font-family:var(--mono);font-size:16px;line-height:1.7;font-weight:600;color:var(--ink);outline:none;resize:vertical;box-shadow:var(--sh-1);letter-spacing:.3px;white-space:pre;overflow:auto;}
+.fr-text:focus{border-color:var(--ink);box-shadow:var(--focus);}
+.fr-keysbar{display:flex;gap:6px;overflow-x:auto;padding:2px 0 4px;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+.fr-keysbar::-webkit-scrollbar{display:none;}
+.fr-keysbar button{flex:0 0 auto;font-family:var(--mono);font-size:13px;font-weight:700;padding:9px 13px;border:1px solid var(--line2);border-radius:9px;background:#fff;color:var(--ink);cursor:pointer;box-shadow:var(--sh-1);transition:transform .1s,border-color .15s;}
+.fr-keysbar button:active{transform:translateY(1px);box-shadow:none;}
+.fr-keysbar button:hover{border-color:var(--ink3);}
 .tsec.s-wkznr{--sec:#9C3F5E;}.tsec.s-wechsel{--sec:#B24A3E;}.tsec.s-tech{--sec:#3E7A82;}
 .tsec.s-kommentar{--sec:#8E9188;}.tsec.s-anfahren{--sec:#2F6B4F;}.tsec.s-kontur{--sec:#15161A;}.tsec.s-abfahren{--sec:#9A7415;}
 .tsec-head{display:flex;align-items:center;gap:10px;padding:12px 13px;cursor:pointer;user-select:none;}
@@ -1003,11 +1010,11 @@ T0404 ; A_STECHST.3MM ; 20.90-21.10"></textarea></div>
     <div id="code-single">
       <div id="code-view" class="codebox"></div>
       <textarea id="code-edit" class="codearea" style="display:none"></textarea>
-      <!-- FIND & REPLACE EDITOR -->
+      <!-- CODE EDITOR (textarea + find/replace) -->
       <div id="code-editor" style="display:none">
         <div class="fr-panel">
           <div class="fr-row">
-            <input id="fr-find" placeholder="Suchen: M428, G54, X40..." oninput="frSearch()" onkeydown="if(event.key==='Enter')frNext()">
+            <input id="fr-find" placeholder="Suchen..." oninput="frSearch()" onkeydown="if(event.key==='Enter'){event.preventDefault();frNext();}">
             <span id="fr-cnt" class="fr-cnt">0/0</span>
             <button class="code-ibtn" onclick="frPrev()" title="Zurück"><svg viewBox="0 0 24 24"><polyline points="18 15 12 9 6 15"/></svg></button>
             <button class="code-ibtn" onclick="frNext()" title="Weiter"><svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></button>
@@ -1016,34 +1023,13 @@ T0404 ; A_STECHST.3MM ; 20.90-21.10"></textarea></div>
             <input id="fr-repl" placeholder="Ersetzen durch...">
             <button class="sbtn save" style="padding:10px 12px;font-size:12px;flex-shrink:0" onclick="frReplaceOne()">Ersetzen</button>
             <button class="sbtn sec" style="padding:10px 12px;font-size:12px;flex-shrink:0" onclick="frReplaceAll()">Alle</button>
+            <button class="code-ibtn" onclick="frUndoRepl()" title="Rückgängig"><svg viewBox="0 0 24 24"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg></button>
           </div>
-          <div class="fr-toolrow">
-            <button class="code-ibtn" id="fr-undo" onclick="doUndo()" title="Rückgängig"><svg viewBox="0 0 24 24"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg></button>
-            <button class="code-ibtn" id="fr-redo" onclick="doRedo()" title="Wiederholen"><svg viewBox="0 0 24 24"><polyline points="15 14 20 9 15 4"/><path d="M4 20v-7a4 4 0 0 1 4-4h12"/></svg></button>
-            <button class="code-ibtn" id="fr-diffbtn" onclick="toggleDiff()" title="Änderungen"><svg viewBox="0 0 24 24"><circle cx="6" cy="6" r="3"/><circle cx="18" cy="18" r="3"/><path d="M6 9v6a3 3 0 0 0 3 3h6"/></svg></button>
-            <button class="code-ibtn" onclick="frJumpT()" title="T-Nummern"><svg viewBox="0 0 24 24"><line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/><line x1="10" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="14" y2="21"/></svg></button>
+          <div class="fr-keysbar">
+            <button onclick="quickInsert('G0')">G0</button><button onclick="quickInsert('G1')">G1</button><button onclick="quickInsert('G2')">G2</button><button onclick="quickInsert('G3')">G3</button><button onclick="quickInsert('X')">X</button><button onclick="quickInsert('Z')">Z</button><button onclick="quickInsert('F')">F</button><button onclick="quickInsert('S')">S</button><button onclick="quickInsert('M3')">M3</button><button onclick="quickInsert('M8')">M8</button><button onclick="quickInsert('M9')">M9</button><button onclick="quickInsert('G54')">G54</button><button onclick="quickInsert('G55')">G55</button><button onclick="quickInsert(',A')">,A</button><button onclick="quickInsert(',R')">,R</button><button onclick="quickInsert('\n')">↵</button>
           </div>
-          <div class="fr-quick" id="fr-keys" style="display:none">
-            <button onclick="quickInsert('G0')">G0</button>
-            <button onclick="quickInsert('G1')">G1</button>
-            <button onclick="quickInsert('G2')">G2</button>
-            <button onclick="quickInsert('G3')">G3</button>
-            <button onclick="quickInsert('X')">X</button>
-            <button onclick="quickInsert('Z')">Z</button>
-            <button onclick="quickInsert('Y')">Y</button>
-            <button onclick="quickInsert('F')">F</button>
-            <button onclick="quickInsert('S')">S</button>
-            <button onclick="quickInsert('M3')">M3</button>
-            <button onclick="quickInsert('M8')">M8</button>
-            <button onclick="quickInsert('M9')">M9</button>
-            <button onclick="quickInsert('G54')">G54</button>
-            <button onclick="quickInsert('G55')">G55</button>
-            <button onclick="quickInsert(',A')">,A</button>
-            <button onclick="quickInsert(',R')">,R</button>
-          </div>
-          <div id="fr-tjump" class="fr-tjump" style="display:none"><div id="fr-tjump-list" class="fr-tjump-list"></div></div>
         </div>
-        <div id="fr-list" class="codebox" style="max-height:42vh"></div>
+        <textarea id="fr-text" class="fr-text" spellcheck="false" autocapitalize="characters" oninput="frTextChanged()" placeholder="Programm..."></textarea>
       </div>
     </div>
     <div id="code-split" style="display:none;gap:8px">
@@ -2927,216 +2913,68 @@ function nextMatch(){
   document.getElementById('code-search-cnt').textContent=(matchPos+1)+'/'+matchIdxs.length;
 }
 
-// ═══ FIND & REPLACE EDITOR ═══
-let frLines=[];        // working copy
-let frOrig=[];         // original snapshot for diff
-let frMatches=[];
-let frPos=-1;
-let frUndo=[], frRedo=[];
-let frActiveLine=-1;   // currently focused line
-let frDiffOn=false;
-
-function pushUndo(){
-  frUndo.push(frLines.slice());
-  if(frUndo.length>100)frUndo.shift();
-  frRedo=[];
-  updateUndoBtns();
-}
-function updateUndoBtns(){
-  const u=document.getElementById('fr-undo'),r=document.getElementById('fr-redo');
-  if(u)u.style.opacity=frUndo.length?'1':'.35';
-  if(r)r.style.opacity=frRedo.length?'1':'.35';
-}
-function doUndo(){if(!frUndo.length)return;frRedo.push(frLines.slice());frLines=frUndo.pop();frSearch();updateUndoBtns();}
-function doRedo(){if(!frRedo.length)return;frUndo.push(frLines.slice());frLines=frRedo.pop();frSearch();updateUndoBtns();}
-
-function toggleCodeEdit(){
-  const editing=document.getElementById('code-editor').style.display!=='none';
-  if(editing){exitEditor();}
-  else{
-    frLines=getCode(codeCtx.kanal).split(/\r?\n/);
-    frOrig=frLines.slice();
-    frUndo=[];frRedo=[];frActiveLine=-1;frDiffOn=false;
-    document.getElementById('code-view').style.display='none';
-    document.getElementById('code-editor').style.display='block';
-    document.getElementById('code-save-row').style.display='grid';
-    document.getElementById('code-toggle').textContent='Ansicht';
-    document.getElementById('fr-find').value='';
-    document.getElementById('fr-repl').value='';
-    frMatches=[];frPos=-1;
-    renderFrList();
-    document.getElementById('fr-cnt').textContent='0/0';
-    updateUndoBtns();
-  }
-}
+// ═══ CODE-EDITOR (Textarea + Suchen/Ersetzen) ═══
+let frMatches=[], frPos=-1, frUndoSnap=null;
 function exitEditor(){
   document.getElementById('code-editor').style.display='none';
   document.getElementById('code-view').style.display='block';
   document.getElementById('code-save-row').style.display='none';
   document.getElementById('code-toggle').textContent='Bearbeiten';
   renderCodeView();
+  if(typeof miniOn!=='undefined'&&miniOn)miniRender();
 }
 function cancelCodeEdit(){ exitEditor(); }
-
-function renderFrList(){
-  const q=(document.getElementById('fr-find').value||'').trim().toUpperCase();
-  const list=document.getElementById('fr-list');
-  list.innerHTML=frLines.map((l,i)=>{
-    const isMatch=q&&l.toUpperCase().includes(q);
-    // diff: compare to original by index
-    let diffCls='';
-    if(frDiffOn){
-      if(i>=frOrig.length||frOrig[i]===undefined)diffCls=' diff-add';
-      else if(frOrig[i]!==l)diffCls=' diff-chg';
-    }
-    const isT=/T\d{4}/.test(l)&&!/^\s*\(/.test(l);
-    return `<div class="fr-line cl-${lineType(l)}${isMatch?' is-match':''}${i===frActiveLine?' active':''}${diffCls}" data-i="${i}" id="frl-${i}" onclick="editLineInline(${i})">
-      <span class="ln">${i+1}</span>
-      <span class="lc">${hlLine(l)||'&nbsp;'}</span>
-    </div>`;
-  }).join('');
+function frText(){return document.getElementById('fr-text');}
+function frTextChanged(){frMatches=[];frPos=-1;document.getElementById('fr-cnt').textContent='0/0';if(typeof miniOn!=='undefined'&&miniOn){/* live-ish */}}
+function frCollect(q){
+  const s=frText().value.toUpperCase(), Q=q.toUpperCase(), m=[];
+  if(!Q)return m;
+  let i=0; while((i=s.indexOf(Q,i))>=0){m.push(i);i+=Q.length;}
+  return m;
 }
-
-function frSearch(){
-  const q=(document.getElementById('fr-find').value||'').trim().toUpperCase();
-  frMatches=[];frPos=-1;
-  if(q){frLines.forEach((l,i)=>{if(l.toUpperCase().includes(q))frMatches.push(i);});}
-  renderFrList();
-  document.getElementById('fr-cnt').textContent=frMatches.length?('0/'+frMatches.length):'0/0';
-  if(frMatches.length)frGo(0);
-}
-function frGo(pos){
-  document.querySelectorAll('.fr-line.fr-cur').forEach(e=>e.classList.remove('fr-cur'));
-  if(!frMatches.length){frPos=-1;return;}
-  frPos=(pos+frMatches.length)%frMatches.length;
-  const idx=frMatches[frPos];
-  const el=document.getElementById('frl-'+idx);
-  if(el){el.classList.add('fr-cur');el.scrollIntoView({block:'center',behavior:'smooth'});}
+function frSelect(q){
+  if(frPos<0||!frMatches.length)return;
+  const ta=frText(), start=frMatches[frPos];
+  ta.focus(); ta.setSelectionRange(start,start+q.length);
+  const before=ta.value.slice(0,start).split('\n').length;
+  const lh=parseFloat(getComputedStyle(ta).lineHeight)||22;
+  ta.scrollTop=Math.max(0,(before-4)*lh);
   document.getElementById('fr-cnt').textContent=(frPos+1)+'/'+frMatches.length;
 }
-function frNext(){if(frMatches.length)frGo(frPos+1);}
-function frPrev(){if(frMatches.length)frGo(frPos-1);}
-
+function frSearch(){
+  const q=document.getElementById('fr-find').value.trim();
+  frMatches=frCollect(q); frPos=frMatches.length?0:-1;
+  document.getElementById('fr-cnt').textContent=frMatches.length?('1/'+frMatches.length):'0/0';
+  if(frPos>=0)frSelect(q);
+}
+function frNext(){const q=document.getElementById('fr-find').value.trim();if(!q)return;if(!frMatches.length){frSearch();return;}frPos=(frPos+1)%frMatches.length;frSelect(q);}
+function frPrev(){const q=document.getElementById('fr-find').value.trim();if(!q)return;if(!frMatches.length){frSearch();return;}frPos=(frPos-1+frMatches.length)%frMatches.length;frSelect(q);}
 function frReplaceOne(){
-  if(frPos<0||!frMatches.length){toast('Nichts ausgewählt');return;}
-  const find=document.getElementById('fr-find').value;
-  const repl=document.getElementById('fr-repl').value;
-  if(!find)return;
-  pushUndo();
-  const idx=frMatches[frPos];
-  const re=new RegExp(find.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'gi');
-  frLines[idx]=frLines[idx].replace(re,repl);
-  frSearch();toast('Ersetzt');
+  const q=document.getElementById('fr-find').value.trim();
+  if(!q||frPos<0||!frMatches.length)return;
+  const ta=frText(); frUndoSnap=ta.value;
+  const r=upCode(document.getElementById('fr-repl').value);
+  const start=frMatches[frPos];
+  ta.value=ta.value.slice(0,start)+r+ta.value.slice(start+q.length);
+  frSearch(); toast('Ersetzt');
 }
 function frReplaceAll(){
-  const find=document.getElementById('fr-find').value;
-  const repl=document.getElementById('fr-repl').value;
-  if(!find)return;
-  pushUndo();
-  const re=new RegExp(find.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'gi');
-  let n=0;
-  frLines=frLines.map(l=>{re.lastIndex=0;if(re.test(l)){n++;re.lastIndex=0;return l.replace(re,repl);}return l;});
-  frSearch();toast(n+' Zeilen ersetzt');
+  const q=document.getElementById('fr-find').value.trim();
+  if(!q)return;
+  const ta=frText(); frUndoSnap=ta.value;
+  const r=upCode(document.getElementById('fr-repl').value);
+  const re=new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'gi');
+  const n=(ta.value.match(re)||[]).length;
+  if(!n){toast('Nichts gefunden');return;}
+  ta.value=ta.value.replace(re,r);
+  frSearch(); toast(n+' ersetzt');
 }
-
-// LINE OPERATIONS
-function insertLine(i){pushUndo();frLines.splice(i+1,0,'');frSearch();setTimeout(()=>editLineInline(i+1),20);}
-function dupLine(i){pushUndo();frLines.splice(i+1,0,frLines[i]);frSearch();toast('Dupliziert');}
-function delLine(i){pushUndo();frLines.splice(i,1);frSearch();toast('Gelöscht');}
-
-function editLineInline(i){
-  const openInp=document.querySelector('.fr-lineedit');
-  if(openInp){
-    if(+openInp.dataset.i===i)return;
-    if(openInp._commit)openInp._commit();
-  }
-  frActiveLine=i;
-  renderFrList();
-  const el=document.getElementById('frl-'+i);
-  if(!el)return;
-  const current=frLines[i];
-  el.classList.add('editing');
-  el.onclick=null;
-  el.innerHTML=`<span class="ln">${i+1}</span>
-    <div class="fr-edit-wrap">
-      <input class="fr-lineedit" value="${esc(current)}" id="fre-${i}" data-i="${i}" spellcheck="false">
-      <div class="fr-edit-acts">
-        <button class="fr-eic" onmousedown="event.preventDefault()" onclick="event.stopPropagation();frEditAct('ins',${i})" title="Zeile danach"><svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
-        <button class="fr-eic" onmousedown="event.preventDefault()" onclick="event.stopPropagation();frEditAct('dup',${i})" title="Duplizieren"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
-        <button class="fr-eic del" onmousedown="event.preventDefault()" onclick="event.stopPropagation();frEditAct('del',${i})" title="Löschen"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg></button>
-        <button class="fr-eic done" onmousedown="event.preventDefault()" onclick="event.stopPropagation();frEditAct('done',${i})" title="Fertig"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></button>
-      </div>
-    </div>`;
-  document.getElementById('fr-keys').style.display='flex';
-  const inp=document.getElementById('fre-'+i);
-  inp.focus();
-  let committed=false;
-  const commit=()=>{if(committed)return;committed=true;const v=upCode(inp.value);if(v!==frLines[i]){pushUndo();frLines[i]=v;}};
-  inp._commit=commit;
-  inp.addEventListener('keydown',e=>{
-    if(e.key==='Enter'){e.preventDefault();commit();frActiveLine=-1;document.getElementById('fr-keys').style.display='none';frSearch();}
-    else if(e.key==='ArrowDown'){e.preventDefault();commit();setTimeout(()=>editLineInline(Math.min(i+1,frLines.length-1)),10);}
-    else if(e.key==='ArrowUp'){e.preventDefault();commit();setTimeout(()=>editLineInline(Math.max(i-1,0)),10);}
-    else if(e.key==='Escape'){committed=true;frActiveLine=-1;document.getElementById('fr-keys').style.display='none';frSearch();}
-  });
-  inp.addEventListener('blur',()=>{
-    setTimeout(()=>{
-      if(document.activeElement&&document.activeElement.closest&&document.activeElement.closest('#fr-keys'))return;
-      commit();
-      if(frActiveLine===i){frActiveLine=-1;document.getElementById('fr-keys').style.display='none';frSearch();}
-    },150);
-  });
-}
-function frEditAct(act,i){
-  const inp=document.getElementById('fre-'+i);
-  if(inp&&inp._commit)inp._commit();
-  if(act==='ins'){frActiveLine=-1;document.getElementById('fr-keys').style.display='none';insertLine(i);setTimeout(()=>editLineInline(i+1),20);return;}
-  if(act==='dup'){frActiveLine=-1;document.getElementById('fr-keys').style.display='none';dupLine(i);return;}
-  if(act==='del'){frActiveLine=-1;document.getElementById('fr-keys').style.display='none';delLine(i);return;}
-  // done
-  frActiveLine=-1;document.getElementById('fr-keys').style.display='none';frSearch();
-}
-
-// QUICK INSERT BUTTONS — insert token into active line edit (or new line)
+function frUndoRepl(){const ta=frText();if(frUndoSnap!=null){ta.value=frUndoSnap;frUndoSnap=null;frSearch();toast('Rückgängig');}else toast('Nichts rückgängig');}
 function quickInsert(tok){
-  // if a line is being edited, insert at cursor
-  const activeInp=document.querySelector('.fr-lineedit');
-  if(activeInp){
-    const s=activeInp.selectionStart||activeInp.value.length;
-    activeInp.value=activeInp.value.slice(0,s)+tok+activeInp.value.slice(s);
-    activeInp.focus();
-    activeInp.selectionStart=activeInp.selectionEnd=s+tok.length;
-  }else{
-    // append new line with token
-    pushUndo();
-    const at=frActiveLine>=0?frActiveLine+1:frLines.length;
-    frLines.splice(at,0,tok);
-    frSearch();
-    setTimeout(()=>editLineInline(at),20);
-  }
-}
-
-// T-NUMBER JUMP
-function frJumpT(){
-  const tnums=[];
-  frLines.forEach((l,i)=>{const m=l.match(/T(\d{4})/);if(m&&!/^\s*\(/.test(l))tnums.push({t:'T'+m[1],i});});
-  if(!tnums.length){toast('Keine T-Nummern');return;}
-  document.getElementById('fr-tjump-list').innerHTML=tnums.map(x=>`<button class="tjump-chip" onclick="frScrollTo(${x.i})">${x.t} · Z${x.i+1}</button>`).join('');
-  const panel=document.getElementById('fr-tjump');
-  panel.style.display=panel.style.display==='none'?'flex':'none';
-}
-function frScrollTo(i){
-  const el=document.getElementById('frl-'+i);
-  if(el){el.scrollIntoView({block:'center',behavior:'smooth'});el.classList.add('fr-cur');setTimeout(()=>el.classList.remove('fr-cur'),1500);}
-}
-
-// DIFF TOGGLE
-function toggleDiff(){
-  frDiffOn=!frDiffOn;
-  document.getElementById('fr-diffbtn').classList.toggle('on',frDiffOn);
-  const changed=frLines.filter((l,i)=>frOrig[i]!==l).length+Math.max(0,frLines.length-frOrig.length);
-  if(frDiffOn)toast(changed+' Zeilen geändert');
-  renderFrList();
+  const ta=frText(), s=ta.selectionStart||0, e=ta.selectionEnd||0;
+  ta.value=ta.value.slice(0,s)+tok+ta.value.slice(e);
+  ta.focus(); ta.selectionStart=ta.selectionEnd=s+tok.length;
+  frTextChanged();
 }
 
 function upCode(line){
@@ -3150,7 +2988,7 @@ function addEOB(line){
   return t+' ;';
 }
 function saveCodeEdit(){
-  const txt=frLines.map(upCode).join('\n');
+  const txt=frText().value.split(/\r?\n/).map(upCode).join('\n');
   setCode(codeCtx.kanal,txt);
   const ops=parseProgram(txt);
   if(codeCtx.kanal==='unten')P().unten=ops;else P().oben=ops;
