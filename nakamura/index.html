@@ -298,12 +298,11 @@ button{font-family:var(--sans);}
 .tsec-cnt{font-family:var(--mono);font-size:11px;font-weight:700;color:#fff;background:var(--ink);border-radius:20px;min-width:20px;height:20px;display:flex;align-items:center;justify-content:center;padding:0 6px;flex-shrink:0;}
 .tsec-add{font-family:var(--mono);font-size:16px;font-weight:700;color:var(--ink3);width:20px;text-align:center;flex-shrink:0;}
 .tsec-chev{width:16px;height:16px;stroke:var(--ink3);fill:none;stroke-width:2.2;flex-shrink:0;transition:transform .18s;stroke-linecap:round;stroke-linejoin:round;}
-.tsec-body{display:none;border-top:1px solid var(--line);}
+.tsec-body{display:block;border-top:1px solid var(--line);}
 .tsec.empty{background:var(--card-soft);}
 .tsec.empty .tsec-name{color:var(--ink3);}
 .tsec.empty .tsec-dot{opacity:.4;}
-.tsec:not(.empty) .tsec-body,.tsec.open .tsec-body{display:block;}
-.tsec:not(.empty) .tsec-chev,.tsec.open .tsec-chev{transform:rotate(180deg);}
+.tsec.open .tsec-chev{transform:rotate(180deg);}
 .tsec-tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:10px 13px 2px;}
 .tce-raw{width:100%;min-height:52vh;padding:16px;background:#fff;border:1px solid var(--line2);border-radius:14px;font-family:var(--mono);font-size:16px;line-height:1.75;font-weight:600;color:var(--ink);outline:none;resize:vertical;box-shadow:var(--sh-1);letter-spacing:.3px;margin-bottom:14px;}
 .tce-raw:focus{border-color:var(--ink);box-shadow:var(--focus);}
@@ -2644,39 +2643,54 @@ function openToolCodeEditorRaw(kanal,start,end,tid,nm){
   tce={kanal,toolIdx:-1,startLine:start,endLine:end};
   document.getElementById('tce-title').textContent=esc(tid)+(nm?' · '+esc(nm):'');
   tceSec=classifyToolBlock(lines,start,end);
+  tceOpen=new Set(TCE_SECTIONS.filter(k=>tceHasContent(k)));
+  tceMark={};
   document.getElementById('tce-raw').value=lines.slice(start,end).filter(l=>l.trim()!=='').join('\n');
   tceRenderSections();
   tceMode('sec');
   open_('m-tce');
 }
+let tceOpen=new Set(), tceMark={};
+function tceHasContent(k){return (tceSec[k]||[]).some(x=>x.trim()!=='');}
+function tceSnapshot(){
+  TCE_SECTIONS.forEach(k=>{
+    const el=document.getElementById('tce-'+k);
+    if(el)tceSec[k]=el.value.split(/\r?\n/);
+    const mk=document.getElementById('tce-mark-'+k);
+    if(mk)tceMark[k]=mk.checked;
+  });
+}
 function tceRenderSections(){
   const body=document.getElementById('tce-body');
   body.innerHTML=TCE_SECTIONS.map(k=>{
-    const has=(tceSec[k]||[]).length>0;
-    const cnt=(tceSec[k]||[]).length;
+    const hasC=tceHasContent(k);
+    const cnt=(tceSec[k]||[]).filter(x=>x.trim()!=='').length;
+    const open=tceOpen.has(k);
     const isKontur=k==='kontur';
-    return `<div class="tsec s-${k} ${has?'':'empty'}" id="tsec-${k}">
-      <div class="tsec-head" onclick="tceToggleSec('${k}')">
-        <span class="tsec-dot"></span>
-        <span class="tsec-name">${TCE_LABELS[k]}</span>
-        ${has?`<span class="tsec-cnt">${cnt}</span>`:'<span class="tsec-add">＋</span>'}
-        <svg class="tsec-chev" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
-      </div>
-      <div class="tsec-body">
+    const bodyHTML=open?`<div class="tsec-body">
         <div class="tsec-tools">
-          <label class="tce-mark"><input type="checkbox" id="tce-mark-${k}"><span>Titelzeile</span></label>
+          <label class="tce-mark"><input type="checkbox" id="tce-mark-${k}" ${tceMark[k]?'checked':''}><span>Titelzeile</span></label>
           ${isKontur?`<button type="button" class="kz-open" onclick="openKonturDraw()"><span class="ic-lbl"><svg class="ic" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg><span>Zeichnen</span></span></button>`:''}
         </div>
         <textarea class="tce-area" id="tce-${k}" oninput="autoGrow(this)" placeholder="—">${esc((tceSec[k]||[]).join('\n'))}</textarea>
+      </div>`:'';
+    return `<div class="tsec s-${k} ${hasC?'':'empty'} ${open?'open':''}" id="tsec-${k}">
+      <div class="tsec-head" onclick="tceToggleSec('${k}')">
+        <span class="tsec-dot"></span>
+        <span class="tsec-name">${TCE_LABELS[k]}</span>
+        ${hasC?`<span class="tsec-cnt">${cnt}</span>`:'<span class="tsec-add">＋</span>'}
+        <svg class="tsec-chev" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
       </div>
+      ${bodyHTML}
     </div>`;
   }).join('');
-  setTimeout(()=>document.querySelectorAll('.tsec:not(.empty) .tce-area').forEach(autoGrow),20);
+  setTimeout(()=>document.querySelectorAll('.tsec.open .tce-area').forEach(autoGrow),20);
 }
 function tceToggleSec(k){
-  const el=document.getElementById('tsec-'+k);
-  el.classList.toggle('open');
-  if(el.classList.contains('open')){const ta=el.querySelector('.tce-area');setTimeout(()=>{autoGrow(ta);ta.focus();},10);}
+  tceSnapshot();
+  if(tceOpen.has(k))tceOpen.delete(k);else tceOpen.add(k);
+  tceRenderSections();
+  if(tceOpen.has(k)){setTimeout(()=>{const ta=document.getElementById('tce-'+k);if(ta){autoGrow(ta);ta.focus();}},30);}
 }
 function tceMode(m){
   const sec=m==='sec';
@@ -2687,7 +2701,7 @@ function tceMode(m){
   raw.style.display=sec?'none':'block';
   if(sec){
     // sync raw → sections if user edited raw
-    if(tce._rawDirty){const l=raw.value.split(/\r?\n/);tceSec=classifyToolBlock(l,0,l.length);tce._rawDirty=false;tceRenderSections();}
+    if(tce._rawDirty){const l=raw.value.split(/\r?\n/);tceSec=classifyToolBlock(l,0,l.length);tceOpen=new Set(TCE_SECTIONS.filter(k=>tceHasContent(k)));tceMark={};tce._rawDirty=false;tceRenderSections();}
   }else{
     // build raw from current sections
     raw.value=tceCollect().join('\n');
@@ -2696,13 +2710,12 @@ function tceMode(m){
   }
 }
 function tceCollect(){
+  tceSnapshot();
   let block=[];
   TCE_SECTIONS.forEach(k=>{
-    const el=document.getElementById('tce-'+k);if(!el)return;
-    const secLines=el.value.split(/\r?\n/).filter(line=>line.trim()!=='');
+    const secLines=(tceSec[k]||[]).map(x=>x).filter(line=>line.trim()!=='');
     if(secLines.length){
-      const mark=document.getElementById('tce-mark-'+k);
-      if(mark&&mark.checked)block.push('(---'+TCE_LABELS[k].toUpperCase()+'---)');
+      if(tceMark[k])block.push('(---'+TCE_LABELS[k].toUpperCase()+'---)');
       secLines.forEach(line=>block.push(upCode(line)));
     }
   });
