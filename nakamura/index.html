@@ -306,9 +306,9 @@ button{font-family:var(--sans);}
 .tsec-add{font-family:var(--mono);font-size:16px;font-weight:700;color:var(--ink3);width:20px;text-align:center;flex-shrink:0;}
 .tsec-chev{width:16px;height:16px;stroke:var(--ink3);fill:none;stroke-width:2.2;flex-shrink:0;transition:transform .18s;stroke-linecap:round;stroke-linejoin:round;}
 .tsec-body{display:block;border-top:1px solid var(--line);}
-.tsec.empty{background:var(--card-soft);}
-.tsec.empty .tsec-name{color:var(--ink3);}
-.tsec.empty .tsec-dot{opacity:.4;}
+.tsec.tsec-empty{background:var(--card-soft);}
+.tsec.tsec-empty .tsec-name{color:var(--ink3);}
+.tsec.tsec-empty .tsec-dot{opacity:.4;}
 .tsec.open .tsec-chev{transform:rotate(180deg);}
 .tsec-tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:10px 13px 2px;}
 .tce-raw{width:100%;min-height:52vh;padding:16px;background:#fff;border:1px solid var(--line2);border-radius:14px;font-family:var(--mono);font-size:16px;line-height:1.75;font-weight:600;color:var(--ink);outline:none;resize:vertical;box-shadow:var(--sh-1);letter-spacing:.3px;margin-bottom:14px;}
@@ -2406,7 +2406,7 @@ function makePDF(){
         ${metaRows}
       </div>
     </div><div style="border-bottom:2px solid #000;margin-bottom:12px;"></div>`;
-  const getFoot=(pg,tot)=>`<div style="margin-top:auto;"><div style="border-top:.5px solid #000;margin-top:10px;padding-top:6px;font-size:10px;font-weight:800;display:flex;justify-content:space-between;letter-spacing:.5px;color:#000;"><span>${esc((p.num||'')+(p.name?' · '+p.name:''))}</span><span>Seite ${pg} / ${tot}</span></div></div>`;
+  const getFoot=()=>`<div style="margin-top:auto;"><div style="border-top:.5px solid #000;margin-top:10px;"></div></div>`;
   const tableHead=`<div style="display:flex;font-size:11px;font-weight:900;text-transform:uppercase;margin-bottom:5px;padding:0 2px;"><div style="width:95px;">T-NR</div><div style="flex:1;">WERKZEUGNAME / KOMMENTAR</div><div style="width:135px;text-align:right;">Ø / TOLERANZ</div></div><div style="border-bottom:2px solid #000;"></div>`;
   const getRow=t=>`<div style="display:flex;align-items:center;border-bottom:.5px solid #000;padding:8px 0;height:54px;box-sizing:border-box;"><div style="width:95px;font-weight:900;font-size:20px;">${esc(t.id)}</div><div style="flex:1;padding-right:10px;"><div style="font-weight:800;font-size:17px;line-height:1.1;text-transform:uppercase;">${esc(t.nm)}</div><div style="font-size:9px;font-weight:800;margin-top:1px;"><span style="color:#666;">${t.isSonder?'SONDERWERKZEUG':'STANDARD'}</span>${t.bem?' | <span style="color:#000;">'+esc(t.bem)+'</span>':''}</div></div><div style="width:135px;text-align:right;font-weight:900;font-size:16px;line-height:1;">${esc(t.dia||'').replace('/','<br>')}</div></div>`;
   const emptyRow=`<div style="height:54px;border-bottom:.5px solid #CCC;box-sizing:border-box;"></div>`;
@@ -2414,7 +2414,7 @@ function makePDF(){
   const page=(title,rows,pg,tot)=>{
     const fill=Math.max(0,PER_PAGE-rows.length);
     const filler=fill?emptyRow.repeat(fill):'';
-    return `<div style="width:210mm;height:270mm;overflow:hidden;padding:6mm;background:#fff;font-family:sans-serif;box-sizing:border-box;${pg<tot?'page-break-after:always;':''}"><div style="border:2px solid #000;padding:16px;height:100%;display:flex;flex-direction:column;box-sizing:border-box;">${getHead()}<div style="flex:1;overflow:hidden;"><div style="font-size:22px;font-weight:900;margin-bottom:8px;letter-spacing:-.5px;">${title}</div>${tableHead}${rows.map(getRow).join('')}${filler}</div>${getFoot(pg,tot)}</div></div>`;
+    return `<div style="width:210mm;height:270mm;overflow:hidden;padding:6mm;background:#fff;font-family:sans-serif;box-sizing:border-box;${pg<tot?'page-break-after:always;':''}"><div style="border:2px solid #000;padding:16px;height:100%;display:flex;flex-direction:column;box-sizing:border-box;">${getHead()}<div style="flex:1;overflow:hidden;"><div style="font-size:22px;font-weight:900;margin-bottom:8px;letter-spacing:-.5px;">${title}</div>${tableHead}${rows.map(getRow).join('')}${filler}</div>${getFoot()}</div></div>`;
   };
   // paginate: fixed rows per A4 page, frame never overflows
   const pages=[];
@@ -2660,7 +2660,7 @@ function tceRenderSections(){
         </div>
         <textarea class="tce-area" id="tce-${k}" oninput="autoGrow(this)" placeholder="—">${esc((tceSec[k]||[]).join('\n'))}</textarea>
       </div>`:'';
-    return `<div class="tsec s-${k} ${hasC?'':'empty'} ${open?'open':''}" id="tsec-${k}">
+    return `<div class="tsec s-${k} ${hasC?'':'tsec-empty'} ${open?'open':''}" id="tsec-${k}">
       <div class="tsec-head" onclick="tceToggleSec('${k}')">
         <span class="tsec-dot"></span>
         <span class="tsec-name">${TCE_LABELS[k]}</span>
