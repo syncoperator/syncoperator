@@ -291,15 +291,17 @@ button{font-family:var(--sans);}
 /* compact collapsible tool-code sections */
 .tsec{--sec:#15161A;border:1px solid var(--line2);border-radius:12px;background:#fff;margin-bottom:8px;overflow:hidden;box-shadow:var(--sh-1);flex:0 0 auto;align-self:flex-start;height:auto;}
 .tsec:not(.open){max-height:58px;}
-.fr-edit{position:relative;border:1px solid var(--line2);border-radius:12px;overflow:hidden;box-shadow:var(--sh-1);background:#fff;}
-.fr-edit:focus-within{border-color:var(--ink);box-shadow:var(--focus);}
-.fr-hl,.fr-text{margin:0;padding:14px;font-family:var(--mono);font-size:15px;line-height:1.6;font-weight:600;letter-spacing:.3px;white-space:pre;word-wrap:normal;box-sizing:border-box;border:0;tab-size:2;}
-.fr-hl{position:absolute;inset:0;overflow:auto;pointer-events:none;color:var(--ink);background:#fff;}
-.fr-hl .hl-line{display:block;height:1.6em;}
-.fr-hl .hl-tsep{background:#EEF0F3;box-shadow:inset 3px 0 0 var(--ink);font-weight:800;}
-.fr-text{position:relative;display:block;width:100%;min-height:46vh;max-height:60vh;background:transparent;color:transparent;-webkit-text-fill-color:transparent;caret-color:var(--ink);outline:none;resize:vertical;overflow:auto;}
-.fr-text::selection{background:rgba(21,22,26,.22);}
-.fr-text::placeholder{color:var(--ink3);-webkit-text-fill-color:var(--ink3);}
+.codeline.editing{background:#fff;box-shadow:inset 3px 0 0 var(--ink),var(--sh-2);border-radius:8px;}
+.codeline.fr-hit .lc{background:rgba(154,116,21,.16);border-radius:4px;}
+.codeline.fr-hit-active .lc{background:rgba(154,116,21,.34);border-radius:4px;}
+.fr-edit-wrap{flex:1;min-width:0;display:flex;flex-direction:column;gap:8px;padding:2px 8px 8px 0;}
+.fr-lineedit{width:100%;background:#fff;border:1.5px solid var(--ink);border-radius:9px;color:#000;font-family:var(--mono);font-size:16px;padding:10px 12px;outline:none;box-shadow:var(--focus);}
+.fr-edit-acts{display:flex;gap:7px;}
+.fr-eic{width:40px;height:36px;border:1px solid var(--line2);border-radius:9px;background:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:var(--sh-1);color:var(--ink);transition:.12s;}
+.fr-eic:active{transform:translateY(1px);box-shadow:none;}
+.fr-eic svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+.fr-eic.del:hover{background:var(--red-bg);color:var(--red);border-color:#E8C5C2;}
+.fr-eic.done{margin-left:auto;background:var(--ink);border-color:var(--ink);color:#fff;}
 .fr-keysbar{display:flex;gap:6px;overflow-x:auto;padding:2px 0 4px;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
 .fr-keysbar::-webkit-scrollbar{display:none;}
 .fr-keysbar button{flex:0 0 auto;font-family:var(--mono);font-size:13px;font-weight:700;padding:9px 13px;border:1px solid var(--line2);border-radius:9px;background:#fff;color:var(--ink);cursor:pointer;box-shadow:var(--sh-1);transition:transform .1s,border-color .15s;}
@@ -1037,10 +1039,7 @@ T0404 ; A_STECHST.3MM ; 20.90-21.10"></textarea></div>
             <button onclick="quickInsert('G0')">G0</button><button onclick="quickInsert('G1')">G1</button><button onclick="quickInsert('G2')">G2</button><button onclick="quickInsert('G3')">G3</button><button onclick="quickInsert('X')">X</button><button onclick="quickInsert('Z')">Z</button><button onclick="quickInsert('F')">F</button><button onclick="quickInsert('S')">S</button><button onclick="quickInsert('M3')">M3</button><button onclick="quickInsert('M8')">M8</button><button onclick="quickInsert('M9')">M9</button><button onclick="quickInsert('G54')">G54</button><button onclick="quickInsert('G55')">G55</button><button onclick="quickInsert(',A')">,A</button><button onclick="quickInsert(',R')">,R</button><button onclick="quickInsert('\n')">↵</button>
           </div>
         </div>
-        <div class="fr-edit">
-          <pre id="fr-hl" class="fr-hl" aria-hidden="true"></pre>
-          <textarea id="fr-text" class="fr-text" spellcheck="false" autocapitalize="characters" oninput="frTextChanged();frHighlight()" onscroll="frSyncScroll()" placeholder="Programm..."></textarea>
-        </div>
+        <div id="fr-list" class="codebox" style="max-height:54vh"></div>
       </div>
     </div>
     <div id="code-split" style="display:none;gap:8px">
@@ -2417,7 +2416,7 @@ function makePDF(){
         ${metaRows}
       </div>
     </div><div style="border-bottom:2px solid #000;margin-bottom:12px;"></div>`;
-  const getFoot=()=>'';
+  const getFoot=()=>`<div style="margin-top:auto;padding-top:6px;border-top:1px solid #000;"></div>`;
   const tableHead=`<div style="display:flex;font-size:11px;font-weight:900;text-transform:uppercase;margin-bottom:5px;padding:0 2px;"><div style="width:95px;">T-NR</div><div style="flex:1;">WERKZEUGNAME / KOMMENTAR</div><div style="width:135px;text-align:right;">Ø / TOLERANZ</div></div><div style="border-bottom:2px solid #000;"></div>`;
   const getRow=t=>`<div style="display:flex;align-items:center;border-bottom:.5px solid #000;padding:8px 0;height:54px;box-sizing:border-box;"><div style="width:95px;font-weight:900;font-size:20px;">${esc(t.id)}</div><div style="flex:1;padding-right:10px;"><div style="font-weight:800;font-size:17px;line-height:1.1;text-transform:uppercase;">${esc(t.nm)}</div><div style="font-size:9px;font-weight:800;margin-top:1px;"><span style="color:#666;">${t.isSonder?'SONDERWERKZEUG':'STANDARD'}</span>${t.bem?' | <span style="color:#000;">'+esc(t.bem)+'</span>':''}</div></div><div style="width:135px;text-align:right;font-weight:900;font-size:16px;line-height:1;">${esc(t.dia||'').replace('/','<br>')}</div></div>`;
   const PER_PAGE=14;
@@ -2921,14 +2920,13 @@ function nextMatch(){
   document.getElementById('code-search-cnt').textContent=(matchPos+1)+'/'+matchIdxs.length;
 }
 
-// ═══ CODE-EDITOR (Textarea + Suchen/Ersetzen) ═══
-let frMatches=[], frPos=-1, frUndoSnap=null;
+// ═══ CODE-EDITOR (Zeilen-Liste wie Ansicht) ═══
+let frLines=[], frMatches=[], frPos=-1, frUndoSnap=null, frEditIdx=-1;
 function toggleCodeEdit(){
   const editing=document.getElementById('code-editor').style.display!=='none';
   if(editing){exitEditor();return;}
-  const ta=document.getElementById('fr-text');
-  ta.value=getCode(codeCtx.kanal);
-  frMatches=[];frPos=-1;frUndoSnap=null;
+  frLines=getCode(codeCtx.kanal).split(/\r?\n/);
+  frMatches=[];frPos=-1;frUndoSnap=null;frEditIdx=-1;
   document.getElementById('code-view').style.display='none';
   document.getElementById('code-editor').style.display='block';
   document.getElementById('code-save-row').style.display='grid';
@@ -2936,7 +2934,7 @@ function toggleCodeEdit(){
   document.getElementById('fr-find').value='';
   document.getElementById('fr-repl').value='';
   document.getElementById('fr-cnt').textContent='0/0';
-  frHighlight();
+  renderFrEditor();
 }
 function exitEditor(){
   document.getElementById('code-editor').style.display='none';
@@ -2947,71 +2945,108 @@ function exitEditor(){
   if(typeof miniOn!=='undefined'&&miniOn)miniRender();
 }
 function cancelCodeEdit(){ exitEditor(); }
-function frText(){return document.getElementById('fr-text');}
-function frHighlight(){
-  const ta=frText(), hl=document.getElementById('fr-hl');
-  if(!ta||!hl)return;
-  const lines=ta.value.split('\n');
-  hl.innerHTML=lines.map(l=>{
-    const isT=/T\d{2,4}/.test(l)&&!/^\s*\(/.test(l);
-    return `<span class="hl-line${isT?' hl-tsep':''}">${hlLine(l)||' '}</span>`;
-  }).join('');
-  frSyncScroll();
+function frRowHTML(l,i){
+  const isT=/T\d{4}/.test(l)&&!/^\s*\(/.test(l);
+  const t=lineType(l);
+  const hit=frMatches.includes(i)?(i===frMatches[frPos]?' fr-hit-active':' fr-hit'):'';
+  return `<div class="codeline cl-${t}${hit}" id="frl-${i}" onclick="editFrLine(${i})"><span class="ln">${i+1}</span><span class="lc">${hlLine(l)||' '}</span></div>`;
 }
-function frSyncScroll(){
-  const ta=frText(), hl=document.getElementById('fr-hl');
-  if(ta&&hl){hl.scrollTop=ta.scrollTop;hl.scrollLeft=ta.scrollLeft;}
+function renderFrEditor(){
+  const box=document.getElementById('fr-list');
+  let html='', blockOpen=false, blockIdx=-1;
+  frLines.forEach((l,i)=>{
+    const U=l.trim().toUpperCase();
+    const isFrameStart=/^N\d+G5[0-9]/.test(U);
+    const isTLine=/T\d{4}/.test(l)&&!/^\s*\(/.test(l);
+    if(isFrameStart||(isTLine&&!blockOpen)){
+      if(blockOpen)html+='</div>';
+      blockIdx++;
+      let tid='';const tm=U.match(/T(\d{4})/);
+      if(tm)tid='T'+tm[1];else{for(let j=i;j<Math.min(frLines.length,i+4);j++){const t2=frLines[j].match(/T(\d{4})/);if(t2&&!/^\s*\(/.test(frLines[j])){tid='T'+t2[1];break;}}}
+      const wcs=/G55/.test(U)?'ru':(/G54/.test(U)?'ro':'');
+      html+=`<div class="cblock ${blockIdx%2?'alt':''} ${wcs}"><div class="cblock-tab">${tid||('#'+(blockIdx+1))}${wcs?' · '+wcs.toUpperCase():''}</div>`;
+      blockOpen=true;
+    }
+    html+=frRowHTML(l,i);
+  });
+  if(blockOpen)html+='</div>';
+  box.innerHTML=html;
 }
-function frTextChanged(){frMatches=[];frPos=-1;document.getElementById('fr-cnt').textContent='0/0';}
-function frCollect(q){
-  const s=frText().value.toUpperCase(), Q=q.toUpperCase(), m=[];
-  if(!Q)return m;
-  let i=0; while((i=s.indexOf(Q,i))>=0){m.push(i);i+=Q.length;}
-  return m;
+function editFrLine(i){
+  if(frEditIdx===i)return;
+  commitFrEdit();
+  frEditIdx=i;
+  const el=document.getElementById('frl-'+i);
+  if(!el)return;
+  el.classList.add('editing');
+  el.onclick=null;
+  el.innerHTML=`<span class="ln">${i+1}</span><div class="fr-edit-wrap"><input class="fr-lineedit" id="fre-${i}" value="${esc(frLines[i])}" spellcheck="false" autocapitalize="characters"><div class="fr-edit-acts"><button class="fr-eic" onmousedown="event.preventDefault()" onclick="event.stopPropagation();frAct('ins')"><svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button><button class="fr-eic" onmousedown="event.preventDefault()" onclick="event.stopPropagation();frAct('dup')"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button><button class="fr-eic del" onmousedown="event.preventDefault()" onclick="event.stopPropagation();frAct('del')"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg></button><button class="fr-eic done" onmousedown="event.preventDefault()" onclick="event.stopPropagation();frAct('done')"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></button></div></div>`;
+  const inp=document.getElementById('fre-'+i);
+  inp.focus();
+  inp.addEventListener('keydown',e=>{
+    if(e.key==='Enter'){e.preventDefault();frAct('done');}
+    else if(e.key==='ArrowDown'){e.preventDefault();commitFrEdit();setTimeout(()=>editFrLine(Math.min(i+1,frLines.length-1)),10);}
+    else if(e.key==='ArrowUp'){e.preventDefault();commitFrEdit();setTimeout(()=>editFrLine(Math.max(i-1,0)),10);}
+  });
 }
-function frSelect(q){
-  if(frPos<0||!frMatches.length)return;
-  const ta=frText(), start=frMatches[frPos];
-  ta.focus(); ta.setSelectionRange(start,start+q.length);
-  const before=ta.value.slice(0,start).split('\n').length;
-  const lh=parseFloat(getComputedStyle(ta).lineHeight)||22;
-  ta.scrollTop=Math.max(0,(before-4)*lh);
+function commitFrEdit(){
+  if(frEditIdx<0)return;
+  const inp=document.getElementById('fre-'+frEditIdx);
+  if(inp)frLines[frEditIdx]=upCode(inp.value);
+  frEditIdx=-1;
+}
+function frAct(a){
+  const i=frEditIdx;
+  commitFrEdit();
+  if(a==='ins'){frLines.splice(i+1,0,'');renderFrEditor();setTimeout(()=>editFrLine(i+1),10);return;}
+  if(a==='dup'){frLines.splice(i+1,0,frLines[i]);renderFrEditor();return;}
+  if(a==='del'){frLines.splice(i,1);renderFrEditor();return;}
+  renderFrEditor();
+}
+function frTextChanged(){}
+function frSearch(){
+  commitFrEdit();
+  const q=document.getElementById('fr-find').value.trim().toUpperCase();
+  frMatches=[];
+  if(q)frLines.forEach((l,i)=>{if(l.toUpperCase().includes(q))frMatches.push(i);});
+  frPos=frMatches.length?0:-1;
+  document.getElementById('fr-cnt').textContent=frMatches.length?('1/'+frMatches.length):'0/0';
+  renderFrEditor();
+  frScrollActive();
+}
+function frScrollActive(){
+  if(frPos<0)return;
+  const el=document.getElementById('frl-'+frMatches[frPos]);
+  if(el)el.scrollIntoView({block:'center',behavior:'smooth'});
   document.getElementById('fr-cnt').textContent=(frPos+1)+'/'+frMatches.length;
 }
-function frSearch(){
-  const q=document.getElementById('fr-find').value.trim();
-  frMatches=frCollect(q); frPos=frMatches.length?0:-1;
-  document.getElementById('fr-cnt').textContent=frMatches.length?('1/'+frMatches.length):'0/0';
-  if(frPos>=0)frSelect(q);
-}
-function frNext(){const q=document.getElementById('fr-find').value.trim();if(!q)return;if(!frMatches.length){frSearch();return;}frPos=(frPos+1)%frMatches.length;frSelect(q);}
-function frPrev(){const q=document.getElementById('fr-find').value.trim();if(!q)return;if(!frMatches.length){frSearch();return;}frPos=(frPos-1+frMatches.length)%frMatches.length;frSelect(q);}
+function frNext(){if(!frMatches.length){frSearch();return;}frPos=(frPos+1)%frMatches.length;renderFrEditor();frScrollActive();}
+function frPrev(){if(!frMatches.length){frSearch();return;}frPos=(frPos-1+frMatches.length)%frMatches.length;renderFrEditor();frScrollActive();}
 function frReplaceOne(){
   const q=document.getElementById('fr-find').value.trim();
   if(!q||frPos<0||!frMatches.length)return;
-  const ta=frText(); frUndoSnap=ta.value;
-  const r=upCode(document.getElementById('fr-repl').value);
-  const start=frMatches[frPos];
-  ta.value=ta.value.slice(0,start)+r+ta.value.slice(start+q.length);
-  frHighlight(); frSearch(); toast('Ersetzt');
+  frUndoSnap=frLines.slice();
+  const r=document.getElementById('fr-repl').value;
+  const idx=frMatches[frPos];
+  frLines[idx]=upCode(frLines[idx].replace(new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'i'),r));
+  frSearch();toast('Ersetzt');
 }
 function frReplaceAll(){
   const q=document.getElementById('fr-find').value.trim();
   if(!q)return;
-  const ta=frText(); frUndoSnap=ta.value;
-  const r=upCode(document.getElementById('fr-repl').value);
+  frUndoSnap=frLines.slice();
+  const r=document.getElementById('fr-repl').value;
   const re=new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'gi');
-  const n=(ta.value.match(re)||[]).length;
+  let n=0;
+  frLines=frLines.map(l=>{if(re.test(l)){n++;re.lastIndex=0;return upCode(l.replace(re,r));}return l;});
   if(!n){toast('Nichts gefunden');return;}
-  ta.value=ta.value.replace(re,r);
-  frHighlight(); frSearch(); toast(n+' ersetzt');
+  frSearch();toast(n+' ersetzt');
 }
-function frUndoRepl(){const ta=frText();if(frUndoSnap!=null){ta.value=frUndoSnap;frUndoSnap=null;frHighlight();frSearch();toast('Rückgängig');}else toast('Nichts rückgängig');}
+function frUndoRepl(){if(frUndoSnap){frLines=frUndoSnap;frUndoSnap=null;frSearch();toast('Rückgängig');}else toast('Nichts rückgängig');}
 function quickInsert(tok){
-  const ta=frText(), s=ta.selectionStart||0, e=ta.selectionEnd||0;
-  ta.value=ta.value.slice(0,s)+tok+ta.value.slice(e);
-  ta.focus(); ta.selectionStart=ta.selectionEnd=s+tok.length;
-  frTextChanged();frHighlight();
+  const inp=document.querySelector('.fr-lineedit');
+  if(inp){const s=inp.selectionStart||inp.value.length;inp.value=inp.value.slice(0,s)+tok+inp.value.slice(s);inp.focus();inp.selectionStart=inp.selectionEnd=s+tok.length;}
+  else{const at=frEditIdx>=0?frEditIdx+1:frLines.length;frLines.splice(at,0,tok==='\n'?'':tok);renderFrEditor();setTimeout(()=>editFrLine(at),10);}
 }
 
 function upCode(line){
@@ -3025,7 +3060,8 @@ function addEOB(line){
   return t+' ;';
 }
 function saveCodeEdit(){
-  const txt=frText().value.split(/\r?\n/).map(upCode).join('\n');
+  commitFrEdit();
+  const txt=frLines.map(upCode).join('\n');
   setCode(codeCtx.kanal,txt);
   const ops=parseProgram(txt);
   if(codeCtx.kanal==='unten')P().unten=ops;else P().oben=ops;
