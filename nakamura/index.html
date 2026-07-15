@@ -60,6 +60,17 @@ button{font-family:var(--sans);}
 .statusbar::after{content:'';position:absolute;left:18px;right:18px;bottom:0;height:7px;background:var(--tick-rule);background-position:bottom;background-repeat:repeat-x;opacity:.9;}
 .status-left{display:flex;align-items:center;gap:9px;text-transform:uppercase;}
 .status-dot{width:7px;height:7px;border-radius:50%;background:var(--ink);box-shadow:0 0 0 4px rgba(21,22,26,.07);animation:dro 3s ease-in-out infinite;}
+.cloud-chip{display:flex;align-items:center;gap:6px;border:1px solid var(--line2);background:var(--card);border-radius:20px;padding:4px 11px 4px 9px;cursor:pointer;font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:1px;color:var(--ink2);box-shadow:var(--sh-1);transition:.15s;}
+.cloud-chip svg{width:14px;height:14px;stroke:var(--ink3);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+.cloud-chip:active{transform:scale(.96);}
+.cloud-chip.on{border-color:var(--ink);color:var(--ink);}
+.cloud-chip.on svg{stroke:var(--ink);}
+.cloud-chip.busy svg{animation:spin 1s linear infinite;}
+.cloud-chip.ok{border-color:#2F6B4F;color:#2F6B4F;}
+.cloud-chip.ok svg{stroke:#2F6B4F;}
+.cloud-chip.err{border-color:#B24A3E;color:#B24A3E;}
+.cloud-chip.err svg{stroke:#B24A3E;}
+@keyframes spin{to{transform:rotate(360deg)}}
 @keyframes dro{0%,100%{opacity:1}50%{opacity:.35}}
 .status-right{color:var(--ink3);display:flex;gap:14px;text-transform:uppercase;align-items:center;}
 .status-edit{color:var(--ink2);cursor:pointer;transition:color .15s;}
@@ -104,7 +115,7 @@ button{font-family:var(--sans);}
 .metacell .meta-label:focus{color:var(--green-deep);box-shadow:none;}
 .metacell .meta-del{cursor:pointer;color:var(--ink3);font-size:11px;opacity:.35;flex-shrink:0;padding:0 2px;transition:.15s;}
 .metacell .meta-del:hover{opacity:1;color:var(--red);}
-.metacell .meta-val{width:100%;border:none;outline:none;background:transparent;font-family:var(--mono);font-size:16px;font-weight:700;color:var(--ink);padding:0;box-shadow:none;}
+.metacell .meta-val{width:100%;border:none;outline:none;background:transparent;font-family:var(--mono);font-size:16px;font-weight:700;color:var(--ink);padding:0;box-shadow:none;text-transform:uppercase;}
 .metacell .meta-val::placeholder{color:var(--ink3);font-weight:500;}
 
 /* ── LEGACY TABS / KANAL (kept for safety) ──────────────────── */
@@ -747,7 +758,7 @@ body:has(.overlay.active) .fab,body:has(.drawer.open) .fab{opacity:0;pointer-eve
 
 <div class="app">
   <div class="statusbar">
-    <div class="status-left"><span class="status-dot"></span><span>Connected</span></div>
+    <div class="status-left"><button class="cloud-chip" id="cloud-chip" onclick="cloudQuickSync()" title="Cloud synchronisieren"><svg viewBox="0 0 24 24"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg><span id="cloud-chip-txt">Cloud</span></button></div>
     <div class="status-right"><span class="status-edit" onclick="openProjModal(true)">Edit</span><span id="clock">--:--</span></div>
   </div>
 
@@ -934,6 +945,10 @@ body:has(.overlay.active) .fab,body:has(.drawer.open) .fab{opacity:0;pointer-eve
   <div class="sheet">
     <div class="sheet-bar"></div>
     <div class="sheet-title">Werkzeug-Bibliothek</div>
+    <div style="display:flex;gap:8px;margin-bottom:12px">
+      <button class="sbtn sec" style="flex:1;font-size:13px" onclick="brainCloudPush()"><span class="ic-lbl"><svg class="ic" viewBox="0 0 24 24"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg><span>In Cloud</span></span></button>
+      <button class="sbtn sec" style="flex:1;font-size:13px" onclick="brainCloudPull()"><span class="ic-lbl"><svg class="ic" viewBox="0 0 24 24"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/><polyline points="9 13 12 16 15 13"/></svg><span>Aus Cloud</span></span></button>
+    </div>
     <div id="lib-body"></div>
   </div>
 </div>
@@ -1396,7 +1411,56 @@ function ensureMeta(p){
 }
 function curList(){const p=P(); if(!p.oben)p.oben=[]; if(!p.unten)p.unten=[]; return kanal==='oben'?p.oben:p.unten;}
 function persist(){localStorage.setItem(DB,JSON.stringify(db));scheduleCloudSync();}
-function saveBrain(){localStorage.setItem(BRAIN,JSON.stringify(brain));}
+function saveBrain(){localStorage.setItem(BRAIN,JSON.stringify(brain));scheduleBrainSync();}
+// ── Werkzeug-Speicher (brain) Cloud ──
+let _brainTimer=null;
+function scheduleBrainSync(){
+  if(typeof autoSyncOn!=='function'||!autoSyncOn()||!cloudSecret())return;
+  clearTimeout(_brainTimer);
+  _brainTimer=setTimeout(brainCloudPushSilent,3000);
+}
+async function brainCloudPushSilent(){
+  const c=sbClient();if(!c||!cloudSecret())return;
+  try{const {error}=await c.rpc('save_brain',{p_secret:cloudSecret(),p_data:brain});if(error)throw error;}catch(e){}
+}
+async function brainCloudPush(){
+  const c=sbClient();if(!c)return;
+  if(!cloudSecret()){askSecret(()=>brainCloudPush());return;}
+  try{
+    const {error}=await c.rpc('save_brain',{p_secret:cloudSecret(),p_data:brain});
+    if(error)throw error;
+    toast('Werkzeug-Speicher in Cloud');
+  }catch(e){toast(/secret/i.test(e.message||'')?'Falscher Zugangscode':'Fehler');}
+}
+function mergeBrain(remote){
+  if(!remote||typeof remote!=='object')return;
+  const uniq=(a,b)=>{const s=new Set(a||[]);(b||[]).forEach(x=>s.add(x));return[...s];};
+  brain.nm=uniq(brain.nm,remote.nm);
+  brain.bem=uniq(brain.bem,remote.bem);
+  brain.pairs=Object.assign({},remote.pairs||{},brain.pairs||{});
+  // library: union by nm+rev, prefer entries with more info
+  const key=it=>(it.nm||'')+'|'+(it.rev||'oben');
+  const map={};
+  (remote.library||[]).forEach(it=>{map[key(it)]=it;});
+  (brain.library||[]).forEach(it=>{map[key(it)]=Object.assign({},map[key(it)]||{},it);});
+  brain.library=Object.values(map);
+  // vorlagen: union by cloudId or name
+  const vk=v=>v.cloudId||('n:'+v.name);
+  const vmap={};
+  (remote.vorlagen||[]).forEach(v=>{vmap[vk(v)]=v;});
+  (brain.vorlagen||[]).forEach(v=>{vmap[vk(v)]=Object.assign({},vmap[vk(v)]||{},v);});
+  brain.vorlagen=Object.values(vmap);
+}
+async function brainCloudPull(silent){
+  const c=sbClient();if(!c)return;
+  if(!cloudSecret()){if(silent)return;askSecret(()=>brainCloudPull());return;}
+  try{
+    const {data,error}=await c.rpc('load_brain',{p_secret:cloudSecret()});
+    if(error)throw error;
+    if(data){mergeBrain(data);localStorage.setItem(BRAIN,JSON.stringify(brain));if(document.getElementById('m-lib').classList.contains('active'))renderLibrary();}
+    if(!silent)toast('Werkzeug-Speicher geladen');
+  }catch(e){if(!silent)toast(/secret/i.test(e.message||'')?'Falscher Zugangscode':'Fehler');}
+}
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2200);}
 function close_(id){document.getElementById(id).classList.remove('active');}
@@ -1438,7 +1502,7 @@ function renderMeta(){
       ondragstart="metaDragStart(event,${i})" ondragover="metaDragOver(event,${i})"
       ondrop="metaDrop(event,${i})" ondragend="metaDragEnd(event)">
       <label><span class="meta-grip" title="Ziehen"><svg viewBox="0 0 24 24"><circle cx="9" cy="6" r="1.4"/><circle cx="15" cy="6" r="1.4"/><circle cx="9" cy="12" r="1.4"/><circle cx="15" cy="12" r="1.4"/><circle cx="9" cy="18" r="1.4"/><circle cx="15" cy="18" r="1.4"/></svg></span><input class="meta-label" value="${esc(f.label)}" placeholder="FELD" oninput="P().meta[${i}].label=this.value.toUpperCase();this.value=this.value.toUpperCase();persist();"><span class="meta-del" onclick="delMetaField(${i})"><svg class="ic" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></span></label>
-      <input class="meta-val" value="${esc(f.value)}" placeholder="—" oninput="P().meta[${i}].value=this.value;persist();">
+      <input class="meta-val" value="${esc(f.value)}" placeholder="—" oninput="this.value=this.value.toUpperCase();P().meta[${i}].value=this.value;persist();">
     </div>`).join('');
 }
 let _metaDrag=-1;
@@ -1682,6 +1746,7 @@ function saveTool(){
   persist();close_('m-tool');render();
   if(tEdit!==null&&oldNm&&nm&&oldNm.toUpperCase()!==nm.toUpperCase())tryRenameInCode(oldNm,nm);
 }
+function deleteTool(){if(tEdit===null)return;listByName(editList).splice(tEdit,1);persist();close_('m-tool');render();}
 function reEsc(s){return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');}
 function tryRenameInCode(oldNm,newNm){
   const chans=['oben','unten'];
@@ -2177,10 +2242,50 @@ function secretOk(){
   if(!v)return;
   localStorage.setItem(SECRET_KEY,v);
   close_('m-secret');
+  if(typeof cloudChipRefresh==='function')cloudChipRefresh();
   const cb=_secretCb;_secretCb=null;
   if(cb)cb();else cloudLoadList();
 }
 function cloudStatus(msg){document.getElementById('cloud-status').textContent=msg||'';}
+// ── Cloud-Chip (Schnellsync aus Kopfzeile) ──
+function cloudChipState(cls,txt){
+  const c=document.getElementById('cloud-chip');if(!c)return;
+  c.classList.remove('on','busy','ok','err');
+  if(cls)c.classList.add(cls);
+  if(txt!=null)document.getElementById('cloud-chip-txt').textContent=txt;
+}
+function cloudChipRefresh(){
+  if(!cloudSecret()){cloudChipState('','Cloud');return;}
+  cloudChipState((autoSyncOn()||autoRefreshOn())?'on':'','Cloud');
+}
+async function cloudQuickSync(){
+  const c=sbClient();if(!c){openCloud();return;}
+  if(!cloudSecret()){askSecret(()=>cloudQuickSync());return;}
+  cloudChipState('busy','Sync...');
+  try{
+    const p=P();
+    const {data,error}=await c.rpc('save_project',{
+      p_secret:cloudSecret(),p_id:p.cloudId||null,
+      p_num:p.num||'',p_name:p.name||'',p_data:p,p_expected:p.cloudTs||null
+    });
+    if(error){
+      if(/conflict/i.test(error.message||'')){
+        cloudChipState('err','Konflikt');
+        uiConfirm('Cloud-Version ist neuer. Überschreiben?',()=>cloudSave(true));
+        setTimeout(cloudChipRefresh,2000);return;
+      }
+      throw error;
+    }
+    const row=Array.isArray(data)?data[0]:data;
+    if(row){p.cloudId=row.id;p.cloudTs=row.updated_at;persist();if(typeof lastStamp!=='undefined')lastStamp=p.cloudTs||lastStamp;}
+    await brainCloudPull(true);
+    cloudChipState('ok','Synced');
+    setTimeout(cloudChipRefresh,1800);
+  }catch(e){
+    cloudChipState('err',/secret/i.test(e.message||'')?'Code?':'Fehler');
+    setTimeout(cloudChipRefresh,2200);
+  }
+}
 function openCloud(){
   open_('m-cloud');
   document.getElementById('cloud-list').innerHTML='';
@@ -2433,12 +2538,12 @@ function makePDF(){
         ${metaRows}
       </div>
     </div><div style="border-bottom:2px solid #000;margin-bottom:12px;"></div>`;
-  const getFoot=()=>`<div style="margin-top:auto;padding-top:6px;border-top:1px solid #000;"></div>`;
+  const getFoot=()=>`<div style="padding-top:6px;border-top:1px solid #000;"></div>`;
   const tableHead=`<div style="display:flex;font-size:11px;font-weight:900;text-transform:uppercase;margin-bottom:5px;padding:0 2px;"><div style="width:95px;">T-NR</div><div style="flex:1;">WERKZEUGNAME / KOMMENTAR</div><div style="width:135px;text-align:right;">Ø / TOLERANZ</div></div><div style="border-bottom:2px solid #000;"></div>`;
   const getRow=t=>`<div style="display:flex;align-items:center;border-bottom:.5px solid #000;padding:8px 0;height:54px;box-sizing:border-box;"><div style="width:95px;font-weight:900;font-size:20px;">${esc(t.id)}</div><div style="flex:1;padding-right:10px;"><div style="font-weight:800;font-size:17px;line-height:1.1;text-transform:uppercase;">${esc(t.nm)}</div><div style="font-size:9px;font-weight:800;margin-top:1px;"><span style="color:#666;">${t.isSonder?'SONDERWERKZEUG':'STANDARD'}</span>${t.bem?' | <span style="color:#000;">'+esc(t.bem)+'</span>':''}</div></div><div style="width:135px;text-align:right;font-weight:900;font-size:16px;line-height:1;">${esc(t.dia||'').replace('/','<br>')}</div></div>`;
   const PER_PAGE=14;
   const page=(title,rows,pg,tot)=>{
-    return `<div style="width:210mm;height:270mm;overflow:hidden;padding:6mm;background:#fff;font-family:sans-serif;box-sizing:border-box;${pg<tot?'page-break-after:always;':''}"><div style="border:2px solid #000;padding:16px;height:100%;display:flex;flex-direction:column;box-sizing:border-box;">${getHead()}<div style="flex:1;overflow:hidden;"><div style="font-size:22px;font-weight:900;margin-bottom:8px;letter-spacing:-.5px;">${title}</div>${tableHead}${rows.map(getRow).join('')}</div>${getFoot()}</div></div>`;
+    return `<div style="width:210mm;height:270mm;overflow:hidden;padding:6mm;background:#fff;font-family:sans-serif;box-sizing:border-box;${pg<tot?'page-break-after:always;':''}"><div style="border:2px solid #000;padding:26px 18px 16px;height:100%;display:flex;flex-direction:column;box-sizing:border-box;">${getHead()}<div style="overflow:hidden;"><div style="font-size:22px;font-weight:900;margin-bottom:8px;letter-spacing:-.5px;">${title}</div>${tableHead}${rows.map(getRow).join('')}</div>${getFoot()}</div></div>`;
   };
   // paginate: fixed rows per A4 page, frame never overflows
   const pages=[];
@@ -3859,6 +3964,8 @@ function vlgInsert(){
 // ═══ INIT ═══
 db.forEach(p=>ensureMeta(p));persist();
 if(autoRefreshOn()&&cloudSecret())startPoll();
+if((autoSyncOn()||autoRefreshOn())&&cloudSecret())setTimeout(()=>brainCloudPull(true),600);
+setTimeout(()=>{if(typeof cloudChipRefresh==='function')cloudChipRefresh();},200);
 renderHeader();render();
 // splash stays until correct PIN entered (keypad)
 function tceToggleFull(){
