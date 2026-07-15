@@ -1648,6 +1648,7 @@ function togglePill(k){const cb=document.getElementById('t-'+k);cb.checked=!cb.c
 function syncPill(k){const cb=document.getElementById('t-'+k);document.getElementById('pill-'+k).classList.toggle('on',cb.checked);}
 
 function saveTool(){
+  const oldNm=(tEdit!==null&&listByName(editList)[tEdit])?(listByName(editList)[tEdit].nm||''):'';
   const nm=document.getElementById('t-nm').value.toUpperCase().trim();
   const bem=document.getElementById('t-bem').value.toUpperCase().trim();
   const dia=document.getElementById('t-dia').value.trim();
@@ -1679,8 +1680,24 @@ function saveTool(){
     }
   }
   persist();close_('m-tool');render();
+  if(tEdit!==null&&oldNm&&nm&&oldNm.toUpperCase()!==nm.toUpperCase())tryRenameInCode(oldNm,nm);
 }
-function deleteTool(){if(tEdit===null)return;listByName(editList).splice(tEdit,1);persist();close_('m-tool');render();}
+function reEsc(s){return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');}
+function tryRenameInCode(oldNm,newNm){
+  const chans=['oben','unten'];
+  const hits=chans.filter(k=>new RegExp('\\('+reEsc(oldNm)+'\\)','i').test(getCode(k)));
+  if(!hits.length)return;
+  uiConfirm('Werkzeugname im Programm ersetzen?  ('+oldNm+') → ('+newNm+')',()=>{
+    hits.forEach(k=>{
+      const re=new RegExp('\\('+reEsc(oldNm)+'\\)','gi');
+      setCode(k,getCode(k).replace(re,'('+newNm+')'));
+    });
+    persist();
+    const cm=document.getElementById('m-code');
+    if(cm&&cm.classList.contains('active'))renderCodeView();
+    toast('Im Programm ersetzt');
+  });
+}
 
 // ═══ SMART CHIPS ═══
 function chips(type,val){
