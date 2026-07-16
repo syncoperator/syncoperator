@@ -919,7 +919,7 @@ body:has(.overlay.active) .fab,body:has(.drawer.open) .fab{opacity:0;pointer-eve
       <input id="t-nm" placeholder="KOPIERST. R0.8" oninput="chips('nm',this.value)" onfocus="chips('nm',this.value)">
       <div id="nm-chips" class="chips"></div>
     </div>
-    <div class="f"><label>Ø / TOLERANZ</label><input id="t-dia" placeholder="24.94 - 24.98"></div>
+    <div class="f"><label>Ø / TOLERANZ</label><textarea id="t-dia" rows="2" placeholder="23.90-24.20&#10;26.40-26.60" style="font-family:var(--mono);font-size:15px;resize:vertical;line-height:1.5"></textarea></div>
     <div class="f">
       <label>BEMERKUNG / KOMMENTAR</label>
       <input id="t-bem" placeholder="FACH B2" oninput="chips('bem',this.value)" onfocus="chips('bem',this.value)">
@@ -1572,7 +1572,7 @@ function opCard(t,i,listName){
       <div class="op-title ${t.nm?'':'empty'}" onclick="editIn('${listName}',${i})">${esc(t.nm||'Leer — antippen')}</div>
       <div class="op-tags">
         ${t.isSonder?'<span class="otag sp">Sonder</span>':'<span class="otag">Standard</span>'}
-        ${t.dia?'<span class="otag">Ø '+esc(t.dia)+'</span>':''}
+        ${t.dia?'<span class="otag">Ø '+esc(t.dia).replace(/\n+/g,' / ')+'</span>':''}
         ${t.bem?'<span class="otag tool" onclick="editIn(\''+listName+'\','+i+')">'+esc(t.bem)+'</span>':''}
       </div>
     </div>`;
@@ -1591,7 +1591,7 @@ function lrow(t,i,listName){
     <span class="lrow-idx">${String(i+1).padStart(2,'0')}</span>
     <span class="lrow-id">${esc(t.id||'T—')}</span>
     <span class="lrow-nm">${esc(t.nm||'Leer')}</span>
-    ${t.dia?`<span class="lrow-dia">Ø ${esc(t.dia)}</span>`:''}
+    ${t.dia?`<span class="lrow-dia">Ø ${esc(t.dia).replace(/\n+/g,' / ')}</span>`:''}
     ${t.isSonder?'<span class="lrow-sonder" title="Sonder"></span>':''}
   </div>`;
 }
@@ -1831,7 +1831,7 @@ function libItemHTML(it,i){
       <div class="libmain">
         <div class="libinfo" onclick="useLibItem(${i})">
           <div class="libnm">${esc(it.nm)}</div>
-          <div class="libsub">${it.bem?esc(it.bem):'—'}${it.dia?' · Ø '+esc(it.dia):''}</div>
+          <div class="libsub">${it.bem?esc(it.bem):'—'}${it.dia?' · Ø '+esc(it.dia).replace(/\n+/g,' / '):''}</div>
         </div>
         <div class="libacts">
           <button class="libbtn" onclick="event.stopPropagation();toggleLibRev(${i})" title="Oben/Unten wechseln"><svg viewBox="0 0 24 24"><polyline points="17 11 12 6 7 11"/><polyline points="17 18 12 13 7 18"/></svg></button>
@@ -1842,7 +1842,7 @@ function libItemHTML(it,i){
       <div class="libedit" id="le-${i}">
         <input style="padding:11px 14px;background:var(--field);border:1px solid var(--line2);border-radius:10px;font-family:var(--sans);font-weight:600" id="le-nm-${i}" value="${esc(it.nm)}">
         <input style="padding:11px 14px;background:var(--field);border:1px solid var(--line2);border-radius:10px;font-family:var(--mono);font-size:13px" id="le-bem-${i}" value="${esc(it.bem||'')}" placeholder="Bemerkung">
-        <input style="padding:11px 14px;background:var(--field);border:1px solid var(--line2);border-radius:10px;font-family:var(--mono);font-size:13px" id="le-dia-${i}" value="${esc(it.dia||'')}" placeholder="Ø / Toleranz">
+        <textarea style="padding:11px 14px;background:var(--field);border:1px solid var(--line2);border-radius:10px;font-family:var(--mono);font-size:13px;resize:vertical;line-height:1.5" rows="2" id="le-dia-${i}" placeholder="Ø / Toleranz">${esc(it.dia||'')}</textarea>
         <div style="display:flex;gap:8px"><button class="sbtn sec" style="flex:1;padding:11px" onclick="closeLibEdit(${i})">Abbrechen</button><button class="sbtn save" style="flex:2;padding:11px" onclick="saveLib(${i})">Speichern</button></div>
       </div>
     </div>`;
@@ -2540,7 +2540,7 @@ function makePDF(){
     </div><div style="border-bottom:2px solid #000;margin-bottom:12px;"></div>`;
   const getFoot=()=>`<div style="padding-top:6px;border-top:1px solid #000;"></div>`;
   const tableHead=`<div style="display:flex;font-size:11px;font-weight:900;text-transform:uppercase;margin-bottom:5px;padding:0 2px;"><div style="width:95px;">T-NR</div><div style="flex:1;">WERKZEUGNAME / KOMMENTAR</div><div style="width:135px;text-align:right;">Ø / TOLERANZ</div></div><div style="border-bottom:2px solid #000;"></div>`;
-  const getRow=t=>`<div style="display:flex;align-items:center;border-bottom:.5px solid #000;padding:8px 0;height:54px;box-sizing:border-box;"><div style="width:95px;font-weight:900;font-size:20px;">${esc(t.id)}</div><div style="flex:1;padding-right:10px;"><div style="font-weight:800;font-size:17px;line-height:1.1;text-transform:uppercase;">${esc(t.nm)}</div><div style="font-size:9px;font-weight:800;margin-top:1px;"><span style="color:#666;">${t.isSonder?'SONDERWERKZEUG':'STANDARD'}</span>${t.bem?' | <span style="color:#000;">'+esc(t.bem)+'</span>':''}</div></div><div style="width:135px;text-align:right;font-weight:900;font-size:16px;line-height:1;">${esc(t.dia||'').replace('/','<br>')}</div></div>`;
+  const getRow=t=>`<div style="display:flex;align-items:center;border-bottom:.5px solid #000;padding:8px 0;height:54px;box-sizing:border-box;"><div style="width:95px;font-weight:900;font-size:20px;">${esc(t.id)}</div><div style="flex:1;padding-right:10px;"><div style="font-weight:800;font-size:17px;line-height:1.1;text-transform:uppercase;">${esc(t.nm)}</div><div style="font-size:9px;font-weight:800;margin-top:1px;"><span style="color:#666;">${t.isSonder?'SONDERWERKZEUG':'STANDARD'}</span>${t.bem?' | <span style="color:#000;">'+esc(t.bem)+'</span>':''}</div></div><div style="width:135px;text-align:right;font-weight:900;font-size:16px;line-height:1.15;">${esc(t.dia||'').replace(/\n/g,'<br>').replace('/','<br>')}</div></div>`;
   const PER_PAGE=14;
   const page=(title,rows,pg,tot)=>{
     return `<div style="width:210mm;height:270mm;overflow:hidden;padding:6mm;background:#fff;font-family:sans-serif;box-sizing:border-box;${pg<tot?'page-break-after:always;':''}"><div style="border:2px solid #000;padding:26px 18px 16px;height:100%;display:flex;flex-direction:column;box-sizing:border-box;">${getHead()}<div style="overflow:hidden;"><div style="font-size:22px;font-weight:900;margin-bottom:8px;letter-spacing:-.5px;">${title}</div>${tableHead}${rows.map(getRow).join('')}</div>${getFoot()}</div></div>`;
