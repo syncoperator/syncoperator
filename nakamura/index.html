@@ -681,6 +681,15 @@ body.on-home .sheet .pill-s{color:#8A8D94;}
 body.on-home .sheet .sheet-title{color:#F2F3F5;}
 body.on-home .sheet .kz-sp,body.on-home .sheet .kz-open{background:#282A31;border-color:#363841;color:#F2F3F5;}
 body.on-home .sheet .kz-sp svg,body.on-home .sheet .kz-open svg{stroke:#F2F3F5;}
+/* Tool-Modals (Vorlagen/Notizen/Sim/Bibliothek) dunkel */
+body.on-home .sheet .codebox,body.on-home .sheet .codearea,body.on-home .sheet .note-textarea,body.on-home .sheet .note-title-input,body.on-home .sheet .vf input,body.on-home .sheet .vf textarea,body.on-home .sheet .fc-sel,body.on-home .sheet .fc-out,body.on-home .sheet .kz-readout,body.on-home .sheet .kz-prow,body.on-home .sheet .kz-field input,body.on-home .sheet .kz-list,body.on-home .sheet .ioarea,body.on-home .sheet .filelbl{background:#20222833!important;background-color:#212329!important;color:#F2F3F5!important;border-color:#363841!important;}
+body.on-home .sheet .codebox,body.on-home .sheet .codeline,body.on-home .sheet .codeline .lc,body.on-home .sheet .vlg-desc,body.on-home .sheet .fc-hint,body.on-home .sheet .sim-info,body.on-home .sheet .kz-coords{color:#E7E8EB;}
+body.on-home .sheet .chip,body.on-home .sheet .pchip,body.on-home .sheet .sim-tchip,body.on-home .sheet .cb-ok,body.on-home .sheet .kz-controls,body.on-home .sheet .kz-toolbar,body.on-home .sheet .sim-tools,body.on-home .sheet .sim-editrow,body.on-home .sheet .fc-box,body.on-home .sheet .vlg-det,body.on-home .sheet .vlg-fanuc,body.on-home .sheet .note-head,body.on-home .sheet .note-pane{background:#212329!important;border-color:#363841!important;color:#F2F3F5;}
+body.on-home .sheet .chip.on,body.on-home .sheet .pchip.on,body.on-home .sheet .sim-tchip.on{background:#F2F3F5!important;color:#15161A!important;border-color:#F2F3F5!important;}
+body.on-home .sheet .vlg-grid,body.on-home .sheet .fc-grid,body.on-home .sheet .kz-coords{color:#C7C9CE;}
+body.on-home .sheet .note-canvas,body.on-home .sheet .kz-preview{background:#F4F5F7!important;}
+body.on-home .sheet .sim-cur,body.on-home .sheet .sim-hot{color:#F2F3F5;}
+body.on-home .sheet .note-sheet{background:#181A1F;color:#F2F3F5;}
 
 @media print{
   html,body{background:#fff;height:auto;overflow:visible;}
@@ -4119,7 +4128,7 @@ function vlgSaveOwn(){
   const code=document.getElementById('vlgo-code').value;
   if(!name||!code.trim()){toast('Name und Code nötig');return;}
   brain.vorlagen.push({id:'v'+Date.now(),kind:vlgKind,name,desc:document.getElementById('vlgo-desc').value.trim(),code});
-  localStorage.setItem(BRAIN,JSON.stringify(brain));
+  saveBrain();
   close_('m-vlgprev');vlgRenderList();
   // restore footer button
   const saveBtn=document.querySelector('#m-vlgprev .sbtn.save');
@@ -4138,7 +4147,7 @@ function vlgOpenOwn(id){
 }
 function vlgDelOwn(id){
   brain.vorlagen=brain.vorlagen.filter(v=>v.id!==id);
-  localStorage.setItem(BRAIN,JSON.stringify(brain));
+  saveBrain();
   vlgRenderList();toast('Gelöscht');
 }
 function vlgOpen(kind,i){
@@ -4178,7 +4187,7 @@ function vlgImport(input){
       if(!Array.isArray(arr))throw 0;
       let n=0;
       arr.forEach(v=>{if(v&&v.name&&v.code){if(!brain.vorlagen.find(x=>x.id===v.id)){brain.vorlagen.push({id:v.id||('v'+Date.now()+n),kind:v.kind||'tool',name:v.name,desc:v.desc||'',code:v.code});n++;}}});
-      localStorage.setItem(BRAIN,JSON.stringify(brain));
+      saveBrain();
       vlgRenderList();toast(n+' Vorlagen importiert');
     }catch(err){toast('Ungültige Datei');}
   };
@@ -4237,7 +4246,7 @@ function homeToggleMore(){
 function homeTool(what){
   const map={bibliothek:openLibrary,vorlagen:openVorlagen,simulation:openSim,notizen:openNotizen};
   const fn=map[what];if(!fn)return;
-  enterApp();setTimeout(fn,300);
+  fn();
 }
 function openPdfPick(){
   const body=document.getElementById('pdfpick-body');
