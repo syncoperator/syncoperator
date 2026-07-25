@@ -1370,13 +1370,27 @@ T0404 ; A_STECHST.3MM ; 20.90-21.10"></textarea></div>
       <div style="display:flex;gap:6px">
         <button class="kz-sp" id="sim-oben" onclick="simSetKanal('oben')">Oben</button>
         <button class="kz-sp" id="sim-unten" onclick="simSetKanal('unten')">Unten</button>
+        <button class="kz-sp" id="sim-both" onclick="simToggleBoth()">Beide</button>
+        <button class="kz-sp" id="sim-flipbtn" onclick="simToggleFlip()" title="Richtung spiegeln">⇄</button>
       </div>
     </div>
     <canvas id="sim-canvas" style="width:100%;height:340px;touch-action:none"></canvas>
     <div class="sim-info" id="sim-info">— Werkzeug wählen —</div>
+    <div style="display:flex;gap:8px;align-items:center;margin:8px 0;flex-wrap:wrap">
+      <span style="font-family:var(--mono);font-size:10px;letter-spacing:1.5px;color:var(--ink3)">ROHTEIL</span>
+      <span style="font-family:var(--mono);font-size:13px;color:var(--ink2)">Ø</span>
+      <input id="sim-rohd" type="text" inputmode="decimal" placeholder="auto" oninput="simSetRohteil()" style="width:64px;padding:8px 10px;border:1px solid var(--line2);border-radius:9px;font-family:var(--mono);font-size:14px;background:var(--field);text-align:center">
+      <span style="font-family:var(--mono);font-size:13px;color:var(--ink2)">L</span>
+      <input id="sim-rohl" type="text" inputmode="decimal" placeholder="auto" oninput="simSetRohteil()" style="width:64px;padding:8px 10px;border:1px solid var(--line2);border-radius:9px;font-family:var(--mono);font-size:14px;background:var(--field);text-align:center">
+      <span style="font-family:var(--mono);font-size:11px;color:var(--ink3)">mm</span>
+    </div>
+    <div class="sim-legend" id="sim-legend" style="display:none;flex-wrap:wrap;gap:6px;margin:2px 0 8px"></div>
     <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px">
-      <button class="sbtn sec" onclick="simPlay()" id="sim-playbtn" style="flex:0 0 auto;padding:11px 18px"><svg class="ic" viewBox="0 0 24 24"><polygon points="6 4 20 12 6 20 6 4" fill="currentColor" stroke="none"/></svg></button>
+      <button class="sbtn sec" onclick="simStep(-1)" title="Schritt zurück" style="flex:0 0 auto;padding:11px 13px"><svg class="ic" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
+      <button class="sbtn sec" onclick="simPlay()" id="sim-playbtn" style="flex:0 0 auto;padding:11px 16px"><svg class="ic" viewBox="0 0 24 24"><polygon points="6 4 20 12 6 20 6 4" fill="currentColor" stroke="none"/></svg></button>
+      <button class="sbtn sec" onclick="simStep(1)" title="Schritt vor" style="flex:0 0 auto;padding:11px 13px"><svg class="ic" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg></button>
       <input type="range" id="sim-scrub" min="0" max="100" value="100" style="flex:1" oninput="simScrub(this.value)">
+      <button class="sbtn sec" onclick="simResetView()" title="Ansicht zurücksetzen" style="flex:0 0 auto;padding:11px 13px"><svg class="ic" viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/></svg></button>
     </div>
     <div class="sim-tools" id="sim-tools"></div>
     <div class="sim-editrow" id="sim-editrow" style="display:none">
@@ -2871,7 +2885,7 @@ function loadCodeFile(input){
   input.value='';
 }
 function saveCodeFile(){
-  const txt=withEOB(getCode(codeCtx.kanal));
+  const txt=getCode(codeCtx.kanal);
   const p=P();
   const suffix=codeCtx.kanal==='unten'?'RU':'RO';
   const fname=(p.num||'programm')+suffix+'.O';
@@ -3763,11 +3777,35 @@ function kzApply(){
 
 // ═══ SIMULATION ═══
 let simKanal='oben', simCanvas, simCtx, simSegs=[], simTools=[], simSelTool=-1, simSelSeg=-1, simProgress=1, simAnim=null;
+let simView={s:1,ox:0,oy:0}, simDrag=null, simBoth=false, simHidden=new Set(), simOrient='G54', simFlip=false;
+const SIM_VER='v8';
+function simToggleFlip(){simFlip=!simFlip;const b=document.getElementById('sim-flipbtn');if(b)b.classList.toggle('on',simFlip);simDraw();}
+function simToolWcs(){
+  // 1) nach echten Z-Daten entscheiden (Schnitt in Z− → G54-Seite, Z+ → G55-Seite)
+  const segs=(simTools[simSelTool]&&simTools[simSelTool].segs)||simSegs||[];
+  let neg=0,pos=0;
+  segs.forEach(s=>{[s.z0,s.z1].forEach(v=>{if(v==null)return;if(v<-0.05)neg++;else if(v>0.05)pos++;});});
+  if(neg||pos)return (neg>=pos)?'G54':'G55';
+  // 2) sonst G54/G55 aus dem Block
+  const t=simTools[simSelTool];
+  if(t&&t.wcs)return t.wcs;
+  return simKanal==='oben'?'G54':'G55';
+}
+function simToggleTool(kanal,i){const k=kanal+':'+i;if(simHidden.has(k))simHidden.delete(k);else simHidden.add(k);simLegend();simDraw();}
+const SIM_COL={rapid:'#B9C2D0',sel:'#DC2626'};
+const SIM_PAL=['#2563EB','#0F9D6B','#E8590C','#7C3AED','#DB2777','#0891B2','#CA8A04','#4F46E5','#15803D','#BE123C','#0D9488','#9333EA','#2E7D32','#C2410C'];
+function simToolCol(i){return SIM_PAL[((i%SIM_PAL.length)+SIM_PAL.length)%SIM_PAL.length];}
 
 function openSim(){
   simKanal=getCode('oben')?'oben':(getCode('unten')?'unten':'oben');
   open_('m-sim');
-  setTimeout(()=>{simInitCanvas();simSetKanal(simKanal);},60);
+  const rt=simRohteil();
+  setTimeout(()=>{
+    const rd=document.getElementById('sim-rohd'),rl=document.getElementById('sim-rohl');
+    if(rd)rd.value=rt.dia>0?rt.dia:'';if(rl)rl.value=rt.len>0?rt.len:'';
+    simBoth=false;document.getElementById('sim-both').classList.remove('on');
+    simInitCanvas();simSetKanal(simKanal);
+  },60);
 }
 function simFromCode(kanal,tid,line){
   close_('m-code');
@@ -3786,39 +3824,205 @@ function simFromCode(kanal,tid,line){
   },80);
 }
 function simSetKanal(k){
+  simBoth=false;
+  document.getElementById('sim-both').classList.remove('on');
   simKanal=k;
   document.getElementById('sim-oben').classList.toggle('on',k==='oben');
   document.getElementById('sim-unten').classList.toggle('on',k==='unten');
+  const tools=document.getElementById('sim-tools');if(tools)tools.style.display='';
+  simLegend();
   simParse();
   simSelTool=simTools.length?0:-1;
   simRenderTools();
   simSelectTool(simSelTool);
+}
+function simToggleBoth(){
+  simBoth=!simBoth;
+  document.getElementById('sim-both').classList.toggle('on',simBoth);
+  document.getElementById('sim-oben').classList.remove('on');
+  document.getElementById('sim-unten').classList.remove('on');
+  const tools=document.getElementById('sim-tools'), edit=document.getElementById('sim-editrow');
+  if(simBoth){
+    if(tools)tools.style.display='none';
+    if(edit)edit.style.display='none';
+    simSelSeg=-1;simSelTool=-1;
+    simView={s:1,ox:0,oy:0};
+    const ro=simParseTools('oben'), ru=simParseTools('unten');
+    const nR=ro.reduce((a,t)=>a+t.segs.length,0), nU=ru.reduce((a,t)=>a+t.segs.length,0);
+    document.getElementById('sim-info').textContent='Beide · RO '+nR+' · RU '+nU+' Wege';
+    const cl=document.getElementById('sim-codelist');if(cl)cl.innerHTML='';
+    simProgress=1;document.getElementById('sim-scrub').value=100;
+    simLegend();
+    simDraw();
+  }else{
+    document.getElementById('sim-oben').classList.toggle('on',simKanal==='oben');
+    document.getElementById('sim-unten').classList.toggle('on',simKanal==='unten');
+    if(tools)tools.style.display='';
+    simLegend();
+    simParse();simSelTool=simTools.length?0:-1;simRenderTools();simSelectTool(simSelTool);
+  }
+}
+function simAxes(px,py,zRight,iz,zlabel){
+  const L=34*iz, ah=6*iz;
+  simCtx.strokeStyle='#4A5260';simCtx.fillStyle='#4A5260';simCtx.lineWidth=1.8*iz;
+  const zx=px+(zRight?L:-L);
+  simCtx.beginPath();simCtx.moveTo(px,py);simCtx.lineTo(zx,py);simCtx.stroke();
+  simCtx.beginPath();
+  if(zRight){simCtx.moveTo(zx,py);simCtx.lineTo(zx-ah,py-ah);simCtx.lineTo(zx-ah,py+ah);}
+  else{simCtx.moveTo(zx,py);simCtx.lineTo(zx+ah,py-ah);simCtx.lineTo(zx+ah,py+ah);}
+  simCtx.closePath();simCtx.fill();
+  simCtx.beginPath();simCtx.moveTo(px,py);simCtx.lineTo(px,py-L);simCtx.stroke();
+  simCtx.beginPath();simCtx.moveTo(px,py-L);simCtx.lineTo(px-ah,py-L+ah);simCtx.lineTo(px+ah,py-L+ah);simCtx.closePath();simCtx.fill();
+  simCtx.font=('700 '+(11*iz)+'px monospace');simCtx.textAlign='center';
+  simCtx.fillText(zlabel||'Z−',zx+(zRight?12*iz:-12*iz),py+4*iz);
+  simCtx.fillText('X',px,py-L-6*iz);
+  simCtx.beginPath();simCtx.arc(px,py,2.8*iz,0,7);simCtx.fill();
+}
+function simDrawChan(tools,kanal,rx0,rx1,maxX,w,h,iz){
+  const all=[]; tools.forEach(t=>t.segs.forEach(s=>all.push(s)));
+  if(!all.length)return;
+  let minZ=1e9,maxZ=-1e9;
+  all.forEach(s=>[s.z0,s.z1].forEach(v=>{if(v!=null){minZ=Math.min(minZ,v);maxZ=Math.max(maxZ,v);}}));
+  const zR=(maxZ-minZ)||1, pad=(rx1-rx0)*0.08, gx0=rx0+pad, gx1=rx1-pad, gw=gx1-gx0, cy=h*0.5;
+  // deep cut: RO at minZ(Z−) → links; RU at maxZ(Z+) → rechts. Beide: tiefster Schnitt zum Aussenrand
+  const C2P=(x,z)=>{
+    const t=(maxZ-z)/zR;
+    const px=gx1-t*gw; // t=0(maxZ)→gx1, t=1(minZ)→gx0
+    const py=cy-((x/2)/Math.max(maxX,1))*(h*0.4);
+    return {px,py};
+  };
+  const rt=simRohteil();
+  const wpDia=rt.dia>0?rt.dia:Math.max(maxX,4), cTop=C2P(wpDia,maxZ);
+  const yTop=cTop.py, yBot=h-cTop.py;
+  const grd=simCtx.createLinearGradient(0,yTop,0,yBot);
+  grd.addColorStop(0,'#EDEFF2');grd.addColorStop(.5,'#F7F8FA');grd.addColorStop(1,'#EDEFF2');
+  simCtx.fillStyle=grd;simCtx.fillRect(gx0,yTop,gw,yBot-yTop);
+  simCtx.strokeStyle='#B9C0CC';simCtx.lineWidth=iz;simCtx.strokeRect(gx0,yTop,gw,yBot-yTop);
+  // chuck an der Mitte
+  simCtx.fillStyle='#E1E3DB';
+  if(kanal==='oben')simCtx.fillRect(gx1,h*0.24,8*iz,h*0.52);else simCtx.fillRect(gx0-8*iz,h*0.24,8*iz,h*0.52);
+  simCtx.fillStyle='#9B9B90';simCtx.font=(10*iz)+'px monospace';simCtx.textAlign='center';
+  simCtx.fillText(kanal==='oben'?'RO · G54':'RU · G55',(gx0+gx1)/2,yTop-6*iz);
+  const org=C2P(0,0);
+  simAxes(org.px,org.py,(kanal==='oben'?false:true),iz,(kanal==='oben'?'Z−':'Z+'));
+  const sc=gw/zR*0.96, total=all.length, shown=Math.ceil(total*simProgress);
+  let idx=0,lastEnd=null,lastCol=SIM_COL.rapid;
+  tools.forEach((t,ti)=>{
+    if(simHidden.has(kanal+':'+ti)){idx+=t.segs.length;return;}
+    const tc=simToolCol(ti);
+    t.segs.forEach((s)=>{
+      if(idx>=shown){idx++;return;}
+      const p0=C2P(s.x0,s.z0), p1=C2P(s.x1,s.z1);
+      const rapid=(s.g===0), isArc=(s.g===2||s.g===3), arcR=s.r||0;
+      const col=rapid?SIM_COL.rapid:tc;
+      simCtx.strokeStyle=col;simCtx.lineWidth=(rapid?1.1:2.3)*iz;
+      simCtx.setLineDash(rapid?[4*iz,3*iz]:[]);
+      const ghost=simHex(tc,.16);
+      if(isArc&&arcR>0){
+        drawArc(p0,p1,arcR*sc,s.g,false);
+        simCtx.strokeStyle=ghost;simCtx.lineWidth=iz;drawArc({px:p0.px,py:h-p0.py},{px:p1.px,py:h-p1.py},arcR*sc,s.g,true);
+      }else if(!rapid&&arcR>0){
+        const nx=all[idx+1];const pc=nx?C2P(nx.x1,nx.z1):p1;const rPx=arcR*sc;
+        cornerRound(p0,p1,pc,rPx,false);
+        simCtx.strokeStyle=ghost;simCtx.lineWidth=iz;cornerRound({px:p0.px,py:h-p0.py},{px:p1.px,py:h-p1.py},{px:pc.px,py:h-pc.py},rPx,true);
+      }else{
+        simCtx.beginPath();simCtx.moveTo(p0.px,p0.py);simCtx.lineTo(p1.px,p1.py);simCtx.stroke();simCtx.setLineDash([]);
+        simCtx.strokeStyle=rapid?'rgba(150,155,165,.25)':ghost;simCtx.lineWidth=iz;
+        simCtx.beginPath();simCtx.moveTo(p0.px,h-p0.py);simCtx.lineTo(p1.px,h-p1.py);simCtx.stroke();
+      }
+      simCtx.setLineDash([]);
+      if(!rapid){simCtx.fillStyle=col;simCtx.beginPath();simCtx.arc(p1.px,p1.py,2.8*iz,0,7);simCtx.fill();lastEnd=p1;lastCol=tc;}
+      else lastEnd=p1;
+      idx++;
+    });
+  });
+  if(lastEnd&&simProgress<1){
+    const gg=simCtx.createRadialGradient(lastEnd.px,lastEnd.py,0,lastEnd.px,lastEnd.py,15*iz);
+    gg.addColorStop(0,simHex(lastCol,.4));gg.addColorStop(1,'transparent');
+    simCtx.fillStyle=gg;simCtx.beginPath();simCtx.arc(lastEnd.px,lastEnd.py,15*iz,0,7);simCtx.fill();
+    simCtx.fillStyle=lastCol;simCtx.beginPath();simCtx.arc(lastEnd.px,lastEnd.py,5.5*iz,0,7);simCtx.fill();
+    simCtx.strokeStyle='#fff';simCtx.lineWidth=1.6*iz;simCtx.stroke();
+  }
+}
+function simHex(hex,a){const n=parseInt(hex.slice(1),16);return`rgba(${(n>>16)&255},${(n>>8)&255},${n&255},${a})`;}
+function simRohteil(){const p=P();return (p&&p.rohteil)?p.rohteil:{dia:0,len:0};}
+function simSetRohteil(){
+  const p=P();if(!p)return;
+  const d=parseFloat((document.getElementById('sim-rohd').value||'').replace(',','.'))||0;
+  const l=parseFloat((document.getElementById('sim-rohl').value||'').replace(',','.'))||0;
+  p.rohteil={dia:d,len:l};persist();simDraw();
+}
+function simLegend(){
+  const el=document.getElementById('sim-legend');if(!el)return;
+  if(!simBoth){el.style.display='none';el.innerHTML='';return;}
+  const roT=simParseTools('oben'), ruT=simParseTools('unten');
+  const chip=(t,i,kanal)=>{const hid=simHidden.has(kanal+':'+i);return `<span onclick="simToggleTool('${kanal}',${i})" style="display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:11px;font-weight:700;color:${hid?'var(--ink3)':'var(--ink)'};background:${hid?'transparent':'var(--card-soft)'};border:1px solid var(--line2);border-radius:20px;padding:3px 9px;cursor:pointer;opacity:${hid?.5:1};text-decoration:${hid?'line-through':'none'}"><span style="width:9px;height:9px;border-radius:50%;background:${hid?'#C3C6CC':simToolCol(i)}"></span>${esc(t.id)}</span>`;};
+  let html='';
+  if(roT.length)html+='<span style="font-family:var(--mono);font-size:10px;color:var(--ink3);align-self:center">RO</span>'+roT.map((t,i)=>chip(t,i,'oben')).join('');
+  if(ruT.length)html+='<span style="font-family:var(--mono);font-size:10px;color:var(--ink3);align-self:center;margin-left:6px">RU</span>'+ruT.map((t,i)=>chip(t,i,'unten')).join('');
+  el.innerHTML=html;el.style.display='flex';
 }
 function simInitCanvas(){
   simCanvas=document.getElementById('sim-canvas');
   const r=simCanvas.getBoundingClientRect();
   simCanvas.width=r.width*2;simCanvas.height=r.height*2;
   simCtx=simCanvas.getContext('2d');simCtx.scale(2,2);
+  simView={s:1,ox:0,oy:0};
   simCanvas.onclick=(e)=>{
+    if(simDrag&&simDrag.moved)return;
     const rect=simCanvas.getBoundingClientRect();
     simPickPoint(e.clientX-rect.left,e.clientY-rect.top);
   };
+  if(!simCanvas._zoomWired){
+    simCanvas._zoomWired=true;
+    simCanvas.addEventListener('wheel',(e)=>{e.preventDefault();const rect=simCanvas.getBoundingClientRect();simZoomAt(e.clientX-rect.left,e.clientY-rect.top,e.deltaY<0?1.15:1/1.15);},{passive:false});
+    simCanvas.addEventListener('mousedown',(e)=>{simDrag={x:e.clientX,y:e.clientY,ox:simView.ox,oy:simView.oy,moved:false};});
+    window.addEventListener('mousemove',(e)=>{if(!simDrag)return;if(Math.abs(e.clientX-simDrag.x)+Math.abs(e.clientY-simDrag.y)>3)simDrag.moved=true;simView.ox=simDrag.ox+(e.clientX-simDrag.x);simView.oy=simDrag.oy+(e.clientY-simDrag.y);simDraw();});
+    window.addEventListener('mouseup',()=>{setTimeout(()=>{simDrag=null;},0);});
+    let ld=0,tdr=null;
+    const dist=t=>Math.hypot(t[0].clientX-t[1].clientX,t[0].clientY-t[1].clientY);
+    const mid=(t,rect)=>({x:(t[0].clientX+t[1].clientX)/2-rect.left,y:(t[0].clientY+t[1].clientY)/2-rect.top});
+    simCanvas.addEventListener('touchstart',(e)=>{if(e.touches.length===2){ld=dist(e.touches);}else if(e.touches.length===1){const t=e.touches[0];tdr={x:t.clientX,y:t.clientY,ox:simView.ox,oy:simView.oy,moved:false};}},{passive:false});
+    simCanvas.addEventListener('touchmove',(e)=>{e.preventDefault();const rect=simCanvas.getBoundingClientRect();if(e.touches.length===2){const d=dist(e.touches),m=mid(e.touches,rect);simZoomAt(m.x,m.y,d/(ld||d));ld=d;}else if(e.touches.length===1&&tdr){const t=e.touches[0];if(Math.abs(t.clientX-tdr.x)+Math.abs(t.clientY-tdr.y)>3)tdr.moved=true;simView.ox=tdr.ox+(t.clientX-tdr.x);simView.oy=tdr.oy+(t.clientY-tdr.y);simDrag=tdr;simDraw();}},{passive:false});
+    simCanvas.addEventListener('touchend',()=>{setTimeout(()=>{tdr=null;simDrag=null;},0);});
+  }
+}
+function simZoomAt(mx,my,f){
+  const ns=Math.max(0.3,Math.min(20,simView.s*f)), r=ns/simView.s;
+  simView.ox=mx-r*(mx-simView.ox);simView.oy=my-r*(my-simView.oy);simView.s=ns;simDraw();
+}
+function simResetView(){simView={s:1,ox:0,oy:0};simDraw();}
+function simStepCount(){
+  if(simBoth){const ro=simParseTools('oben').reduce((a,t)=>a+t.segs.length,0),ru=simParseTools('unten').reduce((a,t)=>a+t.segs.length,0);return Math.max(ro,ru);}
+  return simSegs.length;
+}
+function simStep(dir){
+  if(simAnim){clearInterval(simAnim);simAnim=null;const pb=document.getElementById('sim-playbtn');if(pb)pb.innerHTML=SIM_PLAY;}
+  const n=simStepCount();if(!n)return;
+  let step=Math.round(simProgress*n)+dir;
+  step=Math.max(1,Math.min(n,step));
+  simProgress=step/n;
+  const sc=document.getElementById('sim-scrub');if(sc)sc.value=Math.round(simProgress*100);
+  const info=document.getElementById('sim-info');
+  if(info&&!simBoth)info.textContent=(simTools[simSelTool]?simTools[simSelTool].id:'—')+' · Schritt '+step+'/'+n;
+  simDraw();
 }
 // parse code into tool blocks each with motion segments
-function simParse(){
-  const lines=getCode(simKanal).split(/\r?\n/);
-  simTools=[];
+function simParseTools(kanal){
+  const lines=getCode(kanal).split(/\r?\n/);
+  const tools=[];
   let cur=null, g=0, x=null, z=null;
   for(let i=0;i<lines.length;i++){
     const L=lines[i].trim(); const U=L.toUpperCase();
     if(/T\d{4}/.test(U)&&!/^\(/.test(U)){
       const tm=U.match(/T(\d{4})/);
-      cur={id:'T'+tm[1],line:i,segs:[]};
-      simTools.push(cur); x=null;z=null;g=0;
+      cur={id:'T'+tm[1],line:i,segs:[],wcs:null};
+      tools.push(cur); x=null;z=null;g=0;
       continue;
     }
     if(!cur)continue;
     if(/^\(/.test(L))continue;
+    if(cur.wcs===null){if(/G54(?!\d)/.test(U))cur.wcs='G54';else if(/G55(?!\d)/.test(U))cur.wcs='G55';}
     const gm=U.match(/G0?([0-3])(?![\d])/);
     if(gm)g=parseInt(gm[1],10);
     const xm=U.match(/X(-?\d*\.?\d+)/); const zm=U.match(/Z(-?\d*\.?\d+)/);
@@ -3833,14 +4037,15 @@ function simParse(){
       x=nx;z=nz;
     }
   }
-  // keep only tools with motion
-  simTools=simTools.filter(t=>t.segs.length);
+  return tools.filter(t=>t.segs.length);
 }
+function simParse(){ simTools=simParseTools(simKanal); }
 function simRenderTools(){
   document.getElementById('sim-tools').innerHTML=simTools.map((t,i)=>`<button class="sim-tchip ${i===simSelTool?'on':''}" onclick="simSelectTool(${i})">${esc(t.id)}</button>`).join('');
 }
 function simSelectTool(i){
-  simSelTool=i;simSelSeg=-1;simProgress=1;
+  simSelTool=i;simSelSeg=-1;simProgress=1;simView={s:1,ox:0,oy:0};
+  simOrient=simToolWcs();
   document.getElementById('sim-scrub').value=100;
   document.getElementById('sim-editrow').style.display='none';
   simSegs=(i>=0&&simTools[i])?simTools[i].segs:[];
@@ -3878,6 +4083,7 @@ function simJumpToLine(k){
 function simBounds(){
   let minX=0,maxX=10,minZ=-10,maxZ=10;
   simSegs.forEach(s=>{[s.x0,s.x1].forEach(v=>{if(v!=null){minX=Math.min(minX,v);maxX=Math.max(maxX,v);}});[s.z0,s.z1].forEach(v=>{if(v!=null){minZ=Math.min(minZ,v);maxZ=Math.max(maxZ,v);}});});
+  const rt=simRohteil();if(rt.dia>0)maxX=Math.max(maxX,rt.dia);
   const padX=(maxX-minX)*0.1+2, padZ=(maxZ-minZ)*0.1+2;
   return {minX:minX-padX,maxX:maxX+padX,minZ:minZ-padZ,maxZ:maxZ+padZ};
 }
@@ -3889,7 +4095,8 @@ function simC2P(x,z,w,h){
   let zt=(z-b.minZ)/zR; // 0 at minZ, 1 at maxZ
   // RO (oben): chuck=maxZ on LEFT, deepest minZ on RIGHT → px = w - zt*w
   // RU (unten): mirrored → px = zt*w
-  const px=(simKanal==='oben')?(w-zt*w):(zt*w);
+  const left=(simOrient==='G54')!==simFlip;
+  const px=left?(zt*w):(w-zt*w); // G54: Z− nach LINKS; G55: Z+ nach RECHTS
   const cy=h*0.5;
   const py=cy-((x/2)/(Math.max(b.maxX,1)))*(h*0.4);
   return {px,py};
@@ -3897,50 +4104,137 @@ function simC2P(x,z,w,h){
 function simDraw(){
   if(!simCtx)return;
   const w=simCanvas.width/2,h=simCanvas.height/2;
+  simCtx.setTransform(2,0,0,2,0,0);
   simCtx.clearRect(0,0,w,h);
-  // chuck/Spindel indicator (RO=links, RU=rechts)
-  const chuckLeft=(simKanal==='oben');
-  simCtx.fillStyle='#E6E6DD';
-  if(chuckLeft)simCtx.fillRect(0,h*0.18,14,h*0.64); else simCtx.fillRect(w-14,h*0.18,14,h*0.64);
-  simCtx.fillStyle='#9B9B90';simCtx.font='10px monospace';
-  simCtx.fillText(simKanal==='oben'?'RO·G54·Z−':'RU·G55·Z+',chuckLeft?20:w-110,14);
+  const iz=1/simView.s;
+  simCtx.save();
+  simCtx.translate(simView.ox,simView.oy);
+  simCtx.scale(simView.s,simView.s);
+  if(simBoth){
+    const roT=simParseTools('oben'), ruT=simParseTools('unten');
+    let maxX=4;[...roT,...ruT].forEach(t=>t.segs.forEach(s=>[s.x0,s.x1].forEach(v=>{if(v!=null)maxX=Math.max(maxX,v);})));
+    const rtB=simRohteil();if(rtB.dia>0)maxX=Math.max(maxX,rtB.dia);
+    simCtx.strokeStyle='#E4E6EA';simCtx.lineWidth=iz;simCtx.setLineDash([5*iz,5*iz]);
+    simCtx.beginPath();simCtx.moveTo(w/2,8);simCtx.lineTo(w/2,h-8);simCtx.stroke();simCtx.setLineDash([]);
+    simCtx.strokeStyle='#CBD0D8';simCtx.lineWidth=0.9*iz;simCtx.setLineDash([6*iz,4*iz]);
+    simCtx.beginPath();simCtx.moveTo(0,h*0.5);simCtx.lineTo(w,h*0.5);simCtx.stroke();simCtx.setLineDash([]);
+    simDrawChan(roT,'oben',0,w/2,maxX,w,h,iz);
+    simDrawChan(ruT,'unten',w/2,w,maxX,w,h,iz);
+    simCtx.restore();
+    return;
+  }
+  const b=simBounds();
+  simOrient=simToolWcs();
+  const chuckLeft=((simOrient==='G54')===simFlip);
+  // workpiece (Rohteil)
+  if(simSegs.length){
+    const rt=simRohteil();
+    const wpDia=rt.dia>0?rt.dia:Math.max(b.maxX,4);
+    const cA=simC2P(wpDia,b.minZ,w,h), cB=simC2P(wpDia,b.maxZ,w,h);
+    const yTop=cA.py, yBot=h-cA.py;
+    const gx0=Math.min(cA.px,cB.px), gw=Math.abs(cB.px-cA.px);
+    const grd=simCtx.createLinearGradient(0,yTop,0,yBot);
+    grd.addColorStop(0,'#EDEFF2');grd.addColorStop(.5,'#F7F8FA');grd.addColorStop(1,'#EDEFF2');
+    simCtx.fillStyle=grd;simCtx.fillRect(gx0,yTop,gw,yBot-yTop);
+    simCtx.strokeStyle='#B9C0CC';simCtx.lineWidth=iz;simCtx.strokeRect(gx0,yTop,gw,yBot-yTop);
+  }
+  // grid + Z labels
+  const zR=(b.maxZ-b.minZ)||1;
+  const gs=zR>160?20:zR>60?10:zR>20?5:2;
+  simCtx.strokeStyle='#ECEEF2';simCtx.lineWidth=0.6*iz;
+  simCtx.font=(9*iz)+'px monospace';simCtx.fillStyle='#AEB3BC';simCtx.textAlign='center';
+  for(let g=Math.ceil(b.minZ/gs)*gs;g<=b.maxZ;g+=gs){
+    const p=simC2P(0,g,w,h);
+    simCtx.beginPath();simCtx.moveTo(p.px,4);simCtx.lineTo(p.px,h-4);simCtx.stroke();
+    simCtx.fillText(g,p.px,h-3*iz);
+  }
+  // X (Ø) Zahlen an der Achse
+  const xMax=b.maxX; const xs=xMax>120?40:xMax>60?20:xMax>24?10:5;
+  simCtx.textAlign='left';
+  for(let xv=xs;xv<=xMax;xv+=xs){
+    const py=simC2P(xv,0,w,h).py;
+    simCtx.strokeStyle='#F0F1F4';simCtx.lineWidth=0.5*iz;
+    simCtx.beginPath();simCtx.moveTo(4,py);simCtx.lineTo(w-4,py);simCtx.stroke();
+    simCtx.beginPath();simCtx.moveTo(4,h-py);simCtx.lineTo(w-4,h-py);simCtx.stroke();
+    simCtx.fillStyle='#AEB3BC';simCtx.fillText('Ø'+xv,5*iz,py-2*iz);
+  }
+  simCtx.textAlign='center';
+  // chuck
+  simCtx.fillStyle='#E1E3DB';
+  if(chuckLeft)simCtx.fillRect(0,h*0.2,10*iz,h*0.6);else simCtx.fillRect(w-10*iz,h*0.2,10*iz,h*0.6);
   // centerline
-  simCtx.strokeStyle='#C9C9BE';simCtx.lineWidth=1;simCtx.setLineDash([5,4]);
+  simCtx.strokeStyle='#CBD0D8';simCtx.lineWidth=0.9*iz;simCtx.setLineDash([6*iz,4*iz]);
   simCtx.beginPath();simCtx.moveTo(0,h*0.5);simCtx.lineTo(w,h*0.5);simCtx.stroke();simCtx.setLineDash([]);
+  // Z0-Linie (Grenze Z+/Z−)
+  const z0px=simC2P(0,0,w,h).px;
+  simCtx.strokeStyle='#B7BCC6';simCtx.lineWidth=1.1*iz;simCtx.setLineDash([3*iz,3*iz]);
+  simCtx.beginPath();simCtx.moveTo(z0px,6);simCtx.lineTo(z0px,h-6);simCtx.stroke();simCtx.setLineDash([]);
+  // toolpaths
   const shown=Math.ceil(simSegs.length*simProgress);
+  let lastEnd=null,lastCol='#26272B';
   simSegs.forEach((s,i)=>{
     if(i>=shown)return;
     const p0=simC2P(s.x0,s.z0,w,h), p1=simC2P(s.x1,s.z1,w,h);
-    const rapid=(s.g===0);
-    const sel=(i===simSelSeg);
-    simCtx.strokeStyle=sel?'#B24A3E':(rapid?'#B0B2AB':'#26272B');
-    simCtx.lineWidth=sel?3.5:(rapid?1.3:2.4);
-    if(rapid)simCtx.setLineDash([4,3]);else simCtx.setLineDash([]);
-    const isArc=(s.g===2||s.g===3);
-    const arcR=s.r||0;
+    const rapid=(s.g===0), sel=(i===simSelSeg);
+    const faded=(!sel && s.z0!=null && s.z1!=null && s.z0>=-0.001 && s.z1>=-0.001);
+    simCtx.globalAlpha=faded?0.26:1;
+    const tc=simToolCol(simSelTool<0?0:simSelTool);
+    const col=sel?SIM_COL.sel:(rapid?SIM_COL.rapid:tc);
+    simCtx.strokeStyle=col;
+    simCtx.lineWidth=(sel?3.2:(rapid?1.2:2.3))*iz;
+    if(rapid)simCtx.setLineDash([4*iz,3*iz]);else simCtx.setLineDash([]);
+    const isArc=(s.g===2||s.g===3), arcR=s.r||0, sc=simScale(w,h);
+    const ghost=rapid?'rgba(150,155,165,.25)':simHex(tc,.16);
     if(isArc&&arcR>0){
-      // G2/G3 arc through scaled radius
-      const sc=simScale(w,h);
       drawArc(p0,p1,arcR*sc,s.g,false);
-      simCtx.strokeStyle=rapid?'rgba(150,150,140,.22)':'rgba(17,19,24,.18)';simCtx.lineWidth=1;
+      simCtx.strokeStyle=ghost;simCtx.lineWidth=iz;
       drawArc({px:p0.px,py:h-p0.py},{px:p1.px,py:h-p1.py},arcR*sc,s.g,true);
     }else if(!rapid&&arcR>0&&i<simSegs.length-1){
-      // ,R corner rounding using next segment
-      const next=simSegs[i+1];
-      const pc=simC2P(next.x1,next.z1,w,h);
-      const sc=simScale(w,h); const rPx=arcR*sc;
+      const next=simSegs[i+1];const pc=simC2P(next.x1,next.z1,w,h);const rPx=arcR*sc;
       cornerRound(p0,p1,pc,rPx,false);
-      simCtx.strokeStyle='rgba(17,19,24,.18)';simCtx.lineWidth=1;
+      simCtx.strokeStyle=ghost;simCtx.lineWidth=iz;
       cornerRound({px:p0.px,py:h-p0.py},{px:p1.px,py:h-p1.py},{px:pc.px,py:h-pc.py},rPx,true);
     }else{
-      simCtx.beginPath();simCtx.moveTo(p0.px,p0.py);simCtx.lineTo(p1.px,p1.py);simCtx.stroke();
-      simCtx.setLineDash([]);
-      simCtx.strokeStyle=rapid?'rgba(150,150,140,.22)':'rgba(17,19,24,.18)';simCtx.lineWidth=1;
+      simCtx.beginPath();simCtx.moveTo(p0.px,p0.py);simCtx.lineTo(p1.px,p1.py);simCtx.stroke();simCtx.setLineDash([]);
+      simCtx.strokeStyle=ghost;simCtx.lineWidth=iz;
       simCtx.beginPath();simCtx.moveTo(p0.px,h-p0.py);simCtx.lineTo(p1.px,h-p1.py);simCtx.stroke();
     }
     simCtx.setLineDash([]);
-    if(!rapid){simCtx.fillStyle=sel?'#B24A3E':'#26272B';simCtx.beginPath();simCtx.arc(p1.px,p1.py,3.5,0,7);simCtx.fill();}
+    if(!rapid){simCtx.fillStyle=col;simCtx.beginPath();simCtx.arc(p1.px,p1.py,3.2*iz,0,7);simCtx.fill();lastEnd=p1;lastCol=col;}
+    else lastEnd=p1;
+    simCtx.globalAlpha=1;
   });
+  // Revolver (RO oben / RU unten) + Eingang (halbtransparent)
+  if(lastEnd){
+    const tx=lastEnd.px, top=(simKanal==='oben');
+    simCtx.strokeStyle='rgba(74,82,96,.33)';simCtx.lineWidth=1.4*iz;simCtx.setLineDash([5*iz,4*iz]);
+    simCtx.beginPath();simCtx.moveTo(tx,top?2*iz:h-2*iz);simCtx.lineTo(tx,lastEnd.py);simCtx.stroke();simCtx.setLineDash([]);
+    const bw=36*iz,bh=17*iz, by=top?2*iz:h-2*iz-bh;
+    simCtx.fillStyle='rgba(88,96,110,.26)';simCtx.strokeStyle='rgba(74,82,96,.42)';simCtx.lineWidth=1.2*iz;
+    simCtx.beginPath();
+    if(simCtx.roundRect)simCtx.roundRect(tx-bw/2,by,bw,bh,4*iz);else simCtx.rect(tx-bw/2,by,bw,bh);
+    simCtx.fill();simCtx.stroke();
+    simCtx.fillStyle='rgba(50,56,66,.72)';simCtx.font=('700 '+(9*iz)+'px monospace');simCtx.textAlign='center';
+    simCtx.fillText(top?'RO':'RU',tx,by+bh/2+3*iz);
+  }
+  // glowing tool marker
+  if(lastEnd&&simProgress<1){
+    const gw2=simCtx.createRadialGradient(lastEnd.px,lastEnd.py,0,lastEnd.px,lastEnd.py,16*iz);
+    gw2.addColorStop(0,'rgba(21,22,26,.35)');gw2.addColorStop(1,'transparent');
+    simCtx.fillStyle=gw2;simCtx.beginPath();simCtx.arc(lastEnd.px,lastEnd.py,16*iz,0,7);simCtx.fill();
+    simCtx.fillStyle=lastCol;simCtx.beginPath();simCtx.arc(lastEnd.px,lastEnd.py,6*iz,0,7);simCtx.fill();
+    simCtx.strokeStyle='#fff';simCtx.lineWidth=1.6*iz;simCtx.stroke();
+  }
+  // Koordinatenkreuz (Nullpunkt Z0/X0, Z→Kontur, X↑)
+  const org=simC2P(0,0,w,h);
+  const _l=(simOrient==='G54')!==simFlip;
+  simAxes(org.px,org.py,!_l,iz,(_l?'Z−':'Z+'));
+  simCtx.restore();
+  // header + zoom badge (screen space)
+  simCtx.fillStyle='#9B9B90';simCtx.font='10px monospace';simCtx.textAlign='left';
+  const _lb=(simOrient==='G54')!==simFlip;
+  simCtx.fillText((simKanal==='oben'?'RO':'RU')+'·'+simOrient+'·'+(_lb?'Z−':'Z+')+' · '+SIM_VER,chuckLeft?16:w-140,14);
+  if(Math.abs(simView.s-1)>0.01){simCtx.fillStyle='rgba(21,22,26,.7)';simCtx.fillRect(w-46,h-16,42,13);simCtx.fillStyle='#fff';simCtx.textAlign='center';simCtx.fillText(simView.s.toFixed(1)+'x',w-25,h-6);}
 }
 function simScale(w,h){
   const b=simBounds();
@@ -3978,6 +4272,7 @@ function simPlay(){
 }
 function simPickPoint(px,py){
   const w=simCanvas.width/2,h=simCanvas.height/2;
+  px=(px-simView.ox)/simView.s; py=(py-simView.oy)/simView.s;
   let best=-1,bd=18;
   simSegs.forEach((s,i)=>{
     if(s.g===0)return;
