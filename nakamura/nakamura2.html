@@ -539,6 +539,22 @@ body.on-home .nz-card-nm,body.on-home .nz-title{color:#F2F3F5;}
 @media(min-width:760px){#m-note .sheet{height:94dvh;max-height:94dvh;border-radius:22px;max-width:760px!important;margin:20px;}
   #m-notizen .sheet{height:94dvh;max-height:94dvh;border-radius:22px;max-width:900px!important;margin:20px;}}
 
+
+/* ── BRIEF (DIN 5008) ───────────────────────────────────────── */
+.br-sec{border:1px solid var(--line2);border-radius:14px;background:var(--card);padding:14px 15px;margin-bottom:10px;box-shadow:var(--sh-1);}
+.br-lbl{font-family:var(--mono);font-size:9px;letter-spacing:2px;color:var(--ink3);text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;gap:8px;}
+.br-lbl::after{content:'';flex:1;height:1px;background:var(--line);}
+.br-g2{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.br-g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
+.br-f{margin-bottom:8px;}
+.br-f:last-child{margin-bottom:0;}
+.br-f label{display:block;font-family:var(--mono);font-size:9px;letter-spacing:1.2px;color:var(--ink3);margin-bottom:4px;text-transform:uppercase;}
+.br-f input,.br-f textarea{width:100%;padding:11px 13px;background:#fff;border:1px solid var(--line2);border-radius:10px;font-family:var(--sans);font-size:15px;color:var(--ink);outline:none;box-shadow:var(--sh-1);}
+.br-f textarea{font-size:15px;line-height:1.6;resize:vertical;min-height:150px;}
+.br-f input:focus,.br-f textarea:focus{border-color:var(--ink);box-shadow:var(--focus);}
+body.on-home .sheet .br-sec{background:#212329!important;border-color:#363841!important;}
+body.on-home .sheet .br-f input,body.on-home .sheet .br-f textarea{background:#282A31!important;color:#F2F3F5!important;border-color:#363841!important;}
+
 /* ── FAB · neue Operation ───────────────────────────────────── */
 .fab{position:fixed;right:calc(50% - min(50vw,260px) + 18px);bottom:calc(96px + env(safe-area-inset-bottom,0));width:56px;height:56px;border-radius:18px;border:none;background:var(--ink);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:400;box-shadow:0 8px 24px rgba(21,22,26,.34),inset 0 1px 0 rgba(255,255,255,.12);transition:transform .14s ease,box-shadow .15s;}
 .fab:hover{transform:translateY(-2px);box-shadow:0 12px 30px rgba(21,22,26,.4),inset 0 1px 0 rgba(255,255,255,.12);}
@@ -1686,6 +1702,7 @@ T0404 ; A_STECHST.3MM ; 20.90-21.10"></textarea></div>
       <button class="seg-b on" id="ntab-text" onclick="noteTab('text')">Text</button>
       <button class="seg-b" id="ntab-draw" onclick="noteTab('draw')">Skizze</button>
       <button class="seg-b" id="ntab-files" onclick="noteTab('files')">Dateien</button>
+      <button class="seg-b" id="ntab-brief" onclick="noteTab('brief')">Brief</button>
     </div>
     <div id="note-pane-text" class="note-pane">
       <div class="nz-tb">
@@ -1725,6 +1742,51 @@ T0404 ; A_STECHST.3MM ; 20.90-21.10"></textarea></div>
         <input type="file" accept="application/pdf,image/*" multiple onchange="nzAttach(this)">
       </label>
       <div class="nz-files" id="note-files"></div>
+    </div>
+    <div id="note-pane-brief" class="note-pane" style="display:none;overflow-y:auto">
+      <div class="br-sec">
+        <div class="br-lbl">Absender</div>
+        <div class="br-g2">
+          <div class="br-f"><label>Vorname</label><input id="br-svn" placeholder="Roman"></div>
+          <div class="br-f"><label>Nachname</label><input id="br-snn" placeholder="Muster"></div>
+        </div>
+        <div class="br-f"><label>Straße / Nr.</label><input id="br-sstr" placeholder="Musterstraße 12"></div>
+        <div class="br-g2">
+          <div class="br-f"><label>PLZ</label><input id="br-splz" placeholder="70173" inputmode="numeric"></div>
+          <div class="br-f"><label>Ort</label><input id="br-sort" placeholder="Stuttgart"></div>
+        </div>
+        <div class="br-g2">
+          <div class="br-f"><label>Telefon</label><input id="br-stel" placeholder="0170 1234567" inputmode="tel"></div>
+          <div class="br-f"><label>E-Mail</label><input id="br-smail" placeholder="name@mail.de" inputmode="email"></div>
+        </div>
+        <button class="sbtn sec" style="width:100%;font-size:13px;margin-top:4px" onclick="brSaveSender()">Als Standard-Absender speichern</button>
+      </div>
+      <div class="br-sec">
+        <div class="br-lbl">Empfänger</div>
+        <div class="br-f"><label>Firma / Name</label><input id="br-rfirm" placeholder="Firma Beispiel GmbH"></div>
+        <div class="br-f"><label>z. Hd. / Abteilung</label><input id="br-rattn" placeholder="z. Hd. Herrn Schmidt"></div>
+        <div class="br-f"><label>Straße / Nr.</label><input id="br-rstr" placeholder="Industriestraße 5"></div>
+        <div class="br-g2">
+          <div class="br-f"><label>PLZ</label><input id="br-rplz" placeholder="80331" inputmode="numeric"></div>
+          <div class="br-f"><label>Ort</label><input id="br-rort" placeholder="München"></div>
+        </div>
+      </div>
+      <div class="br-sec">
+        <div class="br-lbl">Inhalt</div>
+        <div class="br-g2">
+          <div class="br-f"><label>Ort (Datumszeile)</label><input id="br-pl" placeholder="Stuttgart"></div>
+          <div class="br-f"><label>Datum</label><input id="br-date" type="date"></div>
+        </div>
+        <div class="br-f"><label>Betreff</label><input id="br-betreff" placeholder="Bewerbung als CNC-Dreher"></div>
+        <div class="br-f"><label>Anrede</label><input id="br-anrede" placeholder="Sehr geehrte Damen und Herren,"></div>
+        <div class="br-f"><label>Text</label><textarea id="br-body" placeholder="hiermit bewerbe ich mich..."></textarea></div>
+        <div class="br-g2">
+          <div class="br-f"><label>Grußformel</label><input id="br-gruss" placeholder="Mit freundlichen Grüßen"></div>
+          <div class="br-f"><label>Unterschrift (Name)</label><input id="br-sign" placeholder="Roman Muster"></div>
+        </div>
+        <div class="br-f"><label>Anlagen (optional)</label><input id="br-anlagen" placeholder="Lebenslauf, Zeugnisse"></div>
+      </div>
+      <button class="sbtn save" style="width:100%;margin-bottom:6px" onclick="brPrint()"><span class="ic-lbl"><svg class="ic" viewBox="0 0 24 24"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg><span>Brief drucken (DIN 5008)</span></span></button>
     </div>
     <div class="sheet-btns" style="margin-top:12px">
       <button class="sbtn del" id="note-del" style="display:none" onclick="deleteNote()">Löschen</button>
@@ -2790,12 +2852,13 @@ function nzOpenFile(i){
 function nzDelFile(i){nzFiles.splice(i,1);nzRenderFiles();}
 // ── Tabs ──
 function noteTab(tb){
-  ['text','draw','files'].forEach(k=>{
+  ['text','draw','files','brief'].forEach(k=>{
     const b=document.getElementById('ntab-'+k);if(b)b.classList.toggle('on',k===tb);
     const pane=document.getElementById('note-pane-'+k);if(pane)pane.style.display=(k===tb)?'flex':'none';
   });
   if(tb==='draw'&&!ndReady)setTimeout(()=>ndInit(ndPendingInk),40);
   if(tb==='files')nzRenderFiles();
+  if(tb==='brief')brSet((notesList()[noteIdx]||{}).brief);
 }
 function openNote(i){
   noteIdx=i;ndReady=false;
@@ -2867,6 +2930,7 @@ function saveNote(){
   else{ink=ndPendingInk||'';}
   if(!title&&!text&&!ink&&!nzFiles.length){toast('Notiz ist leer');return;}
   const n={title,html,text,ink,cat:nzCat,files:nzFiles,ts:Date.now()};
+  if(document.getElementById('note-pane-brief').style.display!=='none'||((notesList()[noteIdx]||{}).brief))n.brief=brGet();
   const notes=notesList();
   if(noteIdx>=0)notes[noteIdx]=Object.assign(notes[noteIdx],n);
   else notes.unshift(n);
@@ -2907,6 +2971,75 @@ function nzPrintNote(i,ev){
 function nzPrintCurrent(){
   if(noteIdx<0){toast('Erst speichern');return;}
   nzPrintNote(noteIdx);
+}
+
+
+// ═══ BRIEF · DIN 5008 ═══
+const BR_IDS=['svn','snn','sstr','splz','sort','stel','smail','rfirm','rattn','rstr','rplz','rort','pl','date','betreff','anrede','body','gruss','sign','anlagen'];
+function brGet(){const o={};BR_IDS.forEach(k=>{const el=document.getElementById('br-'+k);o[k]=el?el.value:'';});return o;}
+function brSet(o){
+  o=o||{};
+  BR_IDS.forEach(k=>{const el=document.getElementById('br-'+k);if(el)el.value=o[k]||'';});
+  const a=(brain.absender||{});
+  ['svn','snn','sstr','splz','sort','stel','smail'].forEach(k=>{
+    const el=document.getElementById('br-'+k);
+    if(el&&!el.value&&a[k])el.value=a[k];
+  });
+  const d=document.getElementById('br-date');if(d&&!d.value)d.value=new Date().toISOString().slice(0,10);
+  const pl=document.getElementById('br-pl');if(pl&&!pl.value)pl.value=(a.sort||'');
+  const an=document.getElementById('br-anrede');if(an&&!an.value)an.value='Sehr geehrte Damen und Herren,';
+  const gr=document.getElementById('br-gruss');if(gr&&!gr.value)gr.value='Mit freundlichen Grüßen';
+  const sg=document.getElementById('br-sign');if(sg&&!sg.value)sg.value=((a.svn||'')+' '+(a.snn||'')).trim();
+}
+function brSaveSender(){
+  const o=brGet();
+  brain.absender={svn:o.svn,snn:o.snn,sstr:o.sstr,splz:o.splz,sort:o.sort,stel:o.stel,smail:o.smail};
+  saveBrain();toast('Absender gespeichert');
+}
+function brPrint(){
+  const o=brGet();
+  const dt=o.date?new Date(o.date).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'}):'';
+  const dateLine=[o.pl,dt].filter(Boolean).join(', ');
+  const absZeile=[((o.svn||'')+' '+(o.snn||'')).trim(),o.sstr,((o.splz||'')+' '+(o.sort||'')).trim()].filter(Boolean).join(' · ');
+  const body=esc(o.body||'').split(/\n\s*\n/).map(par=>'<p style="margin:0 0 11px;">'+par.replace(/\n/g,'<br>')+'</p>').join('');
+  const html=`
+  <div style="width:210mm;height:297mm;padding:0;background:#fff;font-family:Arial,Helvetica,sans-serif;font-size:11pt;line-height:1.45;color:#000;box-sizing:border-box;position:relative;overflow:hidden;">
+    <!-- Infoblock rechts -->
+    <div style="position:absolute;top:45mm;left:125mm;width:75mm;font-size:9.5pt;line-height:1.5;">
+      <div style="font-weight:700;">${esc(((o.svn||'')+' '+(o.snn||'')).trim())}</div>
+      <div>${esc(o.sstr||'')}</div>
+      <div>${esc(((o.splz||'')+' '+(o.sort||'')).trim())}</div>
+      ${o.stel?`<div style="margin-top:5mm;">Tel. ${esc(o.stel)}</div>`:''}
+      ${o.smail?`<div>${esc(o.smail)}</div>`:''}
+    </div>
+    <!-- Anschriftfeld: Rücksendeangabe + Empfänger -->
+    <div style="position:absolute;top:45mm;left:25mm;width:85mm;">
+      ${absZeile?`<div style="font-size:7pt;text-decoration:underline;padding-bottom:2mm;">${esc(absZeile)}</div>`:''}
+      <div style="font-size:11pt;line-height:1.45;">
+        ${o.rfirm?`<div>${esc(o.rfirm)}</div>`:''}
+        ${o.rattn?`<div>${esc(o.rattn)}</div>`:''}
+        ${o.rstr?`<div>${esc(o.rstr)}</div>`:''}
+        ${(o.rplz||o.rort)?`<div style="margin-top:1.5mm;">${esc(((o.rplz||'')+' '+(o.rort||'')).trim())}</div>`:''}
+      </div>
+    </div>
+    <!-- Datumszeile -->
+    <div style="position:absolute;top:92mm;left:25mm;width:160mm;text-align:right;font-size:11pt;">${esc(dateLine)}</div>
+    <!-- Betreff -->
+    <div style="position:absolute;top:98.4mm;left:25mm;width:165mm;font-weight:700;font-size:11pt;">${esc(o.betreff||'')}</div>
+    <!-- Textkörper -->
+    <div style="position:absolute;top:110mm;left:25mm;width:165mm;font-size:11pt;">
+      ${o.anrede?`<p style="margin:0 0 11px;">${esc(o.anrede)}</p>`:''}
+      ${body}
+      ${o.gruss?`<p style="margin:16px 0 0;">${esc(o.gruss)}</p>`:''}
+      ${o.sign?`<p style="margin:20mm 0 0;">${esc(o.sign)}</p>`:''}
+      ${o.anlagen?`<p style="margin:12mm 0 0;font-size:10pt;"><b>Anlagen</b><br>${esc(o.anlagen)}</p>`:''}
+    </div>
+  </div>`;
+  const area=document.getElementById('print-area');
+  area.innerHTML=html;
+  const cleanup=()=>{area.innerHTML='';window.removeEventListener('afterprint',cleanup);};
+  window.addEventListener('afterprint',cleanup);
+  setTimeout(()=>window.print(),150);
 }
 
 // ═══ CLOUD · SUPABASE ═══
