@@ -1235,12 +1235,34 @@ body.on-home .sheet .seg-b.on{background:#F2F3F5!important;color:#15161A!importa
       <button class="menucard" onclick="dNav(openNotizen)"><span class="mc-ic"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></span><span class="mc-lbl">Notizen</span><span class="mc-sub">Skizzen &amp; Merkzettel</span></button>
       <button class="menucard" onclick="dNav(openIO)"><span class="mc-ic"><svg viewBox="0 0 24 24"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg></span><span class="mc-lbl">Import / Export</span><span class="mc-sub">Dateien &amp; JSON</span></button>
       <button class="menucard" onclick="dNav(makePDF)"><span class="mc-ic"><svg viewBox="0 0 24 24"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></span><span class="mc-lbl">PDF drucken</span><span class="mc-sub">Werkzeugliste A4</span></button>
+      <button class="menucard" onclick="dNav(openChk)"><span class="mc-ic"><svg viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span><span class="mc-lbl">Checkliste</span><span class="mc-sub">Einrichten</span></button>
+      <button class="menucard" onclick="dNav(openBackups)"><span class="mc-ic"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><polyline points="3 3 3 8 8 8"/></svg></span><span class="mc-lbl">Sicherungen</span><span class="mc-sub">Version zurück</span></button>
+      <button class="menucard" onclick="dNav(printLabels)"><span class="mc-ic"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="6" y1="10" x2="12" y2="10"/><line x1="6" y1="14" x2="10" y2="14"/></svg></span><span class="mc-lbl">Etiketten</span><span class="mc-sub">Werkzeug-Labels</span></button>
+      <button class="menucard" onclick="dNav(exportPaket)"><span class="mc-ic"><svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/></svg></span><span class="mc-lbl">Paket-Export</span><span class="mc-sub">Alles als JSON</span></button>
       <button class="menucard" onclick="dNav(openSmart)"><span class="mc-ic"><svg viewBox="0 0 24 24"><path d="M12 2l2.4 6.6L21 11l-6.6 2.4L12 20l-2.4-6.6L3 11l6.6-2.4z"/></svg></span><span class="mc-lbl">Programm-Assistent</span><span class="mc-sub">Smart schreiben · TEST</span></button>
       <button class="menucard" onclick="dNav(openGSearch)"><span class="mc-ic"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span><span class="mc-lbl">Werkzeug suchen</span><span class="mc-sub">In allen Projekten</span></button>
       <button class="menucard" onclick="dNav(openCloud)"><span class="mc-ic"><svg viewBox="0 0 24 24"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg></span><span class="mc-lbl">Cloud</span><span class="mc-sub">Sync mit Supabase</span></button>
     </div>
 
     <div class="drawer-foot"><span class="drawer-tick"></span>SYNCOPERATOR · CNC<span class="drawer-tick"></span></div>
+  </div>
+</div>
+
+<!-- BACKUPS -->
+<div class="overlay" id="m-bkp" onclick="if(event.target===this)close_('m-bkp')">
+  <div class="sheet" style="max-width:600px">
+    <div class="sheet-bar"></div>
+    <div class="sheet-title" style="margin-bottom:12px">Sicherungen · letzte 5</div>
+    <div id="bkp-body"></div>
+  </div>
+</div>
+
+<!-- CHECKLISTE -->
+<div class="overlay" id="m-chk" onclick="if(event.target===this)close_('m-chk')">
+  <div class="sheet" style="max-width:520px">
+    <div class="sheet-bar"></div>
+    <div class="sheet-title" style="margin-bottom:12px">Einricht-Checkliste</div>
+    <div id="chk-body"></div>
   </div>
 </div>
 
@@ -3172,12 +3194,45 @@ const SP_TYPES=[
  {id:'uebergabe',nm:'Übergabe / Abgreifen',sub:'Teil an Gegenspindel',t:'',s:0,mode:'UEB',
   p:[['z','Z Abholposition','-2.'],['zb','B-Achse Ziel','-572.5'],['zab','Z Abstechen','-60'],['f','F Abstechen','.07'],['xa','Roh-Ø','45']],
   gen:v=>['(--- UEBERGABE ---)','M69(GEGENSPINDEL SYNCHRON)','G300B'+v.zb+'(GEGENSPINDEL ANFAHREN)','M25(GEGENSPINDEL SPANNEN)','G4U1.','M68(SYNCHRON AUS)','(--- ABSTECHEN ---)','G0Z'+v.zab,'G0X'+(+v.xa+2),'G1X-.5F'+v.f,'G0X'+(+v.xa+4),'G300B0(GEGENSPINDEL ZURUECK)','G28U0','M9','M1']},
+ {id:'raw',nm:'Roh-Block',sub:'importiert',t:'',s:0,mode:'RAW',p:[],gen:()=>[]},
  {id:'wait',nm:'Warten / Sync',sub:'M1xx · Kanal-Sync',t:'',s:0,mode:'WAIT',
   p:[['m','M-Nummer','120'],['txt','Kommentar','WARTEN AUF RO']],
   gen:v=>['M'+v.m+(v.txt?'('+v.txt+')':'')]},
 ];
+
+const SP_MAT={
+ '1.4104':{vc:{schrupp:150,schlicht:180,bohr:60,gew:70,stech:90},f:{schrupp:'.25',schlicht:'.12',bohr:'.1',stech:'.06'}},
+ '1.4112':{vc:{schrupp:120,schlicht:150,bohr:45,gew:55,stech:70},f:{schrupp:'.2',schlicht:'.1',bohr:'.08',stech:'.05'}},
+ 'CuAl10Ni5Fe4':{vc:{schrupp:180,schlicht:220,bohr:70,gew:80,stech:110},f:{schrupp:'.25',schlicht:'.12',bohr:'.12',stech:'.07'}},
+ 'MS58':{vc:{schrupp:300,schlicht:350,bohr:120,gew:130,stech:180},f:{schrupp:'.3',schlicht:'.15',bohr:'.15',stech:'.1'}}
+};
+function spMatApply(){
+  const m=SP_MAT[sp.kopf.mat];if(!m){toast('Material wählen');return;}
+  sp.ops.forEach(o=>{
+    const id=o.type;
+    if(/schrupp/.test(id)){o.s=m.vc.schrupp;if(o.v.f)o.v.f=m.f.schrupp;}
+    else if(/schlicht|plan/.test(id)){o.s=m.vc.schlicht;if(o.v.f)o.v.f=m.f.schlicht;}
+    else if(/bohr/.test(id)){o.s=Math.round(m.vc.bohr*1000/(Math.PI*12));if(o.v.f)o.v.f=m.f.bohr;}
+    else if(/stech|abstech/.test(id)){o.s=m.vc.stech;if(o.v.f)o.v.f=m.f.stech;}
+    else if(/gewinde/.test(id)){o.s=Math.round(m.vc.gew*1000/(Math.PI*26));}
+  });
+  persist();spRender();toast('Schnittwerte für '+sp.kopf.mat+' gesetzt');
+}
 function spType(id){return SP_TYPES.find(x=>x.id===id);}
+function spSaveDraft(){const p=P();if(p)p.spDraft={kanal:sp.kanal,kopf:sp.kopf,ops:sp.ops,step:sp.step};persist();}
 function openSmart(){
+  const p=P();
+  if(p&&p.spDraft&&(p.spDraft.ops||[]).length){
+    uiConfirm('Entwurf fortsetzen? ('+p.spDraft.ops.length+' Werkzeuge)',()=>{
+      sp={step:p.spDraft.step||0,kanal:p.spDraft.kanal||'oben',kopf:p.spDraft.kopf||{},ops:p.spDraft.ops||[]};
+      spRender();open_('m-smart');
+    });
+    _confirmCancel=()=>{delete p.spDraft;persist();openSmartNew();};
+    return;
+  }
+  openSmartNew();
+}
+function openSmartNew(){
   const p=P();
   sp={step:0,ops:[],kanal:'oben',kopf:{variant:'g10',prog:'2908',stang:true,num:(p.num||''),v501:'95.',v511:'76.65',xoff:'0',a:'87',b:'61.25',c:'0',useG1900:false,d:'55',l:'80'}};
   spRender();open_('m-smart');
@@ -3240,11 +3295,17 @@ function spRender(){
         <span class="sp-op-n">${i+1}</span>
         <div class="sp-op-i" onclick="spOpOpen(${i})">
           <div class="sp-op-nm">${esc(o.name||ty.nm)}</div>
-          <div class="sp-op-sub">${ty.mode==='WAIT'?('M'+esc(o.v.m||'')+' · Sync'):ty.mode==='UEB'?'Übergabe · Abstechen':('T'+esc(o.t)+' · '+esc(ty.sub)+' · S'+o.s)}</div>
+          <div class="sp-op-sub">${ty.mode==='WAIT'?('M'+esc(o.v.m||'')+' · Sync'):ty.mode==='UEB'?'Übergabe · Abstechen':ty.mode==='RAW'?('T'+esc(o.t)+' · Roh-Block · '+((o.raw||[]).length)+' Zeilen'):('T'+esc(o.t)+' · '+esc(ty.sub)+' · S'+o.s)}</div>
         </div>
+        <span class="sp-op-x" style="margin-right:2px" onclick="spOpMove(${i},-1)" title="Hoch"><svg viewBox="0 0 24 24"><polyline points="18 15 12 9 6 15"/></svg></span>
+        <span class="sp-op-x" style="margin-right:2px" onclick="spOpMove(${i},1)" title="Runter"><svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></span>
         <span class="sp-op-x" style="margin-right:2px" onclick="spOpDup(${i})" title="Duplizieren"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></span>
         <span class="sp-op-x" onclick="spOpDel(${i})"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></span>
       </div>`;}).join(''):'<div class="empty" style="padding:20px 10px">Noch keine Werkzeuge</div>')
+      +'<div style="display:flex;gap:8px;align-items:center;margin:14px 0 4px"><select id="sp-mat" class="fc-sel" style="flex:1" onchange="sp.kopf.mat=this.value"><option value="">Material wählen…</option>'
+      +Object.keys(SP_MAT).map(m=>`<option value="${m}" ${sp.kopf.mat===m?'selected':''}>${m}</option>`).join('')
+      +'</select><button class="sbtn sec" style="padding:11px 14px;font-size:13px" onclick="spMatApply()">Werte setzen</button></div>'
+      +'<button class="sbtn sec" style="width:100%;font-size:13px;margin-top:10px" onclick="spImportCode()">Vorhandenes Programm zerlegen</button>'
       +'<div style="font-family:var(--mono);font-size:10px;letter-spacing:1.5px;color:var(--ink3);margin:14px 0 9px">OPERATION HINZUFÜGEN</div><div class="sp-types">'
       +SP_TYPES.map(x=>`<button class="sp-type" onclick="spOpNew('${x.id}')"><b>${x.nm}</b><span>${x.sub}</span></button>`).join('')+'</div>';
     nb.classList.remove('finish');nb.innerHTML='<svg viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>';
@@ -3258,25 +3319,35 @@ function spRender(){
       +'<div style="font-family:var(--mono);font-size:11px;color:var(--ink3);margin-top:10px">'+code.split('\n').length+' Zeilen · '+sp.ops.length+' Werkzeuge</div>';
     setTimeout(()=>spDrawSim(code),40);
     nb.classList.add('finish');nb.innerHTML='<span class="ic-lbl" style="color:#fff;font-family:var(--sans);font-weight:700;font-size:14px">In '+(sp.kanal==='unten'?'Unten':'Oben')+' einfügen</span>';
-    b.innerHTML+='<button class="sbtn sec" style="width:100%;margin-top:10px;font-size:13px" onclick="spBothChannels()">RO + RU zusammen erzeugen</button>';
+    b.innerHTML+='<div style="display:flex;gap:8px;margin-top:10px"><button class="sbtn sec" style="flex:1;font-size:13px" onclick="spCopyCode()">Code kopieren</button><button class="sbtn sec" style="flex:1;font-size:13px" onclick="spBothChannels()">RO + RU zusammen</button></div>';
   }
 }
 function spKanal(k){spSnapshot();sp.kanal=k;spRender();}
 function spVariant(v){spSnapshot();sp.kopf.variant=v;spRender();}
 function spBack(){spSnapshot();if(sp.step>0){sp.step--;spRender();}}
-function spNext(){spSnapshot();if(sp.step<2){sp.step++;spRender();return;}spFinish();}
+function spNext(){spSnapshot();spSaveDraft();if(sp.step<2){sp.step++;spRender();return;}spFinish();}
 function spOpNew(tid){
   const ty=spType(tid);
-  spEdit=-1;spCur={type:tid,t:ty.t,s:ty.s,name:ty.nm.toUpperCase(),v:{}};
+  const mem=(brain.spT||{})[tid]||{};
+  spEdit=-1;spCur={type:tid,t:mem.t||ty.t,s:mem.s||ty.s,name:ty.nm.toUpperCase(),v:{}};
   ty.p.forEach(([k,l,d])=>spCur.v[k]=d);
+  if(mem.name)spCur.name=mem.name;
   spOpForm();
 }
 function spOpOpen(i){spEdit=i;spCur=JSON.parse(JSON.stringify(sp.ops[i]));spOpForm();}
 function spOpDel(i){sp.ops.splice(i,1);spRender();}
+function spOpMove(i,d){const j=i+d;if(j<0||j>=sp.ops.length)return;const a=sp.ops;[a[i],a[j]]=[a[j],a[i]];spRender();}
 function spOpDup(i){const c=JSON.parse(JSON.stringify(sp.ops[i]));sp.ops.splice(i+1,0,c);spRender();}
 function spOpForm(){
   const ty=spType(spCur.type);
   document.getElementById('spop-title').textContent=ty.nm;
+  if(ty.mode==='RAW'){
+    document.getElementById('spop-fields').innerHTML=
+      `<div class="f"><label>WERKZEUGNAME</label><input id="spo-name" value="${esc(spCur.name)}" oninput="this.value=this.value.toUpperCase()"></div>
+       <div class="f"><label>CODE</label><textarea id="spo-raw" rows="12" style="font-family:var(--mono);font-size:14px;line-height:1.6">${esc((spCur.raw||[]).join('\n'))}</textarea></div>`;
+    document.getElementById('spop-prev').innerHTML='';
+    open_('m-spop');return;
+  }
   const isW=(ty.mode==='WAIT');
   document.getElementById('spop-fields').innerHTML=
     (isW?'':`<div class="f2"><div class="f"><label>T-NUMMER</label><input id="spo-t" value="${esc(spCur.t)}" oninput="spOpPrev()"></div>
@@ -3290,21 +3361,50 @@ function spOpForm(){
         <button class="sbtn sec" style="padding:8px 12px;font-size:12px" onclick="spVcToS()">→ S</button>
         <span id="spo-vcout" style="font-family:var(--mono);font-size:11px;color:var(--ink2)"></span>
       </div>`)
+     +(isW||ty.mode==='UEB'?'':`<button class="sbtn sec" style="width:100%;font-size:13px;margin-bottom:10px" onclick="spPickTool()"><span class="ic-lbl"><svg class="ic" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg><span>Aus Bibliothek wählen</span></span></button>`)
      +`<div class="vlg-grid">`+ty.p.map(([k,l,d])=>`<div class="vf"><label>${esc(l)}</label><input id="spo-${k}" value="${esc(spCur.v[k])}" inputmode="decimal" oninput="spOpPrev()"></div>`).join('')+'</div>';
   spOpPrev();open_('m-spop');
 }
 function spOpRead(){
   const ty=spType(spCur.type);
+  if(ty.mode==='RAW'){
+    const rw=document.getElementById('spo-raw'),en2=document.getElementById('spo-name');
+    if(rw)spCur.raw=rw.value.split(/\r?\n/);
+    if(en2)spCur.name=en2.value.trim();
+    return;
+  }
   const et=document.getElementById('spo-t'),es=document.getElementById('spo-s'),en=document.getElementById('spo-name');
   if(et)spCur.t=et.value.trim();
   if(es)spCur.s=es.value.trim();
   if(en)spCur.name=en.value.trim();
+  if(ty.mode!=='WAIT'&&ty.mode!=='UEB'){brain.spT=brain.spT||{};brain.spT[spCur.type]={t:spCur.t,s:spCur.s,name:spCur.name};}
   ty.p.forEach(([k])=>{const el=document.getElementById('spo-'+k);if(el)spCur.v[k]=el.value;});
 }
 function spOpPrev(){
   spOpRead();
   const lines=spOpLines(spCur,spEdit>=0?spEdit+1:sp.ops.length+1);
   document.getElementById('spop-prev').innerHTML=lines.map(l=>`<div class="codeline cl-${lineType(l)}"><span class="lc">${hlLine(l)||' '}</span></div>`).join('');
+}
+function spPickTool(){
+  const lib=(brain.library||[]);
+  if(!lib.length){toast('Bibliothek leer');return;}
+  const body=document.getElementById('spop-fields');
+  const old=body.innerHTML;
+  body.innerHTML='<div class="srch"><div class="box"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input id="sptp-q" placeholder="Werkzeug suchen..." oninput="spPickFilter()"></div></div><div id="sptp-list" style="max-height:46vh;overflow-y:auto"></div><button class="sbtn sec" style="width:100%;margin-top:8px" onclick="spOpForm()">Zurück</button>';
+  window._spLib=lib;spPickFilter();
+}
+function spPickFilter(){
+  const q=(document.getElementById('sptp-q').value||'').toUpperCase();
+  const lib=window._spLib||[];
+  document.getElementById('sptp-list').innerHTML=lib.map((it,i)=>({it,i}))
+   .filter(({it})=>!q||((it.nm||'')+' '+(it.bem||'')).toUpperCase().includes(q))
+   .sort((a,b)=>String(a.it.nm||'').localeCompare(String(b.it.nm||''),'de'))
+   .map(({it,i})=>`<div class="sp-op" style="cursor:pointer" onclick="spUseLib(${i})"><div class="sp-op-i"><div class="sp-op-nm">${esc(it.nm||'—')}</div><div class="sp-op-sub">${esc(it.bem||'')}${it.dia?' · Ø '+esc(it.dia).replace(/\n+/g,' / '):''}</div></div></div>`).join('')||'<div class="empty" style="padding:20px">Nichts gefunden</div>';
+}
+function spUseLib(i){
+  const it=(window._spLib||[])[i];if(!it)return;
+  spCur.name=(it.nm||'').toUpperCase();
+  spOpForm();
 }
 function spVcToS(){
   const vc=parseFloat(document.getElementById('spo-vc').value),d=parseFloat(document.getElementById('spo-dia').value);
@@ -3317,7 +3417,7 @@ function spVcToS(){
 function spOpSave(){
   spOpRead();
   if(spEdit>=0)sp.ops[spEdit]=spCur;else sp.ops.push(spCur);
-  close_('m-spop');spRender();
+  close_('m-spop');spRender();spSaveDraft();
 }
 function spSaveOwn(){
   spOpRead();
@@ -3332,6 +3432,7 @@ function spOpLines(o,n){
   const ty=spType(o.type);
   if(ty.mode==='WAIT'){const w=ty.gen(o.v);return [w[0],''];}
   if(ty.mode==='UEB'){const out=[];ty.gen(o.v).forEach(l=>out.push(l));out.push('');return out;}
+  if(ty.mode==='RAW'){return (o.raw||[]).concat(['']);}
   const mill=(ty.mode==='M91'), ru=(sp.kanal==='unten');
   const wcs=ru?'G55':'G54', gear=ru?'M441':'M41', spin=ru?'M54':'M3';
   const out=[];
@@ -3384,7 +3485,7 @@ function spBuild(){
     L.push('G28U0','G28W0','M1','','M120','');
   }
   let nNr=0;
-  sp.ops.forEach(o=>{const ty=spType(o.type);if(ty.mode!=='WAIT'&&ty.mode!=='UEB')nNr++;spOpLines(o,nNr).forEach(l=>L.push(l));});
+  sp.ops.forEach(o=>{const ty=spType(o.type);if(ty.mode!=='WAIT'&&ty.mode!=='UEB'&&ty.mode!=='RAW')nNr++;spOpLines(o,nNr).forEach(l=>L.push(l));});
   L.push('M30','%');
   return L.join('\n');
 }
@@ -3420,6 +3521,41 @@ function spDrawSim(code){
     else{c.strokeStyle='#15161A';c.lineWidth=2;c.setLineDash([]);}
     c.beginPath();c.moveTo(a,b);c.lineTo(d,e);c.stroke();});
   c.setLineDash([]);
+}
+
+// ── Programm → Operationen (Rück-Import) ──
+function spImportCode(){
+  const p=P(),code=(sp.kanal==='unten'?(p.codeUnten||''):(p.codeOben||''));
+  if(!code.trim()){toast('Kein Programm im Kanal');return;}
+  uiConfirm('Vorhandenes Programm in Operationen zerlegen? (Rohcode wird als Vorlage-Block übernommen)',()=>{
+    const lines=code.split(/\r?\n/);
+    const ops=[];let cur=null;
+    lines.forEach((l,i)=>{
+      const U=l.trim().toUpperCase();
+      const wm=U.match(/^M(1[0-3][0-9])(?![\d])/);
+      if(wm&&!cur){ops.push({type:'wait',t:'',s:0,name:'WARTEN',v:{m:wm[1],txt:(l.match(/\(([^)]*)\)/)||[])[1]||''}});return;}
+      const tm=U.match(/T(\d{4})/);
+      if(tm&&!/^\(/.test(U)){
+        cur={type:'raw',t:tm[1],s:0,name:'',v:{},raw:[]};ops.push(cur);
+        if(i>0&&/^N\d+G5/.test(lines[i-1].trim().toUpperCase()))cur.raw.push(lines[i-1]);
+        cur.raw.push(l);return;
+      }
+      if(cur){
+        const cm=l.match(/^\s*\(([^)]+)\)/);
+        if(cm&&!cur.name)cur.name=cm[1].trim().toUpperCase();
+        const sm=U.match(/G9[67]S(\d+)/);if(sm&&!cur.s)cur.s=+sm[1];
+        cur.raw.push(l);
+      }
+    });
+    sp.ops=ops.filter(o=>o.type==='wait'||(o.raw&&o.raw.length>2));
+    sp.step=1;spRender();spSaveDraft();
+    toast(sp.ops.length+' Operationen erkannt');
+  });
+}
+function spCopyCode(){
+  const c=spBuild();
+  navigator.clipboard.writeText(c).then(()=>toast('Code kopiert')).catch(()=>{
+    const ta=document.createElement('textarea');ta.value=c;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();toast('Kopiert');});
 }
 function spBothChannels(){
   uiConfirm('RO und RU zusammen erzeugen? Sync-Marken M130 werden paarweise gesetzt.',()=>{
@@ -3466,10 +3602,115 @@ function spFinish(){
   write(code);
 }
 function spFinishSave(ru){
+  bkpPush();
   const p=P();
+  if(p)delete p.spDraft;
   if(!p.num&&sp.kopf.num)p.num=sp.kopf.num;
   persist();close_('m-smart');renderHeader();render();
   toast('Programm '+(ru?'Unten':'Oben')+' gespeichert');
+}
+
+
+// ═══ BACKUPS · CHECKLISTE · DIFF · EXPORT · LABELS ═══
+const BKP='CITITOOL_BKP_2026';
+function bkpAll(){try{return JSON.parse(localStorage.getItem(BKP)||'{}');}catch(e){return {};}}
+function bkpKey(p){return (p.num||'noname')+'|'+(p.name||'');}
+function bkpPush(){
+  try{
+    const p=P();if(!p)return;
+    const all=bkpAll(),k=bkpKey(p);
+    const arr=all[k]||[];
+    const snap=JSON.stringify(p);
+    if(arr.length&&arr[0].d===snap)return;
+    arr.unshift({t:Date.now(),d:snap});
+    all[k]=arr.slice(0,5);
+    localStorage.setItem(BKP,JSON.stringify(all));
+  }catch(e){}
+}
+function openBackups(){
+  const p=P(),all=bkpAll(),arr=all[bkpKey(p)]||[];
+  const body=document.getElementById('bkp-body');
+  body.innerHTML=arr.length?arr.map((b,i)=>{
+    const o=JSON.parse(b.d);
+    return `<div class="libitem"><div class="libmain">
+      <div class="libinfo" onclick="bkpRestore(${i})">
+        <div class="libnm">${new Date(b.t).toLocaleString('de-DE',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</div>
+        <div class="libsub">${(o.oben||[]).length+(o.unten||[]).length} Ops · ${((o.codeOben||'').split('\n').length+(o.codeUnten||'').split('\n').length)} Zeilen</div>
+      </div>
+      <div class="libacts"><button class="libbtn" onclick="event.stopPropagation();bkpDiff(${i})" title="Vergleichen"><svg viewBox="0 0 24 24"><circle cx="6" cy="6" r="3"/><circle cx="18" cy="18" r="3"/><path d="M6 9v6a3 3 0 0 0 3 3h6"/></svg></button></div>
+    </div></div>`;}).join(''):'<div class="empty" style="padding:26px">Keine Sicherungen</div>';
+  open_('m-bkp');
+}
+function bkpRestore(i){
+  const p=P(),arr=bkpAll()[bkpKey(p)]||[];const b=arr[i];if(!b)return;
+  uiConfirm('Diese Version wiederherstellen?',()=>{
+    bkpPush();
+    const o=JSON.parse(b.d);
+    Object.keys(o).forEach(k=>{if(k!=='cloudId'&&k!=='cloudTs')db[cur][k]=o[k];});
+    persist();close_('m-bkp');renderHeader();render();toast('Wiederhergestellt');
+  });
+}
+function bkpDiff(i){
+  const p=P(),arr=bkpAll()[bkpKey(p)]||[];const b=arr[i];if(!b)return;
+  const o=JSON.parse(b.d);
+  const a1=(o.codeOben||'').split('\n'),a2=(p.codeOben||'').split('\n');
+  const n=Math.max(a1.length,a2.length);let html='',ch=0;
+  for(let k=0;k<n;k++){
+    const x=(a1[k]||''),y=(a2[k]||'');
+    if(x===y)continue;
+    ch++;
+    if(x)html+=`<div class="codeline cl-ref"><span class="ln">${k+1}</span><span class="lc">− ${esc(x)}</span></div>`;
+    if(y)html+=`<div class="codeline cl-feed"><span class="ln">${k+1}</span><span class="lc">+ ${esc(y)}</span></div>`;
+  }
+  document.getElementById('bkp-body').innerHTML=
+    '<div class="sp-chk">'+(ch?ch+' geänderte Zeile(n) · Oben':'Keine Unterschiede (Oben)')+'</div>'
+    +'<div class="sp-code">'+(html||'<div style="padding:14px;color:var(--ink3)">identisch</div>')+'</div>'
+    +'<button class="sbtn sec" style="width:100%;margin-top:10px" onclick="openBackups()">Zurück</button>';
+}
+// ── Checkliste ──
+const CHK_DEF=['Nullpunkte gesetzt','Werkzeuge vermessen','Spannzange / Backen geprüft','Rohteil-Ø kontrolliert','Programm im Einzelsatz gefahren','Erstteil gemessen','Kühlmittel geprüft'];
+function chkList(){const p=P();if(!p.chk)p.chk=CHK_DEF.map(x=>({t:x,d:false}));return p.chk;}
+function openChk(){renderChk();open_('m-chk');}
+function renderChk(){
+  const l=chkList(),done=l.filter(x=>x.d).length;
+  document.getElementById('chk-body').innerHTML=
+    `<div class="sp-chk" style="margin-bottom:12px">${done} / ${l.length} erledigt</div>`
+    +l.map((x,i)=>`<div class="pill ${x.d?'on':''}" onclick="chkTgl(${i})" style="cursor:pointer">
+      <div><div class="pill-l" style="${x.d?'text-decoration:line-through;opacity:.55':''}">${esc(x.t)}</div></div>
+      <span class="pstat ${x.d?'ok':'neu'}"><i></i></span></div>`).join('')
+    +`<button class="sbtn sec" style="width:100%;margin-top:8px" onclick="chkAdd()">+ Punkt</button>
+      <button class="sbtn sec" style="width:100%;margin-top:8px" onclick="chkReset()">Alle zurücksetzen</button>`;
+}
+function chkTgl(i){const l=chkList();l[i].d=!l[i].d;persist();renderChk();
+  const p=P();const all=l.every(x=>x.d);if(all&&projStatus(p)!=='ok'){p.status='ok';persist();syncHdrStat();toast('Projekt: Fertig');}}
+function chkAdd(){uiPrompt('Neuer Punkt:','',v=>{if(v&&v.trim()){chkList().push({t:v.trim(),d:false});persist();renderChk();}});}
+function chkReset(){uiConfirm('Alle Haken entfernen?',()=>{chkList().forEach(x=>x.d=false);persist();renderChk();});}
+// ── Export Paket ──
+function exportPaket(){
+  const p=P();
+  const pack={version:1,exported:new Date().toISOString(),projekt:p,
+    vorlagen:(brain.vorlagen||[]),bibliothek:(brain.library||[])};
+  const blob=new Blob([JSON.stringify(pack,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download=(p.num||'projekt')+'_paket.json';a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+  toast('Paket exportiert');
+}
+// ── Etiketten ──
+function printLabels(){
+  const p=P();
+  const rows=[...(p.oben||[]).map(t=>({t,r:'RO'})),...(p.unten||[]).map(t=>({t,r:'RU'}))].filter(x=>x.t.nm);
+  if(!rows.length){toast('Keine Werkzeuge');return;}
+  const cell=({t,r})=>`<div style="width:62mm;height:28mm;border:1px solid #000;padding:3mm;box-sizing:border-box;display:flex;flex-direction:column;justify-content:center;break-inside:avoid;">
+    <div style="display:flex;justify-content:space-between;align-items:baseline;"><div style="font-size:15pt;font-weight:900;">${esc(t.id||'T—')}</div><div style="font-size:8pt;font-weight:700;">${r}</div></div>
+    <div style="font-size:9pt;font-weight:700;line-height:1.2;margin-top:1mm;">${esc(t.nm||'')}</div>
+    ${t.dia?`<div style="font-family:monospace;font-size:8pt;margin-top:1mm;">Ø ${esc(t.dia).replace(/\n+/g,' / ')}</div>`:''}
+    <div style="font-size:7pt;color:#555;margin-top:auto;">${esc(p.num||'')}</div></div>`;
+  const html=`<div style="width:210mm;padding:8mm;background:#fff;font-family:sans-serif;display:flex;flex-wrap:wrap;gap:3mm;box-sizing:border-box;">${rows.map(cell).join('')}</div>`;
+  const area=document.getElementById('print-area');area.innerHTML=html;
+  const cl=()=>{area.innerHTML='';window.removeEventListener('afterprint',cl);};
+  window.addEventListener('afterprint',cl);
+  setTimeout(()=>window.print(),150);
 }
 
 // ═══ CLOUD · SUPABASE ═══
@@ -4095,6 +4336,7 @@ function tceCollect(){
 function autoGrow(el){el.style.height='auto';el.style.height=(el.scrollHeight+4)+'px';}
 
 function saveToolCode(){
+  bkpPush();
   const lines=getCode(tce.kanal).split(/\r?\n/);
   let block;
   const rawVisible=document.getElementById('tce-raw').style.display!=='none';
@@ -4438,7 +4680,7 @@ function addEOB(line){
   return t+' ;';
 }
 function saveCodeEdit(){
-  commitFrEdit();
+  commitFrEdit();bkpPush();
   const txt=frLines.map(upCode).join('\n');
   setCode(codeCtx.kanal,txt);
   const ops=parseProgram(txt);
