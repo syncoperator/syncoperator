@@ -1067,9 +1067,10 @@ body.dark .eb-bar{background:rgba(21,23,28,.9);}
 .eb-eye{width:28px;height:28px;flex-shrink:0;border:1px solid var(--line2);border-radius:8px;background:var(--card);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--ink3);}
 .eb-eye svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:1.8;}
 @media print{
-  body>*{display:none!important;}
-  #eb-print,#eb-print *{display:revert!important;}
-  #eb-print{position:absolute;inset:0;display:block!important;}
+  body>*:not(#eb-print){display:none!important;}
+  #eb-print{display:block!important;position:absolute;left:0;top:0;width:100%;}
+  #eb-print .eb-pg{page-break-after:always;break-after:page;}
+  #eb-print .eb-pg:last-child{page-break-after:auto;break-after:auto;}
 }
 
 /* ── SPLASH · Gruppen ───────────────────────────────────────── */
@@ -4803,48 +4804,75 @@ function ebBindDrag(){
 }
 // ── Druck ──
 function ebPrint(){
-  const S=(t)=>`<div style="margin:0 0 3mm"><div style="display:flex;align-items:center;gap:2.5mm"><span style="width:5.2mm;height:5.2mm;border-radius:1.2mm;background:#111;color:#fff;font:700 7.5pt sans-serif;display:flex;align-items:center;justify-content:center">${t.n}</span><span style="font:700 9.5pt sans-serif;letter-spacing:.09em">${esc(t.t.toUpperCase())}</span></div><div style="border-bottom:.8pt solid #111;margin-top:2mm"></div></div>`;
-  const F=(l,v,u)=>`<div style="flex:1;min-width:0"><div style="font:700 6pt monospace;letter-spacing:.11em;color:#111;text-transform:uppercase;margin-bottom:4.6mm">${esc(l)}</div><div style="border-bottom:.6pt solid #555;position:relative;padding-bottom:.6mm"><span style="font:11pt monospace">${esc(v||'')}</span>${u?`<span style="position:absolute;right:0;bottom:.8mm;font:6pt monospace;color:#444">${u}</span>`:''}</div></div>`;
-  const ROW=(...f)=>`<div style="display:flex;gap:6mm;margin-bottom:7mm">${f.join('')}</div>`;
-  const TICK=`<div style="height:2.6mm;background:repeating-linear-gradient(90deg,#666 0 .35pt,transparent .35pt 2.5mm);margin:3mm 0 4mm"></div>`;
-  let n=0;const sec=k=>{n++;return S({n,t:EB_TITLES[k]});};
-  let body='';
-  eb.order.filter(k=>!eb.hidden.includes(k)).forEach(k=>{
-    if(k==='roh')body+=sec(k)+ROW(F('Material',eb.roh.material),F('Stangen-Ø',eb.roh.stange,'mm'),F('Sägelänge',eb.roh.saege,'mm'));
-    if(k==='null'){const u=eb.nul;body+=sec(k)
-      +ROW(F('#501 Ausspannl. links (RO/G54)',u.v501,'mm'),F('#511 Ausspannl. rechts (RU/G55)',u.v511,'mm'),F('X-Versatz G10L2',u.xoff,'mm'))
-      +ROW(F('B vor Werkstück',u.b1,'mm'),F('B auf Werkstück',u.b2,'mm'),F('B zurückgezogen',u.b3,'mm'),F('B entladen',u.b4,'mm'))
-      +ROW(F('Abstech Z',u.az,'mm'),F('Abstech Ø',u.ad,'mm'),F('Stecher-Breite',u.br,'mm'),F('Schneidrichtung',u.dir));}
-    if(k==='msync'){body+=sec(k)+`<table style="width:100%;border-collapse:collapse;font:9.5pt monospace;margin-bottom:6mm">
-      <tr style="background:#f2f2f2"><th style="border:.6pt solid #111;padding:2mm;text-align:left;font:700 6pt monospace;letter-spacing:.1em">M-CODE RO</th><th style="border:.6pt solid #111;padding:2mm;text-align:left;font:700 6pt monospace;letter-spacing:.1em">M-CODE RU</th></tr>
-      ${eb.msync.map(r=>`<tr><td style="border:.5pt solid #666;padding:2.4mm 2mm;width:50%">${esc(r[0])}</td><td style="border:.5pt solid #666;padding:2.4mm 2mm">${esc(r[1])}</td></tr>`).join('')}</table>`;}
-    if(k==='chk'){body+=sec(k)+`<div style="display:grid;grid-template-columns:1fr 1fr;gap:2mm 8mm;margin-bottom:6mm">
-      ${eb.chk.map(r=>`<div style="display:flex;align-items:center;gap:2.6mm;font:9.5pt sans-serif"><span style="width:3.4mm;height:3.4mm;border:.7pt solid #111;border-radius:.6mm;display:inline-block;text-align:center;line-height:3.2mm;font-size:7pt">${r[1]?'&#10003;':''}</span>${esc(r[0])}</div>`).join('')}</div>`;}
-    if(k==='skizze'){body+=sec(k)+`<div style="display:flex;gap:5mm;margin-bottom:6mm">
-      <div style="flex:1;height:42mm;border:.6pt solid #555;background-image:linear-gradient(#ddd .3pt,transparent .3pt),linear-gradient(90deg,#ddd .3pt,transparent .3pt);background-size:5mm 5mm"></div>
-      <div style="flex:1"><div style="font:700 6pt monospace;letter-spacing:.11em;margin-bottom:2mm">STÖRUNGEN / BESONDERHEITEN</div><div style="font:9.5pt sans-serif;white-space:pre-wrap;line-height:1.7">${esc(eb.stoer)}</div></div></div>`;}
-    if(k==='wkz'){body+=sec(k)+`<table style="width:100%;border-collapse:collapse;font:9pt monospace;margin-bottom:6mm">
-      <tr style="background:#f2f2f2">${['T-NR.','NULLPKT','ERSETZT DURCH','WKZ-HALTER / GEOMETRIE','BEMERKUNG'].map(h=>`<th style="border:.6pt solid #111;padding:2mm;text-align:left;font:700 6pt monospace;letter-spacing:.1em">${h}</th>`).join('')}</tr>
-      ${eb.wkz.map(r=>`<tr><td style="border:.5pt solid #666;padding:2.2mm 2mm;font-weight:700">${esc(r.t)}</td><td style="border:.5pt solid #666;padding:2.2mm 2mm">${esc(r.np)}</td><td style="border:.5pt solid #666;padding:2.2mm 2mm">${esc(r.ers)}</td><td style="border:.5pt solid #666;padding:2.2mm 2mm;font-family:sans-serif">${esc(r.halter)}</td><td style="border:.5pt solid #666;padding:2.2mm 2mm"></td></tr>`).join('')}</table>`;}
-    if(k==='ueber'){body+=sec(k)+ROW(F('Status',eb.ueber.status))
-      +`<div style="font:700 6pt monospace;letter-spacing:.11em;margin-bottom:2mm">NOTIZEN</div>
-        <div style="min-height:40mm;border:.6pt solid #555;padding:3mm;font:9.5pt sans-serif;white-space:pre-wrap;line-height:1.8;background-image:linear-gradient(#e5e5e5 .3pt,transparent .3pt);background-size:100% 6mm">${esc(eb.ueber.notiz)}</div>`;}
-  });
-  const html=`<div style="width:210mm;min-height:290mm;padding:9mm;box-sizing:border-box;background:#fff;color:#111;font-family:sans-serif">
-    <div style="border:1.5pt solid #111;padding:9mm;box-sizing:border-box;min-height:272mm">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start">
-        <div><div style="font:700 21pt sans-serif;letter-spacing:.06em">EINSTELLBLATT</div>
-        <div style="font:6.5pt monospace;letter-spacing:.18em;color:#333;margin-top:1.5mm">RÜSTEN · SYNCHRONISATION · SCHICHTÜBERGABE</div></div>
-        <div style="text-align:right"><div style="font:700 7.5pt sans-serif;letter-spacing:.14em">CITITOOL</div><div style="font:5.6pt monospace;letter-spacing:.2em;color:#444">SYNCOPERATOR</div></div>
-      </div>${TICK}
-      ${ROW(F('Zeichnung-Nr.',eb.kopf.num),F('Bezeichnung',eb.kopf.bez),F('Maschine',eb.kopf.masch))}
-      ${body}
+  const E=esc;
+  const S=(n,tt)=>`<div style="margin:9mm 0 5mm"><div style="display:flex;align-items:center;gap:3mm">
+    <span style="width:5.8mm;height:5.8mm;border-radius:1.3mm;background:#111;color:#fff;font:700 8pt 'Space Grotesk',sans-serif;display:flex;align-items:center;justify-content:center;flex:0 0 auto">${n}</span>
+    <span style="font:700 10pt 'Space Grotesk',sans-serif;letter-spacing:.12em">${E(tt.toUpperCase())}</span></div>
+    <div style="border-bottom:.8pt solid #111;margin-top:2.4mm"></div></div>`;
+  const F=(l,v,u)=>`<div style="flex:1 1 0;min-width:0">
+    <div style="font:700 6.6pt 'JetBrains Mono',monospace;letter-spacing:.13em;color:#111;text-transform:uppercase">${E(l)}</div>
+    <div style="border-bottom:.65pt solid #444;position:relative;margin-top:6mm;padding-bottom:.8mm;min-height:4mm">
+      <span style="font:11pt 'JetBrains Mono',monospace">${E(v||'')}</span>
+      ${u?`<span style="position:absolute;right:0;bottom:1mm;font:6.4pt 'JetBrains Mono',monospace;color:#444">${u}</span>`:''}</div></div>`;
+  const ROW=(...f)=>`<div style="display:flex;gap:7mm;margin-bottom:9mm">${f.join('')}</div>`;
+  const TICK=`<div style="height:2.6mm;background-image:repeating-linear-gradient(90deg,#555 0 .4pt,transparent .4pt 2.5mm);margin:3mm 0 5mm"></div>`;
+  const CB=(on)=>`<span style="width:3.8mm;height:3.8mm;border:.75pt solid #111;border-radius:.7mm;display:inline-flex;align-items:center;justify-content:center;font:8pt 'Space Grotesk',sans-serif;flex:0 0 auto;line-height:1">${on?'&#10003;':''}</span>`;
+  const GRID=(h)=>`<div style="height:${h};border:.6pt solid #555;background-image:linear-gradient(#ddd .3pt,transparent .3pt),linear-gradient(90deg,#ddd .3pt,transparent .3pt);background-size:5mm 5mm"></div>`;
+  const PAGE=(inner,pg)=>`<div class="eb-pg" style="width:210mm;height:297mm;padding:9mm;box-sizing:border-box;background:#fff;color:#111;font-family:'Space Grotesk',sans-serif">
+    <div style="border:1.5pt solid #111;padding:9mm;box-sizing:border-box;height:100%;display:flex;flex-direction:column">
+      ${inner}
+      <div style="margin-top:auto;padding-top:3mm;border-top:.7pt solid #999;display:flex;justify-content:space-between;font:6pt 'JetBrains Mono',monospace;letter-spacing:.14em;color:#333">
+        <span>CITITOOL SYNCOPERATOR</span><span>SEITE ${pg} / 2</span></div>
     </div></div>`;
+  const HEAD=`<div style="display:flex;justify-content:space-between;align-items:flex-start">
+      <div><div style="font:700 23pt 'Space Grotesk',sans-serif;letter-spacing:.075em;line-height:1">EINSTELLBLATT</div>
+      <div style="font:6.6pt 'JetBrains Mono',monospace;letter-spacing:.2em;color:#1a1a1a;margin-top:2.2mm">RÜSTEN · SYNCHRONISATION · SCHICHTÜBERGABE</div></div>
+      <div style="text-align:right"><div style="font:700 8pt 'Space Grotesk',sans-serif;letter-spacing:.14em">CITITOOL</div>
+      <div style="font:5.8pt 'JetBrains Mono',monospace;letter-spacing:.2em;color:#333">SYNCOPERATOR</div></div></div>${TICK}`;
+  const vis=eb.order.filter(k=>!eb.hidden.includes(k));
+  let n=0, p1='', p2='';
+  const put=(k,html)=>{n++;const b=S(n,EB_TITLES[k])+html; if(['wkz','skizze','ueber'].includes(k))p2+=b; else p1+=b;};
+  vis.forEach(k=>{
+    if(k==='roh')put(k,ROW(F('Material',eb.roh.material),F('Stangen-Ø',eb.roh.stange,'mm'),F('Sägelänge',eb.roh.saege,'mm')));
+    else if(k==='null'){const u=eb.nul;put(k,
+      ROW(F('#501 Ausspannl. links (RO/G54)',u.v501,'mm'),F('#511 Ausspannl. rechts (RU/G55)',u.v511,'mm'),F('X-Versatz G10L2',u.xoff,'mm'))
+      +ROW(F('B vor Werkstück',u.b1,'mm'),F('B auf Werkstück',u.b2,'mm'),F('B zurückgezogen',u.b3,'mm'),F('B entladen',u.b4,'mm'))
+      +ROW(F('Abstech Z',u.az,'mm'),F('Abstech Ø',u.ad,'mm'),F('Stecher-Breite',u.br,'mm'),`<div style="flex:1 1 0;min-width:0"><div style="font:700 6.6pt 'JetBrains Mono',monospace;letter-spacing:.12em;text-transform:uppercase">Schneidrichtung</div>
+      <div style="display:flex;gap:6mm;margin-top:5.4mm;align-items:center;font:9.5pt 'Space Grotesk',sans-serif">
+        <span style="display:flex;align-items:center;gap:2.4mm">${CB(/links/i.test(u.dir||''))}links</span>
+        <span style="display:flex;align-items:center;gap:2.4mm">${CB(/rechts/i.test(u.dir||''))}rechts</span></div></div>`));}
+    else if(k==='msync')put(k,`<table style="width:100%;border-collapse:collapse;font:10pt 'JetBrains Mono',monospace;margin-bottom:6mm">
+      <tr style="background:#f2f2f2"><th style="border:.65pt solid #111;padding:2.2mm;text-align:left;font:700 6.4pt 'JetBrains Mono',monospace;letter-spacing:.12em;width:50%">M-CODE RO</th>
+      <th style="border:.65pt solid #111;padding:2.2mm;text-align:left;font:700 6.4pt 'JetBrains Mono',monospace;letter-spacing:.12em">M-CODE RU</th></tr>
+      ${eb.msync.map(r=>`<tr><td style="border:.5pt solid #666;padding:2.8mm 2.2mm">${E(r[0])}</td><td style="border:.5pt solid #666;padding:2.8mm 2.2mm">${E(r[1])}</td></tr>`).join('')}</table>`);
+    else if(k==='chk')put(k,`<div style="display:flex;flex-wrap:wrap;margin-bottom:6mm">
+      ${eb.chk.map(r=>`<div style="width:50%;box-sizing:border-box;padding:0 5mm 4.2mm 0;display:flex;align-items:center;gap:3mm;font:10.5pt 'Space Grotesk',sans-serif">${CB(r[1])}<span>${E(r[0])}</span></div>`).join('')}</div>`);
+    else if(k==='skizze')put(k,`<div style="display:flex;gap:6mm;margin-bottom:6mm">
+      <div style="flex:1.15">${GRID('40mm')}</div>
+      <div style="flex:1"><div style="font:700 6.6pt 'JetBrains Mono',monospace;letter-spacing:.12em;margin-bottom:2.5mm">STÖRUNGEN / BESONDERHEITEN</div>
+      <div style="font:10pt 'Space Grotesk',sans-serif;white-space:pre-wrap;line-height:1.9;border-bottom:.5pt solid #999;min-height:36mm">${E(eb.stoer)}</div></div></div>`);
+    else if(k==='wkz')put(k,`<table style="width:100%;border-collapse:collapse;font:9.5pt 'JetBrains Mono',monospace;margin-bottom:6mm">
+      <tr style="background:#f2f2f2">${[['T-NR.','12%'],['NULLPKT','13%'],['ERSETZT DURCH','18%'],['WKZ-HALTER / GEOMETRIE','30%'],['BEMERKUNG','27%']].map(([h,w])=>`<th style="border:.65pt solid #111;padding:2.2mm;text-align:left;font:700 6.4pt 'JetBrains Mono',monospace;letter-spacing:.12em;width:${w}">${h}</th>`).join('')}</tr>
+      ${eb.wkz.map(r=>`<tr><td style="border:.5pt solid #666;padding:2.6mm 2.2mm;font-weight:700">${E(r.t)}</td>
+      <td style="border:.5pt solid #666;padding:2.6mm 2.2mm;font-size:8pt;color:#333">${E(r.np)||'G54  G55'}</td>
+      <td style="border:.5pt solid #666;padding:2.6mm 2.2mm">${E(r.ers)}</td>
+      <td style="border:.5pt solid #666;padding:2.6mm 2.2mm;font-family:'Space Grotesk',sans-serif">${E(r.halter)}</td>
+      <td style="border:.5pt solid #666;padding:2.6mm 2.2mm;font-family:'Space Grotesk',sans-serif">${E(r.bem||'')}</td></tr>`).join('')}</table>`);
+    else if(k==='ueber')put(k,ROW(F('Status',eb.ueber.status))
+      +`<div style="font:700 6.6pt 'JetBrains Mono',monospace;letter-spacing:.12em;margin-bottom:2.5mm">NOTIZEN</div>
+        <div style="position:relative">${GRID('52mm')}
+        <div style="position:absolute;inset:0;padding:3mm;font:10pt 'Space Grotesk',sans-serif;white-space:pre-wrap;line-height:6mm">${E(eb.ueber.notiz)}</div></div>`);
+  });
+  const kopf=ROW(F('Zeichnung-Nr.',eb.kopf.num),F('Bezeichnung',eb.kopf.bez),F('Maschine',eb.kopf.masch));
+  const HEAD2=`<div style="display:flex;justify-content:space-between;align-items:flex-end">
+      <div style="font:700 16pt 'Space Grotesk',sans-serif;letter-spacing:.06em">WERKZEUGE</div>
+      <div style="font:6.6pt 'JetBrains Mono',monospace;letter-spacing:.14em">ZEICHNUNG-NR. ${E(eb.kopf.num)||'____________'}</div></div>${TICK}`;
   const area=document.getElementById('eb-print');
-  area.innerHTML=html;area.style.display='block';
+  area.innerHTML=PAGE(HEAD+kopf+p1,1)+(p2?PAGE(HEAD2+p2,2):'');
+  area.style.display='block';
   const cl=()=>{area.innerHTML='';area.style.display='none';window.removeEventListener('afterprint',cl);};
   window.addEventListener('afterprint',cl);
-  setTimeout(()=>window.print(),200);
+  setTimeout(()=>window.print(),250);
 }
 
 // ═══ RECHNER · HEUTE · TIMER · DECKBLATT ═══
