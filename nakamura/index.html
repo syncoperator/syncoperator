@@ -4683,7 +4683,7 @@ function openStats(){
 const EB_KEY='CITITOOL_EB';
 function ebDefault(){return{
  kopf:{num:'',bez:'',masch:''},
- order:['roh','null','msync','chk','skizze','wkz','ueber'],
+ order:['roh','null','msync','chk','wkz','ueber'],
  hidden:[],
  roh:{material:'',stange:'',saege:''},
  nul:{v501:'',v511:'',xoff:'',b1:'',b2:'',b3:'',b4:'',az:'',ad:'',br:'',dir:''},
@@ -4726,9 +4726,10 @@ function ebF(lab,path,ph){
   const a=path.split('.');let o=eb;for(let i=0;i<a.length-1;i++)o=o[a[i]];
   return `<div class="eb-f"><label>${lab}</label><input value="${esc(o[a[a.length-1]]||'')}" placeholder="${ph||''}" oninput="ebSet('${path}',this.value)"></div>`;
 }
-const EB_TITLES={roh:'Rohteil',null:'Nullpunkte & B-Achse',msync:'Synchronisation · M-Codes',chk:'Rüst-Checkliste',skizze:'Störungen / Notizen',wkz:'Werkzeugliste',ueber:'Schichtübergabe'};
+const EB_TITLES={roh:'Auftrag & Rohteil',null:'Nullpunkte & B-Achse',msync:'Synchronisation · M-Codes',chk:'Rüst-Checkliste',skizze:'Störungen',wkz:'Werkzeugliste',ueber:'Schichtübergabe'};
 function ebSecBody(k){
-  if(k==='roh')return '<div class="eb-g3">'+ebF('Material','roh.material')+ebF('Stangen-Ø','roh.stange','mm')+ebF('Sägelänge','roh.saege','mm')+'</div>';
+  if(k==='roh')return '<div class="eb-g3">'+ebF('Zeichnung-Nr.','kopf.num')+ebF('Bezeichnung','kopf.bez')+ebF('Maschine','kopf.masch')+'</div>'
+    +'<div class="eb-g3">'+ebF('Material','roh.material')+ebF('Stangen-Ø','roh.stange','mm')+ebF('Sägelänge','roh.saege','mm')+'</div>';
   if(k==='null')return '<div class="eb-g3">'+ebF('#501 links (RO/G54)','nul.v501','mm')+ebF('#511 rechts (RU/G55)','nul.v511','mm')+ebF('X-Versatz G10L2','nul.xoff','mm')+'</div>'
     +'<div class="eb-g2">'+ebF('B vor Werkstück','nul.b1','mm')+ebF('B auf Werkstück','nul.b2','mm')+ebF('B zurückgezogen','nul.b3','mm')+ebF('B entladen','nul.b4','mm')+'</div>'
     +'<div class="eb-g3">'+ebF('Abstech Z','nul.az','mm')+ebF('Abstech Ø','nul.ad','mm')+ebF('Stecher-Breite','nul.br','mm')+'</div>'
@@ -4757,8 +4758,7 @@ function ebSecBody(k){
 }
 function ebRender(){
   const b=document.getElementById('eb-body');if(!b)return;
-  let h='<div class="eb-sec open" style="border-style:solid"><div class="eb-sin" style="padding:13px">'
-    +'<div class="eb-g3">'+ebF('Zeichnung-Nr.','kopf.num')+ebF('Bezeichnung','kopf.bez')+ebF('Maschine','kopf.masch')+'</div></div></div>';
+  let h='';
   eb.order.forEach((k,idx)=>{
     const hid=eb.hidden.includes(k);
     h+=`<div class="eb-sec ${ebOpen.has(k)?'open':''} ${hid?'eb-hide':''}" data-eb="${k}">
@@ -4808,18 +4808,18 @@ function ebBindDrag(){
 // ── Druck ──
 function ebPrint(){
   const E=esc;
-  const S=(n,tt)=>`<div style="margin:5mm 0 3mm"><div style="display:flex;align-items:center;gap:3mm">
-    <span style="width:5.2mm;height:5.2mm;border-radius:1.2mm;background:#111;color:#fff;font:700 7.4pt 'Space Grotesk',sans-serif;display:flex;align-items:center;justify-content:center;flex:0 0 auto">${n}</span>
-    <span style="font:700 9.4pt 'Space Grotesk',sans-serif;letter-spacing:.12em">${E(tt.toUpperCase())}</span></div>
+  const S=(n,tt)=>`<div style="margin:6.5mm 0 4mm"><div style="display:flex;align-items:center;gap:3mm">
+    <span style="width:6mm;height:6mm;border-radius:1.3mm;background:#111;color:#fff;font:700 8.6pt 'Space Grotesk',sans-serif;display:flex;align-items:center;justify-content:center;flex:0 0 auto">${n}</span>
+    <span style="font:700 11pt 'Space Grotesk',sans-serif;letter-spacing:.12em">${E(tt.toUpperCase())}</span></div>
     <div style="border-bottom:.8pt solid #111;margin-top:2.4mm"></div></div>`;
   const F=(l,v,u)=>`<div style="flex:1 1 0;min-width:0">
-    <div style="font:700 6.2pt 'JetBrains Mono',monospace;letter-spacing:.12em;color:#111;text-transform:uppercase">${E(l)}</div>
-    <div style="border-bottom:.65pt solid #444;position:relative;margin-top:4.4mm;padding-bottom:.7mm;min-height:3mm">
-      <span style="font:10.5pt 'JetBrains Mono',monospace">${E(v||'')}</span>
+    <div style="font:700 7.2pt 'JetBrains Mono',monospace;letter-spacing:.12em;color:#111;text-transform:uppercase">${E(l)}</div>
+    <div style="border-bottom:.65pt solid #444;position:relative;margin-top:5.4mm;padding-bottom:.8mm;min-height:3.4mm">
+      <span style="font:11pt 'JetBrains Mono',monospace">${E(v||'')}</span>
       ${u?`<span style="position:absolute;right:0;bottom:1mm;font:6.4pt 'JetBrains Mono',monospace;color:#444">${u}</span>`:''}</div></div>`;
   const ROW=(...f)=>`<div style="display:flex;gap:7mm;margin-bottom:5.5mm">${f.join('')}</div>`;
   const TICK=`<div style="height:2.6mm;background-image:repeating-linear-gradient(90deg,#555 0 .4pt,transparent .4pt 2.5mm);margin:2.6mm 0 4mm"></div>`;
-  const CB=(on)=>`<span style="width:3.8mm;height:3.8mm;border:.75pt solid #111;border-radius:.7mm;display:inline-flex;align-items:center;justify-content:center;font:8pt 'Space Grotesk',sans-serif;flex:0 0 auto;line-height:1">${on?'&#10003;':''}</span>`;
+  const CB=(on)=>`<span style="width:4.4mm;height:4.4mm;border:.8pt solid #111;border-radius:.7mm;display:inline-flex;align-items:center;justify-content:center;font:8pt 'Space Grotesk',sans-serif;flex:0 0 auto;line-height:1">${on?'&#10003;':''}</span>`;
   const GRID=(h)=>`<div style="height:${h};border:.6pt solid #555;background-image:linear-gradient(#ddd .3pt,transparent .3pt),linear-gradient(90deg,#ddd .3pt,transparent .3pt);background-size:5mm 5mm"></div>`;
   const PAGE=(inner,pg)=>`<div class="eb-pg" style="width:210mm;height:297mm;overflow:hidden;padding:8mm;box-sizing:border-box;background:#fff;color:#111;font-family:'Space Grotesk',sans-serif;overflow:hidden">
     <div class="eb-in" style="border:1.5pt solid #111;padding:7.5mm;box-sizing:border-box;height:100%;overflow:hidden;display:flex;flex-direction:column">
@@ -4836,7 +4836,8 @@ function ebPrint(){
   let n=0, p1='', p2='';
   const put=(k,html)=>{n++;const b=S(n,EB_TITLES[k])+html; if(['wkz','skizze','ueber'].includes(k))p2+=b; else p1+=b;};
   vis.forEach(k=>{
-    if(k==='roh')put(k,ROW(F('Material',eb.roh.material),F('Stangen-Ø',eb.roh.stange,'mm'),F('Sägelänge',eb.roh.saege,'mm')));
+    if(k==='roh')put(k,ROW(F('Zeichnung-Nr.',eb.kopf.num),F('Bezeichnung',eb.kopf.bez),F('Maschine',eb.kopf.masch))
+      +ROW(F('Material',eb.roh.material),F('Stangen-Ø',eb.roh.stange,'mm'),F('Sägelänge',eb.roh.saege,'mm')));
     else if(k==='null'){const u=eb.nul;put(k,
       ROW(F('#501 Ausspannl. links (RO/G54)',u.v501,'mm'),F('#511 Ausspannl. rechts (RU/G55)',u.v511,'mm'),F('X-Versatz G10L2',u.xoff,'mm'))
       +ROW(F('B vor Werkstück',u.b1,'mm'),F('B auf Werkstück',u.b2,'mm'),F('B zurückgezogen',u.b3,'mm'),F('B entladen',u.b4,'mm'))
@@ -4845,17 +4846,17 @@ function ebPrint(){
         <span style="display:flex;align-items:center;gap:2.4mm">${CB(/links/i.test(u.dir||''))}links</span>
         <span style="display:flex;align-items:center;gap:2.4mm">${CB(/rechts/i.test(u.dir||''))}rechts</span></div></div>`));}
     else if(k==='msync')put(k,`<table style="width:100%;border-collapse:collapse;font:10pt 'JetBrains Mono',monospace;margin-bottom:6mm">
-      <tr style="background:#f2f2f2"><th style="border:.65pt solid #111;padding:2.2mm;text-align:left;font:700 6.4pt 'JetBrains Mono',monospace;letter-spacing:.12em;width:50%">M-CODE RO</th>
-      <th style="border:.65pt solid #111;padding:2.2mm;text-align:left;font:700 6.4pt 'JetBrains Mono',monospace;letter-spacing:.12em">M-CODE RU</th></tr>
+      <tr style="background:#f2f2f2"><th style="border:.65pt solid #111;padding:2.2mm;text-align:left;font:700 7pt 'JetBrains Mono',monospace;letter-spacing:.12em;width:50%">M-CODE RO</th>
+      <th style="border:.65pt solid #111;padding:2.2mm;text-align:left;font:700 7pt 'JetBrains Mono',monospace;letter-spacing:.12em">M-CODE RU</th></tr>
       ${eb.msync.map(r=>`<tr><td style="border:.5pt solid #666;padding:1.9mm 2mm">${E(r[0])}</td><td style="border:.5pt solid #666;padding:1.9mm 2mm">${E(r[1])}</td></tr>`).join('')}</table>`);
     else if(k==='chk')put(k,`<div style="display:flex;flex-wrap:wrap;margin-bottom:6mm">
-      ${eb.chk.map(r=>`<div style="width:50%;box-sizing:border-box;padding:0 4mm 2.6mm 0;display:flex;align-items:center;gap:2.6mm;font:9pt 'Space Grotesk',sans-serif"><span style="flex:0 0 auto">${CB(r[1])}</span><span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${E(r[0])}</span></div>`).join('')}</div>`);
+      ${eb.chk.map(r=>`<div style="width:50%;box-sizing:border-box;padding:0 4mm 2.6mm 0;display:flex;align-items:center;gap:2.6mm;font:10pt 'Space Grotesk',sans-serif"><span style="flex:0 0 auto">${CB(r[1])}</span><span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${E(r[0])}</span></div>`).join('')}</div>`);
     else if(k==='skizze')put(k,`<div style="display:flex;gap:6mm;margin-bottom:6mm">
       <div style="flex:1.15">${GRID('34mm')}</div>
       <div style="flex:1"><div style="font:700 6.6pt 'JetBrains Mono',monospace;letter-spacing:.12em;margin-bottom:2.5mm">STÖRUNGEN / BESONDERHEITEN</div>
       <div style="font:10pt 'Space Grotesk',sans-serif;white-space:pre-wrap;line-height:1.9;border-bottom:.5pt solid #999;min-height:30mm">${E(eb.stoer)}</div></div></div>`);
-    else if(k==='wkz')put(k,`<table style="width:100%;border-collapse:collapse;font:9.5pt 'JetBrains Mono',monospace;margin-bottom:6mm">
-      <tr style="background:#f2f2f2">${[['T-NR.','12%'],['NULLPKT','13%'],['ERSETZT DURCH','18%'],['WKZ-HALTER / GEOMETRIE','30%'],['BEMERKUNG','27%']].map(([h,w])=>`<th style="border:.65pt solid #111;padding:2.2mm;text-align:left;font:700 6.4pt 'JetBrains Mono',monospace;letter-spacing:.12em;width:${w}">${h}</th>`).join('')}</tr>
+    else if(k==='wkz')put(k,`<table style="width:100%;border-collapse:collapse;font:10pt 'JetBrains Mono',monospace;margin-bottom:6mm">
+      <tr style="background:#f2f2f2">${[['T-NR.','12%'],['NULLPKT','13%'],['ERSETZT DURCH','18%'],['WKZ-HALTER / GEOMETRIE','30%'],['BEMERKUNG','27%']].map(([h,w])=>`<th style="border:.65pt solid #111;padding:2.2mm;text-align:left;font:700 7pt 'JetBrains Mono',monospace;letter-spacing:.12em;width:${w}">${h}</th>`).join('')}</tr>
       ${eb.wkz.map(r=>`<tr><td style="border:.5pt solid #666;padding:2.1mm 2mm;font-weight:700">${E(r.t)}</td>
       <td style="border:.5pt solid #666;padding:2.1mm 2mm;font-size:8pt;color:#333">${E(r.np)||'G54  G55'}</td>
       <td style="border:.5pt solid #666;padding:2.1mm 2mm">${E(r.ers)}</td>
@@ -4866,7 +4867,7 @@ function ebPrint(){
         <div style="position:relative">${GRID('44mm')}
         <div style="position:absolute;inset:0;padding:3mm;font:10pt 'Space Grotesk',sans-serif;white-space:pre-wrap;line-height:6mm">${E(eb.ueber.notiz)}</div></div>`);
   });
-  const kopf=ROW(F('Zeichnung-Nr.',eb.kopf.num),F('Bezeichnung',eb.kopf.bez),F('Maschine',eb.kopf.masch));
+  const kopf='';
   const HEAD2=`<div style="display:flex;justify-content:space-between;align-items:flex-end">
       <div style="font:700 16pt 'Space Grotesk',sans-serif;letter-spacing:.06em">WERKZEUGE</div>
       <div style="font:6.6pt 'JetBrains Mono',monospace;letter-spacing:.14em">ZEICHNUNG-NR. ${E(eb.kopf.num)||'____________'}</div></div>${TICK}`;
