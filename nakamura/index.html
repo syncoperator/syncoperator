@@ -4687,7 +4687,7 @@ function ebDefault(){return{
  order:['roh','null','msync','chk','wkz','ueber'],
  hidden:[],
  roh:{material:'',stange:'',saege:''},
- nul:{v501:'',v511:'',xoff:'',b1:'',b2:'',b3:'',b4:'',az:'',ad:'',br:'',dir:''},
+ nul:{v501:'',v511:'',xoff:'',b1:'',b2:'',b3:'',b4:'',az:'',ad:'',abst:''},
  msync:[['',''],['',''],['',''],['',''],['',''],['','']],
  chk:[['Programm auf Maschine geladen (RO + RU)',0],['Werkzeuge vermessen & Korrekturen gesetzt',0],
       ['Nullpunkte kontrolliert',0],['Stangenlader eingestellt',0],
@@ -4733,8 +4733,11 @@ function ebSecBody(k){
     +'<div class="eb-g3">'+ebF('Material','roh.material')+ebF('Stangen-Ø','roh.stange','mm')+ebF('Sägelänge','roh.saege','mm')+'</div>';
   if(k==='null')return '<div class="eb-g3">'+ebF('#501 links (RO/G54)','nul.v501','mm')+ebF('#511 rechts (RU/G55)','nul.v511','mm')+ebF('X-Versatz G10L2','nul.xoff','mm')+'</div>'
     +'<div class="eb-g2">'+ebF('B vor Werkstück','nul.b1','mm')+ebF('B auf Werkstück','nul.b2','mm')+ebF('B zurückgezogen','nul.b3','mm')+ebF('B entladen','nul.b4','mm')+'</div>'
-    +'<div class="eb-g3">'+ebF('Abstech Z','nul.az','mm')+ebF('Abstech Ø','nul.ad','mm')+ebF('Stecher-Breite','nul.br','mm')+'</div>'
-    +ebF('Schneidrichtung','nul.dir','links / rechts');
+    +'<div class="eb-g2">'+ebF('Abstech Z','nul.az','mm')+ebF('Abstech Ø','nul.ad','mm')+'</div>'
+    +`<div class="eb-f"><label>Abstecher</label><div style="display:flex;gap:8px">
+      <span class="eb-chk" style="flex:1;margin:0;cursor:pointer" onclick="ebSet('nul.abst','links');ebRender()"><span class="eb-cb ${eb.nul.abst==='links'?'on':''}"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span><span style="font-size:14px">links</span></span>
+      <span class="eb-chk" style="flex:1;margin:0;cursor:pointer" onclick="ebSet('nul.abst','rechts');ebRender()"><span class="eb-cb ${eb.nul.abst==='rechts'?'on':''}"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span><span style="font-size:14px">rechts</span></span>
+      </div></div>`;
   if(k==='msync')return eb.msync.map((r,i)=>`<div class="eb-row">
       <input value="${esc(r[0])}" placeholder="M-Code RO" oninput="eb.msync[${i}][0]=this.value;ebSave()">
       <input value="${esc(r[1])}" placeholder="M-Code RU" oninput="eb.msync[${i}][1]=this.value;ebSave()">
@@ -4843,10 +4846,11 @@ function ebPrint(){
     else if(k==='null'){const u=eb.nul;put(k,
       ROW(F('#501 Ausspannl. links (RO/G54)',u.v501,'mm'),F('#511 Ausspannl. rechts (RU/G55)',u.v511,'mm'),F('X-Versatz G10L2',u.xoff,'mm'))
       +ROW(F('B vor Werkstück',u.b1,'mm'),F('B auf Werkstück',u.b2,'mm'),F('B zurückgezogen',u.b3,'mm'),F('B entladen',u.b4,'mm'))
-      +ROW(F('Abstech Z',u.az,'mm'),F('Abstech Ø',u.ad,'mm'),F('Stecher-Breite',u.br,'mm'),`<div style="flex:1 1 0;min-width:0"><div style="font:700 6.6pt 'JetBrains Mono',monospace;letter-spacing:.12em;text-transform:uppercase">Schneidrichtung</div>
-      <div style="display:flex;gap:6mm;margin-top:5.4mm;align-items:center;font:9.5pt 'Space Grotesk',sans-serif">
-        <span style="display:flex;align-items:center;gap:2.4mm">${CB(/links/i.test(u.dir||''))}links</span>
-        <span style="display:flex;align-items:center;gap:2.4mm">${CB(/rechts/i.test(u.dir||''))}rechts</span></div></div>`));}
+      +ROW(F('Abstech Z',u.az,'mm'),F('Abstech Ø',u.ad,'mm'),
+        `<div style="flex:1 1 0;min-width:0"><div style="font:700 7.2pt 'JetBrains Mono',monospace;letter-spacing:.12em;text-transform:uppercase">Abstecher</div>
+         <div style="display:flex;gap:7mm;margin-top:4.4mm;align-items:center;font:10pt 'Space Grotesk',sans-serif">
+           <span style="display:flex;align-items:center;gap:2.6mm">${CB(/links/i.test(u.abst||''))}links</span>
+           <span style="display:flex;align-items:center;gap:2.6mm">${CB(/rechts/i.test(u.abst||''))}rechts</span></div></div>`));}
     else if(k==='msync')put(k,`<table style="width:100%;border-collapse:collapse;font:10pt 'JetBrains Mono',monospace;margin-bottom:6mm">
       <tr style="background:transparent"><th style="border:none;border-bottom:.9pt solid #111;padding:1mm 2mm 2mm;text-align:left;font:700 7pt 'JetBrains Mono',monospace;letter-spacing:.12em;width:50%">M-CODE RO</th>
       <th style="border:none;border-bottom:.9pt solid #111;padding:1mm 2mm 2mm;text-align:left;font:700 7pt 'JetBrains Mono',monospace;letter-spacing:.12em">M-CODE RU</th></tr>
