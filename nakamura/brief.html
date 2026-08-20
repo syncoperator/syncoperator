@@ -8,10 +8,6 @@
   <script src="https://unpkg.com/lucide@latest"></script>
   <style>
     .glass {
-      background: rgba(255, 255, 255, 0.7);
-      backdrop-filter: blur(16px);
-    }
-    .dark .glass {
       background: rgba(15, 23, 42, 0.75);
       backdrop-filter: blur(16px);
     }
@@ -33,8 +29,11 @@
       </div>
     </div>
 
-    <!-- Controls -->
+    <!-- Badge & Controls -->
     <div class="flex items-center gap-3">
+      <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+        Gemini 2.5 Flash
+      </span>
       <label class="flex items-center gap-2 cursor-pointer text-xs font-medium text-slate-400 hover:text-slate-200 transition">
         <input type="checkbox" id="liveMode" class="sr-only peer">
         <div class="w-8 h-4 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-indigo-600 relative"></div>
@@ -75,7 +74,6 @@
       <div class="relative flex-grow flex flex-col bg-slate-800/40 border border-slate-700/60 rounded-2xl p-4 focus-within:border-indigo-500/80 transition-all">
         <textarea id="text" class="w-full flex-grow bg-transparent text-sm resize-none outline-none placeholder:text-slate-500 leading-relaxed" placeholder="Вставьте исходный текст или набросайте суть ответа..."></textarea>
         
-        <!-- Bottom Controls -->
         <div class="flex justify-between items-center pt-3 border-t border-slate-700/40 mt-2">
           <span id="charCount" class="text-xs text-slate-500">0 символов</span>
           <button onclick="clearInput()" class="text-xs text-slate-400 hover:text-rose-400 transition flex items-center gap-1">
@@ -84,7 +82,7 @@
         </div>
       </div>
 
-      <!-- Templates (Быстрые сценарии) -->
+      <!-- Quick Templates -->
       <div>
         <span class="text-xs font-semibold text-slate-400 mb-2 block">Быстрые сценарии:</span>
         <div class="flex flex-wrap gap-2">
@@ -94,7 +92,7 @@
         </div>
       </div>
 
-      <!-- Process Button -->
+      <!-- Submit Button -->
       <button id="btn" onclick="generateResponse()" class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 active:scale-[0.99] text-white font-semibold rounded-xl p-3 shadow-lg shadow-indigo-600/20 transition-all flex items-center justify-center gap-2">
         <i data-lucide="wand-2" class="w-4 h-4"></i>
         <span>Преобразовать</span>
@@ -105,7 +103,7 @@
     <!-- OUTPUT COLUMN -->
     <div class="flex flex-col gap-4">
       
-      <!-- Action Chips (Модификаторы) -->
+      <!-- Action Chips -->
       <div class="flex flex-col gap-1.5">
         <span class="text-xs font-semibold text-slate-400">Быстрая подстройка ответа:</span>
         <div class="flex flex-wrap gap-2">
@@ -124,25 +122,22 @@
       <!-- Result Card -->
       <div class="relative flex-grow flex flex-col bg-slate-800/40 border border-slate-700/60 rounded-2xl p-4 min-h-[250px]">
         
-        <!-- Result Header -->
         <div class="flex justify-between items-center pb-3 border-b border-slate-700/40 mb-3">
           <span class="text-xs font-semibold text-indigo-400 flex items-center gap-1.5">
             <i data-lucide="check-circle-2" class="w-4 h-4"></i> Результат
           </span>
-          <button onclick="smartCopy()" class="text-xs bg-indigo-600/20 hover:bg-indigo-600/40 text-indigo-300 border border-indigo-500/30 rounded-lg px-3 py-1 transition flex items-center gap-1.5">
+          <button onclick="smartCopy(event)" class="text-xs bg-indigo-600/20 hover:bg-indigo-600/40 text-indigo-300 border border-indigo-500/30 rounded-lg px-3 py-1 transition flex items-center gap-1.5">
             <i data-lucide="copy" class="w-3.5 h-3.5"></i> Скопировать чистый текст
           </button>
         </div>
 
-        <!-- Result Text Area -->
         <div id="output" class="flex-grow text-sm leading-relaxed whitespace-pre-wrap text-slate-200 select-text overflow-y-auto max-h-[350px] pr-2">
           Сгенерированный вариант или разбор грамматики появится здесь...
         </div>
 
-        <!-- Loader overlay -->
         <div id="loader" class="hidden absolute inset-0 bg-slate-900/80 backdrop-blur-sm rounded-2xl flex flex-col items-center justify-center gap-3">
           <div class="w-8 h-8 border-3 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
-          <span class="text-xs font-medium text-indigo-300">Aura AI генерирует идеальный ответ...</span>
+          <span class="text-xs font-medium text-indigo-300">Aura AI генерирует ответ...</span>
         </div>
 
       </div>
@@ -154,7 +149,7 @@
   <script>
     lucide.createIcons();
 
-    // Замените на URL вашего Cloudflare Worker
+    // Замените на ваш актуальный URL Cloudflare Worker
     const WORKER_URL = "https://your-worker.your-subdomain.workers.dev";
     
     let debounceTimer;
@@ -162,7 +157,6 @@
     const charCount = document.getElementById('charCount');
     const liveMode = document.getElementById('liveMode');
 
-    // Счетчик символов
     textInput.addEventListener('input', () => {
       charCount.innerText = `${textInput.value.length} символов`;
       if (liveMode.checked && textInput.value.trim().length > 10) {
@@ -218,14 +212,12 @@
       generateResponse(instruction);
     }
 
-    // Извлекает только готовую часть, отсекая комментарии ИИ
-    function smartCopy() {
+    function smartCopy(e) {
       const rawText = document.getElementById('output').innerText;
       if (!rawText || rawText.includes("появится здесь...")) return;
 
       let textToCopy = rawText;
 
-      // Если режим с разбором, берем только 1-й блок
       if (rawText.includes("### 1. Исправленный вариант:") || rawText.includes("1. Исправленный вариант")) {
         const parts = rawText.split(/### 2|2\./);
         textToCopy = parts[0].replace(/### 1\. Исправленный вариант:|1\. Исправленный вариант:/g, '').trim();
@@ -233,8 +225,7 @@
 
       navigator.clipboard.writeText(textToCopy);
       
-      // Небольшое уведомление
-      const btn = event.currentTarget;
+      const btn = e.currentTarget;
       const originalHTML = btn.innerHTML;
       btn.innerHTML = `<i data-lucide="check" class="w-3.5 h-3.5"></i> Скопировано!`;
       lucide.createIcons();
