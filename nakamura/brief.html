@@ -3,235 +3,165 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Aura AI Chat</title>
+  <title>Aura Canvas & Radial Control</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <style>
-    /* Скрытие стандартного скроллбара для чистоты дизайна */
-    ::-webkit-scrollbar { width: 6px; }
-    ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-    
-    .prose p { margin-bottom: 0.75rem; }
+    .radial-grid {
+      background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
+      background-size: 12px 12px;
+    }
+    .prose p { margin-bottom: 0.5rem; }
     .prose p:last-child { margin-bottom: 0; }
-    .prose strong { color: #0f172a; font-weight: 700; }
-    .prose ul { padding-left: 1.25rem; list-style-type: disc; margin-bottom: 0.75rem; }
   </style>
 </head>
-<body class="bg-slate-50 text-slate-800 h-screen flex flex-col font-sans antialiased selection:bg-indigo-500 selection:text-white overflow-hidden">
+<body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col justify-center items-center p-3 md:p-6 font-sans antialiased selection:bg-indigo-500 selection:text-white">
 
-  <!-- Header -->
-  <header class="bg-white/80 backdrop-blur-md border-b-2 border-slate-200 py-3 px-4 flex justify-between items-center z-20 shrink-0">
-    <div class="flex items-center gap-2.5 max-w-4xl mx-auto w-full">
-      <div class="flex items-center gap-2.5 flex-grow">
-        <div class="p-1.5 bg-indigo-600 rounded-lg shadow-sm">
-          <i data-lucide="sparkles" class="w-4 h-4 text-white"></i>
-        </div>
-        <h1 class="font-bold text-lg text-slate-900">Aura</h1>
-      </div>
-      <span class="text-xs font-bold px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 border-2 border-slate-200">
-        3.6 Flash
-      </span>
-    </div>
-  </header>
-
-  <!-- Chat History Area -->
-  <main id="chatArea" class="flex-grow overflow-y-auto p-4 pb-40 flex flex-col gap-6 max-w-4xl mx-auto w-full scroll-smooth">
+  <!-- Main Canvas Container -->
+  <div class="w-full max-w-3xl bg-white border-2 border-slate-200 rounded-3xl shadow-xl overflow-hidden flex flex-col gap-0">
     
-    <!-- Welcome Message -->
-    <div class="flex gap-4 max-w-3xl">
-      <div class="w-8 h-8 rounded-full bg-indigo-100 border-2 border-indigo-200 flex items-center justify-center shrink-0">
-        <i data-lucide="bot" class="w-4 h-4 text-indigo-600"></i>
+    <!-- Top Bar -->
+    <div class="px-5 py-3.5 border-b-2 border-slate-100 bg-slate-50/50 flex justify-between items-center">
+      <div class="flex items-center gap-2">
+        <div class="w-2.5 h-2.5 rounded-full bg-indigo-600 animate-pulse"></div>
+        <span class="font-bold text-xs uppercase tracking-wider text-slate-600">Aura Live Canvas</span>
       </div>
-      <div class="flex flex-col gap-2 pt-1">
-        <p class="font-medium text-slate-800 text-sm">Здравствуйте! Я ваш лингвистический AI-ассистент. Отправьте мне текст, и я исправлю его или перепишу в нужном формате.</p>
-        
-        <div class="flex flex-wrap gap-2 mt-2">
-          <button onclick="fillInput('Извинение за задержку ответа')" class="text-xs font-bold bg-white border-2 border-slate-200 hover:border-indigo-400 text-slate-600 rounded-xl px-3 py-1.5 transition flex items-center gap-1.5">
-            <i data-lucide="clock" class="w-3.5 h-3.5"></i> Задержка ответа
-          </button>
-          <button onclick="fillInput('Вежливый отказ от предложения')" class="text-xs font-bold bg-white border-2 border-slate-200 hover:border-indigo-400 text-slate-600 rounded-xl px-3 py-1.5 transition flex items-center gap-1.5">
-            <i data-lucide="x-circle" class="w-3.5 h-3.5"></i> Мягкий отказ
-          </button>
-        </div>
+      
+      <!-- Target Language Switcher -->
+      <div class="flex items-center gap-1 bg-white border-2 border-slate-200 p-1 rounded-xl shadow-2xs">
+        <button onclick="setLang('Deutsch')" id="lang-Deutsch" class="lang-btn text-xs font-bold px-2.5 py-1 rounded-lg bg-indigo-600 text-white transition-all">DE</button>
+        <button onclick="setLang('English')" id="lang-English" class="lang-btn text-xs font-bold px-2.5 py-1 rounded-lg text-slate-600 hover:bg-slate-100 transition-all">EN</button>
+        <button onclick="setLang('Russian')" id="lang-Russian" class="lang-btn text-xs font-bold px-2.5 py-1 rounded-lg text-slate-600 hover:bg-slate-100 transition-all">RU</button>
       </div>
     </div>
 
-  </main>
-
-  <!-- Pinned Input Area -->
-  <div class="fixed bottom-0 left-0 right-0 bg-gradient-to-t from-slate-50 via-slate-50 to-transparent pt-10 pb-4 px-4 z-20">
-    <div class="max-w-4xl mx-auto bg-white border-2 border-slate-200 rounded-2xl shadow-lg flex flex-col focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-100 transition-all">
+    <!-- Input Area -->
+    <div class="p-5 border-b-2 border-slate-100 bg-white">
+      <textarea id="userInput" rows="2" class="w-full bg-transparent text-slate-800 font-semibold text-base outline-none resize-none placeholder:text-slate-400 placeholder:font-normal" placeholder="Набросайте суть или вставьте исходный текст..."></textarea>
       
-      <!-- Settings Panel (Top of input) -->
-      <div class="flex items-center gap-3 px-3 pt-3 pb-2 border-b border-slate-100 overflow-x-auto whitespace-nowrap">
-        
-        <div class="flex items-center bg-slate-100 rounded-lg p-0.5">
-          <select id="targetLang" class="bg-transparent text-xs font-bold text-slate-700 outline-none px-2 py-1 cursor-pointer">
-            <option value="Deutsch">🇩🇪 Deutsch</option>
-            <option value="English">🇬🇧 English</option>
-            <option value="Russian">🇷🇺 Русский</option>
-            <option value="Spanish">🇪🇸 Español</option>
-          </select>
-        </div>
+      <div class="flex justify-between items-center pt-2">
+        <span class="text-xs font-bold text-slate-400">Формат: Auto-Detect</span>
+        <button onclick="generateBase()" class="bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white font-bold text-xs px-4 py-2 rounded-xl transition flex items-center gap-1.5 shadow-sm">
+          <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+          <span>Сгенерировать</span>
+        </button>
+      </div>
+    </div>
 
-        <div class="w-px h-4 bg-slate-300"></div>
-
-        <div class="flex items-center bg-slate-100 rounded-lg p-0.5">
-          <select id="type" class="bg-transparent text-xs font-bold text-slate-700 outline-none px-2 py-1 cursor-pointer">
-            <option value="grammar">Grammatik & Rechtschreibung</option>
-            <option value="whatsapp">WhatsApp / Telegram</option>
-            <option value="email">Официальное письмо</option>
-          </select>
-        </div>
-
+    <!-- Interactive Output Canvas -->
+    <div id="canvasArea" class="p-6 bg-slate-50 min-h-[160px] relative flex flex-col justify-between">
+      
+      <div id="outputContent" class="prose text-slate-800 font-medium text-base leading-relaxed">
+        <span class="text-slate-400 italic text-sm">Результат появится здесь...</span>
       </div>
 
-      <!-- Text Input & Send Button -->
-      <div class="relative flex items-end p-2 gap-2">
-        <textarea id="userInput" rows="1" class="w-full max-h-32 bg-transparent text-sm font-medium text-slate-800 resize-none outline-none pl-2 py-2 placeholder:text-slate-400" placeholder="Напишите сообщение..." oninput="autoResize(this)"></textarea>
-        
-        <button id="sendBtn" onclick="handleSend()" class="w-10 h-10 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white flex justify-center items-center shrink-0 transition shadow-sm mb-1">
-          <i data-lucide="arrow-up" class="w-5 h-5"></i>
+      <!-- Quick Action Floating Bar -->
+      <div id="copyBar" class="hidden justify-end pt-4">
+        <button onclick="copyCanvasText()" class="bg-white border-2 border-slate-200 hover:border-indigo-500 text-indigo-600 font-bold text-xs px-3.5 py-1.5 rounded-xl transition shadow-sm flex items-center gap-1.5">
+          <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+          <span id="copyBtnText">Скопировать</span>
         </button>
       </div>
 
+      <!-- Loading Overlay -->
+      <div id="loader" class="hidden absolute inset-0 bg-white/80 backdrop-blur-xs flex items-center justify-center gap-2">
+        <div class="w-5 h-5 border-3 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+        <span class="text-xs font-bold text-indigo-600">Адаптация текста...</span>
+      </div>
     </div>
+
+    <!-- RADIAL TONALITY DIAL (Прорывный орган управления) -->
+    <div class="p-5 bg-white border-t-2 border-slate-100 flex flex-col md:flex-row items-center justify-between gap-4">
+      
+      <div class="flex flex-col gap-1 text-center md:text-left">
+        <span class="text-xs font-bold text-slate-700 uppercase tracking-wider">Джойстик Тональности</span>
+        <p class="text-[11px] font-medium text-slate-400 max-w-xs">Перемещайте точку по осям для моментальной подстройки стиля ответа.</p>
+      </div>
+
+      <!-- 2D Directional Grid Controller -->
+      <div class="relative w-48 h-32 bg-slate-50 border-2 border-slate-200 rounded-2xl radial-grid p-2 flex items-center justify-center shrink-0">
+        <!-- Axis Labels -->
+        <span class="absolute top-1 text-[9px] font-bold text-slate-500 uppercase">Короче</span>
+        <span class="absolute bottom-1 text-[9px] font-bold text-slate-500 uppercase">Подробно</span>
+        <span class="absolute left-1 text-[9px] font-bold text-slate-500 uppercase">Строго</span>
+        <span class="absolute right-1 text-[9px] font-bold text-slate-500 uppercase">Мягко</span>
+
+        <!-- Quick Quadrant Buttons -->
+        <div class="grid grid-cols-2 gap-2 w-full h-full pt-3 pb-3 px-4">
+          <button onclick="applyDial('Максимально строго и коротко')" class="hover:bg-indigo-100/60 rounded-lg text-[10px] font-bold text-slate-600 border border-slate-200/60 transition">Деловой / Краткий</button>
+          <button onclick="applyDial('Очень мягко, вежливо и коротко')" class="hover:bg-indigo-100/60 rounded-lg text-[10px] font-bold text-slate-600 border border-slate-200/60 transition">Мягкий / Краткий</button>
+          <button onclick="applyDial('Официальное развернутое письмо')" class="hover:bg-indigo-100/60 rounded-lg text-[10px] font-bold text-slate-600 border border-slate-200/60 transition">Строгий / Развернутый</button>
+          <button onclick="applyDial('Дружелюбно, тепло и развернуто')" class="hover:bg-indigo-100/60 rounded-lg text-[10px] font-bold text-slate-600 border border-slate-200/60 transition">Теплый / Развернутый</button>
+        </div>
+      </div>
+
+    </div>
+
   </div>
+
+  <textarea id="rawStorage" class="hidden"></textarea>
 
   <script>
     lucide.createIcons();
 
     const WORKER_URL = "https://aura-communicator-api.russianflow.workers.dev/";
-    const chatArea = document.getElementById('chatArea');
-    const userInput = document.getElementById('userInput');
+    let currentLang = 'Deutsch';
 
-    // Автоматическое изменение высоты textarea
-    function autoResize(textarea) {
-      textarea.style.height = 'auto';
-      textarea.style.height = (textarea.scrollHeight < 128 ? textarea.scrollHeight : 128) + 'px';
+    function setLang(lang) {
+      currentLang = lang;
+      document.querySelectorAll('.lang-btn').forEach(btn => {
+        btn.className = 'lang-btn text-xs font-bold px-2.5 py-1 rounded-lg text-slate-600 hover:bg-slate-100 transition-all';
+      });
+      document.getElementById(`lang-${lang}`).className = 'lang-btn text-xs font-bold px-2.5 py-1 rounded-lg bg-indigo-600 text-white transition-all';
     }
 
-    // Обработка Enter (отправка) и Shift+Enter (перенос)
-    userInput.addEventListener('keydown', function(e) {
-      if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        handleSend();
-      }
-    });
-
-    function fillInput(text) {
-      userInput.value = text;
-      autoResize(userInput);
-      userInput.focus();
+    async function generateBase() {
+      applyDial('');
     }
 
-    function scrollToBottom() {
-      chatArea.scrollTop = chatArea.scrollHeight;
-    }
-
-    async function handleSend(modifier = '') {
-      const text = userInput.value.trim();
+    async function applyDial(styleInstruction) {
+      const text = document.getElementById('userInput').value.trim();
       if (!text) return;
 
-      const type = document.getElementById('type').value;
-      const targetLang = document.getElementById('targetLang').value;
+      const loader = document.getElementById('loader');
+      const outputContent = document.getElementById('outputContent');
+      const rawStorage = document.getElementById('rawStorage');
+      const copyBar = document.getElementById('copyBar');
 
-      // 1. Добавляем сообщение пользователя
-      if (!modifier) {
-        appendUserMessage(text);
-        userInput.value = '';
-        userInput.style.height = 'auto';
-      } else {
-        appendUserMessage(`*Примени фильтр:* ${modifier}`);
-      }
-
-      // 2. Добавляем "скелет" ответа AI (загрузка)
-      const messageId = 'msg-' + Date.now();
-      appendAiLoader(messageId);
-      scrollToBottom();
+      loader.classList.remove('hidden');
 
       try {
         const res = await fetch(WORKER_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ type, targetLang, text, modifier })
+          body: JSON.stringify({
+            type: 'whatsapp',
+            targetLang: currentLang,
+            text: text,
+            modifier: styleInstruction
+          })
         });
 
         const data = await res.json();
         const rawText = data.result || data.error;
 
-        // 3. Обновляем сообщение AI готовым результатом
-        updateAiMessage(messageId, rawText);
+        rawStorage.value = rawText;
+        outputContent.innerHTML = marked.parse(rawText);
+        copyBar.classList.remove('hidden');
+        copyBar.classList.add('flex');
 
       } catch (err) {
-        updateAiMessage(messageId, "Ошибка соединения: " + err.message, true);
+        outputContent.innerText = "Ошибка: " + err.message;
+      } finally {
+        loader.classList.add('hidden');
       }
     }
 
-    function appendUserMessage(text) {
-      const div = document.createElement('div');
-      div.className = 'self-end bg-slate-800 text-white rounded-2xl rounded-tr-sm px-4 py-2.5 max-w-[85%] md:max-w-[75%] shadow-sm';
-      div.innerHTML = `<p class="text-sm font-medium whitespace-pre-wrap">${text}</p>`;
-      chatArea.appendChild(div);
-    }
+    function copyCanvasText() {
+      const rawText = document.getElementById('rawStorage').value;
+      if (!rawText) return;
 
-    function appendAiLoader(id) {
-      const div = document.createElement('div');
-      div.id = id;
-      div.className = 'flex gap-3 md:gap-4 max-w-[95%] md:max-w-[85%]';
-      div.innerHTML = `
-        <div class="w-8 h-8 rounded-full bg-indigo-100 border-2 border-indigo-200 flex items-center justify-center shrink-0 mt-1">
-          <i data-lucide="sparkles" class="w-4 h-4 text-indigo-600"></i>
-        </div>
-        <div class="flex items-center bg-white border-2 border-slate-100 rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm min-h-[44px]">
-          <div class="flex gap-1.5">
-            <div class="w-2 h-2 bg-indigo-400 rounded-full animate-bounce"></div>
-            <div class="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style="animation-delay: 0.15s"></div>
-            <div class="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style="animation-delay: 0.3s"></div>
-          </div>
-        </div>
-      `;
-      chatArea.appendChild(div);
-      lucide.createIcons();
-    }
-
-    function updateAiMessage(id, rawText, isError = false) {
-      const msgDiv = document.getElementById(id);
-      if (!msgDiv) return;
-
-      const htmlContent = isError ? `<p class="text-rose-500">${rawText}</p>` : marked.parse(rawText);
-
-      msgDiv.innerHTML = `
-        <div class="w-8 h-8 rounded-full bg-indigo-100 border-2 border-indigo-200 flex items-center justify-center shrink-0 mt-1">
-          <i data-lucide="sparkles" class="w-4 h-4 text-indigo-600"></i>
-        </div>
-        <div class="flex flex-col gap-2 w-full">
-          <div class="bg-white border-2 border-slate-100 rounded-2xl rounded-tl-sm p-4 shadow-sm">
-            <div class="prose text-sm font-medium text-slate-800">${htmlContent}</div>
-          </div>
-          
-          <!-- Быстрые действия под ответом -->
-          <div class="flex items-center gap-2 pl-1">
-            <button onclick="copyChatResult(this)" data-raw="${encodeURIComponent(rawText)}" class="text-xs font-bold text-slate-400 hover:text-indigo-600 transition flex items-center gap-1 bg-white border border-slate-200 rounded-lg px-2 py-1 shadow-sm">
-              <i data-lucide="copy" class="w-3 h-3"></i> Скопировать
-            </button>
-            <button onclick="handleSend('Сделай короче')" class="text-xs font-bold text-slate-400 hover:text-indigo-600 transition flex items-center gap-1 bg-white border border-slate-200 rounded-lg px-2 py-1 shadow-sm">
-              <i data-lucide="zap" class="w-3 h-3"></i> Короче
-            </button>
-            <button onclick="handleSend('Сделай вежливее')" class="text-xs font-bold text-slate-400 hover:text-indigo-600 transition flex items-center gap-1 bg-white border border-slate-200 rounded-lg px-2 py-1 shadow-sm">
-              <i data-lucide="heart" class="w-3 h-3"></i> Мягче
-            </button>
-          </div>
-        </div>
-      `;
-      lucide.createIcons();
-      scrollToBottom();
-    }
-
-    function copyChatResult(btn) {
-      const rawText = decodeURIComponent(btn.getAttribute('data-raw'));
       let cleanText = rawText
         .replace(/^#+\s+/gm, '')
         .replace(/\*\*(.*?)\*\*/g, '$1')
@@ -239,16 +169,9 @@
 
       navigator.clipboard.writeText(cleanText.trim());
 
-      const originalHTML = btn.innerHTML;
-      btn.innerHTML = `<i data-lucide="check" class="w-3 h-3 text-emerald-500"></i> <span class="text-emerald-600">Скопировано</span>`;
-      btn.classList.add('border-emerald-200', 'bg-emerald-50');
-      
-      lucide.createIcons();
-      setTimeout(() => {
-        btn.innerHTML = originalHTML;
-        btn.classList.remove('border-emerald-200', 'bg-emerald-50');
-        lucide.createIcons();
-      }, 2000);
+      const btnText = document.getElementById('copyBtnText');
+      btnText.innerText = "Скопировано!";
+      setTimeout(() => btnText.innerText = "Скопировать", 2000);
     }
   </script>
 </body>
