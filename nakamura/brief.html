@@ -3,99 +3,107 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Aura Canvas & Radial Control</title>
+  <title>Aura Dynamic Canvas</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <style>
-    .radial-grid {
-      background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
-      background-size: 12px 12px;
-    }
     .prose p { margin-bottom: 0.5rem; }
     .prose p:last-child { margin-bottom: 0; }
+    input[type=range] { accent-color: #4f46e5; }
   </style>
 </head>
 <body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col justify-center items-center p-3 md:p-6 font-sans antialiased selection:bg-indigo-500 selection:text-white">
 
-  <!-- Main Canvas Container -->
-  <div class="w-full max-w-3xl bg-white border-2 border-slate-200 rounded-3xl shadow-xl overflow-hidden flex flex-col gap-0">
+  <div class="w-full max-w-3xl bg-white border-2 border-slate-200 rounded-3xl shadow-xl overflow-hidden flex flex-col">
     
-    <!-- Top Bar -->
+    <!-- Top Bar: Quick Languages & Model -->
     <div class="px-5 py-3.5 border-b-2 border-slate-100 bg-slate-50/50 flex justify-between items-center">
       <div class="flex items-center gap-2">
         <div class="w-2.5 h-2.5 rounded-full bg-indigo-600 animate-pulse"></div>
-        <span class="font-bold text-xs uppercase tracking-wider text-slate-600">Aura Live Canvas</span>
+        <span class="font-bold text-xs uppercase tracking-wider text-slate-600">Aura Multi-Style Studio</span>
       </div>
       
-      <!-- Target Language Switcher -->
       <div class="flex items-center gap-1 bg-white border-2 border-slate-200 p-1 rounded-xl shadow-2xs">
         <button onclick="setLang('Deutsch')" id="lang-Deutsch" class="lang-btn text-xs font-bold px-2.5 py-1 rounded-lg bg-indigo-600 text-white transition-all">DE</button>
         <button onclick="setLang('English')" id="lang-English" class="lang-btn text-xs font-bold px-2.5 py-1 rounded-lg text-slate-600 hover:bg-slate-100 transition-all">EN</button>
         <button onclick="setLang('Russian')" id="lang-Russian" class="lang-btn text-xs font-bold px-2.5 py-1 rounded-lg text-slate-600 hover:bg-slate-100 transition-all">RU</button>
+        <button onclick="setLang('Spanish')" id="lang-Spanish" class="lang-btn text-xs font-bold px-2.5 py-1 rounded-lg text-slate-600 hover:bg-slate-100 transition-all">ES</button>
       </div>
     </div>
 
-    <!-- Input Area -->
+    <!-- Context Scenario Switcher -->
+    <div class="px-5 py-3 bg-white border-b border-slate-100 flex items-center gap-2 overflow-x-auto whitespace-nowrap">
+      <span class="text-xs font-bold text-slate-400">Сценарий:</span>
+      <button onclick="setScenario('email')" id="scen-email" class="scen-btn text-xs font-bold px-3 py-1.5 rounded-xl bg-slate-800 text-white transition">E-mail</button>
+      <button onclick="setScenario('chat')" id="scen-chat" class="scen-btn text-xs font-bold px-3 py-1.5 rounded-xl bg-slate-100 text-slate-600 transition">Чат / Мессенджер</button>
+      <button onclick="setScenario('dispute')" id="scen-dispute" class="scen-btn text-xs font-bold px-3 py-1.5 rounded-xl bg-slate-100 text-slate-600 transition">Спор / Возражение</button>
+      <button onclick="setScenario('request')" id="scen-request" class="scen-btn text-xs font-bold px-3 py-1.5 rounded-xl bg-slate-100 text-slate-600 transition">Запрос / Просьба</button>
+    </div>
+
+    <!-- Input Text Area -->
     <div class="p-5 border-b-2 border-slate-100 bg-white">
-      <textarea id="userInput" rows="2" class="w-full bg-transparent text-slate-800 font-semibold text-base outline-none resize-none placeholder:text-slate-400 placeholder:font-normal" placeholder="Набросайте суть или вставьте исходный текст..."></textarea>
-      
-      <div class="flex justify-between items-center pt-2">
-        <span class="text-xs font-bold text-slate-400">Формат: Auto-Detect</span>
-        <button onclick="generateBase()" class="bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white font-bold text-xs px-4 py-2 rounded-xl transition flex items-center gap-1.5 shadow-sm">
-          <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
-          <span>Сгенерировать</span>
-        </button>
-      </div>
+      <textarea id="userInput" rows="2" class="w-full bg-transparent text-slate-800 font-semibold text-base outline-none resize-none placeholder:text-slate-400 placeholder:font-normal" placeholder="Введите исходную мысль или черновик..."></textarea>
     </div>
 
-    <!-- Interactive Output Canvas -->
-    <div id="canvasArea" class="p-6 bg-slate-50 min-h-[160px] relative flex flex-col justify-between">
+    <!-- Live Dual Sliders Controller -->
+    <div class="p-5 bg-slate-50 border-b-2 border-slate-100 grid grid-cols-1 md:grid-cols-2 gap-4">
       
-      <div id="outputContent" class="prose text-slate-800 font-medium text-base leading-relaxed">
-        <span class="text-slate-400 italic text-sm">Результат появится здесь...</span>
+      <!-- Slider 1: Tone -->
+      <div class="flex flex-col gap-1.5">
+        <div class="flex justify-between items-center text-xs font-bold text-slate-600">
+          <span>Стиль</span>
+          <span id="toneVal" class="text-indigo-600">Нейтрально</span>
+        </div>
+        <input type="range" id="toneSlider" min="0" max="100" value="50" oninput="updateSliders()" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer">
+        <div class="flex justify-between text-[10px] font-bold text-slate-400">
+          <span>Официально</span>
+          <span>Мягко / Дружелюбно</span>
+        </div>
       </div>
 
-      <!-- Quick Action Floating Bar -->
-      <div id="copyBar" class="hidden justify-end pt-4">
-        <button onclick="copyCanvasText()" class="bg-white border-2 border-slate-200 hover:border-indigo-500 text-indigo-600 font-bold text-xs px-3.5 py-1.5 rounded-xl transition shadow-sm flex items-center gap-1.5">
+      <!-- Slider 2: Length -->
+      <div class="flex flex-col gap-1.5">
+        <div class="flex justify-between items-center text-xs font-bold text-slate-600">
+          <span>Объём</span>
+          <span id="lengthVal" class="text-indigo-600">Базовый</span>
+        </div>
+        <input type="range" id="lengthSlider" min="0" max="100" value="50" oninput="updateSliders()" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer">
+        <div class="flex justify-between text-[10px] font-bold text-slate-400">
+          <span>Коротко</span>
+          <span>Развернуто</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Quick Modifiers Chips -->
+    <div class="px-5 py-2.5 bg-white border-b border-slate-100 flex flex-wrap items-center gap-1.5">
+      <span class="text-xs font-bold text-slate-400 mr-1">Быстрый акцент:</span>
+      <button onclick="applyModifier('Сделай акцент на аргументах и фактах')" class="text-[11px] font-bold bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 text-slate-600 px-2.5 py-1 rounded-lg transition">+ Факты</button>
+      <button onclick="applyModifier('Убери лишние вежливости, сразу к делу')" class="text-[11px] font-bold bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 text-slate-600 px-2.5 py-1 rounded-lg transition">+ Без воды</button>
+      <button onclick="applyModifier('Сделай максимально эмпатичным')" class="text-[11px] font-bold bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 text-slate-600 px-2.5 py-1 rounded-lg transition">+ Эмпатия</button>
+    </div>
+
+    <!-- Dynamic Output Area -->
+    <div id="canvasArea" class="p-6 bg-slate-50/50 min-h-[140px] relative flex flex-col justify-between">
+      <div id="outputContent" class="prose text-slate-800 font-medium text-base leading-relaxed">
+        <span class="text-slate-400 italic text-sm">Сгенерированный вариант появится здесь...</span>
+      </div>
+
+      <div id="copyBar" class="hidden justify-between items-center pt-4 border-t border-slate-200/60 mt-3">
+        <span class="text-xs font-bold text-slate-400">Готово к отправке</span>
+        <button onclick="copyCanvasText()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-4 py-2 rounded-xl transition shadow-sm flex items-center gap-1.5">
           <i data-lucide="copy" class="w-3.5 h-3.5"></i>
           <span id="copyBtnText">Скопировать</span>
         </button>
       </div>
 
-      <!-- Loading Overlay -->
+      <!-- Loading Indicator -->
       <div id="loader" class="hidden absolute inset-0 bg-white/80 backdrop-blur-xs flex items-center justify-center gap-2">
         <div class="w-5 h-5 border-3 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-        <span class="text-xs font-bold text-indigo-600">Адаптация текста...</span>
+        <span class="text-xs font-bold text-indigo-600">Генерация стиля...</span>
       </div>
-    </div>
-
-    <!-- RADIAL TONALITY DIAL (Прорывный орган управления) -->
-    <div class="p-5 bg-white border-t-2 border-slate-100 flex flex-col md:flex-row items-center justify-between gap-4">
-      
-      <div class="flex flex-col gap-1 text-center md:text-left">
-        <span class="text-xs font-bold text-slate-700 uppercase tracking-wider">Джойстик Тональности</span>
-        <p class="text-[11px] font-medium text-slate-400 max-w-xs">Перемещайте точку по осям для моментальной подстройки стиля ответа.</p>
-      </div>
-
-      <!-- 2D Directional Grid Controller -->
-      <div class="relative w-48 h-32 bg-slate-50 border-2 border-slate-200 rounded-2xl radial-grid p-2 flex items-center justify-center shrink-0">
-        <!-- Axis Labels -->
-        <span class="absolute top-1 text-[9px] font-bold text-slate-500 uppercase">Короче</span>
-        <span class="absolute bottom-1 text-[9px] font-bold text-slate-500 uppercase">Подробно</span>
-        <span class="absolute left-1 text-[9px] font-bold text-slate-500 uppercase">Строго</span>
-        <span class="absolute right-1 text-[9px] font-bold text-slate-500 uppercase">Мягко</span>
-
-        <!-- Quick Quadrant Buttons -->
-        <div class="grid grid-cols-2 gap-2 w-full h-full pt-3 pb-3 px-4">
-          <button onclick="applyDial('Максимально строго и коротко')" class="hover:bg-indigo-100/60 rounded-lg text-[10px] font-bold text-slate-600 border border-slate-200/60 transition">Деловой / Краткий</button>
-          <button onclick="applyDial('Очень мягко, вежливо и коротко')" class="hover:bg-indigo-100/60 rounded-lg text-[10px] font-bold text-slate-600 border border-slate-200/60 transition">Мягкий / Краткий</button>
-          <button onclick="applyDial('Официальное развернутое письмо')" class="hover:bg-indigo-100/60 rounded-lg text-[10px] font-bold text-slate-600 border border-slate-200/60 transition">Строгий / Развернутый</button>
-          <button onclick="applyDial('Дружелюбно, тепло и развернуто')" class="hover:bg-indigo-100/60 rounded-lg text-[10px] font-bold text-slate-600 border border-slate-200/60 transition">Теплый / Развернутый</button>
-        </div>
-      </div>
-
     </div>
 
   </div>
@@ -107,6 +115,8 @@
 
     const WORKER_URL = "https://aura-communicator-api.russianflow.workers.dev/";
     let currentLang = 'Deutsch';
+    let currentScenario = 'email';
+    let debounceTimer;
 
     function setLang(lang) {
       currentLang = lang;
@@ -114,15 +124,45 @@
         btn.className = 'lang-btn text-xs font-bold px-2.5 py-1 rounded-lg text-slate-600 hover:bg-slate-100 transition-all';
       });
       document.getElementById(`lang-${lang}`).className = 'lang-btn text-xs font-bold px-2.5 py-1 rounded-lg bg-indigo-600 text-white transition-all';
+      triggerGeneration();
     }
 
-    async function generateBase() {
-      applyDial('');
+    function setScenario(scen) {
+      currentScenario = scen;
+      document.querySelectorAll('.scen-btn').forEach(btn => {
+        btn.className = 'scen-btn text-xs font-bold px-3 py-1.5 rounded-xl bg-slate-100 text-slate-600 transition';
+      });
+      document.getElementById(`scen-${scen}`).className = 'scen-btn text-xs font-bold px-3 py-1.5 rounded-xl bg-slate-800 text-white transition';
+      triggerGeneration();
     }
 
-    async function applyDial(styleInstruction) {
+    function updateSliders() {
+      const tone = document.getElementById('toneSlider').value;
+      const length = document.getElementById('lengthSlider').value;
+
+      document.getElementById('toneVal').innerText = tone < 35 ? 'Строго' : tone > 65 ? 'Мягко' : 'Нейтрально';
+      document.getElementById('lengthVal').innerText = length < 35 ? 'Коротко' : length > 65 ? 'Подробно' : 'Базовый';
+
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => triggerGeneration(), 400);
+    }
+
+    function applyModifier(mod) {
+      triggerGeneration(mod);
+    }
+
+    async function triggerGeneration(extraMod = '') {
       const text = document.getElementById('userInput').value.trim();
       if (!text) return;
+
+      const tone = document.getElementById('toneSlider').value;
+      const length = document.getElementById('lengthSlider').value;
+
+      let stylePrompt = `Сценарий: ${currentScenario}. `;
+      stylePrompt += tone < 35 ? 'Стиль: строго официальный. ' : tone > 65 ? 'Стиль: максимально мягкий, дружелюбный и вежливый. ' : 'Стиль: нейтральный. ';
+      stylePrompt += length < 35 ? 'Объём: 1-2 кратких предложения. ' : length > 65 ? 'Объём: развернуто, с подробными формулировками. ' : 'Объём: сбалансированный. ';
+      
+      if (extraMod) stylePrompt += ` Акцент: ${extraMod}.`;
 
       const loader = document.getElementById('loader');
       const outputContent = document.getElementById('outputContent');
@@ -136,10 +176,10 @@
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            type: 'whatsapp',
+            type: currentScenario,
             targetLang: currentLang,
             text: text,
-            modifier: styleInstruction
+            modifier: stylePrompt
           })
         });
 
