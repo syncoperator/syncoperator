@@ -1377,6 +1377,7 @@ body.dark .f input:focus,body.dark .vf input:focus,body.dark .eb-f input:focus{b
 .opsel button{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:11px 12px;border:1px solid var(--line2);
   border-radius:12px;background:var(--card);cursor:pointer;text-align:left;box-shadow:var(--sh-1);}
 .opsel button.on{background:var(--ink);border-color:var(--ink);}
+.opsel button.dim{opacity:.42;}
 .opsel button.on b,.opsel button.on span{color:#fff;}
 .opsel b{font-family:var(--sans);font-size:13.5px;font-weight:700;color:var(--ink);}
 .opsel span{font-family:var(--mono);font-size:9.5px;color:var(--ink3);}
@@ -5140,18 +5141,132 @@ let crop={x:.08,y:.18,w:.84,h:.5};
 // ── Geometrie lesen → Bearbeitung zuordnen ──
 let geo=[], geoSel=new Set(), aiPhase='crop';
 
-const BEARB=[
- ['schrupp_a','Schruppen','aussen · längs'],
- ['schlicht_a','Schlichten','aussen · Kontur'],
- ['plan','Plandrehen','Stirn'],
- ['bohrst','Ausdrehen','innen'],
- ['bohr_ax','Bohren axial','Zentrum'],
- ['bohr_rad','Bohren radial','M91 · C'],
- ['stech','Nut stechen','radial'],
- ['gewinde','Gewinde','G76'],
- ['fraes_rad','Fräsen radial','M91'],
- ['abstech','Abstechen','trennen'],
-];
+// ── Regeln: was gehört zusammen ──
+const OP_REGEL={
+  schrupp_a:{folge:['schlicht_a'],text:'Schruppen braucht Schlichten'},
+  bohrst:   {vor:['bohr_ax'],     text:'Innen ausdrehen braucht vorher Bohren'},
+  gewinde:  {vor:['stech'],       text:'Gewinde: Freistich sinnvoll?',weich:true},
+  fraes_rad:{vor:[],              text:''},
+};
+const OP_INFO={
+  schrupp_a:{nm:'Schruppen',s:'aussen · längs',lage:'aussen',braucht:'Roh-Ø + Ziel-Ø + Z'},
+  schlicht_a:{nm:'Schlichten',s:'aussen · Kontur',lage:'aussen',braucht:'alle Kontur-Ø + Z'},
+  plan:{nm:'Plandrehen',s:'Stirn',lage:'aussen',braucht:'Roh-Ø'},
+  bohr_ax:{nm:'Bohren axial',s:'Zentrum',lage:'innen',braucht:'Bohr-Ø + Tiefe Z'},
+  bohrst:{nm:'Ausdrehen',s:'innen · Kontur',lage:'innen',braucht:'Bohrung-Ø + Ziel-Ø + Z'},
+  bohr_rad:{nm:'Bohren radial',s:'M91 · C-Achse',lage:'aussen',braucht:'Ø + Z + C'},
+  stech:{nm:'Nut stechen',s:'radial',lage:'aussen',braucht:'Z + Aussen-Ø + Grund-Ø'},
+  gewinde:{nm:'Gewinde',s:'G76',lage:'both',braucht:'Kern-Ø + Z + Steigung'},
+  fraes_rad:{nm:'Fräsen radial',s:'M91',lage:'aussen',braucht:'Z + Ø + SW'},
+  abstech:{nm:'Abstechen',s:'trennen',lage:'aussen',braucht:'Z + Roh-Ø'},
+};
+const BEARB=Object.keys(OP_INFO).map(k=>[k,OP_INFO[k].nm,OP_INFO[k].s]);
+
+function geoOp(k){
+  if(!geoSel.size)return;
+  const idx=[...geoSel];
+  idx.forEach(i=>{geo[i].op=k;});
+  geoSel.clear();hap(14);
+  // Folge-/Vorstufen anbieten
+  const r=OP_REGEL[k];
+  if(r){
+    const fehlt=[];
+    (r.folge||[]).forEach(f=>{if(!geo.some(g=>g.op===f))fehlt.push({k:f,art:'folge'});});
+    (r.vor||[]).forEach(f=>{if(!geo.some(g=>g.op===f))fehlt.push({k:f,art:'vor'});});
+    if(fehlt.length&&!r.weich){
+      const f=fehlt[0];
+      uiConfirm(r.text+' — '+OP_INFO[f.k].nm+' mit denselben Massen anlegen?',()=>{
+        idx.forEach(i=>{
+          const c=JSON.parse(JSON.stringify(geo[i]));
+          c.op=f.k;c._auto=true;geo.push(c);
+        });
+        hap(12);aiRender();
+      });
+      _confirmCancel=()=>aiRender();
+      return;
+    }
+  }
+  aiRender();
+}
+// Reihenfolge: was zuerst gefahren wird
+const OP_ORDER=['plan','bohr_ax','schrupp_a','bohrst','schlicht_a','stech','gewinde','bohr_rad','fraes_rad','abstech'];
+
+function geoBuild(){
+  const mit=geo.filter(g=>g.op);
+  if(!mit.length){toast('Erst Bearbeitung zuordnen');return;}
+  const k=(aiRes&&aiRes.kopf)||{};
+  openSmartNew();
+  if(k.nummer)sp.kopf.num=String(k.nummer).toUpperCase();
+  if(k.material)sp.kopf.mat=k.material;
+  const grp={};
+  mit.forEach(g=>{(grp[g.op]=grp[g.op]||[]).push(g);});
+  const num=a=>a.filter(n=>n!=null&&!isNaN(n));
+  const rohD=(()=>{const s=(k.stange!=null?+k.stange:null);if(s)return s;
+    const xs=num(mit.map(g=>g.x));return xs.length?Math.max(...xs)+4:50;})();
+
+  OP_ORDER.forEach(key=>{
+    const list=grp[key];if(!list)return;
+    const ty=spType(key);if(!ty)return;
+    const mem=(brain.spT||{})[key]||{};
+    const v={};ty.p.forEach(([kk,,dd])=>v[kk]=dd);
+    const xs=num(list.map(g=>g.x)).sort((a,b)=>a-b);
+    const zs=num(list.map(g=>g.z)).sort((a,b)=>a-b);
+    const maxX=xs.length?xs[xs.length-1]:null, minX=xs.length?xs[0]:null;
+    const minZ=zs.length?zs[0]:null, maxZ=zs.length?zs[zs.length-1]:null;
+    const pts=list.filter(g=>g.x!=null&&g.z!=null).sort((a,b)=>b.z-a.z);
+
+    if(key==='plan'){ if(v.x0!==undefined)v.x0=rohD; }
+    if(key==='schrupp_a'){
+      if(v.x0!==undefined)v.x0=rohD;
+      if(v.x1!==undefined&&maxX!=null)v.x1=maxX;
+      if(v.z1!==undefined&&minZ!=null)v.z1=minZ;
+    }
+    if(key==='schlicht_a'){
+      if(v.x!==undefined&&maxX!=null)v.x=maxX;
+      if(v.z1!==undefined&&minZ!=null)v.z1=minZ;
+      if(pts.length>1)v._kontur=pts.map(p=>'G1X'+p.x+'Z'+p.z);
+    }
+    if(key==='bohr_ax'){
+      if(v.z!==undefined&&minZ!=null)v.z=minZ;
+      if(v.d!==undefined&&minX!=null)v.d=minX;
+    }
+    if(key==='bohrst'){
+      if(v.xb!==undefined&&minX!=null)v.xb=minX;
+      if(v.x!==undefined&&maxX!=null)v.x=maxX;
+      if(v.z1!==undefined&&minZ!=null)v.z1=minZ;
+      if(pts.length>1)v._kontur=pts.map(p=>'G1X'+p.x+'Z'+p.z);
+    }
+    if(key==='stech'){
+      if(v.z1!==undefined&&maxZ!=null)v.z1=maxZ;
+      if(v.xa!==undefined&&maxX!=null)v.xa=maxX;
+      if(v.xg!==undefined&&minX!=null)v.xg=minX;
+    }
+    if(key==='gewinde'){
+      if(v.x!==undefined&&minX!=null)v.x=minX;
+      if(v.z!==undefined&&minZ!=null)v.z=minZ;
+      const g=list.find(x=>/M\s?\d/i.test(x.wert||''));
+      if(g&&v.f!==undefined){const m=(g.wert||'').match(/[xX×]\s?([\d.]+)/);if(m)v.f=m[1];}
+    }
+    if(key==='bohr_rad'){
+      if(v.z!==undefined&&minZ!=null)v.z=minZ;
+      if(v.x0!==undefined)v.x0=rohD;
+      if(v.x1!==undefined&&minX!=null)v.x1=minX;
+    }
+    if(key==='fraes_rad'){
+      if(v.z!==undefined&&minZ!=null)v.z=minZ;
+      if(v.x!==undefined&&maxX!=null)v.x=maxX;
+    }
+    if(key==='abstech'){
+      if(v.z!==undefined&&minZ!=null)v.z=minZ;
+      if(v.xa!==undefined)v.xa=rohD;
+    }
+    sp.ops.push({type:key,t:mem.t||ty.t,s:mem.s||ty.s,
+      name:(mem.name||ty.nm).toUpperCase(),v});
+  });
+  sp.step=1;spRender();spSaveDraft();
+  close_('m-aidraw');open_('m-smart');beepOk();
+  toast(sp.ops.length+' Operation(en) · Werte prüfen!');
+}
 
 function aiRender(){
   const b=document.getElementById('ai-body');
@@ -5203,7 +5318,13 @@ function aiRender(){
     ${nSel?`
     <div style="font-family:var(--mono);font-size:10px;letter-spacing:1.5px;color:var(--ink3);margin:14px 0 8px">
       BEARBEITUNG FÜR ${nSel} MASS${nSel>1?'E':''}</div>
-    <div class="opsel">${BEARB.map(([k,n,s])=>`<button onclick="geoOp('${k}')"><b>${n}</b><span>${s}</span></button>`).join('')}</div>`
+    <div class="opsel">${BEARB.map(([k,n,s])=>{
+        const inf=OP_INFO[k]||{};
+        const lagen=[...geoSel].map(i=>geo[i].lage);
+        const passt=inf.lage==='both'||lagen.every(l=>l===inf.lage);
+        return `<button class="${passt?'':'dim'}" onclick="geoOp('${k}')" title="${esc(inf.braucht||'')}">
+          <b>${n}</b><span>${s}</span></button>`;}).join('')}</div>
+    <div class="crop-hint" style="margin:6px 0 0;text-align:left">Passend zur Auswahl hervorgehoben · Folgeschritte werden vorgeschlagen</div>`
     :'<div class="crop-hint" style="margin-top:14px">Masse antippen und Bearbeitung wählen</div>'}
     <div style="display:flex;gap:8px;margin-top:10px">
       <button class="sbtn sec" style="flex:1;font-size:13px" onclick="aiPhase='crop';aiRender()">Weiterer Bereich</button>
@@ -5213,11 +5334,7 @@ function aiRender(){
 function geoTog(i){if(geoSel.has(i))geoSel.delete(i);else geoSel.add(i);hap(8);aiRender();}
 function geoAll(l){geoSel.clear();geo.forEach((g,i)=>{if(g.lage===l)geoSel.add(i);});hap(10);aiRender();}
 function geoLage(i){const g=geo[i];g.lage=g.lage==='innen'?'aussen':'innen';hap(10);aiRender();}
-function geoOp(k){
-  if(!geoSel.size)return;
-  geoSel.forEach(i=>{geo[i].op=k;});
-  geoSel.clear();hap(14);aiRender();
-}
+
 async function aiRun(btn){
   if(!aiImg)return;
   btnBusy(btn,true);aiStep(0);
@@ -5259,52 +5376,6 @@ Regeln:
   }finally{btnBusy(btn,false);}
 }
 // ── Operationen im Assistenten bauen ──
-function geoBuild(){
-  const mit=geo.filter(g=>g.op);
-  if(!mit.length){toast('Erst Bearbeitung zuordnen');return;}
-  const stil=brain.stil||(typeof stilLernen==='function'?stilLernen():{});
-  const k=(aiRes&&aiRes.kopf)||{};
-  openSmartNew();
-  if(k.nummer)sp.kopf.num=String(k.nummer).toUpperCase();
-  if(k.material)sp.kopf.mat=k.material;
-  // Gruppen nach Bearbeitung
-  const grp={};
-  mit.forEach(g=>{(grp[g.op]=grp[g.op]||[]).push(g);});
-  const ord=BEARB.map(x=>x[0]);
-  ord.forEach(key=>{
-    const list=grp[key];if(!list)return;
-    const ty=spType(key);if(!ty)return;
-    const mem=(brain.spT||{})[key]||{};
-    const v={};ty.p.forEach(([kk,,dd])=>v[kk]=dd);
-    // Werte aus der Zeichnung setzen
-    const xs=list.map(g=>g.x).filter(n=>n!=null).sort((a,b)=>a-b);
-    const zs=list.map(g=>g.z).filter(n=>n!=null).sort((a,b)=>a-b);
-    const maxX=xs.length?xs[xs.length-1]:null, minX=xs.length?xs[0]:null;
-    const minZ=zs.length?zs[0]:null;
-    if(key==='schrupp_a'||key==='schlicht_a'){
-      if(maxX!=null)v.x=maxX; if(v.x0!==undefined&&maxX!=null)v.x0=Math.round((maxX+4)*10)/10;
-      if(v.x1!==undefined&&minX!=null)v.x1=minX;
-      if(minZ!=null&&v.z1!==undefined)v.z1=minZ;
-    }
-    if(key==='bohrst'){if(minX!=null)v.xb=minX;if(maxX!=null)v.x=maxX;if(minZ!=null)v.z1=minZ;}
-    if(key==='bohr_ax'||key==='bohr_rad'){if(minZ!=null&&v.z!==undefined)v.z=minZ;if(maxX!=null&&v.x0!==undefined)v.x0=maxX;}
-    if(key==='stech'){if(zs.length&&v.z1!==undefined)v.z1=zs[zs.length-1];
-      if(maxX!=null&&v.xa!==undefined)v.xa=maxX; if(minX!=null&&v.xg!==undefined)v.xg=minX;}
-    if(key==='gewinde'){if(minX!=null&&v.x!==undefined)v.x=minX;if(minZ!=null&&v.z!==undefined)v.z=minZ;}
-    if(key==='abstech'){if(minZ!=null&&v.z!==undefined)v.z=minZ;if(maxX!=null&&v.xa!==undefined)v.xa=maxX;}
-    if(key==='plan'&&maxX!=null&&v.x0!==undefined)v.x0=maxX;
-    // Kontur für Schlichten aus den Massen
-    if(key==='schlicht_a'){
-      const pts=list.filter(g=>g.x!=null&&g.z!=null).sort((a,b)=>b.z-a.z);
-      if(pts.length>1)v._kontur=pts.map(pt=>'G1X'+pt.x+'Z'+pt.z);
-    }
-    sp.ops.push({type:key,t:mem.t||ty.t,s:mem.s||ty.s,
-      name:(mem.name||ty.nm).toUpperCase(),v});
-  });
-  sp.step=1;spRender();spSaveDraft();
-  close_('m-aidraw');open_('m-smart');beepOk();
-  toast(sp.ops.length+' Operation(en) · Werte prüfen!');
-}
 
 function cropInit(){
   const wrap=document.getElementById('crop-wrap'),box=document.getElementById('crop-box');
