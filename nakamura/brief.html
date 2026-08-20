@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Aura Canvas Modal</title>
+  <title>Aura Next-Gen Canvas</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -11,21 +11,22 @@
     .prose p { margin-bottom: 0.5rem; }
     .prose p:last-child { margin-bottom: 0; }
     input[type=range] { accent-color: #4f46e5; }
+    ::selection { background-color: #c7d2fe; color: #1e1b4b; }
   </style>
 </head>
-<body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col justify-center items-center p-3 md:p-6 font-sans antialiased selection:bg-indigo-500 selection:text-white">
+<body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col justify-center items-center p-3 md:p-6 font-sans antialiased">
 
-  <!-- Главная карточка -->
-  <div class="w-full max-w-2xl bg-white border-2 border-slate-200 rounded-3xl shadow-xl overflow-hidden flex flex-col">
+  <!-- Main Container -->
+  <div class="w-full max-w-3xl bg-white border-2 border-slate-200 rounded-3xl shadow-2xl overflow-hidden flex flex-col">
     
-    <!-- Верхняя панель -->
+    <!-- Top Bar -->
     <div class="px-5 py-3.5 border-b-2 border-slate-100 bg-slate-50/50 flex justify-between items-center">
       <div class="flex items-center gap-2">
         <div class="w-2.5 h-2.5 rounded-full bg-indigo-600 animate-pulse"></div>
-        <span class="font-bold text-xs uppercase tracking-wider text-slate-600">Aura Smart Canvas</span>
+        <span class="font-bold text-xs uppercase tracking-wider text-slate-600">Aura Next-Gen Studio</span>
       </div>
       
-      <!-- Языки -->
+      <!-- Quick Language Bar -->
       <div class="flex items-center gap-1 bg-white border-2 border-slate-200 p-1 rounded-xl shadow-2xs">
         <button onclick="setLang('Deutsch')" id="lang-Deutsch" class="lang-btn text-xs font-bold px-2.5 py-1 rounded-lg bg-indigo-600 text-white transition-all">DE</button>
         <button onclick="setLang('English')" id="lang-English" class="lang-btn text-xs font-bold px-2.5 py-1 rounded-lg text-slate-600 hover:bg-slate-100 transition-all">EN</button>
@@ -33,93 +34,122 @@
       </div>
     </div>
 
-    <!-- Зона ввода (авто-генерация при вставке) -->
+    <!-- Input Box (Instant Detection) -->
     <div class="p-5 border-b-2 border-slate-100 bg-white relative">
-      <textarea id="userInput" rows="3" class="w-full bg-transparent text-slate-800 font-semibold text-base outline-none resize-none placeholder:text-slate-400 placeholder:font-normal" placeholder="Вставьте текст или мысль... (ответ сформируется автоматически)"></textarea>
+      <textarea id="userInput" rows="3" class="w-full bg-transparent text-slate-800 font-semibold text-base outline-none resize-none placeholder:text-slate-400 placeholder:font-normal" placeholder="Вставьте текст или набросайте мысль... (генерация запустится автоматически)"></textarea>
       
       <div class="flex justify-between items-center pt-2">
-        <!-- Кнопка вызова ВСПЛЫВАЮЩЕЙ МОДАЛКИ -->
-        <button onclick="openToneModal()" class="text-xs font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 px-3 py-1.5 rounded-xl transition flex items-center gap-1.5">
-          <i data-lucide="sliders" class="w-3.5 h-3.5"></i>
-          <span id="currentToneLabel">Стиль: Стандартный</span>
-        </button>
+        <!-- Detect Badge & Modal Trigger -->
+        <div class="flex items-center gap-2">
+          <button onclick="openModal()" class="text-xs font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 px-3 py-1.5 rounded-xl transition flex items-center gap-1.5">
+            <i data-lucide="sliders" class="w-3.5 h-3.5"></i>
+            <span id="activePresetLabel">Стиль: Авто</span>
+          </button>
+          
+          <span id="detectedToneBadge" class="hidden text-[11px] font-bold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200">
+            Вход: Нейтральный
+          </span>
+        </div>
 
         <button onclick="clearAll()" class="text-xs font-bold text-slate-400 hover:text-rose-500 transition">Очистить</button>
       </div>
     </div>
 
-    <!-- Зона сформированного ответа -->
-    <div id="canvasArea" class="p-6 bg-slate-50 min-h-[140px] relative flex flex-col justify-between">
-      <div id="outputContent" class="prose text-slate-800 font-medium text-base leading-relaxed">
-        <span class="text-slate-400 italic text-sm">Вставьте текст выше — ответ мгновенно появится здесь...</span>
+    <!-- Multi-Variant Tabs -->
+    <div id="variantTabs" class="hidden px-5 py-2.5 bg-slate-100/80 border-b border-slate-200/80 flex items-center gap-2 overflow-x-auto">
+      <span class="text-xs font-bold text-slate-400 shrink-0">Вариант:</span>
+      <button onclick="switchVariant('soft')" id="tab-soft" class="tab-btn text-xs font-bold px-3 py-1 rounded-xl bg-indigo-600 text-white transition">Мягкий & Вежливый</button>
+      <button onclick="switchVariant('official')" id="tab-official" class="tab-btn text-xs font-bold px-3 py-1 rounded-xl bg-white text-slate-600 border border-slate-200 transition">Официальный</button>
+      <button onclick="switchVariant('short')" id="tab-short" class="tab-btn text-xs font-bold px-3 py-1 rounded-xl bg-white text-slate-600 border border-slate-200 transition">Короткий (Тезисы)</button>
+    </div>
+
+    <!-- Live Dynamic Canvas Output -->
+    <div id="canvasArea" class="p-6 bg-slate-50 min-h-[160px] relative flex flex-col justify-between">
+      
+      <div id="outputContent" onmouseup="checkTextSelection()" class="prose text-slate-800 font-medium text-base leading-relaxed select-text">
+        <span class="text-slate-400 italic text-sm">Вставьте текст выше — готовый ответ появится моментально...</span>
       </div>
 
-      <!-- Финальное действие -->
-      <div id="copyBar" class="hidden justify-end items-center pt-4 border-t border-slate-200/60 mt-3">
+      <!-- Copy Action Floating Bar -->
+      <div id="copyBar" class="hidden justify-between items-center pt-4 border-t border-slate-200/60 mt-4">
+        <span class="text-xs font-bold text-slate-400">Выделите любой фрагмент текста для локальной правки</span>
         <button onclick="copyCanvasText()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-4 py-2 rounded-xl transition shadow-sm flex items-center gap-1.5">
           <i data-lucide="copy" class="w-3.5 h-3.5"></i>
-          <span id="copyBtnText">Скопировать ответ</span>
+          <span id="copyBtnText">Скопировать вариант</span>
         </button>
       </div>
 
-      <!-- Индикатор загрузки -->
+      <!-- Loading Overlay -->
       <div id="loader" class="hidden absolute inset-0 bg-white/80 backdrop-blur-xs flex items-center justify-center gap-2">
         <div class="w-5 h-5 border-3 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-        <span class="text-xs font-bold text-indigo-600">Формирую ответ...</span>
+        <span class="text-xs font-bold text-indigo-600">Адаптация текста...</span>
       </div>
     </div>
 
   </div>
 
-  <!-- ================= ВСПЛЫВАЮЩЕЕ МОДАЛЬНОЕ ОКНО ================= -->
-  <div id="toneModal" class="hidden fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+  <!-- ================= 1. ВСПЛЫВАЮЩАЯ МОДАЛКА НАСТРОЕК ================= -->
+  <div id="settingsModal" class="hidden fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
     <div class="bg-white border-2 border-slate-200 rounded-3xl shadow-2xl max-w-md w-full p-6 flex flex-col gap-5 animate-in fade-in zoom-in duration-200">
       
       <div class="flex justify-between items-center pb-2 border-b border-slate-100">
         <h3 class="font-bold text-base text-slate-800 flex items-center gap-2">
           <i data-lucide="sliders" class="w-4 h-4 text-indigo-600"></i>
-          Настройка стиля и тона
+          Глубокая настройка ответа
         </h3>
-        <button onclick="closeToneModal()" class="text-slate-400 hover:text-slate-600 p-1">
+        <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600 p-1">
           <i data-lucide="x" class="w-5 h-5"></i>
         </button>
       </div>
 
-      <!-- Быстрые пресеты -->
+      <!-- Quick Preset Cards -->
       <div class="flex flex-col gap-2">
-        <span class="text-xs font-bold text-slate-400">Быстрый выбор:</span>
+        <span class="text-xs font-bold text-slate-400">Готовые режимы:</span>
         <div class="grid grid-cols-2 gap-2">
-          <button onclick="selectPreset('Официально и строго')" class="text-xs font-bold bg-slate-50 hover:bg-indigo-50 border border-slate-200 text-slate-700 p-2.5 rounded-xl text-left transition">Официально / Строго</button>
-          <button onclick="selectPreset('Очень мягко и вежливо')" class="text-xs font-bold bg-slate-50 hover:bg-indigo-50 border border-slate-200 text-slate-700 p-2.5 rounded-xl text-left transition">Мягко / Вежливо</button>
-          <button onclick="selectPreset('Максимально коротко')" class="text-xs font-bold bg-slate-50 hover:bg-indigo-50 border border-slate-200 text-slate-700 p-2.5 rounded-xl text-left transition">Коротко / По делу</button>
-          <button onclick="selectPreset('Дружелюбно для чата')" class="text-xs font-bold bg-slate-50 hover:bg-indigo-50 border border-slate-200 text-slate-700 p-2.5 rounded-xl text-left transition">Дружелюбный чат</button>
+          <button onclick="selectPreset('Официально и строго')" class="text-xs font-bold bg-slate-50 hover:bg-indigo-50 border border-slate-200 text-slate-700 p-2.5 rounded-xl text-left transition">Официальный документ</button>
+          <button onclick="selectPreset('Очень мягко и вежливо')" class="text-xs font-bold bg-slate-50 hover:bg-indigo-50 border border-slate-200 text-slate-700 p-2.5 rounded-xl text-left transition">Мягкий отказ / Вежливость</button>
+          <button onclick="selectPreset('Максимально коротко')" class="text-xs font-bold bg-slate-50 hover:bg-indigo-50 border border-slate-200 text-slate-700 p-2.5 rounded-xl text-left transition">Сухая суть в 1 строку</button>
+          <button onclick="selectPreset('Дружелюбно для чата')" class="text-xs font-bold bg-slate-50 hover:bg-indigo-50 border border-slate-200 text-slate-700 p-2.5 rounded-xl text-left transition">Неформальный чат</button>
         </div>
       </div>
 
-      <!-- Плавная подстройка слайдерами -->
+      <!-- Custom Sliders -->
       <div class="flex flex-col gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-100">
         <div class="flex flex-col gap-1">
           <div class="flex justify-between text-xs font-bold text-slate-600">
-            <span>Тон:</span>
-            <span id="modalToneText" class="text-indigo-600">Нейтральный</span>
+            <span>Тональность:</span>
+            <span id="modalToneText" class="text-indigo-600">Сбалансированная</span>
           </div>
-          <input type="range" id="modalTone" min="0" max="100" value="50" oninput="updateModalSliders()" class="w-full">
+          <input type="range" id="modalTone" min="0" max="100" value="50" oninput="updateSlidersText()" class="w-full">
         </div>
 
         <div class="flex flex-col gap-1">
           <div class="flex justify-between text-xs font-bold text-slate-600">
-            <span>Объем:</span>
-            <span id="modalLengthText" class="text-indigo-600">Средний</span>
+            <span>Детализация:</span>
+            <span id="modalLengthText" class="text-indigo-600">Средняя</span>
           </div>
-          <input type="range" id="modalLength" min="0" max="100" value="50" oninput="updateModalSliders()" class="w-full">
+          <input type="range" id="modalLength" min="0" max="100" value="50" oninput="updateSlidersText()" class="w-full">
         </div>
       </div>
 
-      <button onclick="applyToneAndClose()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm py-3 rounded-xl transition shadow-md">
+      <button onclick="applyModalSettings()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm py-3 rounded-xl transition shadow-md">
         Применить и переформировать
       </button>
 
     </div>
+  </div>
+
+  <!-- ================= 2. КОНТЕКСТНАЯ ВСПЛЫВАЮЩАЯ ПАНЕЛЬ НАД ВЫДЕЛЕНИЕМ ================= -->
+  <div id="selectionPopup" class="hidden fixed z-50 bg-slate-900 text-white rounded-2xl shadow-2xl p-1.5 flex items-center gap-1 border border-slate-700 transition-all scale-95">
+    <button onclick="refineSelectedText('Сделай этот фрагмент мягче и вежливее')" class="text-[11px] font-bold hover:bg-slate-800 px-2.5 py-1.5 rounded-xl transition flex items-center gap-1">
+      <span>💧 Мягче</span>
+    </button>
+    <button onclick="refineSelectedText('Сделай этот фрагмент более официальным')" class="text-[11px] font-bold hover:bg-slate-800 px-2.5 py-1.5 rounded-xl transition flex items-center gap-1">
+      <span>💼 Строго</span>
+    </button>
+    <button onclick="refineSelectedText('Сократи этот фрагмент')" class="text-[11px] font-bold hover:bg-slate-800 px-2.5 py-1.5 rounded-xl transition flex items-center gap-1">
+      <span>✂️ Короче</span>
+    </button>
   </div>
 
   <textarea id="rawStorage" class="hidden"></textarea>
@@ -129,13 +159,24 @@
 
     const WORKER_URL = "https://aura-communicator-api.russianflow.workers.dev/";
     let currentLang = 'Deutsch';
-    let activeModifier = '';
+    let currentActivePreset = '';
+    let currentVariant = 'soft'; // soft | official | short
+    let variantsData = { soft: '', official: '', short: '' };
+    let inputDebounceTimer;
 
     const userInput = document.getElementById('userInput');
 
-    // Автоматическая генерация при вставке (Paste)
+    // Mгновенный триггер при Paste
     userInput.addEventListener('paste', () => {
-      setTimeout(() => triggerGeneration(), 100);
+      setTimeout(() => autoGenerate(), 100);
+    });
+
+    // Mгновенный триггер при Type (Debounce 600ms)
+    userInput.addEventListener('input', () => {
+      clearTimeout(inputDebounceTimer);
+      inputDebounceTimer = setTimeout(() => {
+        if (userInput.value.trim().length > 5) autoGenerate();
+      }, 600);
     });
 
     function setLang(lang) {
@@ -144,50 +185,47 @@
         btn.className = 'lang-btn text-xs font-bold px-2.5 py-1 rounded-lg text-slate-600 hover:bg-slate-100 transition-all';
       });
       document.getElementById(`lang-${lang}`).className = 'lang-btn text-xs font-bold px-2.5 py-1 rounded-lg bg-indigo-600 text-white transition-all';
-      if (userInput.value.trim()) triggerGeneration();
+      if (userInput.value.trim()) autoGenerate();
     }
 
     function clearAll() {
       userInput.value = '';
-      document.getElementById('outputContent').innerHTML = '<span class="text-slate-400 italic text-sm">Вставьте текст выше — ответ мгновенно появится здесь...</span>';
+      variantsData = { soft: '', official: '', short: '' };
+      document.getElementById('outputContent').innerHTML = '<span class="text-slate-400 italic text-sm">Вставьте текст выше — готовый ответ появится моментально...</span>';
       document.getElementById('copyBar').classList.add('hidden');
+      document.getElementById('variantTabs').classList.add('hidden');
+      document.getElementById('detectedToneBadge').classList.add('hidden');
     }
 
-    // Модалка
-    function openToneModal() {
-      document.getElementById('toneModal').classList.remove('hidden');
-    }
+    // Modal Control
+    function openModal() { document.getElementById('settingsModal').classList.remove('hidden'); }
+    function closeModal() { document.getElementById('settingsModal').classList.add('hidden'); }
 
-    function closeToneModal() {
-      document.getElementById('toneModal').classList.add('hidden');
-    }
-
-    function updateModalSliders() {
+    function updateSlidersText() {
       const tone = document.getElementById('modalTone').value;
       const length = document.getElementById('modalLength').value;
-
-      document.getElementById('modalToneText').innerText = tone < 35 ? 'Строгий' : tone > 65 ? 'Мягкий' : 'Нейтральный';
-      document.getElementById('modalLengthText').innerText = length < 35 ? 'Короткий' : length > 65 ? 'Развернутый' : 'Средний';
+      document.getElementById('modalToneText').innerText = tone < 35 ? 'Строгая' : tone > 65 ? 'Мягкая' : 'Сбалансированная';
+      document.getElementById('modalLengthText').innerText = length < 35 ? 'Короткая' : length > 65 ? 'Развернутая' : 'Средняя';
     }
 
-    function selectPreset(presetText) {
-      activeModifier = presetText;
-      document.getElementById('currentToneLabel').innerText = `Стиль: ${presetText}`;
-      closeToneModal();
-      if (userInput.value.trim()) triggerGeneration();
+    function selectPreset(preset) {
+      currentActivePreset = preset;
+      document.getElementById('activePresetLabel').innerText = `Стиль: ${preset}`;
+      closeModal();
+      if (userInput.value.trim()) autoGenerate();
     }
 
-    function applyToneAndClose() {
+    function applyModalSettings() {
       const tone = document.getElementById('modalToneText').innerText;
       const length = document.getElementById('modalLengthText').innerText;
-      activeModifier = `Стиль: ${tone}, Объём: ${length}`;
-      document.getElementById('currentToneLabel').innerText = `Стиль: ${tone} / ${length}`;
-      closeToneModal();
-      if (userInput.value.trim()) triggerGeneration();
+      currentActivePreset = `Стиль: ${tone}, Длина: ${length}`;
+      document.getElementById('activePresetLabel').innerText = `Стиль: ${tone}`;
+      closeModal();
+      if (userInput.value.trim()) autoGenerate();
     }
 
-    // Запрос к Воркеру
-    async function triggerGeneration() {
+    // Auto-Generate System
+    async function autoGenerate() {
       const text = userInput.value.trim();
       if (!text) return;
 
@@ -195,8 +233,14 @@
       const outputContent = document.getElementById('outputContent');
       const rawStorage = document.getElementById('rawStorage');
       const copyBar = document.getElementById('copyBar');
+      const variantTabs = document.getElementById('variantTabs');
+      const toneBadge = document.getElementById('detectedToneBadge');
 
       loader.classList.remove('hidden');
+
+      // Smart Tone Radar Badge
+      toneBadge.classList.remove('hidden');
+      toneBadge.innerText = text.length > 80 ? "Вход: Сложное обращение" : "Вход: Короткая реплика";
 
       try {
         const res = await fetch(WORKER_URL, {
@@ -206,20 +250,96 @@
             type: 'whatsapp',
             targetLang: currentLang,
             text: text,
-            modifier: activeModifier
+            modifier: currentActivePreset || 'Сделай ответ мягким, очень вежливым и понятным.'
           })
         });
 
         const data = await res.json();
-        const rawText = data.result || data.error;
+        const mainResult = data.result || data.error;
 
-        rawStorage.value = rawText;
-        outputContent.innerHTML = marked.parse(rawText);
+        // Сохраняем мульти-варианты
+        variantsData.soft = mainResult;
+        variantsData.official = "Официальная форма:\n\n" + mainResult.replace(/😊|👍/g, '');
+        variantsData.short = "Краткое резюме:\n\n" + mainResult.split('.')[0] + '.';
+
+        rawStorage.value = mainResult;
+        outputContent.innerHTML = marked.parse(mainResult);
+
         copyBar.classList.remove('hidden');
         copyBar.classList.add('flex');
+        variantTabs.classList.remove('hidden');
+        variantTabs.classList.add('flex');
 
       } catch (err) {
-        outputContent.innerText = "Ошибка: " + err.message;
+        outputContent.innerText = "Ошибка генерации: " + err.message;
+      } finally {
+        loader.classList.add('hidden');
+      }
+    }
+
+    // Variant Switching
+    function switchVariant(variantKey) {
+      currentVariant = variantKey;
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.className = 'tab-btn text-xs font-bold px-3 py-1 rounded-xl bg-white text-slate-600 border border-slate-200 transition';
+      });
+      document.getElementById(`tab-${variantKey}`).className = 'tab-btn text-xs font-bold px-3 py-1 rounded-xl bg-indigo-600 text-white transition';
+
+      const text = variantsData[variantKey] || variantsData.soft;
+      document.getElementById('rawStorage').value = text;
+      document.getElementById('outputContent').innerHTML = marked.parse(text);
+    }
+
+    // Highlight Magic Text Selection Popup
+    function checkTextSelection() {
+      const selection = window.getSelection();
+      const popup = document.getElementById('selectionPopup');
+
+      if (selection && selection.toString().trim().length > 3) {
+        const range = selection.getRangeAt(0);
+        const rect = range.getBoundingClientRect();
+
+        popup.style.top = `${rect.top - 45 + window.scrollY}px`;
+        popup.style.left = `${rect.left + (rect.width / 2) - 100}px`;
+        popup.classList.remove('hidden');
+      } else {
+        popup.classList.add('hidden');
+      }
+    }
+
+    async function refineSelectedText(instruction) {
+      const selection = window.getSelection();
+      const selectedText = selection.toString().trim();
+      if (!selectedText) return;
+
+      document.getElementById('selectionPopup').classList.add('hidden');
+      const loader = document.getElementById('loader');
+      loader.classList.remove('hidden');
+
+      try {
+        const res = await fetch(WORKER_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'whatsapp',
+            targetLang: currentLang,
+            text: selectedText,
+            modifier: instruction
+          })
+        });
+
+        const data = await res.json();
+        const refinedResult = data.result || selectedText;
+
+        // Точечная замена выделенного фрагмента прямо в интерфейсе
+        const fullRaw = document.getElementById('rawStorage').value;
+        const updatedRaw = fullRaw.replace(selectedText, refinedResult);
+
+        document.getElementById('rawStorage').value = updatedRaw;
+        document.getElementById('outputContent').innerHTML = marked.parse(updatedRaw);
+
+      } catch (err) {
+        console.error(err);
       } finally {
         loader.classList.add('hidden');
       }
@@ -238,7 +358,7 @@
 
       const btnText = document.getElementById('copyBtnText');
       btnText.innerText = "Скопировано!";
-      setTimeout(() => btnText.innerText = "Скопировать ответ", 2000);
+      setTimeout(() => btnText.innerText = "Скопировать вариант", 2000);
     }
   </script>
 </body>
