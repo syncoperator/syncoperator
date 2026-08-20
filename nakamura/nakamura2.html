@@ -2338,7 +2338,10 @@ body.on-home .sheet .seg-b.on{background:#F2F3F5!important;color:#15161A!importa
 <div class="overlay" id="m-aidraw" onclick="if(event.target===this)close_('m-aidraw')">
   <div class="sheet" style="max-width:560px">
     <div class="sheet-bar"></div>
-    <div class="sheet-title" style="margin-bottom:4px">Zeichnung lesen</div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+      <div class="sheet-title" style="margin:0;flex:1">Zeichnung lesen</div>
+      <button class="kz-sp" onclick="aiSetup()" title="KI-Dienst einrichten" style="flex:0 0 auto;padding:8px 11px"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9c.14.63.68 1.09 1.51 1H21a2 2 0 1 1 0 4h-.09c-.83 0-1.37.46-1.51 1z"/></svg></button>
+    </div>
     <div class="wiz-sub" style="margin-bottom:14px">Foto oder PDF — Masse werden erkannt</div>
     <div id="ai-body"></div>
   </div>
@@ -5097,13 +5100,41 @@ const AI_MODEL='claude-sonnet-4-6';
 let aiImg=null, aiRes=null;
 
 async function aiCall(messages,maxTok){
-  const r=await fetch("https://api.anthropic.com/v1/messages",{
-    method:"POST",headers:{"Content-Type":"application/json"},
+  const url=(localStorage.getItem('CT_AIURL')||'').trim();
+  if(!url)throw new Error('KEIN_ENDPOINT');
+  const tok=(localStorage.getItem('CT_AITOKEN')||'').trim();
+  const h={"Content-Type":"application/json"};
+  if(tok)h["X-App-Token"]=tok;
+  const r=await fetch(url,{
+    method:"POST",headers:h,
     body:JSON.stringify({model:AI_MODEL,max_tokens:maxTok||1600,messages})
   });
-  if(!r.ok)throw new Error('HTTP '+r.status);
+  if(!r.ok)throw new Error('HTTP '+r.status+' — Endpoint prüfen');
   const d=await r.json();
-  return (d.content||[]).map(x=>x.type==='text'?x.text:'').join('\n');
+  const c=d.content||d.message&&d.message.content||[];
+  return (Array.isArray(c)?c:[]).map(x=>x.type==='text'?x.text:'').join('\n');
+}
+function aiSetup(){
+  const cur=localStorage.getItem('CT_AIURL')||'';
+  uiPrompt('Worker-Adresse (https://...workers.dev):',cur,v=>{
+    localStorage.setItem('CT_AIURL',(v||'').trim());
+    const tk=localStorage.getItem('CT_AITOKEN')||'';
+    uiPrompt('Zugangs-Token (leer lassen, wenn keiner gesetzt):',tk,w=>{
+      localStorage.setItem('CT_AITOKEN',(w||'').trim());
+      toast('Gespeichert');aiRender();
+    });
+  });
+}
+function aiTest(btn){
+  withBusy(btn,async()=>{
+    try{
+      const r=await aiCall([{role:'user',content:[{type:'text',text:'Antworte nur mit: OK'}]}],32);
+      if(/ok/i.test(r)){beepOk();toast('Verbindung steht');}
+      else toast('Antwort: '+r.slice(0,40));
+    }catch(e){
+      toast(/KEIN_ENDPOINT/.test(e.message)?'Keine Adresse hinterlegt':'Fehler: '+e.message.slice(0,50));
+    }
+  });
 }
 function aiJSON(txt){
   const c=txt.replace(/```json|```/g,'').trim();
@@ -5554,7 +5585,14 @@ Regeln:
   }catch(e){
     aiStep(0);
     const el=document.getElementById('ai-steps');
-    if(el)el.innerHTML=`<div class="ai-warn"><b>Fehler:</b> ${esc(e.message||'unbekannt')}</div>`;
+    const kein=/KEIN_ENDPOINT|Load failed|Failed to fetch|NetworkError/i.test(e.message||'');
+    if(el)el.innerHTML=kein
+      ? `<div class="ai-warn"><b>Kein KI-Dienst hinterlegt.</b><br>
+         Das Lesen der Zeichnung braucht einen eigenen Server (Proxy), der den API-Schlüssel hält.
+         Ein Schlüssel darf nicht im Browser stehen — er wäre für jeden sichtbar.<br><br>
+         <button class="sbtn sec" style="width:100%;font-size:12px;margin-top:4px" onclick="aiSetup()">Adresse eintragen</button>
+         <button class="sbtn sec" style="width:100%;font-size:12px;margin-top:6px" onclick="aiTest(this)">Verbindung testen</button></div>`
+      : `<div class="ai-warn"><b>Fehler:</b> ${esc(e.message||'unbekannt')}</div>`;
   }finally{btnBusy(btn,false);}
 }
 // ── Operationen im Assistenten bauen ──
