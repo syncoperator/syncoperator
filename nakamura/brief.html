@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Aura Dynamic Canvas</title>
+  <title>Aura Canvas Modal</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -15,97 +15,111 @@
 </head>
 <body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col justify-center items-center p-3 md:p-6 font-sans antialiased selection:bg-indigo-500 selection:text-white">
 
-  <div class="w-full max-w-3xl bg-white border-2 border-slate-200 rounded-3xl shadow-xl overflow-hidden flex flex-col">
+  <!-- Главная карточка -->
+  <div class="w-full max-w-2xl bg-white border-2 border-slate-200 rounded-3xl shadow-xl overflow-hidden flex flex-col">
     
-    <!-- Top Bar: Quick Languages & Model -->
+    <!-- Верхняя панель -->
     <div class="px-5 py-3.5 border-b-2 border-slate-100 bg-slate-50/50 flex justify-between items-center">
       <div class="flex items-center gap-2">
         <div class="w-2.5 h-2.5 rounded-full bg-indigo-600 animate-pulse"></div>
-        <span class="font-bold text-xs uppercase tracking-wider text-slate-600">Aura Multi-Style Studio</span>
+        <span class="font-bold text-xs uppercase tracking-wider text-slate-600">Aura Smart Canvas</span>
       </div>
       
+      <!-- Языки -->
       <div class="flex items-center gap-1 bg-white border-2 border-slate-200 p-1 rounded-xl shadow-2xs">
         <button onclick="setLang('Deutsch')" id="lang-Deutsch" class="lang-btn text-xs font-bold px-2.5 py-1 rounded-lg bg-indigo-600 text-white transition-all">DE</button>
         <button onclick="setLang('English')" id="lang-English" class="lang-btn text-xs font-bold px-2.5 py-1 rounded-lg text-slate-600 hover:bg-slate-100 transition-all">EN</button>
         <button onclick="setLang('Russian')" id="lang-Russian" class="lang-btn text-xs font-bold px-2.5 py-1 rounded-lg text-slate-600 hover:bg-slate-100 transition-all">RU</button>
-        <button onclick="setLang('Spanish')" id="lang-Spanish" class="lang-btn text-xs font-bold px-2.5 py-1 rounded-lg text-slate-600 hover:bg-slate-100 transition-all">ES</button>
       </div>
     </div>
 
-    <!-- Context Scenario Switcher -->
-    <div class="px-5 py-3 bg-white border-b border-slate-100 flex items-center gap-2 overflow-x-auto whitespace-nowrap">
-      <span class="text-xs font-bold text-slate-400">Сценарий:</span>
-      <button onclick="setScenario('email')" id="scen-email" class="scen-btn text-xs font-bold px-3 py-1.5 rounded-xl bg-slate-800 text-white transition">E-mail</button>
-      <button onclick="setScenario('chat')" id="scen-chat" class="scen-btn text-xs font-bold px-3 py-1.5 rounded-xl bg-slate-100 text-slate-600 transition">Чат / Мессенджер</button>
-      <button onclick="setScenario('dispute')" id="scen-dispute" class="scen-btn text-xs font-bold px-3 py-1.5 rounded-xl bg-slate-100 text-slate-600 transition">Спор / Возражение</button>
-      <button onclick="setScenario('request')" id="scen-request" class="scen-btn text-xs font-bold px-3 py-1.5 rounded-xl bg-slate-100 text-slate-600 transition">Запрос / Просьба</button>
-    </div>
-
-    <!-- Input Text Area -->
-    <div class="p-5 border-b-2 border-slate-100 bg-white">
-      <textarea id="userInput" rows="2" class="w-full bg-transparent text-slate-800 font-semibold text-base outline-none resize-none placeholder:text-slate-400 placeholder:font-normal" placeholder="Введите исходную мысль или черновик..."></textarea>
-    </div>
-
-    <!-- Live Dual Sliders Controller -->
-    <div class="p-5 bg-slate-50 border-b-2 border-slate-100 grid grid-cols-1 md:grid-cols-2 gap-4">
+    <!-- Зона ввода (авто-генерация при вставке) -->
+    <div class="p-5 border-b-2 border-slate-100 bg-white relative">
+      <textarea id="userInput" rows="3" class="w-full bg-transparent text-slate-800 font-semibold text-base outline-none resize-none placeholder:text-slate-400 placeholder:font-normal" placeholder="Вставьте текст или мысль... (ответ сформируется автоматически)"></textarea>
       
-      <!-- Slider 1: Tone -->
-      <div class="flex flex-col gap-1.5">
-        <div class="flex justify-between items-center text-xs font-bold text-slate-600">
-          <span>Стиль</span>
-          <span id="toneVal" class="text-indigo-600">Нейтрально</span>
-        </div>
-        <input type="range" id="toneSlider" min="0" max="100" value="50" oninput="updateSliders()" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer">
-        <div class="flex justify-between text-[10px] font-bold text-slate-400">
-          <span>Официально</span>
-          <span>Мягко / Дружелюбно</span>
-        </div>
-      </div>
+      <div class="flex justify-between items-center pt-2">
+        <!-- Кнопка вызова ВСПЛЫВАЮЩЕЙ МОДАЛКИ -->
+        <button onclick="openToneModal()" class="text-xs font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 px-3 py-1.5 rounded-xl transition flex items-center gap-1.5">
+          <i data-lucide="sliders" class="w-3.5 h-3.5"></i>
+          <span id="currentToneLabel">Стиль: Стандартный</span>
+        </button>
 
-      <!-- Slider 2: Length -->
-      <div class="flex flex-col gap-1.5">
-        <div class="flex justify-between items-center text-xs font-bold text-slate-600">
-          <span>Объём</span>
-          <span id="lengthVal" class="text-indigo-600">Базовый</span>
-        </div>
-        <input type="range" id="lengthSlider" min="0" max="100" value="50" oninput="updateSliders()" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer">
-        <div class="flex justify-between text-[10px] font-bold text-slate-400">
-          <span>Коротко</span>
-          <span>Развернуто</span>
-        </div>
+        <button onclick="clearAll()" class="text-xs font-bold text-slate-400 hover:text-rose-500 transition">Очистить</button>
       </div>
-
     </div>
 
-    <!-- Quick Modifiers Chips -->
-    <div class="px-5 py-2.5 bg-white border-b border-slate-100 flex flex-wrap items-center gap-1.5">
-      <span class="text-xs font-bold text-slate-400 mr-1">Быстрый акцент:</span>
-      <button onclick="applyModifier('Сделай акцент на аргументах и фактах')" class="text-[11px] font-bold bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 text-slate-600 px-2.5 py-1 rounded-lg transition">+ Факты</button>
-      <button onclick="applyModifier('Убери лишние вежливости, сразу к делу')" class="text-[11px] font-bold bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 text-slate-600 px-2.5 py-1 rounded-lg transition">+ Без воды</button>
-      <button onclick="applyModifier('Сделай максимально эмпатичным')" class="text-[11px] font-bold bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 text-slate-600 px-2.5 py-1 rounded-lg transition">+ Эмпатия</button>
-    </div>
-
-    <!-- Dynamic Output Area -->
-    <div id="canvasArea" class="p-6 bg-slate-50/50 min-h-[140px] relative flex flex-col justify-between">
+    <!-- Зона сформированного ответа -->
+    <div id="canvasArea" class="p-6 bg-slate-50 min-h-[140px] relative flex flex-col justify-between">
       <div id="outputContent" class="prose text-slate-800 font-medium text-base leading-relaxed">
-        <span class="text-slate-400 italic text-sm">Сгенерированный вариант появится здесь...</span>
+        <span class="text-slate-400 italic text-sm">Вставьте текст выше — ответ мгновенно появится здесь...</span>
       </div>
 
-      <div id="copyBar" class="hidden justify-between items-center pt-4 border-t border-slate-200/60 mt-3">
-        <span class="text-xs font-bold text-slate-400">Готово к отправке</span>
+      <!-- Финальное действие -->
+      <div id="copyBar" class="hidden justify-end items-center pt-4 border-t border-slate-200/60 mt-3">
         <button onclick="copyCanvasText()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-4 py-2 rounded-xl transition shadow-sm flex items-center gap-1.5">
           <i data-lucide="copy" class="w-3.5 h-3.5"></i>
-          <span id="copyBtnText">Скопировать</span>
+          <span id="copyBtnText">Скопировать ответ</span>
         </button>
       </div>
 
-      <!-- Loading Indicator -->
+      <!-- Индикатор загрузки -->
       <div id="loader" class="hidden absolute inset-0 bg-white/80 backdrop-blur-xs flex items-center justify-center gap-2">
         <div class="w-5 h-5 border-3 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-        <span class="text-xs font-bold text-indigo-600">Генерация стиля...</span>
+        <span class="text-xs font-bold text-indigo-600">Формирую ответ...</span>
       </div>
     </div>
 
+  </div>
+
+  <!-- ================= ВСПЛЫВАЮЩЕЕ МОДАЛЬНОЕ ОКНО ================= -->
+  <div id="toneModal" class="hidden fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white border-2 border-slate-200 rounded-3xl shadow-2xl max-w-md w-full p-6 flex flex-col gap-5 animate-in fade-in zoom-in duration-200">
+      
+      <div class="flex justify-between items-center pb-2 border-b border-slate-100">
+        <h3 class="font-bold text-base text-slate-800 flex items-center gap-2">
+          <i data-lucide="sliders" class="w-4 h-4 text-indigo-600"></i>
+          Настройка стиля и тона
+        </h3>
+        <button onclick="closeToneModal()" class="text-slate-400 hover:text-slate-600 p-1">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Быстрые пресеты -->
+      <div class="flex flex-col gap-2">
+        <span class="text-xs font-bold text-slate-400">Быстрый выбор:</span>
+        <div class="grid grid-cols-2 gap-2">
+          <button onclick="selectPreset('Официально и строго')" class="text-xs font-bold bg-slate-50 hover:bg-indigo-50 border border-slate-200 text-slate-700 p-2.5 rounded-xl text-left transition">Официально / Строго</button>
+          <button onclick="selectPreset('Очень мягко и вежливо')" class="text-xs font-bold bg-slate-50 hover:bg-indigo-50 border border-slate-200 text-slate-700 p-2.5 rounded-xl text-left transition">Мягко / Вежливо</button>
+          <button onclick="selectPreset('Максимально коротко')" class="text-xs font-bold bg-slate-50 hover:bg-indigo-50 border border-slate-200 text-slate-700 p-2.5 rounded-xl text-left transition">Коротко / По делу</button>
+          <button onclick="selectPreset('Дружелюбно для чата')" class="text-xs font-bold bg-slate-50 hover:bg-indigo-50 border border-slate-200 text-slate-700 p-2.5 rounded-xl text-left transition">Дружелюбный чат</button>
+        </div>
+      </div>
+
+      <!-- Плавная подстройка слайдерами -->
+      <div class="flex flex-col gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-100">
+        <div class="flex flex-col gap-1">
+          <div class="flex justify-between text-xs font-bold text-slate-600">
+            <span>Тон:</span>
+            <span id="modalToneText" class="text-indigo-600">Нейтральный</span>
+          </div>
+          <input type="range" id="modalTone" min="0" max="100" value="50" oninput="updateModalSliders()" class="w-full">
+        </div>
+
+        <div class="flex flex-col gap-1">
+          <div class="flex justify-between text-xs font-bold text-slate-600">
+            <span>Объем:</span>
+            <span id="modalLengthText" class="text-indigo-600">Средний</span>
+          </div>
+          <input type="range" id="modalLength" min="0" max="100" value="50" oninput="updateModalSliders()" class="w-full">
+        </div>
+      </div>
+
+      <button onclick="applyToneAndClose()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm py-3 rounded-xl transition shadow-md">
+        Применить и переформировать
+      </button>
+
+    </div>
   </div>
 
   <textarea id="rawStorage" class="hidden"></textarea>
@@ -115,8 +129,14 @@
 
     const WORKER_URL = "https://aura-communicator-api.russianflow.workers.dev/";
     let currentLang = 'Deutsch';
-    let currentScenario = 'email';
-    let debounceTimer;
+    let activeModifier = '';
+
+    const userInput = document.getElementById('userInput');
+
+    // Автоматическая генерация при вставке (Paste)
+    userInput.addEventListener('paste', () => {
+      setTimeout(() => triggerGeneration(), 100);
+    });
 
     function setLang(lang) {
       currentLang = lang;
@@ -124,45 +144,52 @@
         btn.className = 'lang-btn text-xs font-bold px-2.5 py-1 rounded-lg text-slate-600 hover:bg-slate-100 transition-all';
       });
       document.getElementById(`lang-${lang}`).className = 'lang-btn text-xs font-bold px-2.5 py-1 rounded-lg bg-indigo-600 text-white transition-all';
-      triggerGeneration();
+      if (userInput.value.trim()) triggerGeneration();
     }
 
-    function setScenario(scen) {
-      currentScenario = scen;
-      document.querySelectorAll('.scen-btn').forEach(btn => {
-        btn.className = 'scen-btn text-xs font-bold px-3 py-1.5 rounded-xl bg-slate-100 text-slate-600 transition';
-      });
-      document.getElementById(`scen-${scen}`).className = 'scen-btn text-xs font-bold px-3 py-1.5 rounded-xl bg-slate-800 text-white transition';
-      triggerGeneration();
+    function clearAll() {
+      userInput.value = '';
+      document.getElementById('outputContent').innerHTML = '<span class="text-slate-400 italic text-sm">Вставьте текст выше — ответ мгновенно появится здесь...</span>';
+      document.getElementById('copyBar').classList.add('hidden');
     }
 
-    function updateSliders() {
-      const tone = document.getElementById('toneSlider').value;
-      const length = document.getElementById('lengthSlider').value;
-
-      document.getElementById('toneVal').innerText = tone < 35 ? 'Строго' : tone > 65 ? 'Мягко' : 'Нейтрально';
-      document.getElementById('lengthVal').innerText = length < 35 ? 'Коротко' : length > 65 ? 'Подробно' : 'Базовый';
-
-      clearTimeout(debounceTimer);
-      debounceTimer = setTimeout(() => triggerGeneration(), 400);
+    // Модалка
+    function openToneModal() {
+      document.getElementById('toneModal').classList.remove('hidden');
     }
 
-    function applyModifier(mod) {
-      triggerGeneration(mod);
+    function closeToneModal() {
+      document.getElementById('toneModal').classList.add('hidden');
     }
 
-    async function triggerGeneration(extraMod = '') {
-      const text = document.getElementById('userInput').value.trim();
+    function updateModalSliders() {
+      const tone = document.getElementById('modalTone').value;
+      const length = document.getElementById('modalLength').value;
+
+      document.getElementById('modalToneText').innerText = tone < 35 ? 'Строгий' : tone > 65 ? 'Мягкий' : 'Нейтральный';
+      document.getElementById('modalLengthText').innerText = length < 35 ? 'Короткий' : length > 65 ? 'Развернутый' : 'Средний';
+    }
+
+    function selectPreset(presetText) {
+      activeModifier = presetText;
+      document.getElementById('currentToneLabel').innerText = `Стиль: ${presetText}`;
+      closeToneModal();
+      if (userInput.value.trim()) triggerGeneration();
+    }
+
+    function applyToneAndClose() {
+      const tone = document.getElementById('modalToneText').innerText;
+      const length = document.getElementById('modalLengthText').innerText;
+      activeModifier = `Стиль: ${tone}, Объём: ${length}`;
+      document.getElementById('currentToneLabel').innerText = `Стиль: ${tone} / ${length}`;
+      closeToneModal();
+      if (userInput.value.trim()) triggerGeneration();
+    }
+
+    // Запрос к Воркеру
+    async function triggerGeneration() {
+      const text = userInput.value.trim();
       if (!text) return;
-
-      const tone = document.getElementById('toneSlider').value;
-      const length = document.getElementById('lengthSlider').value;
-
-      let stylePrompt = `Сценарий: ${currentScenario}. `;
-      stylePrompt += tone < 35 ? 'Стиль: строго официальный. ' : tone > 65 ? 'Стиль: максимально мягкий, дружелюбный и вежливый. ' : 'Стиль: нейтральный. ';
-      stylePrompt += length < 35 ? 'Объём: 1-2 кратких предложения. ' : length > 65 ? 'Объём: развернуто, с подробными формулировками. ' : 'Объём: сбалансированный. ';
-      
-      if (extraMod) stylePrompt += ` Акцент: ${extraMod}.`;
 
       const loader = document.getElementById('loader');
       const outputContent = document.getElementById('outputContent');
@@ -176,10 +203,10 @@
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            type: currentScenario,
+            type: 'whatsapp',
             targetLang: currentLang,
             text: text,
-            modifier: stylePrompt
+            modifier: activeModifier
           })
         });
 
@@ -211,7 +238,7 @@
 
       const btnText = document.getElementById('copyBtnText');
       btnText.innerText = "Скопировано!";
-      setTimeout(() => btnText.innerText = "Скопировать", 2000);
+      setTimeout(() => btnText.innerText = "Скопировать ответ", 2000);
     }
   </script>
 </body>
