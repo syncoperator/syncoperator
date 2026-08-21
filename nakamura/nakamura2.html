@@ -1028,6 +1028,10 @@ body.dark .eb-bar{background:rgba(21,23,28,.9);}
 @page{size:A4;margin:10mm;}
 @media print{
   html,body{margin:0!important;padding:0!important;background:#fff!important;height:auto!important;}
+  /* Normaler Druck (Werkzeugliste, Deckblatt …): nur #print-area zeigen */
+  body:not(.print-eb)>*:not(#print-area){display:none!important;}
+  body:not(.print-eb) #print-area{display:block!important;position:static!important;
+    -webkit-print-color-adjust:exact;print-color-adjust:exact;}
   body.print-eb>*:not(#eb-print){display:none!important;}
   body.print-eb #eb-print{display:block!important;position:static!important;width:auto;margin:0;padding:0;
     -webkit-print-color-adjust:exact;print-color-adjust:exact;}
@@ -1444,6 +1448,29 @@ body.on-home .overlay.active>.sheet{
   border-radius:var(--r-xl) var(--r-xl) 0 0;margin-top:auto;}
 body.on-home #m-projlist>.sheet,body.on-home #m-lib>.sheet,
 body.on-home #m-notizen>.sheet,body.on-home #m-calc>.sheet{overflow-y:auto;}
+
+
+/* ══ PROJEKTE · Nummernkreise ═══════════════════════════════ */
+.pgrp{margin-bottom:10px;border-radius:var(--r-lg);overflow:hidden;transition:background .2s var(--e-out);}
+.pgrp.open{background:var(--card-soft);}
+.pgrp-h{display:flex;align-items:center;gap:11px;width:100%;padding:12px 13px;background:transparent;border:none;
+  cursor:pointer;border-radius:var(--r-lg);}
+.pgrp-h:active{transform:scale(.995);}
+.pgrp-k{font-family:var(--mono);font-size:13px;font-weight:700;color:var(--ink);letter-spacing:.04em;
+  background:var(--field);border-radius:9px;padding:5px 10px;flex:0 0 auto;}
+.pgrp.open .pgrp-k{background:var(--ink);color:#fff;}
+.pgrp-t{flex:1;text-align:left;font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--ink3);}
+.pgrp-n{font-family:var(--mono);font-size:10px;font-weight:700;color:var(--ink3);background:var(--field);
+  border-radius:20px;min-width:19px;height:19px;display:flex;align-items:center;justify-content:center;padding:0 6px;}
+.pgrp-ch{width:14px;height:14px;stroke:var(--ink3);fill:none;stroke-width:2.2;stroke-linecap:round;
+  transition:transform .3s var(--e-spring);}
+.pgrp.open .pgrp-ch{transform:rotate(180deg);}
+.pgrp-b{display:grid;grid-template-rows:0fr;transition:grid-template-rows .34s var(--e-spring);}
+.pgrp.open .pgrp-b{grid-template-rows:1fr;}
+.pgrp-in{overflow:hidden;min-height:0;padding:0 8px;}
+.pgrp.open .pgrp-in{padding:2px 8px 8px;}
+body.dark .pgrp.open,body.on-home .sheet .pgrp.open{background:rgba(255,255,255,.04);}
 
 /* ── SPLASH · Gruppen ───────────────────────────────────────── */
 #splash-cards{display:none;flex-direction:column;gap:8px;}
@@ -3684,13 +3711,50 @@ function deleteProject(){
     persist();close_('m-proj');renderHeader();render();
   });
 }
+
+// ── Projekte nach Nummernkreis (erste drei Ziffern) ──
+let pOffen=new Set();
+function pKreis(num){
+  const s=String(num||'').trim();
+  const m=s.match(/\d{4,}/);          // mind. 4 Ziffern → Kreis bilden
+  if(!m)return null;                  // ohne Nummer / zu kurz → Sonstige
+  return m[0].slice(0,3);
+}
+function pGrpToggle(k){
+  if(pOffen.has(k))pOffen.delete(k);else pOffen.add(k);
+  hap(10);openProjList();
+}
+function pGruppen(rows,zeile){
+  const grp={};
+  rows.forEach(o=>{
+    const k=pKreis(o.p.num)||'sonst';
+    (grp[k]=grp[k]||[]).push(o);
+  });
+  const keys=Object.keys(grp).filter(k=>k!=='sonst').sort((a,b)=>b.localeCompare(a,'de',{numeric:true}));
+  if(grp.sonst)keys.push('sonst');
+  return keys.map(k=>{
+    const auf=pOffen.has(k);
+    const list=grp[k];
+    const fertig=list.filter(o=>projStatus(o.p)==='ok').length;
+    return `<div class="pgrp ${auf?'open':''}">
+      <button class="pgrp-h" onclick="pGrpToggle('${k}')">
+        <span class="pgrp-k">${k==='sonst'?'—':k+'···'}</span>
+        <span class="pgrp-t">${k==='sonst'?'Sonstige':'Nummernkreis'}${fertig?' · '+fertig+' fertig':''}</span>
+        <span class="pgrp-n">${list.length}</span>
+        <svg class="pgrp-ch" viewBox="0 0 24 24"><use href="#i0"/></svg>
+      </button>
+      <div class="pgrp-b"><div class="pgrp-in">${list.map(zeile).join('')}</div></div>
+    </div>`;
+  }).join('');
+}
+
 function openProjList(){
   const body=document.getElementById('projlist-body');
   const qEl=document.getElementById('proj-q');const q=(qEl?qEl.value:'').toUpperCase().trim();
   let rows=db.map((p,i)=>({p,i}));
   if(q)rows=rows.filter(({p})=>((p.num||'')+' '+(p.name||'')).toUpperCase().includes(q));
   rows.sort((a,b)=>String(a.p.num||'').localeCompare(String(b.p.num||''),'de',{numeric:true,sensitivity:'base'}));
-  body.innerHTML=rows.map(({p,i})=>`
+  const zeile=({p,i})=>`
     <div class="libitem" data-pi="${i}"><div class="libmain">
       <span class="pstat ${projStatus(p)}" title="${PSTAT[projStatus(p)]}" onclick="cycleStatus(${i},event)"><i></i></span>
       <div class="libinfo" onclick="selectProject(${i})">
@@ -3701,7 +3765,10 @@ function openProjList(){
         <button class="libbtn" title="Duplizieren" onclick="event.stopPropagation();duplicateProject(${i},event)"><svg viewBox="0 0 24 24"><use href="#i19"/></svg></button>
         <button class="libbtn del" onclick="event.stopPropagation();delProjectByIdx(${i})"><svg viewBox="0 0 24 24"><use href="#i25"/></svg></button>
       </div>
-    </div></div></div>`).join('')||emptyBox('<svg viewBox="0 0 24 24"><use href="#i13"/></svg>','Nichts gefunden','Andere Schreibweise probieren oder Filter zurücksetzen','<button class="empty-a" onclick="clearSearches()">Filter zurücksetzen</button>');
+    </div></div></div>`;
+  body.innerHTML=rows.length
+    ? (q ? rows.map(zeile).join('') : pGruppen(rows,zeile))
+    : emptyBox('<svg viewBox="0 0 24 24"><use href="#i13"/></svg>','Nichts gefunden','Andere Schreibweise probieren oder Filter zurücksetzen','<button class="empty-a" onclick="clearSearches()">Filter zurücksetzen</button>');
   setTimeout(bindProjSwipes,20);stagger('#projlist-body');
   if(!document.getElementById('m-projlist').classList.contains('active'))open_('m-projlist');
   setTimeout(wireSwipe,30);
@@ -7669,7 +7736,7 @@ function lineType(l){
 }
 
 // ── Code-Blöcke falten ──
-let cZu=new Set();
+let cZu=new Set(), cZuInit=false;
 function cbToggle(b,ev){
   if(ev)ev.stopPropagation();
   if(cZu.has(b))cZu.delete(b);else cZu.add(b);
@@ -7690,6 +7757,15 @@ function renderCodeView(){
   bmLoad();
   const code=getCode(codeCtx.kanal);
   const lines=code.split(/\r?\n/);
+  // Beim ersten Anzeigen: alle Blöcke zugeklappt
+  if(!cZuInit){
+    cZuInit=true;cZu.clear();
+    let b=-1;
+    lines.forEach((l,i)=>{
+      const U=l.toUpperCase();
+      if(/^N\d+\s*G5[45]/.test(U.trim())||(/T\d{4}/.test(U)&&!/^\s*\(/.test(l))){b++;cZu.add(b);}
+    });
+  }
   let jumpIdx=-1;
   if(codeCtx.jumpLine!=null && codeCtx.jumpLine>=0){
     jumpIdx=codeCtx.jumpLine;
@@ -7758,6 +7834,7 @@ function renderCodeView(){
   if(typeof miniOn!=='undefined'&&miniOn)miniRender();
 }
 
+function resetFold(){cZuInit=false;}
 function showCode(kanal,jumpId,jumpLine){
   codeCtx={kanal,jumpId,jumpLine:(jumpLine!=null?jumpLine:-1)};
   // reset split & search
