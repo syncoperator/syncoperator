@@ -1153,12 +1153,10 @@ h1,.sechead-title,.nzv-title,.eb-title,.splash-name{letter-spacing:-.028em;}
 /* Fenster, die über einem anderen Fenster geöffnet werden */
 #m-oed,#m-kdlg,#m-spop,#m-confirm,#m-prompt{z-index:100060!important;}
 #m-confirm,#m-prompt{z-index:100080!important;}
-body:has(#splash:not(.hide)) .statusdock,
-body:has(#splash:not(.hide)) .hdr-mini,
-body:has(#splash:not(.hide)) .fab{display:none!important;}
+body.splash-an .statusdock,body.splash-an .hdr-mini,body.splash-an .fab,
 body.on-home .statusdock,body.on-home .hdr-mini,body.on-home .fab{display:none!important;}
-body:has(.overlay.active) .statusdock,body:has(.drawer.open) .statusdock{opacity:0;pointer-events:none;transform:translateX(-50%) translateY(120%);}
-body:has(.overlay.active) .hdr-mini{opacity:0;pointer-events:none;}
+body.modal-an .statusdock,body.drawer-an .statusdock{opacity:0;pointer-events:none;transform:translateX(-50%) translateY(120%);}
+body.modal-an .hdr-mini{opacity:0;pointer-events:none;}
 /* 5 · Tiefen-Hierarchie: aktives Fenster tiefer */
 .overlay.active>.sheet{box-shadow:var(--sh-4);}
 
@@ -1558,7 +1556,7 @@ body.dark .mnav-i.primary .mnav-ic svg{stroke:#15171C;}
 .fab svg{width:26px;height:26px;stroke:#fff;fill:none;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;}
 @media(min-width:560px){.fab{right:calc(50% - 280px + 18px);}}
 @media(min-width:1100px){.fab{right:calc(50% - 430px + 18px);}}
-body:has(.overlay.active) .fab,body:has(.drawer.open) .fab{opacity:0;pointer-events:none;transform:scale(.8);}
+body.modal-an .fab,body.drawer-an .fab{opacity:0;pointer-events:none;transform:scale(.8);}
 
 .bb{flex:1;padding:15px 8px;border-radius:var(--r-md);border:1px solid var(--line2);background:var(--card);font-family:var(--sans);font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:var(--sh-1);transition:transform .1s,box-shadow .12s,background .15s,border-color .15s;}
 .bb:hover{background:var(--card-soft);border-color:var(--ink3);}
@@ -1770,7 +1768,7 @@ body:has(.overlay.active) .fab,body:has(.drawer.open) .fab{opacity:0;pointer-eve
 .wiz-madd svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;}
 
 /* ── DARK MODALS (vom Splash geöffnet) ──────────────────────── */
-body:has(#splash:not(.hide)){overflow:hidden;height:100vh;}
+body.splash-an{overflow:hidden;height:100vh;}
 body.on-home .overlay{background:rgba(8,9,11,.62);backdrop-filter:blur(10px);z-index:100000;}
 #m-kdlg{z-index:100050!important;}
 body.on-home .sheet{
@@ -3216,11 +3214,21 @@ function close_(id){
   const ov=document.getElementById(id);if(!ov)return;
   const sh=ov.querySelector('.sheet');
   // 'active' sofort entfernen (Logik bleibt synchron), Ausblenden rein visuell
-  ov.classList.remove('active');
+  ov.classList.remove('active');setzeModalKlasse();
   if(sh){
     ov.classList.add('closing');
     setTimeout(()=>ov.classList.remove('closing'),200);
   }
+}
+function setzeModalKlasse(){
+  const auf=!!document.querySelector('.overlay.active');
+  document.body.classList.toggle('modal-an',auf);
+  const dr=document.getElementById('drawer');
+  document.body.classList.toggle('drawer-an',!!(dr&&dr.classList.contains('open')));
+}
+function setzeSplashKlasse(){
+  const s=document.getElementById('splash');
+  document.body.classList.toggle('splash-an',!!(s&&!s.classList.contains('hide')));
 }
 function open_(id){
   const ov=document.getElementById(id);if(!ov)return;
@@ -3229,7 +3237,7 @@ function open_(id){
     const r=sh.getBoundingClientRect?null:null;
     sh.style.transformOrigin=((_lastTapXY.x/window.innerWidth)*100).toFixed(1)+'% '+((_lastTapXY.y/window.innerHeight)*100).toFixed(1)+'%';
   }
-  ov.classList.add('active');
+  ov.classList.add('active');setzeModalKlasse();
 }
 // ── custom dialogs (no native confirm/prompt) ──
 let _confirmCb=null;
@@ -3265,13 +3273,13 @@ function mgrpRestore(){
   const el=document.querySelector('.mgrp[data-g="'+g+'"]');
   if(el)el.classList.add('open');
 }
-function openDrawer(){applyMenu();mgrpRestore();document.getElementById('drawer').classList.add('open');}
-function closeDrawer(){document.getElementById('drawer').classList.remove('open');}
+function openDrawer(){applyMenu();setTimeout(setzeModalKlasse,10);mgrpRestore();document.getElementById('drawer').classList.add('open');}
+function closeDrawer(){setTimeout(setzeModalKlasse,10);document.getElementById('drawer').classList.remove('open');}
 function dNav(fn){closeDrawer();setTimeout(()=>{try{fn();}catch(e){}},170);}
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeDrawer();});
 
 // ═══ CLOCK ═══
-function tick(){const d=new Date();document.getElementById('clock').textContent=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');}
+function tick(){const el=document.getElementById('clock');if(!el)return;const d=new Date();el.textContent=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');}
 tick();setInterval(tick,30000);
 
 // ═══ HEADER ═══
@@ -5843,6 +5851,7 @@ if(typeof pinStillValid==='function'&&pinStillValid()){
   const pz=document.getElementById('pin-zone'),sc=document.getElementById('splash-cards');
   if(pz&&sc){pz.style.display='none';sc.style.display='flex';if(typeof hsecRestore==='function')hsecRestore();document.body.classList.add('on-home');}
 }
+document.body.classList.add('splash-an');
 applyDark();applyAccent();applyDensity();setTimeout(()=>{syncDock();bindScrollUI();},300);setTimeout(()=>{sqBadge();sqFlush(true);},1200);tmrTick();applyMenu();autoBackupCheck();hap();toast('Design '+(darkOn()?'dunkel':'hell'));}
 function greetText(){
   const h=new Date().getHours();
@@ -9070,7 +9079,7 @@ function hsecRestore(){
   if(i==='')return;
   const el=document.querySelector('.hsec[data-hg="'+i+'"]');if(el)el.classList.add('open');
 }
-function hideHome(){document.body.classList.remove('on-home');const s=document.getElementById('splash');s.classList.add('hide');setTimeout(()=>{s.style.display='none';},400);}
+function hideHome(){document.body.classList.remove('splash-an');document.body.classList.remove('on-home');const s=document.getElementById('splash');s.classList.add('hide');setTimeout(()=>{s.style.display='none';},400);}
 function openHome(){
   const s=document.getElementById('splash');
   s.style.display='flex';s.classList.remove('hide');
@@ -9082,7 +9091,7 @@ function homeGo(what){
   if(what==='projekte')openProjList();
   else if(what==='neu')openWizard();
 }
-function enterApp(){hideHome();renderHeader();render();}
+function enterApp(){document.body.classList.remove('splash-an');hideHome();renderHeader();render();}
 function homeTool(what){
   const map={bibliothek:openLibrary,vorlagen:openVorlagen,simulation:openSim,notizen:openNotizen,smart:openSmart};
   const fn=map[what];if(!fn)return;
