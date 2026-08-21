@@ -2753,83 +2753,83 @@ function setOrient(o){const st=document.getElementById('pageOrient');if(st)st.te
 function ph(){return {zn:esc((document.getElementById('inZN').value||'').trim())||'—',bez:esc((document.getElementById('inBez').value||'').trim())||'—'};}
 function buildPrintPlan(){
   const p=ph();
-  const o1=DATA['1'].filter(o=>!slotEmpty(o));
-  const o2=DATA['2'].filter(o=>!slotEmpty(o));
+  const s1=DATA['1'], s2=DATA['2'];
   let h='<div class="pp-header"><div class="ph-row"><div class="ph-zn">'+p.zn+'</div><div class="ph-bez">'+p.bez+'</div></div></div>';
-  h+=buildMindmapSVG(p,o1,o2);
+  h+=buildMindmapSVG(p,s1,s2);
   return h;
 }
-// Mindmap: Mitte = Werkstück, zwei Äste (Kanal 1 oben / Kanal 2 unten)
-function buildMindmapSVG(p,o1,o2){
-  const W=1000;                       // viewBox-Breite (A4 quer)
-  const maxN=Math.max(o1.length,o2.length,1);
-  const NW=150, NH=44;                // Knotengröße
-  const GAPX=28;                      // horizontaler Abstand
-  const perRow=Math.max(1,Math.floor((W-120)/(NW+GAPX)));
-  const rows1=Math.ceil(o1.length/perRow)||1, rows2=Math.ceil(o2.length/perRow)||1;
-  const ROWH=NH+30;
-  const topH=rows1*ROWH, botH=rows2*ROWH;
-  const CY=60+topH;                   // Mittelachse
-  const H=topH+botH+150;
-  const cx=W/2;
+// Synchron-Timeline: Mittelachse = Schritte, links Kanal 1, rechts Kanal 2
+function buildMindmapSVG(p,s1,s2){
+  const rows=[];
+  const n=Math.max(s1.length,s2.length);
+  for(let i=0;i<n;i++){
+    const a=(s1[i]&&!slotEmpty(s1[i]))?s1[i]:null;
+    const b=(s2[i]&&!slotEmpty(s2[i]))?s2[i]:null;
+    if(a||b)rows.push({i:i+1,a,b});
+  }
+  const W=1000, NW=340, NH=52, ROW=70, AX=W/2, AR=17;
+  const HEAD=64;
+  const H=HEAD+rows.length*ROW+40;
   let s='<svg class="mm-svg" viewBox="0 0 '+W+' '+H+'" xmlns="http://www.w3.org/2000/svg">';
-  // defs: soft shadow-free flat look
   s+='<style>'
-    +'.mm-n{fill:#fff;stroke:#d4d4d8;stroke-width:1.2}'
-    +'.mm-n4{stroke:#3DA46E}.mm-n3{stroke:#4577B0}'
-    +'.mm-t{font-family:Inter,sans-serif;font-size:12.5px;font-weight:600;fill:#111}'
-    +'.mm-c{font-family:"JetBrains Mono",monospace;font-size:9px;font-weight:700;fill:#888}'
-    +'.mm-tn{font-family:"JetBrains Mono",monospace;font-size:9px;font-weight:800;fill:#111}'
-    +'.mm-num{font-family:"JetBrains Mono",monospace;font-size:9px;font-weight:800;fill:#fff}'
-    +'.mm-lnk{fill:none;stroke:#c8c8cc;stroke-width:1.2}'
-    +'.mm-spine{fill:none;stroke-width:2.4;stroke-linecap:round}'
-    +'.mm-lbl{font-family:"JetBrains Mono",monospace;font-size:10px;font-weight:800;letter-spacing:.08em}'
+    +'.n-box{fill:#fff;stroke-width:1.3}'
+    +'.n-t{font-family:Inter,sans-serif;font-size:13px;font-weight:650;fill:#111}'
+    +'.n-c{font-family:"JetBrains Mono",monospace;font-size:9px;font-weight:700;fill:#8a8a8f}'
+    +'.n-tn{font-family:"JetBrains Mono",monospace;font-size:9.5px;font-weight:800}'
+    +'.ax-n{font-family:"JetBrains Mono",monospace;font-size:12px;font-weight:800;fill:#fff}'
+    +'.hd{font-family:"JetBrains Mono",monospace;font-size:10.5px;font-weight:800;letter-spacing:.1em}'
+    +'.cross{font-family:"JetBrains Mono",monospace;font-size:7.5px;font-weight:800;fill:#B45309}'
+    +'.sync{font-family:"JetBrains Mono",monospace;font-size:7px;font-weight:700;fill:#a0a0a5;letter-spacing:.06em}'
   +'</style>';
-  // ROOT (Werkstück)
-  const rw=210,rh=54;
-  s+='<rect x="'+(cx-rw/2)+'" y="'+(CY-rh/2)+'" width="'+rw+'" height="'+rh+'" rx="10" fill="#111"/>';
-  s+='<text x="'+cx+'" y="'+(CY-4)+'" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="15" font-weight="800" fill="#fff">'+esc(p.zn||'—')+'</text>';
-  s+='<text x="'+cx+'" y="'+(CY+14)+'" text-anchor="middle" font-family="Inter,sans-serif" font-size="11" fill="#bbb">'+esc(p.bez||'')+'</text>';
-  // Branch renderer
-  function branch(ops,dir,color,label,rows){
-    if(!ops.length)return '';
+  // Kopf: Bauteil + Kanal-Titel
+  s+='<rect x="'+(AX-135)+'" y="6" width="270" height="34" rx="9" fill="#111"/>';
+  s+='<text x="'+AX+'" y="21" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="13" font-weight="800" fill="#fff">'+esc(p.zn||'—')+'</text>';
+  s+='<text x="'+AX+'" y="34" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" fill="#bbb">'+esc(p.bez||'')+'</text>';
+  s+='<text x="'+(AX-165)+'" y="56" text-anchor="end" class="hd" fill="#3DA46E">KANAL 1 · 1000.MPF</text>';
+  s+='<text x="'+(AX+165)+'" y="56" class="hd" fill="#4577B0">KANAL 2 · 2000.MPF</text>';
+  // Mittelachse
+  const y0=HEAD+ROW/2, y1=HEAD+(rows.length-0.5)*ROW;
+  if(rows.length)s+='<path d="M '+AX+' '+(y0-AR-6)+' V '+(y1+AR+6)+'" stroke="#d4d4d8" stroke-width="2" fill="none"/>';
+  function node(op,side,cy){
+    if(!op)return '';
+    const isSP3=op.spindle==='SP3';
+    const col=isSP3?'#4577B0':'#3DA46E';
+    // "Cross" = Operation läuft auf der Gegenspindel des Kanals
+    const cross=(side==='L'&&isSP3)||(side==='R'&&!isSP3);
+    const x=side==='L'?(AX-AR-24-NW):(AX+AR+24);
+    const y=cy-NH/2;
     let g='';
-    const sign=dir==='up'?-1:1;
-    const spineY=CY+sign*(rh/2+22);
-    // label an der Wurzel
-    g+='<text x="'+(cx+rw/2+14)+'" y="'+(spineY+3)+'" class="mm-lbl" fill="'+color+'">'+label+'</text>';
-    // Verbindung Wurzel -> Spine
-    g+='<path class="mm-spine" stroke="'+color+'" d="M '+cx+' '+(CY+sign*rh/2)+' V '+spineY+'"/>';
-    ops.forEach((op,i)=>{
-      const r=Math.floor(i/perRow), c=i%perRow;
-      const inRow=Math.min(perRow,ops.length-r*perRow);
-      const rowW=inRow*NW+(inRow-1)*GAPX;
-      const x=cx-rowW/2+c*(NW+GAPX);
-      const y=spineY+sign*(24+r*ROWH);
-      const ny=dir==='up'?y-NH:y;
-      // Konnektor
-      const midY=y-sign*12;
-      g+='<path class="mm-lnk" d="M '+cx+' '+spineY+' C '+cx+' '+midY+', '+(x+NW/2)+' '+midY+', '+(x+NW/2)+' '+(dir==='up'?ny+NH:ny)+'"/>';
-      // Knoten
-      const spCls=(op.spindle==='SP3')?'mm-n3':'mm-n4';
-      const spCol=(op.spindle==='SP3')?'#4577B0':'#3DA46E';
-      g+='<rect x="'+x+'" y="'+ny+'" width="'+NW+'" height="'+NH+'" rx="8" class="mm-n '+spCls+'"/>';
-      // Nummernbadge
-      g+='<rect x="'+x+'" y="'+ny+'" width="26" height="'+NH+'" rx="8" fill="'+spCol+'"/>';
-      g+='<rect x="'+(x+18)+'" y="'+ny+'" width="8" height="'+NH+'" fill="'+spCol+'"/>';
-      g+='<text x="'+(x+13)+'" y="'+(ny+NH/2+3.5)+'" text-anchor="middle" class="mm-num">'+String(i+1).padStart(2,'0')+'</text>';
-      // Titel (gekürzt)
-      let t=String(op.title||op.code||'');
-      if(t.length>19)t=t.slice(0,18)+'…';
-      g+='<text x="'+(x+34)+'" y="'+(ny+18)+'" class="mm-t">'+esc(t)+'</text>';
-      // L-Code + T-Nr
-      g+='<text x="'+(x+34)+'" y="'+(ny+33)+'" class="mm-c">'+esc(op.code||'')+(op.spindle?' · '+esc(op.spindle):'')+'</text>';
-      if(op.tno)g+='<text x="'+(x+NW-8)+'" y="'+(ny+33)+'" text-anchor="end" class="mm-tn">'+esc(op.tno)+'</text>';
-    });
+    // Konnektor zur Achse
+    const px=side==='L'?x+NW:x;
+    g+='<path d="M '+px+' '+cy+' H '+(side==='L'?AX-AR-4:AX+AR+4)+'" stroke="'+(cross?'#E5A54B':'#d4d4d8')+'" stroke-width="'+(cross?2:1.4)+'" fill="none"'+(cross?' stroke-dasharray="4 3"':'')+'/>';
+    // Box
+    g+='<rect x="'+x+'" y="'+y+'" width="'+NW+'" height="'+NH+'" rx="9" class="n-box" stroke="'+(cross?'#E5A54B':col)+'"'+(cross?' stroke-dasharray="5 3"':'')+'/>';
+    // Spindel-Streifen
+    const sx=side==='L'?x:x+NW-7;
+    g+='<path d="M '+(side==='L'?x+9:x+NW-9)+' '+y+' h '+(side==='L'?-9:9)+' a9,9 0 0 '+(side==='L'?'0':'1')+' '+(side==='L'?'-0,0':'0,0')+'" fill="none"/>';
+    g+='<rect x="'+sx+'" y="'+y+'" width="7" height="'+NH+'" rx="3.5" fill="'+col+'"/>';
+    const tx=side==='L'?x+18:x+16;
+    // Titel
+    let t=String(op.title||op.code||'');
+    if(t.length>34)t=t.slice(0,33)+'…';
+    g+='<text x="'+tx+'" y="'+(y+21)+'" class="n-t">'+esc(t)+'</text>';
+    // L-Code · Spindel   +  T-Nr rechts
+    g+='<text x="'+tx+'" y="'+(y+38)+'" class="n-c">'+esc(op.code||'')+' · '+esc(op.spindle||'SP4')+'</text>';
+    if(op.tno)g+='<text x="'+(side==='L'?x+NW-16:x+NW-18)+'" y="'+(y+38)+'" text-anchor="end" class="n-tn" fill="'+col+'">'+esc(op.tno)+'</text>';
+    // Cross-Hinweis
+    if(cross)g+='<text x="'+(side==='L'?x+NW-16:x+NW-18)+'" y="'+(y+14)+'" text-anchor="end" class="cross">CROSS '+esc(op.spindle)+'</text>';
     return g;
   }
-  s+=branch(o1,'up','#3DA46E','KANAL 1 · 1000.MPF',rows1);
-  s+=branch(o2,'down','#4577B0','KANAL 2 · 2000.MPF',rows2);
+  rows.forEach((r,idx)=>{
+    const cy=HEAD+idx*ROW+ROW/2;
+    s+=node(r.a,'L',cy);
+    s+=node(r.b,'R',cy);
+    // Achsen-Knoten
+    const both=r.a&&r.b;
+    s+='<circle cx="'+AX+'" cy="'+cy+'" r="'+AR+'" fill="#111"/>';
+    s+='<text x="'+AX+'" y="'+(cy+4.5)+'" text-anchor="middle" class="ax-n">'+r.i+'</text>';
+    if(both)s+='<text x="'+AX+'" y="'+(cy+AR+11)+'" text-anchor="middle" class="sync">SYNCHRON</text>';
+  });
   s+='</svg>';
   return s;
 }
