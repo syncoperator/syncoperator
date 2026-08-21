@@ -1609,7 +1609,18 @@ function parseOperationsMPF(text){
     if((mm=ln.match(/^(L\d+)(?:\.SPF)?\s*$/i))){cur.code=mm[1];return;}
     if((mm=ln.match(/^(RG\d+)\s*=\s*([^\s]+)/))){cur.asReg=mm[1];cur.asVal=mm[2];return;}
     if((mm=ln.match(/^;DUMMY\("([^"]*)"\)/))){cur.dummy=mm[1];return;}
-    if(/^GROUP_END\(0,/.test(ln)){if(cur)ops.push(cur);cur=null;return;}
+    if(/^GROUP_END\(0,/.test(ln)){
+      if(cur){
+        // Spindel primär aus dem Register ableiten (RG703 = SP3, RG704 = SP4).
+        // Der 3. GROUP_BEGIN-Parameter ist in echten Dateien die Kanalnummer und
+        // damit als Spindel-Quelle unbrauchbar.
+        const reg=cur.ifReg||cur.asReg||'';
+        if(/RG703/.test(reg))cur.sp='SP3';
+        else if(/RG704/.test(reg))cur.sp='SP4';
+        ops.push(cur);
+      }
+      cur=null;return;
+    }
   });
   return ops;
 }
@@ -2753,12 +2764,10 @@ function setOrient(o){const st=document.getElementById('pageOrient');if(st)st.te
 function ph(){return {zn:esc((document.getElementById('inZN').value||'').trim())||'—',bez:esc((document.getElementById('inBez').value||'').trim())||'—'};}
 function buildPrintPlan(){
   const p=ph();
-  const s1=DATA['1'], s2=DATA['2'];
   let h='<div class="pp-header"><div class="ph-row"><div class="ph-zn">'+p.zn+'</div><div class="ph-bez">'+p.bez+'</div></div></div>';
-  h+=buildMindmapSVG(p,s1,s2);
+  h+=buildMindmapSVG(p,DATA['1'],DATA['2']);
   return h;
 }
-// Synchron-Timeline: Mittelachse = Schritte, links Kanal 1, rechts Kanal 2 (bis 22 Zeilen)
 function buildMindmapSVG(p,s1,s2){
   const rows=[];
   const n=Math.max(s1.length,s2.length);
@@ -2768,65 +2777,80 @@ function buildMindmapSVG(p,s1,s2){
     if(a||b)rows.push({i:i+1,a,b});
   }
   const cnt=rows.length||1;
-  // Kompakt-Skalierung: bis 22 Zeilen sauber auf A4 quer
-  const dense = cnt>14;
-  const NH   = dense?24:44;
-  const ROW  = dense?28:54;
-  const NW   = 372;
-  const AX   = 500, AR = dense?9.5:14;
-  const HEAD = 24;
-  const W=1000;
-  const H=HEAD+cnt*ROW+14;
-  const fT = dense?9.5:12.5;   // Titel
-  const fC = dense?7:9;       // L-Code
-  const fN = dense?7.5:9.5;       // T-Nr
+  // drei Dichtestufen für 1..22 Zeilen
+  const d = cnt>14?2:(cnt>8?1:0);
+  const NH  = [46,32,22][d];
+  const GAP = [14,9,5][d];
+  const ROW = NH+GAP;
+  const NW  = 366;
+  const W   = 1000, AX = W/2;
+  const AR  = [13,10.5,8][d];
+  const HEAD= 26;
+  const H   = HEAD+cnt*ROW+8;
+  const fT  = [13,10.6,8.8][d];
+  const fC  = [9,7.6,6.4][d];
+  const fN  = [10,8.2,6.9][d];
+  const RX  = [9,6.5,5][d];
+  const G='#2F9E68', B='#3F72AE', A='#C8801B';
   let s='<svg class="mm-svg" viewBox="0 0 '+W+' '+H+'" xmlns="http://www.w3.org/2000/svg">';
   s+='<style>'
-    +'.n-box{fill:#fff;stroke-width:1.2}'
-    +'.n-t{font-family:Inter,sans-serif;font-size:'+fT+'px;font-weight:650;fill:#111}'
-    +'.n-c{font-family:"JetBrains Mono",monospace;font-size:'+fC+'px;font-weight:700;fill:#8a8a8f}'
-    +'.n-tn{font-family:"JetBrains Mono",monospace;font-size:'+fN+'px;font-weight:800}'
-    +'.ax-n{font-family:"JetBrains Mono",monospace;font-size:'+(dense?9:11)+'px;font-weight:800;fill:#111}'
-    +'.hd{font-family:"JetBrains Mono",monospace;font-size:10px;font-weight:800;letter-spacing:.1em}'
-    +'.cross{font-family:"JetBrains Mono",monospace;font-size:'+(dense?6.5:7.5)+'px;font-weight:800;fill:#B45309}'
+    +'.t{font-family:Inter,sans-serif;font-size:'+fT+'px;font-weight:640;fill:#15151a}'
+    +'.c{font-family:"JetBrains Mono",monospace;font-size:'+fC+'px;font-weight:600;fill:#9a9aa2;letter-spacing:.02em}'
+    +'.tn{font-family:"JetBrains Mono",monospace;font-size:'+fN+'px;font-weight:800}'
+    +'.ax{font-family:"JetBrains Mono",monospace;font-size:'+[11,9,7.4][d]+'px;font-weight:800;fill:#3a3a42}'
+    +'.hd{font-family:"JetBrains Mono",monospace;font-size:9.5px;font-weight:800;letter-spacing:.14em}'
+    +'.xb{font-family:"JetBrains Mono",monospace;font-size:'+[7.5,6.5,5.5][d]+'px;font-weight:800;fill:#fff;letter-spacing:.04em}'
   +'</style>';
-  // Kanal-Titel (ohne schwarze Bauteil-Box)
-  s+='<text x="'+(AX-AR-26)+'" y="16" text-anchor="end" class="hd" fill="#3DA46E">KANAL 1 · 1000.MPF</text>';
-  s+='<text x="'+(AX+AR+26)+'" y="16" class="hd" fill="#4577B0">KANAL 2 · 2000.MPF</text>';
-  // Mittelachse
-  const y0=HEAD+ROW/2, y1=HEAD+(cnt-0.5)*ROW;
-  if(rows.length)s+='<path d="M '+AX+' '+(y0-AR-4)+' V '+(y1+AR+4)+'" stroke="#d4d4d8" stroke-width="1.6" fill="none"/>';
-  function node(op,side,cy){
+  // Kopfzeile der Kanäle
+  s+='<text x="'+(AX-AR-22)+'" y="14" text-anchor="end" class="hd" fill="'+G+'">KANAL 1 · 1000.MPF</text>';
+  s+='<text x="'+(AX+AR+22)+'" y="14" class="hd" fill="'+B+'">KANAL 2 · 2000.MPF</text>';
+  s+='<path d="M '+(AX-AR-22-NW)+' 21 H '+(AX-AR-22)+'" stroke="'+G+'" stroke-width="1.6" opacity=".45"/>';
+  s+='<path d="M '+(AX+AR+22)+' 21 H '+(AX+AR+22+NW)+'" stroke="'+B+'" stroke-width="1.6" opacity=".45"/>';
+  // Mittelschiene
+  const yA=HEAD+ROW/2, yB=HEAD+(cnt-0.5)*ROW;
+  s+='<path d="M '+AX+' '+(yA-AR)+' V '+(yB+AR)+'" stroke="#e2e2e6" stroke-width="2.6" stroke-linecap="round" fill="none"/>';
+  function card(op,side,cy){
     if(!op)return '';
-    const isSP3=op.spindle==='SP3';
-    const col=isSP3?'#4577B0':'#3DA46E';
-    const cross=(side==='L'&&isSP3)||(side==='R'&&!isSP3);
-    const x=side==='L'?(AX-AR-20-NW):(AX+AR+20);
+    const sp3=op.spindle==='SP3';
+    const col=sp3?B:G;
+    const cross=(side==='L'&&sp3)||(side==='R'&&!sp3);
+    const x=side==='L'?(AX-AR-18-NW):(AX+AR+18);
     const y=cy-NH/2;
     let g='';
+    // Konnektor
     const px=side==='L'?x+NW:x;
-    g+='<path d="M '+px+' '+cy+' H '+(side==='L'?AX-AR-3:AX+AR+3)+'" stroke="'+(cross?'#E5A54B':'#d4d4d8')+'" stroke-width="'+(cross?1.6:1.2)+'" fill="none"'+(cross?' stroke-dasharray="3.5 2.5"':'')+'/>';
-    g+='<rect x="'+x+'" y="'+y+'" width="'+NW+'" height="'+NH+'" rx="'+(dense?6:8)+'" class="n-box" stroke="'+(cross?'#E5A54B':col)+'"'+(cross?' stroke-dasharray="4.5 3"':'')+'/>';
-    const sx=side==='L'?x:x+NW-6;
-    g+='<rect x="'+sx+'" y="'+y+'" width="6" height="'+NH+'" rx="3" fill="'+col+'"/>';
-    const tx=side==='L'?x+15:x+14;
+    const qx=side==='L'?AX-AR-2:AX+AR+2;
+    g+='<path d="M '+px+' '+cy+' H '+qx+'" stroke="'+(cross?A:'#dcdce1')+'" stroke-width="1.5" fill="none"/>';
+    g+='<circle cx="'+px+'" cy="'+cy+'" r="2.4" fill="'+(cross?A:col)+'"/>';
+    // Karte: heller Farbton + kräftige Akzentkante
+    g+='<rect x="'+x+'" y="'+y+'" width="'+NW+'" height="'+NH+'" rx="'+RX+'" fill="'+(cross?'#FDF6EC':(sp3?'#F3F7FC':'#F2FAF6'))+'" stroke="'+(cross?A:col)+'" stroke-width="1.1" stroke-opacity=".55"/>';
+    const bx=side==='L'?x:x+NW-4.5;
+    g+='<rect x="'+bx+'" y="'+(y+1)+'" width="4.5" height="'+(NH-2)+'" rx="2.2" fill="'+col+'"/>';
+    const tx=side==='L'?x+15:x+13;
+    // Titel
     let t=String(op.title||op.code||'');
-    const maxc=dense?34:34;
-    if(t.length>maxc)t=t.slice(0,maxc-1)+'…';
-    g+='<text x="'+tx+'" y="'+(y+(dense?10.5:19))+'" class="n-t">'+esc(t)+'</text>';
-    g+='<text x="'+tx+'" y="'+(y+(dense?19.5:34))+'" class="n-c">'+esc(op.code||'')+' · '+esc(op.spindle||'SP4')+'</text>';
-    const rx=side==='L'?x+NW-14:x+NW-16;
-    if(op.tno)g+='<text x="'+rx+'" y="'+(y+(dense?19.5:34))+'" text-anchor="end" class="n-tn" fill="'+col+'">'+esc(op.tno)+'</text>';
-    if(cross)g+='<text x="'+rx+'" y="'+(y+(dense?9.5:13))+'" text-anchor="end" class="cross">CROSS '+esc(op.spindle)+'</text>';
+    const mx=[36,38,40][d];
+    if(t.length>mx)t=t.slice(0,mx-1)+'…';
+    g+='<text x="'+tx+'" y="'+(y+[19,14,10][d])+'" class="t">'+esc(t)+'</text>';
+    // Fußzeile: L-Code · Spindel      T-Nr
+    g+='<text x="'+tx+'" y="'+(y+[35,25.5,17.8][d])+'" class="c">'+esc(op.code||'')+'  ·  '+esc(op.spindle||'SP4')+'</text>';
+    const rx=side==='L'?x+NW-14:x+NW-13;
+    if(op.tno)g+='<text x="'+rx+'" y="'+(y+[35,25.5,17.8][d])+'" text-anchor="end" class="tn" fill="'+col+'">'+esc(op.tno)+'</text>';
+    // Cross-Badge
+    if(cross){
+      const bw=[52,44,36][d], bh=[13,11,8.6][d];
+      const bxx=side==='L'?x+NW-14-bw:x+NW-13-bw;
+      g+='<rect x="'+bxx+'" y="'+(y+[6,4,2.5][d])+'" width="'+bw+'" height="'+bh+'" rx="'+(bh/2)+'" fill="'+A+'"/>';
+      g+='<text x="'+(bxx+bw/2)+'" y="'+(y+[15,11.8,8.9][d])+'" text-anchor="middle" class="xb">CROSS</text>';
+    }
     return g;
   }
   rows.forEach((r,idx)=>{
     const cy=HEAD+idx*ROW+ROW/2;
-    s+=node(r.a,'L',cy);
-    s+=node(r.b,'R',cy);
-    // Achsen-Knoten: weiß mit Rand, Zahl dunkel
-    s+='<circle cx="'+AX+'" cy="'+cy+'" r="'+AR+'" fill="#fff" stroke="#b8b8bd" stroke-width="1.3"/>';
-    s+='<text x="'+AX+'" y="'+(cy+(dense?3:4))+'" text-anchor="middle" class="ax-n">'+r.i+'</text>';
+    s+=card(r.a,'L',cy);
+    s+=card(r.b,'R',cy);
+    s+='<circle cx="'+AX+'" cy="'+cy+'" r="'+AR+'" fill="#fff" stroke="#c9c9d0" stroke-width="1.4"/>';
+    s+='<text x="'+AX+'" y="'+(cy+[4,3.3,2.7][d])+'" text-anchor="middle" class="ax">'+r.i+'</text>';
   });
   s+='</svg>';
   return s;
