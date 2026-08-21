@@ -3713,7 +3713,7 @@ function deleteProject(){
 }
 
 // ── Projekte nach Nummernkreis (erste drei Ziffern) ──
-let pOffen=new Set();
+let pOffen=new Set();  // startet leer = alle zu
 function pKreis(num){
   const s=String(num||'').trim();
   const m=s.match(/\d{4,}/);          // mind. 4 Ziffern → Kreis bilden
@@ -3769,9 +3769,7 @@ function openProjList(){
   body.innerHTML=rows.length
     ? (q ? rows.map(zeile).join('') : pGruppen(rows,zeile))
     : emptyBox('<svg viewBox="0 0 24 24"><use href="#i13"/></svg>','Nichts gefunden','Andere Schreibweise probieren oder Filter zurücksetzen','<button class="empty-a" onclick="clearSearches()">Filter zurücksetzen</button>');
-  setTimeout(bindProjSwipes,20);stagger('#projlist-body');
   if(!document.getElementById('m-projlist').classList.contains('active'))open_('m-projlist');
-  setTimeout(wireSwipe,30);
 }
 function selectProject(i){cur=i;close_('m-projlist');hideHome();renderHeader();render();}
 function delProjectByIdx(i){uiConfirm('Projekt löschen?',()=>{db.splice(i,1);if(!db.length)db.push(newProject());if(cur>=db.length)cur=0;persist();openProjList();renderHeader();render();});}
@@ -7760,10 +7758,13 @@ function renderCodeView(){
   // Beim ersten Anzeigen: alle Blöcke zugeklappt
   if(!cZuInit){
     cZuInit=true;cZu.clear();
-    let b=-1;
-    lines.forEach((l,i)=>{
-      const U=l.toUpperCase();
-      if(/^N\d+\s*G5[45]/.test(U.trim())||(/T\d{4}/.test(U)&&!/^\s*\(/.test(l))){b++;cZu.add(b);}
+    // exakt dieselbe Erkennung wie beim Rendern, sonst passen die Nummern nicht
+    let b=-1,offen=false;
+    lines.forEach(l=>{
+      const U=l.trim().toUpperCase();
+      const rahmen=/^N\d+G5[0-9]/.test(U);
+      const tzeile=/T\d{4}/.test(l)&&!/^\s*\(/.test(l);
+      if(rahmen||(tzeile&&!offen)){b++;cZu.add(b);offen=true;}
     });
   }
   let jumpIdx=-1;
