@@ -1474,6 +1474,14 @@ body.on-home #m-notizen>.sheet,body.on-home #m-calc>.sheet{overflow-y:auto;}
 .pgrp.open .pgrp-in{padding:2px 8px 8px;}
 body.dark .pgrp.open,body.on-home .sheet .pgrp.open{background:rgba(255,255,255,.04);}
 
+
+/* PIN-Tastatur: sofort reagieren, kein Doppeltipp-Zoom */
+#pin-zone,.keypad,.key-num,.key-del{touch-action:manipulation!important;-webkit-user-select:none;user-select:none;
+  -webkit-tap-highlight-color:transparent;}
+.key-num,.key-del{position:relative;z-index:5;pointer-events:auto!important;cursor:pointer;}
+.keypad{position:relative;z-index:5;}
+#splash{touch-action:manipulation;}
+
 /* ── SPLASH · Gruppen ───────────────────────────────────────── */
 #splash-cards{display:none;flex-direction:column;gap:8px;}
 .hsec{border-radius:16px;overflow:hidden;transition:background .2s var(--e-out);}
@@ -9118,6 +9126,23 @@ function pdfPickPrint(i){
 }
 // ═══ PIN KEYPAD ═══
 let pinVal='';
+// Tasten direkt an pointerdown hängen — click kann auf iOS/Chrome verschluckt werden
+function pinBind(){
+  document.querySelectorAll('.keypad .key-num,.keypad .key-del').forEach(b=>{
+    if(b._pb)return;b._pb=true;
+    const oc=b.getAttribute('onclick')||'';
+    const ziffer=(oc.match(/pinPush\('(\d)'\)/)||[])[1];
+    const loeschen=/pinDel/.test(oc);
+    b.removeAttribute('onclick');
+    b.addEventListener('pointerdown',ev=>{
+      ev.preventDefault();ev.stopPropagation();
+      if(ziffer!=null)pinPush(ziffer);
+      else if(loeschen)pinDel();
+    });
+  });
+}
+document.addEventListener('DOMContentLoaded',pinBind);
+setTimeout(pinBind,300);
 function pinRender(){document.querySelectorAll('#pin-dots span').forEach((d,i)=>d.classList.toggle('on',i<pinVal.length));}
 function pinPush(d){
   if(pinVal.length>=4)return;
