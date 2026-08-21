@@ -2334,14 +2334,7 @@ body.on-home .sheet .seg-b.on{background:#F2F3F5!important;color:#15161A!importa
   </div>
 </div>
 
-<!-- EINSTELLUNGEN -->
-<div class="overlay" id="m-set" onclick="if(event.target===this)close_('m-set')">
-  <div class="sheet" style="max-width:520px">
-    <div class="sheet-bar"></div>
-    <div class="sheet-title" style="margin-bottom:14px">Einstellungen</div>
-    <div id="set-body"></div>
-  </div>
-</div>
+
 
 <!-- DRUCKEN -->
 <div class="overlay" id="m-print" onclick="if(event.target===this)close_('m-print')">
@@ -3167,11 +3160,6 @@ function scheduleBrainSync(){
   clearTimeout(_brainTimer);
   _brainTimer=setTimeout(brainCloudPushSilent,3000);
 }
-async function brainCloudPushSilent(){
-  const c=sbClient();if(!c||!cloudSecret())return;
-  try{const {error}=await c.rpc('save_brain',{p_secret:cloudSecret(),p_data:brain});if(error)throw error;}
-  catch(e){sqAdd('brain',{data:brain});}
-}
 async function brainCloudPush(){
   const c=sbClient();if(!c)return;
   if(!cloudSecret()){askSecret(()=>brainCloudPush());return;}
@@ -3369,51 +3357,12 @@ function opTyp(t){
   return {k:'',lbl:''};
 }
 
-function opCard(t,i,listName){
-  const isRev = listName==='unten';
-  return `
-    <div class="op${isRev?' rev':''} ${opTyp(t).k?'t-'+opTyp(t).k:''}" data-list="${listName}" data-idx="${i}" data-nm="${esc((t.id||'')+'~'+(t.nm||''))}" tabindex="0">
-      ${hovBarHTML(listName,i)}
-      <div class="op-top">
-        <div class="op-slot">
-          ${dragHandleHTML()}
-          <div class="op-idx" onclick="moveTo('${listName}',${i})" style="cursor:pointer" title="Position ändern">${String(i+1).padStart(2,'0')}</div>
-          <div class="op-prog">${esc(t.id||t.slot||'—')}</div>
-          ${(listName==='oben'?P().codeOben:P().codeUnten)?`<button class="op-code" onclick="showCode('${listName}','${esc(t.id)}',${t.line!=null?t.line:-1})" title="Code anzeigen"><svg viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>Code</button>`:''}
-        </div>
-        <div class="op-ctrls">
-          <button class="opc" onclick="moveIn('${listName}',${i},-1)"><svg viewBox="0 0 24 24"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg></button>
-          <button class="opc" onclick="moveIn('${listName}',${i},1)"><svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg></button>
-          <button class="opc x" onclick="delIn('${listName}',${i})"><svg viewBox="0 0 24 24"><use href="#i12"/></svg></button>
-        </div>
-      </div>
-      <div class="op-title ${t.nm?'':'empty'}" onclick="editIn('${listName}',${i})">${esc(t.nm||'Leer — antippen')}</div>
-      <div class="op-tags">
-        ${opTyp(t).lbl?'<span class="op-typ"><i></i>'+opTyp(t).lbl+'</span>':''}
-        ${t.isSonder?'<span class="otag sp">Sonder</span>':''}
-        ${t.dia?'<span class="otag">Ø '+esc(t.dia).replace(/\n+/g,' / ')+'</span>':''}
-        ${t.bem?'<span class="otag tool" onclick="editIn(\''+listName+'\','+i+')">'+esc(t.bem)+'</span>':''}
-      </div>
-    </div>`;
-}
-
 let viewMode='karten';
 function setView(v){
   viewMode=v;
   document.getElementById('vt-karten').classList.toggle('active',v==='karten');
   document.getElementById('vt-liste').classList.toggle('active',v==='liste');
   render();
-}
-function lrow(t,i,listName){
-  const isRev=listName==='unten';
-  return `<div class="lrow ${isRev?'rev':''} ${opTyp(t).k?'t-'+opTyp(t).k:''}" data-list="${listName}" data-idx="${i}" data-nm="${esc((t.id||'')+'~'+(t.nm||''))}" tabindex="0" onclick="editIn('${listName}',${i})">
-    ${hovBarHTML(listName,i)}
-    ${dragHandleHTML()}<span class="lrow-idx">${String(i+1).padStart(2,'0')}</span>
-    <span class="lrow-id">${esc(t.id||'T—')}</span>
-    <span class="lrow-nm">${esc(t.nm||'Leer')}</span>
-    ${t.dia?`<span class="lrow-dia">Ø ${esc(t.dia).replace(/\n+/g,' / ')}</span>`:''}
-    ${t.isSonder?'<span class="lrow-sonder" title="Sonder"></span>':''}
-  </div>`;
 }
 function render(){
   const p=P(); if(!p.oben)p.oben=[]; if(!p.unten)p.unten=[];
@@ -3836,26 +3785,6 @@ function copyToolToOther(){
 
 
 // ── Swipe auf Projektkarten ──
-function wireSwipe(){
-  document.querySelectorAll('#projlist-body .libitem').forEach(el=>{
-    if(el._sw)return;el._sw=true;
-    let x0=0,y0=0,idx=el.dataset.pi;
-    el.addEventListener('touchstart',e=>{const t0=e.touches[0];x0=t0.clientX;y0=t0.clientY;el.style.transition='';},{passive:true});
-    el.addEventListener('touchmove',e=>{
-      const t0=e.touches[0],dx=t0.clientX-x0,dy=t0.clientY-y0;
-      if(Math.abs(dx)>Math.abs(dy)&&Math.abs(dx)>10){
-        el.style.transform='translateX('+dx*.6+'px)';
-        el.style.background=dx>0?'rgba(47,107,79,.12)':'rgba(196,61,51,.1)';
-      }
-    },{passive:true});
-    el.addEventListener('touchend',e=>{
-      const dx=(e.changedTouches[0].clientX-x0);
-      el.style.transition='transform .2s,background .2s';el.style.transform='';el.style.background='';
-      if(dx>70){const p=db[+idx];if(p){p.status='ok';persist();buzz(18);openProjList();toast('Fertig');}}
-      else if(dx<-70){delProjectByIdx(+idx);}
-    });
-  });
-}
 function openWip(){
   const wip=db.map((p,i)=>({p,i})).filter(({p})=>projStatus(p)==='wip');
   if(!wip.length){toast('Keine Projekte in Arbeit');return;}
@@ -4274,8 +4203,6 @@ function delNote(i){
   notesList().splice(i,1);saveBrain();persist();renderNotes();
   undoMerken('Notiz gelöscht',()=>{notesList().splice(i,0,kopie);saveBrain();persist();renderNotes();});
   return;}
-function delNoteAlt(i){uiConfirm('Notiz löschen?',()=>{notesList().splice(i,1);persist();renderNotes();});}
-
 let noteIdx=-1, ndCanvas, ndCtx, ndDrawing=false, ndMode='pen', ndUndoStack=[], ndReady=false, ndPendingInk=null;
 let nzFiles=[], nzCat='', noteFilter='';
 // ── Kategorien ──
@@ -6476,12 +6403,6 @@ function swipeBind(el,onLeft,onRight){
   };
   el.addEventListener('touchend',end);el.addEventListener('touchcancel',end);
 }
-function bindProjSwipes(){
-  document.querySelectorAll('#projlist-body .sw-wrap').forEach(w=>{
-    const i=+w.dataset.i;
-    swipeBind(w,()=>delProjectByIdx(i),()=>{db[i].status='ok';persist();beepOk();openProjList();});
-  });
-}
 function accent(){return localStorage.getItem('CT_ACC')||'ink';}
 function applyAccent(){
   document.body.classList.remove('acc-steel','acc-graphit');
@@ -7597,18 +7518,6 @@ function classifyToolBlock(lines,start,end){
   return sec;
 }
 
-function openToolCodeEditor(kanal,toolIdx){
-  const list=(kanal==='unten')?(P().unten||[]):(P().oben||[]);
-  const tool=list[toolIdx];
-  if(!tool){toast('Werkzeug nicht gefunden');return;}
-  const lines=getCode(kanal).split(/\r?\n/);
-  let start=(tool.line!=null&&tool.line>=0)?tool.line:0;
-  if(start>0&&/^N\d+G5/.test(lines[start-1].trim().toUpperCase()))start--;
-  let end=lines.length;
-  for(let j=toolIdx+1;j<list.length;j++){if(list[j].line!=null&&list[j].line>start){end=list[j].line;break;}}
-  openToolCodeEditorRaw(kanal,start,end,tool.id||'T—',tool.nm||'');
-}
-
 let tceSec={};
 function openToolCodeEditorRaw(kanal,start,end,tid,nm){
   const lines=getCode(kanal).split(/\r?\n/);
@@ -7835,7 +7744,6 @@ function renderCodeView(){
   if(typeof miniOn!=='undefined'&&miniOn)miniRender();
 }
 
-function resetFold(){cZuInit=false;}
 function showCode(kanal,jumpId,jumpLine){
   codeCtx={kanal,jumpId,jumpLine:(jumpLine!=null?jumpLine:-1)};
   // reset split & search
@@ -8083,11 +7991,6 @@ function upCode(line){
   return line.replace(/\([^)]*\)|[^()]+/g,seg=>seg.startsWith('(')?seg:seg.toUpperCase());
 }
 // EOB (End Of Block ';') — stored WITHOUT, added on export/copy
-function addEOB(line){
-  const t=line.replace(/\s*;?\s*$/,'');
-  if(t.trim()==='')return '';
-  return t+' ;';
-}
 function saveCodeEdit(){
   commitFrEdit();bkpPush();
   const txt=frLines.map(upCode).join('\n');
@@ -8109,17 +8012,6 @@ function openKonturDraw(){
   kzSetSpindel('ro');
   open_('m-kontur');
   setTimeout(()=>{kzInitCanvas();kzRender();},60);
-}
-function kzReadFields(){
-  const g=id=>{const v=document.getElementById(id).value;return v!==''?v:null;};
-  const num=v=>v!=null?parseFloat(v):null;
-  return {
-    x:(()=>{const v=num(g('kz-x'));return v!=null?Math.abs(v):null;})(),
-    z:num(g('kz-z')),
-    a:num(g('kz-a')),
-    r:num(g('kz-r')),
-    f:g('kz-f') // keep as string (.05, .1)
-  };
 }
 function kzClearFields(){['kz-x','kz-z','kz-a','kz-r','kz-f'].forEach(id=>document.getElementById(id).value='');}
 function kzSelectPoint(i){
