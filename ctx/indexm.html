@@ -2871,27 +2871,43 @@ function buildMindmapSVG(p,s1,s2){
     const bx=side==='L'?x:x+NW-4.5;
     g+='<rect x="'+bx+'" y="'+(y+1)+'" width="4.5" height="'+(NH-2)+'" rx="2.2" fill="'+col+'"/>';
     const tx=side==='L'?x+15:x+13;
-    // Titel
-    let t=String(op.title||op.code||'');
-    const mx=Math.round((cross?30:34)*Math.min(1.2,1/k*0.95));
-    if(t.length>mx)t=t.slice(0,mx-1)+'…';
-    g+='<text x="'+tx+'" y="'+(y+yT)+'" class="t">'+esc(t)+'</text>';
-    // Fußzeile: nur L-Code (+ T-Nr rechts)
-    g+='<text x="'+tx+'" y="'+(y+yC)+'" class="c">'+esc(op.category||'')+'</text>';
-    const rx=side==='L'?x+NW-14:x+NW-13;
-    if(op.tno)g+='<text x="'+rx+'" y="'+(y+yC)+'" text-anchor="end" class="tn" fill="'+col+'">'+esc(op.tno)+'</text>';
-    // Badges oben rechts: [CROSS] [SP4/SP3]
-    const bh=Math.max(11,NH*0.28), by=y+(NH-bh)/2-NH*0.17;
-    const spw=bh*2.5, crw=bh*3.4, gap=4;
-    let bxx=(side==='L'?x+NW-14:x+NW-13)-spw;
-    // Spindel-Badge (immer)
+    const bh=Math.max(11,NH*0.28);
+    const spw=bh*2.5, crw=bh*3.4;
+    // Spindel-Badge oben rechts
+    const bxx=(side==='L'?x+NW-14:x+NW-13)-spw;
+    const by=y+(NH-bh)/2-NH*0.17;
     g+='<rect x="'+bxx+'" y="'+by+'" width="'+spw+'" height="'+bh+'" rx="'+(bh/2)+'" fill="'+col+'"/>';
     g+='<text x="'+(bxx+spw/2)+'" y="'+(by+bh*0.73)+'" text-anchor="middle" class="xb">'+esc(op.spindle||'SP4')+'</text>';
-    // Cross-Badge links daneben
+    // Titel
+    let t=String(op.title||op.code||'');
+    const cw=fT*0.55;
+    const avail=(bxx-8)-tx-(cross?crw+7:0);
+    const mx=Math.max(6,Math.floor(avail/cw));
+    if(t.length>mx)t=t.slice(0,mx-1)+'\u2026';
+    g+='<text x="'+tx+'" y="'+(y+yT)+'" class="t">'+esc(t)+'</text>';
+    // Cross-Badge direkt hinter dem Operationsnamen
     if(cross){
-      const cxx=bxx-gap-crw;
-      g+='<rect x="'+cxx+'" y="'+by+'" width="'+crw+'" height="'+bh+'" rx="'+(bh/2)+'" fill="'+A+'"/>';
-      g+='<text x="'+(cxx+crw/2)+'" y="'+(by+bh*0.73)+'" text-anchor="middle" class="xb">CROSS</text>';
+      const cxx=tx+t.length*cw+7;
+      const cy2=y+yT-bh*0.78;
+      g+='<rect x="'+cxx+'" y="'+cy2+'" width="'+crw+'" height="'+bh+'" rx="'+(bh/2)+'" fill="'+A+'"/>';
+      g+='<text x="'+(cxx+crw/2)+'" y="'+(cy2+bh*0.73)+'" text-anchor="middle" class="xb">CROSS</text>';
+    }
+    // Fußzeile: T-Nr + Werkzeugname
+    const chK=(side==='L')?'1':'2';
+    let tname=op.tname||'';
+    if(!tname&&op.tno){
+      const dig=String(op.tno).replace(/\D/g,'');
+      const hit=(TOOLS[chK]||[]).find(w=>String(w.pl)===String(parseInt(dig,10)));
+      if(hit)tname=hit.name||'';
+    }
+    if(op.tno||tname){
+      let fn=String(tname||'');
+      const favail=(bxx-8)-tx-(op.tno?String(op.tno).length*fC*0.62+8:0);
+      const fmx=Math.max(4,Math.floor(favail/(fC*0.6)));
+      if(fn.length>fmx)fn=fn.slice(0,fmx-1)+'\u2026';
+      g+='<text x="'+tx+'" y="'+(y+yC)+'" class="c">'
+        +(op.tno?'<tspan class="tn" fill="'+col+'">'+esc(op.tno)+'</tspan>  ':'')
+        +esc(fn)+'</text>';
     }
     return g;
   }
