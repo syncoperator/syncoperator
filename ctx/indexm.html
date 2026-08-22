@@ -1065,13 +1065,21 @@ select option{background:var(--surface);color:var(--ink);}
 
   .pp-header{display:block;width:100%;border-bottom:1.6px solid #111;padding-bottom:2mm;margin-bottom:3mm;}
 
-  .meta-strip{display:flex !important;flex-wrap:wrap;align-items:baseline;gap:1.2mm 5mm;
-    padding:2mm 0 2.6mm;margin-bottom:3.2mm;border-bottom:.4mm solid #ececf0;
+  .ds{display:flex !important;align-items:stretch;gap:0;
+    border-top:.5mm solid #15151a;border-bottom:.25mm solid #d8d8de;
+    padding:2.4mm 0 2.8mm;margin-bottom:4mm;
     page-break-inside:avoid !important;break-inside:avoid !important;}
-  .ms-i{display:inline-flex !important;align-items:baseline;gap:1.6mm;white-space:nowrap;}
-  .ms-k{font-family:'JetBrains Mono',monospace;font-size:5.8pt;font-weight:700;letter-spacing:.1em;
-    text-transform:uppercase;color:#a8a8b0;}
-  .ms-v{font-family:'Inter',sans-serif;font-size:8.6pt;font-weight:650;color:#15151a;}
+  .ds-g{flex:1 1 0;min-width:0;padding:0 4mm;border-left:.2mm solid #e6e6ea;}
+  .ds-g:first-child{padding-left:0;border-left:none;}
+  .ds-g:last-child{padding-right:0;}
+  .ds-t{font-family:'JetBrains Mono',monospace;font-size:5.4pt;font-weight:800;letter-spacing:.18em;
+    text-transform:uppercase;color:#b4b4bc;margin-bottom:1.4mm;}
+  .ds-r{display:flex !important;align-items:baseline;gap:1.2mm;margin-bottom:.9mm;}
+  .ds-r:last-child{margin-bottom:0;}
+  .ds-k{font-family:'Inter',sans-serif;font-size:6.6pt;font-weight:500;color:#8e8e98;white-space:nowrap;
+    overflow:hidden;text-overflow:ellipsis;flex:0 1 auto;}
+  .ds-d{flex:1 1 auto;min-width:2mm;border-bottom:.2mm dotted #d2d2d8;transform:translateY(-.5mm);}
+  .ds-v{font-family:'JetBrains Mono',monospace;font-size:8.2pt;font-weight:700;color:#15151a;white-space:nowrap;flex:0 0 auto;}
   .mm-svg{display:block;width:100%;height:auto;max-height:232mm;page-break-inside:avoid;break-inside:avoid;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
   .mm-svg.mm-wkz{max-height:216mm;}
   .pp-header .ph-row{display:flex;align-items:baseline;gap:4mm;}
@@ -2995,10 +3003,27 @@ function buildPrintWkz(){
 function metaStripHTML(){
   const rows=(META||[]).filter(m=>(m.k||'').trim()&&(m.v||'').trim());
   if(!rows.length)return '';
-  return '<div class="meta-strip">'+rows.map(r=>
-    '<span class="ms-i"><span class="ms-k">'+esc(r.k)+'</span><span class="ms-v">'+esc(r.v)+'</span></span>'
-  ).join('')+'</div>';
+  // Fachliche Gruppierung wie auf einem Einrichteblatt
+  const GRP=[
+    {t:'Werkstück',  re:/material|werkstoff|laufzeit|zeichnung/i},
+    {t:'Stange',     re:/s(ä|a)ge|stange|ausspann|restst(ü|u)ck|zange|schnitt|toleranz|durchlauf/i},
+    {t:'Spannmittel',re:/backen|futter|spann/i},
+    {t:'Robo2Go',    re:/robo|greifer|lader/i}
+  ];
+  const buckets=GRP.map(g=>({t:g.t,items:[]})); const rest=[];
+  rows.forEach(r=>{
+    const i=GRP.findIndex(g=>g.re.test(r.k));
+    if(i>=0)buckets[i].items.push(r); else rest.push(r);
+  });
+  if(rest.length)buckets.push({t:'Weitere',items:rest});
+  const used=buckets.filter(b=>b.items.length);
+  if(!used.length)return '';
+  return '<div class="ds">'+used.map(b=>
+    '<div class="ds-g"><div class="ds-t">'+esc(b.t)+'</div>'+
+    b.items.map(r=>'<div class="ds-r"><span class="ds-k">'+esc(r.k)+'</span><span class="ds-d"></span><span class="ds-v">'+esc(r.v)+'</span></div>').join('')+
+    '</div>').join('')+'</div>';
 }
+
 // Werkzeug-Mindmap: Mittelachse = T-Nummer, links Kanal 1, rechts Kanal 2
 function buildWkzMindmapSVG(p){
   const t1=TOOLS['1']||[], t2=TOOLS['2']||[];
