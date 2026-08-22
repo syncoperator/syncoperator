@@ -1065,22 +1065,9 @@ select option{background:var(--surface);color:var(--ink);}
 
   .pp-header{display:block;width:100%;border-bottom:1.6px solid #111;padding-bottom:2mm;margin-bottom:3mm;}
 
-  .ph2{display:flex !important;align-items:flex-end;justify-content:space-between;gap:10mm;
-    padding-bottom:2.4mm;margin-bottom:5mm;border-bottom:1.4mm solid #111;}
-  .ph2-l{min-width:0;}
-  .ph2-bez{font-family:'Inter',sans-serif;font-size:11pt;font-weight:700;letter-spacing:.02em;
-    color:#111;text-transform:uppercase;margin-bottom:.6mm;}
-  .ph2-zn{font-family:'Inter',sans-serif;font-size:34pt;font-weight:800;line-height:.92;
-    letter-spacing:-.02em;color:#111;}
-  .ph2-r{flex:0 0 auto;}
-  .ph-meta{border-collapse:collapse;min-width:62mm;}
-  .ph-meta td{padding:.9mm 0;border-bottom:.25mm solid #c9c9d0;font-size:7.6pt;line-height:1.15;}
-  .ph-meta tr:first-child td{border-top:.25mm solid #c9c9d0;}
-  .pm-k{font-family:'Inter',sans-serif;font-weight:700;color:#111;text-transform:uppercase;
-    letter-spacing:.04em;padding-right:8mm !important;white-space:nowrap;}
-  .pm-v{font-family:'Inter',sans-serif;font-weight:700;color:#111;text-align:right;white-space:nowrap;}
+  .mm-svg.mm-stamm{max-height:52mm;margin-bottom:4mm;}
   .mm-svg{display:block;width:100%;height:auto;max-height:232mm;page-break-inside:avoid;break-inside:avoid;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
-  .mm-svg.mm-wkz{max-height:216mm;}
+  .mm-svg.mm-wkz{max-height:196mm;}
   .pp-header .ph-row{display:flex;align-items:baseline;gap:4mm;}
   .ph-zn{font-family:'JetBrains Mono',monospace;font-size:14pt;font-weight:800;color:#111;letter-spacing:.01em;}
   .ph-bez{font-family:'Inter',sans-serif;font-size:14pt;font-weight:600;color:#111;}
@@ -2855,7 +2842,7 @@ function setOrient(o){const st=document.getElementById('pageOrient');if(st)st.te
 function ph(){return {zn:esc((document.getElementById('inZN').value||'').trim())||'—',bez:esc((document.getElementById('inBez').value||'').trim())||'—'};}
 function buildPrintPlan(){
   const p=ph();
-  let h=printHeadHTML(p,false);
+  let h='<div class="pp-header"><div class="ph-row"><div class="ph-zn">'+p.zn+'</div><div class="ph-bez">'+p.bez+'</div></div></div>';
   h+=buildMindmapSVG(p,DATA['1'],DATA['2']);
   return h;
 }
@@ -2993,22 +2980,58 @@ function wkzColHTML(ch){
 }
 function buildPrintWkz(){
   const p=ph();
-  let h=printHeadHTML(p,true);
+  let h='<div class="pp-header"><div class="ph-row"><div class="ph-zn">'+p.zn+'</div><div class="ph-bez">'+p.bez+'</div></div></div>';
+  h+=buildStammMindmapSVG();
   h+=buildWkzMindmapSVG(p);
   return h;
 }
 // Kompakte Stammdaten-Leiste unter der Kopfzeile
-function printHeadHTML(p,withMeta){
-  let m='';
-  if(withMeta){
-    const rows=(META||[]).filter(x=>(x.k||'').trim()&&(x.v||'').trim());
-    if(rows.length)m='<table class="ph-meta">'+rows.map(r=>
-      '<tr><td class="pm-k">'+esc(r.k)+'</td><td class="pm-v">'+esc(r.v)+'</td></tr>').join('')+'</table>';
+function buildStammMindmapSVG(){
+  const rows=(META||[]).filter(x=>(x.k||'').trim()&&(x.v||'').trim());
+  if(!rows.length)return '';
+  // zwei Karten pro Zeile, zickzack um die Mittelschiene
+  const pairs=[];
+  for(let i=0;i<rows.length;i+=2)pairs.push([rows[i],rows[i+1]||null]);
+  const W=1000, AX=W/2, HEAD=22, PAD=6;
+  const NH=30, GAP=9, ROW=NH+GAP, NW=436, R=4.5;
+  const H=HEAD+pairs.length*ROW+PAD;
+  const G='#2F9E68';
+  let s='<svg class="mm-svg mm-stamm" viewBox="0 0 '+W+' '+H+'" xmlns="http://www.w3.org/2000/svg">';
+  s+='<style>'
+    +'.sk{font-family:"JetBrains Mono",monospace;font-size:7px;font-weight:700;letter-spacing:.12em;fill:#a8a8b0}'
+    +'.sv2{font-family:Inter,sans-serif;font-size:12.5px;font-weight:700;fill:#15151a}'
+    +'.shd{font-family:"JetBrains Mono",monospace;font-size:9.5px;font-weight:800;letter-spacing:.14em;fill:#8e8e98}'
+  +'</style>';
+  s+='<text x="'+AX+'" y="12" text-anchor="middle" class="shd">STAMMDATEN</text>';
+  const yA=HEAD+ROW/2, yB=HEAD+(pairs.length-0.5)*ROW;
+  s+='<path d="M '+AX+' '+(yA-NH*0.3)+' V '+(yB+NH*0.3)+'" stroke="#e2e2e6" stroke-width="2.2" stroke-linecap="round" fill="none"/>';
+  function card(m,side,cy){
+    if(!m)return '';
+    const x=side==='L'?(AX-14-NW):(AX+14);
+    const y=cy-NH/2;
+    let g='';
+    const px=side==='L'?x+NW:x;
+    g+='<path d="M '+px+' '+cy+' H '+(side==='L'?AX-R:AX+R)+'" stroke="#dcdce1" stroke-width="1.4" fill="none"/>';
+    g+='<rect x="'+x+'" y="'+y+'" width="'+NW+'" height="'+NH+'" rx="8" fill="#fff" stroke="#e0e0e5" stroke-width="1"/>';
+    const bx=side==='L'?x:x+NW-4;
+    g+='<rect x="'+bx+'" y="'+(y+1)+'" width="4" height="'+(NH-2)+'" rx="2" fill="'+G+'"/>';
+    const tx=side==='L'?x+14:x+13;
+    let k=String(m.k||'').toUpperCase(); if(k.length>26)k=k.slice(0,25)+'\u2026';
+    let v=String(m.v||''); if(v.length>22)v=v.slice(0,21)+'\u2026';
+    g+='<text x="'+tx+'" y="'+(y+12)+'" class="sk">'+esc(k)+'</text>';
+    g+='<text x="'+tx+'" y="'+(y+25)+'" class="sv2">'+esc(v)+'</text>';
+    return g;
   }
-  return '<div class="ph2"><div class="ph2-l"><div class="ph2-bez">'+esc(p.bez||'')+'</div>'
-    +'<div class="ph2-zn">'+esc(p.zn||'')+'</div></div>'
-    +'<div class="ph2-r">'+m+'</div></div>';
+  pairs.forEach((pr,idx)=>{
+    const cy=HEAD+idx*ROW+ROW/2;
+    s+=card(pr[0],'L',cy);
+    s+=card(pr[1],'R',cy);
+    s+='<circle cx="'+AX+'" cy="'+cy+'" r="'+R+'" fill="#fff" stroke="#c9c9d0" stroke-width="1.3"/>';
+  });
+  s+='</svg>';
+  return s;
 }
+
 
 
 // Werkzeug-Mindmap: Mittelachse = T-Nummer, links Kanal 1, rechts Kanal 2
