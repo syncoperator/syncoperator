@@ -1064,6 +1064,11 @@ select option{background:var(--surface);color:var(--ink);}
   #printArea::before,#printArea::after{display:none !important;}
 
   .pp-header{display:block;width:100%;border-bottom:1.6px solid #111;padding-bottom:2mm;margin-bottom:3mm;}
+
+  .meta-strip{display:grid !important;grid-template-columns:repeat(4,1fr);gap:0;border:1px solid #d4d4d8;border-radius:2mm;overflow:hidden;margin-bottom:4mm;page-break-inside:avoid !important;break-inside:avoid !important;}
+  .ms-cell{display:flex !important;flex-direction:column;gap:.4mm;padding:1.6mm 2.6mm;border-right:1px solid #e8e8ec;border-bottom:1px solid #e8e8ec;min-width:0;}
+  .ms-k{font-family:'JetBrains Mono',monospace;font-size:5.6pt;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#9a9aa2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .ms-v{font-family:'Inter',sans-serif;font-size:8.5pt;font-weight:650;color:#15151a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .mm-svg{display:block;width:100%;height:auto;max-height:232mm;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
   .pp-header .ph-row{display:flex;align-items:baseline;gap:4mm;}
   .ph-zn{font-family:'JetBrains Mono',monospace;font-size:14pt;font-weight:800;color:#111;letter-spacing:.01em;}
@@ -2936,8 +2941,17 @@ function wkzColHTML(ch){
 function buildPrintWkz(){
   const p=ph();
   let h='<div class="pp-header"><div class="ph-row"><div class="ph-zn">'+p.zn+'</div><div class="ph-bez">'+p.bez+'</div></div></div>';
+  h+=metaStripHTML();          // Stammdaten: Laufzeit, Backen-Nr. …
   h+=buildWkzMindmapSVG(p);
   return h;
+}
+// Kompakte Stammdaten-Leiste unter der Kopfzeile
+function metaStripHTML(){
+  const rows=(META||[]).filter(m=>(m.k||'').trim()&&(m.v||'').trim());
+  if(!rows.length)return '';
+  return '<div class="meta-strip">'+rows.map(r=>
+    '<div class="ms-cell"><span class="ms-k">'+esc(r.k)+'</span><span class="ms-v">'+esc(r.v)+'</span></div>'
+  ).join('')+'</div>';
 }
 // Werkzeug-Mindmap: Mittelachse = T-Nummer, links Kanal 1, rechts Kanal 2
 function buildWkzMindmapSVG(p){
@@ -3020,8 +3034,8 @@ function buildWkzMindmapSVG(p){
     s+=card(r.b,'R',cy);
     // T-Nummer als zentrale Pille (Hauptsache)
     const pw=HW*2, phh=Math.max(20,NH*0.56);
-    s+='<rect x="'+(AX-pw/2)+'" y="'+(cy-phh/2)+'" width="'+pw+'" height="'+phh+'" rx="'+(phh/2)+'" fill="#15151a"/>';
-    s+='<text x="'+AX+'" y="'+(cy+fA*0.35)+'" text-anchor="middle" class="ax" fill="#fff">T'+String(r.t).padStart(2,'0')+'</text>';
+    s+='<rect x="'+(AX-pw/2)+'" y="'+(cy-phh/2)+'" width="'+pw+'" height="'+phh+'" rx="'+(phh/2)+'" fill="#fff" stroke="#c9c9d0" stroke-width="1.3"/>';
+    s+='<text x="'+AX+'" y="'+(cy+fA*0.35)+'" text-anchor="middle" class="ax">T'+String(r.t).padStart(2,'0')+'</text>';
   });
   s+='</svg>';
   return s;
