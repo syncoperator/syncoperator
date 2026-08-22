@@ -1149,6 +1149,40 @@ select option{background:var(--surface);color:var(--ink);}
 .dr-cat.open .dr-cat-b{display:block;}
 .dr-cat .dr-item{border-radius:11px;padding:11px 12px;}
 .dr-hint{font-family:var(--mono);font-size:9px;color:var(--sp4);opacity:0;transition:.3s;margin-left:auto;}
+
+/* ===== PIN-Overlay (statt Splash) ===== */
+.pinov{position:fixed;inset:0;z-index:200;display:flex;align-items:flex-end;justify-content:center;
+  background:rgba(8,9,12,.55);backdrop-filter:saturate(160%) blur(14px);-webkit-backdrop-filter:saturate(160%) blur(14px);
+  transition:opacity .34s var(--ease),visibility .34s;}
+.pinov.hide{opacity:0;visibility:hidden;pointer-events:none;}
+.pinov.nofade,.pinov.nofade .pinov-card{transition:none !important;animation:none !important;}
+.pinov-card{width:min(400px,100%);background:var(--surface);border-radius:28px 28px 0 0;
+  border-top:.5px solid var(--line);box-shadow:0 -16px 60px rgba(0,0,0,.4);
+  padding:26px 24px calc(28px + env(safe-area-inset-bottom,0));
+  display:flex;flex-direction:column;align-items:center;gap:0;position:relative;
+  transform:translateY(0);animation:pinUp .48s cubic-bezier(.32,.72,0,1) both;}
+.pinov.hide .pinov-card{transform:translateY(100%);transition:transform .34s var(--ease);}
+@keyframes pinUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.pinov-card::before{content:'';position:absolute;top:10px;left:50%;transform:translateX(-50%);
+  width:38px;height:4px;border-radius:2px;background:var(--line-3);opacity:.7;}
+.pin-mark{width:76px;height:76px;border-radius:22px;margin-top:6px;}
+.pinov-name{font-size:22px;font-weight:800;letter-spacing:-.02em;color:var(--ink);margin-top:14px;}
+.pinov-name span{color:var(--ink-4);}
+.pinov-sub{font-family:var(--mono);font-size:9px;letter-spacing:.28em;text-transform:uppercase;color:var(--ink-5);margin-top:4px;}
+.pinov-card .gate-label{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-4);margin-top:22px;}
+.pinov-card .pin{display:flex;gap:14px;margin-top:12px;}
+.pinov-card .pin-dot{width:13px;height:13px;border-radius:50%;background:transparent;border:1.6px solid var(--line-3);transition:.2s var(--ease);}
+.pinov-card .pin-dot.on{background:var(--ink);border-color:var(--ink);transform:scale(1.12);}
+.pinov-card .keys{display:grid;grid-template-columns:repeat(3,74px);gap:12px;margin-top:22px;}
+.pinov-card .key{height:60px;display:flex;align-items:center;justify-content:center;border-radius:20px;
+  background:var(--surface-2);border:.5px solid var(--line);font-family:var(--mono);font-size:22px;font-weight:600;
+  color:var(--ink);cursor:pointer;user-select:none;transition:.12s var(--ease);}
+.pinov-card .key:active{transform:scale(.94);background:var(--bg-2);}
+.pinov-card .key.empty{background:transparent;border:none;cursor:default;}
+.pinov-card .key svg{width:24px;height:24px;}
+.pinov-card .gate-hint{font-family:var(--mono);font-size:10.5px;color:var(--danger);min-height:16px;margin-top:14px;letter-spacing:.04em;}
+.pinov-card.shake{animation:pinShake .42s;}
+@keyframes pinShake{10%,90%{transform:translateX(-2px)}20%,80%{transform:translateX(4px)}30%,50%,70%{transform:translateX(-7px)}40%,60%{transform:translateX(7px)}}
 </style>
 <style id="pageOrient">@page { size: A4 landscape; margin: 8mm; }
 /* ===== Launcher: Kategorien-Akkordeon ===== */
@@ -1187,28 +1221,24 @@ select option{background:var(--surface);color:var(--ink);}
 </style>
 </head>
 <body>
-<div class="splash" id="splash">
-  <div class="logo-xl">
-    <div class="logo-box splash-mark"><span class="logo-mark"></span></div>
-  </div>
-  <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
-    <div class="splash-name">Citi<span>Tool</span></div>
-    <div class="splash-sub">SyncOperator · CNC</div>
-  </div>
-  <div class="gate" id="gate">
+<div class="pinov" id="splash">
+  <div class="pinov-card" id="gate">
+    <div class="logo-box pin-mark"><span class="logo-mark"></span></div>
+    <div class="pinov-name">Citi<span>Tool</span></div>
+    <div class="pinov-sub">SyncOperator · CNC</div>
     <div class="gate-label">Zugangscode</div>
     <div class="pin" id="pin"><div class="pin-dot"></div><div class="pin-dot"></div><div class="pin-dot"></div><div class="pin-dot"></div></div>
     <div class="keys" id="keys">
       <div class="key" data-d="1">1</div><div class="key" data-d="2">2</div><div class="key" data-d="3">3</div>
       <div class="key" data-d="4">4</div><div class="key" data-d="5">5</div><div class="key" data-d="6">6</div>
       <div class="key" data-d="7">7</div><div class="key" data-d="8">8</div><div class="key" data-d="9">9</div>
-      <div class="key empty"></div><div class="key" data-d="0">0</div><div class="key wide" data-act="del">⌫</div>
+      <div class="key empty"></div><div class="key" data-d="0">0</div><div class="key" data-act="del"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20 5H9l-6 7 6 7h11a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1z"/><path d="M17 9.5L12 14.5M12 9.5l5 5"/></svg></div>
     </div>
     <div class="gate-hint" id="gateHint"></div>
   </div>
 </div>
 
-<div class="launch" id="launch">
+<div class="launch show" id="launch">
   <div class="launch-top">
     <div class="logo-box launch-mark"><span class="logo-mark"></span></div>
     <div class="launch-titles"><div class="launch-name">Citi<span>Tool</span></div><div class="launch-sub">SyncOperator · CNC</div></div>
@@ -1371,14 +1401,24 @@ function toggleTheme(){
 /* ===== GATE ===== */
 (function(){
   const CODE='3504';let buf='';
+  const LSK='CitiTool_gate_until';        // Zugang 10 Minuten merken
+  const TTL=10*60*1000;
+  function unlockedUntil(){try{return parseInt(localStorage.getItem(LSK)||'0',10)||0;}catch(e){return 0;}}
+  function remember(){try{localStorage.setItem(LSK,String(Date.now()+TTL));}catch(e){}}
   const dots=()=>document.querySelectorAll('#pin .pin-dot');
   function upd(){dots().forEach((d,i)=>d.classList.toggle('on',i<buf.length));}
-  function ok(){document.getElementById('splash').classList.add('hide');document.getElementById('launch').classList.add('show');setTimeout(()=>{try{boot();}catch(e){console.error(e);}},60);}
+  function ok(skip){if(!skip)remember();
+    const sp=document.getElementById('splash');
+    if(skip)sp.classList.add('nofade');
+    sp.classList.add('hide');document.getElementById('launch').classList.add('show');
+    setTimeout(()=>{try{boot();}catch(e){console.error(e);}},60);}
   function fail(){const g=document.getElementById('gate');g.classList.add('shake');document.getElementById('gateHint').textContent='Falscher Code';setTimeout(()=>{g.classList.remove('shake');buf='';upd();document.getElementById('gateHint').textContent='';},500);}
   function push(d){if(buf.length>=4)return;buf+=d;upd();if(buf.length===4){setTimeout(()=>{if(buf===CODE)ok();else fail();},150);}}
   function del(){buf=buf.slice(0,-1);upd();}
   document.getElementById('keys').addEventListener('click',e=>{const k=e.target.closest('.key');if(!k)return;if(k.dataset.act==='del')del();else if(k.dataset.d!==undefined)push(k.dataset.d);});
   document.addEventListener('keydown',e=>{if(document.getElementById('splash').classList.contains('hide'))return;if(/^[0-9]$/.test(e.key))push(e.key);else if(e.key==='Backspace')del();});
+  // noch gültig? -> direkt öffnen
+  if(Date.now()<unlockedUntil())ok(true);
 })();
 
 /* ===== MODEL ===== */
