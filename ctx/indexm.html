@@ -1065,21 +1065,20 @@ select option{background:var(--surface);color:var(--ink);}
 
   .pp-header{display:block;width:100%;border-bottom:1.6px solid #111;padding-bottom:2mm;margin-bottom:3mm;}
 
-  .ds{display:flex !important;align-items:stretch;gap:0;
-    border-top:.5mm solid #15151a;border-bottom:.25mm solid #d8d8de;
-    padding:2.4mm 0 2.8mm;margin-bottom:4mm;
-    page-break-inside:avoid !important;break-inside:avoid !important;}
-  .ds-g{flex:1 1 0;min-width:0;padding:0 4mm;border-left:.2mm solid #e6e6ea;}
-  .ds-g:first-child{padding-left:0;border-left:none;}
-  .ds-g:last-child{padding-right:0;}
-  .ds-t{font-family:'JetBrains Mono',monospace;font-size:5.4pt;font-weight:800;letter-spacing:.18em;
-    text-transform:uppercase;color:#b4b4bc;margin-bottom:1.4mm;}
-  .ds-r{display:flex !important;align-items:baseline;gap:1.2mm;margin-bottom:.9mm;}
-  .ds-r:last-child{margin-bottom:0;}
-  .ds-k{font-family:'Inter',sans-serif;font-size:6.6pt;font-weight:500;color:#8e8e98;white-space:nowrap;
-    overflow:hidden;text-overflow:ellipsis;flex:0 1 auto;}
-  .ds-d{flex:1 1 auto;min-width:2mm;border-bottom:.2mm dotted #d2d2d8;transform:translateY(-.5mm);}
-  .ds-v{font-family:'JetBrains Mono',monospace;font-size:8.2pt;font-weight:700;color:#15151a;white-space:nowrap;flex:0 0 auto;}
+  .ph2{display:flex !important;align-items:flex-end;justify-content:space-between;gap:10mm;
+    padding-bottom:2.4mm;margin-bottom:5mm;border-bottom:1.4mm solid #111;}
+  .ph2-l{min-width:0;}
+  .ph2-bez{font-family:'Inter',sans-serif;font-size:11pt;font-weight:700;letter-spacing:.02em;
+    color:#111;text-transform:uppercase;margin-bottom:.6mm;}
+  .ph2-zn{font-family:'Inter',sans-serif;font-size:34pt;font-weight:800;line-height:.92;
+    letter-spacing:-.02em;color:#111;}
+  .ph2-r{flex:0 0 auto;}
+  .ph-meta{border-collapse:collapse;min-width:62mm;}
+  .ph-meta td{padding:.9mm 0;border-bottom:.25mm solid #c9c9d0;font-size:7.6pt;line-height:1.15;}
+  .ph-meta tr:first-child td{border-top:.25mm solid #c9c9d0;}
+  .pm-k{font-family:'Inter',sans-serif;font-weight:700;color:#111;text-transform:uppercase;
+    letter-spacing:.04em;padding-right:8mm !important;white-space:nowrap;}
+  .pm-v{font-family:'Inter',sans-serif;font-weight:700;color:#111;text-align:right;white-space:nowrap;}
   .mm-svg{display:block;width:100%;height:auto;max-height:232mm;page-break-inside:avoid;break-inside:avoid;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
   .mm-svg.mm-wkz{max-height:216mm;}
   .pp-header .ph-row{display:flex;align-items:baseline;gap:4mm;}
@@ -2856,7 +2855,7 @@ function setOrient(o){const st=document.getElementById('pageOrient');if(st)st.te
 function ph(){return {zn:esc((document.getElementById('inZN').value||'').trim())||'—',bez:esc((document.getElementById('inBez').value||'').trim())||'—'};}
 function buildPrintPlan(){
   const p=ph();
-  let h='<div class="pp-header"><div class="ph-row"><div class="ph-zn">'+p.zn+'</div><div class="ph-bez">'+p.bez+'</div></div></div>';
+  let h=printHeadHTML(p,false);
   h+=buildMindmapSVG(p,DATA['1'],DATA['2']);
   return h;
 }
@@ -2994,35 +2993,23 @@ function wkzColHTML(ch){
 }
 function buildPrintWkz(){
   const p=ph();
-  let h='<div class="pp-header"><div class="ph-row"><div class="ph-zn">'+p.zn+'</div><div class="ph-bez">'+p.bez+'</div></div></div>';
-  h+=metaStripHTML();          // Stammdaten: Laufzeit, Backen-Nr. …
+  let h=printHeadHTML(p,true);
   h+=buildWkzMindmapSVG(p);
   return h;
 }
 // Kompakte Stammdaten-Leiste unter der Kopfzeile
-function metaStripHTML(){
-  const rows=(META||[]).filter(m=>(m.k||'').trim()&&(m.v||'').trim());
-  if(!rows.length)return '';
-  // Fachliche Gruppierung wie auf einem Einrichteblatt
-  const GRP=[
-    {t:'Werkstück',  re:/material|werkstoff|laufzeit|zeichnung/i},
-    {t:'Stange',     re:/s(ä|a)ge|stange|ausspann|restst(ü|u)ck|zange|schnitt|toleranz|durchlauf/i},
-    {t:'Spannmittel',re:/backen|futter|spann/i},
-    {t:'Robo2Go',    re:/robo|greifer|lader/i}
-  ];
-  const buckets=GRP.map(g=>({t:g.t,items:[]})); const rest=[];
-  rows.forEach(r=>{
-    const i=GRP.findIndex(g=>g.re.test(r.k));
-    if(i>=0)buckets[i].items.push(r); else rest.push(r);
-  });
-  if(rest.length)buckets.push({t:'Weitere',items:rest});
-  const used=buckets.filter(b=>b.items.length);
-  if(!used.length)return '';
-  return '<div class="ds">'+used.map(b=>
-    '<div class="ds-g"><div class="ds-t">'+esc(b.t)+'</div>'+
-    b.items.map(r=>'<div class="ds-r"><span class="ds-k">'+esc(r.k)+'</span><span class="ds-d"></span><span class="ds-v">'+esc(r.v)+'</span></div>').join('')+
-    '</div>').join('')+'</div>';
+function printHeadHTML(p,withMeta){
+  let m='';
+  if(withMeta){
+    const rows=(META||[]).filter(x=>(x.k||'').trim()&&(x.v||'').trim());
+    if(rows.length)m='<table class="ph-meta">'+rows.map(r=>
+      '<tr><td class="pm-k">'+esc(r.k)+'</td><td class="pm-v">'+esc(r.v)+'</td></tr>').join('')+'</table>';
+  }
+  return '<div class="ph2"><div class="ph2-l"><div class="ph2-bez">'+esc(p.bez||'')+'</div>'
+    +'<div class="ph2-zn">'+esc(p.zn||'')+'</div></div>'
+    +'<div class="ph2-r">'+m+'</div></div>';
 }
+
 
 // Werkzeug-Mindmap: Mittelachse = T-Nummer, links Kanal 1, rechts Kanal 2
 function buildWkzMindmapSVG(p){
@@ -3090,13 +3077,7 @@ function buildWkzMindmapSVG(p){
     let nm=String(t.name||'');
     const cw=fT*0.55, mx=Math.max(6,Math.floor((NW-30)/cw));
     if(nm.length>mx)nm=nm.slice(0,mx-1)+'\u2026';
-    g+='<text x="'+tx+'" y="'+(y+yT)+'" class="t">'+esc(nm)+'</text>';
-    // Zusatzinfo: Schneide / Magazin / Länge falls vorhanden
-    const info=[];
-    if(t.sn)info.push('SN '+t.sn);
-    if(t.typ)info.push(t.typ);
-    if(t.mag)info.push('Mag '+t.mag);
-    if(info.length)g+='<text x="'+tx+'" y="'+(y+yC)+'" class="c">'+esc(info.join('  ·  '))+'</text>';
+    g+='<text x="'+tx+'" y="'+(y+NH*0.60)+'" class="t">'+esc(nm)+'</text>';
     return g;
   }
   rows.forEach((r,idx)=>{
