@@ -1208,6 +1208,8 @@ select option{background:var(--surface);color:var(--ink);}
 .fx-acts{display:flex;gap:8px;flex-wrap:wrap;}
 @media(max-width:640px){.fx-dir{display:none;}}
 .fx-note{display:flex;flex-direction:column;gap:2px;padding:12px 16px;margin-bottom:14px;background:var(--surface-2);border:.5px solid var(--line);border-radius:14px;}
+.fx-note.fx-ok{background:color-mix(in srgb,var(--sp4) 12%,transparent);border-color:color-mix(in srgb,var(--sp4) 40%,transparent);}
+.fx-note.fx-ok b{color:var(--sp4);}
 .fx-note b{font-size:13px;font-weight:700;color:var(--ink);}
 .fx-note i{font-style:normal;font-size:11px;color:var(--ink-4);}
 .fx-ren{display:flex;align-items:center;gap:12px;padding:14px 16px;margin-bottom:14px;
@@ -2865,7 +2867,7 @@ function renderProjects(){
 }
 
 /* ===== DATEIEN: Laden, Vorschau, Umbenennen, ZIP ===== */
-let fxRenumber=false;
+let fxRenumber=false, fxNote='';
 const SPF_STUB=';NOP\r\n\r\nM17\r\n';
 
 // SPF-Text zur passenden Operation ablegen
@@ -2874,7 +2876,12 @@ function fxAttachSPF(name,text){
   if(!m)return false;
   const ch=m[1]==='2'?'2':'1';
   const code='L'+m[1]+m[2];
-  const op=(DATA[ch]||[]).find(o=>o&&(o.origCode===code||o.code===code));
+  let op=(DATA[ch]||[]).find(o=>o&&(o.origCode===code||o.code===code));
+  if(!op){ // Rückfall: Slot-Nummer aus dem Dateinamen
+    const slot=parseInt(m[2].slice(-2),10);
+    const list=(DATA[ch]||[]).filter(o=>o&&!slotEmpty(o));
+    if(slot>=1&&slot<=list.length)op=list[slot-1];
+  }
   if(op){op.spfText=text;return true;}
   return false;
 }
@@ -2946,6 +2953,9 @@ function fxPick(dir){
 }
 function fxHandle(fileList){
   const files=Array.from(fileList||[]);if(!files.length)return;
+  // bereits zugeordnete Unterprogramme sichern (Import ersetzt die Operationen)
+  const keep={};
+  ['1','2'].forEach(ch=>{(DATA[ch]||[]).forEach(o=>{if(o&&o.spfText&&o.code)keep[ch+':'+o.code]=o.spfText;});});
   const spf=[]; let done=0, nOps=0;
   files.forEach(file=>{
     const r=new FileReader();
@@ -2958,7 +2968,9 @@ function fxHandle(fileList){
       }catch(e){console.error(e);}
       done++;
       if(done===files.length){
+        ['1','2'].forEach(ch=>{(DATA[ch]||[]).forEach(o=>{const k=ch+':'+(o&&o.code);if(o&&!o.spfText&&keep[k])o.spfText=keep[k];});});
         let n=0; spf.forEach(f=>{if(fxAttachSPF(f.name,f.text))n++;});
+        fxNote=spf.length?(n+' von '+spf.length+' Unterprogrammen zugeordnet'):'';
         if(nOps){calcMode='manuell';syncCalcSeg();render();}
         renderTools();snapshot();renderProjects();renderDateien();
       }
@@ -2979,6 +2991,7 @@ function renderDateien(){
     +'<button class="btn primary" id="fxZipBtn">ZIP · '+esc(zn)+'.zip</button>'
     +'</div></div>';
   const ren=files.filter(f=>f.kind==='spf'&&f.orig&&f.orig!==f.name).length;
+  if(fxNote)h+='<div class="fx-note fx-ok"><b>'+esc(fxNote)+'</b></div>';
   h+='<div class="fx-note"><b>'+(ren?ren+' Datei(en) werden umbenannt':'Alle Namen passen zum Plan')+'</b>'
     +'<i>Inhalt der Unterprogramme bleibt unverändert</i></div>';
   h+='<div class="fx-list">';
