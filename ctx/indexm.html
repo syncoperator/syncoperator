@@ -1343,7 +1343,7 @@ select option{background:var(--surface);color:var(--ink);}
 .ck-pick select{flex:1;min-width:0;background:var(--surface);border:.5px solid var(--line-2);border-radius:11px;
   padding:11px 12px;font-family:inherit;font-size:13px;font-weight:600;color:var(--ink);}
 .ck-wide{width:100%;margin-bottom:8px;}
-.ck-backbar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(18px + env(safe-area-inset-bottom,0));
+.ck-backbar{position:fixed;left:0;right:0;margin:0 auto;width:max-content;max-width:90vw;bottom:calc(18px + env(safe-area-inset-bottom,0));
   z-index:2700;display:flex;align-items:center;gap:7px;padding:12px 18px;border-radius:99px;
   background:var(--ink);color:var(--bg);font-size:13px;font-weight:700;cursor:pointer;
   box-shadow:0 10px 30px rgba(0,0,0,.35);}
@@ -1497,6 +1497,15 @@ select option{background:var(--surface);color:var(--ink);}
 .ck-pz{font-family:var(--mono);font-size:13px;font-weight:800;color:var(--ink);}
 .ck-pb{flex:1;font-size:12px;color:var(--ink-4);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .ck-projrow svg{width:13px;height:13px;color:var(--ink-5);}
+.ck-acc{border:.5px solid var(--line);border-radius:13px;background:var(--surface);margin-bottom:8px;overflow:hidden;}
+.ck-acc-h{width:100%;display:flex;align-items:center;gap:10px;padding:13px 14px;background:transparent;
+  border:none;cursor:pointer;font-family:inherit;font-size:13px;font-weight:650;color:var(--ink);text-align:left;}
+.ck-acc-h span:first-child{flex:1;}
+.ck-acc-n{font-family:var(--mono);font-size:11px;font-weight:800;color:var(--ink-5);}
+.ck-acc-h svg{width:14px;height:14px;color:var(--ink-5);transition:transform .22s var(--ease);}
+.ck-acc.open .ck-acc-h svg{transform:rotate(180deg);}
+.ck-acc-b{display:none;border-top:.5px solid var(--line);}
+.ck-acc.open .ck-acc-b{display:block;}
 .ck-vis-t{width:100%;display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;
   padding:11px 14px;border-radius:12px;border:.5px solid var(--line-2);background:var(--surface-2);
   color:var(--ink-3);font-family:var(--mono);font-size:10.5px;font-weight:700;letter-spacing:.08em;
@@ -3505,6 +3514,7 @@ function ckOpenPoints(){
   return p;
 }
 function ckRender(){
+  const _bb=document.getElementById('ckBackBar');if(_bb)_bb.remove();
   const st=document.getElementById('ckSteps');
   st.innerHTML=CK_STEPS.map((s,i)=>'<div data-jump="'+i+'" class="ck-step'+(i===ckStep?' active':'')+(i<ckStep?' done':'')+'">'
     +'<span class="ck-num">'+(i<ckStep?'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8.5l3.5 3.5L13 5"/></svg>':(i+1))+'</span>'
@@ -3583,6 +3593,7 @@ function ckRender(){
   if(lt)lt.addEventListener('click',()=>ckPick('tools'));
   const lp=document.getElementById('ckLoadProg');
   if(lp)lp.addEventListener('click',()=>ckPick('prog'));
+  b.querySelectorAll('.ck-acc-h').forEach(hd=>hd.addEventListener('click',()=>hd.parentElement.classList.toggle('open')));
   const vt=document.getElementById('ckVisT'), vv=document.getElementById('ckVis');
   if(vt&&vv)vt.addEventListener('click',()=>{const o=vv.style.display==='none';
     vv.style.display=o?'block':'none';vt.classList.toggle('open',o);});
@@ -3619,6 +3630,11 @@ function ckRender(){
   });
 }
 let ckReturn=0;
+function ckNames(){
+  const s=[];['1','2'].forEach(c=>(TOOLS[c]||[]).forEach(t=>{if(t.name&&s.indexOf(t.name)<0)s.push(t.name);}));
+  ['1','2'].forEach(c=>(DATA[c]||[]).forEach(o=>{if(o&&o.tno&&s.indexOf(o.tno)<0)s.push(o.tno);}));
+  return s.sort();
+}
 const CK_IC={
  tech:'<path d="M8 2v1.6M8 12.4V14M2 8h1.6M12.4 8H14M4.5 4.5l1.1 1.1M10.4 10.4l1.1 1.1M11.5 4.5l-1.1 1.1M5.6 10.4l-1.1 1.1"/><circle cx="8" cy="8" r="2.3"/>',
  wkz:'<rect x="2.5" y="2.5" width="11" height="11" rx="1.5"/><path d="M5.5 6h5M5.5 9h3"/>',
@@ -3772,12 +3788,12 @@ function ckTech(){
 
 function ckWkz(){
   const SLOTS=24;
+  ckNames();
   const pos={'1':{},'2':{}};
   ['1','2'].forEach(ch=>(TOOLS[ch]||[]).forEach(t=>{
     const n=parseInt(String(t.pl).replace(/\D/g,''),10);if(n>=1&&n<=SLOTS)pos[ch][n]=t;}));
   const used={'1':Object.keys(pos['1']).length,'2':Object.keys(pos['2']).length};
-  const names=[];['1','2'].forEach(c=>(TOOLS[c]||[]).forEach(t=>{if(t.name&&names.indexOf(t.name)<0)names.push(t.name);}));
-  names.sort();
+  const names=ckNames();
   let h='<div class="ck-pane"><div class="ck-h ck-h-ic">'+SVI('wkz')+'Werkzeuge · Revolver'+ckTip('Je Revolver 24 Plätze. Platz antippen und Werkzeug wählen oder eigenen Namen eintragen. Leeres Feld = freier Platz.')+'</div>'
     +'<div class="ck-stats" style="grid-template-columns:repeat(2,1fr)">'
     +'<div class="ck-stat"><b>'+used['1']+'</b><i>belegt · Oben</i></div>'
@@ -3815,36 +3831,44 @@ function ckFlowSVG(){
   const s2=(DATA['2']||[]).filter(o=>o&&!slotEmpty(o));
   const n=Math.max(s1.length,s2.length);
   if(!n)return '<div class="ck-none">Keine Operationen</div>';
-  const W=Math.max(320,n*74+90), CW=64, GAP=10, X0=84, LH=42, H=170;
+  const CW=54, GAP=6, X0=76, W=X0+n*(CW+GAP)+16, H=190;
   const G='#2F9E68', B='#3F72AE', A='#C8801B';
+  const yS4=52, yS3=112, BH=34;
   let s='<svg viewBox="0 0 '+W+' '+H+'" class="ck-flowsvg" xmlns="http://www.w3.org/2000/svg">';
-  s+='<style>.fl{font-family:"JetBrains Mono",monospace;font-size:9px;font-weight:700;fill:#9a9aa2}'
-    +'.fn{font-family:Inter,sans-serif;font-size:9.5px;font-weight:650;fill:#15151a}'
-    +'.fs{font-family:"JetBrains Mono",monospace;font-size:8px;font-weight:700;fill:#fff}</style>';
-  s+='<text x="8" y="46" class="fl">SPINDEL 4</text><text x="8" y="112" class="fl">SPINDEL 3</text>';
-  s+='<path d="M'+X0+' 42 H'+(W-10)+'" stroke="#ececf0" stroke-width="1.5"/>';
-  s+='<path d="M'+X0+' 108 H'+(W-10)+'" stroke="#ececf0" stroke-width="1.5"/>';
+  s+='<style>.fl{font-family:"JetBrains Mono",monospace;font-size:8.5px;font-weight:700;fill:#9a9aa2}'
+    +'.fb{font-family:"JetBrains Mono",monospace;font-size:9px;font-weight:800;fill:#15151a}'
+    +'.fc{font-family:"JetBrains Mono",monospace;font-size:7px;font-weight:800;fill:#fff}</style>'
+    +'<defs><pattern id="idle" width="6" height="6" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">'
+    +'<line x1="0" y1="0" x2="0" y2="6" stroke="#e6e6ea" stroke-width="3"/></pattern></defs>';
+  // Achsenbeschriftung
+  s+='<text x="10" y="'+(yS4+20)+'" class="fl">SPINDEL 4</text>';
+  s+='<text x="10" y="'+(yS3+20)+'" class="fl">SPINDEL 3</text>';
+  s+='<text x="10" y="26" class="fl">SCHRITT</text>';
   for(let i=0;i<n;i++){
     const x=X0+i*(CW+GAP), a=s1[i], b2=s2[i];
-    if(a&&b2)s+='<path d="M'+(x+CW/2)+' 30 V120" stroke="#d4d4dc" stroke-width="1" stroke-dasharray="3 3"/>'
-      +'<text x="'+(x+CW/2)+'" y="140" text-anchor="middle" class="fl">WAIT</text>';
-    [[a,'1'],[b2,'2']].forEach(([op,ch])=>{
-      if(!op)return;
-      const sp3=op.spindle==='SP3';
-      const y=sp3?92:26;                      // Zeile nach Spindel, nicht nach Kanal
-      const col=sp3?B:G;
-      const cross=(ch==='1'&&sp3)||(ch==='2'&&!sp3);
-      s+='<rect x="'+x+'" y="'+y+'" width="'+CW+'" height="32" rx="7" fill="'+(cross?'#FDF6EC':'#fff')+'" stroke="'+(cross?A:col)+'" stroke-width="1.2"/>';
-      s+='<rect x="'+x+'" y="'+y+'" width="4" height="32" rx="2" fill="'+col+'"/>';
-      let t=String(op.title||op.code||'');if(t.length>9)t=t.slice(0,8)+'…';
-      s+='<text x="'+(x+9)+'" y="'+(y+14)+'" class="fn">'+esc(t)+'</text>';
-      s+='<text x="'+(x+9)+'" y="'+(y+25)+'" class="fl">K'+ch+' · '+String(i+1).padStart(2,'0')+'</text>';
-      if(cross){s+='<rect x="'+(x+CW-26)+'" y="'+(y+3)+'" width="23" height="10" rx="5" fill="'+A+'"/>'
-        +'<text x="'+(x+CW-14.5)+'" y="'+(y+10.6)+'" text-anchor="middle" class="fs">X</text>';}
+    s+='<text x="'+(x+CW/2)+'" y="26" text-anchor="middle" class="fb">'+String(i+1).padStart(2,'0')+'</text>';
+    if(a&&b2)s+='<rect x="'+(x-2)+'" y="32" width="'+(CW+4)+'" height="'+(H-56)+'" rx="6" fill="'+A+'" opacity=".06"/>';
+    [yS4,yS3].forEach(y=>{
+      const sp=y===yS4?'SP4':'SP3';
+      const op=[a,b2].find(o=>o&&(o.spindle||'SP4')===sp);
+      if(!op){s+='<rect x="'+x+'" y="'+y+'" width="'+CW+'" height="'+BH+'" rx="7" fill="url(#idle)" opacity=".7"/>';return;}
+      const ch=(op===a)?'1':'2';
+      const col=sp==='SP3'?B:G;
+      const cross=(ch==='1'&&sp==='SP3')||(ch==='2'&&sp==='SP4');
+      s+='<rect x="'+x+'" y="'+y+'" width="'+CW+'" height="'+BH+'" rx="7" fill="'+col+'" opacity="'+(cross?'.20':'.14')+'"/>';
+      s+='<rect x="'+x+'" y="'+y+'" width="'+CW+'" height="'+BH+'" rx="7" fill="none" stroke="'+(cross?A:col)+'" stroke-width="1.2"'+(cross?' stroke-dasharray="4 3"':'')+'/>';
+      let t=String(op.title||op.code||'');if(t.length>7)t=t.slice(0,6)+'…';
+      s+='<text x="'+(x+CW/2)+'" y="'+(y+14)+'" text-anchor="middle" class="fb">'+esc(t)+'</text>';
+      s+='<text x="'+(x+CW/2)+'" y="'+(y+26)+'" text-anchor="middle" class="fl">K'+ch+'</text>';
+      if(cross)s+='<circle cx="'+(x+CW-8)+'" cy="'+(y+8)+'" r="6" fill="'+A+'"/>'
+        +'<text x="'+(x+CW-8)+'" y="'+(y+10.5)+'" text-anchor="middle" class="fc">X</text>';
     });
+    if(a&&b2)s+='<text x="'+(x+CW/2)+'" y="'+(H-14)+'" text-anchor="middle" class="fl">WAIT</text>';
   }
+  s+='<text x="10" y="'+(H-14)+'" class="fl">SYNC</text>';
   return s+'</svg>';
 }
+
 function ckAblauf(){
   const s1=(DATA['1']||[]).filter(o=>o&&!slotEmpty(o));
   const s2=(DATA['2']||[]).filter(o=>o&&!slotEmpty(o));
@@ -3885,33 +3909,58 @@ function ckAblauf(){
 function ckDiff(){
   const d=BASE?diffProject():null;
   const pts=ckOpenPoints();
-  let h='<div class="ck-pane"><div class="ck-h ck-h-ic">'+SVI('diff')+'Änderungen'+ckTip('Vergleich mit dem geladenen Stand: verschoben, umbenannt, geändert. Darunter alles, was noch fehlt — direkt hier ausfüllbar.')+'</div>';
-  if(!d)h+='<div class="ck-none">Kein Vergleich – es wurde kein Programm geladen.</div>';
-  else if(!d.count)h+='<div class="ck-ok">Keine Änderungen gegenüber dem geladenen Stand</div>';
+  const grp=(id,title,count,body,open)=>'<div class="ck-acc'+(open?' open':'')+'" data-acc="'+id+'">'
+    +'<button class="ck-acc-h"><span>'+esc(title)+'</span><span class="ck-acc-n">'+count+'</span>'
+    +'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6l4 4 4-4"/></svg></button>'
+    +'<div class="ck-acc-b">'+body+'</div></div>';
+  let h='<div class="ck-pane"><div class="ck-h ck-h-ic">'+SVI('diff')+'Änderungen'
+    +ckTip('Vergleich mit dem geladenen Stand und alles, was noch fehlt. Kategorien antippen zum Aufklappen.')+'</div>';
+  if(!d){h+='<div class="ck-none">Kein Vergleich – es wurde kein Programm geladen.</div>';}
   else{
-    h+='<div class="ck-card">';
+    let ops='';let nOps=0;
     ['1','2'].forEach(ch=>d.ops[ch].forEach(r=>{
-      const real=r.changes.filter(c=>c.t!=='nop');if(!real.length)return;
-      h+='<div class="ck-ch"><b>K'+ch+' · '+esc(r.op.title||r.op.code||'')+'</b>'
+      const real=r.changes.filter(c=>c.t!=='nop');if(!real.length)return;nOps++;
+      ops+='<div class="ck-ch"><b>K'+ch+' · '+esc(r.op.title||r.op.code||'')+'</b>'
         +real.map(c=>'<span class="cg-tag cg-'+c.t+'">'+DIFF_LBL[c.t]+' <em>'+esc(c.txt)+'</em></span>').join('')+'</div>';
     }));
-    d.meta.forEach(m=>h+='<div class="ck-ch"><b>'+esc(m.k)+'</b><span class="cg-tag cg-'+m.t+'">'+DIFF_LBL[m.t]+' <em>'+esc(m.txt)+'</em></span></div>');
-    d.tools.forEach(t=>h+='<div class="ck-ch"><b>K'+t.ch+' · T'+String(t.pl).padStart(2,'0')+'</b><span class="cg-tag cg-'+t.t+'">'+DIFF_LBL[t.t]+' <em>'+esc(t.txt)+'</em></span></div>');
-    h+='</div>';
+    let met='';d.meta.forEach(m=>met+='<div class="ck-ch"><b>'+esc(m.k)+'</b><span class="cg-tag cg-'+m.t+'">'+DIFF_LBL[m.t]+' <em>'+esc(m.txt)+'</em></span></div>');
+    let too='';d.tools.forEach(t=>too+='<div class="ck-ch"><b>K'+t.ch+' · T'+String(t.pl).padStart(2,'0')+'</b><span class="cg-tag cg-'+t.t+'">'+DIFF_LBL[t.t]+' <em>'+esc(t.txt)+'</em></span></div>');
+    if(!d.count)h+='<div class="ck-ok">Keine Änderungen gegenüber dem geladenen Stand</div>';
+    else{
+      if(nOps)h+=grp('op','Operationen',nOps,ops,false);
+      if(d.meta.length)h+=grp('me','Stammdaten',d.meta.length,met,false);
+      if(d.tools.length)h+=grp('to','Werkzeuge',d.tools.length,too,false);
+    }
   }
+  // offene Punkte nach Art gruppiert
+  const cat={head:[],meta:[],tool:[],spf:[],dup:[]};
+  pts.forEach(p=>{
+    if(p.head!==undefined)cat.head.push(p);
+    else if(p.meta!==undefined)cat.meta.push(p);
+    else if(p.tno)cat.tool.push(p);
+    else if(p.op)cat.spf.push(p);
+    else cat.dup.push(p);
+  });
+  const line=p=>{
+    let x='<div class="ck-pt '+p.s+'"><span class="ck-dot"></span><span class="ck-pt-t">'+esc(p.t)+'</span>';
+    if(p.head!==undefined)x+='<input class="ck-fix" data-head="'+p.head+'" placeholder="eintragen">';
+    else if(p.meta!==undefined)x+='<input class="ck-fix" data-meta="'+p.meta+'" placeholder="Wert">';
+    else if(p.tno)x+='<input class="ck-fix" data-tno="'+p.k+':'+p.i+'" list="ckTools" placeholder="Werkzeug">';
+    else if(p.op)x+='<button class="ck-jump" data-go-op="'+p.k+':'+p.i+'">Öffnen</button>';
+    return x+'</div>';
+  };
   h+='<div class="ck-h">Offene Punkte</div>';
   if(!pts.length)h+='<div class="ck-ok">Alles vollständig</div>';
-  else{h+='<div class="ck-card">';pts.forEach(p=>{
-    h+='<div class="ck-pt '+p.s+'"><span class="ck-dot"></span><span class="ck-pt-t">'+esc(p.t)+'</span>';
-    if(p.head!==undefined)h+='<input class="ck-fix" data-head="'+p.head+'" placeholder="eintragen">';
-    else if(p.meta!==undefined)h+='<input class="ck-fix" data-meta="'+p.meta+'" placeholder="Wert">';
-    else if(p.tno)h+='<input class="ck-fix" data-tno="'+p.k+':'+p.i+'" list="ckTools" placeholder="Werkzeug">';
-    else if(p.op)h+='<button class="ck-jump" data-go-op="'+p.k+':'+p.i+'">Öffnen</button>';
-    h+='</div>';});h+='</div>';
-    const names=[];['1','2'].forEach(c=>(TOOLS[c]||[]).forEach(t=>{if(t.name&&names.indexOf(t.name)<0)names.push(t.name);}));
-    h+='<datalist id="ckTools">'+names.map(n=>'<option value="'+esc(n)+'">').join('')+'</datalist>';}
+  else{
+    const secs=[['head','Kopfdaten',cat.head],['meta','Stammdaten',cat.meta],
+                ['tool','Werkzeuge fehlen',cat.tool],['spf','Unterprogramme fehlen',cat.spf],
+                ['dup','Konflikte',cat.dup]];
+    secs.forEach(([id,title,arr])=>{if(arr.length)h+=grp('p'+id,title,arr.length,arr.map(line).join(''),arr===cat.head||arr===cat.dup);});
+    h+='<datalist id="ckTools">'+ckNames().map(n=>'<option value="'+esc(n)+'">').join('')+'</datalist>';
+  }
   return h+'</div>';
 }
+
 function ckEnd(){
   const zn=(document.getElementById('inZN')||{}).value||'projekt';
   const files=fxFiles();
