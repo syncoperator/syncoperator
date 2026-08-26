@@ -1343,11 +1343,6 @@ select option{background:var(--surface);color:var(--ink);}
 .ck-pick select{flex:1;min-width:0;background:var(--surface);border:.5px solid var(--line-2);border-radius:11px;
   padding:11px 12px;font-family:inherit;font-size:13px;font-weight:600;color:var(--ink);}
 .ck-wide{width:100%;margin-bottom:8px;}
-.ck-backbar{position:fixed;left:0;right:0;margin:0 auto;width:max-content;max-width:90vw;bottom:calc(18px + env(safe-area-inset-bottom,0));
-  z-index:2700;display:flex;align-items:center;gap:7px;padding:12px 18px;border-radius:99px;
-  background:var(--ink);color:var(--bg);font-size:13px;font-weight:700;cursor:pointer;
-  box-shadow:0 10px 30px rgba(0,0,0,.35);}
-.ck-backbar svg{width:14px;height:14px;}
 .ck-sec{display:flex;align-items:center;gap:9px;margin:20px 0 10px;
   font-family:var(--mono);font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-4);}
 .ck-sec:first-child{margin-top:0;}
@@ -1773,7 +1768,7 @@ select option{background:var(--surface);color:var(--ink);}
   <div class="view-pane" data-pane="projekte">
     <div class="pj-wrap" id="pjWrap"></div>
   </div>
-</div></div>
+</div>
 </div><!-- /#app -->
 
 <button class="fab" id="fab"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4L2 8l3 4M11 4l3 4-3 4"/></svg>Code</button>
@@ -3653,13 +3648,12 @@ function ckOpenPoints(){
   return p;
 }
 function ckRender(){
-  const _bb=document.getElementById('ckBackBar');if(_bb)_bb.remove();
+  ckStep=Math.min(CK_STEPS.length-1,Math.max(0,parseInt(ckStep,10)||0));
   const st=document.getElementById('ckSteps');
   st.innerHTML=CK_STEPS.map((s,i)=>'<div data-jump="'+i+'" class="ck-step'+(i===ckStep?' active':'')+(i<ckStep?' done':'')+'">'
     +'<span class="ck-num">'+(i<ckStep?'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8.5l3.5 3.5L13 5"/></svg>':(i+1))+'</span>'
     +'<span class="ck-lbl">'+s+'</span></div>').join('<div class="ck-sep"></div>');
   st.querySelectorAll('[data-jump]').forEach(el=>el.addEventListener('click',()=>{ckStep=+el.dataset.jump;ckRender();}));
-  st.querySelectorAll('.ck-step').forEach(el=>el.addEventListener('click',()=>{ckStep=+el.dataset.step;ckRender();}));
   document.getElementById('ckBack').style.visibility=ckStep===0?'hidden':'visible';
   const _nx=document.getElementById('ckNext'), _bk=document.getElementById('ckBack');
   _nx.onclick=()=>{if(ckStep<CK_STEPS.length-1){ckStep++;ckRender();}};
@@ -3697,10 +3691,10 @@ function ckRender(){
   const lp=document.getElementById('ckLoadProg');
   if(lp)lp.addEventListener('click',()=>ckPick('prog'));
   b.querySelectorAll('[data-view]').forEach(el=>el.addEventListener('click',()=>ckGoto(el.dataset.view)));
-  b.querySelectorAll('[data-act="pair"]').forEach(el=>el.addEventListener('click',()=>{ckReturn=ckStep;setView('schema');openPairing();showCkBack();}));
+  b.querySelectorAll('[data-act="pair"]').forEach(el=>el.addEventListener('click',()=>{ckReturn=ckStep;setView('schema');openPairing();;}));
   b.querySelectorAll('[data-print]').forEach(el=>el.addEventListener('click',()=>{
     ckReturn=ckStep;
-    setTimeout(()=>{el.dataset.print==='plan'?printPlan():printWkz();setTimeout(showCkBack,300);},60);
+    setTimeout(()=>{el.dataset.print==='plan'?printPlan():printWkz();},60);
   }));
   b.querySelectorAll('[data-file]').forEach(el=>el.addEventListener('click',()=>fxPreview(+el.dataset.file)));
   b.querySelectorAll('.ck-acc-h').forEach(hd=>hd.addEventListener('click',()=>hd.parentElement.classList.toggle('open')));
@@ -4136,15 +4130,7 @@ function ckCloseTips(){
   document.querySelectorAll('.ck-pop').forEach(x=>x.remove());
 }
 
-function ckGoto(v){ckReturn=ckStep;setView(v);showCkBack();}
-function showCkBack(){
-  if(currentView==='check'){const o=document.getElementById('ckBackBar');if(o)o.remove();return;}
-  let b=document.getElementById('ckBackBar');
-  if(!b){b=document.createElement('div');b.id='ckBackBar';b.className='ck-backbar';
-    b.innerHTML='<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3L5 8l5 5"/></svg>Zurück zum Check';
-    document.body.appendChild(b);
-    b.addEventListener('click',()=>{b.remove();ckStep=ckReturn;setView('check');});}
-}
+function ckGoto(v){ckReturn=ckStep;setView(v);;}
 function ckPick(kind){
   const inp=document.createElement('input');inp.type='file';inp.multiple=true;
   inp.style.position='fixed';inp.style.left='-9999px';inp.style.opacity='0';
