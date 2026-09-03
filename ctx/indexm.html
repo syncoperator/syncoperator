@@ -4539,7 +4539,7 @@ function buildMindmapSVG(p,s1,s2){
   const RX=Math.max(7,NH*0.20);
   const yT=NH*0.42, yC=NH*0.76;                        // Baselines im Kärtchen
   const G='#2F9E68', B='#3F72AE', A='#C8801B';
-  let s='<svg class="mm-svg" viewBox="0 0 '+W+' '+H+'" xmlns="http://www.w3.org/2000/svg">';
+  let s='<svg class="mm-svg" viewBox="0 0 '+W+' '+H+'" width="'+W+'" height="'+H+'" preserveAspectRatio="xMidYMin meet" xmlns="http://www.w3.org/2000/svg">';
   s+='<style>'
     +'.t{font-family:Inter,sans-serif;font-size:'+fT+'px;font-weight:640;fill:#15151a}'
     +'.c{font-family:"JetBrains Mono",monospace;font-size:'+fC+'px;font-weight:600;fill:#9a9aa2;letter-spacing:.02em}'
@@ -4704,7 +4704,7 @@ function buildWkzMindmapSVG(p){
   const yT=NH*0.42, yC=NH*0.76;
   const G='#2F9E68', B='#3F72AE';
   const HW=Math.max(52,fA*4.2)/2;
-  let s='<svg class="mm-svg mm-wkz" viewBox="0 0 '+W+' '+H+'" xmlns="http://www.w3.org/2000/svg">';
+  let s='<svg class="mm-svg mm-wkz" viewBox="0 0 '+W+' '+H+'" width="'+W+'" height="'+H+'" preserveAspectRatio="xMidYMin meet" xmlns="http://www.w3.org/2000/svg">';
   s+='<style>'
     +'.t{font-family:Inter,sans-serif;font-size:'+fT+'px;font-weight:640;fill:#15151a}'
     +'.c{font-family:"JetBrains Mono",monospace;font-size:'+fC+'px;font-weight:600;fill:#9a9aa2;letter-spacing:.02em}'
@@ -4757,9 +4757,25 @@ function buildWkzMindmapSVG(p){
   return s;
 }
 function doPrint(){
-  requestAnimationFrame(()=>requestAnimationFrame(()=>{
-    setTimeout(()=>{ try{window.print();}catch(e){} },150);
-  }));
+  const pa=document.getElementById('printArea');
+  // Layout erzwingen: das SVG muss vom Browser tatsächlich vermessen sein, bevor gedruckt wird
+  const forceLayout=()=>{ if(pa) pa.getBoundingClientRect(); };
+  const go=()=>{
+    forceLayout();
+    requestAnimationFrame(()=>{
+      forceLayout();
+      requestAnimationFrame(()=>{
+        forceLayout();
+        setTimeout(()=>{ try{window.print();}catch(e){} },250);
+      });
+    });
+  };
+  // Auf geladene Schriften warten, falls der Browser das unterstützt — sonst sofort weiter
+  if(document.fonts && document.fonts.ready){
+    document.fonts.ready.then(go).catch(go);
+  } else {
+    go();
+  }
 }
 function printPlan(){document.getElementById('printArea').innerHTML=buildPrintPlan();doPrint();}
 function printWkz(){document.getElementById('printArea').innerHTML=buildPrintWkz();doPrint();}
