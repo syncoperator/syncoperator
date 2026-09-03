@@ -1054,6 +1054,7 @@ select option{background:var(--surface);color:var(--ink);}
 .wiz-next:hover{background:color-mix(in srgb,var(--sp4) 88%,#000);}
 /* ===== PRINT (matches original reference PDF) ===== */
 #printArea{display:none;}
+@page{ size:A4 portrait; margin:12mm 10mm; }
 @media print{
   html,body{background:#fff !important;color:#000 !important;font-family:'Inter',sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact;margin:0 !important;padding:0 !important;min-height:0 !important;}
   /* kill decorative layers */
@@ -1622,8 +1623,37 @@ select option{background:var(--surface);color:var(--ink);}
   font-weight:650;cursor:pointer;transition:.16s var(--ease);}
 .la-go svg{width:15px;height:15px;}
 .la-go:hover{border-color:var(--sp4);color:var(--sp4);}
+.cloud-wrap{padding:20px 18px 40px;max-width:760px;margin:0 auto;}
+.cl-head{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+.cl-title{font-size:22px;font-weight:800;letter-spacing:-.02em;color:var(--ink);}
+.cl-badge{font-family:var(--mono);font-size:10px;font-weight:800;letter-spacing:.06em;padding:5px 10px;border-radius:99px;}
+.cl-badge.cl-ok{background:color-mix(in srgb,var(--sp4) 16%,transparent);color:var(--sp4);}
+.cl-badge.cl-err{background:color-mix(in srgb,var(--danger) 14%,transparent);color:var(--danger);}
+.cl-badge.cl-off{background:var(--surface-2);color:var(--ink-5);}
+.cl-note{min-height:18px;font-family:var(--mono);font-size:11.5px;color:var(--ink-4);margin-bottom:14px;}
+.cl-warn{padding:12px 14px;border-radius:12px;margin-bottom:14px;font-size:12.5px;line-height:1.5;
+  background:color-mix(in srgb,var(--amber) 12%,transparent);border:.5px solid color-mix(in srgb,var(--amber) 40%,transparent);color:var(--ink-2);}
+.cl-row{display:flex;gap:9px;margin-bottom:10px;}
+.cl-row .btn{flex:1;}
+.ck-h{font-family:var(--mono);font-size:10.5px;font-weight:800;letter-spacing:.13em;text-transform:uppercase;color:var(--ink-3);margin:20px 0 10px;}
+.ck-h:first-child{margin-top:0;}
+.ck-card{background:var(--surface);border:.5px solid var(--line);border-radius:14px;overflow:hidden;}
+.ckg-card{padding:14px;display:flex;flex-direction:column;gap:12px;}
+.ck-fld{display:flex;flex-direction:column;gap:5px;}
+.ck-fld label{font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-5);}
+.ck-edit2{width:100%;box-sizing:border-box;background:var(--surface-2);border:.5px solid var(--line-2);border-radius:11px;padding:12px 14px;font-size:14px;font-weight:600;color:var(--ink);font-family:inherit;}
+.ck-none{padding:16px;font-size:13px;color:var(--ink-5);text-align:center;}
+.ck-projlist{display:flex;flex-direction:column;gap:6px;}
+.ck-projrow{display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:12px;border:.5px solid var(--line);background:var(--surface);cursor:pointer;position:relative;}
+.ck-projrow:hover{border-color:var(--sp4);}
+.ck-projrow.on{border-color:var(--sp4);background:color-mix(in srgb,var(--sp4) 8%,var(--surface));}
+.ck-pz{font-family:var(--mono);font-size:13px;font-weight:800;color:var(--ink);}
+.ck-pb{flex:1;font-size:12px;color:var(--ink-4);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.ck-pt2{font-family:var(--mono);font-size:9.5px;color:var(--ink-5);flex-shrink:0;}
+.ck-pdel{flex:0 0 auto;width:24px;height:24px;border:none;border-radius:7px;background:var(--surface-2);color:var(--ink-5);font-size:11px;cursor:pointer;}
+.ck-pdel:hover{background:var(--danger);color:#fff;}
 </style>
-<style id="pageOrient">@page { size: A4 landscape; margin: 8mm; }</style>
+
 </head>
 <body>
 <div class="pinov" id="splash">
@@ -1764,6 +1794,9 @@ select option{background:var(--surface);color:var(--ink);}
   </div>
   <div class="view-pane" data-pane="dateien">
     <div class="fx-wrap" id="fxWrap"></div>
+  </div>
+  <div class="view-pane" data-pane="cloud">
+    <div class="cloud-wrap" id="cloudWrap"></div>
   </div>
   <div class="view-pane" data-pane="projekte">
     <div class="pj-wrap" id="pjWrap"></div>
@@ -2488,6 +2521,7 @@ function setView(v){
   else if(v==='uebersicht')renderUebersicht();
   else if(v==='projekte')renderProjekte();
   else if(v==='dateien')renderDateien();
+  else if(v==='cloud')renderCloud();
   else if(v==='changes')renderChanges();
   else if(v==='check')ckRender();
 }
@@ -4472,7 +4506,7 @@ function renderProjekte(){
 }
 
 /* ===== PRINT (matches original reference) ===== */
-function setOrient(o){const st=document.getElementById('pageOrient');if(st)st.textContent='@page { size: A4 '+(o==='landscape'?'landscape':'portrait')+'; margin: '+(o==='landscape'?'12mm 14mm':'12mm 10mm')+'; }';}
+
 function ph(){return {zn:esc((document.getElementById('inZN').value||'').trim())||'—',bez:esc((document.getElementById('inBez').value||'').trim())||'—'};}
 function buildPrintPlan(){
   const p=ph();
@@ -4724,9 +4758,13 @@ function buildWkzMindmapSVG(p){
   s+='</svg>';
   return s;
 }
-function doPrint(){ requestAnimationFrame(()=>requestAnimationFrame(()=>{ try{window.print();}catch(e){} })); }
-function printPlan(){setOrient('portrait');document.getElementById('printArea').innerHTML=buildPrintPlan();doPrint();}
-function printWkz(){setOrient('portrait');document.getElementById('printArea').innerHTML=buildPrintWkz();doPrint();}
+function doPrint(){
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    setTimeout(()=>{ try{window.print();}catch(e){} },150);
+  }));
+}
+function printPlan(){document.getElementById('printArea').innerHTML=buildPrintPlan();doPrint();}
+function printWkz(){document.getElementById('printArea').innerHTML=buildPrintWkz();doPrint();}
 
 /* ===== boot ===== */
 function boot(){
@@ -4900,6 +4938,161 @@ function jsonImport(){
   inp.click();
 }
 
+
+/* ===== CLOUD (Supabase über fetch, ohne Bibliothek) ===== */
+const SB_URL='https://yrbmtddrnndksubhngyo.supabase.co';
+const SB_KEY='sb_publishable_aty20v3He7gWXStOrJhk3w_IePwm26y';
+const SB_SECRET_KEY='CitiTool_cloud_secret';
+
+function cloudSecret(){ try{ return localStorage.getItem(SB_SECRET_KEY)||''; }catch(e){ return ''; } }
+function cloudSetSecret(v){ try{ localStorage.setItem(SB_SECRET_KEY, String(v||'').trim()); }catch(e){} }
+function cloudForget(){ try{ localStorage.removeItem(SB_SECRET_KEY); }catch(e){} CLOUD_STATUS=null; CLOUD_MSG='Code gelöscht'; }
+
+let CLOUD_ID=null, CLOUD_TS=null, CLOUD_LIST=[], CLOUD_STATUS=null, CLOUD_MSG='';
+
+async function sbRpc(fn,args){
+  let res;
+  try{
+    res=await fetch(SB_URL+'/rest/v1/rpc/'+fn,{
+      method:'POST',
+      headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json'},
+      body:JSON.stringify(args||{})
+    });
+  }catch(netErr){
+    if(location.protocol==='file:') throw new Error('Datei lokal geöffnet — Cloud braucht https');
+    throw new Error('Server nicht erreichbar');
+  }
+  const txt=await res.text();
+  let out=null; try{ out = txt?JSON.parse(txt):null; }catch(e){ out=txt; }
+  if(!res.ok){
+    const msg=(out&&(out.message||out.hint))||String(out||res.status);
+    if(/kein zugang/i.test(msg)) throw new Error('Falscher Cloud-Code');
+    if(res.status===404 || /could not find|does not exist/i.test(msg)) throw new Error('Funktion fehlt — SQL in Supabase ausführen');
+    throw new Error('HTTP '+res.status);
+  }
+  return out;
+}
+function cloudPack(){
+  return {
+    zn:(document.getElementById('inZN')||{}).value||'',
+    bez:(document.getElementById('inBez')||{}).value||'',
+    meta:JSON.parse(JSON.stringify(META||[])),
+    data:JSON.parse(JSON.stringify(DATA||{'1':[],'2':[]})),
+    tools:JSON.parse(JSON.stringify(TOOLS||{'1':[],'2':[]}))
+  };
+}
+function cloudEnsureCode(){
+  if(cloudSecret()) return true;
+  const v=prompt('Cloud-Code eingeben:');
+  if(!v) return false;
+  cloudSetSecret(v);
+  return true;
+}
+async function cloudSave(){
+  if(!cloudEnsureCode()) return;
+  const p=cloudPack();
+  if(!p.zn.trim()){ CLOUD_MSG='Zeichnungsnummer fehlt'; renderCloud(); return; }
+  CLOUD_MSG='Speichern …'; renderCloud();
+  try{
+    const row=await sbRpc('save_project',{p_secret:cloudSecret(),p_id:CLOUD_ID,p_num:p.zn,p_name:p.bez,p_data:p,p_expected:CLOUD_TS});
+    const r=Array.isArray(row)?row[0]:row;
+    if(r){ CLOUD_ID=r.id; CLOUD_TS=r.updated_at; }
+    CLOUD_STATUS='ok'; CLOUD_MSG='In der Cloud gespeichert';
+  }catch(e){
+    CLOUD_STATUS='err'; CLOUD_MSG=e.message;
+  }
+  renderCloud();
+}
+async function cloudLoadList(){
+  if(!cloudEnsureCode()) return;
+  CLOUD_MSG='Lade …'; renderCloud();
+  try{
+    CLOUD_LIST=await sbRpc('list_projects',{p_secret:cloudSecret()})||[];
+    CLOUD_STATUS='ok'; CLOUD_MSG=CLOUD_LIST.length+' Projekte in der Cloud';
+  }catch(e){
+    CLOUD_LIST=[]; CLOUD_STATUS='err'; CLOUD_MSG=e.message;
+  }
+  renderCloud();
+}
+function cloudOpen(id){
+  const row=CLOUD_LIST.find(r=>r.id===id); if(!row) return;
+  const p=row.data||{};
+  const zn=document.getElementById('inZN'), bz=document.getElementById('inBez');
+  if(zn) zn.value=p.zn||row.num||'';
+  if(bz) bz.value=p.bez||row.name||'';
+  META=p.meta||[]; DATA=p.data||{'1':[],'2':[]}; TOOLS=p.tools||{'1':[],'2':[]};
+  ['1','2'].forEach(k=>{ if(!Array.isArray(DATA[k])) DATA[k]=[]; });
+  CLOUD_ID=row.id; CLOUD_TS=row.updated_at;
+  recode('1'); recode('2'); render(); renderTools();
+  CLOUD_MSG='Aus der Cloud geladen';
+  renderCloud();
+}
+async function cloudDelete(id){
+  if(!cloudEnsureCode()) return;
+  try{
+    await sbRpc('delete_project',{p_secret:cloudSecret(),p_id:id});
+    CLOUD_LIST=CLOUD_LIST.filter(r=>r.id!==id);
+    if(CLOUD_ID===id){ CLOUD_ID=null; CLOUD_TS=null; }
+    CLOUD_MSG='Aus der Cloud gelöscht';
+  }catch(e){ CLOUD_MSG=e.message; }
+  renderCloud();
+}
+function cloudDate(s){
+  try{ const d=new Date(s); return d.toLocaleDateString('de-DE')+' '+d.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'}); }
+  catch(e){ return ''; }
+}
+function renderCloud(){
+  const w=document.getElementById('cloudWrap'); if(!w) return;
+  const host=SB_URL.replace(/^https?:\/\//,'');
+  const hasCode=!!cloudSecret();
+  const st=CLOUD_STATUS;
+  let h='<div class="cl-page">';
+  h+='<div class="cl-head"><div class="cl-title">Cloud</div>'
+    +'<span class="cl-badge cl-'+(st==='ok'?'ok':(st==='err'?'err':'off'))+'">'
+    +(st==='ok'?'Verbunden':(st==='err'?'Nicht verbunden':'Ungeprüft'))+'</span></div>';
+  h+='<div class="cl-note">'+esc(CLOUD_MSG||'')+'</div>';
+  if(location.protocol==='file:')
+    h+='<div class="cl-warn">Läuft als lokale Datei. Für die Cloud muss die Seite über https geöffnet werden.</div>';
+  h+='<div class="ck-h">Zugang</div><div class="ck-card ckg-card">'
+    +'<div class="ck-fld"><label>Server</label><input class="ck-edit2" value="'+esc(host)+'" readonly></div>'
+    +'<div class="cl-row"><button class="btn ghost" id="clSetCode">'+(hasCode?'Code ändern':'Code eintragen')+'</button>'
+    +(hasCode?'<button class="btn ghost" id="clClear">Code löschen</button>':'')+'</div>'
+    +'<div class="cl-row"><button class="btn ghost" id="clTest">Verbindung prüfen</button></div></div>';
+  h+='<div class="ck-h">Projekte</div>'
+    +'<div class="cl-row"><button class="btn primary" id="clLoad2">Liste laden</button>'
+    +'<button class="btn ghost" id="clSave2">Aktuelles hochladen</button></div>';
+  if(CLOUD_LIST.length){
+    h+='<div class="ck-projlist">'+CLOUD_LIST.map(r=>
+      '<div class="ck-projrow'+(r.id===CLOUD_ID?' on':'')+'" data-cl="'+esc(r.id)+'">'
+      +'<span class="ck-pz">'+esc(r.num||'—')+'</span>'
+      +'<span class="ck-pb">'+esc(r.name||'')+'</span>'
+      +'<span class="ck-pt2">'+esc(cloudDate(r.updated_at))+'</span>'
+      +'<button class="ck-pdel" data-cldel="'+esc(r.id)+'">✕</button></div>').join('')+'</div>';
+  } else h+='<div class="ck-none">Keine Projekte geladen</div>';
+  h+='</div>';
+  w.innerHTML=h;
+
+  const sc=document.getElementById('clSetCode');
+  if(sc) sc.addEventListener('click',()=>{
+    const v=prompt('Cloud-Code eingeben:'); if(v){ cloudSetSecret(v); CLOUD_MSG='Code gespeichert'; renderCloud(); }
+  });
+  const cc=document.getElementById('clClear');
+  if(cc) cc.addEventListener('click',()=>{ cloudForget(); renderCloud(); });
+  const ct=document.getElementById('clTest');
+  if(ct) ct.addEventListener('click',cloudLoadList);
+  const cl2=document.getElementById('clLoad2');
+  if(cl2) cl2.addEventListener('click',cloudLoadList);
+  const cs2=document.getElementById('clSave2');
+  if(cs2) cs2.addEventListener('click',cloudSave);
+  w.querySelectorAll('[data-cl]').forEach(el=>el.addEventListener('click',ev=>{
+    if(ev.target.closest && ev.target.closest('[data-cldel]')) return;
+    cloudOpen(el.dataset.cl);
+  }));
+  w.querySelectorAll('[data-cldel]').forEach(el=>el.addEventListener('click',ev=>{
+    ev.stopPropagation();
+    if(confirm('Projekt aus der Cloud löschen?')) cloudDelete(el.dataset.cldel);
+  }));
+}
 </script>
 <div id="printArea"></div>
 <!-- drawer außerhalb #app: transform bricht sonst position:fixed -->
@@ -4917,6 +5110,7 @@ function jsonImport(){
         <div class="dr-item" data-view="changes"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h7M3 10h7"/><path d="M11 3l2 3-2 3M11 13l2-3"/></svg><span class="di-main">Änderungen</span></div>
         <div class="dr-item" data-act="hilfe"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="8" cy="8" r="6.4"/><path d="M8 7.2v4"/><circle cx="8" cy="4.9" r=".55" fill="currentColor"/></svg><span class="di-main">Hilfe</span></div>
         <div class="dr-item" data-view="dateien"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2h5l3 3v9H4z"/><path d="M9 2v3h3"/></svg><span class="di-main">Dateien</span></div>
+        <div class="dr-item" data-view="cloud"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12.5h6.8a2.7 2.7 0 0 0 .2-5.4 3.8 3.8 0 0 0-7.3-.6 2.9 2.9 0 0 0 .3 6z"/></svg><span class="di-main">Cloud</span></div>
         <div class="dr-item" data-view="uebersicht"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/></svg><span class="di-main">Übersicht</span></div>
         </div>
       </div>
