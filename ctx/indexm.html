@@ -4910,6 +4910,56 @@ async function cloudDelete(id){
   }catch(e){ CLOUD_MSG=e.message; }
   renderCloud();
 }
+async function cloudUploadAll(){
+  if(!cloudEnsureCode()) return;
+  const zns=Object.keys(PROJECTS||{});
+  if(!zns.length){ CLOUD_MSG='Keine lokalen Projekte vorhanden'; renderCloud(); return; }
+  let ok=0, fail=0;
+  for(const zn of zns){
+    const p=PROJECTS[zn];
+    CLOUD_MSG='Hochladen … ('+(ok+fail+1)+' von '+zns.length+')'; renderCloud();
+    try{
+      const existing=CLOUD_LIST.find(r=>r.num===zn);
+      const row=await sbRpc('save_project',{
+        p_secret:cloudSecret(),
+        p_id:existing?existing.id:null,
+        p_num:p.zn||zn,
+        p_name:p.bez||'',
+        p_data:{zn:p.zn||zn,bez:p.bez||'',meta:p.META||[],data:p.DATA||{'1':[],'2':[]},tools:p.TOOLS||{'1':[],'2':[]}},
+        p_expected:existing?existing.updated_at:null
+      });
+      ok++;
+    }catch(e){ fail++; }
+  }
+  CLOUD_STATUS= fail?'err':'ok';
+  CLOUD_MSG=ok+' von '+zns.length+' hochgeladen'+(fail?' · '+fail+' fehlgeschlagen':'');
+  try{ CLOUD_LIST=await sbRpc('list_projects',{p_secret:cloudSecret()})||[]; }catch(e){}
+  renderCloud();
+}
+async function cloudDownloadAll(){
+  if(!cloudEnsureCode()) return;
+  CLOUD_MSG='Lade Liste …'; renderCloud();
+  try{ CLOUD_LIST=await sbRpc('list_projects',{p_secret:cloudSecret()})||[]; }
+  catch(e){ CLOUD_STATUS='err'; CLOUD_MSG=e.message; renderCloud(); return; }
+  if(!CLOUD_LIST.length){ CLOUD_MSG='Cloud ist leer'; renderCloud(); return; }
+  let n=0;
+  CLOUD_LIST.forEach(row=>{
+    const p=row.data||{};
+    const zn=p.zn||row.num||('cloud-'+row.id);
+    PROJECTS[zn]={
+      zn, bez:p.bez||row.name||'',
+      DATA:p.data||{'1':[],'2':[]},
+      TOOLS:p.tools||{'1':[],'2':[]},
+      META:p.meta||[]
+    };
+    n++;
+  });
+  persistProjects();
+  CLOUD_STATUS='ok';
+  CLOUD_MSG=n+' Projekt(e) lokal gespeichert';
+  renderProjects();
+  renderCloud();
+}
 function cloudDate(s){
   try{ const d=new Date(s); return d.toLocaleDateString('de-DE')+' '+d.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'}); }
   catch(e){ return ''; }
@@ -4933,7 +4983,9 @@ function renderCloud(){
     +'<div class="cl-row"><button class="btn ghost" id="clTest">Verbindung prüfen</button></div></div>';
   h+='<div class="cl-h">Projekte</div>'
     +'<div class="cl-row"><button class="btn primary" id="clLoad2">Liste laden</button>'
-    +'<button class="btn ghost" id="clSave2">Aktuelles hochladen</button></div>';
+    +'<button class="btn ghost" id="clSave2">Aktuelles hochladen</button></div>'
+    +'<div class="cl-row"><button class="btn ghost" id="clUploadAll">Alle hochladen ('+Object.keys(PROJECTS||{}).length+')</button>'
+    +'<button class="btn ghost" id="clDownloadAll">Alle herunterladen'+(CLOUD_LIST.length?' ('+CLOUD_LIST.length+')':'')+'</button></div>';
   if(CLOUD_LIST.length){
     h+='<div class="cl-list">'+CLOUD_LIST.map(r=>
       '<div class="cl-row2'+(r.id===CLOUD_ID?' on':'')+'" data-cl="'+esc(r.id)+'">'
@@ -4957,6 +5009,10 @@ function renderCloud(){
   if(cl2) cl2.addEventListener('click',cloudLoadList);
   const cs2=document.getElementById('clSave2');
   if(cs2) cs2.addEventListener('click',cloudSave);
+  const cua=document.getElementById('clUploadAll');
+  if(cua) cua.addEventListener('click',cloudUploadAll);
+  const cda=document.getElementById('clDownloadAll');
+  if(cda) cda.addEventListener('click',cloudDownloadAll);
   w.querySelectorAll('[data-cl]').forEach(el=>el.addEventListener('click',ev=>{
     if(ev.target.closest && ev.target.closest('[data-cldel]')) return;
     cloudOpen(el.dataset.cl);
