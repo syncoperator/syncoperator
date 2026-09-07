@@ -2077,18 +2077,18 @@ body.on-home .sheet .seg-b.on{background:#F2F3F5!important;color:#15161A!importa
     <div class="pin-dots" id="pin-dots"><span></span><span></span><span></span><span></span></div>
     <div class="pin-err" id="pin-err"></div>
     <div class="keypad">
-      <button class="key-num" onclick="pinPush('1')">1</button>
-      <button class="key-num" onclick="pinPush('2')">2</button>
-      <button class="key-num" onclick="pinPush('3')">3</button>
-      <button class="key-num" onclick="pinPush('4')">4</button>
-      <button class="key-num" onclick="pinPush('5')">5</button>
-      <button class="key-num" onclick="pinPush('6')">6</button>
-      <button class="key-num" onclick="pinPush('7')">7</button>
-      <button class="key-num" onclick="pinPush('8')">8</button>
-      <button class="key-num" onclick="pinPush('9')">9</button>
+      <button class="key-num">1</button>
+      <button class="key-num">2</button>
+      <button class="key-num">3</button>
+      <button class="key-num">4</button>
+      <button class="key-num">5</button>
+      <button class="key-num">6</button>
+      <button class="key-num">7</button>
+      <button class="key-num">8</button>
+      <button class="key-num">9</button>
       <span></span>
-      <button class="key-num" onclick="pinPush('0')">0</button>
-      <button class="key-num key-del" onclick="pinDel()" aria-label="Löschen"><svg viewBox="0 0 24 24"><path d="M20 5H9l-6 7 6 7h11a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1z"/><line x1="17" y1="9.5" x2="12" y2="14.5"/><line x1="12" y1="9.5" x2="17" y2="14.5"/></svg></button>
+      <button class="key-num">0</button>
+      <button class="key-num key-del" aria-label="Löschen"><svg viewBox="0 0 24 24"><path d="M20 5H9l-6 7 6 7h11a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1z"/><line x1="17" y1="9.5" x2="12" y2="14.5"/><line x1="12" y1="9.5" x2="17" y2="14.5"/></svg></button>
     </div>
     </div>
     <div id="splash-cards" style="display:none">
@@ -9146,25 +9146,33 @@ const APP_VER='20260905-0631';
 console.log('CITITOOL Version',APP_VER);
 let pinVal='';
 // Tasten direkt an pointerdown hängen — click kann auf iOS/Chrome verschluckt werden
-function pinBind(){
-  // Sicherheitsnetz: falls Splash schon weg ist, nichts binden
-  const pz=document.getElementById('pin-zone');
-  if(pz&&pz.classList.contains('weg'))return;
-  document.querySelectorAll('.keypad .key-num,.keypad .key-del').forEach(b=>{
-    if(b._pb)return;b._pb=true;
-    const oc=b.getAttribute('onclick')||'';
-    const ziffer=(oc.match(/pinPush\('(\d)'\)/)||[])[1];
-    const loeschen=/pinDel/.test(oc);
-    b.removeAttribute('onclick');
-    b.addEventListener('pointerdown',ev=>{
-      ev.preventDefault();ev.stopPropagation();
-      if(ziffer!=null)pinPush(ziffer);
-      else if(loeschen)pinDel();
-    });
-  });
-}
-document.addEventListener('DOMContentLoaded',pinBind);
-setTimeout(pinBind,300);
+function pinBind(){/* nicht mehr nötig — siehe Delegation unten */}
+// Ein einziger Zuhörer am Dokument: funktioniert auch, wenn die Tasten
+// später entstehen oder neu gezeichnet werden. Klick UND Touch.
+(function(){
+  let letzter=0;
+  const ausloesen=(el)=>{
+    if(!el)return false;
+    const pz=document.getElementById('pin-zone');
+    if(pz&&pz.classList.contains('weg'))return false;
+    const taste=el.closest('.key-num,.key-del');
+    if(!taste)return false;
+    // Doppelauslösung (pointerdown + click) verhindern
+    const jetzt=Date.now();
+    if(jetzt-letzter<250)return true;
+    letzter=jetzt;
+    if(taste.classList.contains('key-del')){pinDel();return true;}
+    const z=(taste.textContent||'').trim();
+    if(/^[0-9]$/.test(z))pinPush(z);
+    return true;
+  };
+  document.addEventListener('pointerdown',e=>{
+    if(ausloesen(e.target)){e.preventDefault();}
+  },true);
+  document.addEventListener('click',e=>{
+    if(ausloesen(e.target)){e.preventDefault();}
+  },true);
+})();
 function pinRender(){document.querySelectorAll('#pin-dots span').forEach((d,i)=>d.classList.toggle('on',i<pinVal.length));}
 function pinPush(d){
   if(pinVal.length>=4)return;
