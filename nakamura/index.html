@@ -3402,6 +3402,45 @@ function setView(v){
   document.getElementById('vt-liste').classList.toggle('active',v==='liste');
   render();
 }
+function opCard(t,i,listName){
+  const isRev = listName==='unten';
+  return `
+    <div class="op${isRev?' rev':''} ${opTyp(t).k?'t-'+opTyp(t).k:''}" data-list="${listName}" data-idx="${i}" data-nm="${esc((t.id||'')+'~'+(t.nm||''))}" tabindex="0">
+      ${hovBarHTML(listName,i)}
+      <div class="op-top">
+        <div class="op-slot">
+          ${dragHandleHTML()}
+          <div class="op-idx" onclick="moveTo('${listName}',${i})" style="cursor:pointer" title="Position ändern">${String(i+1).padStart(2,'0')}</div>
+          <div class="op-prog">${esc(t.id||t.slot||'—')}</div>
+          ${(listName==='oben'?P().codeOben:P().codeUnten)?`<button class="op-code" onclick="showCode('${listName}','${esc(t.id)}',${t.line!=null?t.line:-1})" title="Code anzeigen"><svg viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>Code</button>`:''}
+        </div>
+        <div class="op-ctrls">
+          <button class="opc" onclick="moveIn('${listName}',${i},-1)"><svg viewBox="0 0 24 24"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg></button>
+          <button class="opc" onclick="moveIn('${listName}',${i},1)"><svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg></button>
+          <button class="opc x" onclick="delIn('${listName}',${i})"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        </div>
+      </div>
+      <div class="op-title ${t.nm?'':'empty'}" onclick="editIn('${listName}',${i})">${esc(t.nm||'Leer — antippen')}</div>
+      <div class="op-tags">
+        ${opTyp(t).lbl?'<span class="op-typ"><i></i>'+opTyp(t).lbl+'</span>':''}
+        ${t.isSonder?'<span class="otag sp">Sonder</span>':''}
+        ${t.dia?'<span class="otag">Ø '+esc(t.dia).replace(/\n+/g,' / ')+'</span>':''}
+        ${t.bem?'<span class="otag tool" onclick="editIn(\''+listName+'\','+i+')">'+esc(t.bem)+'</span>':''}
+      </div>
+    </div>`;
+}
+function lrow(t,i,listName){
+  const isRev=listName==='unten';
+  return `<div class="lrow ${isRev?'rev':''} ${opTyp(t).k?'t-'+opTyp(t).k:''}" data-list="${listName}" data-idx="${i}" data-nm="${esc((t.id||'')+'~'+(t.nm||''))}" tabindex="0" onclick="editIn('${listName}',${i})">
+    ${hovBarHTML(listName,i)}
+    ${dragHandleHTML()}<span class="lrow-idx">${String(i+1).padStart(2,'0')}</span>
+    <span class="lrow-id">${esc(t.id||'T—')}</span>
+    <span class="lrow-nm">${esc(t.nm||'Leer')}</span>
+    ${t.dia?`<span class="lrow-dia">Ø ${esc(t.dia).replace(/\n+/g,' / ')}</span>`:''}
+    ${t.isSonder?'<span class="lrow-sonder" title="Sonder"></span>':''}
+  </div>`;
+}
+
 function render(){
   const p=P(); if(!p.oben)p.oben=[]; if(!p.unten)p.unten=[];
   const c=document.getElementById('content');
