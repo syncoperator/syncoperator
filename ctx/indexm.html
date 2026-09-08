@@ -1818,6 +1818,15 @@ select option{background:var(--surface);color:var(--ink);}
   <div class="modal-body" id="toolBody"></div><div class="modal-foot" id="toolFoot"></div>
 </div></div>
 
+<div class="ov" id="newToolOv"><div class="modal">
+  <div class="modal-head"><div><div class="mh-tag">[WERKZEUG] · NEU</div><div class="mh-title">Neues Werkzeug anlegen</div></div><button class="mh-x" id="ntClose">✕</button></div>
+  <div class="modal-body">
+    <div class="fg"><label class="flabel">Platz (T-Nr.)</label><input class="finput mono" id="ntPl" type="number" min="1" placeholder="7"></div>
+    <div class="fg"><label class="flabel">Werkzeugname</label><input class="finput" id="ntName" placeholder="Bohrer D5"></div>
+  </div>
+  <div class="modal-foot"><button class="btn ghost" id="ntCancel">Abbrechen</button><button class="btn primary" id="ntOk">Anlegen</button></div>
+</div></div>
+
 <div class="ov" id="pairOv"><div class="modal wide">
   <div class="modal-head"><div><div class="mh-tag">[PAIR] · VERKNÜPFEN</div><div class="mh-title">Operation ⇄ Werkzeug</div></div><button class="mh-x" id="pairClose">✕</button></div>
   <div class="modal-body" id="pairBody"></div><div class="modal-foot" id="pairFoot"></div>
@@ -3238,6 +3247,27 @@ function quickAddTool(ch,pl,name){
   TOOLS[ch].sort((a,b)=>(parseInt(a.pl,10)||0)-(parseInt(b.pl,10)||0));
   return tno;
 }
+let newToolCb=null, newToolCh='1';
+function openNewTool(ch,cb){
+  newToolCh=ch; newToolCb=cb;
+  document.getElementById('ntPl').value='';
+  document.getElementById('ntName').value='';
+  document.getElementById('newToolOv').classList.add('open');
+  setTimeout(()=>{const el=document.getElementById('ntPl');if(el)el.focus();},80);
+}
+function closeNewTool(){
+  document.getElementById('newToolOv').classList.remove('open');
+  newToolCb=null;
+}
+function confirmNewTool(){
+  const pl=document.getElementById('ntPl').value;
+  const name=document.getElementById('ntName').value;
+  const tno=quickAddTool(newToolCh,pl,name);
+  if(!tno){alert('Platz und Name eintragen.');return;}
+  const cb=newToolCb;
+  closeNewTool();
+  if(cb)cb(tno,name.trim());
+}
 function openPairing(){
   const body=document.getElementById('pairBody');
   let h='<div class="pair-wrap">';
@@ -3265,6 +3295,14 @@ function openPairing(){
     sel.addEventListener('change',()=>{
       const k=sel.dataset.k, idx=+sel.dataset.idx, v=sel.value;
       const op=DATA[k][idx];if(!op)return;
+      if(v==='__new__'){
+        sel.value='';
+        openNewTool(k,(tno,name)=>{
+          const o=DATA[k][idx];if(o){o.tno=tno;o.tname=name;}
+          render();openPairing();
+        });
+        return;
+      }
       if(!v){op.tno='';op.tname='';}else{const parts=v.split('|');op.tno=parts[0];op.tname=parts[1]||'';}
       render();
     });
@@ -3655,6 +3693,13 @@ function boot(){
   document.getElementById('tlSearch').addEventListener('input',e=>{tlFilter=e.target.value;renderTools();});
   document.getElementById('mpfFile').addEventListener('change',e=>{handleFiles(e.target.files);e.target.value='';});
   document.getElementById('pairClose').addEventListener('click',closePairing);
+  {
+    const ntx=document.getElementById('ntClose'); if(ntx)ntx.addEventListener('click',closeNewTool);
+    const ntc=document.getElementById('ntCancel'); if(ntc)ntc.addEventListener('click',closeNewTool);
+    const nto=document.getElementById('ntOk'); if(nto)nto.addEventListener('click',confirmNewTool);
+    const ntn=document.getElementById('ntName');
+    if(ntn)ntn.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();confirmNewTool();}});
+  }
   document.getElementById('pairOv').addEventListener('click',e=>{if(e.target.id==='pairOv')closePairing();});
   document.getElementById('toolClose').addEventListener('click',closeToolEdit);
   document.getElementById('toolOv').addEventListener('click',e=>{if(e.target.id==='toolOv')closeToolEdit();});
@@ -4091,37 +4136,15 @@ function ckRender(){
         const k=sel.dataset.k, idx=+sel.dataset.idx, v=sel.value;
         const op=DATA[k][idx];if(!op)return;
         if(v==='__new__'){
-          sel.style.display='none';
-          const form=b.querySelector('.ck-newtool[data-k="'+k+'"][data-idx="'+idx+'"]');
-          if(form){
-            form.style.display='';
-            const plInp=form.querySelector('.ck-newtool-pl');
-            if(plInp)plInp.focus();
-          }
+          sel.value='';
+          openNewTool(k,(tno,name)=>{
+            const o=DATA[k][idx];if(o){o.tno=tno;o.tname=name;}
+            render();ckRender();
+          });
           return;
         }
         if(!v){op.tno='';op.tname='';}else{const parts=v.split('|');op.tno=parts[0];op.tname=parts[1]||'';}
         render();ckRender();
-      });
-    });
-    b.querySelectorAll('.ck-newtool-ok').forEach(btn=>{
-      btn.addEventListener('click',()=>{
-        const form=btn.closest('.ck-newtool');
-        const k=form.dataset.k, idx=+form.dataset.idx;
-        const pl=form.querySelector('.ck-newtool-pl').value;
-        const name=form.querySelector('.ck-newtool-name').value;
-        const tno=quickAddTool(k,pl,name);
-        if(!tno){alert('Platz und Name eintragen.');return;}
-        const op=DATA[k][idx];if(op){op.tno=tno;op.tname=name.trim();}
-        render();ckRender();
-      });
-    });
-    b.querySelectorAll('.ck-newtool-cancel').forEach(btn=>{
-      btn.addEventListener('click',()=>{
-        const form=btn.closest('.ck-newtool');
-        form.style.display='none';
-        const sel=b.querySelector('.ck-pair-sel[data-k="'+form.dataset.k+'"][data-idx="'+form.dataset.idx+'"]');
-        if(sel){sel.style.display='';sel.value='';}
       });
     });
   }
@@ -4713,7 +4736,7 @@ function ckWkz(){
         +'<div class="pair-num"><span class="pair-idx">'+String(idx+1).padStart(2,'0')+'</span><span class="pair-lc">'+esc(op.code||'')+'</span></div>'
         +'<div class="pair-op"><div class="c">'+esc(op.title||op.code||'—')+'</div><div class="s">'+esc(op.spindle||'')+(op.tno?' · '+esc(op.tno):'')+'</div></div>'
         +'<div class="pair-arrow"><svg viewBox="0 0 24 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 6h18M16 2l4 4-4 4"/></svg></div>'
-        +'<div class="pair-tool"><select class="ck-pair-sel" data-k="'+k+'" data-idx="'+idx+'">'+allToolOptions(op.tno)+'</select><div class="ck-newtool" data-k="'+k+'" data-idx="'+idx+'" style="display:none"><input class="ck-newtool-pl" type="number" min="1" placeholder="Platz"><input class="ck-newtool-name" placeholder="Name"><button class="ck-newtool-ok" type="button">✓</button><button class="ck-newtool-cancel" type="button">✕</button></div></div>'
+        +'<div class="pair-tool"><select class="ck-pair-sel" data-k="'+k+'" data-idx="'+idx+'">'+allToolOptions(op.tno)+'</select></div>'
       +'</div>';
     });
     h+='</div>';
