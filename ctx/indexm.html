@@ -1818,15 +1818,6 @@ select option{background:var(--surface);color:var(--ink);}
   <div class="modal-body" id="toolBody"></div><div class="modal-foot" id="toolFoot"></div>
 </div></div>
 
-<div class="ov" id="newToolOv"><div class="modal">
-  <div class="modal-head"><div><div class="mh-tag">[WERKZEUG] · NEU</div><div class="mh-title">Neues Werkzeug anlegen</div></div><button class="mh-x" id="ntClose">✕</button></div>
-  <div class="modal-body">
-    <div class="fg"><label class="flabel">Platz (T-Nr.)</label><input class="finput mono" id="ntPl" type="number" min="1" placeholder="7"></div>
-    <div class="fg"><label class="flabel">Werkzeugname</label><input class="finput" id="ntName" placeholder="Bohrer D5"></div>
-  </div>
-  <div class="modal-foot"><button class="btn ghost" id="ntCancel">Abbrechen</button><button class="btn primary" id="ntOk">Anlegen</button></div>
-</div></div>
-
 <div class="ov" id="pairOv"><div class="modal wide">
   <div class="modal-head"><div><div class="mh-tag">[PAIR] · VERKNÜPFEN</div><div class="mh-title">Operation ⇄ Werkzeug</div></div><button class="mh-x" id="pairClose">✕</button></div>
   <div class="modal-body" id="pairBody"></div><div class="modal-foot" id="pairFoot"></div>
@@ -2405,7 +2396,7 @@ function renderTools(){
 }
 
 /* ===== Tool editor (with channel selector) ===== */
-function openToolEdit(ch,idx){
+function openToolEdit(ch,idx,onSaved){
   const isNew=idx<0;
   const t=isNew?{pl:'',name:'',typ:'',l1:'',l2:'',l3:'',radius:'',sl:'',u:'0'}:Object.assign({},TOOLS[ch][idx]);
   document.getElementById('toolTitle').textContent=isNew?'Werkzeug hinzufügen':'Werkzeug bearbeiten';
@@ -2443,6 +2434,7 @@ function openToolEdit(ch,idx){
       // sort by numeric PL for tidiness
       TOOLS[newCh].sort((a,b)=>(parseInt(a.pl,10)||0)-(parseInt(b.pl,10)||0));
       closeToolEdit();renderTools();snapshot();renderProjects();
+      if(onSaved){const tno='T'+String(parseInt(obj.pl,10)||0).padStart(2,'0');onSaved(tno,obj.name,newCh);}
     })
   );
   document.getElementById('toolOv').classList.add('open');
@@ -3247,27 +3239,6 @@ function quickAddTool(ch,pl,name){
   TOOLS[ch].sort((a,b)=>(parseInt(a.pl,10)||0)-(parseInt(b.pl,10)||0));
   return tno;
 }
-let newToolCb=null, newToolCh='1';
-function openNewTool(ch,cb){
-  newToolCh=ch; newToolCb=cb;
-  document.getElementById('ntPl').value='';
-  document.getElementById('ntName').value='';
-  document.getElementById('newToolOv').classList.add('open');
-  setTimeout(()=>{const el=document.getElementById('ntPl');if(el)el.focus();},80);
-}
-function closeNewTool(){
-  document.getElementById('newToolOv').classList.remove('open');
-  newToolCb=null;
-}
-function confirmNewTool(){
-  const pl=document.getElementById('ntPl').value;
-  const name=document.getElementById('ntName').value;
-  const tno=quickAddTool(newToolCh,pl,name);
-  if(!tno){alert('Platz und Name eintragen.');return;}
-  const cb=newToolCb;
-  closeNewTool();
-  if(cb)cb(tno,name.trim());
-}
 function openPairing(){
   const body=document.getElementById('pairBody');
   let h='<div class="pair-wrap">';
@@ -3297,9 +3268,9 @@ function openPairing(){
       const op=DATA[k][idx];if(!op)return;
       if(v==='__new__'){
         sel.value='';
-        openNewTool(k,(tno,name)=>{
+        openToolEdit(k,-1,(tno,name)=>{
           const o=DATA[k][idx];if(o){o.tno=tno;o.tname=name;}
-          render();openPairing();
+          openPairing();
         });
         return;
       }
@@ -3693,13 +3664,6 @@ function boot(){
   document.getElementById('tlSearch').addEventListener('input',e=>{tlFilter=e.target.value;renderTools();});
   document.getElementById('mpfFile').addEventListener('change',e=>{handleFiles(e.target.files);e.target.value='';});
   document.getElementById('pairClose').addEventListener('click',closePairing);
-  {
-    const ntx=document.getElementById('ntClose'); if(ntx)ntx.addEventListener('click',closeNewTool);
-    const ntc=document.getElementById('ntCancel'); if(ntc)ntc.addEventListener('click',closeNewTool);
-    const nto=document.getElementById('ntOk'); if(nto)nto.addEventListener('click',confirmNewTool);
-    const ntn=document.getElementById('ntName');
-    if(ntn)ntn.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();confirmNewTool();}});
-  }
   document.getElementById('pairOv').addEventListener('click',e=>{if(e.target.id==='pairOv')closePairing();});
   document.getElementById('toolClose').addEventListener('click',closeToolEdit);
   document.getElementById('toolOv').addEventListener('click',e=>{if(e.target.id==='toolOv')closeToolEdit();});
@@ -4137,9 +4101,9 @@ function ckRender(){
         const op=DATA[k][idx];if(!op)return;
         if(v==='__new__'){
           sel.value='';
-          openNewTool(k,(tno,name)=>{
+          openToolEdit(k,-1,(tno,name)=>{
             const o=DATA[k][idx];if(o){o.tno=tno;o.tname=name;}
-            render();ckRender();
+            ckRender();
           });
           return;
         }
