@@ -3252,7 +3252,10 @@ function openPairing(){
   foot.append(mkBtn('Fertig','primary',closePairing));
   document.getElementById('pairOv').classList.add('open');
 }
-function closePairing(){document.getElementById('pairOv').classList.remove('open');}
+function closePairing(){
+  document.getElementById('pairOv').classList.remove('open');
+  if(typeof ckReturnActive!=='undefined'&&ckReturnActive){ckReturnActive=false;ckStep=ckReturn;setView('check');}
+}
 
 /* ===== Projects list ===== */
 function renderProjects(){
@@ -3437,16 +3440,19 @@ function metaPrintHTML(){
   return '<div class="meta-print">'+rows.map(r=>'<div class="meta-print-row"><div class="mpr-label">'+esc(r.k)+'</div><div class="mpr-value">'+esc(r.v)+'</div></div>').join('')+'</div>';
 }
 function wkzColHTML(ch){
-  const list=(TOOLS[ch]||[]).slice().sort((a,b)=>(parseInt(a.pl,10)||0)-(parseInt(b.pl,10)||0));
+  const ROWS=22;
+  const byPl={};
+  (TOOLS[ch]||[]).forEach(t=>{const n=parseInt(t.pl,10);if(n>=1&&n<=ROWS)byPl[n]=t;});
   const spCls=ch==='1'?'wkz-sp4':'wkz-sp3';
   let h='<div class="wkz-col"><table class="wkz-table '+spCls+'"><colgroup><col class="wkz-c-tno"><col class="wkz-c-name"></colgroup>';
   h+='<thead><tr class="wkz-section-head"><td colspan="2">'+(ch==='1'?'Kanal 1 · Revolver 1':'Kanal 2 · Revolver 2')+'</td></tr>';
   h+='<tr class="wkz-head-row"><th>T-Nr.</th><th>Werkzeug</th></tr></thead><tbody>';
-  if(!list.length){h+='<tr><td class="wkz-empty" colspan="2">Keine Werkzeuge</td></tr>';}
-  else list.forEach(t=>{
-    const tno='T'+String(t.pl).padStart(2,'0');
-    h+='<tr><td class="wkz-tno">'+esc(tno)+'</td><td class="wkz-name">'+esc(t.name||'')+'</td></tr>';
-  });
+  for(let n=1;n<=ROWS;n++){
+    const t=byPl[n];
+    const tno='T'+String(n).padStart(2,'0');
+    if(t)h+='<tr><td class="wkz-tno">'+esc(tno)+'</td><td class="wkz-name">'+esc(t.name||'')+'</td></tr>';
+    else h+='<tr class="wkz-free"><td class="wkz-tno">'+esc(tno)+'</td><td class="wkz-name">&nbsp;</td></tr>';
+  }
   h+='</tbody></table></div>';
   return h;
 }
@@ -4057,6 +4063,17 @@ function ckRender(){
     const s2=document.getElementById('ckSave');if(s2)s2.addEventListener('click',()=>{saveProject();renderProjects();s2.textContent='Gespeichert';});
   }
   ckBindTips(b);
+  if(ckStep===1)bindMetaPanel();
+  if(ckStep===2){
+    b.querySelectorAll('.ck-pair-sel').forEach(sel=>{
+      sel.addEventListener('change',()=>{
+        const k=sel.dataset.k, idx=+sel.dataset.idx, v=sel.value;
+        const op=DATA[k][idx];if(!op)return;
+        if(!v){op.tno='';op.tname='';}else{const parts=v.split('|');op.tno=parts[0];op.tname=parts[1]||'';}
+        render();ckRender();
+      });
+    });
+  }
   const nb2=document.getElementById('ckNewBlank');
   if(nb2)nb2.addEventListener('click',()=>{
     document.getElementById('inZN').value='';
@@ -4079,7 +4096,7 @@ function ckRender(){
   const lp=document.getElementById('ckLoadProg');
   if(lp)lp.addEventListener('click',()=>ckPick('prog'));
   b.querySelectorAll('[data-view]').forEach(el=>el.addEventListener('click',()=>ckGoto(el.dataset.view)));
-  b.querySelectorAll('[data-act="pair"]').forEach(el=>el.addEventListener('click',()=>{ckReturn=ckStep;setView('schema');openPairing();;}));
+  b.querySelectorAll('[data-act="pair"]').forEach(el=>el.addEventListener('click',()=>{ckReturn=ckStep;ckReturnActive=true;setView('schema');openPairing();}));
   b.querySelectorAll('[data-print]').forEach(el=>el.addEventListener('click',()=>{
     ckReturn=ckStep;
     setTimeout(()=>{el.dataset.print==='plan'?printPlan():printWkz();},60);
@@ -4483,6 +4500,7 @@ function renderTour(){
 }
 
 let ckReturn=0;
+let ckReturnActive=false;
 function ckNames(){
   const s=[];['1','2'].forEach(c=>(TOOLS[c]||[]).forEach(t=>{if(t.name&&s.indexOf(t.name)<0)s.push(t.name);}));
   ['1','2'].forEach(c=>(DATA[c]||[]).forEach(o=>{if(o&&o.tno&&s.indexOf(o.tno)<0)s.push(o.tno);}));
@@ -4614,65 +4632,44 @@ function ckKopf(){
 }
 
 function ckTech(){
-  const rows=(META||[]);
   let h='<div class="ck-pane"><div class="ck-h ck-h-ic">'+SVI('tech')+'Technologie · Stammdaten'
-    +ckTip('Laufzeit, Material, Sägelänge, Backen und Greifer. Diese Werte erscheinen im Kopf der Werkzeugliste. Links der Feldname, rechts der Wert.')+'</div>'
-    +'<div class="ck-legend-cols"><span>Feld</span><span></span><span>Wert</span></div>'
-    +'<div class="ck-flow">';
-  if(!rows.length)h+='<div class="ck-none">Keine Stammdaten erfasst</div>';
-  rows.forEach((m,i)=>{
-    const empty=!(m.v||'').trim();
-    h+='<div class="ck-row ck-meta-row">'
-      +'<div class="ck-side"><input class="ck-mk2" data-mi="'+i+'" value="'+esc(m.k||'')+'" placeholder="Feldname"></div>'
-      +'<div class="ck-mid'+(empty?'':' sync')+'"><span>'+String(i+1).padStart(2,'0')+'</span></div>'
-      +'<div class="ck-side ck-side-v"><input class="ck-mv2'+(empty?' miss':'')+'" data-mv="'+i+'" value="'+esc(m.v||'')+'" placeholder="Wert">'
-      +'<button class="ck-mdel" data-md="'+i+'">✕</button></div>'
-      +'</div>';
-  });
-  h+='</div><button class="ck-load ck-load-sm" id="ckMetaAdd">＋ Eigenes Feld</button></div>';
+    +ckTip('Laufzeit, Material, Sägelänge, Backen und Greifer. Diese Werte erscheinen im Kopf der Werkzeugliste.')+'</div>';
+  h+=metaPanelHTML();
+  h+='</div>';
   return h;
 }
-
-
 function ckWkz(){
-  const names=ckNames();
-  // Platznummer je Werkzeugname (aus beiden Revolvern)
-  const plOf={};
-  ['1','2'].forEach(c=>(TOOLS[c]||[]).forEach(t=>{
-    const n=parseInt(String(t.pl).replace(/\D/g,''),10);
-    if(t.name&&n&&!plOf[t.name])plOf[t.name]='T'+String(n).padStart(2,'0');
-  }));
-  const lbl=n=>(plOf[n]?plOf[n]+' · ':'')+n;
   const rows=[];
-  ['1','2'].forEach(ch=>(DATA[ch]||[]).forEach((o,i)=>{if(o&&!slotEmpty(o))rows.push({ch,o,i});}));
-  const done=rows.filter(r=>(r.o.tno||'').trim()).length;
+  ['1','2'].forEach(ch=>(DATA[ch]||[]).forEach(o=>{if(o&&!slotEmpty(o))rows.push(o);}));
+  const done=rows.filter(o=>(o.tno||'').trim()).length;
   let h='<div class="ck-pane"><div class="ck-h ck-h-ic">'+SVI('wkz')+'Verknüpfen · Werkzeug je Operation'
-    +ckTip('Jeder Operation ihr Werkzeug zuordnen. Die Liste kommt aus der Werkzeugliste — eigene Namen lassen sich ebenfalls eintragen.')+'</div>'
+    +ckTip('Jeder Operation ihr Werkzeug zuordnen — direkt hier oder in der Werkzeugliste laden.')+'</div>'
     +'<div class="ck-chips"><span class="ck-chip'+(done?' ok':'')+'">'+done+' von '+rows.length+' zugeordnet</span></div>'
     +'<button class="ck-jump ck-wide" data-view="tools">Zur Werkzeugliste</button>'
     +'<button class="ck-load ck-load-sm" id="ckLoadTools">Toolliste laden</button>';
-  if(!rows.length)return h+'<div class="ck-none">Keine Operationen geladen</div></div>';
-  let cur='';
-  rows.forEach(r=>{
-    if(r.ch!==cur){cur=r.ch;
-      h+='<div class="ck-vh ck-vh-'+(r.ch==='1'?'sp4':'sp3')+'">'+(r.ch==='1'?'Kanal 1 · 1000.MPF':'Kanal 2 · 2000.MPF')+'</div>';}
-    const val=r.o.tno||'';
-    const known=val&&names.indexOf(val)>=0;
-    let opt='<option value="">— kein Werkzeug —</option>';
-    names.forEach(n=>opt+='<option value="'+esc(n)+'"'+(n===val?' selected':'')+'>'+esc(lbl(n))+'</option>');
-    if(val&&!known)opt='<option value="'+esc(val)+'" selected>'+esc(lbl(val))+'</option>'+opt;
-    opt+='<option value="__new__">＋ Eigenes …</option>';
-    h+='<div class="ck-vrow'+(val?'':' free')+'">'
-      +'<span class="ck-vn">'+String(r.i+1).padStart(2,'0')+'</span>'
-      +'<span class="ck-vb"><b>'+esc(r.o.title||r.o.code||'')+'</b><i>'+esc(r.o.code||'')+' · '+esc(r.o.spindle||'SP4')
-        +(val&&plOf[val]?' · '+esc(plOf[val]):'')+'</i></span>'
-      +'<span class="ck-vsel"><select class="ck-psel" data-p="'+r.ch+':'+r.i+'">'+opt+'</select>'
-      +'<input class="ck-pnew" data-pn="'+r.ch+':'+r.i+'" value="'+esc(val)+'" placeholder="Werkzeugname" style="display:none"></span>'
+  if(!TOOLS['1'].length&&!TOOLS['2'].length){
+    h+='<div class="ck-none">Keine Werkzeuge in der Bibliothek. Erst eine Werkzeugliste laden.</div></div>';
+    return h;
+  }
+  h+='<div class="pair-wrap">';
+  ['1','2'].forEach(k=>{
+    h+='<div class="pair-col"><div class="pair-col-title">Kanal '+k+' · '+(k==='1'?'1000.MPF':'2000.MPF')+'</div>';
+    const arr=DATA[k].filter(s=>!slotEmpty(s));
+    if(!arr.length){h+='<div class="empty-note">Keine Operationen</div>';}
+    arr.forEach(op=>{
+      const idx=DATA[k].indexOf(op);
+      h+='<div class="pair-row">'
+        +'<div class="pair-num"><span class="pair-idx">'+String(idx+1).padStart(2,'0')+'</span><span class="pair-lc">'+esc(op.code||'')+'</span></div>'
+        +'<div class="pair-op"><div class="c">'+esc(op.title||op.code||'—')+'</div><div class="s">'+esc(op.spindle||'')+(op.tno?' · '+esc(op.tno):'')+'</div></div>'
+        +'<div class="pair-arrow"><svg viewBox="0 0 24 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 6h18M16 2l4 4-4 4"/></svg></div>'
+        +'<div class="pair-tool"><select class="ck-pair-sel" data-k="'+k+'" data-idx="'+idx+'">'+allToolOptions(op.tno)+'</select></div>'
       +'</div>';
+    });
+    h+='</div>';
   });
+  h+='</div>';
   return h+'</div>';
 }
-
 function ckFlowSVG(){
   const s1=(DATA['1']||[]).filter(o=>o&&!slotEmpty(o));
   const s2=(DATA['2']||[]).filter(o=>o&&!slotEmpty(o));
