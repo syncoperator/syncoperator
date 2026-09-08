@@ -3179,10 +3179,23 @@ function ensureMeta(p){
   p.meta=p.meta.filter(f=>f.label!=='STÜCK T'&&f.label!=='STÜCK N');
   return p.meta;
 }
-function persist(){localStorage.setItem(DB,JSON.stringify(db));scheduleCloudSync();}
-function saveBrain(){localStorage.setItem(BRAIN,JSON.stringify(brain));scheduleBrainSync();}
+function persist(){
+  try{ localStorage.setItem(DB,JSON.stringify(db)); }
+  catch(e){ console.warn('Speicher voll?',e); toast('Speicher voll — Bilder entfernen'); }
+  try{ scheduleCloudSync(); }catch(e){ console.warn('Cloud später',e); }
+}
+function saveBrain(){
+  try{ localStorage.setItem(BRAIN,JSON.stringify(brain)); }
+  catch(e){ console.warn('Speicher voll?',e); }
+  try{ scheduleBrainSync(); }catch(e){ console.warn('Cloud später',e); }
+}
 // ── Werkzeug-Speicher (brain) Cloud ──
 let _brainTimer=null;
+async function brainCloudPushSilent(){
+  const c=sbClient();if(!c||!cloudSecret())return;
+  try{const {error}=await c.rpc('save_brain',{p_secret:cloudSecret(),p_data:brain});if(error)throw error;}
+  catch(e){sqAdd('brain',{data:brain});}
+}
 function scheduleBrainSync(){
   if(typeof autoSyncOn!=='function'||!autoSyncOn()||!cloudSecret())return;
   clearTimeout(_brainTimer);
@@ -7002,7 +7015,11 @@ async function sqFlush(silent){
         const {data,error}=await c.rpc('save_project',{
           p_secret:cloudSecret(),p_id:p.cloudId||null,
           p_num:p.num||'',p_name:p.name||'',p_data:p,p_expected:null});
-        if(error)throw error;
+        if(error){
+          if(/400|payload|too large/i.test(error.message||''))
+            console.warn('Projekt zu gross für die Cloud — lokal ist alles gespeichert');
+          throw error;
+        }
         const row=Array.isArray(data)?data[0]:data;
         const live=db.find(x=>x===p||(x.num===p.num&&x.name===p.name));
         if(row&&live){live.cloudId=row.id;live.cloudTs=row.updated_at;}
