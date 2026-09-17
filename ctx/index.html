@@ -1660,6 +1660,22 @@ select option{background:var(--surface);color:var(--ink);}
 .cl-pt{font-family:var(--mono);font-size:9.5px;color:var(--ink-5);flex-shrink:0;}
 .cl-pdel{flex:0 0 auto;width:24px;height:24px;border:none;border-radius:7px;background:var(--surface-2);color:var(--ink-5);font-size:11px;cursor:pointer;}
 .cl-pdel:hover{background:var(--danger);color:#fff;}
+
+/* --- Menü: zentriertes Panel statt Bottom-Sheet --- */
+.drawer{top:50%;left:50%;right:auto;bottom:auto;
+  width:min(440px,calc(100vw - 32px));max-width:none;max-height:min(78vh,700px);
+  border-radius:24px;border:.5px solid var(--line);border-top:.5px solid var(--line);
+  transform:translate(-50%,calc(-50% + 16px)) scale(.965);opacity:0;pointer-events:none;
+  transition:transform .34s cubic-bezier(.32,.72,0,1),opacity .24s ease;
+  box-shadow:0 26px 74px rgba(0,0,0,.30);overflow:hidden;padding-bottom:0;}
+.drawer.open{transform:translate(-50%,-50%) scale(1);opacity:1;pointer-events:auto;}
+.drawer::before{display:none;}
+.dr-head{padding:20px 20px 14px;}
+.dr-list{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:4px;}
+.dr-foot{padding:11px 18px 14px;border-top:1px solid var(--line);font-family:var(--mono);
+  font-size:8.5px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;
+  color:var(--ink-5);text-align:center;flex:0 0 auto;}
+@media(max-width:560px){.drawer{width:calc(100vw - 24px);max-height:84vh;border-radius:22px;}}
 </style>
 
 </head>
@@ -3364,14 +3380,14 @@ function buildMindmapSVG(p,s1,s2){
   const cnt=rows.length||1;
   // Adaptive Skalierung: Zeilenhöhe so wählen, dass die Seite gefüllt wird
   const W=1000, AX=W/2, HEAD=30, PAD=6;
-  const TARGET=1120;                                  // Ziel-Höhe (A4 hoch, gut gefüllt)
-  const ROW=Math.max(42,Math.min(74,(TARGET-HEAD-PAD)/cnt));
+  const TARGET=1215;                                  // Ziel-Höhe (A4 hoch, füllt Breite ohne Shrink)
+  const ROW=Math.max(42,Math.min(92,(TARGET-HEAD-PAD)/cnt));
   const GAP=Math.max(10,Math.min(20,ROW*0.22));
   const NH=ROW-GAP;
   const NW=424;
-  const AR=Math.max(11,Math.min(17,NH*0.30));
+  const AR=Math.max(11,Math.min(19,NH*0.30));
   const H=HEAD+cnt*ROW+PAD;
-  const k=Math.max(.62,Math.min(1,NH/62));            // Typo-Skalierung
+  const k=Math.max(.62,Math.min(1.18,NH/62));         // Typo-Skalierung
   const fT=Math.round(16*k*10)/10;
   const fC=Math.round(11*k*10)/10;
   const fN=Math.round(12.5*k*10)/10;
@@ -3388,7 +3404,7 @@ function buildMindmapSVG(p,s1,s2){
     +'.tn{font-family:"JetBrains Mono",monospace;font-size:'+fN+'px;font-weight:800}'
     +'.ax{font-family:"JetBrains Mono",monospace;font-size:'+fA+'px;font-weight:800;fill:'+(bw?'#111':'#3a3a42')+'}'
     +'.hd{font-family:"JetBrains Mono",monospace;font-size:11.5px;font-weight:800;letter-spacing:.14em}'
-    +'.xb{font-family:"JetBrains Mono",monospace;font-size:'+fX+'px;font-weight:800;fill:#fff;letter-spacing:.04em}'
+    +'.xb{font-family:"JetBrains Mono",monospace;font-size:'+fX+'px;font-weight:800;letter-spacing:.04em}'
   +'</style>';
   // Kopfzeile der Kanäle
   s+='<text x="'+(AX-Math.max(46,fA*4.6)/2-14)+'" y="18" text-anchor="end" class="hd" fill="'+B+'">KANAL 1 · 1000.MPF</text>';
@@ -3437,7 +3453,7 @@ function buildMindmapSVG(p,s1,s2){
       const cxx=tx+t.length*cw+7;
       const cy2=y+yT-bh*0.78;
       g+='<rect x="'+cxx+'" y="'+cy2+'" width="'+crw+'" height="'+bh+'" rx="'+(bh/2)+'" fill="'+A+'"/>';
-      g+='<text x="'+(cxx+crw/2)+'" y="'+(cy2+bh*0.73)+'" text-anchor="middle" class="xb">CROSS</text>';
+      g+='<text x="'+(cxx+crw/2)+'" y="'+(cy2+bh*0.73)+'" text-anchor="middle" class="xb" fill="#fff">CROSS</text>';
     }
     // Fußzeile: T-Nr + Werkzeugname
     const chK=(side==='L')?'1':'2';
@@ -5132,6 +5148,7 @@ function renderCloud(){
     <div class="dr-sec">Gespeicherte Projekte</div>
     <div id="projList"></div>
   </div>
+  <div class="dr-foot">SyncOperator · CNC</div>
 </div>
 </div>
 <div class="ov" id="fileOv"><div class="modal wide">
