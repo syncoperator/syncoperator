@@ -2791,7 +2791,7 @@ function handleFiles(fileList){
 
 /* ===== NEUES PROJEKT — Wizard (4 Schritte) ===== */
 let wizStep=0, wizData=null, wizToolCh='1';
-const WIZ_STEPS=['Kopfdaten','Technologie','Programm','Werkzeuge','Übersicht'];
+const WIZ_STEPS=['Kopfdaten','Technologie','Programm','Übersicht'];
 function openWizard(){
   wizStep=0; wizToolCh='1';
   wizData={zn:'',bez:'',meta:META_DEFAULTS.map(o=>({k:o.k,v:o.v})),DATA:{'1':[],'2':[]},TOOLS:{'1':[],'2':[]},loaded:[],spf:[],verknuepfen:true,toolSrc:'auto',opTools:[]};
@@ -2807,7 +2807,7 @@ function renderWizard(){
   document.getElementById('wizDots').innerHTML=WIZ_STEPS.map((s,i)=>'<span class="wiz-dot'+(i===wizStep?' on':'')+'"></span>').join('');
   // buttons
   document.getElementById('wizBack').style.visibility=wizStep===0?'hidden':'visible';
-  document.getElementById('wizNext').innerHTML=wizStep===4
+  document.getElementById('wizNext').innerHTML=wizStep===3
     ?'<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;vertical-align:-2px;margin-right:5px;"><path d="M3 8.5l3.5 3.5L13 5"/></svg>Projekt erstellen'
     :'Weiter<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;vertical-align:-2px;margin-left:4px;"><path d="M6 3l5 5-5 5"/></svg>';
   // body
@@ -2815,7 +2815,6 @@ function renderWizard(){
   if(wizStep===0)b.innerHTML=wizStepKopf();
   else if(wizStep===1)b.innerHTML=wizStepTech();
   else if(wizStep===2)b.innerHTML=wizStepProg();
-  else if(wizStep===3)b.innerHTML=wizStepTools();
   else b.innerHTML=wizStepUeber();
   wizBind();
 }
@@ -2867,46 +2866,6 @@ function wizBuildOpTools(){
   });
   wizData.opTools=rows;
 }
-function wizStepTools(){
-  wizBuildOpTools();
-  const rows=wizData.opTools||[];
-  if(!rows.length){
-    return '<div class="wiz-pane"><div class="wiz-lead">Werkzeuge zuordnen</div><div class="wiz-empty">Keine Operationen geladen.<br>Lade zuerst ein Programm (Schritt 3).</div></div>';
-  }
-  // verfügbare Werkzeugnamen (Toolliste) für Dropdown
-  const names=[];['1','2'].forEach(ch=>(wizData.TOOLS[ch]||[]).forEach(t=>{if(t.name&&names.indexOf(t.name)<0)names.push(t.name);}));
-  const n1=rows.filter(r=>r.ch==='1').length, n2=rows.filter(r=>r.ch==='2').length;
-  // channel segment
-  let h='<div class="wiz-pane"><div class="wiz-lead">Werkzeuge zuordnen</div>'
-    +'<div class="wiz-tch-seg">'
-      +'<button class="'+(wizToolCh==='1'?'on':'')+'" data-tch="1"><b>1000.MPF</b><i>Kanal 1 · '+n1+'</i></button>'
-      +'<button class="'+(wizToolCh==='2'?'on':'')+'" data-tch="2"><b>2000.MPF</b><i>Kanal 2 · '+n2+'</i></button>'
-    +'</div>';
-  const chRows=rows.filter(r=>r.ch===wizToolCh);
-  if(!chRows.length){h+='<div class="wiz-empty sm">Keine Operationen in diesem Kanal</div>';}
-  else{
-    h+='<div class="wiz-ot-list">';
-    rows.forEach((r,i)=>{
-      if(r.ch!==wizToolCh)return;
-      // dropdown options from Toolliste + current value if custom
-      let opts='<option value="">— kein Werkzeug —</option>';
-      let matched=false;
-      names.forEach(nm=>{const sel=(nm===r.tool)?' selected':'';if(sel)matched=true;opts+='<option value="'+esc(nm)+'"'+sel+'>'+esc(nm)+'</option>';});
-      if(r.tool&&!matched)opts='<option value="'+esc(r.tool)+'" selected>'+esc(r.tool)+'</option>'+opts;
-      opts+='<option value="__custom__">＋ Eigenes eingeben…</option>';
-      h+='<div class="wiz-ot-row">'
-        +'<span class="wiz-ot-pos">T'+String(r.pos).padStart(2,'0')+'</span>'
-        +'<span class="wiz-ot-op"><b>'+esc(r.title)+'</b>'+(r.code?'<i>'+esc(r.code)+'</i>':'')+'</span>'
-        +'<div class="wiz-ot-sel-wrap"><select class="wiz-ot-sel" data-i="'+i+'">'+opts+'</select>'
-        +'<input class="wiz-ot-custom" data-i="'+i+'" value="'+esc(r.tool)+'" placeholder="Werkzeugname…" style="display:none;"></div>'
-        +'</div>';
-    });
-    h+='</div>';
-  }
-  if(!names.length)h+='<div class="wiz-ot-note">Keine Toolliste geladen — Namen frei eingeben (»Eigenes eingeben«).</div>';
-  h+='</div>';
-  return h;
-}
 function wizStepUeber(){
   const n1=wizData.DATA['1'].filter(o=>!slotEmpty(o)).length, n2=wizData.DATA['2'].filter(o=>!slotEmpty(o)).length;
   const t1=wizData.TOOLS['1'].length, t2=wizData.TOOLS['2'].length;
@@ -2941,21 +2900,6 @@ function wizBind(){
     const vk=document.getElementById('wizVkToggle');if(vk)vk.addEventListener('click',()=>{wizData.verknuepfen=!wizData.verknuepfen;wizResolveTools();renderWizard();});
     document.querySelectorAll('.wiz-src-seg button').forEach(b=>b.addEventListener('click',()=>{wizData.toolSrc=b.dataset.src;wizResolveTools();renderWizard();}));
   }else if(wizStep===3){
-    document.querySelectorAll('.wiz-tch-seg button').forEach(b=>b.addEventListener('click',()=>{wizToolCh=b.dataset.tch;renderWizard();}));
-    document.querySelectorAll('.wiz-ot-sel').forEach(sel=>{
-      const i=+sel.dataset.i;
-      const custom=document.querySelector('.wiz-ot-custom[data-i="'+i+'"]');
-      // if current value is custom (not in options), show input
-      if(custom&&wizData.opTools[i].tool&&sel.value!==wizData.opTools[i].tool){custom.style.display='';}
-      sel.addEventListener('change',()=>{
-        if(sel.value==='__custom__'){custom.style.display='';custom.value='';custom.focus();wizData.opTools[i].tool='';}
-        else{custom.style.display='none';wizData.opTools[i].tool=sel.value;}
-      });
-    });
-    document.querySelectorAll('.wiz-ot-custom').forEach(inp=>{
-      inp.addEventListener('input',()=>{wizData.opTools[+inp.dataset.i].tool=inp.value;});
-    });
-  }else if(wizStep===4){
     document.querySelectorAll('.wiz-acc-h').forEach(h=>h.addEventListener('click',()=>{h.parentElement.classList.toggle('open');}));
   }
 }
@@ -3043,7 +2987,7 @@ function wizNext(){
     }
     wizBuildOpTools(); // Operationen-Liste für Werkzeug-Zuordnung vorbereiten
   }
-  if(wizStep<4){wizStep++;renderWizard();}
+  if(wizStep<3){wizStep++;renderWizard();}
   else wizFinish();
 }
 function wizBack(){if(wizStep>0){wizStep--;renderWizard();}}
@@ -4116,24 +4060,6 @@ function ckRender(){
   }
   ckBindTips(b);
   if(ckStep===1)bindMetaPanel();
-  if(ckStep===2){
-    b.querySelectorAll('.ck-pair-sel').forEach(sel=>{
-      sel.addEventListener('change',()=>{
-        const k=sel.dataset.k, idx=+sel.dataset.idx, v=sel.value;
-        const op=DATA[k][idx];if(!op)return;
-        if(v==='__new__'){
-          sel.value='';
-          openToolEdit(k,-1,(tno,name)=>{
-            const o=DATA[k][idx];if(o){o.tno=tno;o.tname=name;}
-            ckRender();
-          });
-          return;
-        }
-        if(!v){op.tno='';op.tname='';}else{const parts=v.split('|');op.tno=parts[0];op.tname=parts[1]||'';}
-        render();ckRender();
-      });
-    });
-  }
   const nb2=document.getElementById('ckNewBlank');
   if(nb2)nb2.addEventListener('click',()=>{
     document.getElementById('inZN').value='';
@@ -4703,31 +4629,14 @@ function ckWkz(){
   ['1','2'].forEach(ch=>(DATA[ch]||[]).forEach(o=>{if(o&&!slotEmpty(o))rows.push(o);}));
   const done=rows.filter(o=>(o.tno||'').trim()).length;
   let h='<div class="ck-pane"><div class="ck-h ck-h-ic">'+SVI('wkz')+'Verknüpfen · Werkzeug je Operation'
-    +ckTip('Jeder Operation ihr Werkzeug zuordnen — direkt hier oder in der Werkzeugliste laden.')+'</div>'
+    +ckTip('Jeder Operation ihr Werkzeug zuordnen — im Verknüpfen-Fenster.')+'</div>'
     +'<div class="ck-chips"><span class="ck-chip'+(done?' ok':'')+'">'+done+' von '+rows.length+' zugeordnet</span></div>'
+    +'<button class="ck-jump ck-wide" data-act="pair">Zum Verknüpfen</button>'
     +'<button class="ck-jump ck-wide" data-view="tools">Zur Werkzeugliste</button>'
     +'<button class="ck-load ck-load-sm" id="ckLoadTools">Toolliste laden</button>';
   if(!TOOLS['1'].length&&!TOOLS['2'].length){
-    h+='<div class="ck-none">Keine Werkzeuge in der Bibliothek. Erst eine Werkzeugliste laden.</div></div>';
-    return h;
+    h+='<div class="ck-none">Keine Werkzeuge in der Bibliothek. Erst eine Werkzeugliste laden.</div>';
   }
-  h+='<div class="pair-wrap">';
-  ['1','2'].forEach(k=>{
-    h+='<div class="pair-col"><div class="pair-col-title">Kanal '+k+' · '+(k==='1'?'1000.MPF':'2000.MPF')+'</div>';
-    const arr=DATA[k].filter(s=>!slotEmpty(s));
-    if(!arr.length){h+='<div class="empty-note">Keine Operationen</div>';}
-    arr.forEach(op=>{
-      const idx=DATA[k].indexOf(op);
-      h+='<div class="pair-row">'
-        +'<div class="pair-num"><span class="pair-idx">'+String(idx+1).padStart(2,'0')+'</span><span class="pair-lc">'+esc(op.code||'')+'</span></div>'
-        +'<div class="pair-op"><div class="c">'+esc(op.title||op.code||'—')+'</div><div class="s">'+esc(op.spindle||'')+(op.tno?' · '+esc(op.tno):'')+'</div></div>'
-        +'<div class="pair-arrow"><svg viewBox="0 0 24 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 6h18M16 2l4 4-4 4"/></svg></div>'
-        +'<div class="pair-tool"><select class="ck-pair-sel" data-k="'+k+'" data-idx="'+idx+'">'+allToolOptions(op.tno)+'</select></div>'
-      +'</div>';
-    });
-    h+='</div>';
-  });
-  h+='</div>';
   return h+'</div>';
 }
 function ckFlowSVG(){
