@@ -186,13 +186,17 @@ input.mono{font-family:var(--f-mono)}
 .lightbox{position:fixed;inset:0;background:rgba(0,0,0,.8);display:grid;place-items:center;padding:24px;z-index:30}
 .lightbox img{max-width:100%;max-height:100%;border-radius:12px;background:#fff}
 .copybox{width:100%;min-height:140px;font-family:var(--f-mono);font-size:12px;text-transform:none}
+.sheetview{position:fixed;inset:0;z-index:40;background:#E6E7EA;display:flex;flex-direction:column}
+.sv-bar{display:flex;gap:8px;align-items:center;padding:calc(10px + env(safe-area-inset-top,0px)) 16px 10px;background:var(--card);box-shadow:var(--shadow)}
+.sv-bar .grow{flex:1}
+.sheetview iframe{flex:1;width:100%;border:0;background:#E6E7EA}
 
 /* printed sheet */
 .sheet{display:none}
 @media print{
   @page{size:A4;margin:14mm}
   html,body{background:#fff!important;color:#000!important;padding:0}
-  .wrap,.toast,.lightbox{display:none!important}
+  .wrap,.toast,.lightbox,.sheetview{display:none!important}
   .sheet{display:block;font-family:var(--f-body);color:#000;text-transform:uppercase}
   .s-top{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2.5px solid #000;padding-bottom:4mm}
   .s-kind{font-family:var(--f-head);font-weight:700;font-size:13pt;letter-spacing:.12em}
@@ -384,6 +388,14 @@ input.mono{font-family:var(--f-mono)}
 <div id="toast" class="toast" hidden></div>
 <div id="lightbox" class="lightbox" hidden><img id="lbImg" alt=""></div>
 <section id="sheet" class="sheet" aria-hidden="true"></section>
+<div id="sheetView" class="sheetview" hidden>
+  <div class="sv-bar">
+    <button type="button" class="btn" id="sheetClose">← Zurück</button>
+    <span class="grow"></span>
+    <button type="button" class="btn primary" id="sheetPrint">Drucken / PDF</button>
+  </div>
+  <iframe id="sheetFrame" title="Bestellzettel"></iframe>
+</div>
 
 <script>
 (() => {
@@ -728,7 +740,7 @@ input.mono{font-family:var(--f-mono)}
     catch { const ta = $('copyFallback'); ta.value = text; ta.hidden = false; ta.focus(); ta.select(); toast('Text markiert – jetzt kopieren'); }
     askConfirm('abgeschickt');
   };
-  $('printGo').onclick = () => { printSheet(); setTimeout(() => askConfirm('ausgedruckt und übergeben'), 400); };
+  $('printGo').onclick = () => printSheet();
   $('confirmNo').onclick = () => $('confirm').hidden = true;
   $('confirmYes').onclick = () => {
     const now = Date.now(), items = sendItems();
@@ -780,8 +792,65 @@ input.mono{font-family:var(--f-mono)}
       </table>
       <div class="s-thanks">${rem ? 'BITTE KURZ BESCHEID GEBEN. DANKE!' : 'DANKE!'}</div>
       <div class="s-name">${esc(name) || '&nbsp;'}</div>`;
-    const imgs = [...$('sheet').querySelectorAll('img')];
-    Promise.all(imgs.map(im => im.complete ? 0 : new Promise(r => { im.onload = im.onerror = r; }))).then(() => window.print());
+    const doc = sheetDoc($('sheet').innerHTML, rem ? 'Erinnerung' : `Bestellung ${nr || ''}`);
+    $('sheetFrame').srcdoc = doc;
+    $('sheetView').hidden = false;
+    document.body.style.overflow = 'hidden';
+  }
+  $('sheetClose').onclick = () => { $('sheetView').hidden = true; document.body.style.overflow = ''; if (S.send) askConfirm('ausgedruckt und übergeben'); };
+  $('sheetPrint').onclick = () => {
+    const w = $('sheetFrame').contentWindow;
+    try { w.focus(); w.print(); } catch { window.print(); }
+  };
+
+  function sheetDoc(inner, title) {
+    return `<!doctype html><html lang="de"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${esc(title)}</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+:root{--f-head:"Space Grotesk",system-ui,-apple-system,"Segoe UI",sans-serif;--f-body:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;--f-mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color-scheme:light}
+*{box-sizing:border-box}
+html{background:#E6E7EA}
+body{margin:0;padding:16px;font-family:var(--f-body);color:#000;text-transform:uppercase;-webkit-text-size-adjust:100%}
+.bar{max-width:210mm;margin:0 auto 12px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.bar button{font:600 15px var(--f-body);text-transform:uppercase;letter-spacing:.03em;padding:12px 18px;border-radius:10px;border:0;background:#111214;color:#fff;cursor:pointer}
+.bar span{font-size:12px;color:#555;text-transform:none;flex:1 1 200px}
+.page{background:#fff;width:210mm;min-height:297mm;padding:14mm;box-shadow:0 2px 12px rgba(0,0,0,.12);transform-origin:0 0}
+.fit{margin:0 auto}
+.s-top{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2.5px solid #000;padding-bottom:4mm}
+.s-kind{font-family:var(--f-head);font-weight:700;font-size:13pt;letter-spacing:.12em}
+.s-nr{font-family:var(--f-mono);font-size:11pt;text-align:right}
+.s-hello{font-size:13pt;margin:8mm 0 1mm}
+h2{font-family:var(--f-head);font-size:30pt;line-height:1.05;margin:0 0 3mm}
+.s-ref{font-size:10pt;margin-bottom:3mm}
+.s-until{font-size:13pt;font-weight:700;border:2px solid #000;display:inline-block;padding:2mm 4mm;margin-bottom:4mm}
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:10.5pt;margin-top:2mm}
+th{text-align:left;font-size:7.5pt;letter-spacing:.1em;border-bottom:1.5px solid #000;padding:2mm 3mm 2mm 0;font-weight:700;white-space:nowrap}
+td{border-bottom:.5px solid #999;padding:3mm 3mm 3mm 0;vertical-align:middle}
+td.m{font-family:var(--f-mono)}
+td.qty{font-family:var(--f-mono);font-weight:700;font-size:13pt;white-space:nowrap}
+td.box{width:9mm}
+td.box span{display:inline-block;width:6mm;height:6mm;border:1.5px solid #000}
+td.img{width:20mm}
+td.img img{width:18mm;height:18mm;object-fit:cover;border-radius:2mm;border:.5px solid #ccc;display:block}
+.nm{font-weight:700;font-size:11pt}
+.s-sub{font-size:8.5pt;color:#333;margin-top:1mm}
+tr{break-inside:avoid;page-break-inside:avoid}
+.s-thanks{margin-top:12mm;font-size:16pt}
+.s-name{font-family:var(--f-head);font-size:20pt;font-weight:700;margin-top:1mm}
+@page{size:A4;margin:0}
+@media print{html,body{background:#fff}body{padding:0}.fit{width:auto!important;height:auto!important}.page{box-shadow:none;transform:none!important;min-height:0}}
+</style></head><body>
+<div class="fit" id="fit"><div class="page" id="pg">${inner}</div></div>
+<script>
+function fit(){var pg=document.getElementById('pg'),f=document.getElementById('fit');pg.style.transform='none';
+var w=pg.offsetWidth,h=pg.offsetHeight,avail=document.documentElement.clientWidth-32,k=Math.min(1,avail/w);
+pg.style.transform='scale('+k+')';f.style.width=(w*k)+'px';f.style.height=(h*k)+'px';}
+window.addEventListener('resize',fit);window.addEventListener('load',fit);fit();
+<\/script>
+</body></html>`;
   }
 
   // ---------- waiting / reminders ----------
