@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
 <style>
-/* Layout: two views (Bestellen / Bibliothek) — alarm strip, library picker, status segments, cards with one big next-step button */
+/* Layout: three views (Bestellen / Bibliothek / Archiv). Bestellen runs top-down as 1 find → 2 list → 3 send, then "unterwegs". */
 :root{
   --bg:#F2F3F5; --card:#FFFFFF; --fg:#111214; --muted:#6B6F76; --line:#E1E3E7;
   --ink:#111214; --on-ink:#FFFFFF; --soft:#ECEDF0;
@@ -37,257 +37,316 @@ html{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset
 body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.45;text-transform:uppercase}
 [hidden]{display:none!important}
 .wrap{max-width:760px;margin:0 auto;padding-inline:16px;padding-block:20px 60px;display:flex;flex-direction:column;gap:16px}
-h1,h2{font-family:var(--f-head);margin:0;text-wrap:balance}
+.view{display:flex;flex-direction:column;gap:16px}
+h1,h2,h3{font-family:var(--f-head);margin:0;text-wrap:balance}
 .mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
 button{font:inherit;color:inherit;cursor:pointer;text-transform:uppercase}
 button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
 svg{flex:none}
-.keepcase{text-transform:none}
 
-/* header + main nav */
-.top{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap}
+/* header + nav */
 .brand{font-family:var(--f-mono);font-size:11px;letter-spacing:.14em;color:var(--muted)}
-h1{font-size:26px;font-weight:700;letter-spacing:0}
+h1{font-size:26px;font-weight:700}
 .ruler{height:10px;background:repeating-linear-gradient(90deg,var(--line) 0 1px,transparent 1px 8px),repeating-linear-gradient(90deg,var(--muted) 0 1px,transparent 1px 40px);background-size:auto 5px,auto 10px;background-repeat:repeat-x;background-position:bottom;opacity:.7}
-.nav{display:grid;grid-template-columns:1fr 1fr;gap:0;border:1.5px solid var(--ink);border-radius:12px;overflow:hidden}
-.nav button{border:0;background:var(--card);padding:12px 8px;font-family:var(--f-head);font-weight:700;font-size:15px;letter-spacing:.04em;display:flex;justify-content:center;align-items:center;gap:8px}
+.nav{display:grid;grid-template-columns:repeat(3,1fr);border:1.5px solid var(--ink);border-radius:12px;overflow:hidden}
+.nav button{border:0;background:var(--card);padding:12px 4px;font-family:var(--f-head);font-weight:700;font-size:13px;letter-spacing:.04em;display:flex;justify-content:center;align-items:center;gap:6px;min-width:0}
+.nav button+button{border-left:1.5px solid var(--ink)}
 .nav button[aria-pressed="true"]{background:var(--ink);color:var(--on-ink)}
-.nav .n{font-family:var(--f-mono);font-size:12px;font-weight:600;opacity:.7}
+.nav .n{font-family:var(--f-mono);font-size:11px;font-weight:600;opacity:.7}
+.nav .n.alert{opacity:1;background:var(--crit);color:#fff;border-radius:6px;padding:0 5px}
 
 /* alarm */
-.alarm{border-radius:var(--r);padding:14px 16px;display:flex;gap:12px;align-items:center}
+.alarm{border-radius:var(--r);padding:14px 16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
 .alarm.hot{background:var(--ink);color:var(--on-ink)}
+.alarm.hot .btn{background:var(--on-ink);color:var(--ink);border-color:var(--on-ink)}
 .alarm.calm{background:var(--card);box-shadow:var(--shadow);color:var(--muted)}
-.alarm b{font-family:var(--f-head);font-size:17px;display:block;color:inherit}
-.alarm small{opacity:.8;font-size:13px}
+.alarm .txt{flex:1 1 180px;min-width:0}
+.alarm b{font-family:var(--f-head);font-size:16px;display:block;color:inherit}
+.alarm small{opacity:.8;font-size:12px}
 .alarm .big{font-family:var(--f-mono);font-size:30px;font-weight:600;line-height:1;min-width:1.2em;text-align:center}
 
-/* card + form */
+/* steps */
 .card{background:var(--card);border-radius:var(--r);box-shadow:var(--shadow);padding:16px}
-.form{display:flex;flex-direction:column;gap:10px}
-.form h2{font-size:15px;font-weight:700;letter-spacing:.04em;display:flex;justify-content:space-between;align-items:center;gap:8px}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.grid.g3{grid-template-columns:repeat(3,1fr)}
+.step{display:flex;flex-direction:column;gap:12px}
+.step-h{display:flex;align-items:center;gap:10px}
+.step-h .no{width:26px;height:26px;border-radius:50%;background:var(--ink);color:var(--on-ink);font-family:var(--f-mono);font-weight:600;font-size:13px;display:grid;place-items:center;flex:none}
+.step-h h2{font-size:16px;font-weight:700;letter-spacing:.03em;flex:1;min-width:0}
+.step-h .link{flex:none}
+.sec-h{font-family:var(--f-mono);font-size:11px;letter-spacing:.14em;color:var(--muted);display:flex;align-items:center;gap:8px;padding-top:4px}
+.sec-h::after{content:"";flex:1;height:1px;background:var(--line)}
+
+/* form */
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
 .grid .full{grid-column:1/-1}
-@media (max-width:480px){.grid{grid-template-columns:1fr}.grid.g3{grid-template-columns:1fr 1fr}.grid.g3 .full,.grid.g3 .wide{grid-column:1/-1}}
+.grid .span2{grid-column:span 2}
+@media (max-width:520px){.grid{grid-template-columns:1fr 1fr}.grid .span2{grid-column:1/-1}}
 label{display:flex;flex-direction:column;gap:4px;font-size:11px;letter-spacing:.08em;color:var(--muted);min-width:0}
 input,select,textarea{font:inherit;font-size:15px;text-transform:uppercase;letter-spacing:0;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;width:100%;min-width:0}
-input::placeholder,textarea::placeholder{text-transform:none;color:var(--muted);opacity:.8}
+input::placeholder{text-transform:none;color:var(--muted);opacity:.8}
 input[type="email"]{text-transform:none}
-textarea{resize:vertical;min-height:44px}
 input.mono{font-family:var(--f-mono)}
 .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.row .grow{flex:1}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px solid var(--line);background:var(--card);border-radius:10px;padding:10px 14px;font-weight:600;font-size:14px;letter-spacing:.02em}
 .btn.primary{background:var(--ink);color:var(--on-ink);border-color:var(--ink)}
 .btn.ghost{background:transparent;border-color:transparent;color:var(--muted);padding:8px 10px}
 .btn.sm{padding:7px 11px;font-size:13px}
-.btn:disabled{opacity:.45;cursor:not-allowed}
-.link{background:none;border:0;color:var(--muted);font-size:13px;text-decoration:underline;padding:0}
+.btn.big{width:100%;padding:15px;font-size:16px;font-family:var(--f-head);font-weight:700;letter-spacing:.05em}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.link{background:none;border:0;color:var(--muted);font-size:12px;text-decoration:underline;padding:0;letter-spacing:.04em}
 .hint{font-size:12px;color:var(--muted)}
 
-/* library picker (order view) */
-.pick{display:flex;flex-direction:column;gap:8px}
-.pick-res{display:flex;flex-direction:column;gap:6px;max-height:420px;overflow:auto}
-.pr{display:grid;grid-template-columns:1fr auto;gap:4px 10px;align-items:center;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg)}
-.pr .t{font-weight:600;font-family:var(--f-head);overflow-wrap:anywhere;min-width:0}
-.pr .s{font-size:12px;color:var(--muted);grid-column:1;display:flex;gap:4px 12px;flex-wrap:wrap;min-width:0}
-.pr .s .mono{color:var(--fg)}
-.pr > .btn{grid-row:1/span 2;grid-column:2}
-.pr.open{border-color:var(--ink)}
-.pr .ordform{grid-column:1/-1;display:grid;grid-template-columns:90px 1fr;gap:8px;margin-top:6px}
-.pr .ordform .full{grid-column:1/-1}
-.pr .ordform input{background:var(--card)}
+/* type chips */
+.types{display:flex;flex-wrap:wrap;gap:6px}
+.types button{border:1px solid var(--line);background:var(--bg);border-radius:999px;padding:6px 12px;font-size:12px;font-weight:600;letter-spacing:.03em;display:inline-flex;gap:6px;align-items:center}
+.types button[aria-pressed="true"]{background:var(--ink);color:var(--on-ink);border-color:var(--ink)}
+.types .add{border-style:dashed;color:var(--muted)}
+.types .x{opacity:.6;font-weight:400}
+.newtype{display:flex;gap:8px}
+.newtype input{flex:1}
 
-/* segments */
-.seg{display:grid;grid-template-columns:repeat(3,1fr);background:var(--soft);border-radius:12px;padding:4px;gap:4px}
-.seg button{border:0;background:transparent;border-radius:9px;padding:9px 6px;font-weight:600;font-size:13px;color:var(--muted);display:flex;justify-content:center;gap:6px;align-items:center;flex-wrap:wrap}
-.seg button[aria-pressed="true"]{background:var(--card);color:var(--fg);box-shadow:var(--shadow)}
-.seg .n{font-family:var(--f-mono);font-size:12px;background:var(--line);border-radius:6px;padding:1px 6px;color:var(--fg)}
-.seg button[aria-pressed="true"] .n{background:var(--ink);color:var(--on-ink)}
-.tools{display:flex;gap:8px;flex-wrap:wrap}
-.tools input{flex:1 1 200px;background:var(--card)}
+/* photo */
+.photo{display:flex;gap:12px;align-items:center}
+.ph{width:72px;height:72px;border-radius:10px;background:var(--bg);border:1px dashed var(--line);display:grid;place-items:center;overflow:hidden;flex:none;color:var(--muted)}
+.ph img{width:100%;height:100%;object-fit:cover;display:block}
+.thumb{width:52px;height:52px;border-radius:9px;background:var(--bg);border:1px solid var(--line);overflow:hidden;flex:none;display:grid;place-items:center;color:var(--muted);padding:0}
+.thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.thumb.lg{width:64px;height:64px}
 
-/* items */
-.list{display:flex;flex-direction:column;gap:10px}
-.item{background:var(--card);border-radius:var(--r);box-shadow:var(--shadow);padding:14px 16px;display:grid;grid-template-columns:1fr auto;gap:10px 12px;border-left:4px solid transparent}
-.item.late{border-left-color:var(--crit)}
-.item.aging{border-left-color:var(--warn)}
-.item .main{min-width:0;display:flex;flex-direction:column;gap:6px}
-.item .name{font-family:var(--f-head);font-weight:600;font-size:17px;overflow-wrap:anywhere}
-.item .qty{font-family:var(--f-mono);font-weight:600;font-size:18px;text-align:right;white-space:nowrap}
-.item .qty small{display:block;font-size:10px;letter-spacing:.1em;color:var(--muted);font-weight:500}
-.item .fa{font-family:var(--f-mono);font-weight:600;font-size:15px;text-align:right;white-space:nowrap}
-.item .fa small{display:block;font-size:10px;letter-spacing:.1em;color:var(--muted);font-weight:500}
-.meta{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13px;color:var(--muted)}
-.meta span{display:inline-flex;gap:5px;align-items:baseline;min-width:0;overflow-wrap:anywhere}
-.meta em{font-style:normal;font-size:10px;letter-spacing:.1em}
-.meta .mono{color:var(--fg);font-size:13px}
-.chips{display:flex;gap:6px;flex-wrap:wrap}
-.chip{font-size:12px;font-weight:600;border-radius:6px;padding:2px 8px;background:var(--soft);color:var(--fg)}
-.chip.spec{font-family:var(--f-mono);background:transparent;border:1px solid var(--line)}
+/* rows (picker, cart, waiting) */
+.rows{display:flex;flex-direction:column;gap:8px}
+.r{display:flex;gap:12px;align-items:flex-start;padding:10px;border:1px solid var(--line);border-radius:12px;background:var(--bg)}
+.r.open{border-color:var(--ink);background:var(--card)}
+.r .body{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.r .t{font-family:var(--f-head);font-weight:600;font-size:15px;overflow-wrap:anywhere}
+.r .s{font-size:12px;color:var(--muted);display:flex;gap:2px 12px;flex-wrap:wrap}
+.r .s b{font-family:var(--f-mono);font-weight:500;color:var(--fg)}
+.r .side{display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex:none}
+.r .qtyin{width:96px;text-align:right;font-family:var(--f-mono);font-weight:600;padding:8px 10px;background:var(--card)}
+.r .dwgin{margin-top:6px;padding:8px 10px;font-size:13px;background:var(--card);font-family:var(--f-mono)}
+.r .flag{font-size:11px;font-weight:700;color:var(--warn);letter-spacing:.04em}
+.ordform{display:grid;grid-template-columns:110px 1fr;gap:8px;margin-top:8px}
+.ordform .full{grid-column:1/-1}
+.ordform input{background:var(--card)}
+.x-btn{background:none;border:0;color:var(--muted);padding:4px;border-radius:6px}
+
+/* order blocks (waiting + archive) */
+.ord{background:var(--card);border-radius:var(--r);box-shadow:var(--shadow);padding:14px 16px;display:flex;flex-direction:column;gap:10px;border-left:4px solid transparent}
+.ord.late{border-left-color:var(--crit)}
+.ord.aging{border-left-color:var(--warn)}
+.ord.done{opacity:.85}
+.ord-h{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+.ord-h .nr{font-family:var(--f-mono);font-weight:600;font-size:15px}
+.ord-h .meta{font-size:12px;color:var(--muted);flex-basis:100%;order:3;min-width:0}
+.ord-h .nr{flex:1}
+.chip{font-size:11px;font-weight:700;border-radius:6px;padding:2px 8px;background:var(--soft);color:var(--fg);letter-spacing:.03em;white-space:nowrap}
 .chip.crit{background:var(--crit-bg);color:var(--crit)}
 .chip.warn{background:var(--warn-bg);color:var(--warn)}
 .chip.ok{background:var(--ok-bg);color:var(--ok)}
-.note{font-size:13px;color:var(--fg);background:var(--bg);border-radius:8px;padding:6px 10px;overflow-wrap:anywhere}
-.acts{grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap;align-items:center;border-top:1px solid var(--line);padding-top:10px}
+.chip.spec{font-family:var(--f-mono);background:transparent;border:1px solid var(--line);font-weight:500}
+.ol{display:flex;flex-direction:column}
+.oi{display:flex;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--line)}
+.oi .body{flex:1;min-width:0}
+.oi .t{font-weight:600;font-size:14px;overflow-wrap:anywhere}
+.oi .s{font-size:12px;color:var(--muted)}
+.oi .q{font-family:var(--f-mono);font-weight:600;font-size:13px;white-space:nowrap}
+.oi.got .t{text-decoration:line-through;color:var(--muted)}
+.chk{width:28px;height:28px;border-radius:8px;border:1.5px solid var(--line);background:var(--card);display:grid;place-items:center;flex:none;padding:0}
+.chk.on{background:var(--ok);border-color:var(--ok);color:#fff}
+
+/* library cards */
+.list{display:flex;flex-direction:column;gap:10px}
+.item{background:var(--card);border-radius:var(--r);box-shadow:var(--shadow);padding:14px;display:flex;gap:12px}
+.item .main{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
+.item .name{font-family:var(--f-head);font-weight:600;font-size:16px;overflow-wrap:anywhere}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.kv{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12px;color:var(--muted)}
+.kv span{display:inline-flex;gap:5px;align-items:baseline;min-width:0;overflow-wrap:anywhere}
+.kv b{font-family:var(--f-mono);font-weight:500;color:var(--fg);font-size:13px}
+.note{font-size:12px;color:var(--fg);background:var(--bg);border-radius:8px;padding:6px 10px;overflow-wrap:anywhere}
+.acts{display:flex;gap:6px;flex-wrap:wrap;align-items:center;padding-top:4px}
 .acts .grow{flex:1}
-.trail{font-size:12px;color:var(--muted)}
-.empty{text-align:center;color:var(--muted);padding:32px 16px;background:var(--card);border-radius:var(--r);box-shadow:var(--shadow)}
-.empty b{display:block;font-family:var(--f-head);color:var(--fg);font-size:16px;margin-bottom:4px}
-.status{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px}
+.trail{font-size:11px;color:var(--muted);letter-spacing:.03em}
+.empty{text-align:center;color:var(--muted);padding:26px 16px;border:1px dashed var(--line);border-radius:12px;font-size:13px}
+.empty b{display:block;font-family:var(--f-head);color:var(--fg);font-size:15px;margin-bottom:4px}
+
+/* send panel */
+.sendbox{display:flex;flex-direction:column;gap:12px;border-top:1px solid var(--line);padding-top:14px}
+.confirm{background:var(--ok-bg);color:var(--ok);border-radius:12px;padding:12px 14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.confirm b{flex:1 1 200px;font-size:14px}
+.confirm .btn.primary{background:var(--ok);border-color:var(--ok);color:#fff}
+.preview{font-family:var(--f-mono);font-size:12px;background:var(--bg);border-radius:10px;padding:12px;white-space:pre-wrap;max-height:260px;overflow:auto;text-transform:none}
+
+.status{font-size:11px;color:var(--muted);display:flex;align-items:center;gap:6px}
 .dot{width:8px;height:8px;border-radius:50%;background:var(--muted)}
 .dot.live{background:var(--ok)}
 .dot.off{background:var(--crit)}
-.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--on-ink);padding:10px 16px;border-radius:10px;font-size:14px;font-weight:600;box-shadow:var(--shadow);max-width:calc(100% - 32px)}
-.copybox{width:100%;min-height:140px;font-family:var(--f-mono);font-size:12px}
-.backup{display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:space-between;font-size:12px;color:var(--muted)}
-.group-h{font-family:var(--f-mono);font-size:11px;letter-spacing:.14em;color:var(--muted);padding:6px 2px 0;display:flex;align-items:center;gap:8px}
-.group-h::after{content:"";flex:1;height:1px;background:var(--line)}
-@media (prefers-reduced-motion:no-preference){.item{transition:border-color .2s}}
+.foot{display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--on-ink);padding:10px 16px;border-radius:10px;font-size:13px;font-weight:600;box-shadow:var(--shadow);max-width:calc(100% - 32px);z-index:20}
+.lightbox{position:fixed;inset:0;background:rgba(0,0,0,.8);display:grid;place-items:center;padding:24px;z-index:30}
+.lightbox img{max-width:100%;max-height:100%;border-radius:12px;background:#fff}
+.copybox{width:100%;min-height:140px;font-family:var(--f-mono);font-size:12px;text-transform:none}
 
-/* printed order slip */
+/* printed sheet */
 .sheet{display:none}
 @media print{
-  @page{size:A4;margin:16mm}
+  @page{size:A4;margin:14mm}
   html,body{background:#fff!important;color:#000!important;padding:0}
-  .wrap,.toast{display:none!important}
-  .sheet{display:block;font-family:var(--f-body);color:#000}
-  .sheet .s-top{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #000;padding-bottom:6mm}
-  .sheet .s-brand{font-family:var(--f-mono);font-size:9pt;letter-spacing:.14em}
-  .sheet .s-date{font-family:var(--f-mono);font-size:10pt}
-  .sheet .s-hello{font-size:14pt;margin:10mm 0 2mm}
-  .sheet h2{font-family:var(--f-head);font-size:34pt;line-height:1.05;margin:0 0 3mm}
-  .sheet .s-until{font-size:14pt;font-weight:600;border:2px solid #000;display:inline-block;padding:2mm 4mm;margin-bottom:6mm}
-  .sheet table{width:100%;border-collapse:collapse;font-size:10.5pt;margin-top:4mm}
-  .sheet th{text-align:left;font-size:7.5pt;letter-spacing:.1em;border-bottom:1.5px solid #000;padding:2mm 2mm 2mm 0}
-  .sheet td{border-bottom:.5px solid #999;padding:3mm 2mm 3mm 0;vertical-align:top}
+  .wrap,.toast,.lightbox{display:none!important}
+  .sheet{display:block;font-family:var(--f-body);color:#000;text-transform:uppercase}
+  .s-top{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2.5px solid #000;padding-bottom:4mm}
+  .s-kind{font-family:var(--f-head);font-weight:700;font-size:13pt;letter-spacing:.12em}
+  .s-nr{font-family:var(--f-mono);font-size:11pt;text-align:right}
+  .s-hello{font-size:13pt;margin:8mm 0 1mm}
+  .sheet h2{font-family:var(--f-head);font-size:30pt;line-height:1.05;margin:0 0 3mm}
+  .s-ref{font-size:10pt;margin-bottom:3mm}
+  .s-until{font-size:13pt;font-weight:700;border:2px solid #000;display:inline-block;padding:2mm 4mm;margin-bottom:4mm}
+  .sheet table{width:100%;border-collapse:collapse;font-size:10.5pt;margin-top:2mm}
+  .sheet th{text-align:left;font-size:7.5pt;letter-spacing:.1em;border-bottom:1.5px solid #000;padding:2mm 3mm 2mm 0;font-weight:700}
+  .sheet td{border-bottom:.5px solid #999;padding:3mm 3mm 3mm 0;vertical-align:middle}
   .sheet td.m{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
-  .sheet td.box{width:8mm}
-  .sheet td.box span{display:inline-block;width:5mm;height:5mm;border:1.5px solid #000}
-  .sheet .s-sub{font-size:8.5pt;color:#444;margin-top:1mm}
+  .sheet td.qty{font-family:var(--f-mono);font-weight:700;font-size:13pt;white-space:nowrap}
+  .sheet td.box{width:9mm}
+  .sheet td.box span{display:inline-block;width:6mm;height:6mm;border:1.5px solid #000}
+  .sheet td.img{width:20mm}
+  .sheet td.img img{width:18mm;height:18mm;object-fit:cover;border-radius:2mm;border:.5px solid #ccc;display:block}
+  .sheet .nm{font-weight:700;font-size:11pt}
+  .sheet .s-sub{font-size:8.5pt;color:#333;margin-top:1mm}
   .sheet tr{break-inside:avoid}
-  .sheet .s-thanks{margin-top:14mm;font-size:18pt}
-  .sheet .s-name{font-family:var(--f-head);font-size:22pt;font-weight:600;margin-top:2mm}
+  .s-thanks{margin-top:12mm;font-size:16pt}
+  .s-name{font-family:var(--f-head);font-size:20pt;font-weight:700;margin-top:1mm}
 }
 </style>
 </head>
 <body>
 
 <div class="wrap">
-  <header class="top">
-    <div>
-      <div class="brand">SYNCOPERATOR · WERKZEUG</div>
-      <h1>BESTELLLISTE</h1>
-    </div>
+  <header>
+    <div class="brand">SYNCOPERATOR · WERKZEUG</div>
+    <h1>BESTELLLISTE</h1>
   </header>
   <div class="ruler" aria-hidden="true"></div>
 
   <nav class="nav" aria-label="Bereich">
-    <button type="button" data-view="orders" aria-pressed="true">Bestellen <span class="n" id="nv_orders">0</span></button>
-    <button type="button" data-view="lib" aria-pressed="false">Bibliothek <span class="n" id="nv_lib">0</span></button>
+    <button type="button" data-view="orders" aria-pressed="true">Bestellen <span class="n" id="nv_orders"></span></button>
+    <button type="button" data-view="lib" aria-pressed="false">Bibliothek <span class="n" id="nv_lib"></span></button>
+    <button type="button" data-view="arch" aria-pressed="false">Archiv <span class="n" id="nv_arch"></span></button>
   </nav>
 
   <!-- ================= BESTELLEN ================= -->
-  <section id="v_orders" class="wrap" style="padding:0;max-width:none">
+  <section id="v_orders" class="view">
     <div id="alarm" class="alarm calm"></div>
 
-    <div class="card pick">
-      <div class="form"><h2><span>Was fehlt?</span><button type="button" class="link" id="goNewTool">+ Neues Werkzeug</button></h2></div>
-      <input id="pickQ" type="search" autocomplete="off" placeholder="Suchen: CNMG, Ø8, R0.8, Firmen-Nr. …">
-      <div id="pickRes" class="pick-res"></div>
+    <div class="card step">
+      <div class="step-h"><span class="no">1</span><h2>Werkzeug suchen</h2><button type="button" class="link" id="goNewTool">+ Neues Werkzeug</button></div>
+      <input id="pickQ" type="search" autocomplete="off" placeholder="z. B. CNMG, Ø8, R0.8, Artikelnummer …">
+      <div id="pickRes" class="rows"></div>
     </div>
 
-    <div class="seg" role="group" aria-label="Status">
-      <button type="button" data-tab="bedarf" aria-pressed="true">Zu bestellen <span class="n" id="n_bedarf">0</span></button>
-      <button type="button" data-tab="bestellt" aria-pressed="false">Bestellt <span class="n" id="n_bestellt">0</span></button>
-      <button type="button" data-tab="geliefert" aria-pressed="false">Geliefert <span class="n" id="n_geliefert">0</span></button>
-    </div>
+    <div class="card step">
+      <div class="step-h"><span class="no">2</span><h2>Zu bestellen <span class="mono" id="cartN" style="color:var(--muted);font-size:14px"></span></h2></div>
+      <div id="cart" class="rows"></div>
 
-    <div class="tools">
-      <input id="q" type="search" placeholder="Liste durchsuchen …">
-      <button type="button" class="btn primary" id="printOpen">
-        <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 4.5h12v8H2z M2 4.5l6 4.5 6-4.5" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linejoin="round"/></svg>
-        Bestellung senden
-      </button>
-    </div>
-
-    <div id="printPanel" class="card form" hidden>
-      <h2><span>Bestellung senden</span><button type="button" id="printClose" class="link">Schließen</button></h2>
-      <div class="grid">
-        <label>An (Name, optional)
-          <input id="p_to" placeholder="z. B. Thomas">
-        </label>
-        <label>E-Mail (optional)
-          <input id="p_mail" type="email" inputmode="email" placeholder="einkauf@firma.de">
-        </label>
-        <label>Bitte bis (optional)
-          <input id="p_until" type="date">
-        </label>
-        <label>Dein Name
-          <input id="p_name" placeholder="z. B. Roma">
-        </label>
+      <div id="sendbox" class="sendbox" hidden>
+        <div class="step-h"><span class="no">3</span><h2 id="sendTitle">Senden</h2><button type="button" class="link" id="sendClose">Schließen</button></div>
+        <div class="grid">
+          <label>An (Name)
+            <input id="p_to" placeholder="z. B. Thomas">
+          </label>
+          <label class="span2">E-Mail (optional)
+            <input id="p_mail" type="email" inputmode="email" placeholder="einkauf@firma.de">
+          </label>
+          <label>Bitte bis (optional)
+            <input id="p_until" type="date">
+          </label>
+          <label>Von (dein Name)
+            <input id="p_name" placeholder="z. B. Roma">
+          </label>
+          <label>Erinnern nach
+            <select id="p_remind">
+              <option value="2">2 Tagen</option>
+              <option value="3">3 Tagen</option>
+              <option value="5">5 Tagen</option>
+              <option value="7">7 Tagen</option>
+              <option value="14">14 Tagen</option>
+            </select>
+          </label>
+        </div>
+        <div class="row">
+          <button type="button" class="btn primary" id="mailGo">
+            <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 4.5h12v8H2z M2 4.5l6 4.5 6-4.5" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linejoin="round"/></svg>
+            Per E-Mail
+          </button>
+          <button type="button" class="btn primary" id="printGo">
+            <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M4.5 6V2h7v4M4.5 11.5H3a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v3.5a1 1 0 0 1-1 1h-1.5" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linejoin="round"/><rect x="4.5" y="9.5" width="7" height="4.5" stroke="currentColor" stroke-width="1.5" fill="none"/></svg>
+            Drucken
+          </button>
+          <button type="button" class="btn" id="copyBtn">Text kopieren</button>
+          <button type="button" class="btn ghost" id="previewBtn">Vorschau</button>
+        </div>
+        <pre id="preview" class="preview" hidden></pre>
+        <textarea id="copyFallback" class="copybox" readonly hidden></textarea>
+        <div id="confirm" class="confirm" hidden>
+          <b id="confirmTxt">Wurde die Bestellung abgeschickt?</b>
+          <button type="button" class="btn primary" id="confirmYes">Ja, gesendet</button>
+          <button type="button" class="btn ghost" id="confirmNo">Nein</button>
+        </div>
       </div>
-      <div class="hint" id="p_info"></div>
-      <div class="row">
-        <button type="button" class="btn primary" id="mailGo">
-          <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 4.5h12v8H2z M2 4.5l6 4.5 6-4.5" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linejoin="round"/></svg>
-          Per E-Mail
-        </button>
-        <button type="button" class="btn" id="copyBtn">Text kopieren</button>
-        <button type="button" class="btn" id="printGo">Drucken</button>
-      </div>
-      <textarea id="copyFallback" class="copybox" readonly hidden></textarea>
+
+      <button type="button" class="btn primary big" id="sendOpen">Bestellung senden →</button>
     </div>
 
-    <div id="list" class="list"></div>
+    <div class="sec-h">Unterwegs · wartet auf Lieferung</div>
+    <div id="waiting" class="list"></div>
   </section>
 
   <!-- ================= BIBLIOTHEK ================= -->
-  <section id="v_lib" class="wrap" style="padding:0;max-width:none" hidden>
-    <form id="libForm" class="card form" autocomplete="off">
-      <h2><span id="libTitle">Neues Werkzeug</span><button type="button" id="libCancel" class="link" hidden>Abbrechen</button></h2>
-      <div class="grid g3">
-        <label>Typ
-          <select id="l_type">
-            <option>Wendeplatte</option>
-            <option>Halter</option>
-            <option>Bohrer</option>
-            <option>Fräser</option>
-            <option>Stechen</option>
-            <option>Gewinde</option>
-            <option>Reibahle</option>
-            <option>Spannmittel</option>
-            <option>Sonstiges</option>
-          </select>
-        </label>
-        <label class="wide" style="grid-column:span 2">Bezeichnung *
+  <section id="v_lib" class="view" hidden>
+    <form id="libForm" class="card step" autocomplete="off">
+      <div class="step-h"><h2 id="libTitle">Neues Werkzeug</h2><button type="button" id="libCancel" class="link" hidden>Abbrechen</button></div>
+
+      <div class="photo">
+        <button type="button" class="ph" id="phBtn" aria-label="Foto hinzufügen"><svg width="26" height="26" viewBox="0 0 26 26" aria-hidden="true"><path d="M4 8.5h4l2-3h6l2 3h4v12H4z" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linejoin="round"/><circle cx="13" cy="14" r="3.6" stroke="currentColor" stroke-width="1.6" fill="none"/></svg></button>
+        <div class="row" style="flex-direction:column;align-items:flex-start;gap:4px">
+          <button type="button" class="btn sm" id="phPick">Foto wählen</button>
+          <button type="button" class="link" id="phDel" hidden>Foto entfernen</button>
+        </div>
+        <input type="file" id="phFile" accept="image/*" hidden>
+      </div>
+
+      <label>Typ</label>
+      <div id="typeChips" class="types" style="margin-top:-6px"></div>
+      <div id="newTypeRow" class="newtype" hidden>
+        <input id="newType" placeholder="Neuer Typ, z. B. Senker">
+        <button type="button" class="btn sm primary" id="newTypeOk">OK</button>
+      </div>
+
+      <div class="grid">
+        <label class="full">Bezeichnung *
           <input id="l_name" required placeholder="z. B. CNMG 120408-PM">
         </label>
         <label>Ø Durchmesser
           <input id="l_d" class="mono" inputmode="decimal" placeholder="mm">
         </label>
-        <label>r Radius
+        <label>R Radius
           <input id="l_r" class="mono" inputmode="decimal" placeholder="mm">
         </label>
         <label>Sorte / Beschichtung
           <input id="l_grade" class="mono" placeholder="z. B. 4325">
         </label>
-        <label class="wide">Firmen-Art.-Nr.
+        <label>Artikelnummer
           <input id="l_firm" class="mono" placeholder="unsere Nummer">
         </label>
         <label>Hersteller
           <input id="l_maker" list="dl_maker" placeholder="z. B. Sandvik">
         </label>
-        <label>Hersteller-Art.-Nr.
+        <label>Hersteller Artikel-Nr.
           <input id="l_makerArt" class="mono" placeholder="Bestellnummer">
-        </label>
-        <label>Lieferant
-          <input id="l_sup" list="dl_sup" placeholder="falls anders">
         </label>
         <label>Standard-Menge
           <input id="l_qty" class="mono" placeholder="z. B. 10 STK">
         </label>
-        <label>Maschine
+        <label class="span2">Maschine
           <input id="l_mach" list="dl_mach" placeholder="z. B. WT-250 RO">
         </label>
         <label class="full">Notiz
@@ -296,322 +355,551 @@ input.mono{font-family:var(--f-mono)}
       </div>
       <datalist id="dl_mach"><option value="WT-250 RO"><option value="WT-250 RU"><option value="WT-250 BEIDE"><option value="ALLGEMEIN"></datalist>
       <datalist id="dl_maker"></datalist>
-      <datalist id="dl_sup"></datalist>
       <div class="row">
         <button type="submit" class="btn primary" id="libSave">Speichern</button>
         <button type="button" class="btn" id="libSaveOrder">Speichern + bestellen</button>
       </div>
     </form>
 
-    <div class="tools">
-      <input id="libQ" type="search" placeholder="Bibliothek durchsuchen …">
-    </div>
+    <input id="libQ" type="search" placeholder="Bibliothek durchsuchen …" style="background:var(--card)">
+    <div id="libTypeFilter" class="types"></div>
     <div id="libList" class="list"></div>
   </section>
 
-  <div class="backup">
+  <!-- ================= ARCHIV ================= -->
+  <section id="v_arch" class="view" hidden>
+    <input id="archQ" type="search" placeholder="Archiv durchsuchen: Nr., Werkzeug, Empfänger …" style="background:var(--card)">
+    <div id="archList" class="list"></div>
+  </section>
+
+  <div class="foot">
     <span class="status"><span class="dot" id="dot"></span><span id="statusText"></span></span>
     <span class="row">
-      <button type="button" class="btn" id="exportBtn">Backup speichern</button>
-      <button type="button" class="btn" id="importBtn">Backup laden</button>
+      <button type="button" class="btn sm" id="exportBtn">Backup speichern</button>
+      <button type="button" class="btn sm" id="importBtn">Backup laden</button>
       <input type="file" id="importFile" accept="application/json,.json" hidden>
     </span>
   </div>
 </div>
 <div id="toast" class="toast" hidden></div>
+<div id="lightbox" class="lightbox" hidden><img id="lbImg" alt=""></div>
 <section id="sheet" class="sheet" aria-hidden="true"></section>
 
 <script>
 (() => {
   const DAY = 86400000;
-  const AGE_WARN_BEDARF = 1, AGE_CRIT_BEDARF = 2;
-  const AGE_WARN_BESTELLT = 7, AGE_CRIT_BESTELLT = 14;
-  const HIDE_DELIVERED_AFTER = 30;
-  const KEY = 'syncop_bestellliste_v1';
-  const LIB_KEY = 'syncop_bestellliste_lib_v1';
-  const TYPES = ['Wendeplatte','Halter','Bohrer','Fräser','Stechen','Gewinde','Reibahle','Spannmittel','Sonstiges'];
+  const K = { items:'syncop_bestellliste_v1', lib:'syncop_bestellliste_lib_v1', orders:'syncop_bestellliste_orders_v1', types:'syncop_bestellliste_types_v1',
+              name:'syncop_bestellliste_name', to:'syncop_bestellliste_to', mail:'syncop_bestellliste_mail', remind:'syncop_bestellliste_remind' };
+  const BASE_TYPES = ['WENDEPLATTE','HALTER','BOHRER','FRÄSER','STECHEN','GEWINDE','REIBAHLE','SPANNMITTEL','SONSTIGES'];
 
   const $ = id => document.getElementById(id);
-  const state = { items: [], lib: [], view: 'orders', tab: 'bedarf', q: '', libQ: '', pickQ: '', pickOpen: null,
-                  editLib: null, confirmDel: null, confirmLibDel: null };
+  const S = { items: [], lib: [], orders: [], customTypes: [], view: 'orders', pickQ: '', pickOpen: null, libQ: '', libType: '', archQ: '',
+              editLib: null, formType: 'WENDEPLATTE', formImg: '', confirmLibDel: null, confirmArchDel: null,
+              send: null /* {mode:'order'|'reminder', itemIds:[], nr, orderIds:[]} */ };
 
   const U = s => String(s ?? '').trim().toUpperCase();
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const days = ts => ts ? Math.floor((Date.now() - ts) / DAY) : 0;
   const ageText = d => d <= 0 ? 'HEUTE' : d === 1 ? 'SEIT 1 TAG' : `SEIT ${d} TAGEN`;
-  const fmtDate = ts => ts ? new Date(ts).toLocaleDateString('de-DE', { day:'2-digit', month:'2-digit' }) : '';
+  const fmtD = ts => ts ? new Date(ts).toLocaleDateString('de-DE', { day:'2-digit', month:'2-digit', year:'numeric' }) : '';
+  const fmtDs = ts => ts ? new Date(ts).toLocaleDateString('de-DE', { day:'2-digit', month:'2-digit' }) : '';
   const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-  const toast = msg => { const t = $('toast'); t.textContent = msg; t.hidden = false; clearTimeout(toast._t); toast._t = setTimeout(() => t.hidden = true, 2200); };
+  const toast = msg => { const t = $('toast'); t.textContent = msg; t.hidden = false; clearTimeout(toast._t); toast._t = setTimeout(() => t.hidden = true, 2400); };
   const lsGet = k => { try { return localStorage.getItem(k) || '' } catch { return '' } };
   const lsSet = (k,v) => { try { localStorage.setItem(k, v); return true } catch { return false } };
-
-  // spec line, e.g. "Ø8,5 · R0,8 · 4325"
   const num = v => String(v).replace('.', ',');
   const specs = t => [t.d && `Ø${num(t.d)}`, t.r && `R${num(t.r)}`, t.grade].filter(Boolean);
   const fullName = t => [t.name, ...specs(t)].join(' ');
+  const libOf = it => S.lib.find(t => t.id === it.libId);
+  const imgOf = it => (it.img) || (libOf(it)?.img) || '';
+  const remindDays = () => parseInt(lsGet(K.remind) || '3', 10);
+  const icoTool = '<svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><path d="M4 18l7-7M12.5 4.5a4 4 0 0 0 5 5l-2.5 2.5-5-5z" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linejoin="round" stroke-linecap="round"/></svg>';
+  const thumb = (src, cls='') => `<span class="thumb ${cls}">${src ? `<img src="${src}" alt="">` : icoTool}</span>`;
+  const thumbBtn = (src, cls='') => src ? `<button type="button" class="thumb ${cls}" data-zoom="1"><img src="${src}" alt="Foto"></button>` : thumb('', cls);
 
   // ---------- storage ----------
   let storageOk = true;
-  function migrateItem(i) {
-    if (i.art && !i.makerArt) { i.makerArt = i.art; delete i.art; }
-    if (i.sup && !i.maker && !i.libId) { i.maker = i.sup; delete i.sup; }
-    ['name','type','d','r','grade','firm','maker','makerArt','sup','mach','dwg','note','qty'].forEach(k => { if (i[k]) i[k] = U(i[k]); });
-    return i;
+  function migrate() {
+    S.items.forEach(i => {
+      if (i.art && !i.makerArt) { i.makerArt = i.art; delete i.art; }
+      if (i.status === 'bestellt') { i.status = 'gesendet'; i.sentAt = i.sentAt || i.orderedAt; }
+      if (i.type) i.type = U(i.type);
+    });
+    S.lib.forEach(t => { if (t.type) t.type = U(t.type); });
   }
   function load() {
     try {
-      const a = JSON.parse(lsGet(KEY) || '[]'); state.items = Array.isArray(a) ? a.map(migrateItem) : [];
-      const b = JSON.parse(lsGet(LIB_KEY) || '[]'); state.lib = Array.isArray(b) ? b : [];
+      const p = k => { const v = JSON.parse(lsGet(k) || '[]'); return Array.isArray(v) ? v : []; };
+      S.items = p(K.items); S.lib = p(K.lib); S.orders = p(K.orders); S.customTypes = p(K.types);
     } catch { storageOk = false; }
+    migrate();
   }
   function save() {
-    storageOk = lsSet(KEY, JSON.stringify(state.items)) && lsSet(LIB_KEY, JSON.stringify(state.lib));
+    const ok = [lsSet(K.items, JSON.stringify(S.items)), lsSet(K.orders, JSON.stringify(S.orders)), lsSet(K.types, JSON.stringify(S.customTypes)), lsSet(K.lib, JSON.stringify(S.lib))];
+    storageOk = ok.every(Boolean);
+    if (!storageOk) toast('Speicher voll – Fotos verkleinern oder Backup machen');
     updateStatus();
   }
   function setStatus(kind, text) { $('dot').className = 'dot ' + (kind || ''); $('statusText').textContent = text; }
   function updateStatus() {
-    if (storageOk) setStatus('live', `${state.lib.length} Werkzeuge · ${state.items.length} Bestellungen · in diesem Browser`);
-    else setStatus('off', 'Speichern nicht möglich (privates Fenster?) – Backup nutzen');
+    storageOk ? setStatus('live', `${S.lib.length} Werkzeuge · ${S.orders.length} Bestellungen · in diesem Browser`)
+              : setStatus('off', 'Speichern fehlgeschlagen – Backup nutzen');
   }
   const commit = msg => { save(); render(); if (msg) toast(msg); };
 
   // ---------- nav ----------
   function setView(v) {
-    state.view = v;
+    S.view = v;
     document.querySelectorAll('.nav button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.view === v)));
-    $('v_orders').hidden = v !== 'orders'; $('v_lib').hidden = v !== 'lib';
-    render();
+    ['orders','lib','arch'].forEach(x => $('v_' + x).hidden = x !== v);
+    render(); window.scrollTo(0, 0);
   }
   document.querySelectorAll('.nav button').forEach(b => b.onclick = () => setView(b.dataset.view));
-  $('goNewTool').onclick = () => {
-    resetLibForm();
-    const q = U($('pickQ').value); if (q) $('l_name').value = q;
-    setView('lib'); $('l_name').focus();
+
+  // ---------- types ----------
+  const allTypes = () => [...new Set([...BASE_TYPES, ...S.customTypes, ...S.lib.map(t => t.type).filter(Boolean)])];
+  function renderTypeChips() {
+    $('typeChips').innerHTML = allTypes().map(t => {
+      const custom = !BASE_TYPES.includes(t) && !S.lib.some(x => x.type === t);
+      return `<button type="button" data-type="${esc(t)}" aria-pressed="${t === S.formType}">${esc(t)}${custom ? ` <span class="x" data-deltype="${esc(t)}" aria-label="Typ entfernen">×</span>` : ''}</button>`;
+    }).join('') + `<button type="button" class="add" data-type="__new">+ Eigener Typ</button>`;
+  }
+  $('typeChips').addEventListener('click', e => {
+    const del = e.target.closest('[data-deltype]');
+    if (del) { S.customTypes = S.customTypes.filter(t => t !== del.dataset.deltype); if (S.formType === del.dataset.deltype) S.formType = BASE_TYPES[0]; save(); renderTypeChips(); return; }
+    const b = e.target.closest('[data-type]'); if (!b) return;
+    if (b.dataset.type === '__new') { $('newTypeRow').hidden = false; $('newType').focus(); return; }
+    S.formType = b.dataset.type; renderTypeChips();
+  });
+  const addType = () => {
+    const t = U($('newType').value); if (!t) return;
+    if (!allTypes().includes(t)) S.customTypes.push(t);
+    S.formType = t; $('newType').value = ''; $('newTypeRow').hidden = true; save(); renderTypeChips();
+  };
+  $('newTypeOk').onclick = addType;
+  $('newType').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addType(); } });
+
+  // ---------- photo ----------
+  function setFormImg(src) {
+    S.formImg = src || '';
+    $('phBtn').innerHTML = src ? `<img src="${src}" alt="">` : '<svg width="26" height="26" viewBox="0 0 26 26" aria-hidden="true"><path d="M4 8.5h4l2-3h6l2 3h4v12H4z" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linejoin="round"/><circle cx="13" cy="14" r="3.6" stroke="currentColor" stroke-width="1.6" fill="none"/></svg>';
+    $('phDel').hidden = !src; $('phPick').textContent = src ? 'Foto ändern' : 'Foto wählen';
+  }
+  $('phBtn').onclick = $('phPick').onclick = () => $('phFile').click();
+  $('phDel').onclick = () => setFormImg('');
+  $('phFile').onchange = e => {
+    const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+    const url = URL.createObjectURL(f); const img = new Image();
+    img.onload = () => {
+      const max = 480, k = Math.min(1, max / Math.max(img.width, img.height));
+      const c = document.createElement('canvas'); c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+      const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0,0,c.width,c.height); g.drawImage(img, 0, 0, c.width, c.height);
+      setFormImg(c.toDataURL('image/jpeg', 0.72)); URL.revokeObjectURL(url);
+    };
+    img.onerror = () => toast('Bild konnte nicht gelesen werden');
+    img.src = url;
   };
 
   // ---------- library form ----------
-  const LF = { type:'l_type', name:'l_name', d:'l_d', r:'l_r', grade:'l_grade', firm:'l_firm', maker:'l_maker', makerArt:'l_makerArt', sup:'l_sup', qty:'l_qty', mach:'l_mach', note:'l_note' };
-  const readLib = () => Object.fromEntries(Object.entries(LF).map(([k,id]) => [k, k === 'type' ? $(id).value : U($(id).value)]));
-  const fillLib = (o={}) => Object.entries(LF).forEach(([k,id]) => $(id).value = o[k] ?? (k === 'type' ? TYPES[0] : ''));
-  function resetLibForm() { state.editLib = null; fillLib(); $('libTitle').textContent = 'Neues Werkzeug'; $('libCancel').hidden = true; $('libSaveOrder').hidden = false; }
+  const LF = { name:'l_name', d:'l_d', r:'l_r', grade:'l_grade', firm:'l_firm', maker:'l_maker', makerArt:'l_makerArt', qty:'l_qty', mach:'l_mach', note:'l_note' };
+  const readLib = () => ({ ...Object.fromEntries(Object.entries(LF).map(([k,id]) => [k, U($(id).value)])), type: S.formType, img: S.formImg });
+  function fillLib(o = {}) {
+    Object.entries(LF).forEach(([k,id]) => $(id).value = o[k] || '');
+    S.formType = o.type || BASE_TYPES[0]; setFormImg(o.img || ''); renderTypeChips();
+  }
+  function resetLibForm() { S.editLib = null; fillLib(); $('libTitle').textContent = 'Neues Werkzeug'; $('libCancel').hidden = true; $('libSaveOrder').hidden = false; $('newTypeRow').hidden = true; }
   $('libCancel').onclick = resetLibForm;
+  $('goNewTool').onclick = () => { resetLibForm(); const q = U($('pickQ').value); setView('lib'); if (q) $('l_name').value = q; $('l_name').focus(); };
 
   function saveLib(andOrder) {
     const d = readLib();
-    if (!d.name) { $('l_name').focus(); return null; }
+    if (!d.name) { $('l_name').focus(); toast('Bezeichnung fehlt'); return; }
+    const dup = d.firm && S.lib.find(t => t.firm === d.firm && t.id !== S.editLib);
+    if (dup) { toast(`Artikelnummer ${d.firm} gibt es schon`); return; }
     let tool;
-    if (state.editLib) {
-      tool = state.lib.find(t => t.id === state.editLib);
-      Object.assign(tool, d, { updatedAt: Date.now() });
-    } else {
-      const dup = d.firm && state.lib.find(t => t.firm === d.firm);
-      if (dup) { toast(`Firmen-Nr. ${d.firm} gibt es schon`); return null; }
-      tool = { id: newId(), ...d, createdAt: Date.now() };
-      state.lib.push(tool);
-    }
-    const wasEdit = !!state.editLib;
+    if (S.editLib) { tool = S.lib.find(t => t.id === S.editLib); Object.assign(tool, d, { updatedAt: Date.now() }); }
+    else { tool = { id: newId(), ...d, createdAt: Date.now() }; S.lib.push(tool); }
+    const wasEdit = !!S.editLib;
     resetLibForm();
-    if (andOrder) { orderFromLib(tool, {}); setView('orders'); }
-    else commit(wasEdit ? 'Gespeichert' : 'In Bibliothek');
-    return tool;
+    if (andOrder) { addToCart(tool, {}); setView('orders'); }
+    else commit(wasEdit ? 'Gespeichert' : 'In Bibliothek gespeichert');
   }
   $('libForm').addEventListener('submit', e => { e.preventDefault(); saveLib(false); });
   $('libSaveOrder').onclick = () => saveLib(true);
 
-  // ---------- ordering ----------
-  function orderFromLib(t, o) {
-    const it = {
+  // ---------- cart ----------
+  function addToCart(t, o) {
+    S.items.push({
       id: newId(), libId: t.id,
-      name: t.name, type: t.type, d: t.d, r: t.r, grade: t.grade, firm: t.firm,
-      maker: t.maker, makerArt: t.makerArt, sup: t.sup, mach: t.mach,
+      name: t.name, type: t.type, d: t.d, r: t.r, grade: t.grade, firm: t.firm, maker: t.maker, makerArt: t.makerArt, mach: t.mach,
       qty: U(o.qty) || t.qty || '', dwg: U(o.dwg), note: U(o.note),
       status: 'bedarf', createdAt: Date.now()
-    };
-    state.items.push(it);
-    commit('Auf der Liste');
+    });
+    commit('Auf die Liste gesetzt');
   }
+  const cartItems = () => S.items.filter(i => i.status === 'bedarf').sort((a,b) => a.createdAt - b.createdAt);
 
-  const libHay = t => [t.name, t.type, ...specs(t), t.d, t.r, t.firm, t.maker, t.makerArt, t.sup, t.mach, t.note].join(' ').toUpperCase().replace(/,/g,'.');
-  const match = (hay, q) => q.split(/\s+/).filter(Boolean).every(w => hay.includes(w.replace(/,/g,'.').replace(/^Ø/,'Ø')));
-
-  function lastOrder(libId) {
-    const its = state.items.filter(i => i.libId === libId);
-    return { count: its.length, last: Math.max(0, ...its.map(i => i.createdAt || 0)), open: its.some(i => i.status === 'bedarf') };
-  }
+  const hay = t => [t.name, t.type, ...specs(t), t.d, t.r, t.firm, t.maker, t.makerArt, t.mach, t.note, t.dwg].join(' ').toUpperCase().replace(/,/g,'.');
+  const match = (h, q) => q.split(/\s+/).filter(Boolean).every(w => h.includes(w.replace(/,/g,'.')));
+  const stats = libId => { const its = S.items.filter(i => i.libId === libId); return { count: its.length, last: Math.max(0, ...its.map(i => i.createdAt || 0)), inCart: its.some(i => i.status === 'bedarf'), waiting: its.some(i => i.status === 'gesendet') }; };
 
   function renderPick() {
-    const q = state.pickQ;
-    const R = $('pickRes');
-    if (!state.lib.length) { R.innerHTML = `<div class="hint">Bibliothek ist leer. Mit „+ Neues Werkzeug“ das erste anlegen – danach reicht hier ein Suchwort.</div>`; return; }
-    let rows = state.lib.slice();
-    if (q) rows = rows.filter(t => match(libHay(t), q));
-    else rows.sort((a,b) => lastOrder(b.id).last - lastOrder(a.id).last);
-    rows = rows.slice(0, q ? 30 : 6);
-    if (!rows.length) { R.innerHTML = `<div class="hint">Nichts gefunden. <button type="button" class="link" data-pick="new">Als neues Werkzeug anlegen</button></div>`; return; }
+    const q = S.pickQ, R = $('pickRes');
+    if (!S.lib.length) { R.innerHTML = `<div class="empty"><b>Bibliothek ist leer</b>Mit „+ Neues Werkzeug“ das erste anlegen. Danach reicht hier ein Suchwort.</div>`; return; }
+    let rows = S.lib.slice();
+    if (q) rows = rows.filter(t => match(hay(t), q)).slice(0, 30);
+    else rows = rows.map(t => [t, stats(t.id).last]).filter(x => x[1]).sort((a,b) => b[1]-a[1]).map(x => x[0]).slice(0, 5);
+    if (!rows.length) {
+      R.innerHTML = q ? `<div class="empty"><b>Nichts gefunden</b><button type="button" class="link" data-pick="new">„${esc(q)}“ als neues Werkzeug anlegen</button></div>` : `<div class="hint">Tippe, um in ${S.lib.length} Werkzeugen zu suchen.</div>`;
+      return;
+    }
     R.innerHTML = (q ? '' : `<div class="hint">Zuletzt bestellt:</div>`) + rows.map(t => {
-      const lo = lastOrder(t.id);
-      const open = state.pickOpen === t.id;
-      const sub = [
-        ...specs(t).map(s => `<span class="mono">${esc(s)}</span>`),
-        t.firm && `<span>FA <span class="mono">${esc(t.firm)}</span></span>`,
-        t.maker && `<span>${esc(t.maker)}</span>`,
-        lo.open && `<span style="color:var(--warn);font-weight:600">SCHON AUF DER LISTE</span>`
-      ].filter(Boolean).join('');
-      return `<div class="pr ${open ? 'open' : ''}">
-        <div class="t">${esc(t.name)}</div>
-        <button type="button" class="btn ${open ? '' : 'primary'} sm" data-pick="toggle" data-id="${t.id}">${open ? 'Zu' : '+ Bestellen'}</button>
-        <div class="s">${sub}</div>
-        ${open ? `<div class="ordform">
+      const st = stats(t.id), open = S.pickOpen === t.id;
+      const s = [...specs(t).map(x => `<b>${esc(x)}</b>`), t.firm && `<span>ART.-NR. <b>${esc(t.firm)}</b></span>`, t.maker && `<span>${esc(t.maker)}</span>`].filter(Boolean).join('');
+      const flag = st.inCart ? 'Schon auf der Liste' : st.waiting ? 'Schon unterwegs' : '';
+      return `<div class="r ${open ? 'open' : ''}">
+        ${thumbBtn(t.img)}
+        <div class="body">
+          <div class="t">${esc(t.name)}</div>
+          <div class="s">${s}</div>
+          ${flag ? `<div class="flag">${flag}</div>` : ''}
+          ${open ? '' : `<div class="row" style="margin-top:6px"><button type="button" class="btn primary sm" data-pick="toggle" data-id="${t.id}">+ Bestellen</button></div>`}
+          ${open ? `<div class="ordform">
             <label>Menge<input id="o_qty" class="mono" value="${esc(t.qty || '')}" placeholder="10 STK"></label>
             <label>Zeichnung / Auftrag<input id="o_dwg" class="mono" placeholder="optional"></label>
             <label class="full">Notiz<input id="o_note" placeholder="optional, z. B. dringend"></label>
-            <div class="full row"><button type="button" class="btn primary" data-pick="add" data-id="${t.id}">Auf die Liste</button></div>
+            <div class="full row"><button type="button" class="btn primary" data-pick="add" data-id="${t.id}">Auf die Liste</button><button type="button" class="btn ghost" data-pick="toggle" data-id="${t.id}">Abbrechen</button></div>
           </div>` : ''}
+        </div>
       </div>`;
     }).join('');
   }
-  $('pickQ').addEventListener('input', e => { state.pickQ = U(e.target.value); state.pickOpen = null; renderPick(); });
+  $('pickQ').addEventListener('input', e => { S.pickQ = U(e.target.value); S.pickOpen = null; renderPick(); });
   $('pickRes').addEventListener('click', e => {
     const b = e.target.closest('[data-pick]'); if (!b) return;
     if (b.dataset.pick === 'new') { $('goNewTool').click(); return; }
-    const t = state.lib.find(x => x.id === b.dataset.id); if (!t) return;
+    const t = S.lib.find(x => x.id === b.dataset.id); if (!t) return;
     if (b.dataset.pick === 'toggle') {
-      state.pickOpen = state.pickOpen === t.id ? null : t.id; renderPick();
-      if (state.pickOpen) { const q = $('o_qty'); q.focus(); q.select(); }
+      S.pickOpen = S.pickOpen === t.id ? null : t.id; renderPick();
+      if (S.pickOpen) { const q = $('o_qty'); q.focus(); q.select(); }
     }
     if (b.dataset.pick === 'add') {
-      orderFromLib(t, { qty: $('o_qty').value, dwg: $('o_dwg').value, note: $('o_note').value });
-      state.pickOpen = null; state.pickQ = ''; $('pickQ').value = ''; renderPick();
+      addToCart(t, { qty: $('o_qty').value, dwg: $('o_dwg').value, note: $('o_note').value });
+      S.pickOpen = null; S.pickQ = ''; $('pickQ').value = ''; renderPick();
     }
   });
-  $('pickRes').addEventListener('keydown', e => {
-    if (e.key === 'Enter' && e.target.closest('.ordform')) { e.preventDefault(); $('pickRes').querySelector('[data-pick="add"]')?.click(); }
-  });
+  $('pickRes').addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.closest('.ordform')) { e.preventDefault(); $('pickRes').querySelector('[data-pick="add"]')?.click(); } });
 
-  // ---------- order list actions ----------
-  $('list').addEventListener('click', e => {
-    const b = e.target.closest('button[data-act]'); if (!b) return;
-    const id = b.dataset.id, act = b.dataset.act, now = Date.now();
-    const it = state.items.find(x => x.id === id); if (!it) return;
-    if (act === 'order') { Object.assign(it, { status:'bestellt', orderedAt: now }); commit('Als bestellt markiert'); }
-    if (act === 'deliver') { Object.assign(it, { status:'geliefert', deliveredAt: now }); commit('Als geliefert markiert'); }
-    if (act === 'back') { it.status = it.status === 'geliefert' ? 'bestellt' : 'bedarf'; commit('Zurückgesetzt'); }
-    if (act === 'again') {
-      const t = state.lib.find(x => x.id === it.libId) || it;
-      orderFromLib({ ...t, id: it.libId || t.id }, { qty: it.qty, dwg: it.dwg });
-    }
-    if (act === 'del') { state.confirmDel = id; render(); }
-    if (act === 'delno') { state.confirmDel = null; render(); }
-    if (act === 'delyes') { state.confirmDel = null; state.items = state.items.filter(x => x.id !== id); commit('Gelöscht'); }
-  });
-
-  // ---------- library list actions ----------
-  $('libList').addEventListener('click', e => {
-    const b = e.target.closest('button[data-lact]'); if (!b) return;
-    const t = state.lib.find(x => x.id === b.dataset.id); if (!t) return;
-    const act = b.dataset.lact;
-    if (act === 'order') { setView('orders'); state.pickQ = U(t.firm || t.name); $('pickQ').value = state.pickQ; state.pickOpen = t.id; renderPick(); const q = $('o_qty'); if (q) { q.focus(); q.select(); } }
-    if (act === 'edit') {
-      state.editLib = t.id; fillLib(t);
-      $('libTitle').textContent = 'Werkzeug bearbeiten'; $('libCancel').hidden = false; $('libSaveOrder').hidden = true;
-      $('libForm').scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
-    }
-    if (act === 'copy') { state.editLib = null; fillLib({ ...t, firm: '', makerArt: '' }); $('libTitle').textContent = 'Neues Werkzeug (Kopie)'; $('libCancel').hidden = false; $('l_name').focus(); }
-    if (act === 'del') { state.confirmLibDel = t.id; render(); }
-    if (act === 'delno') { state.confirmLibDel = null; render(); }
-    if (act === 'delyes') { state.confirmLibDel = null; state.lib = state.lib.filter(x => x.id !== t.id); commit('Aus Bibliothek gelöscht'); }
-  });
-  $('libQ').addEventListener('input', e => { state.libQ = U(e.target.value); render(); });
-
-  document.querySelectorAll('.seg button').forEach(b => b.onclick = () => {
-    state.tab = b.dataset.tab;
-    document.querySelectorAll('.seg button').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
-    render();
-  });
-  $('q').addEventListener('input', e => { state.q = U(e.target.value); render(); });
-
-  // ---------- send: mail / copy / print ----------
-  const NAME_KEY = 'syncop_bestellliste_name';
-  $('p_name').value = lsGet(NAME_KEY);
-  $('p_name').addEventListener('input', e => lsSet(NAME_KEY, e.target.value.trim()));
-  [['p_to','syncop_bestellliste_to'],['p_mail','syncop_bestellliste_mail']].forEach(([id,k]) => {
-    $(id).value = lsGet(k);
-    $(id).addEventListener('input', e => lsSet(k, e.target.value.trim()));
-  });
-  const openItems = () => state.items.filter(i => i.status === 'bedarf').sort((a,b) => (a.createdAt||0) - (b.createdAt||0));
-  const untilText = () => { const u = $('p_until').value; return u ? new Date(u + 'T12:00').toLocaleDateString('de-DE', { weekday:'long', day:'2-digit', month:'2-digit', year:'numeric' }).toUpperCase() : ''; };
-
-  function slipText(items) {
-    const to = U($('p_to').value), name = U($('p_name').value), until = untilText();
-    const lines = items.map((i, n) => {
-      const head = [`${n+1}. ${fullName(i)}`];
-      if (i.firm) head.push(`FA-NR. ${i.firm}`);
-      if (i.qty) head.push(`MENGE: ${i.qty}`);
-      let line = head.join(' · ');
-      const sub = [i.maker && (i.makerArt ? `${i.maker} ${i.makerArt}` : i.maker), !i.maker && i.makerArt && `ART.-NR. ${i.makerArt}`, i.sup && `LIEFERANT ${i.sup}`, i.dwg && `ZEICHNUNG ${i.dwg}`, i.mach, i.note].filter(Boolean).join(' · ');
-      if (sub) line += `\n   ${sub}`;
-      return line;
-    });
-    return [to ? `HALLO ${to},` : 'HALLO,', '', until ? `BITTE BIS ${until} BESTELLEN:` : 'BITTE BESTELLEN:', '', lines.join('\n'), '', 'DANKE!', name].join('\n').trim() + '\n';
+  function renderCart() {
+    const items = cartItems();
+    $('cartN').textContent = items.length ? `· ${items.length}` : '';
+    $('sendOpen').hidden = !items.length || (!$('sendbox').hidden && S.send?.mode === 'order');
+    if (!items.length) { $('cart').innerHTML = `<div class="empty"><b>Liste ist leer</b>Oben Werkzeug suchen und „+ Bestellen“ tippen.</div>`; return; }
+    $('cart').innerHTML = items.map(i => {
+      const d = days(i.createdAt);
+      const s = [...specs(i).map(x => `<b>${esc(x)}</b>`), i.firm && `<span>ART.-NR. <b>${esc(i.firm)}</b></span>`, i.maker && `<span>${esc(i.maker)}${i.makerArt ? ` <b>${esc(i.makerArt)}</b>` : ''}</span>`].filter(Boolean).join('');
+      return `<div class="r" data-id="${i.id}">
+        ${thumbBtn(imgOf(i))}
+        <div class="body">
+          <div class="t">${esc(i.name)}</div>
+          <div class="s">${s}</div>
+          ${i.note ? `<div class="s">NOTIZ: ${esc(i.note)}</div>` : ''}
+          ${d >= 1 ? `<div class="flag" style="color:${d >= 2 ? 'var(--crit)' : 'var(--warn)'}">Noch nicht gesendet · ${ageText(d)}</div>` : ''}
+          <input class="dwgin" data-f="dwg" value="${esc(i.dwg || '')}" placeholder="Zeichnung / Auftrag (optional)" aria-label="Zeichnung">
+        </div>
+        <div class="side">
+          <button type="button" class="x-btn" data-cart="del" aria-label="Entfernen"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>
+          <input class="qtyin" data-f="qty" value="${esc(i.qty || '')}" placeholder="MENGE" aria-label="Menge">
+        </div>
+      </div>`;
+    }).join('');
   }
+  $('cart').addEventListener('change', e => {
+    const f = e.target.dataset.f; if (!f) return;
+    const it = S.items.find(x => x.id === e.target.closest('[data-id]').dataset.id); if (!it) return;
+    it[f] = U(e.target.value); save(); if (S.send) renderPreview();
+  });
+  $('cart').addEventListener('click', e => {
+    const b = e.target.closest('[data-cart="del"]'); if (!b) return;
+    const id = b.closest('[data-id]').dataset.id;
+    S.items = S.items.filter(x => x.id !== id); commit('Von der Liste entfernt');
+  });
 
-  $('printOpen').onclick = () => {
-    const n = openItems().length;
-    if (!n) { toast('Nichts zu bestellen'); return; }
-    $('p_info').textContent = `${n} ${n === 1 ? 'Position' : 'Positionen'} aus „Zu bestellen“. Ohne E-Mail-Adresse wählst du den Empfänger im Mailprogramm.`;
-    $('printPanel').hidden = false;
-    $('printPanel').scrollIntoView({ block: 'nearest' });
-  };
-  $('printClose').onclick = () => $('printPanel').hidden = true;
+  // ---------- send (order / reminder) ----------
+  $('p_name').value = lsGet(K.name); $('p_to').value = lsGet(K.to); $('p_mail').value = lsGet(K.mail);
+  $('p_remind').value = String(remindDays());
+  [['p_name',K.name],['p_to',K.to],['p_mail',K.mail]].forEach(([id,k]) => $(id).addEventListener('input', e => { lsSet(k, e.target.value.trim()); if (S.send) renderPreview(); }));
+  $('p_remind').onchange = e => { lsSet(K.remind, e.target.value); render(); };
+  $('p_until').onchange = () => { if (S.send) renderPreview(); };
 
-  $('copyBtn').onclick = async () => {
-    const items = openItems(); if (!items.length) { toast('Nichts zu bestellen'); return; }
-    const text = slipText(items);
-    try { await navigator.clipboard.writeText(text); toast(`${items.length} Positionen kopiert`); $('copyFallback').hidden = true; }
-    catch { const ta = $('copyFallback'); ta.value = text; ta.hidden = false; ta.focus(); ta.select(); toast('Text markiert – jetzt kopieren'); }
-  };
-  $('mailGo').onclick = () => {
-    const items = openItems(); if (!items.length) { toast('Nichts zu bestellen'); return; }
-    const to = $('p_mail').value.trim();
-    const subject = `BESTELLUNG ${new Date().toLocaleDateString('de-DE')}`;
-    location.href = `mailto:${encodeURIComponent(to).replace(/%40/g,'@')}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(slipText(items))}`;
-  };
-  $('printGo').onclick = () => {
-    const items = openItems(); if (!items.length) { toast('Nichts zu bestellen'); return; }
+  function nextNr() {
+    const y = new Date().getFullYear();
+    const n = Math.max(0, ...S.orders.filter(o => o.nr?.startsWith(`B-${y}-`)).map(o => parseInt(o.nr.split('-')[2], 10) || 0)) + 1;
+    return `B-${y}-${String(n).padStart(3, '0')}`;
+  }
+  function openSend(mode, itemIds, orderIds = []) {
+    S.send = { mode, itemIds, orderIds, nr: mode === 'order' ? nextNr() : '' };
+    $('sendTitle').textContent = mode === 'order' ? `Senden · ${S.send.nr}` : 'Erinnerung senden';
+    $('confirm').hidden = true; $('preview').hidden = true; $('copyFallback').hidden = true;
+    $('sendbox').hidden = false; $('sendOpen').hidden = true;
+    if (mode === 'reminder') $('sendbox').closest('.card').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    else $('sendbox').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+  function closeSend() { S.send = null; $('sendbox').hidden = true; render(); }
+  $('sendOpen').onclick = () => { const ids = cartItems().map(i => i.id); if (!ids.length) return; openSend('order', ids); };
+  $('sendClose').onclick = closeSend;
+
+  const sendItems = () => S.send ? S.send.itemIds.map(id => S.items.find(i => i.id === id)).filter(Boolean) : [];
+  const untilText = () => { const u = $('p_until').value; return u ? U(new Date(u + 'T12:00').toLocaleDateString('de-DE', { weekday:'long', day:'2-digit', month:'2-digit', year:'numeric' })) : ''; };
+  const refNrs = items => [...new Set(items.map(i => S.orders.find(o => o.id === i.orderId)).filter(Boolean).map(o => `${o.nr} VOM ${fmtD(o.sentAt)}`))];
+
+  function mailText() {
+    const items = sendItems(), rem = S.send.mode === 'reminder';
     const to = U($('p_to').value), name = U($('p_name').value), until = untilText();
-    const rows = items.map((i, n) => {
-      const sub = [i.maker && (i.makerArt ? `${i.maker} ${i.makerArt}` : i.maker), !i.maker && i.makerArt, i.dwg && `ZEICHNUNG ${i.dwg}`, i.mach, i.note].filter(Boolean).map(esc).join(' · ');
+    const blocks = items.map(i => {
+      const L = [`▸ ${fullName(i)}`, `  MENGE: ${i.qty || '–'}`];
+      if (i.firm) L.push(`  ARTIKELNUMMER: ${i.firm}`);
+      if (i.maker || i.makerArt) L.push(`  HERSTELLER: ${[i.maker, i.makerArt && `ART.-NR. ${i.makerArt}`].filter(Boolean).join(' · ')}`);
+      if (i.dwg) L.push(`  ZEICHNUNG / AUFTRAG: ${i.dwg}`);
+      if (i.note) L.push(`  NOTIZ: ${i.note}`);
+      return L.join('\n');
+    });
+    const head = rem
+      ? ['ERINNERUNG', '', to ? `HALLO ${to},` : 'HALLO,', '', `FOLGENDE POSITIONEN SIND NOCH NICHT DA (${refNrs(items).join(', ')}):`]
+      : [`BESTELLUNG ${S.send.nr} · ${fmtD(Date.now())}`, '', to ? `HALLO ${to},` : 'HALLO,', '', until ? `BITTE BIS ${until} BESTELLEN:` : 'BITTE BESTELLEN:'];
+    return [...head, '', blocks.join('\n\n'), '', rem ? 'BITTE KURZ BESCHEID GEBEN. DANKE!' : 'DANKE!', name].join('\n').trim() + '\n';
+  }
+  const subject = () => S.send.mode === 'reminder' ? `ERINNERUNG: WERKZEUG-BESTELLUNG ${refNrs(sendItems()).map(x => x.split(' ')[0]).join(', ')}` : `BESTELLUNG ${S.send.nr} · ${fmtD(Date.now())}`;
+  function renderPreview() { if (!$('preview').hidden) $('preview').textContent = `BETREFF: ${subject()}\n\n${mailText()}`; }
+  $('previewBtn').onclick = () => { $('preview').hidden = !$('preview').hidden; renderPreview(); };
+
+  function askConfirm(how) {
+    $('confirmTxt').textContent = S.send.mode === 'reminder' ? `Erinnerung ${how}?` : `Bestellung ${S.send.nr} ${how}?`;
+    $('confirm').hidden = false;
+    $('confirm').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+  $('mailGo').onclick = () => {
+    if (!sendItems().length) return;
+    const to = $('p_mail').value.trim();
+    location.href = `mailto:${encodeURIComponent(to).replace(/%40/g,'@')}?subject=${encodeURIComponent(subject())}&body=${encodeURIComponent(mailText())}`;
+    setTimeout(() => askConfirm('per E-Mail abgeschickt'), 600);
+  };
+  $('copyBtn').onclick = async () => {
+    const text = mailText();
+    try { await navigator.clipboard.writeText(text); toast('Text kopiert'); $('copyFallback').hidden = true; }
+    catch { const ta = $('copyFallback'); ta.value = text; ta.hidden = false; ta.focus(); ta.select(); toast('Text markiert – jetzt kopieren'); }
+    askConfirm('abgeschickt');
+  };
+  $('printGo').onclick = () => { printSheet(); setTimeout(() => askConfirm('ausgedruckt und übergeben'), 400); };
+  $('confirmNo').onclick = () => $('confirm').hidden = true;
+  $('confirmYes').onclick = () => {
+    const now = Date.now(), items = sendItems();
+    if (S.send.mode === 'order') {
+      const o = { id: newId(), nr: S.send.nr, sentAt: now, to: U($('p_to').value), mail: $('p_mail').value.trim(), until: $('p_until').value, from: U($('p_name').value), itemIds: items.map(i => i.id), reminders: [] };
+      S.orders.push(o);
+      items.forEach(i => Object.assign(i, { status: 'gesendet', sentAt: now, orderId: o.id }));
+      $('p_until').value = '';
+      closeSend(); commit(`${o.nr} gesendet · erscheint unter „Unterwegs“`);
+    } else {
+      const oids = new Set(items.map(i => i.orderId));
+      S.orders.filter(o => oids.has(o.id)).forEach(o => (o.reminders ||= []).push(now));
+      items.forEach(i => i.remindedAt = now);
+      closeSend(); commit('Erinnerung vermerkt');
+    }
+  };
+
+  function printSheet(order) {
+    // order: reprint from archive; otherwise current send
+    const rem = !order && S.send?.mode === 'reminder';
+    const items = order ? order.itemIds.map(id => S.items.find(i => i.id === id)).filter(Boolean) : sendItems();
+    const nr = order ? order.nr : S.send?.nr;
+    const to = order ? order.to : U($('p_to').value);
+    const name = order ? order.from : U($('p_name').value);
+    const untilRaw = order ? order.until : $('p_until').value;
+    const until = untilRaw ? U(new Date(untilRaw + 'T12:00').toLocaleDateString('de-DE', { weekday:'long', day:'2-digit', month:'2-digit', year:'numeric' })) : '';
+    const date = order ? order.sentAt : Date.now();
+    const rows = items.map(i => {
+      const img = imgOf(i);
+      const sub = [i.dwg && `ZEICHNUNG / AUFTRAG: ${esc(i.dwg)}`, i.note && `NOTIZ: ${esc(i.note)}`, i.mach && esc(i.mach)].filter(Boolean).join(' · ');
       return `<tr>
         <td class="box"><span></span></td>
-        <td class="m">${n+1}</td>
-        <td><strong>${esc(fullName(i))}</strong>${sub ? `<div class="s-sub">${sub}</div>` : ''}</td>
+        <td class="img">${img ? `<img src="${img}" alt="">` : ''}</td>
+        <td><div class="nm">${esc(fullName(i))}</div>${sub ? `<div class="s-sub">${sub}</div>` : ''}</td>
         <td class="m">${esc(i.firm || '')}</td>
-        <td>${esc(i.sup || i.maker || '')}</td>
-        <td class="m">${esc(i.qty || '')}</td>
+        <td>${esc(i.maker || '')}${i.makerArt ? `<div class="s-sub mono">${esc(i.makerArt)}</div>` : ''}</td>
+        <td class="qty">${esc(i.qty || '')}</td>
       </tr>`;
     }).join('');
     $('sheet').innerHTML = `
-      <div class="s-top"><span class="s-brand">BESTELLUNG</span><span class="s-date">${new Date().toLocaleDateString('de-DE')}</span></div>
+      <div class="s-top"><span class="s-kind">${rem ? 'ERINNERUNG' : 'BESTELLUNG'}</span><span class="s-nr">${rem ? '' : esc(nr || '') + '<br>'}${fmtD(date)}</span></div>
       <div class="s-hello">${to ? `HALLO ${esc(to)},` : 'HALLO,'}</div>
-      <h2>BITTE BESTELLEN:</h2>
-      ${until ? `<div class="s-until">BIS ${esc(until)}</div>` : ''}
+      <h2>${rem ? 'NOCH NICHT GELIEFERT:' : 'BITTE BESTELLEN:'}</h2>
+      ${rem ? `<div class="s-ref">${esc(refNrs(items).join(' · '))}</div>` : ''}
+      ${until && !rem ? `<div class="s-until">BIS ${esc(until)}</div>` : ''}
       <table>
-        <thead><tr><th></th><th>POS</th><th>BEZEICHNUNG</th><th>FIRMEN-NR.</th><th>LIEFERANT</th><th>MENGE</th></tr></thead>
+        <thead><tr><th></th><th></th><th>BEZEICHNUNG</th><th>ARTIKELNUMMER</th><th>HERSTELLER</th><th>MENGE</th></tr></thead>
         <tbody>${rows}</tbody>
       </table>
-      <div class="s-thanks">DANKE!</div>
+      <div class="s-thanks">${rem ? 'BITTE KURZ BESCHEID GEBEN. DANKE!' : 'DANKE!'}</div>
       <div class="s-name">${esc(name) || '&nbsp;'}</div>`;
-    window.print();
-  };
+    const imgs = [...$('sheet').querySelectorAll('img')];
+    Promise.all(imgs.map(im => im.complete ? 0 : new Promise(r => { im.onload = im.onerror = r; }))).then(() => window.print());
+  }
+
+  // ---------- waiting / reminders ----------
+  const lastTouch = i => Math.max(i.sentAt || 0, i.remindedAt || 0);
+  const overdue = () => S.items.filter(i => i.status === 'gesendet' && days(lastTouch(i)) >= remindDays());
+  const orderItems = o => o.itemIds.map(id => S.items.find(i => i.id === id)).filter(Boolean);
+
+  function orderBlock(o, inArchive) {
+    const its = orderItems(o);
+    const got = its.filter(i => i.status === 'geliefert').length;
+    const done = its.length && got === its.length;
+    const open = its.filter(i => i.status === 'gesendet');
+    const late = open.some(i => days(lastTouch(i)) >= remindDays());
+    const d = days(o.sentAt);
+    const cls = done ? 'done' : late ? 'late' : d >= Math.max(1, remindDays() - 1) ? 'aging' : '';
+    const statusChip = done ? `<span class="chip ok">Komplett erhalten</span>`
+      : late ? `<span class="chip crit">Überfällig · ${ageText(d)}</span>`
+      : `<span class="chip ${cls === 'aging' ? 'warn' : ''}">Gesendet ${ageText(d)}</span>`;
+    const rem = (o.reminders || []).length ? `<span class="chip">${o.reminders.length}× erinnert</span>` : '';
+    const list = its.map(i => `<div class="oi ${i.status === 'geliefert' ? 'got' : ''}">
+        <button type="button" class="chk ${i.status === 'geliefert' ? 'on' : ''}" data-got="${i.id}" aria-label="Erhalten">${i.status === 'geliefert' ? '<svg width="14" height="14" viewBox="0 0 16 16"><path d="M3 8.5l3 3L13 4.5" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>' : ''}</button>
+        ${thumbBtn(imgOf(i))}
+        <div class="body"><div class="t">${esc(fullName(i))}</div><div class="s">${[i.firm && `ART.-NR. ${esc(i.firm)}`, i.dwg && `ZNG. ${esc(i.dwg)}`, i.status === 'geliefert' && `ERHALTEN ${fmtDs(i.deliveredAt)}`].filter(Boolean).join(' · ')}</div></div>
+        <span class="q">${esc(i.qty || '')}</span>
+      </div>`).join('');
+    const actions = inArchive
+      ? `<button type="button" class="btn sm" data-oa="print" data-id="${o.id}">Nochmal drucken</button>
+         <button type="button" class="btn sm" data-oa="again" data-id="${o.id}">Erneut bestellen</button>
+         ${open.length ? `<button type="button" class="btn sm" data-oa="remind" data-id="${o.id}">Erinnerung</button>` : ''}
+         <span class="grow"></span>
+         ${S.confirmArchDel === o.id ? `<button type="button" class="btn sm" data-oa="delno" data-id="${o.id}">Nein</button><button type="button" class="btn sm primary" data-oa="delyes" data-id="${o.id}">Löschen</button>` : `<button type="button" class="btn ghost sm" data-oa="del" data-id="${o.id}">Löschen</button>`}`
+      : `${open.length ? `<button type="button" class="btn sm primary" data-oa="allgot" data-id="${o.id}">Alles erhalten</button>` : ''}
+         ${open.length ? `<button type="button" class="btn sm" data-oa="remind" data-id="${o.id}">Erinnerung senden</button>` : ''}
+         <span class="grow"></span><button type="button" class="btn ghost sm" data-oa="print" data-id="${o.id}">Drucken</button>`;
+    return `<div class="ord ${cls}">
+      <div class="ord-h"><span class="nr">${esc(o.nr)}</span><span class="meta">${fmtD(o.sentAt)}${o.to ? ` · AN ${esc(o.to)}` : ''} · ${got}/${its.length} ERHALTEN</span>${statusChip}${rem}</div>
+      <div class="ol">${list}</div>
+      <div class="acts">${actions}</div>
+    </div>`;
+  }
+
+  function onOrderClick(e) {
+    const z = e.target.closest('[data-zoom]'); if (z) return;
+    const g = e.target.closest('[data-got]');
+    if (g) { const it = S.items.find(i => i.id === g.dataset.got); if (!it) return;
+      if (it.status === 'geliefert') { it.status = 'gesendet'; delete it.deliveredAt; } else { it.status = 'geliefert'; it.deliveredAt = Date.now(); }
+      commit(it.status === 'geliefert' ? 'Erhalten' : 'Zurückgesetzt'); return; }
+    const b = e.target.closest('[data-oa]'); if (!b) return;
+    const o = S.orders.find(x => x.id === b.dataset.id); if (!o) return;
+    const act = b.dataset.oa, its = orderItems(o);
+    if (act === 'allgot') { its.filter(i => i.status === 'gesendet').forEach(i => { i.status = 'geliefert'; i.deliveredAt = Date.now(); }); commit(`${o.nr} komplett erhalten`); }
+    if (act === 'remind') { setView('orders'); openSend('reminder', its.filter(i => i.status === 'gesendet').map(i => i.id), [o.id]); }
+    if (act === 'print') printSheet(o);
+    if (act === 'again') { its.forEach(i => { const t = libOf(i) || i; addToCart({ ...t, id: i.libId }, { qty: i.qty, dwg: i.dwg, note: i.note }); }); setView('orders'); toast(`${its.length} Positionen wieder auf der Liste`); }
+    if (act === 'del') { S.confirmArchDel = o.id; render(); }
+    if (act === 'delno') { S.confirmArchDel = null; render(); }
+    if (act === 'delyes') { S.confirmArchDel = null; const ids = new Set(o.itemIds); S.items = S.items.filter(i => !ids.has(i.id)); S.orders = S.orders.filter(x => x.id !== o.id); commit('Bestellung gelöscht'); }
+  }
+  $('waiting').addEventListener('click', onOrderClick);
+  $('archList').addEventListener('click', onOrderClick);
+
+  function renderWaiting() {
+    const ords = S.orders.filter(o => orderItems(o).some(i => i.status === 'gesendet')).sort((a,b) => a.sentAt - b.sentAt);
+    $('waiting').innerHTML = ords.length ? ords.map(o => orderBlock(o, false)).join('')
+      : `<div class="empty"><b>Nichts unterwegs</b>Gesendete Bestellungen warten hier, bis du sie als erhalten abhakst.</div>`;
+  }
+
+  function renderAlarm() {
+    const od = overdue(), cart = cartItems(), a = $('alarm');
+    const oldCart = cart.filter(i => days(i.createdAt) >= 1);
+    if (od.length) {
+      const oldest = Math.max(...od.map(i => days(i.sentAt)));
+      a.className = 'alarm hot';
+      a.innerHTML = `<span class="big">${od.length}</span><div class="txt"><b>Noch nicht geliefert</b><small>Gesendet, aber nach ${remindDays()} Tagen nicht da · älteste ${ageText(oldest)}</small></div><button type="button" class="btn sm" id="alarmRemind">Erinnerung senden</button>`;
+      $('alarmRemind').onclick = () => openSend('reminder', od.map(i => i.id));
+    } else if (oldCart.length) {
+      a.className = 'alarm hot';
+      a.innerHTML = `<span class="big">${cart.length}</span><div class="txt"><b>Noch nicht gesendet</b><small>Liegt ${ageText(Math.max(...oldCart.map(i => days(i.createdAt))))} auf der Liste</small></div><button type="button" class="btn sm" id="alarmSend">Jetzt senden</button>`;
+      $('alarmSend').onclick = () => $('sendOpen').click();
+    } else {
+      a.className = 'alarm calm';
+      a.innerHTML = `<svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><circle cx="11" cy="11" r="9" stroke="currentColor" stroke-width="1.6" fill="none"/><path d="M7 11.5l2.6 2.5L15 8.5" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg><div class="txt"><b style="color:var(--fg)">Alles im Griff</b><small>${cart.length ? `${cart.length} auf der Liste – unten senden` : 'Fehlt etwas? Unten suchen und auf die Liste setzen.'}</small></div>`;
+    }
+  }
+
+  // ---------- library list ----------
+  function libCard(t) {
+    const st = stats(t.id);
+    const kv = [t.firm && `<span>ART.-NR. <b>${esc(t.firm)}</b></span>`, (t.maker || t.makerArt) && `<span>${esc(t.maker || 'HERST.')} <b>${esc(t.makerArt || '')}</b></span>`, t.qty && `<span>STD. <b>${esc(t.qty)}</b></span>`, t.mach && `<span>${esc(t.mach)}</span>`].filter(Boolean).join('');
+    const trail = (st.count ? `${st.count}× bestellt · zuletzt ${fmtDs(st.last)}` : 'noch nie bestellt') + (st.inCart ? ' · auf der Liste' : st.waiting ? ' · unterwegs' : '');
+    const acts = S.confirmLibDel === t.id
+      ? `<span class="grow" style="font-size:13px">Aus Bibliothek löschen?</span><button class="btn sm" data-lact="delno" data-id="${t.id}">Nein</button><button class="btn sm primary" data-lact="delyes" data-id="${t.id}">Löschen</button>`
+      : `<button class="btn sm primary" data-lact="order" data-id="${t.id}">+ Bestellen</button><span class="grow"></span>
+         <button class="btn ghost sm" data-lact="copy" data-id="${t.id}">Kopie</button>
+         <button class="btn ghost sm" data-lact="edit" data-id="${t.id}">Ändern</button>
+         <button class="btn ghost sm" data-lact="del" data-id="${t.id}" aria-label="Löschen"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 4.5h10M6.5 4.5V3h3v1.5M4.5 4.5l.7 8.5h5.6l.7-8.5" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linejoin="round"/></svg></button>`;
+    return `<article class="item">
+      ${thumbBtn(t.img, 'lg')}
+      <div class="main">
+        <div class="name">${esc(t.name)}</div>
+        ${specs(t).length ? `<div class="chips">${specs(t).map(s => `<span class="chip spec">${esc(s)}</span>`).join('')}</div>` : ''}
+        ${kv ? `<div class="kv">${kv}</div>` : ''}
+        ${t.note ? `<div class="note">${esc(t.note)}</div>` : ''}
+        <div class="trail">${trail}</div>
+        <div class="acts">${acts}</div>
+      </div>
+    </article>`;
+  }
+  $('libList').addEventListener('click', e => {
+    if (e.target.closest('[data-zoom]')) return;
+    const b = e.target.closest('[data-lact]'); if (!b) return;
+    const t = S.lib.find(x => x.id === b.dataset.id); if (!t) return;
+    const act = b.dataset.lact, smooth = matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
+    if (act === 'order') { setView('orders'); S.pickQ = U(t.firm || t.name); $('pickQ').value = S.pickQ; S.pickOpen = t.id; renderPick(); const q = $('o_qty'); if (q) { q.focus(); q.select(); } }
+    if (act === 'edit') { S.editLib = t.id; fillLib(t); $('libTitle').textContent = 'Werkzeug ändern'; $('libCancel').hidden = false; $('libSaveOrder').hidden = true; $('libForm').scrollIntoView({ behavior: smooth, block: 'start' }); }
+    if (act === 'copy') { S.editLib = null; fillLib({ ...t, firm: '', makerArt: '' }); $('libTitle').textContent = 'Neues Werkzeug (Kopie)'; $('libCancel').hidden = false; $('libSaveOrder').hidden = false; $('libForm').scrollIntoView({ behavior: smooth, block: 'start' }); $('l_name').focus(); }
+    if (act === 'del') { S.confirmLibDel = t.id; render(); }
+    if (act === 'delno') { S.confirmLibDel = null; render(); }
+    if (act === 'delyes') { S.confirmLibDel = null; S.lib = S.lib.filter(x => x.id !== t.id); commit('Aus Bibliothek gelöscht'); }
+  });
+  $('libQ').addEventListener('input', e => { S.libQ = U(e.target.value); renderLib(); });
+  $('libTypeFilter').addEventListener('click', e => { const b = e.target.closest('[data-ft]'); if (!b) return; S.libType = S.libType === b.dataset.ft ? '' : b.dataset.ft; renderLib(); });
+
+  function renderLib() {
+    const used = [...new Set(S.lib.map(t => t.type || 'SONSTIGES'))];
+    const order = allTypes().filter(t => used.includes(t));
+    $('libTypeFilter').innerHTML = order.length > 1 ? order.map(t => `<button type="button" data-ft="${esc(t)}" aria-pressed="${S.libType === t}">${esc(t)} · ${S.lib.filter(x => (x.type || 'SONSTIGES') === t).length}</button>`).join('') : '';
+    let rows = S.lib.slice();
+    if (S.libType) rows = rows.filter(t => (t.type || 'SONSTIGES') === S.libType);
+    if (S.libQ) rows = rows.filter(t => match(hay(t), S.libQ));
+    const L = $('libList');
+    if (!rows.length) { L.innerHTML = S.lib.length ? `<div class="empty"><b>Keine Treffer</b>Suchbegriff oder Filter ändern.</div>` : `<div class="empty"><b>Bibliothek ist leer</b>Oben das erste Werkzeug anlegen – Bezeichnung, Ø, Radius, Artikelnummer, Foto. Nur einmal.</div>`; return; }
+    const by = {}; rows.forEach(t => (by[t.type || 'SONSTIGES'] ||= []).push(t));
+    const cmp = (a,b) => (parseFloat(a.d)||0) - (parseFloat(b.d)||0) || a.name.localeCompare(b.name) || (parseFloat(a.r)||0) - (parseFloat(b.r)||0);
+    L.innerHTML = order.filter(k => by[k]).map(k => `<div class="sec-h">${esc(k)} · ${by[k].length}</div>` + by[k].sort(cmp).map(libCard).join('')).join('');
+  }
+
+  // ---------- archive ----------
+  $('archQ').addEventListener('input', e => { S.archQ = U(e.target.value); renderArch(); });
+  function renderArch() {
+    let ords = S.orders.slice().sort((a,b) => b.sentAt - a.sentAt);
+    if (S.archQ) ords = ords.filter(o => match([o.nr, o.to, fmtD(o.sentAt), ...orderItems(o).map(hay)].join(' ').toUpperCase(), S.archQ));
+    $('archList').innerHTML = ords.length ? ords.map(o => orderBlock(o, true)).join('')
+      : `<div class="empty"><b>${S.orders.length ? 'Keine Treffer' : 'Noch keine Bestellungen'}</b>${S.orders.length ? 'Suchbegriff ändern.' : 'Jede gesendete Bestellung landet hier mit Nummer, Datum und Empfänger.'}</div>`;
+  }
+
+  // ---------- lightbox ----------
+  document.addEventListener('click', e => { const z = e.target.closest('[data-zoom]'); if (!z) return; $('lbImg').src = z.querySelector('img').src; $('lightbox').hidden = false; });
+  $('lightbox').onclick = () => $('lightbox').hidden = true;
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') $('lightbox').hidden = true; });
 
   // ---------- backup ----------
   $('exportBtn').onclick = () => {
-    const blob = new Blob([JSON.stringify({ app: 'bestellliste', version: 2, exportedAt: new Date().toISOString(), lib: state.lib, items: state.items }, null, 2)], { type: 'application/json' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = `bestellliste-${new Date().toISOString().slice(0,10)}.json`;
-    document.body.appendChild(a); a.click(); a.remove();
-    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    const blob = new Blob([JSON.stringify({ app: 'bestellliste', version: 3, exportedAt: new Date().toISOString(), lib: S.lib, items: S.items, orders: S.orders, types: S.customTypes })], { type: 'application/json' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `bestellliste-${new Date().toISOString().slice(0,10)}.json`;
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
     toast('Backup gespeichert');
   };
   $('importBtn').onclick = () => $('importFile').click();
@@ -619,168 +907,33 @@ input.mono{font-family:var(--f-mono)}
     const f = e.target.files[0]; e.target.value = ''; if (!f) return;
     try {
       const data = JSON.parse(await f.text());
-      const items = Array.isArray(data) ? data : (data.items || []);
-      const lib = Array.isArray(data.lib) ? data.lib : [];
-      const mergeInto = (arr, incoming, fix) => { const m = new Map(arr.map(x => [x.id, x])); let n = 0; incoming.forEach(x => { if (x && x.id && x.name) { if (!m.has(x.id)) n++; m.set(x.id, fix ? fix(x) : x); } }); return [[...m.values()], n]; };
-      let a, b;
-      [state.items, a] = mergeInto(state.items, items, migrateItem);
-      [state.lib, b] = mergeInto(state.lib, lib);
-      commit(`${b} Werkzeuge, ${a} Bestellungen geladen`);
+      const merge = (arr, inc, ok) => { const m = new Map(arr.map(x => [x.id, x])); let n = 0; (inc || []).forEach(x => { if (x && x.id && ok(x)) { if (!m.has(x.id)) n++; m.set(x.id, x); } }); return [[...m.values()], n]; };
+      let a, b, c;
+      [S.items, a] = merge(S.items, Array.isArray(data) ? data : data.items, x => x.name);
+      [S.lib, b] = merge(S.lib, data.lib, x => x.name);
+      [S.orders, c] = merge(S.orders, data.orders, x => x.nr);
+      S.customTypes = [...new Set([...S.customTypes, ...(data.types || [])])];
+      migrate(); commit(`${b} Werkzeuge, ${c} Bestellungen geladen`);
     } catch { toast('Datei ist kein gültiges Backup'); }
   };
 
   // ---------- render ----------
-  function ageClass(it) {
-    if (it.status === 'bedarf') { const d = days(it.createdAt); return d >= AGE_CRIT_BEDARF ? 'late' : d >= AGE_WARN_BEDARF ? 'aging' : ''; }
-    if (it.status === 'bestellt') { const d = days(it.orderedAt); return d >= AGE_CRIT_BESTELLT ? 'late' : d >= AGE_WARN_BESTELLT ? 'aging' : ''; }
-    return '';
-  }
-
-  function renderAlarm() {
-    const open = state.items.filter(i => i.status === 'bedarf');
-    const lateOrders = state.items.filter(i => i.status === 'bestellt' && days(i.orderedAt) >= AGE_CRIT_BESTELLT);
-    const a = $('alarm');
-    if (open.length) {
-      const oldest = Math.max(...open.map(i => days(i.createdAt)));
-      a.className = 'alarm hot';
-      a.innerHTML = `<span class="big">${open.length}</span><div><b>${open.length === 1 ? 'Position wartet' : 'Positionen warten'} auf Bestellung</b><small>Älteste ${ageText(oldest)}${lateOrders.length ? ` · ${lateOrders.length} Bestellung${lateOrders.length>1?'en':''} über ${AGE_CRIT_BESTELLT} Tage offen` : ''}</small></div>`;
-    } else if (lateOrders.length) {
-      a.className = 'alarm hot';
-      a.innerHTML = `<span class="big">${lateOrders.length}</span><div><b>Bestellt, aber nicht geliefert</b><small>Seit über ${AGE_CRIT_BESTELLT} Tagen – beim Lieferanten nachfragen</small></div>`;
-    } else {
-      a.className = 'alarm calm';
-      a.innerHTML = `<svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><circle cx="11" cy="11" r="9" stroke="currentColor" stroke-width="1.6" fill="none"/><path d="M7 11.5l2.6 2.5L15 8.5" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg><div><b style="color:var(--fg)">Alles bestellt</b><small>Fehlt etwas? Unten suchen und auf die Liste setzen.</small></div>`;
-    }
-  }
-
-  const specChips = t => specs(t).map(s => `<span class="chip spec">${esc(s)}</span>`).join('');
-
-  function itemHTML(it) {
-    const cls = ageClass(it);
-    const chips = [];
-    if (it.status === 'bedarf') chips.push(`<span class="chip ${cls==='late'?'crit':cls==='aging'?'warn':''}">Eingetragen ${ageText(days(it.createdAt))}</span>`);
-    if (it.status === 'bestellt') chips.push(`<span class="chip ${cls==='late'?'crit':cls==='aging'?'warn':''}">Bestellt ${ageText(days(it.orderedAt))}</span>`);
-    if (it.status === 'geliefert') chips.push(`<span class="chip ok">Geliefert ${fmtDate(it.deliveredAt)}</span>`);
-    if (it.type) chips.push(`<span class="chip">${esc(it.type)}</span>`);
-    if (it.mach) chips.push(`<span class="chip">${esc(it.mach)}</span>`);
-
-    const meta = [];
-    if (it.firm) meta.push(`<span><em>FA-Nr.</em><span class="mono">${esc(it.firm)}</span></span>`);
-    if (it.makerArt || it.maker) meta.push(`<span><em>${esc(it.maker || 'Art.')}</em><span class="mono">${esc(it.makerArt || '')}</span></span>`);
-    if (it.sup) meta.push(`<span><em>Lief.</em>${esc(it.sup)}</span>`);
-    if (it.dwg) meta.push(`<span><em>Zng.</em><span class="mono">${esc(it.dwg)}</span></span>`);
-
-    const trail = [`eingetragen ${fmtDate(it.createdAt)}`];
-    if (it.orderedAt) trail.push(`bestellt ${fmtDate(it.orderedAt)}`);
-    if (it.deliveredAt) trail.push(`erhalten ${fmtDate(it.deliveredAt)}`);
-
-    let acts;
-    if (state.confirmDel === it.id) {
-      acts = `<span class="grow" style="font-size:14px">Wirklich löschen?</span>
-        <button class="btn" data-act="delno" data-id="${it.id}">Nein</button>
-        <button class="btn primary" data-act="delyes" data-id="${it.id}">Löschen</button>`;
-    } else {
-      const main = it.status === 'bedarf' ? `<button class="btn primary" data-act="order" data-id="${it.id}"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5l3 3L13 4.5" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>Bestellt</button>`
-        : it.status === 'bestellt' ? `<button class="btn primary" data-act="deliver" data-id="${it.id}"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 5.5L8 2.5l6 3v5l-6 3-6-3z M2 5.5l6 3 6-3 M8 8.5v5" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linejoin="round"/></svg>Geliefert</button>`
-        : `<button class="btn" data-act="again" data-id="${it.id}">Nochmal bestellen</button>`;
-      const back = it.status !== 'bedarf' ? `<button class="btn ghost" data-act="back" data-id="${it.id}">Zurück</button>` : '';
-      acts = `${main}<span class="grow"></span>${back}
-        <button class="btn ghost" data-act="del" data-id="${it.id}" aria-label="Löschen"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 4.5h10M6.5 4.5V3h3v1.5M4.5 4.5l.7 8.5h5.6l.7-8.5" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linejoin="round"/></svg></button>`;
-    }
-
-    return `<article class="item ${cls}">
-      <div class="main">
-        <div class="name">${esc(it.name)}</div>
-        ${specs(it).length ? `<div class="chips">${specChips(it)}</div>` : ''}
-        ${meta.length ? `<div class="meta">${meta.join('')}</div>` : ''}
-        <div class="chips">${chips.join('')}</div>
-        ${it.note ? `<div class="note">${esc(it.note)}</div>` : ''}
-        <div class="trail">${trail.join(' · ')}</div>
-      </div>
-      <div class="qty">${esc(it.qty || '–')}<small>Menge</small></div>
-      <div class="acts">${acts}</div>
-    </article>`;
-  }
-
-  function libHTML(t) {
-    const lo = lastOrder(t.id);
-    const meta = [];
-    if (t.maker || t.makerArt) meta.push(`<span><em>${esc(t.maker || 'Art.')}</em><span class="mono">${esc(t.makerArt || '')}</span></span>`);
-    if (t.sup) meta.push(`<span><em>Lief.</em>${esc(t.sup)}</span>`);
-    if (t.mach) meta.push(`<span><em>Masch.</em>${esc(t.mach)}</span>`);
-    if (t.qty) meta.push(`<span><em>Std.</em><span class="mono">${esc(t.qty)}</span></span>`);
-    const trail = lo.count ? `${lo.count}× bestellt · zuletzt ${fmtDate(lo.last)}` : 'noch nie bestellt';
-    const acts = state.confirmLibDel === t.id
-      ? `<span class="grow" style="font-size:14px">Aus Bibliothek löschen?</span>
-         <button class="btn" data-lact="delno" data-id="${t.id}">Nein</button>
-         <button class="btn primary" data-lact="delyes" data-id="${t.id}">Löschen</button>`
-      : `<button class="btn primary" data-lact="order" data-id="${t.id}">+ Bestellen</button><span class="grow"></span>
-         <button class="btn ghost" data-lact="copy" data-id="${t.id}">Kopie</button>
-         <button class="btn ghost" data-lact="edit" data-id="${t.id}" aria-label="Bearbeiten"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 13l1-3.5L10.5 3 13 5.5 6.5 12z" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linejoin="round"/></svg></button>
-         <button class="btn ghost" data-lact="del" data-id="${t.id}" aria-label="Löschen"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 4.5h10M6.5 4.5V3h3v1.5M4.5 4.5l.7 8.5h5.6l.7-8.5" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linejoin="round"/></svg></button>`;
-    return `<article class="item">
-      <div class="main">
-        <div class="name">${esc(t.name)}</div>
-        ${specs(t).length ? `<div class="chips">${specChips(t)}</div>` : ''}
-        ${meta.length ? `<div class="meta">${meta.join('')}</div>` : ''}
-        ${t.note ? `<div class="note">${esc(t.note)}</div>` : ''}
-        <div class="trail">${trail}${lo.open ? ' · <b style="color:var(--warn)">auf der Liste</b>' : ''}</div>
-      </div>
-      <div class="fa">${esc(t.firm || '–')}<small>FA-Nr.</small></div>
-      <div class="acts">${acts}</div>
-    </article>`;
-  }
-
-  function renderOrders() {
-    const vis = state.items.filter(i => !(i.status === 'geliefert' && days(i.deliveredAt) > HIDE_DELIVERED_AFTER));
-    ['bedarf','bestellt','geliefert'].forEach(s => $('n_' + s).textContent = vis.filter(i => i.status === s).length);
-    renderAlarm(); renderPick();
-    let rows = vis.filter(i => i.status === state.tab);
-    if (state.q) rows = rows.filter(i => match(libHay(i) + ' ' + (i.dwg||''), state.q));
-    const key = { bedarf: i => i.createdAt, bestellt: i => i.orderedAt, geliefert: i => -(i.deliveredAt||0) };
-    rows.sort((a,b) => (key[state.tab](a)||0) - (key[state.tab](b)||0));
-    const L = $('list');
-    if (!rows.length) {
-      const msg = state.q ? ['Keine Treffer', 'Suchbegriff ändern.']
-        : state.tab === 'bedarf' ? ['Nichts offen', 'Oben Werkzeug suchen und „+ Bestellen“ tippen.']
-        : state.tab === 'bestellt' ? ['Keine offenen Bestellungen', 'Was bestellt ist, bleibt hier bis zur Lieferung.']
-        : ['Noch nichts geliefert', `Gelieferte Einträge bleiben ${HIDE_DELIVERED_AFTER} Tage sichtbar.`];
-      L.innerHTML = `<div class="empty"><b>${msg[0]}</b>${msg[1]}</div>`;
-    } else L.innerHTML = rows.map(itemHTML).join('');
-  }
-
-  function renderLib() {
-    let rows = state.lib.slice();
-    if (state.libQ) rows = rows.filter(t => match(libHay(t), state.libQ));
-    const L = $('libList');
-    if (!rows.length) {
-      L.innerHTML = state.libQ ? `<div class="empty"><b>Keine Treffer</b>Suchbegriff ändern.</div>`
-        : `<div class="empty"><b>Bibliothek ist leer</b>Oben das erste Werkzeug anlegen: Bezeichnung, Ø, Radius, Firmen-Nr. – nur einmal.</div>`;
-      return;
-    }
-    const byType = {};
-    rows.forEach(t => (byType[t.type || 'Sonstiges'] ||= []).push(t));
-    const order = [...TYPES, ...Object.keys(byType).filter(k => !TYPES.includes(k))];
-    const cmp = (a,b) => (parseFloat(a.d)||0) - (parseFloat(b.d)||0) || a.name.localeCompare(b.name) || (parseFloat(a.r)||0) - (parseFloat(b.r)||0);
-    L.innerHTML = order.filter(k => byType[k]).map(k =>
-      `<div class="group-h">${esc(k)} · ${byType[k].length}</div>` + byType[k].sort(cmp).map(libHTML).join('')
-    ).join('');
-  }
-
   function render() {
-    $('nv_orders').textContent = state.items.filter(i => i.status === 'bedarf').length;
-    $('nv_lib').textContent = state.lib.length;
-    const uniq = k => [...new Set(state.lib.map(t => t[k]).filter(Boolean))].map(v => `<option value="${esc(v)}">`).join('');
-    $('dl_maker').innerHTML = uniq('maker'); $('dl_sup').innerHTML = uniq('sup');
-    if (state.view === 'orders') renderOrders(); else renderLib();
+    const cart = cartItems().length, od = overdue().length;
+    $('nv_orders').textContent = od ? '!' : (cart || ''); $('nv_orders').classList.toggle('alert', !!od);
+    $('nv_lib').textContent = S.lib.length || '';
+    $('nv_arch').textContent = S.orders.length || '';
+    $('dl_maker').innerHTML = [...new Set(S.lib.map(t => t.maker).filter(Boolean))].map(v => `<option value="${esc(v)}">`).join('');
+    if (S.view === 'orders') { renderAlarm(); renderPick(); renderCart(); renderWaiting(); }
+    if (S.view === 'lib') renderLib();
+    if (S.view === 'arch') renderArch();
   }
 
   load();
   resetLibForm();
-  if (!state.lib.length && !state.items.some(i => i.status === 'bedarf')) setView('lib'); else render();
+  if (!S.lib.length && !S.items.length) setView('lib'); else render();
   updateStatus();
-  setInterval(render, 60 * 60 * 1000);
-  document.addEventListener('visibilitychange', () => { if (!document.hidden && !state.pickOpen && !state.editLib) { load(); render(); } });
+  setInterval(() => { if (!S.send && !S.pickOpen) render(); }, 30 * 60 * 1000);
 })();
 </script>
 </body>
