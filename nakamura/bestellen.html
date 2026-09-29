@@ -1,0 +1,562 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#F2F3F5">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Bestellliste">
+<title>Werkzeug-Bestellliste</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<style>
+/* Layout: single column shop-floor list — alarm strip, quick-add card, status segments, item cards with one big next-step button */
+:root{
+  --bg:#F2F3F5; --card:#FFFFFF; --fg:#111214; --muted:#6B6F76; --line:#E1E3E7;
+  --ink:#111214; --on-ink:#FFFFFF; --soft:#ECEDF0;
+  --warn:#B45309; --warn-bg:#FEF3E2; --crit:#B42318; --crit-bg:#FDECEA; --ok:#1E7A46; --ok-bg:#E6F4EC;
+  --shadow:0 1px 2px rgba(17,18,20,.05),0 6px 18px rgba(17,18,20,.06);
+  --f-head:"Space Grotesk",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-body:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --r:14px;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#141518; --card:#1D1F23; --fg:#ECEDEF; --muted:#9A9EA6; --line:#2E3136;
+  --ink:#ECEDEF; --on-ink:#141518; --soft:#26282D;
+  --warn:#F5B35C; --warn-bg:#3A2A12; --crit:#FF8A80; --crit-bg:#3D1C1A; --ok:#6FD39A; --ok-bg:#16301F;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 18px rgba(0,0,0,.25); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#141518; --card:#1D1F23; --fg:#ECEDEF; --muted:#9A9EA6; --line:#2E3136;
+  --ink:#ECEDEF; --on-ink:#141518; --soft:#26282D;
+  --warn:#F5B35C; --warn-bg:#3A2A12; --crit:#FF8A80; --crit-bg:#3D1C1A; --ok:#6FD39A; --ok-bg:#16301F;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 18px rgba(0,0,0,.25); color-scheme:dark}
+*{box-sizing:border-box}
+html{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.45}
+[hidden]{display:none!important}
+.wrap{max-width:760px;margin:0 auto;padding-inline:16px;padding-block:20px 60px;display:flex;flex-direction:column;gap:16px}
+h1,h2{font-family:var(--f-head);margin:0;text-wrap:balance}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+svg{flex:none}
+
+/* header */
+.top{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.brand{font-family:var(--f-mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+h1{font-size:26px;font-weight:700;letter-spacing:-.01em}
+.ruler{height:10px;background:repeating-linear-gradient(90deg,var(--line) 0 1px,transparent 1px 8px),repeating-linear-gradient(90deg,var(--muted) 0 1px,transparent 1px 40px);background-size:auto 5px,auto 10px;background-repeat:repeat-x;background-position:bottom;opacity:.7}
+.who{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
+.who input{width:120px;border:1px solid var(--line);background:var(--card);color:var(--fg);border-radius:10px;padding:6px 10px;font:inherit;font-size:13px}
+
+/* alarm */
+.alarm{border-radius:var(--r);padding:14px 16px;display:flex;gap:12px;align-items:center}
+.alarm.hot{background:var(--ink);color:var(--on-ink)}
+.alarm.calm{background:var(--card);box-shadow:var(--shadow);color:var(--muted)}
+.alarm b{font-family:var(--f-head);font-size:17px;display:block;color:inherit}
+.alarm small{opacity:.8;font-size:13px}
+.alarm .big{font-family:var(--f-mono);font-size:30px;font-weight:600;line-height:1;min-width:1.2em;text-align:center}
+
+/* card + form */
+.card{background:var(--card);border-radius:var(--r);box-shadow:var(--shadow);padding:16px}
+.form{display:flex;flex-direction:column;gap:10px}
+.form h2{font-size:15px;font-weight:600;display:flex;justify-content:space-between;align-items:center}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.grid .full{grid-column:1/-1}
+@media (max-width:480px){.grid{grid-template-columns:1fr}}
+label{display:flex;flex-direction:column;gap:4px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);min-width:0}
+input,select,textarea{font:inherit;font-size:15px;text-transform:none;letter-spacing:0;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;width:100%;min-width:0}
+textarea{resize:vertical;min-height:44px}
+input.mono{font-family:var(--f-mono)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px solid var(--line);background:var(--card);border-radius:10px;padding:10px 14px;font-weight:600;font-size:14px}
+.btn.primary{background:var(--ink);color:var(--on-ink);border-color:var(--ink)}
+.btn.ghost{background:transparent;border-color:transparent;color:var(--muted);padding:8px 10px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.link{background:none;border:0;color:var(--muted);font-size:13px;text-decoration:underline;padding:0}
+
+/* segments */
+.seg{display:grid;grid-template-columns:repeat(3,1fr);background:var(--soft);border-radius:12px;padding:4px;gap:4px}
+.seg button{border:0;background:transparent;border-radius:9px;padding:9px 6px;font-weight:600;font-size:14px;color:var(--muted);display:flex;justify-content:center;gap:6px;align-items:center}
+.seg button[aria-pressed="true"]{background:var(--card);color:var(--fg);box-shadow:var(--shadow)}
+.seg .n{font-family:var(--f-mono);font-size:12px;background:var(--line);border-radius:6px;padding:1px 6px;color:var(--fg)}
+.seg button[aria-pressed="true"] .n{background:var(--ink);color:var(--on-ink)}
+.tools{display:flex;gap:8px;flex-wrap:wrap}
+.tools input{flex:1 1 200px;background:var(--card)}
+
+/* items */
+.list{display:flex;flex-direction:column;gap:10px}
+.item{background:var(--card);border-radius:var(--r);box-shadow:var(--shadow);padding:14px 16px;display:grid;grid-template-columns:1fr auto;gap:10px 12px;border-left:4px solid transparent}
+.item.late{border-left-color:var(--crit)}
+.item.aging{border-left-color:var(--warn)}
+.item .main{min-width:0;display:flex;flex-direction:column;gap:6px}
+.item .name{font-family:var(--f-head);font-weight:600;font-size:17px;overflow-wrap:anywhere}
+.item .qty{font-family:var(--f-mono);font-weight:600;font-size:18px;text-align:right;white-space:nowrap}
+.item .qty small{display:block;font-size:10px;letter-spacing:.1em;color:var(--muted);font-weight:500;text-transform:uppercase}
+.meta{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13px;color:var(--muted)}
+.meta span{display:inline-flex;gap:5px;align-items:baseline;min-width:0;overflow-wrap:anywhere}
+.meta em{font-style:normal;font-size:10px;letter-spacing:.1em;text-transform:uppercase}
+.meta .mono{color:var(--fg);font-size:13px}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{font-size:12px;font-weight:600;border-radius:6px;padding:2px 8px;background:var(--soft);color:var(--fg)}
+.chip.crit{background:var(--crit-bg);color:var(--crit)}
+.chip.warn{background:var(--warn-bg);color:var(--warn)}
+.chip.ok{background:var(--ok-bg);color:var(--ok)}
+.note{font-size:13px;color:var(--fg);background:var(--bg);border-radius:8px;padding:6px 10px;overflow-wrap:anywhere}
+.acts{grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap;align-items:center;border-top:1px solid var(--line);padding-top:10px}
+.acts .grow{flex:1}
+.trail{font-size:12px;color:var(--muted)}
+.empty{text-align:center;color:var(--muted);padding:32px 16px;background:var(--card);border-radius:var(--r);box-shadow:var(--shadow)}
+.empty b{display:block;font-family:var(--f-head);color:var(--fg);font-size:16px;margin-bottom:4px}
+.status{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--muted)}
+.dot.live{background:var(--ok)}
+.dot.off{background:var(--crit)}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--on-ink);padding:10px 16px;border-radius:10px;font-size:14px;font-weight:600;box-shadow:var(--shadow);max-width:calc(100% - 32px)}
+.copybox{width:100%;min-height:140px;font-family:var(--f-mono);font-size:12px}
+@media (prefers-reduced-motion:no-preference){.item{transition:border-color .2s}}
+.backup{display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:space-between;font-size:12px;color:var(--muted)}
+
+/* printed order slip */
+.sheet{display:none}
+@media print{
+  @page{size:A4;margin:16mm}
+  html,body{background:#fff!important;color:#000!important;padding:0}
+  .wrap,.toast{display:none!important}
+  .sheet{display:block;font-family:var(--f-body);color:#000}
+  .sheet .s-top{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #000;padding-bottom:6mm}
+  .sheet .s-brand{font-family:var(--f-mono);font-size:9pt;letter-spacing:.14em;text-transform:uppercase}
+  .sheet .s-date{font-family:var(--f-mono);font-size:10pt}
+  .sheet .s-ruler{height:3mm;margin-top:1mm;background:repeating-linear-gradient(90deg,#000 0 .3mm,transparent .3mm 2mm);background-size:auto 1.5mm;background-repeat:repeat-x;background-position:top}
+  .sheet .s-hello{font-size:14pt;margin:10mm 0 2mm}
+  .sheet h2{font-family:var(--f-head);font-size:34pt;line-height:1.05;margin:0 0 3mm;letter-spacing:-.01em}
+  .sheet .s-until{font-size:14pt;font-weight:600;border:2px solid #000;display:inline-block;padding:2mm 4mm;margin-bottom:6mm}
+  .sheet table{width:100%;border-collapse:collapse;font-size:11pt;margin-top:4mm}
+  .sheet th{text-align:left;font-size:8pt;letter-spacing:.1em;text-transform:uppercase;border-bottom:1.5px solid #000;padding:2mm 2mm 2mm 0}
+  .sheet td{border-bottom:.5px solid #999;padding:3mm 2mm 3mm 0;vertical-align:top}
+  .sheet td.m{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+  .sheet td.box{width:8mm}
+  .sheet td.box span{display:inline-block;width:5mm;height:5mm;border:1.5px solid #000}
+  .sheet .s-sub{font-size:9pt;color:#444;margin-top:1mm}
+  .sheet tr{break-inside:avoid}
+  .sheet .s-thanks{margin-top:14mm;font-size:18pt}
+  .sheet .s-name{font-family:var(--f-head);font-size:22pt;font-weight:600;margin-top:2mm}
+  .sheet .s-foot{margin-top:12mm;font-size:9pt;color:#444}
+}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <div class="brand">SyncOperator · Werkzeug</div>
+      <h1>Bestellliste</h1>
+    </div>
+  </header>
+  <div class="ruler" aria-hidden="true"></div>
+
+  <div id="alarm" class="alarm calm"></div>
+
+  <form id="form" class="card form" autocomplete="off">
+    <h2><span id="formTitle">Was fehlt?</span><button type="button" id="cancelEdit" class="link" hidden>Abbrechen</button></h2>
+    <div class="grid">
+      <label class="full">Bezeichnung
+        <input id="f_name" required placeholder="z. B. Wendeplatte CNMG 120408">
+      </label>
+      <label>Artikelnummer
+        <input id="f_art" class="mono" placeholder="z. B. 5628 312">
+      </label>
+      <label>Menge
+        <input id="f_qty" class="mono" inputmode="decimal" placeholder="10 Stk">
+      </label>
+    </div>
+    <div class="grid" id="more" hidden>
+      <label>Hersteller / Lieferant
+        <input id="f_sup" list="dl_sup" placeholder="z. B. Sandvik, Iscar">
+      </label>
+      <label>Typ
+        <select id="f_type">
+          <option value="">–</option>
+          <option>Wendeplatte</option>
+          <option>Halter</option>
+          <option>Bohrer</option>
+          <option>Fräser</option>
+          <option>Gewinde</option>
+          <option>Spannmittel</option>
+          <option>Sonstiges</option>
+        </select>
+      </label>
+      <label>Zeichnungsnr. / Teil
+        <input id="f_dwg" class="mono" placeholder="z. B. 4711-020 Rev. B">
+      </label>
+      <label>Maschine
+        <input id="f_mach" list="dl_mach" placeholder="z. B. WT-250 RO">
+      </label>
+      <label class="full">Notiz
+        <textarea id="f_note" rows="2" placeholder="Dringend für Auftrag …, Alternative …"></textarea>
+      </label>
+    </div>
+    <datalist id="dl_mach"><option value="WT-250 RO"><option value="WT-250 RU"><option value="WT-250 beide"><option value="Allgemein"></datalist>
+    <datalist id="dl_sup"></datalist>
+    <div class="row">
+      <button type="submit" class="btn primary" id="submitBtn">
+        <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>
+        <span id="submitLabel">Auf die Liste</span>
+      </button>
+      <button type="button" class="btn ghost" id="moreBtn">Mehr Felder</button>
+    </div>
+  </form>
+
+  <div class="seg" role="group" aria-label="Status">
+    <button type="button" data-tab="bedarf" aria-pressed="true">Zu bestellen <span class="n" id="n_bedarf">0</span></button>
+    <button type="button" data-tab="bestellt" aria-pressed="false">Bestellt <span class="n" id="n_bestellt">0</span></button>
+    <button type="button" data-tab="geliefert" aria-pressed="false">Geliefert <span class="n" id="n_geliefert">0</span></button>
+  </div>
+
+  <div class="tools">
+    <input id="q" type="search" placeholder="Suchen: Artikel, Zeichnung, Maschine …">
+    <button type="button" class="btn" id="copyBtn">
+      <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><rect x="5" y="5" width="8" height="9" rx="1.5" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M3 11V3.5A1.5 1.5 0 0 1 4.5 2H10" stroke="currentColor" stroke-width="1.5" fill="none"/></svg>
+      Bestellung kopieren
+    </button>
+    <button type="button" class="btn primary" id="printOpen">
+      <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M4.5 6V2h7v4M4.5 11.5H3a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v3.5a1 1 0 0 1-1 1h-1.5" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linejoin="round"/><rect x="4.5" y="9.5" width="7" height="4.5" stroke="currentColor" stroke-width="1.5" fill="none"/></svg>
+      Zettel drucken
+    </button>
+  </div>
+  <textarea id="copyFallback" class="copybox" readonly hidden></textarea>
+
+  <div id="printPanel" class="card form" hidden>
+    <h2><span>Bestellzettel</span><button type="button" id="printClose" class="link">Schließen</button></h2>
+    <div class="grid">
+      <label>An (optional)
+        <input id="p_to" placeholder="z. B. Thomas">
+      </label>
+      <label>Bitte bis (optional)
+        <input id="p_until" type="date">
+      </label>
+      <label class="full">Dein Name
+        <input id="p_name" placeholder="z. B. Roma">
+      </label>
+    </div>
+    <div class="trail" id="p_info"></div>
+    <div class="row">
+      <button type="button" class="btn primary" id="printGo">Drucken</button>
+    </div>
+  </div>
+
+  <div id="list" class="list"></div>
+
+  <div class="backup">
+    <span class="status"><span class="dot" id="dot"></span><span id="statusText"></span></span>
+    <span class="row">
+      <button type="button" class="btn" id="exportBtn">Backup speichern</button>
+      <button type="button" class="btn" id="importBtn">Backup laden</button>
+      <input type="file" id="importFile" accept="application/json,.json" hidden>
+    </span>
+  </div>
+</div>
+<div id="toast" class="toast" hidden></div>
+<section id="sheet" class="sheet" aria-hidden="true"></section>
+
+<script>
+(() => {
+  const DAY = 86400000;
+  const AGE_WARN_BEDARF = 1, AGE_CRIT_BEDARF = 2;      // Tage bis gelb / rot
+  const AGE_WARN_BESTELLT = 7, AGE_CRIT_BESTELLT = 14;
+  const HIDE_DELIVERED_AFTER = 30;
+
+  const $ = id => document.getElementById(id);
+  const state = { items: [], tab: 'bedarf', q: '', editId: null, confirmDel: null, readOnly: false };
+
+  const KEY = 'syncop_bestellliste_v1';
+  const me = () => '';
+
+  const toast = msg => { const t = $('toast'); t.textContent = msg; t.hidden = false; clearTimeout(toast._t); toast._t = setTimeout(() => t.hidden = true, 2200); };
+  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const days = ts => ts ? Math.floor((Date.now() - ts) / DAY) : 0;
+  const ageText = d => d <= 0 ? 'heute' : d === 1 ? 'seit 1 Tag' : `seit ${d} Tagen`;
+  const fmtDate = ts => ts ? new Date(ts).toLocaleDateString('de-DE', { day:'2-digit', month:'2-digit' }) : '';
+
+  // ---------- form ----------
+  const F = { name:'f_name', art:'f_art', qty:'f_qty', sup:'f_sup', type:'f_type', dwg:'f_dwg', mach:'f_mach', note:'f_note' };
+  const readForm = () => Object.fromEntries(Object.entries(F).map(([k,id]) => [k, $(id).value.trim()]));
+  const fillForm = (o={}) => Object.entries(F).forEach(([k,id]) => $(id).value = o[k] || '');
+  const setMore = open => { $('more').hidden = !open; $('moreBtn').textContent = open ? 'Weniger Felder' : 'Mehr Felder'; };
+  $('moreBtn').onclick = () => setMore($('more').hidden);
+
+  const resetForm = () => { state.editId = null; fillForm(); setMore(false); $('formTitle').textContent = 'Was fehlt?'; $('submitLabel').textContent = 'Auf die Liste'; $('cancelEdit').hidden = true; };
+  $('cancelEdit').onclick = resetForm;
+
+  $('form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const d = readForm();
+    if (!d.name) return;
+    if (state.editId) {
+      await write(state.editId, d, 'Gespeichert');
+      resetForm();
+    } else {
+      const now = Date.now();
+      await create({ ...d, status:'bedarf', createdAt: now, createdBy: me() });
+      resetForm();
+      $('f_name').focus();
+    }
+  });
+
+  // ---------- data (localStorage) ----------
+  let storageOk = true;
+  function load() {
+    try { const raw = localStorage.getItem(KEY); state.items = raw ? JSON.parse(raw) : []; }
+    catch { storageOk = false; state.items = []; }
+    if (!Array.isArray(state.items)) state.items = [];
+  }
+  function save() {
+    try { localStorage.setItem(KEY, JSON.stringify(state.items)); storageOk = true; }
+    catch { storageOk = false; }
+    updateStatus();
+  }
+  function updateStatus() {
+    if (storageOk) setStatus('live', `${state.items.length} Einträge · gespeichert in diesem Browser`);
+    else setStatus('off', 'Speichern nicht möglich (privates Fenster?) – Backup nutzen');
+  }
+  const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  async function create(doc) { state.items.push({ id: newId(), ...doc }); save(); render(); toast('Auf der Liste'); }
+  async function write(id, patch, msg) {
+    const it = state.items.find(x => x.id === id); if (!it) return;
+    Object.assign(it, patch); save(); render(); if (msg) toast(msg);
+  }
+  async function remove(id) { state.items = state.items.filter(x => x.id !== id); save(); render(); toast('Gelöscht'); }
+
+  function setStatus(kind, text) { $('dot').className = 'dot ' + (kind || ''); $('statusText').textContent = text; }
+
+  // ---------- backup ----------
+  $('exportBtn').onclick = () => {
+    const blob = new Blob([JSON.stringify({ app: 'bestellliste', version: 1, exportedAt: new Date().toISOString(), items: state.items }, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `bestellliste-${new Date().toISOString().slice(0,10)}.json`;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    toast('Backup gespeichert');
+  };
+  $('importBtn').onclick = () => $('importFile').click();
+  $('importFile').onchange = async e => {
+    const f = e.target.files[0]; e.target.value = '';
+    if (!f) return;
+    try {
+      const data = JSON.parse(await f.text());
+      const items = Array.isArray(data) ? data : data.items;
+      if (!Array.isArray(items)) throw new Error();
+      const byId = new Map(state.items.map(i => [i.id, i]));
+      let added = 0;
+      items.forEach(i => { if (i && i.id && i.name) { if (!byId.has(i.id)) added++; byId.set(i.id, i); } });
+      state.items = [...byId.values()]; save(); render();
+      toast(`${added} neue Einträge geladen`);
+    } catch { toast('Datei ist kein gültiges Backup'); }
+  };
+
+  // ---------- actions ----------
+  $('list').addEventListener('click', async e => {
+    const b = e.target.closest('button[data-act]'); if (!b) return;
+    const id = b.dataset.id, act = b.dataset.act, now = Date.now();
+    const it = state.items.find(x => x.id === id);
+    if (act === 'order') await write(id, { status:'bestellt', orderedAt: now, orderedBy: me() }, 'Als bestellt markiert');
+    if (act === 'deliver') await write(id, { status:'geliefert', deliveredAt: now, deliveredBy: me() }, 'Als geliefert markiert');
+    if (act === 'back') {
+      const prev = it.status === 'geliefert' ? 'bestellt' : 'bedarf';
+      await write(id, { status: prev }, 'Zurückgesetzt');
+    }
+    if (act === 'again') await create({ name: it.name, art: it.art, qty: it.qty, sup: it.sup, type: it.type, dwg: it.dwg, mach: it.mach, note: '', status:'bedarf', createdAt: now, createdBy: me() });
+    if (act === 'edit') {
+      state.editId = id; fillForm(it); setMore(true);
+      $('formTitle').textContent = 'Eintrag bearbeiten'; $('submitLabel').textContent = 'Speichern'; $('cancelEdit').hidden = false;
+      $('form').scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block:'start' });
+    }
+    if (act === 'del') { state.confirmDel = id; render(); }
+    if (act === 'delno') { state.confirmDel = null; render(); }
+    if (act === 'delyes') { state.confirmDel = null; await remove(id); }
+  });
+
+  document.querySelectorAll('.seg button').forEach(b => b.onclick = () => {
+    state.tab = b.dataset.tab;
+    document.querySelectorAll('.seg button').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+    render();
+  });
+  $('q').addEventListener('input', e => { state.q = e.target.value.trim().toLowerCase(); render(); });
+
+  $('copyBtn').onclick = async () => {
+    const open = state.items.filter(i => i.status === 'bedarf');
+    if (!open.length) { toast('Nichts zu bestellen'); return; }
+    const lines = open.map((i, n) => {
+      const parts = [`${n+1}. ${i.name}`];
+      if (i.art) parts.push(`Art.-Nr. ${i.art}`);
+      if (i.sup) parts.push(i.sup);
+      if (i.qty) parts.push(`Menge ${i.qty}`);
+      if (i.dwg) parts.push(`Zeichnung ${i.dwg}`);
+      if (i.mach) parts.push(i.mach);
+      return parts.join(' · ');
+    });
+    const text = `Bestellung Werkzeug – ${new Date().toLocaleDateString('de-DE')}\n\n${lines.join('\n')}\n`;
+    try { await navigator.clipboard.writeText(text); toast(`${open.length} Positionen kopiert`); $('copyFallback').hidden = true; }
+    catch { const ta = $('copyFallback'); ta.value = text; ta.hidden = false; ta.focus(); ta.select(); toast('Text markiert – jetzt kopieren'); }
+  };
+
+  // ---------- print slip ----------
+  const NAME_KEY = 'syncop_bestellliste_name';
+  const lsGet = k => { try { return localStorage.getItem(k) || '' } catch { return '' } };
+  const lsSet = (k,v) => { try { localStorage.setItem(k, v) } catch {} };
+  $('p_name').value = lsGet(NAME_KEY);
+  $('p_name').addEventListener('input', e => lsSet(NAME_KEY, e.target.value.trim()));
+
+  const openItems = () => state.items.filter(i => i.status === 'bedarf').sort((a,b) => (a.createdAt||0) - (b.createdAt||0));
+  $('printOpen').onclick = () => {
+    const n = openItems().length;
+    if (!n) { toast('Nichts zu bestellen'); return; }
+    $('p_info').textContent = `${n} ${n === 1 ? 'Position' : 'Positionen'} aus „Zu bestellen“ kommen auf den Zettel.`;
+    $('printPanel').hidden = false;
+    $('printPanel').scrollIntoView({ block: 'nearest' });
+  };
+  $('printClose').onclick = () => $('printPanel').hidden = true;
+
+  $('printGo').onclick = () => {
+    const items = openItems();
+    if (!items.length) { toast('Nichts zu bestellen'); return; }
+    const to = $('p_to').value.trim(), name = $('p_name').value.trim(), until = $('p_until').value;
+    const untilTxt = until ? new Date(until + 'T12:00').toLocaleDateString('de-DE', { weekday:'long', day:'2-digit', month:'2-digit', year:'numeric' }) : '';
+    const rows = items.map((i, n) => {
+      const sub = [i.dwg && `Zeichnung ${esc(i.dwg)}`, i.mach && esc(i.mach), i.note && esc(i.note)].filter(Boolean).join(' · ');
+      return `<tr>
+        <td class="box"><span></span></td>
+        <td class="m">${n+1}</td>
+        <td><strong>${esc(i.name)}</strong>${sub ? `<div class="s-sub">${sub}</div>` : ''}</td>
+        <td class="m">${esc(i.art || '')}</td>
+        <td>${esc(i.sup || '')}</td>
+        <td class="m">${esc(i.qty || '')}</td>
+      </tr>`;
+    }).join('');
+    $('sheet').innerHTML = `
+      <div class="s-top"><span class="s-brand">SyncOperator · Werkzeug</span><span class="s-date">${new Date().toLocaleDateString('de-DE')}</span></div>
+      <div class="s-ruler"></div>
+      <div class="s-hello">${to ? `Hallo ${esc(to)},` : 'Hallo,'}</div>
+      <h2>Bitte bestellen:</h2>
+      ${untilTxt ? `<div class="s-until">Bis ${untilTxt}</div>` : ''}
+      <table>
+        <thead><tr><th></th><th>Pos</th><th>Bezeichnung</th><th>Artikel-Nr.</th><th>Lieferant</th><th>Menge</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <div class="s-thanks">Danke!</div>
+      <div class="s-name">${esc(name) || '&nbsp;'}</div>
+      <div class="s-foot">Bestellte Positionen bitte abhaken und mir zurückgeben.</div>`;
+    window.print();
+  };
+
+  // ---------- render ----------
+  function ageClass(it) {
+    if (it.status === 'bedarf') { const d = days(it.createdAt); return d >= AGE_CRIT_BEDARF ? 'late' : d >= AGE_WARN_BEDARF ? 'aging' : ''; }
+    if (it.status === 'bestellt') { const d = days(it.orderedAt); return d >= AGE_CRIT_BESTELLT ? 'late' : d >= AGE_WARN_BESTELLT ? 'aging' : ''; }
+    return '';
+  }
+
+  function renderAlarm() {
+    const open = state.items.filter(i => i.status === 'bedarf');
+    const lateOrders = state.items.filter(i => i.status === 'bestellt' && days(i.orderedAt) >= AGE_CRIT_BESTELLT);
+    const a = $('alarm');
+    if (open.length) {
+      const oldest = Math.max(...open.map(i => days(i.createdAt)));
+      a.className = 'alarm hot';
+      a.innerHTML = `<span class="big">${open.length}</span><div><b>${open.length === 1 ? 'Position wartet' : 'Positionen warten'} auf Bestellung</b><small>Älteste ${ageText(oldest)}${lateOrders.length ? ` · ${lateOrders.length} Bestellung${lateOrders.length>1?'en':''} über ${AGE_CRIT_BESTELLT} Tage offen` : ''}</small></div>`;
+    } else if (lateOrders.length) {
+      a.className = 'alarm hot';
+      a.innerHTML = `<span class="big">${lateOrders.length}</span><div><b>Bestellt, aber nicht geliefert</b><small>Seit über ${AGE_CRIT_BESTELLT} Tagen – beim Lieferanten nachfragen</small></div>`;
+    } else {
+      a.className = 'alarm calm';
+      a.innerHTML = `<svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><circle cx="11" cy="11" r="9" stroke="currentColor" stroke-width="1.6" fill="none"/><path d="M7 11.5l2.6 2.5L15 8.5" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg><div><b style="color:var(--fg)">Alles bestellt</b><small>Fehlt etwas? Oben eintragen, solange du dran denkst.</small></div>`;
+    }
+  }
+
+  function itemHTML(it) {
+    const cls = ageClass(it);
+    const chips = [];
+    if (it.status === 'bedarf') chips.push(`<span class="chip ${cls==='late'?'crit':cls==='aging'?'warn':''}">Eingetragen ${ageText(days(it.createdAt))}</span>`);
+    if (it.status === 'bestellt') chips.push(`<span class="chip ${cls==='late'?'crit':cls==='aging'?'warn':''}">Bestellt ${ageText(days(it.orderedAt))}</span>`);
+    if (it.status === 'geliefert') chips.push(`<span class="chip ok">Geliefert ${fmtDate(it.deliveredAt)}</span>`);
+    if (it.type) chips.push(`<span class="chip">${esc(it.type)}</span>`);
+    if (it.mach) chips.push(`<span class="chip">${esc(it.mach)}</span>`);
+
+    const meta = [];
+    if (it.art) meta.push(`<span><em>Art.</em><span class="mono">${esc(it.art)}</span></span>`);
+    if (it.dwg) meta.push(`<span><em>Zng.</em><span class="mono">${esc(it.dwg)}</span></span>`);
+    if (it.sup) meta.push(`<span><em>Lief.</em>${esc(it.sup)}</span>`);
+
+    const trail = [ `eingetragen ${fmtDate(it.createdAt)}` ];
+    if (it.orderedAt) trail.push(`bestellt ${fmtDate(it.orderedAt)}`);
+    if (it.deliveredAt) trail.push(`erhalten ${fmtDate(it.deliveredAt)}`);
+
+    let acts = '';
+    if (!state.readOnly) {
+      if (state.confirmDel === it.id) {
+        acts = `<span class="grow" style="font-size:14px">Wirklich löschen?</span>
+          <button class="btn" data-act="delno" data-id="${it.id}">Nein</button>
+          <button class="btn primary" data-act="delyes" data-id="${it.id}">Löschen</button>`;
+      } else {
+        const main = it.status === 'bedarf' ? `<button class="btn primary" data-act="order" data-id="${it.id}"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5l3 3L13 4.5" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>Bestellt</button>`
+          : it.status === 'bestellt' ? `<button class="btn primary" data-act="deliver" data-id="${it.id}"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 5.5L8 2.5l6 3v5l-6 3-6-3z M2 5.5l6 3 6-3 M8 8.5v5" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linejoin="round"/></svg>Geliefert</button>`
+          : `<button class="btn" data-act="again" data-id="${it.id}">Nochmal bestellen</button>`;
+        const back = it.status !== 'bedarf' ? `<button class="btn ghost" data-act="back" data-id="${it.id}">Zurück</button>` : '';
+        acts = `${main}<span class="grow"></span>${back}
+          <button class="btn ghost" data-act="edit" data-id="${it.id}" aria-label="Bearbeiten"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 13l1-3.5L10.5 3 13 5.5 6.5 12z" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linejoin="round"/></svg></button>
+          <button class="btn ghost" data-act="del" data-id="${it.id}" aria-label="Löschen"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 4.5h10M6.5 4.5V3h3v1.5M4.5 4.5l.7 8.5h5.6l.7-8.5" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linejoin="round"/></svg></button>`;
+      }
+    }
+
+    return `<article class="item ${cls}">
+      <div class="main">
+        <div class="name">${esc(it.name)}</div>
+        ${meta.length ? `<div class="meta">${meta.join('')}</div>` : ''}
+        <div class="chips">${chips.join('')}</div>
+        ${it.note ? `<div class="note">${esc(it.note)}</div>` : ''}
+        <div class="trail">${trail.join(' · ')}</div>
+      </div>
+      <div class="qty">${esc(it.qty || '–')}<small>Menge</small></div>
+      ${acts ? `<div class="acts">${acts}</div>` : ''}
+    </article>`;
+  }
+
+  function render() {
+    const all = state.items;
+    const vis = all.filter(i => !(i.status === 'geliefert' && days(i.deliveredAt) > HIDE_DELIVERED_AFTER));
+    ['bedarf','bestellt','geliefert'].forEach(s => $('n_' + s).textContent = vis.filter(i => i.status === s).length);
+    renderAlarm();
+
+    let rows = vis.filter(i => i.status === state.tab);
+    if (state.q) rows = rows.filter(i => [i.name,i.art,i.dwg,i.sup,i.mach,i.type,i.note].join(' ').toLowerCase().includes(state.q));
+    const key = { bedarf: i => i.createdAt, bestellt: i => i.orderedAt, geliefert: i => -(i.deliveredAt||0) };
+    rows.sort((a,b) => (key[state.tab](a)||0) - (key[state.tab](b)||0));
+
+    const L = $('list');
+    if (!rows.length) {
+      const msg = state.q ? ['Keine Treffer', 'Suchbegriff ändern.']
+        : state.tab === 'bedarf' ? ['Nichts offen', 'Neue Werkzeuge oben eintragen – Bezeichnung reicht, der Rest geht später.']
+        : state.tab === 'bestellt' ? ['Keine offenen Bestellungen', 'Was bestellt ist, landet hier bis zur Lieferung.']
+        : ['Noch nichts geliefert', `Gelieferte Einträge bleiben ${HIDE_DELIVERED_AFTER} Tage sichtbar.`];
+      L.innerHTML = `<div class="empty"><b>${msg[0]}</b>${msg[1]}</div>`;
+    } else L.innerHTML = rows.map(itemHTML).join('');
+
+    const sups = [...new Set(all.map(i => i.sup).filter(Boolean))];
+    $('dl_sup').innerHTML = sups.map(s => `<option value="${esc(s)}">`).join('');
+    $('submitBtn').disabled = state.readOnly;
+  }
+
+  load();
+  render();
+  updateStatus();
+  setInterval(render, 60 * 60 * 1000); // Alter der Einträge stündlich neu berechnen
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) { load(); render(); } });
+  window.addEventListener('storage', e => { if (e.key === KEY) { load(); render(); updateStatus(); } });
+})();
+</script>
+</body>
+</html>
