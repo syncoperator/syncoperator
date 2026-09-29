@@ -218,34 +218,38 @@ input.mono{font-family:var(--f-mono)}
 
   <div class="tools">
     <input id="q" type="search" placeholder="Suchen: Artikel, Zeichnung, Maschine …">
-    <button type="button" class="btn" id="copyBtn">
-      <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><rect x="5" y="5" width="8" height="9" rx="1.5" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M3 11V3.5A1.5 1.5 0 0 1 4.5 2H10" stroke="currentColor" stroke-width="1.5" fill="none"/></svg>
-      Bestellung kopieren
-    </button>
     <button type="button" class="btn primary" id="printOpen">
-      <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M4.5 6V2h7v4M4.5 11.5H3a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v3.5a1 1 0 0 1-1 1h-1.5" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linejoin="round"/><rect x="4.5" y="9.5" width="7" height="4.5" stroke="currentColor" stroke-width="1.5" fill="none"/></svg>
-      Zettel drucken
+      <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 4.5h12v8H2z M2 4.5l6 4.5 6-4.5" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linejoin="round"/></svg>
+      Bestellung senden
     </button>
   </div>
-  <textarea id="copyFallback" class="copybox" readonly hidden></textarea>
 
   <div id="printPanel" class="card form" hidden>
-    <h2><span>Bestellzettel</span><button type="button" id="printClose" class="link">Schließen</button></h2>
+    <h2><span>Bestellung senden</span><button type="button" id="printClose" class="link">Schließen</button></h2>
     <div class="grid">
-      <label>An (optional)
+      <label>An (Name, optional)
         <input id="p_to" placeholder="z. B. Thomas">
+      </label>
+      <label>E-Mail (optional)
+        <input id="p_mail" type="email" inputmode="email" placeholder="einkauf@firma.de">
       </label>
       <label>Bitte bis (optional)
         <input id="p_until" type="date">
       </label>
-      <label class="full">Dein Name
+      <label>Dein Name
         <input id="p_name" placeholder="z. B. Roma">
       </label>
     </div>
     <div class="trail" id="p_info"></div>
     <div class="row">
-      <button type="button" class="btn primary" id="printGo">Drucken</button>
+      <button type="button" class="btn primary" id="mailGo">
+        <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 4.5h12v8H2z M2 4.5l6 4.5 6-4.5" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linejoin="round"/></svg>
+        Per E-Mail
+      </button>
+      <button type="button" class="btn" id="copyBtn">Text kopieren</button>
+      <button type="button" class="btn" id="printGo">Drucken</button>
     </div>
+    <textarea id="copyFallback" class="copybox" readonly hidden></textarea>
   </div>
 
   <div id="list" class="list"></div>
@@ -388,20 +392,19 @@ input.mono{font-family:var(--f-mono)}
   $('q').addEventListener('input', e => { state.q = e.target.value.trim().toLowerCase(); render(); });
 
   $('copyBtn').onclick = async () => {
-    const open = state.items.filter(i => i.status === 'bedarf');
-    if (!open.length) { toast('Nichts zu bestellen'); return; }
-    const lines = open.map((i, n) => {
-      const parts = [`${n+1}. ${i.name}`];
-      if (i.art) parts.push(`Art.-Nr. ${i.art}`);
-      if (i.sup) parts.push(i.sup);
-      if (i.qty) parts.push(`Menge ${i.qty}`);
-      if (i.dwg) parts.push(`Zeichnung ${i.dwg}`);
-      if (i.mach) parts.push(i.mach);
-      return parts.join(' · ');
-    });
-    const text = `Bestellung Werkzeug – ${new Date().toLocaleDateString('de-DE')}\n\n${lines.join('\n')}\n`;
-    try { await navigator.clipboard.writeText(text); toast(`${open.length} Positionen kopiert`); $('copyFallback').hidden = true; }
+    const items = openItems();
+    if (!items.length) { toast('Nichts zu bestellen'); return; }
+    const text = slipText(items);
+    try { await navigator.clipboard.writeText(text); toast(`${items.length} Positionen kopiert`); $('copyFallback').hidden = true; }
     catch { const ta = $('copyFallback'); ta.value = text; ta.hidden = false; ta.focus(); ta.select(); toast('Text markiert – jetzt kopieren'); }
+  };
+
+  $('mailGo').onclick = () => {
+    const items = openItems();
+    if (!items.length) { toast('Nichts zu bestellen'); return; }
+    const to = $('p_mail').value.trim();
+    const subject = `Bestellung ${new Date().toLocaleDateString('de-DE')}`;
+    location.href = `mailto:${encodeURIComponent(to).replace(/%40/g,'@')}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(slipText(items))}`;
   };
 
   // ---------- print slip ----------
@@ -410,12 +413,41 @@ input.mono{font-family:var(--f-mono)}
   const lsSet = (k,v) => { try { localStorage.setItem(k, v) } catch {} };
   $('p_name').value = lsGet(NAME_KEY);
   $('p_name').addEventListener('input', e => lsSet(NAME_KEY, e.target.value.trim()));
+  [['p_to','syncop_bestellliste_to'],['p_mail','syncop_bestellliste_mail']].forEach(([id,k]) => {
+    $(id).value = lsGet(k);
+    $(id).addEventListener('input', e => lsSet(k, e.target.value.trim()));
+  });
+
+  const untilText = () => { const u = $('p_until').value; return u ? new Date(u + 'T12:00').toLocaleDateString('de-DE', { weekday:'long', day:'2-digit', month:'2-digit', year:'numeric' }) : ''; };
+  function slipText(items) {
+    const to = $('p_to').value.trim(), name = $('p_name').value.trim(), until = untilText();
+    const lines = items.map((i, n) => {
+      const parts = [`${n+1}. ${i.name}`];
+      if (i.art) parts.push(`Art.-Nr. ${i.art}`);
+      if (i.sup) parts.push(i.sup);
+      if (i.qty) parts.push(`Menge: ${i.qty}`);
+      let line = parts.join(' · ');
+      const sub = [i.dwg && `Zeichnung ${i.dwg}`, i.mach, i.note].filter(Boolean).join(' · ');
+      if (sub) line += `\n   ${sub}`;
+      return line;
+    });
+    return [
+      to ? `Hallo ${to},` : 'Hallo,',
+      '',
+      until ? `bitte bis ${until} bestellen:` : 'bitte bestellen:',
+      '',
+      lines.join('\n'),
+      '',
+      'Danke!',
+      name
+    ].join('\n').trim() + '\n';
+  }
 
   const openItems = () => state.items.filter(i => i.status === 'bedarf').sort((a,b) => (a.createdAt||0) - (b.createdAt||0));
   $('printOpen').onclick = () => {
     const n = openItems().length;
     if (!n) { toast('Nichts zu bestellen'); return; }
-    $('p_info').textContent = `${n} ${n === 1 ? 'Position' : 'Positionen'} aus „Zu bestellen“ kommen auf den Zettel.`;
+    $('p_info').textContent = `${n} ${n === 1 ? 'Position' : 'Positionen'} aus „Zu bestellen“ kommen in die Bestellung. Ohne E-Mail-Adresse wählst du den Empfänger im Mailprogramm.`;
     $('printPanel').hidden = false;
     $('printPanel').scrollIntoView({ block: 'nearest' });
   };
@@ -438,7 +470,7 @@ input.mono{font-family:var(--f-mono)}
       </tr>`;
     }).join('');
     $('sheet').innerHTML = `
-      <div class="s-top"><span class="s-brand">SyncOperator · Werkzeug</span><span class="s-date">${new Date().toLocaleDateString('de-DE')}</span></div>
+      <div class="s-top"><span class="s-brand">Bestellung</span><span class="s-date">${new Date().toLocaleDateString('de-DE')}</span></div>
       <div class="s-ruler"></div>
       <div class="s-hello">${to ? `Hallo ${esc(to)},` : 'Hallo,'}</div>
       <h2>Bitte bestellen:</h2>
@@ -448,8 +480,7 @@ input.mono{font-family:var(--f-mono)}
         <tbody>${rows}</tbody>
       </table>
       <div class="s-thanks">Danke!</div>
-      <div class="s-name">${esc(name) || '&nbsp;'}</div>
-      <div class="s-foot">Bestellte Positionen bitte abhaken und mir zurückgeben.</div>`;
+      <div class="s-name">${esc(name) || '&nbsp;'}</div>`;
     window.print();
   };
 
