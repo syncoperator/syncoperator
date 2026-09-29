@@ -394,7 +394,7 @@ input.mono{font-family:var(--f-mono)}
 
   const $ = id => document.getElementById(id);
   const S = { items: [], lib: [], orders: [], customTypes: [], view: 'orders', pickQ: '', pickOpen: null, libQ: '', libType: '', archQ: '',
-              editLib: null, formType: 'WENDEPLATTE', formImg: '', confirmLibDel: null, confirmArchDel: null,
+              editLib: null, editCart: null, formType: 'WENDEPLATTE', formImg: '', confirmLibDel: null, confirmArchDel: null,
               send: null /* {mode:'order'|'reminder', itemIds:[], nr, orderIds:[]} */ };
 
   const U = s => String(s ?? '').trim().toUpperCase();
@@ -595,24 +595,43 @@ input.mono{font-family:var(--f-mono)}
     $('cartN').textContent = items.length ? `· ${items.length}` : '';
     $('sendOpen').hidden = !items.length || (!$('sendbox').hidden && S.send?.mode === 'order');
     if (!items.length) { $('cart').innerHTML = `<div class="empty"><b>Liste ist leer</b>Oben Werkzeug suchen und „+ Bestellen“ tippen.</div>`; return; }
-    $('cart').innerHTML = items.map(i => {
-      const d = days(i.createdAt);
-      const s = [...specs(i).map(x => `<b>${esc(x)}</b>`), i.firm && `<span>ART.-NR. <b>${esc(i.firm)}</b></span>`, i.maker && `<span>${esc(i.maker)}${i.makerArt ? ` <b>${esc(i.makerArt)}</b>` : ''}</span>`].filter(Boolean).join('');
-      return `<div class="r" data-id="${i.id}">
-        ${thumbBtn(imgOf(i))}
-        <div class="body">
-          <div class="t">${esc(i.name)}</div>
-          <div class="s">${s}</div>
-          ${i.note ? `<div class="s">NOTIZ: ${esc(i.note)}</div>` : ''}
-          ${d >= 1 ? `<div class="flag" style="color:${d >= 2 ? 'var(--crit)' : 'var(--warn)'}">Noch nicht gesendet · ${ageText(d)}</div>` : ''}
-          <input class="dwgin" data-f="dwg" value="${esc(i.dwg || '')}" placeholder="Zeichnung / Auftrag (optional)" aria-label="Zeichnung">
+    $('cart').innerHTML = items.map(i => S.editCart === i.id ? cartEditHTML(i) : cartRowHTML(i)).join('');
+  }
+  const CE = [['name','Bezeichnung','full',''],['d','Ø Durchmesser','','mono'],['r','R Radius','','mono'],['grade','Sorte','','mono'],
+              ['firm','Artikelnummer','','mono'],['maker','Hersteller','',''],['makerArt','Herst. Artikel-Nr.','','mono'],
+              ['qty','Menge','','mono'],['dwg','Zeichnung / Auftrag','span2','mono'],['note','Notiz','full','']];
+  function cartRowHTML(i) {
+    const d = days(i.createdAt);
+    const s = [...specs(i).map(x => `<b>${esc(x)}</b>`), i.firm && `<span>ART.-NR. <b>${esc(i.firm)}</b></span>`, i.maker && `<span>${esc(i.maker)}${i.makerArt ? ` <b>${esc(i.makerArt)}</b>` : ''}</span>`].filter(Boolean).join('');
+    return `<div class="r" data-id="${i.id}">
+      ${thumbBtn(imgOf(i))}
+      <div class="body">
+        <div class="t">${esc(i.name)}</div>
+        <div class="s">${s}</div>
+        ${i.note ? `<div class="s">NOTIZ: ${esc(i.note)}</div>` : ''}
+        ${d >= 1 ? `<div class="flag" style="color:${d >= 2 ? 'var(--crit)' : 'var(--warn)'}">Noch nicht gesendet · ${ageText(d)}</div>` : ''}
+        <input class="dwgin" data-f="dwg" value="${esc(i.dwg || '')}" placeholder="Zeichnung / Auftrag (optional)" aria-label="Zeichnung">
+        <div class="row" style="margin-top:4px"><button type="button" class="btn ghost sm" data-cart="edit" style="padding-left:0">
+          <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 13l1-3.5L10.5 3 13 5.5 6.5 12z" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linejoin="round"/></svg>Ändern</button></div>
+      </div>
+      <div class="side">
+        <button type="button" class="x-btn" data-cart="del" aria-label="Entfernen"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>
+        <input class="qtyin" data-f="qty" value="${esc(i.qty || '')}" placeholder="MENGE" aria-label="Menge">
+      </div>
+    </div>`;
+  }
+  function cartEditHTML(i) {
+    const inLib = !!libOf(i);
+    return `<div class="r open" data-id="${i.id}">
+      <div class="body" style="gap:10px">
+        <div class="row">${thumbBtn(imgOf(i))}<div class="t grow">Position ändern</div></div>
+        <div class="grid">
+          ${CE.map(([k,l,cls,mono]) => `<label class="${cls}">${l}<input data-e="${k}" class="${mono}" value="${esc(i[k] || '')}"></label>`).join('')}
         </div>
-        <div class="side">
-          <button type="button" class="x-btn" data-cart="del" aria-label="Entfernen"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>
-          <input class="qtyin" data-f="qty" value="${esc(i.qty || '')}" placeholder="MENGE" aria-label="Menge">
-        </div>
-      </div>`;
-    }).join('');
+        ${inLib ? `<label style="flex-direction:row;align-items:center;gap:8px;font-size:12px;color:var(--fg)"><input type="checkbox" id="ce_lib" style="width:18px;height:18px">Werkzeugdaten auch in der Bibliothek ändern</label>` : ''}
+        <div class="row"><button type="button" class="btn primary" data-cart="save">Speichern</button><button type="button" class="btn ghost" data-cart="cancel">Abbrechen</button></div>
+      </div>
+    </div>`;
   }
   $('cart').addEventListener('change', e => {
     const f = e.target.dataset.f; if (!f) return;
@@ -620,10 +639,24 @@ input.mono{font-family:var(--f-mono)}
     it[f] = U(e.target.value); save(); if (S.send) renderPreview();
   });
   $('cart').addEventListener('click', e => {
-    const b = e.target.closest('[data-cart="del"]'); if (!b) return;
-    const id = b.closest('[data-id]').dataset.id;
-    S.items = S.items.filter(x => x.id !== id); commit('Von der Liste entfernt');
+    const b = e.target.closest('[data-cart]'); if (!b) return;
+    const row = b.closest('[data-id]'), id = row.dataset.id, it = S.items.find(x => x.id === id); if (!it) return;
+    const act = b.dataset.cart;
+    if (act === 'del') { S.items = S.items.filter(x => x.id !== id); if (S.editCart === id) S.editCart = null; commit('Von der Liste entfernt'); }
+    if (act === 'edit') { S.editCart = id; renderCart(); row.isConnected || $('cart').querySelector(`[data-id="${id}"] input`)?.focus(); }
+    if (act === 'cancel') { S.editCart = null; renderCart(); }
+    if (act === 'save') {
+      const vals = {}; row.querySelectorAll('[data-e]').forEach(inp => vals[inp.dataset.e] = U(inp.value));
+      if (!vals.name) { toast('Bezeichnung fehlt'); return; }
+      Object.assign(it, vals);
+      if ($('ce_lib')?.checked) {
+        const t = libOf(it);
+        if (t) { ['name','d','r','grade','firm','maker','makerArt'].forEach(k => t[k] = vals[k]); t.updatedAt = Date.now(); }
+      }
+      S.editCart = null; commit('Position geändert'); if (S.send) renderPreview();
+    }
   });
+  $('cart').addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.dataset.e) { e.preventDefault(); $('cart').querySelector('[data-cart="save"]')?.click(); } });
 
   // ---------- send (order / reminder) ----------
   $('p_name').value = lsGet(K.name); $('p_to').value = lsGet(K.to); $('p_mail').value = lsGet(K.mail);
@@ -933,7 +966,7 @@ input.mono{font-family:var(--f-mono)}
   resetLibForm();
   if (!S.lib.length && !S.items.length) setView('lib'); else render();
   updateStatus();
-  setInterval(() => { if (!S.send && !S.pickOpen) render(); }, 30 * 60 * 1000);
+  setInterval(() => { if (!S.send && !S.pickOpen && !S.editCart) render(); }, 30 * 60 * 1000);
 })();
 </script>
 </body>
