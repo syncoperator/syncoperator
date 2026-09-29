@@ -546,14 +546,18 @@ input.mono{font-family:var(--f-mono)}
   function renderPick() {
     const q = S.pickQ, R = $('pickRes');
     if (!S.lib.length) { R.innerHTML = `<div class="empty"><b>Bibliothek ist leer</b>Mit „+ Neues Werkzeug“ das erste anlegen. Danach reicht hier ein Suchwort.</div>`; return; }
-    let rows = S.lib.slice();
-    if (q) rows = rows.filter(t => match(hay(t), q)).slice(0, 30);
-    else rows = rows.map(t => [t, stats(t.id).last]).filter(x => x[1]).sort((a,b) => b[1]-a[1]).map(x => x[0]).slice(0, 5);
-    if (!rows.length) {
-      R.innerHTML = q ? `<div class="empty"><b>Nichts gefunden</b><button type="button" class="link" data-pick="new">„${esc(q)}“ als neues Werkzeug anlegen</button></div>` : `<div class="hint">Tippe, um in ${S.lib.length} Werkzeugen zu suchen.</div>`;
-      return;
+    let groups;
+    if (q) {
+      const hits = S.lib.filter(t => match(hay(t), q));
+      if (!hits.length) { R.innerHTML = `<div class="empty"><b>Nichts gefunden</b><button type="button" class="link" data-pick="new">„${esc(q)}“ als neues Werkzeug anlegen</button></div>`; return; }
+      groups = [['', hits]];
+    } else {
+      const withLast = S.lib.map(t => [t, stats(t.id).last]);
+      const recent = withLast.filter(x => x[1]).sort((a,b) => b[1]-a[1]).map(x => x[0]).slice(0, 5);
+      const rest = S.lib.filter(t => !recent.includes(t)).sort((a,b) => (a.type||'').localeCompare(b.type||'') || a.name.localeCompare(b.name));
+      groups = [['Zuletzt bestellt', recent], [recent.length ? 'Weitere Werkzeuge' : 'Alle Werkzeuge', rest]].filter(g => g[1].length);
     }
-    R.innerHTML = (q ? '' : `<div class="hint">Zuletzt bestellt:</div>`) + rows.map(t => {
+    const row = t => {
       const st = stats(t.id), open = S.pickOpen === t.id;
       const s = [...specs(t).map(x => `<b>${esc(x)}</b>`), t.firm && `<span>ART.-NR. <b>${esc(t.firm)}</b></span>`, t.maker && `<span>${esc(t.maker)}</span>`].filter(Boolean).join('');
       const flag = st.inCart ? 'Schon auf der Liste' : st.waiting ? 'Schon unterwegs' : '';
@@ -572,7 +576,8 @@ input.mono{font-family:var(--f-mono)}
           </div>` : ''}
         </div>
       </div>`;
-    }).join('');
+    };
+    R.innerHTML = groups.map(([h, list]) => (h ? `<div class="hint" style="margin-top:4px">${h}:</div>` : '') + list.map(row).join('')).join('');
   }
   $('pickQ').addEventListener('input', e => { S.pickQ = U(e.target.value); S.pickOpen = null; renderPick(); });
   $('pickRes').addEventListener('click', e => {
