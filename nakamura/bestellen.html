@@ -113,6 +113,20 @@ input.mono{font-family:var(--f-mono)}
 .thumb.ico{color:var(--fg);padding:6px}
 .thumb.ico:has(img){padding:0}
 .types .ti{width:18px;height:18px;display:inline-block;margin:-2px 0}
+.specbox{display:flex;flex-direction:column;gap:8px;border:1px solid var(--line);border-radius:12px;padding:12px;background:var(--bg)}
+.specs-h{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:11px;letter-spacing:.08em;color:var(--muted);font-weight:600}
+.specs-h .hint{font-weight:400;letter-spacing:.02em}
+.specgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+@media (max-width:520px){.specgrid{grid-template-columns:repeat(2,1fr)}}
+.spec{display:flex;flex-direction:column;gap:4px;min-width:0}
+.spec .sl{display:flex;align-items:center;justify-content:space-between;gap:6px;font-size:11px;letter-spacing:.06em;color:var(--muted)}
+.spec input[type=text]{background:var(--card);padding:9px 10px}
+.innm{display:flex;flex-direction:row;align-items:center;gap:6px;cursor:pointer;font-size:11px;letter-spacing:.05em;color:var(--muted);white-space:nowrap;min-width:0}
+.innm span{overflow:hidden;text-overflow:ellipsis}
+.innm input{width:17px;height:17px;margin:0;accent-color:var(--ink);padding:0;flex:none}
+.innm:has(input:checked){color:var(--fg);font-weight:700}
+.namepreview{font-size:12px;color:var(--muted);overflow-wrap:anywhere}
+.namepreview b{color:var(--fg);font-size:13px}
 .thumb img{width:100%;height:100%;object-fit:cover;display:block}
 .thumb.lg{width:64px;height:64px}
 
@@ -333,15 +347,11 @@ input.mono{font-family:var(--f-mono)}
         <label class="full">Bezeichnung *
           <input id="l_name" required placeholder="z. B. CNMG 120408-PM">
         </label>
-        <label>Ø Durchmesser
-          <input id="l_d" class="mono" inputmode="decimal" placeholder="mm">
-        </label>
-        <label>R Radius
-          <input id="l_r" class="mono" inputmode="decimal" placeholder="mm">
-        </label>
-        <label>Sorte / Beschichtung
-          <input id="l_grade" class="mono" placeholder="z. B. 4325">
-        </label>
+        <div class="full specbox">
+          <div class="specs-h"><span>Maße &amp; Sorte</span><span class="hint">☑ = steht im Namen</span></div>
+          <div id="specFields" class="specgrid"></div>
+          <div class="namepreview"><span>Name:</span> <b id="namePrev" class="mono"></b></div>
+        </div>
         <label>Artikelnummer
           <input id="l_firm" class="mono" placeholder="unsere Nummer">
         </label>
@@ -406,7 +416,7 @@ input.mono{font-family:var(--f-mono)}
   const DAY = 86400000;
   const K = { items:'syncop_bestellliste_v1', lib:'syncop_bestellliste_lib_v1', orders:'syncop_bestellliste_orders_v1', types:'syncop_bestellliste_types_v1',
               name:'syncop_bestellliste_name', to:'syncop_bestellliste_to', mail:'syncop_bestellliste_mail', remind:'syncop_bestellliste_remind' };
-  const BASE_TYPES = ['WENDEPLATTE','STECHPLATTE','KOPIERSTAHL','HALTER','BOHRER','FRÄSER','REIBAHLE','GEWINDE','SENKER','SPANNMITTEL','SONSTIGES'];
+  const BASE_TYPES = ['WENDEPLATTE','STECHPLATTE','GEWINDEPLATTE','KOPIERSTAHL','HALTER','BOHRSTANGE','BOHRER','FRÄSER','REIBAHLE','GEWINDE','SENKER','SPANNMITTEL','SONSTIGES'];
 
   const $ = id => document.getElementById(id);
   const S = { items: [], lib: [], orders: [], customTypes: [], view: 'orders', pickQ: '', pickOpen: null, libQ: '', libType: '', archQ: '',
@@ -424,8 +434,28 @@ input.mono{font-family:var(--f-mono)}
   const lsGet = k => { try { return localStorage.getItem(k) || '' } catch { return '' } };
   const lsSet = (k,v) => { try { localStorage.setItem(k, v); return true } catch { return false } };
   const num = v => String(v).replace('.', ',');
-  const specs = t => [t.d && `Ø${num(t.d)}`, t.r && `R${num(t.r)}`, t.grade].filter(Boolean);
-  const fullName = t => [t.name, ...specs(t)].join(' ');
+  // Maße: key, label, short label, format, default "im Namen"
+  const SPEC = [
+    { k:'d',     label:'Ø Durchm.', ph:'mm',  f:v => `Ø${num(v)}`, def:true },
+    { k:'r',     label:'R Radius',      ph:'mm',  f:v => `R${num(v)}`, def:true },
+    { k:'b',     label:'B Breite',      ph:'mm',  f:v => `B${num(v)}`, def:true },
+    { k:'l',     label:'L Länge',       ph:'mm',  f:v => `L${num(v)}`, def:false },
+    { k:'z',     label:'Z Schneid.',   ph:'Anz.',f:v => `Z${v}`,      def:false },
+    { k:'w',     label:'∠ Winkel',        ph:'°',   f:v => `${num(String(v).replace(/°$/,''))}°`, def:true },
+    { k:'p',     label:'P Steig.',    ph:'mm',  f:v => `P${num(v)}`, def:true },
+    { k:'grade', label:'Sorte',         ph:'4325',f:v => v,            def:true },
+  ];
+  const SPEC_KEYS = SPEC.map(x => x.k);
+  const inName = (t, sp) => (t.inName && sp.k in t.inName) ? !!t.inName[sp.k] : sp.def;
+  const specs = t => SPEC.filter(sp => t[sp.k]).map(sp => sp.f(t[sp.k]));
+  const specsIn = t => SPEC.filter(sp => t[sp.k] && inName(t, sp)).map(sp => sp.f(t[sp.k]));
+  const specsOut = t => SPEC.filter(sp => t[sp.k] && !inName(t, sp)).map(sp => sp.f(t[sp.k]));
+  const fullName = t => [t.name, ...specsIn(t)].join(' ');
+  const specFieldsHTML = (t, pre) => SPEC.map(sp => `<div class="spec">
+      <label class="innm" title="Im Namen anzeigen"><input type="checkbox" data-innm="${sp.k}" ${inName(t, sp) ? 'checked' : ''}><span>${sp.label}</span></label>
+      <input type="text" id="${pre}${sp.k}" data-e="${sp.k}" class="mono" ${sp.k === 'grade' ? '' : 'inputmode="decimal"'} value="${esc(t[sp.k] || '')}" placeholder="${sp.ph}">
+    </div>`).join('');
+  const readInName = root => Object.fromEntries([...root.querySelectorAll('[data-innm]')].map(c => [c.dataset.innm, c.checked]));
   const libOf = it => S.lib.find(t => t.id === it.libId);
   const imgOf = it => (it.img) || (libOf(it)?.img) || '';
   const remindDays = () => parseInt(lsGet(K.remind) || '3', 10);
@@ -443,21 +473,25 @@ input.mono{font-family:var(--f-mono)}
     W: ico(`<path ${tint} d="M24 5L37.5 17.5 40.5 35 24 41 7.5 35 10.5 17.5z"/><path d="M24 5L37.5 17.5 40.5 35 24 41 7.5 35 10.5 17.5z" transform="translate(24 26) scale(0.7) translate(-24 -26)" stroke-opacity=".4" stroke-width="1.3"/>${hole(24,27,3.8)}`),
     S: ico(`<rect ${tint} x="8" y="8" width="32" height="32" rx="2"/><rect x="13" y="13" width="22" height="22" rx="1.5" stroke-opacity=".4" stroke-width="1.3"/>${hole()}`),
     R: ico(`<circle ${tint} cx="24" cy="24" r="17"/><circle cx="24" cy="24" r="12" stroke-opacity=".4" stroke-width="1.3"/>${hole()}`),
-    STECH: ico(`<path fill="currentColor" fill-opacity=".1" d="M4 15h6l2 2.5h6l6 3 6-3h6l2-2.5h6l-1.4 18H38l-2-2.5h-6l-6-3-6 3h-6l-2 2.5H5.4z"/><path d="M4 15v4M44 15v4" stroke-width="2.8"/><path d="M18 17.5l6 3 6-3M18 30.5l6-3 6 3" stroke-opacity=".5"/>`, false),
+    STECH: ico(`<path fill="currentColor" fill-opacity=".1" d="M5 15h7l2 3h20l2-3h7l-1.2 18H36l-2-3H14l-2 3H6.2z"/><path fill="currentColor" fill-opacity=".38" d="M5 15h7l-1.2 18H6.2z" stroke="none"/><path fill="currentColor" fill-opacity=".38" d="M36 15h7l-1.2 18H36z" stroke="none"/><path d="M5 15h7l2 3h20l2-3h7l-1.2 18H36l-2-3H14l-2 3H6.2z"/><path d="M14 21.5h20M14 26.5h20" stroke-opacity=".45"/><path d="M5 15h7M36 15h7" stroke-width="2.8"/>`, false),
     KOPIER: ico(`<path fill="currentColor" fill-opacity=".1" d="M3 16h26l9 7 4 3.5-3 5.5H3z"/><polygon fill="currentColor" fill-opacity=".38" points="47,31 33.4,32.3 21.6,25.6 35.1,24.3"/><circle cx="34.3" cy="28.3" r="1.5"/><path d="M27 16v16" stroke-opacity=".45"/>`, 26),
     HALTER: ico(`<path fill="currentColor" fill-opacity=".1" d="M3 17h28l7 3 5 5-2 9H3z"/><path d="M29 17v17" stroke-opacity=".45"/><polygon fill="currentColor" fill-opacity=".38" points="46,35 30.3,35 27.6,19.6 43.3,19.6"/><circle cx="36.8" cy="27.3" r="2"/>`, 26),
-    BOHR: ico(`<rect fill="currentColor" fill-opacity=".1" x="3" y="18.5" width="15" height="11" rx="1.5"/><path fill="currentColor" fill-opacity=".1" d="M18 18h19l7.5 6-7.5 6H18z"/><path fill="currentColor" fill-opacity=".38" d="M20 18c2.6 2.2 3.6 7 5.2 12h3.2c-1.6-5-2.6-9.8-5.2-12z"/><path fill="currentColor" fill-opacity=".38" d="M27 18c2.6 2.2 3.6 7 5.2 12h3.2c-1.6-5-2.6-9.8-5.2-12z"/><path fill="currentColor" fill-opacity=".38" d="M34 18h3l3.5 2.8c-.6 3-1.6 6-2.8 9.2h-2.5c1-4 .6-8.4-1.2-12z"/><path d="M37 18l1.2 6-1.2 6" stroke-opacity=".6"/>`, true),
+    BOHR: ico(`<rect fill="currentColor" fill-opacity=".1" x="3" y="18.5" width="15" height="11" rx="1.5"/><path fill="currentColor" fill-opacity=".1" d="M18 18h20l7 6-7 6H18z"/><path fill="currentColor" fill-opacity=".5" d="M20 18c2.4 2.4 3.3 7.2 4.6 12h3c-1.3-4.8-2.2-9.6-4.6-12z" stroke="none"/><path fill="currentColor" fill-opacity=".5" d="M26.5 18c2.4 2.4 3.3 7.2 4.6 12h3c-1.3-4.8-2.2-9.6-4.6-12z" stroke="none"/><path fill="currentColor" fill-opacity=".5" d="M33 18c2.4 2.4 3.3 7.2 4.6 12h3c-1.3-4.8-2.2-9.6-4.6-12z" stroke="none"/><path d="M18 18h20l7 6-7 6H18z"/><path fill="currentColor" fill-opacity=".38" d="M38 18l7 6h-7z" stroke="none"/><path d="M38 18v12"/>`, true),
     FRAES: ico(`<rect fill="currentColor" fill-opacity=".1" x="3" y="18.5" width="16" height="11" rx="1.5"/><path d="M8 18.5v2.2h6v-2.2"/><path fill="currentColor" fill-opacity=".1" d="M19 18h25v12H19z"/><path fill="currentColor" fill-opacity=".38" d="M21 18c2 2 3 7 4.4 12h3c-1.4-5-2.4-10-4.4-12z"/><path fill="currentColor" fill-opacity=".38" d="M27.5 18c2 2 3 7 4.4 12h3c-1.4-5-2.4-10-4.4-12z"/><path fill="currentColor" fill-opacity=".38" d="M34 18c2 2 3 7 4.4 12h3c-1.4-5-2.4-10-4.4-12z"/><path d="M44 18l-2 3 2 3-2 3 2 3" stroke-width="2"/>`, true),
     REIB: ico(`<rect fill="currentColor" fill-opacity=".1" x="3" y="19.5" width="12" height="9" rx="1.2"/><path fill="currentColor" fill-opacity=".1" d="M15 21.5h7v5h-7z"/><path fill="currentColor" fill-opacity=".1" d="M22 18.5h19l4 3.5v4l-4 3.5H22z"/><path d="M23.5 21.2h17M23.5 24h18.5M23.5 26.8h17"/>`, true),
     GEWIND: ico(`<rect fill="currentColor" fill-opacity=".1" x="3" y="20" width="14" height="8" rx="1"/><path d="M3 20h4v8H3z" fill="currentColor" fill-opacity=".38"/><path fill="currentColor" fill-opacity=".1" d="M17 18.6 L18.3 17.2 L19.6 18.8 L20.9 17.2 L22.2 18.8 L23.5 17.2 L24.8 18.8 L26.1 17.2 L27.4 18.8 L28.7 17.2 L30 18.8 L31.3 17.2 L32.6 18.8 L33.9 17.2 L35.2 18.8 L36.5 17.2 L37.8 18.8 L38.5 17.6 L39.8 19 L41.1 18.9 L42.4 20.3 L43.7 20.4 L45 21.6 L45 26 L45 26.4 L43.7 27.6 L42.4 27.7 L41.1 29.1 L39.8 29 L38.5 30.4 L37.8 29.2 L36.5 30.8 L35.2 29.2 L33.9 30.8 L32.6 29.2 L31.3 30.8 L30 29.2 L28.7 30.8 L27.4 29.2 L26.1 30.8 L24.8 29.2 L23.5 30.8 L22.2 29.2 L20.9 30.8 L19.6 29.2 L18.3 30.8 L17 29.4Z" stroke-linejoin="miter" stroke-width="1.5"/><path fill="currentColor" fill-opacity=".38" d="M25 19c3 2.3 4.2 6.5 6 10h3c-1.8-3.5-3-7.7-6-10z" stroke="none"/>`, true),
     SENK: ico(`<rect fill="currentColor" fill-opacity=".1" x="5" y="19.5" width="18" height="9" rx="1.2"/><path fill="currentColor" fill-opacity=".1" d="M23 19.5L27 13h1.5L39.5 24 28.5 35H27l-4-6.5z"/><path fill="currentColor" fill-opacity=".38" d="M39.5 24L28.5 15.5v4.8z"/><path fill="currentColor" fill-opacity=".38" d="M39.5 24L28.5 28.5v4.2z"/>`, 24),
     SPANN: ico(`<circle fill="currentColor" fill-opacity=".1" cx="24" cy="24" r="19.5"/><circle cx="24" cy="24" r="3.6"/><g transform="rotate(0 24 24)"><path fill="currentColor" fill-opacity=".38" d="M19.5 5.5h9v5h-1.8v4h-1.7v3.8h-2V14.5h-1.7v-4h-1.8z"/></g><g transform="rotate(120 24 24)"><path fill="currentColor" fill-opacity=".38" d="M19.5 5.5h9v5h-1.8v4h-1.7v3.8h-2V14.5h-1.7v-4h-1.8z"/></g><g transform="rotate(240 24 24)"><path fill="currentColor" fill-opacity=".38" d="M19.5 5.5h9v5h-1.8v4h-1.7v3.8h-2V14.5h-1.7v-4h-1.8z"/></g>`, false),
+    BSTANGE: ico(`<path fill="currentColor" fill-opacity=".1" d="M7 20h29l6-5h3l-1 13H7a4 4 0 0 1 0-8z"/><path d="M14 22.5v3" stroke-opacity=".45"/><polygon fill="currentColor" fill-opacity=".38" points="46,13.5 43.8,23.4 34.4,27.3 36.6,17.4"/><circle cx="40.2" cy="20.4" r="1.4"/>`, 22),
+    GPLATTE: ico(`<path fill="currentColor" fill-opacity=".1" d="M24 9 L39.6 36 L8.4 36Z"/><path fill="currentColor" fill-opacity=".38" d="M24 3.5L26.6 10L21.4 10Z"/><path fill="currentColor" fill-opacity=".38" d="M44.4 38.7L37.4 37.8L40 33.2Z"/><path fill="currentColor" fill-opacity=".38" d="M3.6 38.7L8 33.2L10.6 37.8Z"/><circle cx="24" cy="27" r="4.2"/>`, false),
     ETC: ico(`<path ${tint} d="M24 6l15.6 9v18L24 42 8.4 33V15z"/>${hole(24,24,6)}`),
   };
   function iconKey(t = {}) {
     const ty = String(t.type || '').toUpperCase(), nm = String(t.name || '').toUpperCase().trim();
     const has = k => ty.includes(k);
     if (has('STECH')) return 'STECH';
+    if (has('GEWINDE') && has('PLATTE')) return 'GPLATTE';
+    if (has('STANGE') || has('INNEN')) return 'BSTANGE';
     if (has('KOPIER')) return 'KOPIER';
     if (has('HALTER')) return 'HALTER';
     if (has('GEWIND')) return 'GEWIND';
@@ -467,6 +501,7 @@ input.mono{font-family:var(--f-mono)}
     if (has('BOHR')) return 'BOHR';
     if (has('SPANN') || has('FUTTER')) return 'SPANN';
     if (has('WENDE') || has('PLATTE') || !ty) {
+      if (/^\d{2}\s?[EI]R\b|^\d{2}[EI]R/.test(nm)) return 'GPLATTE';
       const m = nm.match(/^([CDRSTVW])[A-Z]{2,3}[\s-]?[\dT]/);
       if (m) return m[1];
       if (has('WENDE') || has('PLATTE')) return 'C';
@@ -564,12 +599,19 @@ input.mono{font-family:var(--f-mono)}
   };
 
   // ---------- library form ----------
-  const LF = { name:'l_name', d:'l_d', r:'l_r', grade:'l_grade', firm:'l_firm', maker:'l_maker', makerArt:'l_makerArt', qty:'l_qty', mach:'l_mach', note:'l_note' };
-  const readLib = () => ({ ...Object.fromEntries(Object.entries(LF).map(([k,id]) => [k, U($(id).value)])), type: S.formType, img: S.formImg });
+  const LF = { name:'l_name', firm:'l_firm', maker:'l_maker', makerArt:'l_makerArt', qty:'l_qty', mach:'l_mach', note:'l_note' };
+  const readLib = () => ({
+    ...Object.fromEntries(Object.entries(LF).map(([k,id]) => [k, U($(id).value)])),
+    ...Object.fromEntries(SPEC_KEYS.map(k => [k, U($('ls_' + k).value)])),
+    inName: readInName($('specFields')), type: S.formType, img: S.formImg });
   function fillLib(o = {}) {
     Object.entries(LF).forEach(([k,id]) => $(id).value = o[k] || '');
-    S.formType = o.type || BASE_TYPES[0]; setFormImg(o.img || ''); renderTypeChips();
+    $('specFields').innerHTML = specFieldsHTML(o, 'ls_');
+    S.formType = o.type || BASE_TYPES[0]; setFormImg(o.img || ''); renderTypeChips(); updateNamePrev();
   }
+  function updateNamePrev() { const d = readLib(); $('namePrev').textContent = d.name ? fullName(d) : '–'; }
+  $('libForm').addEventListener('input', e => { if (e.target.closest('#specFields') || e.target.id === 'l_name') updateNamePrev(); });
+  $('libForm').addEventListener('change', e => { if (e.target.dataset.innm) updateNamePrev(); });
   function resetLibForm() { S.editLib = null; fillLib(); $('libTitle').textContent = 'Neues Werkzeug'; $('libCancel').hidden = true; $('libSaveOrder').hidden = false; $('newTypeRow').hidden = true; }
   $('libCancel').onclick = resetLibForm;
   $('goNewTool').onclick = () => { resetLibForm(); const q = U($('pickQ').value); setView('lib'); if (q) $('l_name').value = q; $('l_name').focus(); };
@@ -594,7 +636,8 @@ input.mono{font-family:var(--f-mono)}
   function addToCart(t, o) {
     S.items.push({
       id: newId(), libId: t.id,
-      name: t.name, type: t.type, d: t.d, r: t.r, grade: t.grade, firm: t.firm, maker: t.maker, makerArt: t.makerArt, mach: t.mach,
+      name: t.name, type: t.type, ...Object.fromEntries(SPEC_KEYS.map(k => [k, t[k] || ''])), inName: { ...(t.inName || {}) },
+      firm: t.firm, maker: t.maker, makerArt: t.makerArt, mach: t.mach,
       qty: U(o.qty) || t.qty || '', dwg: U(o.dwg), note: U(o.note),
       status: 'bedarf', createdAt: Date.now()
     });
@@ -602,7 +645,7 @@ input.mono{font-family:var(--f-mono)}
   }
   const cartItems = () => S.items.filter(i => i.status === 'bedarf').sort((a,b) => a.createdAt - b.createdAt);
 
-  const hay = t => [t.name, t.type, ...specs(t), t.d, t.r, t.firm, t.maker, t.makerArt, t.mach, t.note, t.dwg].join(' ').toUpperCase().replace(/,/g,'.');
+  const hay = t => [t.name, t.type, ...specs(t), ...SPEC_KEYS.map(k => t[k]), t.firm, t.maker, t.makerArt, t.mach, t.note, t.dwg].join(' ').toUpperCase().replace(/,/g,'.');
   const match = (h, q) => q.split(/\s+/).filter(Boolean).every(w => h.includes(w.replace(/,/g,'.')));
   const stats = libId => { const its = S.items.filter(i => i.libId === libId); return { count: its.length, last: Math.max(0, ...its.map(i => i.createdAt || 0)), inCart: its.some(i => i.status === 'bedarf'), waiting: its.some(i => i.status === 'gesendet') }; };
 
@@ -622,12 +665,12 @@ input.mono{font-family:var(--f-mono)}
     }
     const row = t => {
       const st = stats(t.id), open = S.pickOpen === t.id;
-      const s = [...specs(t).map(x => `<b>${esc(x)}</b>`), t.firm && `<span>ART.-NR. <b>${esc(t.firm)}</b></span>`, t.maker && `<span>${esc(t.maker)}</span>`].filter(Boolean).join('');
+      const s = [...specsOut(t).map(x => `<b>${esc(x)}</b>`), t.firm && `<span>ART.-NR. <b>${esc(t.firm)}</b></span>`, t.maker && `<span>${esc(t.maker)}</span>`].filter(Boolean).join('');
       const flag = st.inCart ? 'Schon auf der Liste' : st.waiting ? 'Schon unterwegs' : '';
       return `<div class="r ${open ? 'open' : ''}">
         ${thumbBtn(t.img, '', t)}
         <div class="body">
-          <div class="t">${esc(t.name)}</div>
+          <div class="t">${esc(fullName(t))}</div>
           <div class="s">${s}</div>
           ${flag ? `<div class="flag">${flag}</div>` : ''}
           ${open ? '' : `<div class="row" style="margin-top:6px"><button type="button" class="btn primary sm" data-pick="toggle" data-id="${t.id}">+ Bestellen</button></div>`}
@@ -666,16 +709,16 @@ input.mono{font-family:var(--f-mono)}
     if (!items.length) { $('cart').innerHTML = `<div class="empty"><b>Liste ist leer</b>Oben Werkzeug suchen und „+ Bestellen“ tippen.</div>`; return; }
     $('cart').innerHTML = items.map(i => S.editCart === i.id ? cartEditHTML(i) : cartRowHTML(i)).join('');
   }
-  const CE = [['name','Bezeichnung','full',''],['d','Ø Durchmesser','','mono'],['r','R Radius','','mono'],['grade','Sorte','','mono'],
+  const CE = [['name','Bezeichnung','full',''],
               ['firm','Artikelnummer','','mono'],['maker','Hersteller','',''],['makerArt','Herst. Artikel-Nr.','','mono'],
               ['qty','Menge','','mono'],['dwg','Zeichnung / Auftrag','span2','mono'],['note','Notiz','full','']];
   function cartRowHTML(i) {
     const d = days(i.createdAt);
-    const s = [...specs(i).map(x => `<b>${esc(x)}</b>`), i.firm && `<span>ART.-NR. <b>${esc(i.firm)}</b></span>`, i.maker && `<span>${esc(i.maker)}${i.makerArt ? ` <b>${esc(i.makerArt)}</b>` : ''}</span>`].filter(Boolean).join('');
+    const s = [...specsOut(i).map(x => `<b>${esc(x)}</b>`), i.firm && `<span>ART.-NR. <b>${esc(i.firm)}</b></span>`, i.maker && `<span>${esc(i.maker)}${i.makerArt ? ` <b>${esc(i.makerArt)}</b>` : ''}</span>`].filter(Boolean).join('');
     return `<div class="r" data-id="${i.id}">
       ${thumbBtn(imgOf(i), '', i)}
       <div class="body">
-        <div class="t">${esc(i.name)}</div>
+        <div class="t">${esc(fullName(i))}</div>
         <div class="s">${s}</div>
         ${i.note ? `<div class="s">NOTIZ: ${esc(i.note)}</div>` : ''}
         ${d >= 1 ? `<div class="flag" style="color:${d >= 2 ? 'var(--crit)' : 'var(--warn)'}">Noch nicht gesendet · ${ageText(d)}</div>` : ''}
@@ -695,7 +738,9 @@ input.mono{font-family:var(--f-mono)}
       <div class="body" style="gap:10px">
         <div class="row">${thumbBtn(imgOf(i), '', i)}<div class="t grow">Position ändern</div></div>
         <div class="grid">
-          ${CE.map(([k,l,cls,mono]) => `<label class="${cls}">${l}<input data-e="${k}" class="${mono}" value="${esc(i[k] || '')}"></label>`).join('')}
+          ${CE.slice(0,1).map(([k,l,cls,mono]) => `<label class="${cls}">${l}<input data-e="${k}" class="${mono}" value="${esc(i[k] || '')}"></label>`).join('')}
+          <div class="full specbox"><div class="specs-h"><span>Maße &amp; Sorte</span><span class="hint">☑ = steht im Namen</span></div><div class="specgrid ce-specs">${specFieldsHTML(i, 'ce_' + i.id + '_')}</div></div>
+          ${CE.slice(1).map(([k,l,cls,mono]) => `<label class="${cls}">${l}<input data-e="${k}" class="${mono}" value="${esc(i[k] || '')}"></label>`).join('')}
         </div>
         ${inLib ? `<label style="flex-direction:row;align-items:center;gap:8px;font-size:12px;color:var(--fg)"><input type="checkbox" id="ce_lib" style="width:18px;height:18px">Werkzeugdaten auch in der Bibliothek ändern</label>` : ''}
         <div class="row"><button type="button" class="btn primary" data-cart="save">Speichern</button><button type="button" class="btn ghost" data-cart="cancel">Abbrechen</button></div>
@@ -716,11 +761,12 @@ input.mono{font-family:var(--f-mono)}
     if (act === 'cancel') { S.editCart = null; renderCart(); }
     if (act === 'save') {
       const vals = {}; row.querySelectorAll('[data-e]').forEach(inp => vals[inp.dataset.e] = U(inp.value));
+      vals.inName = readInName(row.querySelector('.ce-specs'));
       if (!vals.name) { toast('Bezeichnung fehlt'); return; }
       Object.assign(it, vals);
       if ($('ce_lib')?.checked) {
         const t = libOf(it);
-        if (t) { ['name','d','r','grade','firm','maker','makerArt'].forEach(k => t[k] = vals[k]); t.updatedAt = Date.now(); }
+        if (t) { ['name', ...SPEC_KEYS, 'inName', 'firm', 'maker', 'makerArt'].forEach(k => t[k] = vals[k]); t.updatedAt = Date.now(); }
       }
       S.editCart = null; commit('Position geändert'); if (S.send) renderPreview();
     }
@@ -761,6 +807,7 @@ input.mono{font-family:var(--f-mono)}
     const to = U($('p_to').value), name = U($('p_name').value), until = untilText();
     const blocks = items.map(i => {
       const L = [`▸ ${fullName(i)}`, `  MENGE: ${i.qty || '–'}`];
+      if (specsOut(i).length) L.push(`  MASSE: ${specsOut(i).join(' · ')}`);
       if (i.firm) L.push(`  ARTIKELNUMMER: ${i.firm}`);
       if (i.maker || i.makerArt) L.push(`  HERSTELLER: ${[i.maker, i.makerArt && `ART.-NR. ${i.makerArt}`].filter(Boolean).join(' · ')}`);
       if (i.dwg) L.push(`  ZEICHNUNG / AUFTRAG: ${i.dwg}`);
@@ -826,7 +873,7 @@ input.mono{font-family:var(--f-mono)}
     const date = order ? order.sentAt : Date.now();
     const rows = items.map(i => {
       const img = imgOf(i);
-      const sub = [i.dwg && `ZEICHNUNG / AUFTRAG: ${esc(i.dwg)}`, i.note && `NOTIZ: ${esc(i.note)}`, i.mach && esc(i.mach)].filter(Boolean).join(' · ');
+      const sub = [specsOut(i).length && esc(specsOut(i).join(' · ')), i.dwg && `ZEICHNUNG / AUFTRAG: ${esc(i.dwg)}`, i.note && `NOTIZ: ${esc(i.note)}`, i.mach && esc(i.mach)].filter(Boolean).join(' · ');
       return `<tr>
         <td class="box"><span></span></td>
         <td class="img">${img ? `<img src="${img}" alt="">` : `<span class="sico">${toolIcon(i)}</span>`}</td>
@@ -1007,8 +1054,8 @@ window.addEventListener('resize',fit);window.addEventListener('load',fit);fit();
     return `<article class="item">
       ${thumbBtn(t.img, 'lg', t)}
       <div class="main">
-        <div class="name">${esc(t.name)}</div>
-        ${specs(t).length ? `<div class="chips">${specs(t).map(s => `<span class="chip spec">${esc(s)}</span>`).join('')}</div>` : ''}
+        <div class="name">${esc(fullName(t))}</div>
+        ${specsOut(t).length ? `<div class="chips">${specsOut(t).map(s => `<span class="chip spec">${esc(s)}</span>`).join('')}</div>` : ''}
         ${kv ? `<div class="kv">${kv}</div>` : ''}
         ${t.note ? `<div class="note">${esc(t.note)}</div>` : ''}
         <div class="trail">${trail}</div>
