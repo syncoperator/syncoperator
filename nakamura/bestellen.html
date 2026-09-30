@@ -611,6 +611,7 @@ input.mono{font-family:var(--f-mono)}
     const items = cartItems();
     $('cartN').textContent = items.length ? `· ${items.length}` : '';
     $('sendOpen').hidden = !items.length || (!$('sendbox').hidden && S.send?.mode === 'order');
+    if (!items.length && S.send?.mode === 'order') { S.send = null; $('sendbox').hidden = true; }
     if (!items.length) { $('cart').innerHTML = `<div class="empty"><b>Liste ist leer</b>Oben Werkzeug suchen und „+ Bestellen“ tippen.</div>`; return; }
     $('cart').innerHTML = items.map(i => S.editCart === i.id ? cartEditHTML(i) : cartRowHTML(i)).join('');
   }
@@ -699,7 +700,8 @@ input.mono{font-family:var(--f-mono)}
   $('sendOpen').onclick = () => { const ids = cartItems().map(i => i.id); if (!ids.length) return; openSend('order', ids); };
   $('sendClose').onclick = closeSend;
 
-  const sendItems = () => S.send ? S.send.itemIds.map(id => S.items.find(i => i.id === id)).filter(Boolean) : [];
+  // order: always the live list · reminder: the fixed set of overdue positions
+  const sendItems = () => !S.send ? [] : S.send.mode === 'order' ? cartItems() : S.send.itemIds.map(id => S.items.find(i => i.id === id)).filter(Boolean);
   const untilText = () => { const u = $('p_until').value; return u ? U(new Date(u + 'T12:00').toLocaleDateString('de-DE', { weekday:'long', day:'2-digit', month:'2-digit', year:'numeric' })) : ''; };
   const refNrs = items => [...new Set(items.map(i => S.orders.find(o => o.id === i.orderId)).filter(Boolean).map(o => `${o.nr} VOM ${fmtD(o.sentAt)}`))];
 
@@ -735,6 +737,7 @@ input.mono{font-family:var(--f-mono)}
     setTimeout(() => askConfirm('per E-Mail abgeschickt'), 600);
   };
   $('copyBtn').onclick = async () => {
+    if (!sendItems().length) { toast('Liste ist leer'); return; }
     const text = mailText();
     try { await navigator.clipboard.writeText(text); toast('Text kopiert'); $('copyFallback').hidden = true; }
     catch { const ta = $('copyFallback'); ta.value = text; ta.hidden = false; ta.focus(); ta.select(); toast('Text markiert – jetzt kopieren'); }
@@ -744,6 +747,7 @@ input.mono{font-family:var(--f-mono)}
   $('confirmNo').onclick = () => $('confirm').hidden = true;
   $('confirmYes').onclick = () => {
     const now = Date.now(), items = sendItems();
+    if (!items.length) { $('confirm').hidden = true; toast('Liste ist leer – nichts gesendet'); return; }
     if (S.send.mode === 'order') {
       const o = { id: newId(), nr: S.send.nr, sentAt: now, to: U($('p_to').value), mail: $('p_mail').value.trim(), until: $('p_until').value, from: U($('p_name').value), itemIds: items.map(i => i.id), reminders: [] };
       S.orders.push(o);
@@ -762,6 +766,7 @@ input.mono{font-family:var(--f-mono)}
     // order: reprint from archive; otherwise current send
     const rem = !order && S.send?.mode === 'reminder';
     const items = order ? order.itemIds.map(id => S.items.find(i => i.id === id)).filter(Boolean) : sendItems();
+    if (!items.length) { toast('Keine Positionen zum Drucken'); return; }
     const nr = order ? order.nr : S.send?.nr;
     const to = order ? order.to : U($('p_to').value);
     const name = order ? order.from : U($('p_name').value);
