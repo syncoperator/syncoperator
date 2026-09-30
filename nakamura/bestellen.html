@@ -110,6 +110,9 @@ input.mono{font-family:var(--f-mono)}
 .ph{width:72px;height:72px;border-radius:10px;background:var(--bg);border:1px dashed var(--line);display:grid;place-items:center;overflow:hidden;flex:none;color:var(--muted)}
 .ph img{width:100%;height:100%;object-fit:cover;display:block}
 .thumb{width:52px;height:52px;border-radius:9px;background:var(--bg);border:1px solid var(--line);overflow:hidden;flex:none;display:grid;place-items:center;color:var(--muted);padding:0}
+.thumb.ico{color:var(--fg);padding:6px}
+.thumb.ico:has(img){padding:0}
+.types .ti{width:18px;height:18px;display:inline-block;margin:-2px 0}
 .thumb img{width:100%;height:100%;object-fit:cover;display:block}
 .thumb.lg{width:64px;height:64px}
 
@@ -214,6 +217,7 @@ input.mono{font-family:var(--f-mono)}
   .sheet td.box span{display:inline-block;width:6mm;height:6mm;border:1.5px solid #000}
   .sheet td.img{width:20mm}
   .sheet td.img img{width:18mm;height:18mm;object-fit:cover;border-radius:2mm;border:.5px solid #ccc;display:block}
+  .sheet .sico{display:block;width:18mm;height:18mm;padding:2.5mm;border:.5px solid #ccc;border-radius:2mm}
   .sheet .nm{font-weight:700;font-size:11pt}
   .sheet .s-sub{font-size:8.5pt;color:#333;margin-top:1mm}
   .sheet tr{break-inside:avoid}
@@ -402,7 +406,7 @@ input.mono{font-family:var(--f-mono)}
   const DAY = 86400000;
   const K = { items:'syncop_bestellliste_v1', lib:'syncop_bestellliste_lib_v1', orders:'syncop_bestellliste_orders_v1', types:'syncop_bestellliste_types_v1',
               name:'syncop_bestellliste_name', to:'syncop_bestellliste_to', mail:'syncop_bestellliste_mail', remind:'syncop_bestellliste_remind' };
-  const BASE_TYPES = ['WENDEPLATTE','HALTER','BOHRER','FRÄSER','STECHEN','GEWINDE','REIBAHLE','SPANNMITTEL','SONSTIGES'];
+  const BASE_TYPES = ['WENDEPLATTE','STECHPLATTE','KOPIERSTAHL','HALTER','BOHRER','FRÄSER','REIBAHLE','GEWINDE','SENKER','SPANNMITTEL','SONSTIGES'];
 
   const $ = id => document.getElementById(id);
   const S = { items: [], lib: [], orders: [], customTypes: [], view: 'orders', pickQ: '', pickOpen: null, libQ: '', libType: '', archQ: '',
@@ -426,8 +430,53 @@ input.mono{font-family:var(--f-mono)}
   const imgOf = it => (it.img) || (libOf(it)?.img) || '';
   const remindDays = () => parseInt(lsGet(K.remind) || '3', 10);
   const icoTool = '<svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><path d="M4 18l7-7M12.5 4.5a4 4 0 0 0 5 5l-2.5 2.5-5-5z" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linejoin="round" stroke-linecap="round"/></svg>';
-  const thumb = (src, cls='') => `<span class="thumb ${cls}">${src ? `<img src="${src}" alt="">` : icoTool}</span>`;
-  const thumbBtn = (src, cls='') => src ? `<button type="button" class="thumb ${cls}" data-zoom="1"><img src="${src}" alt="Foto"></button>` : thumb('', cls);
+
+  // ---------- tool icons (shown when there is no photo) ----------
+  const ico = (body, diag) => `<svg viewBox="0 0 48 48" width="100%" height="100%" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round">${diag ? `<g transform="translate(24 24) scale(${diag === true ? 1.1 : 1.02}) rotate(-40) translate(-24.5 -${diag === true ? 24 : diag})" stroke-width="1.7">${body}</g>` : body}</svg>`;
+  const tint = 'fill="currentColor" fill-opacity=".1"';
+  const hole = (cx=24, cy=24, r=4) => `<circle cx="${cx}" cy="${cy}" r="${r}"/>`;
+  const ICON = {
+    C: ico(`<path ${tint} d="M6 24L24 9l18 15-18 15z"/><path d="M6 24L24 9l18 15-18 15z" transform="translate(24 24) scale(0.7) translate(-24 -24)" stroke-opacity=".4" stroke-width="1.3"/>${hole()}`),
+    D: ico(`<path ${tint} d="M4 24l20-10 20 10-20 10z"/><path d="M4 24l20-10 20 10-20 10z" transform="translate(24 24) scale(0.7) translate(-24 -24)" stroke-opacity=".4" stroke-width="1.3"/>${hole(24,24,3.5)}`),
+    V: ico(`<path ${tint} d="M3 24l21-7 21 7-21 7z"/><path d="M3 24l21-7 21 7-21 7z" transform="translate(24 24) scale(0.78) translate(-24 -24)" stroke-opacity=".4" stroke-width="1.3"/>${hole(24,24,2.8)}`),
+    T: ico(`<path ${tint} d="M24 6l19 33H5z"/><path d="M24 6l19 33H5z" transform="translate(24 28) scale(0.7) translate(-24 -28)" stroke-opacity=".4" stroke-width="1.3"/>${hole(24,27,3.8)}`),
+    W: ico(`<path ${tint} d="M24 5L37.5 17.5 40.5 35 24 41 7.5 35 10.5 17.5z"/><path d="M24 5L37.5 17.5 40.5 35 24 41 7.5 35 10.5 17.5z" transform="translate(24 26) scale(0.7) translate(-24 -26)" stroke-opacity=".4" stroke-width="1.3"/>${hole(24,27,3.8)}`),
+    S: ico(`<rect ${tint} x="8" y="8" width="32" height="32" rx="2"/><rect x="13" y="13" width="22" height="22" rx="1.5" stroke-opacity=".4" stroke-width="1.3"/>${hole()}`),
+    R: ico(`<circle ${tint} cx="24" cy="24" r="17"/><circle cx="24" cy="24" r="12" stroke-opacity=".4" stroke-width="1.3"/>${hole()}`),
+    STECH: ico(`<path fill="currentColor" fill-opacity=".1" d="M4 15h6l2 2.5h6l6 3 6-3h6l2-2.5h6l-1.4 18H38l-2-2.5h-6l-6-3-6 3h-6l-2 2.5H5.4z"/><path d="M4 15v4M44 15v4" stroke-width="2.8"/><path d="M18 17.5l6 3 6-3M18 30.5l6-3 6 3" stroke-opacity=".5"/>`, false),
+    KOPIER: ico(`<path fill="currentColor" fill-opacity=".1" d="M3 16h26l9 7 4 3.5-3 5.5H3z"/><polygon fill="currentColor" fill-opacity=".38" points="47,31 33.4,32.3 21.6,25.6 35.1,24.3"/><circle cx="34.3" cy="28.3" r="1.5"/><path d="M27 16v16" stroke-opacity=".45"/>`, 26),
+    HALTER: ico(`<path fill="currentColor" fill-opacity=".1" d="M3 17h28l7 3 5 5-2 9H3z"/><path d="M29 17v17" stroke-opacity=".45"/><polygon fill="currentColor" fill-opacity=".38" points="46,35 30.3,35 27.6,19.6 43.3,19.6"/><circle cx="36.8" cy="27.3" r="2"/>`, 26),
+    BOHR: ico(`<rect fill="currentColor" fill-opacity=".1" x="3" y="18.5" width="15" height="11" rx="1.5"/><path fill="currentColor" fill-opacity=".1" d="M18 18h19l7.5 6-7.5 6H18z"/><path fill="currentColor" fill-opacity=".38" d="M20 18c2.6 2.2 3.6 7 5.2 12h3.2c-1.6-5-2.6-9.8-5.2-12z"/><path fill="currentColor" fill-opacity=".38" d="M27 18c2.6 2.2 3.6 7 5.2 12h3.2c-1.6-5-2.6-9.8-5.2-12z"/><path fill="currentColor" fill-opacity=".38" d="M34 18h3l3.5 2.8c-.6 3-1.6 6-2.8 9.2h-2.5c1-4 .6-8.4-1.2-12z"/><path d="M37 18l1.2 6-1.2 6" stroke-opacity=".6"/>`, true),
+    FRAES: ico(`<rect fill="currentColor" fill-opacity=".1" x="3" y="18.5" width="16" height="11" rx="1.5"/><path d="M8 18.5v2.2h6v-2.2"/><path fill="currentColor" fill-opacity=".1" d="M19 18h25v12H19z"/><path fill="currentColor" fill-opacity=".38" d="M21 18c2 2 3 7 4.4 12h3c-1.4-5-2.4-10-4.4-12z"/><path fill="currentColor" fill-opacity=".38" d="M27.5 18c2 2 3 7 4.4 12h3c-1.4-5-2.4-10-4.4-12z"/><path fill="currentColor" fill-opacity=".38" d="M34 18c2 2 3 7 4.4 12h3c-1.4-5-2.4-10-4.4-12z"/><path d="M44 18l-2 3 2 3-2 3 2 3" stroke-width="2"/>`, true),
+    REIB: ico(`<rect fill="currentColor" fill-opacity=".1" x="3" y="19.5" width="12" height="9" rx="1.2"/><path fill="currentColor" fill-opacity=".1" d="M15 21.5h7v5h-7z"/><path fill="currentColor" fill-opacity=".1" d="M22 18.5h19l4 3.5v4l-4 3.5H22z"/><path d="M23.5 21.2h17M23.5 24h18.5M23.5 26.8h17"/>`, true),
+    GEWIND: ico(`<rect fill="currentColor" fill-opacity=".1" x="3" y="20" width="14" height="8" rx="1"/><path d="M3 20h4v8H3z" fill="currentColor" fill-opacity=".38"/><path fill="currentColor" fill-opacity=".1" d="M17 18.6 L18.3 17.2 L19.6 18.8 L20.9 17.2 L22.2 18.8 L23.5 17.2 L24.8 18.8 L26.1 17.2 L27.4 18.8 L28.7 17.2 L30 18.8 L31.3 17.2 L32.6 18.8 L33.9 17.2 L35.2 18.8 L36.5 17.2 L37.8 18.8 L38.5 17.6 L39.8 19 L41.1 18.9 L42.4 20.3 L43.7 20.4 L45 21.6 L45 26 L45 26.4 L43.7 27.6 L42.4 27.7 L41.1 29.1 L39.8 29 L38.5 30.4 L37.8 29.2 L36.5 30.8 L35.2 29.2 L33.9 30.8 L32.6 29.2 L31.3 30.8 L30 29.2 L28.7 30.8 L27.4 29.2 L26.1 30.8 L24.8 29.2 L23.5 30.8 L22.2 29.2 L20.9 30.8 L19.6 29.2 L18.3 30.8 L17 29.4Z" stroke-linejoin="miter" stroke-width="1.5"/><path fill="currentColor" fill-opacity=".38" d="M25 19c3 2.3 4.2 6.5 6 10h3c-1.8-3.5-3-7.7-6-10z" stroke="none"/>`, true),
+    SENK: ico(`<rect fill="currentColor" fill-opacity=".1" x="5" y="19.5" width="18" height="9" rx="1.2"/><path fill="currentColor" fill-opacity=".1" d="M23 19.5L27 13h1.5L39.5 24 28.5 35H27l-4-6.5z"/><path fill="currentColor" fill-opacity=".38" d="M39.5 24L28.5 15.5v4.8z"/><path fill="currentColor" fill-opacity=".38" d="M39.5 24L28.5 28.5v4.2z"/>`, 24),
+    SPANN: ico(`<circle fill="currentColor" fill-opacity=".1" cx="24" cy="24" r="19.5"/><circle cx="24" cy="24" r="3.6"/><g transform="rotate(0 24 24)"><path fill="currentColor" fill-opacity=".38" d="M19.5 5.5h9v5h-1.8v4h-1.7v3.8h-2V14.5h-1.7v-4h-1.8z"/></g><g transform="rotate(120 24 24)"><path fill="currentColor" fill-opacity=".38" d="M19.5 5.5h9v5h-1.8v4h-1.7v3.8h-2V14.5h-1.7v-4h-1.8z"/></g><g transform="rotate(240 24 24)"><path fill="currentColor" fill-opacity=".38" d="M19.5 5.5h9v5h-1.8v4h-1.7v3.8h-2V14.5h-1.7v-4h-1.8z"/></g>`, false),
+    ETC: ico(`<path ${tint} d="M24 6l15.6 9v18L24 42 8.4 33V15z"/>${hole(24,24,6)}`),
+  };
+  function iconKey(t = {}) {
+    const ty = String(t.type || '').toUpperCase(), nm = String(t.name || '').toUpperCase().trim();
+    const has = k => ty.includes(k);
+    if (has('STECH')) return 'STECH';
+    if (has('KOPIER')) return 'KOPIER';
+    if (has('HALTER')) return 'HALTER';
+    if (has('GEWIND')) return 'GEWIND';
+    if (has('REIB')) return 'REIB';
+    if (has('SENK')) return 'SENK';
+    if (has('FRÄS') || has('FRAES')) return 'FRAES';
+    if (has('BOHR')) return 'BOHR';
+    if (has('SPANN') || has('FUTTER')) return 'SPANN';
+    if (has('WENDE') || has('PLATTE') || !ty) {
+      const m = nm.match(/^([CDRSTVW])[A-Z]{2,3}[\s-]?[\dT]/);
+      if (m) return m[1];
+      if (has('WENDE') || has('PLATTE')) return 'C';
+    }
+    return 'ETC';
+  }
+  const toolIcon = t => ICON[iconKey(t)];
+  const typeIcon = ty => ICON[iconKey({ type: ty })];
+  const thumb = (src, cls='', t) => `<span class="thumb ico ${cls}">${src ? `<img src="${src}" alt="">` : (t ? toolIcon(t) : icoTool)}</span>`;
+  const thumbBtn = (src, cls='', t) => src ? `<button type="button" class="thumb ${cls}" data-zoom="1"><img src="${src}" alt="Foto"></button>` : thumb('', cls, t);
 
   // ---------- storage ----------
   let storageOk = true;
@@ -436,8 +485,10 @@ input.mono{font-family:var(--f-mono)}
       if (i.art && !i.makerArt) { i.makerArt = i.art; delete i.art; }
       if (i.status === 'bestellt') { i.status = 'gesendet'; i.sentAt = i.sentAt || i.orderedAt; }
       if (i.type) i.type = U(i.type);
+      if (i.type === 'STECHEN') i.type = 'STECHPLATTE';
     });
-    S.lib.forEach(t => { if (t.type) t.type = U(t.type); });
+    S.lib.forEach(t => { if (t.type) t.type = U(t.type); if (t.type === 'STECHEN') t.type = 'STECHPLATTE'; });
+    S.customTypes = S.customTypes.filter(t => t !== 'STECHEN');
   }
   function load() {
     try {
@@ -473,7 +524,7 @@ input.mono{font-family:var(--f-mono)}
   function renderTypeChips() {
     $('typeChips').innerHTML = allTypes().map(t => {
       const custom = !BASE_TYPES.includes(t) && !S.lib.some(x => x.type === t);
-      return `<button type="button" data-type="${esc(t)}" aria-pressed="${t === S.formType}">${esc(t)}${custom ? ` <span class="x" data-deltype="${esc(t)}" aria-label="Typ entfernen">×</span>` : ''}</button>`;
+      return `<button type="button" data-type="${esc(t)}" aria-pressed="${t === S.formType}"><span class="ti">${typeIcon(t)}</span>${esc(t)}${custom ? ` <span class="x" data-deltype="${esc(t)}" aria-label="Typ entfernen">×</span>` : ''}</button>`;
     }).join('') + `<button type="button" class="add" data-type="__new">+ Eigener Typ</button>`;
   }
   $('typeChips').addEventListener('click', e => {
@@ -574,7 +625,7 @@ input.mono{font-family:var(--f-mono)}
       const s = [...specs(t).map(x => `<b>${esc(x)}</b>`), t.firm && `<span>ART.-NR. <b>${esc(t.firm)}</b></span>`, t.maker && `<span>${esc(t.maker)}</span>`].filter(Boolean).join('');
       const flag = st.inCart ? 'Schon auf der Liste' : st.waiting ? 'Schon unterwegs' : '';
       return `<div class="r ${open ? 'open' : ''}">
-        ${thumbBtn(t.img)}
+        ${thumbBtn(t.img, '', t)}
         <div class="body">
           <div class="t">${esc(t.name)}</div>
           <div class="s">${s}</div>
@@ -622,7 +673,7 @@ input.mono{font-family:var(--f-mono)}
     const d = days(i.createdAt);
     const s = [...specs(i).map(x => `<b>${esc(x)}</b>`), i.firm && `<span>ART.-NR. <b>${esc(i.firm)}</b></span>`, i.maker && `<span>${esc(i.maker)}${i.makerArt ? ` <b>${esc(i.makerArt)}</b>` : ''}</span>`].filter(Boolean).join('');
     return `<div class="r" data-id="${i.id}">
-      ${thumbBtn(imgOf(i))}
+      ${thumbBtn(imgOf(i), '', i)}
       <div class="body">
         <div class="t">${esc(i.name)}</div>
         <div class="s">${s}</div>
@@ -642,7 +693,7 @@ input.mono{font-family:var(--f-mono)}
     const inLib = !!libOf(i);
     return `<div class="r open" data-id="${i.id}">
       <div class="body" style="gap:10px">
-        <div class="row">${thumbBtn(imgOf(i))}<div class="t grow">Position ändern</div></div>
+        <div class="row">${thumbBtn(imgOf(i), '', i)}<div class="t grow">Position ändern</div></div>
         <div class="grid">
           ${CE.map(([k,l,cls,mono]) => `<label class="${cls}">${l}<input data-e="${k}" class="${mono}" value="${esc(i[k] || '')}"></label>`).join('')}
         </div>
@@ -778,7 +829,7 @@ input.mono{font-family:var(--f-mono)}
       const sub = [i.dwg && `ZEICHNUNG / AUFTRAG: ${esc(i.dwg)}`, i.note && `NOTIZ: ${esc(i.note)}`, i.mach && esc(i.mach)].filter(Boolean).join(' · ');
       return `<tr>
         <td class="box"><span></span></td>
-        <td class="img">${img ? `<img src="${img}" alt="">` : ''}</td>
+        <td class="img">${img ? `<img src="${img}" alt="">` : `<span class="sico">${toolIcon(i)}</span>`}</td>
         <td><div class="nm">${esc(fullName(i))}</div>${sub ? `<div class="s-sub">${sub}</div>` : ''}</td>
         <td class="m">${esc(i.firm || '')}</td>
         <td>${esc(i.maker || '')}${i.makerArt ? `<div class="s-sub mono">${esc(i.makerArt)}</div>` : ''}</td>
@@ -840,6 +891,7 @@ td.box{width:9mm}
 td.box span{display:inline-block;width:6mm;height:6mm;border:1.5px solid #000}
 td.img{width:20mm}
 td.img img{width:18mm;height:18mm;object-fit:cover;border-radius:2mm;border:.5px solid #ccc;display:block}
+.sico{display:block;width:18mm;height:18mm;padding:2.5mm;border:.5px solid #ccc;border-radius:2mm;color:#000}
 .nm{font-weight:700;font-size:11pt}
 .s-sub{font-size:8.5pt;color:#333;margin-top:1mm}
 tr{break-inside:avoid;page-break-inside:avoid}
@@ -877,7 +929,7 @@ window.addEventListener('resize',fit);window.addEventListener('load',fit);fit();
     const rem = (o.reminders || []).length ? `<span class="chip">${o.reminders.length}× erinnert</span>` : '';
     const list = its.map(i => `<div class="oi ${i.status === 'geliefert' ? 'got' : ''}">
         <button type="button" class="chk ${i.status === 'geliefert' ? 'on' : ''}" data-got="${i.id}" aria-label="Erhalten">${i.status === 'geliefert' ? '<svg width="14" height="14" viewBox="0 0 16 16"><path d="M3 8.5l3 3L13 4.5" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>' : ''}</button>
-        ${thumbBtn(imgOf(i))}
+        ${thumbBtn(imgOf(i), '', i)}
         <div class="body"><div class="t">${esc(fullName(i))}</div><div class="s">${[i.firm && `ART.-NR. ${esc(i.firm)}`, i.dwg && `ZNG. ${esc(i.dwg)}`, i.status === 'geliefert' && `ERHALTEN ${fmtDs(i.deliveredAt)}`].filter(Boolean).join(' · ')}</div></div>
         <span class="q">${esc(i.qty || '')}</span>
       </div>`).join('');
@@ -953,7 +1005,7 @@ window.addEventListener('resize',fit);window.addEventListener('load',fit);fit();
          <button class="btn ghost sm" data-lact="edit" data-id="${t.id}">Ändern</button>
          <button class="btn ghost sm" data-lact="del" data-id="${t.id}" aria-label="Löschen"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 4.5h10M6.5 4.5V3h3v1.5M4.5 4.5l.7 8.5h5.6l.7-8.5" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linejoin="round"/></svg></button>`;
     return `<article class="item">
-      ${thumbBtn(t.img, 'lg')}
+      ${thumbBtn(t.img, 'lg', t)}
       <div class="main">
         <div class="name">${esc(t.name)}</div>
         ${specs(t).length ? `<div class="chips">${specs(t).map(s => `<span class="chip spec">${esc(s)}</span>`).join('')}</div>` : ''}
