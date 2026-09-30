@@ -210,7 +210,7 @@ button.card:active{transform:scale(.99)}
 .tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}
 .tiles div{background:rgba(255,255,255,.75);border-radius:12px;padding:10px 12px;min-width:0}
 .tiles span{font-size:11px;font-weight:500;color:var(--mut)}
-.tiles b{display:block;font-family:var(--mono);font-size:15px;margin-top:3px;white-space:nowrap;font-weight:600}
+.tiles b{display:block;font-family:var(--mono);font-size:15px;margin-top:3px;white-space:nowrap;font-weight:600;overflow:hidden;text-overflow:ellipsis}
 .ksub{font-size:13px;color:var(--mut);margin-top:2px;font-family:var(--mono)}
 .sbar{display:flex;gap:2px;height:14px;border-radius:7px;overflow:hidden;margin:14px 0 6px;background:var(--soft)}
 .sbar i{display:block;min-width:4px;transition:flex-grow .35s;cursor:pointer}
@@ -232,6 +232,35 @@ button.card:active{transform:scale(.99)}
 .from svg{width:16px;height:16px;color:var(--accent);flex:none}
 .from span{flex:1}
 .from em{font-style:normal;font-family:var(--mono);color:var(--mut);font-weight:400}
+
+/* Sonderzahlungen */
+.ktab{margin-top:0}
+.bx{padding:14px 0;border-top:1px solid var(--line)}
+.bx:first-child{border-top:0;padding-top:10px}
+.bxh{display:flex;align-items:center;gap:8px}
+.bxh b{flex:1;font-size:15px;font-weight:600;min-width:0}
+.bxh select{font:inherit;font-size:13px;font-weight:500;color:var(--ink2);background:var(--soft);border:0;border-radius:9px;padding:7px 10px;box-shadow:inset 0 0 0 1px var(--line);-webkit-appearance:none;appearance:none}
+.bxh .x{width:34px;height:34px;border-radius:9px;display:grid;place-items:center;color:var(--mut)}
+.bxh .x svg{width:16px;height:16px}
+.bxr{display:flex;align-items:flex-end;gap:12px;margin-top:12px}
+.bxbr{flex:none}
+.bxbr span{display:block;font-size:11px;color:var(--mut);font-weight:500}
+.bxbr b{font-family:var(--mono);font-size:15px;font-weight:600}
+.seg.sm{margin-top:10px}
+.seg.sm button{height:34px;font-size:12px}
+.bgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:10px}
+.bgrid .f input{height:44px;font-size:16px;text-align:right;padding:0 12px}
+.bgrid .f.span2{grid-column:span 2}
+.bgrid .ro{height:44px;display:flex;align-items:center;justify-content:flex-end;padding:0 12px;border-radius:12px;box-shadow:inset 0 0 0 1px var(--line);font-family:var(--mono);font-size:14px;color:var(--mut);white-space:nowrap;overflow:hidden}
+.bformel{font-family:var(--mono);font-size:12px;color:var(--mut);margin-top:8px}
+.bxnet{flex:1;text-align:right;min-width:0}
+.bxnet b{font-family:var(--mono);font-size:18px;font-weight:600;color:var(--green-t);display:block}
+.bxnet span{font-family:var(--mono);font-size:11px;color:var(--mut)}
+.bxd{font-size:12px;color:var(--mut);margin-top:8px;font-family:var(--mono);line-height:1.6}
+.bxd i{font-style:normal;color:var(--ink2)}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;padding-top:14px;border-top:1px solid var(--line)}
+.chip{background:var(--soft2);border-radius:10px;padding:10px 12px;font-size:13px;font-weight:600;color:var(--ink2)}
+.chip:active{background:#E6E4DE}
 
 /* Navigation */
 .tabs .in{display:grid;grid-template-columns:repeat(4,1fr);max-width:520px;margin:0 auto}
@@ -411,6 +440,9 @@ dialog::backdrop{background:rgba(30,32,36,.32)}
 
 <!-- ================= LOHNRECHNER ================= -->
 <section class="view" id="v-calc" hidden>
+  <div class="seg ktab" id="kTab"><button data-v="month">Monatslohn</button><button data-v="bonus">Sonderzahlungen</button></div>
+
+  <div class="view" id="kMonthView">
   <div class="card hero grad g-teal">
     <div class="eyebrow"><span id="kLbl">Netto pro Monat</span><span class="r" id="kMode"></span></div>
     <div class="bignum" id="kNetto"></div>
@@ -452,6 +484,52 @@ dialog::backdrop{background:rgba(30,32,36,.32)}
       <label class="lb" for="cMain">Grundgehalt<small>optional · gleicher Arbeitgeber</small></label><div class="num"><input id="cMain" inputmode="decimal" autocomplete="off" placeholder="0"><i>€</i></div></div>
   </div>
   <p class="hint" id="cMainHint">Werden die Einsätze mit deinem normalen Gehalt abgerechnet? Dann Grundgehalt eintragen – der Rechner zeigt genau, was <b>von den Einsätzen</b> netto übrig bleibt.</p>
+  </div>
+
+  <div class="view" id="kBonusView" hidden>
+    <div class="card hero grad g-teal">
+      <div class="eyebrow"><span>Netto aus Sonderzahlungen</span><span class="r" id="bMode"></span></div>
+      <div class="bignum" id="bNet"></div>
+      <div class="ksub" id="bSub"></div>
+      <div class="tiles">
+        <div><span>Brutto</span><b id="bBr"></b></div>
+        <div><span>Steuern</span><b id="bTax"></b></div>
+        <div><span>Sozial</span><b id="bSoz"></b></div>
+      </div>
+    </div>
+    <div class="notice" id="bNote" hidden>
+      <span class="ico i-amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 8v5M12 16h.01"/><circle cx="12" cy="12" r="9"/></svg></span>
+      <span class="tx"><b id="bNoteT"></b><span id="bNoteX"></span></span>
+    </div>
+    <div class="card">
+      <div class="eyebrow">Deine Sonderzahlungen <span class="r mono" id="bYearLbl"></span></div>
+      <div id="bList"></div>
+      <div class="chips" id="bAdd">
+        <button class="chip" data-t="urlaub">+ Urlaubsgeld</button>
+        <button class="chip" data-t="weihnacht">+ Weihnachtsgeld</button>
+        <button class="chip" data-t="m13">+ 13. Gehalt</button>
+        <button class="chip" data-t="praemie">+ Prämie</button>
+      </div>
+    </div>
+    <div class="sec-title">Basis <em>laufender Lohn</em></div>
+    <div class="group">
+      <div class="fld"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="7" width="18" height="13" rx="2.5"/><path d="M8 7V5h8v2"/></svg></span>
+        <label class="lb" for="bBasis">Monatslohn brutto<small id="bBasisHint"></small></label><div class="num"><input id="bBasis" inputmode="decimal" autocomplete="off"><i>€</i></div></div>
+      <div class="fld"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="4" y="5" width="16" height="15" rx="2.5"/><path d="M4 10h16M9 3v4M15 3v4M12 14h.01"/></svg></span>
+        <label class="lb" for="bDaily">Tagessatz<small id="bDailyHint"></small></label><div class="num"><input id="bDaily" inputmode="decimal" autocomplete="off"><i>€</i></div></div>
+    </div>
+    <div class="card">
+      <div class="eyebrow">Jahr gesamt <span class="r">laufend + Sonderzahlungen</span></div>
+      <div class="calc" style="margin-top:6px">
+        <div class="ln"><span>Brutto im Jahr</span><b id="yBr"></b></div>
+        <div class="ln"><span>Laufend netto</span><b id="yReg"></b></div>
+        <div class="ln"><span>Sonderzahlungen netto</span><b id="yBon"></b></div>
+        <div class="ln"><span>Ø Netto pro Monat</span><b id="yAvg"></b></div>
+        <div class="ln total"><span>Netto im Jahr</span><b id="yNet"></b></div>
+      </div>
+    </div>
+    <p class="hint">Urlaubs- und Weihnachtsgeld sind „sonstige Bezüge“: Die Lohnsteuer wird über das Jahr gerechnet (Jahressteuer mit minus ohne Zahlung, § 39b Abs. 3 EStG). Deshalb bleibt davon oft weniger übrig als vom normalen Lohn. Sozialabgaben fallen bis zur anteiligen Jahres-Beitragsbemessungsgrenze an. Ohne Märzklausel und persönliche Freibeträge.</p>
+  </div>
 
   <div class="sec-title">Steuer</div>
   <div class="group">
@@ -551,7 +629,7 @@ dialog::backdrop{background:rgba(30,32,36,.32)}
       <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 6 6 6-6 6"/></svg></button>
   </div>
   <p class="hint">Alle Daten liegen nur in diesem Browser auf diesem Gerät. Beim Löschen der Browserdaten sind sie weg – speichere das Backup deshalb z. B. in iCloud Drive oder Google Drive.</p>
-  <div class="foot">CITITOOL SYNCOPERATOR · EINSATZ v3.3</div>
+  <div class="foot">CITITOOL SYNCOPERATOR · EINSATZ v3.5</div>
 </section>
 
 </main></div>
@@ -608,7 +686,9 @@ dialog::backdrop{background:rgba(30,32,36,.32)}
 /* ================= Daten ================= */
 const KEY='syncop_einsatz_v1';               // gleicher Schlüssel wie v1/v2 → alte Daten bleiben
 const DEF={pausch:50,rate:20,tax:20,soz:20,round:15,pauschTax:1,vat:false};
-const CDEF={hours:10,count:4,main:0,stkl:1,zkf:0,kist:false,land:'NW',kvz:2.9,kids:0,over23:true,mode:'normal',rvFree:false,init:false};
+const CDEF={hours:10,count:4,main:0,stkl:1,zkf:0,kist:false,land:'NW',kvz:2.9,kids:0,over23:true,mode:'normal',rvFree:false,init:false,tab:'month',basis:0,daily:0,bonus:[]};
+function normCalc(x){x=x||{};return{...CDEF,...x,bonus:Array.isArray(x.bonus)?x.bonus.filter(b=>b&&typeof b==='object').map(normBonus):[]}}
+function normBonus(b){const n=(v,d)=>isFinite(+v)&&v!==''&&v!=null?+v:d;return{id:b.id||Date.now(),t:b.t||'praemie',mode:['fix','pct','days'].includes(b.mode)?b.mode:'fix',amount:n(b.amount,0),pct:n(b.pct,50),months:Math.min(12,Math.max(0,n(b.months,12))),days:n(b.days,30),month:Math.min(12,Math.max(1,n(b.month,1)))}}
 const RK=['pausch','rate','tax','soz','round','pauschTax'];
 const DAY=864e5;
 
@@ -643,7 +723,7 @@ function load(){
     settings:{...DEF,...(d.settings||{})},
     entries:(d.entries||[]).filter(validEntry).map(normEntry),
     running:d.running&&isFinite(+d.running.start)?{start:+d.running.start,note:d.running.note||'',s:normS(d.running.s)}:null,
-    calc:{...CDEF,...(d.calc||{})},
+    calc:normCalc(d.calc),
     lastBackup:d.lastBackup||0,changed:d.changed||0
   };
 }
@@ -701,6 +781,51 @@ function pvRateAN(c){
   else if(c.kids>=2)r-=0.0025*Math.min(c.kids-1,4);
   return r;
 }
+/* Jahreslohnsteuer für einen Jahresarbeitslohn RE4 (PAP 2026) */
+function lstJahr(RE4,c){
+  const st=c.stkl,pvr=pvRateAN(c);
+  const vr=Math.min(RE4,P26.BBG_RV*12),vk=Math.min(RE4,P26.BBG_KV*12);
+  const VSPR=vr*0.093,VSPKVPV=vk*(0.07+c.kvz/200+pvr),VSPALV=vr*0.013;
+  let VSP=VSPR+VSPKVPV;const VSPN=VSPR+Math.min(VSPKVPV+VSPALV,P26.VSP_CAP);if(VSPN>VSP)VSP=VSPN;VSP=Math.ceil(VSP);
+  const ANP=st<6?Math.min(P26.ANP,RE4):0,SAP=st<6?P26.SAP:0,EFA=st===2?P26.EFA:0;
+  const ZVE=Math.max(0,Math.floor(RE4-ANP-SAP-EFA-VSP));
+  const KZ=st===3?2:1;
+  const tax=z=>st>=5?mst56(Math.floor(z)):uptab(Math.floor(z/KZ))*KZ;
+  const lst=tax(ZVE);
+  const KFB=st<=3?c.zkf*P26.KFB:st===4?c.zkf*P26.KFB/2:0;
+  return{lst,jbmg:KFB>0?tax(Math.max(0,ZVE-KFB)):lst,KZ};
+}
+/* Sozialabgaben (AN) eines Monats – ohne Minijob */
+function svMonth(AE,c){
+  let base=AE;if(AE>P26.MINI&&AE<=P26.MIDI)base=P26.MIDI/(P26.MIDI-P26.MINI)*(AE-P26.MINI);
+  const pvr=pvRateAN(c),rvB=Math.min(base,P26.BBG_RV),kvB=Math.min(base,P26.BBG_KV);
+  return{rv:rvB*0.093,av:rvB*0.013,kv:kvB*(0.073+c.kvz/200),pv:kvB*pvr};
+}
+/* Sonderzahlungen (sonstige Bezüge) – L = laufender Monatslohn, list = [{amount,month}] */
+function bonusCalc(L,list,c){
+  const out={},sorted=list.slice().sort((a,b)=>a.month-b.month||a.id-b.id);
+  let vbs=0,usedRV=0,usedKV=0;const JL=L*12,kr=c.land==='BY'||c.land==='BW'?0.08:0.09,pvr=pvRateAN(c);
+  for(const b of sorted){
+    const EZ=Math.max(0,+b.amount||0),m=b.month;
+    const r={brutto:EZ,lst:0,soli:0,kist:0,rv:0,kv:0,pv:0,av:0,type:c.mode==='mini'?'mini':'normal'};
+    if(c.mode==='mini'){r.rv=c.rvFree?0:EZ*0.036}
+    else if(EZ>0){
+      const o=lstJahr(JL+vbs,c),w=lstJahr(JL+vbs+EZ,c),sts=Math.max(0,w.lst-o.lst);
+      r.lst=sts;
+      r.soli=w.jbmg>P26.SOLZFREI*w.KZ?Math.floor(sts*5.5)/100:0;
+      r.kist=c.kist?Math.floor(sts*kr*100)/100:0;
+      if(L<=P26.MIDI){const a=svMonth(L,c),z=svMonth(L+EZ,c);['rv','av','kv','pv'].forEach(k=>r[k]=Math.max(0,z[k]-a[k]))}
+      else{
+        const bRV=Math.min(EZ,Math.max(0,m*(P26.BBG_RV-Math.min(L,P26.BBG_RV))-usedRV));usedRV+=bRV;
+        const bKV=Math.min(EZ,Math.max(0,m*(P26.BBG_KV-Math.min(L,P26.BBG_KV))-usedKV));usedKV+=bKV;
+        r.rv=bRV*0.093;r.av=bRV*0.013;r.kv=bKV*(0.073+c.kvz/200);r.pv=bKV*pvr;
+      }
+      vbs+=EZ;
+    }
+    out[b.id]=fin(r);
+  }
+  return out;
+}
 function payroll(AE,c){
   const o={brutto:AE,lst:0,soli:0,kist:0,rv:0,kv:0,pv:0,av:0,type:'normal'};
   if(!(AE>0))return fin(o);
@@ -713,18 +838,8 @@ function payroll(AE,c){
   const pvr=pvRateAN(c),rvB=Math.min(base,P26.BBG_RV),kvB=Math.min(base,P26.BBG_KV);
   o.rv=rvB*0.093;o.av=rvB*0.013;o.kv=kvB*(0.073+c.kvz/200);o.pv=kvB*pvr;
   /* Lohnsteuer – Jahresberechnung */
-  const st=c.stkl,RE4=AE*12;
-  const vr=Math.min(RE4,P26.BBG_RV*12),vk=Math.min(RE4,P26.BBG_KV*12);
-  const VSPR=vr*0.093,VSPKVPV=vk*(0.07+c.kvz/200+pvr),VSPALV=vr*0.013;
-  let VSP=VSPR+VSPKVPV;const VSPN=VSPR+Math.min(VSPKVPV+VSPALV,P26.VSP_CAP);if(VSPN>VSP)VSP=VSPN;VSP=Math.ceil(VSP);
-  const ANP=st<6?Math.min(P26.ANP,RE4):0,SAP=st<6?P26.SAP:0,EFA=st===2?P26.EFA:0;
-  const ZVE=Math.max(0,Math.floor(RE4-ANP-SAP-EFA-VSP));
-  const KZ=st===3?2:1;
-  const tax=z=>st>=5?mst56(Math.floor(z)):uptab(Math.floor(z/KZ))*KZ;
-  const LSTJ=tax(ZVE);
-  const KFB=st<=3?c.zkf*P26.KFB:st===4?c.zkf*P26.KFB/2:0;
-  const JBMG=KFB>0?tax(Math.max(0,ZVE-KFB)):LSTJ;
-  const fr=P26.SOLZFREI*KZ;
+  const J=lstJahr(AE*12,c),LSTJ=J.lst,JBMG=J.jbmg;
+  const fr=P26.SOLZFREI*J.KZ;
   const soli=JBMG>fr?Math.min(JBMG*0.055,(JBMG-fr)*0.119):0;
   const kist=c.kist?JBMG*(c.land==='BY'||c.land==='BW'?0.08:0.09):0;
   o.lst=Math.floor(LSTJ*100/12)/100;o.soli=Math.floor(soli*100/12)/100;o.kist=Math.floor(kist*100/12)/100;
@@ -1063,6 +1178,7 @@ function renderCalc(full){
   const tp=E>0?p.steuer/E*100:0,sp=E>0?p.sozial/E*100:0;
   $('kApplySub').textContent='Steuern '+pctf(tp)+' % · Sozial '+pctf(sp)+' %';
   $('kApply').disabled=!(E>0);
+  renderBonus(full);
 }
 $('kBar').onclick=e=>{
   const i=e.target.closest('i');if(!i)return;
@@ -1070,6 +1186,131 @@ $('kBar').onclick=e=>{
   if(row){row.classList.add('hl');setTimeout(()=>row.classList.remove('hl'),900)}
 };
 function calcChanged(){save();renderCalc(false)}
+
+/* ---- Sonderzahlungen ---- */
+/* Typ: [Name, Standard-Monat, Standard-Art, Standard-%] */
+const BTYPES={urlaub:['Urlaubsgeld',6,'days',50],weihnacht:['Weihnachtsgeld',11,'pct',50],m13:['13. Monatsgehalt',11,'pct',100],praemie:['Prämie / Bonus',0,'fix',0]};
+const MON=[...Array(12)].map((_,i)=>new Date(2026,i,1).toLocaleDateString('de-DE',{month:'short'}).replace('.',''));
+const MODES=[['fix','Betrag'],['pct','% vom Lohn'],['days','Tage × %']];
+function bonusSetup(){
+  const c=db.calc,R=lohnResult();
+  const auto=R.total?R.total.brutto:R.E;
+  const L=c.basis>0?c.basis:auto;
+  const dailyAuto=L*3/65;                         // 3 Monate ÷ 65 Arbeitstage (5-Tage-Woche)
+  const D=c.daily>0?c.daily:dailyAuto;
+  const cc={...c};if(c.mode==='mini'&&L>P26.MINI)cc.mode='normal';
+  return{L,auto,D,dailyAuto,cc};
+}
+function bonusAmount(b,L,D){
+  if(b.mode==='pct')return L*b.pct/100*b.months/12;
+  if(b.mode==='days')return b.days*D*b.pct/100;
+  return b.amount;
+}
+function bonusFields(b){
+  if(b.mode==='pct')return `<div class="bgrid">
+      <div class="f"><label>Prozent %</label><input data-f="pct" inputmode="decimal" autocomplete="off" value="${inp(b.pct)}"></div>
+      <div class="f"><label>Monate /12</label><input data-f="months" inputmode="decimal" autocomplete="off" value="${inp(b.months)}"></div>
+      <div class="f"><label>Monatslohn</label><div class="ro" data-o="base"></div></div></div>`;
+  if(b.mode==='days')return `<div class="bgrid">
+      <div class="f"><label>Urlaubstage</label><input data-f="days" inputmode="decimal" autocomplete="off" value="${inp(b.days)}"></div>
+      <div class="f"><label>Prozent %</label><input data-f="pct" inputmode="decimal" autocomplete="off" value="${inp(b.pct)}"></div>
+      <div class="f"><label>Tagessatz</label><div class="ro" data-o="base"></div></div></div>`;
+  return `<div class="bgrid"><div class="f span2"><label>Betrag brutto €</label><input data-f="amount" inputmode="decimal" autocomplete="off" value="${inp(b.amount)}"></div></div>`;
+}
+function renderBonus(full){
+  const c=db.calc,{L,auto,D,dailyAuto,cc}=bonusSetup();
+  $('kTab').querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.v===c.tab));
+  $('kMonthView').hidden=c.tab!=='month';$('kBonusView').hidden=c.tab!=='bonus';
+  $('bYearLbl').textContent=String(new Date().getFullYear());
+  if(document.activeElement!==$('bBasis'))$('bBasis').value=c.basis>0?inp(c.basis):'';
+  $('bBasis').placeholder=inp(r2(auto));
+  $('bBasisHint').textContent=c.basis>0?'eigener Wert · leeren = '+eur(auto)+' aus Rechner':'automatisch aus Monatslohn';
+  if(document.activeElement!==$('bDaily'))$('bDaily').value=c.daily>0?inp(c.daily):'';
+  $('bDaily').placeholder=inp(r2(dailyAuto));
+  $('bDailyHint').textContent=c.daily>0?'eigener Wert · leeren = '+eur(dailyAuto)+' automatisch':'Monatslohn × 3 ÷ 65 (5-Tage-Woche)';
+  if(full){
+    $('bList').innerHTML=c.bonus.length?c.bonus.map(b=>`<div class="bx" data-id="${b.id}">
+      <div class="bxh"><b>${esc(BTYPES[b.t]?BTYPES[b.t][0]:'Sonderzahlung')}</b>
+        <select data-f="month" aria-label="Monat der Auszahlung">${MON.map((n,i)=>`<option value="${i+1}"${i+1===b.month?' selected':''}>${n}</option>`).join('')}</select>
+        <button class="x" data-del="1" aria-label="Entfernen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg></button></div>
+      <div class="seg sm" data-modes="1">${MODES.map(([k,l])=>`<button data-mode="${k}" class="${b.mode===k?'on':''}">${l}</button>`).join('')}</div>
+      ${bonusFields(b)}
+      <div class="bformel" data-o="formel"></div>
+      <div class="bxr"><div class="bxbr"><span>Brutto</span><b data-o="br"></b></div>
+        <div class="bxnet"><b data-o="net"></b><span data-o="pct"></span></div></div>
+      <div class="bxd" data-o="det"></div></div>`).join('')
+      :'<div class="empty" style="padding:18px 0 8px">Noch keine Sonderzahlung – unten hinzufügen.</div>';
+  }
+  const list=c.bonus.map(b=>({id:b.id,month:b.month,amount:r2(Math.max(0,bonusAmount(b,L,D)))}));
+  const res=bonusCalc(L,list,cc);
+  let T={brutto:0,steuer:0,sozial:0,netto:0};
+  c.bonus.forEach(b=>{
+    const r=res[b.id];if(!r)return;
+    Object.keys(T).forEach(k=>T[k]+=r[k]);
+    const el=document.querySelector(`#bList .bx[data-id="${b.id}"]`);if(!el)return;
+    const q=k=>el.querySelector(`[data-o="${k}"]`);
+    if(q('base'))q('base').textContent=eur(b.mode==='days'?D:L);
+    q('formel').textContent=b.mode==='pct'?`${eur(L)} × ${pctf(b.pct)} % × ${pctf(b.months)}/12`
+      :b.mode==='days'?`${pctf(b.days)} Tage × ${eur(D)} × ${pctf(b.pct)} %`:'';
+    q('formel').hidden=b.mode==='fix';
+    q('br').textContent=eur(r.brutto);
+    q('net').textContent=eur(r.netto);
+    q('pct').textContent=r.brutto>0?'netto · bleibt '+pctf(r.netto/r.brutto*100)+' %':'netto';
+    q('det').innerHTML=r.type==='mini'
+      ?`Rente <i>${eur(r.rv)}</i> · keine Lohnsteuer (Minijob)`
+      :`Lohnsteuer <i>${eur(r.lst)}</i>`+(r.soli?` · Soli <i>${eur(r.soli)}</i>`:'')+(r.kist?` · Kirche <i>${eur(r.kist)}</i>`:'')+
+       `<br>Rente <i>${eur(r.rv)}</i> · Kranken <i>${eur(r.kv)}</i> · Pflege <i>${eur(r.pv)}</i> · AV <i>${eur(r.av)}</i>`;
+  });
+  $('bMode').textContent=cc.mode==='mini'?'Minijob':'Klasse '+['','I','II','III','IV','V','VI'][c.stkl];
+  $('bNet').textContent=eur(T.netto);
+  $('bSub').textContent=T.brutto>0?'von '+eur(T.brutto)+' brutto · bleibt '+pctf(T.netto/T.brutto*100)+' %':'noch keine Sonderzahlung eingetragen';
+  const e0=v=>Math.round(v).toLocaleString('de-DE')+' €';
+  $('bBr').textContent=e0(T.brutto);$('bTax').textContent=e0(T.steuer);$('bSoz').textContent=e0(T.sozial);
+  /* Jahr */
+  const reg=payroll(L,cc);
+  $('yBr').textContent=eur(12*L+T.brutto);$('yNet').textContent=eur(12*reg.netto+T.netto);
+  $('yAvg').textContent=eur((12*reg.netto+T.netto)/12);$('yReg').textContent='12 × '+eur(reg.netto);$('yBon').textContent=eur(T.netto);
+  /* Hinweise */
+  let nt='',nx='';
+  if(c.mode==='mini'&&12*L+T.brutto>P26.MINI*12){nt='Minijob-Jahresgrenze überschritten';nx='12 × '+eur(L)+' + Sonderzahlungen = '+eur(12*L+T.brutto)+' > 7.236 € im Jahr.'}
+  else if(c.mode==='mini'&&L>P26.MINI){nt='Über der Minijob-Grenze';nx='Laufender Lohn über 603 € – als normale Beschäftigung berechnet.'}
+  else if(!(L>0)&&c.bonus.length){nt='Kein laufender Lohn';nx='Trag im Monatslohn-Rechner Einsätze/Grundgehalt ein oder unten einen Monatslohn – sonst fehlen % und Tagessatz.'}
+  $('bNote').hidden=!nt;$('bNoteT').textContent=nt;$('bNoteX').textContent=nx;
+}
+$('kTab').onclick=e=>{const b=e.target.closest('button');if(!b)return;db.calc.tab=b.dataset.v;save();renderBonus(false);$('scroller').scrollTop=0};
+$('bAdd').onclick=e=>{
+  const b=e.target.closest('[data-t]');if(!b)return;
+  const t=b.dataset.t,[name,mon,mode,pct]=BTYPES[t];
+  db.calc.bonus.push(normBonus({id:Date.now(),t,mode,pct:pct||50,months:12,days:30,amount:500,month:mon||new Date().getMonth()+1}));
+  save();renderBonus(true);toast(name+' hinzugefügt – Werte anpassen');
+};
+const bFind=el=>db.calc.bonus.find(x=>String(x.id)===el.dataset.id);
+$('bList').addEventListener('input',e=>{
+  const el=e.target.closest('.bx'),f=e.target.dataset.f;if(!el||!f||f==='month')return;const b=bFind(el);if(!b)return;
+  let v=toNum(e.target.value);if(f==='months')v=Math.min(12,v);
+  b[f]=v;save();renderBonus(false);
+});
+$('bList').addEventListener('change',e=>{
+  const el=e.target.closest('.bx');if(!el)return;const b=bFind(el);if(!b)return;
+  if(e.target.dataset.f==='month'){b.month=+e.target.value;save();renderBonus(false)}
+});
+$('bList').addEventListener('focusin',e=>{if(e.target.dataset.f&&e.target.tagName==='INPUT')setTimeout(()=>e.target.select(),0)});
+$('bList').addEventListener('focusout',e=>{if(e.target.dataset.f==='months'){const el=e.target.closest('.bx'),b=el&&bFind(el);if(b)e.target.value=inp(b.months)}});
+$('bList').addEventListener('click',e=>{
+  const m=e.target.closest('[data-mode]');
+  if(m){const el=m.closest('.bx'),b=bFind(el);if(!b||b.mode===m.dataset.mode)return;
+    const {L,D}=bonusSetup();if(m.dataset.mode==='fix')b.amount=r2(bonusAmount(b,L,D))||b.amount;   // Betrag übernehmen
+    b.mode=m.dataset.mode;save();renderBonus(true);return}
+  const x=e.target.closest('[data-del]');if(!x)return;
+  const el=x.closest('.bx'),i=db.calc.bonus.findIndex(b=>String(b.id)===el.dataset.id);if(i<0)return;
+  const [gone]=db.calc.bonus.splice(i,1);save();renderBonus(true);
+  toast((BTYPES[gone.t]||['Sonderzahlung'])[0]+' entfernt','Rückgängig',()=>{db.calc.bonus.splice(i,0,gone);save();renderBonus(true)});
+});
+[['bBasis','basis'],['bDaily','daily']].forEach(([id,k])=>{
+  $(id).addEventListener('input',()=>{db.calc[k]=toNum($(id).value);save();renderBonus(false)});
+  $(id).addEventListener('focus',()=>setTimeout(()=>$(id).select(),0));
+  $(id).addEventListener('blur',()=>renderBonus(false));
+});
 [['cHours','hours'],['cCount','count'],['cMain','main'],['cKvz','kvz']].forEach(([id,k])=>{
   $(id).addEventListener('input',()=>{db.calc[k]=toNum($(id).value);calcChanged()});
   $(id).addEventListener('focus',()=>setTimeout(()=>$(id).select(),0));
@@ -1173,7 +1414,7 @@ $('fileIn').onchange=async()=>{
   if(v!=='merge'&&v!=='replace')return;
   const prev=clone({settings:db.settings,entries:db.entries,running:db.running,calc:db.calc});
   if(v==='merge'){db.entries=db.entries.concat(fresh)}
-  else{db.entries=inc;db.settings={...DEF,...(d.settings||{})};if(d.calc)db.calc={...CDEF,...d.calc};
+  else{db.entries=inc;db.settings={...DEF,...(d.settings||{})};if(d.calc)db.calc=normCalc(d.calc);
     if(!db.running&&d.running&&isFinite(+d.running.start))db.running={start:+d.running.start,note:d.running.note||'',s:normS(d.running.s)}}
   commit();render();
   toast(v==='merge'?plural(fresh.length,'Einsatz','Einsätze')+' hinzugefügt':'Backup wiederhergestellt','Rückgängig',()=>{
