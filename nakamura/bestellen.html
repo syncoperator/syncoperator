@@ -230,7 +230,10 @@ input.mono{font-family:var(--f-mono)}
 .wz-foot{background:var(--card);box-shadow:0 -1px 0 var(--line);padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px))}
 .wz-foot .wz-in{display:flex;gap:8px}
 .wz-foot .btn{padding:14px 16px;font-size:15px}
-.wz-foot #wzNext{flex:1;font-family:var(--f-head);font-weight:700;letter-spacing:.05em}
+.wz-foot #wzNext,.wz-foot #twNext{flex:1;font-family:var(--f-head);font-weight:700;letter-spacing:.05em}
+.wz-foot .btn{white-space:nowrap}
+.tw-namebar{position:sticky;top:-16px;z-index:2;margin:-16px -16px 0;padding:10px 16px;background:var(--bg);border-bottom:1px solid var(--line)}
+.tw-namebar b{font-size:15px}
 .wz-sel{display:flex;gap:6px;flex-wrap:wrap}
 .wz-sel .chip{display:inline-flex;align-items:center;gap:6px;padding:5px 6px 5px 10px;font-size:12px}
 .wz-sel .chip button{background:none;border:0;padding:0 2px;font-size:15px;line-height:1;color:var(--muted)}
@@ -258,6 +261,15 @@ input.mono{font-family:var(--f-mono)}
 .wz-done h3{font-family:var(--f-head);font-size:24px;margin:0}
 .wz-done p{color:var(--muted);font-size:13px;margin:0;max-width:34ch}
 
+/* ===== Werkzeug-Assistent ===== */
+.tw-tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+@media (min-width:560px){.tw-tiles{grid-template-columns:repeat(4,1fr)}}
+.tw-tile{display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 6px;border:1px solid var(--line);border-radius:12px;background:var(--card);font-size:11px;font-weight:700;letter-spacing:.03em;text-align:center;min-width:0;overflow-wrap:anywhere}
+.tw-tile .tw-ti{width:48px;height:48px;color:var(--fg)}
+.tw-tile.on{border-color:var(--ink);box-shadow:0 0 0 1.5px var(--ink) inset}
+.tw-attr{display:flex;flex-direction:column;gap:6px}
+.tw-al{font-size:11px;letter-spacing:.08em;color:var(--muted)}
+.tw-free{width:auto;flex:1 1 110px;min-width:90px;padding:6px 10px;font-size:13px;border-radius:999px;background:var(--card)}
 /* ===== Help sheet ===== */
 .sheetbg{position:fixed;inset:0;z-index:45;background:rgba(10,10,12,.5);display:flex;align-items:flex-end;justify-content:center}
 .helpsheet{background:var(--card);width:100%;max-width:560px;border-radius:18px 18px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom,0px));max-height:88vh;overflow:auto;display:flex;flex-direction:column;gap:10px}
@@ -413,7 +425,8 @@ input.mono{font-family:var(--f-mono)}
 
   <!-- ================= BIBLIOTHEK ================= -->
   <section id="v_lib" class="view" hidden>
-    <form id="libForm" class="card step" autocomplete="off">
+    <button type="button" class="wizstart" id="toolWizStart"><span class="wsi" id="toolWizIco"></span><span><b>Neues Werkzeug</b><small>Werkzeug-Assistent · fragt nur, was zum Typ passt</small></span><span class="arr" aria-hidden="true">→</span></button>
+    <form id="libForm" class="card step" autocomplete="off" hidden>
       <div class="step-h"><h2 id="libTitle">Neues Werkzeug</h2><button type="button" id="libCancel" class="link" hidden>Abbrechen</button></div>
 
       <div class="photo">
@@ -503,6 +516,23 @@ input.mono{font-family:var(--f-mono)}
     <button type="button" class="btn" id="wzBack">← Zurück</button>
     <button type="button" class="btn primary" id="wzNext">Weiter →</button>
   </div></div>
+</div>
+
+<!-- ================= WERKZEUG-ASSISTENT ================= -->
+<div id="twiz" class="wiz" style="z-index:38" hidden role="dialog" aria-modal="true" aria-labelledby="twTitle">
+  <div class="wz-top"><div class="wz-in">
+    <div class="wz-h"><span class="brand">WERKZEUG-ASSISTENT</span><button type="button" class="x-btn" id="twClose" aria-label="Schließen"><svg width="22" height="22" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button></div>
+    <div class="wz-prog" id="twProg"><i></i><i></i><i></i><i></i></div>
+    <div class="wz-k" id="twK"></div>
+    <h2 id="twTitle"></h2>
+    <div class="wz-sub" id="twSub"></div>
+  </div></div>
+  <div class="wz-body" id="twBodyWrap"><div class="wz-in" id="twBody"></div></div>
+  <div class="wz-foot"><div class="wz-in">
+    <button type="button" class="btn" id="twBack">← Zurück</button>
+    <button type="button" class="btn primary" id="twNext">Weiter →</button>
+  </div></div>
+  <input type="file" id="twFile" accept="image/*" hidden>
 </div>
 
 <!-- ================= HILFE ================= -->
@@ -746,7 +776,7 @@ input.mono{font-family:var(--f-mono)}
   $('libForm').addEventListener('change', e => { if (e.target.dataset.innm) updateNamePrev(); });
   function resetLibForm() { S.editLib = null; fillLib(); $('libTitle').textContent = 'Neues Werkzeug'; $('libCancel').hidden = true; $('libSaveOrder').hidden = false; $('newTypeRow').hidden = true; }
   $('libCancel').onclick = resetLibForm;
-  $('goNewTool').onclick = () => { resetLibForm(); const q = U($('pickQ').value); setView('lib'); if (q) $('l_name').value = q; $('l_name').focus(); };
+  $('goNewTool').onclick = () => openToolWiz({ name: U($('pickQ').value) });
 
   function saveLib(andOrder) {
     const d = readLib();
@@ -768,7 +798,7 @@ input.mono{font-family:var(--f-mono)}
   function addToCart(t, o) {
     S.items.push({
       id: newId(), libId: t.id,
-      name: t.name, type: t.type, ...Object.fromEntries(SPEC_KEYS.map(k => [k, t[k] || ''])), inName: { ...(t.inName || {}) },
+      name: t.name, type: t.type, ...Object.fromEntries(SPEC_KEYS.map(k => [k, t[k] || ''])), inName: { ...(t.inName || {}) }, attrs: JSON.parse(JSON.stringify(t.attrs || {})),
       firm: t.firm, maker: t.maker, makerArt: t.makerArt, mach: t.mach,
       qty: U(o.qty) || t.qty || '', dwg: U(o.dwg), note: U(o.note),
       status: 'bedarf', createdAt: Date.now()
@@ -777,7 +807,7 @@ input.mono{font-family:var(--f-mono)}
   }
   const cartItems = () => S.items.filter(i => i.status === 'bedarf').sort((a,b) => a.createdAt - b.createdAt);
 
-  const hay = t => [t.name, t.type, ...specs(t), ...SPEC_KEYS.map(k => t[k]), t.firm, t.maker, t.makerArt, t.mach, t.note, t.dwg].join(' ').toUpperCase().replace(/,/g,'.');
+  const hay = t => [t.name, t.type, ...specs(t), ...SPEC_KEYS.map(k => t[k]), ...Object.values(t.attrs || {}).flat(), t.firm, t.maker, t.makerArt, t.mach, t.note, t.dwg].join(' ').toUpperCase().replace(/,/g,'.');
   const match = (h, q) => q.split(/\s+/).filter(Boolean).every(w => h.includes(w.replace(/,/g,'.')));
   const stats = libId => { const its = S.items.filter(i => i.libId === libId); return { count: its.length, last: Math.max(0, ...its.map(i => i.createdAt || 0)), inCart: its.some(i => i.status === 'bedarf'), waiting: its.some(i => i.status === 'gesendet') }; };
 
@@ -797,7 +827,7 @@ input.mono{font-family:var(--f-mono)}
     }
     const row = t => {
       const st = stats(t.id), open = S.pickOpen === t.id;
-      const s = [...specsOut(t).map(x => `<b>${esc(x)}</b>`), t.firm && `<span>ART.-NR. <b>${esc(t.firm)}</b></span>`, t.maker && `<span>${esc(t.maker)}</span>`].filter(Boolean).join('');
+      const s = [...attrsShown(t).map(x => `<span>${esc(x)}</span>`), ...specsOut(t).map(x => `<b>${esc(x)}</b>`), t.firm && `<span>ART.-NR. <b>${esc(t.firm)}</b></span>`, t.maker && `<span>${esc(t.maker)}</span>`].filter(Boolean).join('');
       const flag = st.inCart ? 'Schon auf der Liste' : st.waiting ? 'Schon unterwegs' : '';
       return `<div class="r ${open ? 'open' : ''}">
         ${thumbBtn(t.img, '', t)}
@@ -846,7 +876,7 @@ input.mono{font-family:var(--f-mono)}
               ['qty','Menge','','mono'],['dwg','Zeichnung / Auftrag','span2','mono'],['note','Notiz','full','']];
   function cartRowHTML(i) {
     const d = days(i.createdAt);
-    const s = [...specsOut(i).map(x => `<b>${esc(x)}</b>`), i.firm && `<span>ART.-NR. <b>${esc(i.firm)}</b></span>`, i.maker && `<span>${esc(i.maker)}${i.makerArt ? ` <b>${esc(i.makerArt)}</b>` : ''}</span>`].filter(Boolean).join('');
+    const s = [...attrsShown(i).map(x => `<span>${esc(x)}</span>`), ...specsOut(i).map(x => `<b>${esc(x)}</b>`), i.firm && `<span>ART.-NR. <b>${esc(i.firm)}</b></span>`, i.maker && `<span>${esc(i.maker)}${i.makerArt ? ` <b>${esc(i.makerArt)}</b>` : ''}</span>`].filter(Boolean).join('');
     return `<div class="r" data-id="${i.id}">
       ${thumbBtn(imgOf(i), '', i)}
       <div class="body">
@@ -939,6 +969,7 @@ input.mono{font-family:var(--f-mono)}
     const to = U($('p_to').value), name = U($('p_name').value), until = untilText();
     const blocks = items.map(i => {
       const L = [`▸ ${fullName(i)}`, `  MENGE: ${i.qty || '–'}`];
+      if (attrsShown(i).length) L.push(`  DETAILS: ${attrsShown(i).join(' · ')}`);
       if (specsOut(i).length) L.push(`  MASSE: ${specsOut(i).join(' · ')}`);
       if (i.firm) L.push(`  ARTIKELNUMMER: ${i.firm}`);
       if (i.maker || i.makerArt) L.push(`  HERSTELLER: ${[i.maker, i.makerArt && `ART.-NR. ${i.makerArt}`].filter(Boolean).join(' · ')}`);
@@ -1005,7 +1036,7 @@ input.mono{font-family:var(--f-mono)}
     const date = order ? order.sentAt : Date.now();
     const rows = items.map(i => {
       const img = imgOf(i);
-      const sub = [specsOut(i).length && esc(specsOut(i).join(' · ')), i.dwg && `ZEICHNUNG / AUFTRAG: ${esc(i.dwg)}`, i.note && `NOTIZ: ${esc(i.note)}`, i.mach && esc(i.mach)].filter(Boolean).join(' · ');
+      const sub = [[...attrsShown(i), ...specsOut(i)].length && esc([...attrsShown(i), ...specsOut(i)].join(' · ')), i.dwg && `ZEICHNUNG / AUFTRAG: ${esc(i.dwg)}`, i.note && `NOTIZ: ${esc(i.note)}`, i.mach && esc(i.mach)].filter(Boolean).join(' · ');
       return `<tr>
         <td class="box"><span></span></td>
         <td class="img">${img ? `<img src="${img}" alt="">` : `<span class="sico">${toolIcon(i)}</span>`}</td>
@@ -1187,7 +1218,7 @@ window.addEventListener('resize',fit);window.addEventListener('load',fit);fit();
       ${thumbBtn(t.img, 'lg', t)}
       <div class="main">
         <div class="name">${esc(fullName(t))}</div>
-        ${specsOut(t).length ? `<div class="chips">${specsOut(t).map(s => `<span class="chip spec">${esc(s)}</span>`).join('')}</div>` : ''}
+        ${[...attrsShown(t), ...specsOut(t)].length ? `<div class="chips">${[...attrsShown(t), ...specsOut(t)].map(s => `<span class="chip spec">${esc(s)}</span>`).join('')}</div>` : ''}
         ${kv ? `<div class="kv">${kv}</div>` : ''}
         ${t.note ? `<div class="note">${esc(t.note)}</div>` : ''}
         <div class="trail">${trail}</div>
@@ -1201,8 +1232,8 @@ window.addEventListener('resize',fit);window.addEventListener('load',fit);fit();
     const t = S.lib.find(x => x.id === b.dataset.id); if (!t) return;
     const act = b.dataset.lact, smooth = matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
     if (act === 'order') { setView('orders'); S.pickQ = U(t.firm || t.name); $('pickQ').value = S.pickQ; S.pickOpen = t.id; renderPick(); const q = $('o_qty'); if (q) { q.focus(); q.select(); } }
-    if (act === 'edit') { S.editLib = t.id; fillLib(t); $('libTitle').textContent = 'Werkzeug ändern'; $('libCancel').hidden = false; $('libSaveOrder').hidden = true; $('libForm').scrollIntoView({ behavior: smooth, block: 'start' }); }
-    if (act === 'copy') { S.editLib = null; fillLib({ ...t, firm: '', makerArt: '' }); $('libTitle').textContent = 'Neues Werkzeug (Kopie)'; $('libCancel').hidden = false; $('libSaveOrder').hidden = false; $('libForm').scrollIntoView({ behavior: smooth, block: 'start' }); $('l_name').focus(); }
+    if (act === 'edit') { openToolWiz({ tool: t }); }
+    if (act === 'copy') { openToolWiz({ tool: t, copy: true }); }
     if (act === 'del') { S.confirmLibDel = t.id; render(); }
     if (act === 'delno') { S.confirmLibDel = null; render(); }
     if (act === 'delyes') { S.confirmLibDel = null; S.lib = S.lib.filter(x => x.id !== t.id); commit('Aus Bibliothek gelöscht'); }
@@ -1295,7 +1326,7 @@ window.addEventListener('resize',fit);window.addEventListener('load',fit);fit();
       let it = e.itemId && S.items.find(i => i.id === e.itemId);
       if (!it) {
         const t = S.lib.find(x => x.id === e.libId); if (!t) return;
-        it = { id: newId(), libId: t.id, name: t.name, type: t.type, ...Object.fromEntries(SPEC_KEYS.map(k => [k, t[k] || ''])), inName: { ...(t.inName || {}) },
+        it = { id: newId(), libId: t.id, name: t.name, type: t.type, ...Object.fromEntries(SPEC_KEYS.map(k => [k, t[k] || ''])), inName: { ...(t.inName || {}) }, attrs: JSON.parse(JSON.stringify(t.attrs || {})),
                firm: t.firm, maker: t.maker, makerArt: t.makerArt, mach: t.mach, status: 'bedarf', createdAt: Date.now() };
         S.items.push(it); e.itemId = it.id;
       }
@@ -1485,7 +1516,10 @@ window.addEventListener('resize',fit);window.addEventListener('load',fit);fit();
       if (W.step === 0) { $('wzSelBox').innerHTML = wzSelHTML(); wzRenderList(); wzFoot(); } else renderWiz();
       return;
     }
-    if (a === 'newopen') { W.newOpen = true; renderWiz(); $('wn_name')?.focus(); return; }
+    if (a === 'newopen') {
+      openToolWiz({ name: W.q, onSave: t => { W.draft.push({ key: 'n' + newId(), libId: t.id, itemId: null, qty: t.qty || '', dwg: '', note: '' }); W.q = ''; renderWiz(); toast('In Bibliothek gespeichert und ausgewählt'); } });
+      return;
+    }
     if (a === 'newclose') { W.newOpen = false; renderWiz(); return; }
     if (a === 'ntype') { W.newType = b.dataset.type; b.parentElement.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', String(x === b))); return; }
     if (a === 'newsave') {
@@ -1539,7 +1573,7 @@ window.addEventListener('resize',fit);window.addEventListener('load',fit);fit();
       W.step = 3; W.confirm = false; renderWiz(); return;
     }
   };
-  document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('wiz').hidden && $('sheetView').hidden && $('tour').hidden) closeWizard(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('wiz').hidden && $('twiz').hidden && $('sheetView').hidden && $('tour').hidden) closeWizard(); });
 
   // =====================================================================
   // HILFE + TOUREN
@@ -1576,12 +1610,11 @@ window.addEventListener('resize',fit);window.addEventListener('load',fit);fit();
       { v: 'orders', sel: '.foot', ill: 'backup', t: 'Backup nicht vergessen', x: 'Die Daten liegen nur in diesem Browser. Ab und zu „Backup speichern“ tippen.' },
     ]},
     { id: 'lib', title: 'Werkzeug anlegen', desc: 'Neues Werkzeug in die Bibliothek', icon: 'BOHR', steps: [
-      { v: 'lib', sel: '#libForm .photo', ill: 'photo', t: 'Foto machen', x: 'Foto vom Etikett oder vom Werkzeug. Ohne Foto zeigt die App ein passendes Symbol.' },
-      { v: 'lib', sel: '#typeChips', ill: 'types', t: 'Typ wählen', x: 'Typ antippen. Fehlt einer? „+ Eigener Typ“.' },
-      { v: 'lib', sel: '#l_name', ill: 'name', t: 'Bezeichnung', x: 'So wie auf der Packung, z. B. CNMG 120408-PM.' },
-      { v: 'lib', sel: '.specbox', ill: 'specs', t: 'Maße', x: 'Ø, Radius, Länge … eintragen. Mit Häkchen steht das Maß im Namen.' },
-      { v: 'lib', sel: '#l_firm', ill: 'artnr', t: 'Nummern', x: 'Unsere Artikelnummer. Daneben Hersteller und seine Bestellnummer.' },
-      { v: 'lib', sel: '#libSave', ill: 'save', t: 'Speichern', x: '„Speichern“ – oder „Speichern + bestellen“, dann ist es gleich auf der Liste.' },
+      { v: 'lib', sel: '#toolWizStart', ill: 'types', t: 'Neues Werkzeug', x: 'Der Werkzeug-Assistent fragt nur, was zum Typ passt: beim Bohrer Ø, Bohrtiefe und Kühlung, beim Halter nicht.' },
+      { v: 'lib', sel: null, ill: 'specs', t: 'Name automatisch', x: 'Bei Bohrer, Fräser, Reibahle usw. baut die App den Namen selbst, z. B. VHM BOHRER 5XD IK Ø8,5. Häkchen = Maß steht im Namen.' },
+      { v: 'lib', sel: null, ill: 'photo', t: 'Nummern & Foto', x: 'Unsere Artikelnummer, Hersteller und seine Nummer. Foto vom Etikett – oder leer lassen, dann kommt ein Symbol.' },
+      { v: 'lib', sel: '#libQ', ill: 'search', t: 'Finden', x: 'Suchen nach Name, Ø, Radius, IK oder Nummer. Oder oben einen Typ antippen.' },
+      { v: 'lib', sel: '#libList', alt: '#libQ', ill: 'save', t: 'Ändern & Kopie', x: '„Ändern“ öffnet den Assistenten. „Kopie“ ist praktisch für den gleichen Bohrer mit anderem Ø.' },
     ]},
     { id: 'order', title: 'Bestellen & senden', desc: 'Ohne Assistent, direkt auf der Seite', icon: 'HALTER', steps: [
       { v: 'orders', sel: '#pickQ', ill: 'search', t: 'Suchen', x: 'Name, Ø, Radius oder Nummer eintippen. Dann „+ Bestellen“.' },
@@ -1670,6 +1703,305 @@ window.addEventListener('resize',fit);window.addEventListener('load',fit);fit();
 
   $('wizStart').onclick = openWizard;
 
+  // =====================================================================
+  // WERKZEUG-ASSISTENT — fragt je Typ nur, was wichtig ist
+  // =====================================================================
+  const ATTR = {
+    mat:        { label: 'Material',        opts: ['VHM', 'HSS', 'HSS-E', 'HSS-E PM', 'WSP'] },
+    ld:         { label: 'Bohrtiefe',       opts: ['3XD', '5XD', '8XD', '12XD', '16XD', '20XD'], free: 'z. B. 30XD' },
+    ik:         { label: 'Kühlung',         opts: ['MIT IK', 'OHNE IK'], tok: v => v === 'MIT IK' ? 'IK' : '' },
+    schaftform: { label: 'Schaft',          opts: ['ZYLINDER', 'WELDON HA', 'WHISTLE NOTCH HE'] },
+    fart:       { label: 'Art',             opts: ['SCHAFTFRÄSER', 'TORUSFRÄSER', 'RADIUSFRÄSER', 'FASENFRÄSER', 'SCHRUPPFRÄSER', 'T-NUTENFRÄSER'], free: 'andere' },
+    tol:        { label: 'Toleranz',        opts: ['H6', 'H7', 'H8', 'H9'], free: 'z. B. F7' },
+    gew:        { label: 'Gewinde',         text: 'M8, M10X1, G1/4, UNC 1/4-20' },
+    gart:       { label: 'Werkzeug',        opts: ['GEWINDEBOHRER', 'GEWINDEFORMER', 'GEWINDEFRÄSER'] },
+    loch:       { label: 'Für',             opts: ['GRUNDLOCH', 'DURCHGANG'] },
+    tol6h:      { label: 'Toleranz',        opts: ['6H', '6HX', '6G', '4H'], free: 'andere' },
+    hand:       { label: 'Ausführung',      opts: ['RECHTS', 'LINKS', 'NEUTRAL'] },
+    innen:      { label: 'Bearbeitung',     opts: ['AUSSEN', 'INNEN'] },
+    profil:     { label: 'Profil',          opts: ['ISO 60°', 'UN 60°', 'WHITWORTH 55°', 'TRAPEZ 30°'], free: 'andere' },
+    schaft:     { label: 'Schaft',          text: 'z. B. 20×20' },
+    platte:     { label: 'Passende Platte', text: 'z. B. CNMG 1204..' },
+    minbohr:    { label: 'Min. Bohrung Ø',  text: 'mm' },
+    werkst:     { label: 'Werkstoff (ISO)', opts: ['P', 'M', 'K', 'N', 'S', 'H'], multi: true },
+    sart:       { label: 'Art',             opts: ['WEICHE BACKEN', 'HARTE BACKEN', 'SPANNZANGE', 'FUTTER', 'SPANNDORN'], free: 'andere' },
+  };
+  const av = (t, k) => { const v = (t.attrs || {})[k]; return Array.isArray(v) ? v.join(' ') : (v || ''); };
+  const ikTok = t => av(t, 'ik') === 'MIT IK' ? 'IK' : '';
+  const TP = {
+    WENDEPLATTE:   { nameLabel: 'ISO-Bezeichnung', namePh: 'z. B. CNMG 120408-PM', specs: ['r', 'grade'], attrs: ['werkst'], iso: true,
+                     hint: 'Den Radius liest die App aus der Bezeichnung: …08 = R0,8.' },
+    STECHPLATTE:   { nameLabel: 'Bezeichnung', namePh: 'z. B. GIP 3.00E-0.20', specs: ['b', 'r', 'grade'], labels: { b: 'B Stechbreite' }, attrs: ['hand'], req: ['b'] },
+    GEWINDEPLATTE: { nameLabel: 'Bezeichnung', namePh: 'z. B. 16ER 1.5ISO', specs: ['p', 'grade'], attrs: ['innen', 'profil'] },
+    KOPIERSTAHL:   { nameLabel: 'ISO-Bezeichnung', namePh: 'z. B. SVJBR 2020 K16', specs: [], attrs: ['hand', 'schaft', 'platte'], holder: true,
+                     hint: 'Ausführung und Schaft liest die App aus der Bezeichnung.' },
+    HALTER:        { nameLabel: 'ISO-Bezeichnung', namePh: 'z. B. PCLNR 2020 K12', specs: [], attrs: ['hand', 'schaft', 'platte'], holder: true,
+                     hint: 'Ausführung und Schaft liest die App aus der Bezeichnung.' },
+    BOHRSTANGE:    { nameLabel: 'Bezeichnung', namePh: 'z. B. S20S-SCLCR09', specs: ['d', 'l'], labels: { d: 'Ø Schaft', l: 'L Länge' }, attrs: ['hand', 'ik', 'platte', 'minbohr'], inName: { d: false, l: false } },
+    BOHRER:        { auto: t => [av(t, 'mat'), 'BOHRER', av(t, 'ld'), ikTok(t)], specs: ['d', 'w', 'l'], labels: { w: '∠ Spitze', l: 'L Gesamt' },
+                     attrs: ['mat', 'ld', 'ik', 'schaftform'], req: ['d'], inName: { d: true, w: false, l: false } },
+    'FRÄSER':      { auto: t => [av(t, 'mat'), av(t, 'fart') || 'FRÄSER', ikTok(t)], specs: ['d', 'r', 'z', 'l'], labels: { r: 'R Eckradius', l: 'L Schneide' },
+                     attrs: ['mat', 'fart', 'ik'], req: ['d'], inName: { d: true, r: true, z: true, l: false } },
+    REIBAHLE:      { auto: t => [av(t, 'mat'), 'REIBAHLE', av(t, 'tol'), ikTok(t)], specs: ['d', 'l'], attrs: ['mat', 'tol', 'ik'], req: ['d'], inName: { d: true, l: false } },
+    GEWINDE:       { auto: t => [av(t, 'gart') || 'GEWINDEBOHRER', av(t, 'gew'), av(t, 'tol6h')], specs: ['p', 'l'], attrs: ['gew', 'gart', 'loch', 'tol6h', 'mat'],
+                     req: ['gew'], inName: { p: false, l: false } },
+    SENKER:        { auto: t => [av(t, 'mat'), 'KEGELSENKER'], specs: ['d', 'w', 'z'], labels: { w: '∠ Senkwinkel' }, attrs: ['mat'], req: ['d'],
+                     inName: { d: true, w: true, z: false }, defaults: { w: '90' } },
+    SPANNMITTEL:   { nameLabel: 'Bezeichnung', namePh: 'z. B. Weiche Backen Ø65', specs: ['d'], attrs: ['sart'] },
+    SONSTIGES:     { nameLabel: 'Bezeichnung', namePh: 'z. B. Spannschraube M5', specs: ['d', 'l'], attrs: [] },
+  };
+  const FAM = { C:'WENDEPLATTE', D:'WENDEPLATTE', V:'WENDEPLATTE', T:'WENDEPLATTE', W:'WENDEPLATTE', S:'WENDEPLATTE', R:'WENDEPLATTE',
+                STECH:'STECHPLATTE', GPLATTE:'GEWINDEPLATTE', KOPIER:'KOPIERSTAHL', HALTER:'HALTER', BSTANGE:'BOHRSTANGE', BOHR:'BOHRER',
+                FRAES:'FRÄSER', REIB:'REIBAHLE', GEWIND:'GEWINDE', SENK:'SENKER', SPANN:'SPANNMITTEL', ETC:'SONSTIGES' };
+  const profileOf = type => TP[type] || TP[FAM[iconKey({ type })]] || TP.SONSTIGES;
+  const autoBase = t => { const p = profileOf(t.type); return p.auto ? p.auto(t).filter(Boolean).join(' ').replace(/\s+/g, ' ').trim() : ''; };
+  // attributes worth showing that are not already part of the name
+  const attrsShown = t => {
+    const nm = ' ' + U(fullName(t)) + ' ';
+    return Object.entries(t.attrs || {}).map(([k, v]) => {
+      const txt = Array.isArray(v) ? (v.length ? `${ATTR[k]?.label === 'Werkstoff (ISO)' ? 'ISO ' : ''}${v.join(' ')}` : '') : v;
+      if (!txt) return '';
+      const tok = ATTR[k]?.tok ? ATTR[k].tok(v) : txt;
+      if (tok && nm.includes(' ' + tok + ' ')) return '';
+      if (k === 'schaft' || k === 'platte' || k === 'minbohr') return `${ATTR[k].label.toUpperCase()}: ${txt}`;
+      return txt;
+    }).filter(Boolean);
+  };
+
+  const TW = { step: 0, t: null, editId: null, onSave: null, auto: true, order: false };
+  const TWSTEPS = [
+    { t: 'Was für ein Werkzeug?', s: 'Typ antippen. Danach fragt die App nur, was dafür wichtig ist.' },
+    { t: 'Daten',                 s: '' },
+    { t: 'Nummern & Foto',        s: 'Unsere Nummer, Hersteller, Foto vom Etikett.' },
+    { t: 'Prüfen & speichern',    s: 'So erscheint es in der Liste und auf dem Bestellzettel.' },
+  ];
+
+  function openToolWiz(opts = {}) {
+    const src = opts.tool ? JSON.parse(JSON.stringify(opts.tool)) : {};
+    TW.t = { type: '', name: '', attrs: {}, inName: {}, img: '', ...src };
+    TW.t.attrs = TW.t.attrs || {}; TW.t.inName = TW.t.inName || {};
+    if (opts.copy) { delete TW.t.id; TW.t.firm = ''; TW.t.makerArt = ''; }
+    if (!opts.tool && opts.name) TW.t.name = U(opts.name);
+    TW.editId = opts.tool && !opts.copy ? opts.tool.id : null;
+    TW.onSave = opts.onSave || null;
+    TW.copy = !!opts.copy;
+    TW.step = opts.tool ? 1 : 0;
+    TW.auto = TW.t.type ? (profileOf(TW.t.type).auto ? (!TW.t.name || TW.t.name === autoBase(TW.t)) : false) : true;
+    $('twiz').hidden = false; document.body.style.overflow = 'hidden';
+    renderTW();
+  }
+  function closeToolWiz() {
+    $('twiz').hidden = true;
+    if ($('wiz').hidden) document.body.style.overflow = '';
+  }
+  $('twClose').onclick = closeToolWiz;
+
+  function renderTW() {
+    const p = TW.t.type ? profileOf(TW.t.type) : null;
+    [...$('twProg').children].forEach((el, k) => el.classList.toggle('on', k <= TW.step));
+    $('twK').textContent = `${TW.editId ? 'ÄNDERN' : TW.copy ? 'KOPIE' : 'NEU'} · SCHRITT ${TW.step + 1} VON 4`;
+    $('twTitle').textContent = TW.step === 1 && TW.t.type ? TW.t.type : TWSTEPS[TW.step].t;
+    $('twSub').textContent = TW.step === 1 ? (p?.hint || 'Nur ausfüllen, was du weißt. * = Pflicht') : TWSTEPS[TW.step].s;
+    $('twBack').hidden = TW.step === 0;
+    $('twNext').hidden = TW.step === 0;
+    $('twNext').textContent = TW.step === 3 ? (TW.editId ? 'Speichern' : 'In Bibliothek speichern') : 'Weiter →';
+    const B = $('twBody');
+    B.innerHTML = [twStep0, twStep1, twStep2, twStep3][TW.step]();
+    if (TW.step === 1) twUpdateName();
+    $('twBodyWrap').scrollTop = 0;
+  }
+
+  // ---- step 1: type tiles
+  function twStep0() {
+    return `<div class="tw-tiles">${allTypes().map(ty => `<button type="button" class="tw-tile ${ty === TW.t.type ? 'on' : ''}" data-tw="type" data-type="${esc(ty)}">
+        <span class="tw-ti">${typeIcon(ty)}</span><span>${esc(ty)}</span></button>`).join('')}</div>
+      <div class="hint">Typ fehlt? Eigenen Typ anlegen:</div>
+      <div class="newtype"><input id="twNewType" placeholder="Eigener Typ, z. B. Stufenbohrer"><button type="button" class="btn sm primary" data-tw="newtype">OK</button></div>`;
+  }
+
+  // ---- step 2: type-specific data
+  function twAttrHTML(k) {
+    const A = ATTR[k], v = TW.t.attrs[k];
+    if (A.text) return `<label class="full">${A.label}${(profileOf(TW.t.type).req || []).includes(k) ? ' *' : ''}<input data-twattr="${k}" class="mono" value="${esc(v || '')}" placeholder="${esc(A.text)}"></label>`;
+    const sel = x => A.multi ? (v || []).includes(x) : v === x;
+    const isFree = A.free && v && !A.opts.includes(v);
+    return `<div class="full tw-attr"><div class="tw-al">${A.label}${A.multi ? ' <span class="hint">(mehrere)</span>' : ''}</div>
+      <div class="types" data-group="${k}">${A.opts.map(o => `<button type="button" data-tw="opt" data-k="${k}" data-v="${esc(o)}" aria-pressed="${sel(o)}">${esc(o)}</button>`).join('')}
+      ${A.free ? `<input class="tw-free mono" data-twfree="${k}" value="${isFree ? esc(v) : ''}" placeholder="${esc(A.free)}">` : ''}</div></div>`;
+  }
+  function twSpecHTML(p) {
+    if (!p.specs.length) return '';
+    return `<div class="full specbox"><div class="specs-h"><span>Maße</span><span class="hint">☑ = steht im Namen</span></div><div class="specgrid">${
+      p.specs.map(k => { const sp = SPEC.find(x => x.k === k); const req = (p.req || []).includes(k);
+        return `<div class="spec"><label class="innm" title="Im Namen anzeigen"><input type="checkbox" data-twin="${k}" ${inName(TW.t, sp) ? 'checked' : ''}><span>${(p.labels || {})[k] || sp.label}${req ? ' *' : ''}</span></label>
+          <input type="text" id="tws_${k}" data-twspec="${k}" class="mono" ${k === 'grade' ? '' : 'inputmode="decimal"'} value="${esc(TW.t[k] || '')}" placeholder="${sp.ph}"></div>`; }).join('')
+    }</div></div>`;
+  }
+  function twStep1() {
+    const p = profileOf(TW.t.type);
+    const nameBlock = p.auto
+      ? `<label class="full">Name ${TW.auto ? '<span class="hint">(wird automatisch gebaut)</span>' : ''}
+           <input id="twName" value="${esc(TW.t.name)}" placeholder="wird aus den Angaben gebaut"></label>
+         <label class="innm full" style="margin-top:-4px"><input type="checkbox" id="twAuto" ${TW.auto ? 'checked' : ''}><span>Name automatisch</span></label>`
+      : `<label class="full">${p.nameLabel} *<input id="twName" class="mono" value="${esc(TW.t.name)}" placeholder="${esc(p.namePh)}"></label>`;
+    return `<div class="namepreview tw-namebar"><span>So heißt es:</span> <b id="twPrev" class="mono"></b></div>
+      <div class="card form"><div class="grid">
+        ${p.auto ? '' : nameBlock}
+        ${p.attrs.map(twAttrHTML).join('')}
+        ${twSpecHTML(p)}
+        ${p.auto ? nameBlock : ''}
+      </div>
+    </div>`;
+  }
+  function twUpdateName() {
+    if (TW.auto && profileOf(TW.t.type).auto) { TW.t.name = autoBase(TW.t); const n = $('twName'); if (n && document.activeElement !== n) n.value = TW.t.name; }
+    const pv = $('twPrev'); if (pv) pv.textContent = TW.t.name ? fullName(TW.t) : '–';
+  }
+  // read ISO codes on leaving the name field
+  function twParseName() {
+    const p = profileOf(TW.t.type), nm = U(TW.t.name);
+    let changed = false;
+    if (p.iso) {
+      const m = nm.match(/^[A-Z]{4}\s*\d{2}[\dT]\d(\d{2})/);
+      if (m && !TW.t.r) { TW.t.r = String(parseInt(m[1], 10) / 10); changed = true; }
+    }
+    if (p.holder) {
+      const m = nm.match(/^[A-Z]{4}([RLN])\s*(\d{2})(\d{2})/);
+      if (m) {
+        if (!TW.t.attrs.hand) { TW.t.attrs.hand = { R: 'RECHTS', L: 'LINKS', N: 'NEUTRAL' }[m[1]]; changed = true; }
+        if (!TW.t.attrs.schaft) { TW.t.attrs.schaft = `${parseInt(m[2], 10)}×${parseInt(m[3], 10)}`; changed = true; }
+      }
+    }
+    if (changed) { renderTW(); toast('Aus der Bezeichnung übernommen'); }
+  }
+
+  // ---- step 3: numbers & photo
+  function twStep2() {
+    const t = TW.t, f = (k, l, ph, cls = '', extra = '') => `<label class="${cls}">${l}<input data-twf="${k}" class="${['firm','makerArt','qty'].includes(k) ? 'mono' : ''}" value="${esc(t[k] || '')}" placeholder="${ph}" ${extra}></label>`;
+    return `<div class="card form">
+      <div class="photo">
+        <button type="button" class="ph" data-tw="photo" aria-label="Foto">${t.img ? `<img src="${t.img}" alt="">` : toolIcon(t)}</button>
+        <div class="row" style="flex-direction:column;align-items:flex-start;gap:4px">
+          <button type="button" class="btn sm" data-tw="photo">${t.img ? 'Foto ändern' : 'Foto machen / wählen'}</button>
+          ${t.img ? '<button type="button" class="link" data-tw="nophoto">Foto entfernen</button>' : '<span class="hint">Ohne Foto erscheint das Symbol.</span>'}
+        </div>
+      </div>
+      <div class="grid">
+        ${f('firm', 'Artikelnummer (unsere)', 'z. B. 10234', 'span2')}
+        ${f('qty', 'Standard-Menge', 'z. B. 10 STK')}
+        ${f('maker', 'Hersteller', 'z. B. Sandvik', '', 'list="dl_maker"')}
+        ${f('makerArt', 'Hersteller Artikel-Nr.', 'Bestellnummer', 'span2')}
+        ${f('mach', 'Maschine', 'z. B. WT-250 RO', 'span2', 'list="dl_mach"')}
+        ${f('note', 'Notiz', 'Einsatz, Alternative …')}
+      </div>
+    </div>`;
+  }
+
+  // ---- step 4: preview
+  function twStep3() {
+    const t = TW.t;
+    const chips = [...attrsShown(t), ...specsOut(t)].map(s => `<span class="chip spec">${esc(s)}</span>`).join('');
+    const kv = [t.firm && `<span>ART.-NR. <b>${esc(t.firm)}</b></span>`, (t.maker || t.makerArt) && `<span>${esc(t.maker || 'HERST.')} <b>${esc(t.makerArt || '')}</b></span>`, t.qty && `<span>STD. <b>${esc(t.qty)}</b></span>`, t.mach && `<span>${esc(t.mach)}</span>`].filter(Boolean).join('');
+    return `<article class="item">${thumb(t.img, 'lg', t)}<div class="main">
+        <div class="trail">${esc(t.type)}</div>
+        <div class="name">${esc(fullName(t))}</div>
+        ${chips ? `<div class="chips">${chips}</div>` : ''}
+        ${kv ? `<div class="kv">${kv}</div>` : ''}
+        ${t.note ? `<div class="note">${esc(t.note)}</div>` : ''}
+      </div></article>
+      ${TW.editId || TW.onSave ? '' : `<button type="button" class="btn" data-tw="saveorder">Speichern + gleich auf die Liste</button>`}`;
+  }
+
+  function twValidate() {
+    const p = profileOf(TW.t.type);
+    if (!String(TW.t.name || '').trim()) { toast(p.auto ? 'Bitte Angaben machen – der Name ist noch leer' : `${p.nameLabel} fehlt`); return false; }
+    for (const k of p.req || []) {
+      const has = ATTR[k] ? av(TW.t, k) : TW.t[k];
+      if (!String(has || '').trim()) { toast(`Pflichtfeld fehlt: ${ATTR[k]?.label || (p.labels || {})[k] || SPEC.find(x => x.k === k)?.label}`); return false; }
+    }
+    return true;
+  }
+  function twSave(andOrder) {
+    const d = TW.t;
+    d.name = U(d.name);
+    if (d.firm && S.lib.some(x => x.firm === d.firm && x.id !== TW.editId)) { toast(`Artikelnummer ${d.firm} gibt es schon`); TW.step = 2; renderTW(); return; }
+    let tool;
+    if (TW.editId) { tool = S.lib.find(x => x.id === TW.editId); Object.assign(tool, d, { id: tool.id, updatedAt: Date.now() }); }
+    else { tool = { ...d, id: newId(), createdAt: Date.now() }; S.lib.push(tool); }
+    const cb = TW.onSave;
+    closeToolWiz();
+    if (cb) { save(); cb(tool); return; }
+    if (andOrder) { addToCart(tool, {}); setView('orders'); return; }
+    commit(TW.editId ? 'Gespeichert' : 'In Bibliothek gespeichert');
+  }
+
+  // ---- events
+  $('twBody').addEventListener('click', e => {
+    const b = e.target.closest('[data-tw]'); if (!b) return;
+    const a = b.dataset.tw, t = TW.t;
+    if (a === 'type') {
+      const changed = t.type !== b.dataset.type;
+      t.type = b.dataset.type;
+      if (changed && !TW.editId) {
+        const p = profileOf(t.type);
+        t.inName = { ...(p.inName || {}) };
+        Object.entries(p.defaults || {}).forEach(([k, v]) => { if (!t[k]) t[k] = v; });
+        TW.auto = !!p.auto;
+      }
+      TW.step = 1; renderTW(); return;
+    }
+    if (a === 'newtype') {
+      const v = U($('twNewType').value); if (!v) return;
+      if (!allTypes().includes(v)) { S.customTypes.push(v); save(); }
+      t.type = v; const p = profileOf(v); t.inName = { ...(p.inName || {}) }; TW.auto = !!p.auto; TW.step = 1; renderTW(); return;
+    }
+    if (a === 'opt') {
+      const k = b.dataset.k, v = b.dataset.v, A = ATTR[k];
+      if (A.multi) { const arr = new Set(t.attrs[k] || []); arr.has(v) ? arr.delete(v) : arr.add(v); t.attrs[k] = A.opts.filter(o => arr.has(o)); }
+      else t.attrs[k] = t.attrs[k] === v ? '' : v;
+      b.parentElement.querySelectorAll('[data-tw="opt"]').forEach(x => x.setAttribute('aria-pressed', String(A.multi ? (t.attrs[k] || []).includes(x.dataset.v) : t.attrs[k] === x.dataset.v)));
+      const fr = b.parentElement.querySelector('[data-twfree]'); if (fr && !A.multi) fr.value = '';
+      twUpdateName(); return;
+    }
+    if (a === 'photo') { $('twFile').click(); return; }
+    if (a === 'nophoto') { t.img = ''; renderTW(); return; }
+    if (a === 'saveorder') { if (twValidate()) twSave(true); return; }
+  });
+  $('twBody').addEventListener('input', e => {
+    const el = e.target, t = TW.t;
+    if (el.id === 'twName') { t.name = U(el.value); if (TW.auto && profileOf(t.type).auto && el.value !== autoBase(t)) { TW.auto = false; const c = $('twAuto'); if (c) c.checked = false; } twUpdateName(); return; }
+    if (el.dataset.twattr) { t.attrs[el.dataset.twattr] = U(el.value); twUpdateName(); return; }
+    if (el.dataset.twfree) { const k = el.dataset.twfree; t.attrs[k] = U(el.value); el.parentElement.querySelectorAll('[data-tw="opt"]').forEach(x => x.setAttribute('aria-pressed', 'false')); twUpdateName(); return; }
+    if (el.dataset.twspec) { t[el.dataset.twspec] = U(el.value); twUpdateName(); return; }
+    if (el.dataset.twf) { t[el.dataset.twf] = U(el.value); return; }
+  });
+  $('twBody').addEventListener('change', e => {
+    const el = e.target, t = TW.t;
+    if (el.dataset.twin) { t.inName = { ...(t.inName || {}), [el.dataset.twin]: el.checked }; twUpdateName(); return; }
+    if (el.id === 'twAuto') { TW.auto = el.checked; if (TW.auto) { t.name = autoBase(t); $('twName').value = t.name; } twUpdateName(); return; }
+    if (el.id === 'twName') twParseName();
+  });
+  $('twFile').onchange = e => {
+    const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+    const url = URL.createObjectURL(f), img = new Image();
+    img.onload = () => {
+      const max = 480, k = Math.min(1, max / Math.max(img.width, img.height));
+      const c = document.createElement('canvas'); c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+      const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); g.drawImage(img, 0, 0, c.width, c.height);
+      TW.t.img = c.toDataURL('image/jpeg', 0.72); URL.revokeObjectURL(url); renderTW();
+    };
+    img.onerror = () => toast('Bild konnte nicht gelesen werden');
+    img.src = url;
+  };
+  $('twBack').onclick = () => { TW.step = Math.max(0, TW.step - 1); renderTW(); };
+  $('twNext').onclick = () => {
+    if (TW.step === 1) { if (!twValidate()) return; }
+    if (TW.step === 3) { if (twValidate()) twSave(false); return; }
+    TW.step++; renderTW();
+  };
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('twiz').hidden && $('tour').hidden) closeToolWiz(); });
+  $('toolWizStart').onclick = () => openToolWiz();
+
   // ---------- render ----------
   function render() {
     const cart = cartItems().length, od = overdue().length;
@@ -1687,6 +2019,7 @@ window.addEventListener('resize',fit);window.addEventListener('load',fit);fit();
   if (!S.lib.length && !S.items.length) setView('lib'); else render();
   updateStatus();
   $('wizIco').innerHTML = ICON.C;
+  $('toolWizIco').innerHTML = ICON.BOHR;
   if (!lsGet('syncop_bestellliste_help_seen')) setTimeout(() => openHelp(true), 400);
   setInterval(() => { if (!S.send && !S.pickOpen && !S.editCart) render(); }, 30 * 60 * 1000);
 })();
