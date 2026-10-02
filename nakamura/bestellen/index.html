@@ -2179,7 +2179,7 @@ window.addEventListener('resize',fit);window.addEventListener('load',fit);fit();
   const cutFields = type => CUTF[baseOf(type)] || [];
   const CWST = ['ALLE', 'P', 'M', 'K', 'N', 'S', 'H'];
   const CWSTN = { P: 'STAHL', M: 'ROSTFREI', K: 'GUSS', N: 'ALU/NE', S: 'HRSA/TI', H: 'GEHÄRTET', ALLE: '' };
-  const cutClean = v => String(v ?? '').replace(/,/g, '.').replace(/\s*(-|–|bis)\s*/gi, '–').replace(/[^\d.–]/g, '').slice(0, 15);
+  const cutClean = v => String(v ?? '').replace(/(\d),(\d)/g, '$1.$2').replace(/\s*(-|–|bis)\s*/gi, '–').replace(/[^\d.–]/g, '').slice(0, 15);
   function cutHTML() {
     const t = TW.t, fs = cutFields(t.type); if (!fs.length) return '';
     const rows = t.cut || [];
@@ -2213,17 +2213,17 @@ window.addEventListener('resize',fit);window.addEventListener('load',fit);fit();
     TW.scanBusy = { img: '', msg: 'Suche Schnittdaten …' }; renderTW();
     const prompt = `Werkzeug: ${t.type} "${fullName(t)}"${t.maker ? `, Hersteller ${t.maker}` : ''}${t.makerArt ? `, Art.-Nr. ${t.makerArt}` : ''}${t.grade ? `, Sorte ${t.grade}` : ''}.
 Gib die Start-Schnittdaten (Richtwerte) laut Herstellerkatalog für die passenden ISO-Werkstoffgruppen (P, M, K, N, S, H). Nur Gruppen, für die das Werkzeug empfohlen ist.
-Antworte NUR mit JSON: {"cut":[{"wst":"P","vc":"","f":"","ap":""}],"sicher":true,"hinweis":""}
+Antworte NUR mit gültigem JSON, alle Werte als Strings in Anführungszeichen: {"cut":[{"wst":"P","vc":"","f":"","ap":""}],"sicher":true,"hinweis":""}
 - vc in m/min, ${baseOf(t.type) === 'FRÄSER' ? 'f = Vorschub pro Zahn fz in mm/Z' : 'f in mm/U'}, ${baseOf(t.type) === 'GEWINDEPLATTE' ? 'ap = Anzahl Zustellungen' : 'ap in mm'}. Bereiche als "min–max".
 - Nur Felder: ${fs.join(', ')}. Was du nicht weißt, leer lassen.
 - "sicher": false, wenn du die Sorte/Geometrie nicht genau kennst und nur allgemeine Werte gibst. In "hinweis" kurz warum.
 - Keine Werte erfinden.`;
     try {
-      const j = aiJSON(await aiCall([{ role: 'user', content: [{ type: 'text', text: prompt }] }], 800, info => { if (TW.scanBusy) { TW.scanBusy.msg = info; renderTW(); } }));
+      const j = aiJSON(await aiCall([{ role: 'user', content: [{ type: 'text', text: prompt }] }], 2000, info => { if (TW.scanBusy) { TW.scanBusy.msg = info; renderTW(); } }));
       const rows = cutFromAI(j.cut, 'KI', t.type);
       TW.scanBusy = null; TW.step = back;
       if (!rows.length) { renderTW(); toast('Keine Schnittdaten gefunden'); return; }
-      t.cut = [...(t.cut || []).filter(r => fs.some(k => r[k])), ...rows];
+      t.cut = [...(t.cut || []).filter(r => r.src !== 'KI' && fs.some(k => r[k])), ...rows];
       TW.aiNote = { filled: ['Schnittdaten'], unsure: [j.sicher === false ? 'Nur allgemeine Werte' : '', String(j.hinweis || '')].filter(Boolean) };
       renderTW(); toast('Richtwerte eingetragen – bitte prüfen');
     } catch (e) {
@@ -2279,7 +2279,12 @@ Antworte NUR mit JSON: {"cut":[{"wst":"P","vc":"","f":"","ap":""}],"sicher":true
         if (!TW.t.attrs.schaft) { TW.t.attrs.schaft = `${parseInt(m[2], 10)}×${parseInt(m[3], 10)}`; changed = true; }
       }
     }
-    if (changed) { renderTW(); toast('Aus der Bezeichnung übernommen'); }
+    if (changed) {
+      // nur die Felder aktualisieren – ein komplettes Neuzeichnen würde den gerade getippten Knopf verschlucken
+      const rIn = $('tws_r'); if (rIn && TW.t.r) rIn.value = TW.t.r;
+      if (p.holder) setTimeout(renderTW, 250); else twUpdateName();
+      toast('Aus der Bezeichnung übernommen');
+    }
   }
 
   // ---- step 3: numbers & photo
@@ -2500,7 +2505,26 @@ Antworte NUR mit JSON: {"cut":[{"wst":"P","vc":"","f":"","ap":""}],"sicher":true
     const c = d.content || (d.message && d.message.content) || [];
     return (Array.isArray(c) ? c : []).map(x => x.type === 'text' ? x.text : '').join('\n');
   }
-  const aiJSON = txt => { const t = String(txt).replace(/```(json)?/gi, ''); const a = t.indexOf('{'), b = t.lastIndexOf('}'); if (a < 0 || b < a) throw new Error('KEIN_JSON'); return JSON.parse(t.slice(a, b + 1)); };
+  // tolerant: KI liefert oft Bereiche ohne Anführungszeichen (vc: 150–250), Kommas am Ende, abgeschnittene Antworten
+  const aiJSON = txt => {
+    const t = String(txt).replace(/```(json)?/gi, '').replace(/[“”„]/g, '"');
+    const a = t.indexOf('{'); if (a < 0) throw new Error('KEIN_JSON');
+    const b = t.lastIndexOf('}'); const body = b > a ? t.slice(a, b + 1) : t.slice(a);
+    try { return JSON.parse(body); } catch {}
+    const fixed = body
+      .replace(/:\s*(-?[\d.,]+\s*(?:–|—|-|bis)\s*[\d.,]+)\s*(?=[,}\]\n])/g, ': "$1"')
+      .replace(/:\s*(-?\d+,\d+)\s*(?=[,}\]\n])/g, ': "$1"')
+      .replace(/,\s*([}\]])/g, '$1');
+    try { return JSON.parse(fixed); } catch {}
+    // letzte Rettung: Felder einzeln herauslesen
+    const out = {}, field = (src, k) => { const m = src.match(new RegExp('"' + k + '"\\s*:\\s*("([^"]*)"|[^,}\\]\\n]+)')); return m ? (m[2] !== undefined ? m[2] : m[1].trim()) : undefined; };
+    ['type', 'name', 'maker', 'makerArt', 'grade', 'd', 'r', 'b', 'l', 'z', 'w', 'p', 'qty', 'hinweis'].forEach(k => { const v = field(t, k); if (v !== undefined && v !== 'null') out[k] = v; });
+    const ci = t.indexOf('"cut"');
+    if (ci >= 0) out.cut = (t.slice(ci).match(/\{[^{}]*\}/g) || []).map(o => ({ wst: field(o, 'wst'), vc: field(o, 'vc'), f: field(o, 'f'), ap: field(o, 'ap') })).filter(o => o.vc || o.f || o.ap);
+    if (/"sicher"\s*:\s*false/.test(t)) out.sicher = false;
+    if (!Object.keys(out).length) throw new Error('KEIN_JSON');
+    return out;
+  };
   function scanPrompt() {
     const types = allTypes().join(', ');
     const attrs = Object.entries(ATTR).filter(([, A]) => A.opts).map(([k, A]) => `${k}: ${A.opts.join(' | ')}`).join('\n');
@@ -2528,7 +2552,7 @@ ${attrs}
     try {
       const txt = await aiCall([{ role: 'user', content: [
         { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: big.split(',')[1] } },
-        { type: 'text', text: scanPrompt() }] }], 1200, info => { if (TW.scanBusy) { TW.scanBusy.msg = info; renderTW(); } });
+        { type: 'text', text: scanPrompt() }] }], 2000, info => { if (TW.scanBusy) { TW.scanBusy.msg = info; renderTW(); } });
       const j = aiJSON(txt);
       TW.scanBusy = null;
       twApplyScan(j, thumb);
