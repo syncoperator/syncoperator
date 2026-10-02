@@ -222,17 +222,19 @@ input.mono{font-family:var(--f-mono)}
 .stages{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;font-family:var(--f-mono);font-size:9.5px;letter-spacing:.08em;color:var(--muted)}
 .stages span{display:flex;flex-direction:column;gap:4px}
 .stages i{height:4px;border-radius:2px;background:var(--line)}
-.stages .on i{background:var(--ink)} .stages .on{color:var(--ink)}
+.stages .on i{background:var(--ok)} .stages .on{color:var(--ink)}
 .stages .part i{background:linear-gradient(90deg,var(--ink) var(--p),var(--line) var(--p))}
 .timer{position:relative;height:16px}
 .timer .tk{position:absolute;left:0;right:0;bottom:0;height:11px;background:repeating-linear-gradient(90deg,var(--muted) 0 1.5px,transparent 1.5px calc(100% / var(--n) - .01px));opacity:.35;border-right:1.5px solid var(--muted)}
-.timer .fill{position:absolute;left:0;bottom:0;height:5px;border-radius:3px;background:var(--ink);width:var(--w);transition:width .6s ease}
+.timer .fill{position:absolute;left:0;bottom:0;height:5px;border-radius:3px;background:var(--ok);width:var(--w);transition:width .6s ease}
+.timer.mid .fill{background:var(--warn)}
 .timer.late .fill{background:var(--crit)}
 .timer .lbl{position:absolute;right:0;top:-2px;font-family:var(--f-mono);font-size:10px;letter-spacing:.06em;color:var(--muted)}
 .timer.late .lbl{color:var(--crit);font-weight:600}
-.rc .use{width:100%;height:4px;border-radius:2px;background:var(--line);overflow:hidden;margin-top:auto}
-.rc .use i{display:block;height:100%;background:var(--ink);width:var(--w)}
-.rc .use.soon i{background:var(--crit)}
+.rc .ubar{display:block;flex:none;width:100%;height:5px;border-radius:2px;background:var(--line);overflow:hidden;margin-top:auto}
+.rc .ubar i{display:block;height:100%;background:var(--ok);width:var(--w)}
+.rc .ubar.mid i{background:var(--warn)}
+.rc .ubar.soon i{background:var(--crit)}
 .rc .uset{font-family:var(--f-mono);font-size:9.5px;letter-spacing:.06em;color:var(--muted);text-transform:uppercase}
 .rc .uset.soon{color:var(--crit);font-weight:600}
 .foot{display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:space-between}
@@ -445,6 +447,20 @@ input.mono{font-family:var(--f-mono)}
 .recent{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;scroll-snap-type:x mandatory}
 .rc{flex:0 0 132px;scroll-snap-align:start;display:flex;flex-direction:column;align-items:flex-start;gap:8px;padding:10px;border:0;border-radius:14px;background:var(--card);box-shadow:var(--shadow);text-align:left;position:relative}
 .rc .rn{font-family:var(--f-head);font-weight:600;font-size:12px;line-height:1.25;overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.recent{display:grid!important;grid-template-columns:1fr 1fr;gap:10px;overflow:visible!important}
+@media(min-width:560px){.recent{grid-template-columns:repeat(3,1fr)}}
+.recent .rc{flex:none;width:auto;padding:0;gap:0;overflow:hidden;border-radius:16px}
+.rc .thumb{width:100%;height:auto;aspect-ratio:4/3;border-radius:0;border:0;border-bottom:1px solid var(--line)}
+.rc .thumb svg{width:56%;height:56%}
+.rc .rb{display:flex;flex-direction:column;gap:6px;padding:10px 12px 12px;width:100%;flex:1}
+.rc .rn{font-size:13.5px!important}
+.rc .rp{width:34px!important;height:34px!important;border-radius:11px!important;font-size:22px!important;box-shadow:0 2px 8px rgba(0,0,0,.18)}
+.rmore{width:100%;margin-top:8px}
+.segs{display:flex;gap:3px;height:7px}
+.segs i{flex:1;border-radius:2px;background:var(--line)}
+.segs i.ok{background:var(--ok)} .segs i.wait{background:var(--warn)} .segs i.late{background:var(--crit)}
+.seg-l{display:flex;justify-content:space-between;font-family:var(--f-mono);font-size:9.5px;letter-spacing:.08em;color:var(--muted)}
+.seg-l b{color:var(--ink);font-weight:600}
 .rc .rp{position:absolute;top:10px;right:10px;width:28px;height:28px;border-radius:9px;background:var(--ink);color:var(--on-ink);display:grid;place-items:center;font-size:18px;font-weight:600}
 .freq{display:flex;flex-direction:column;gap:6px}
 .fq{display:grid;grid-template-columns:1fr 90px 36px;gap:10px;align-items:center;border:0;background:transparent;padding:4px 0;text-align:left}
@@ -2987,8 +3003,10 @@ ${attrs}
       const w = Math.min(100, Math.round(since / rd * 100));
       return `<button type="button" class="op" data-home="${late ? 'remind' : 'wait'}">
         <div class="op-h"><span class="nr">${esc(o.nr)}</span><span class="to">${fmtDs(o.sentAt)}${o.to ? ' · AN ' + esc(o.to) : ''}</span><span class="got">${got}/${its.length}</span></div>
-        <div class="stages"><span class="on"><i></i>LISTE</span><span class="on"><i></i>GESENDET</span><span class="${got ? 'part' : ''}" style="--p:${Math.round(got / its.length * 100)}%"><i></i>GELIEFERT</span></div>
-        <div class="timer ${late ? 'late' : ''}" style="--n:${rd};--w:${Math.max(4, w)}%"><span class="tk"></span><span class="fill"></span><span class="lbl">${late ? (since - rd ? `${since - rd} T ÜBERFÄLLIG · ERINNERN` : 'HEUTE ERINNERN') : `TAG ${since} VON ${rd}`}</span></div>
+        <div class="stages"><span class="on"><i></i>LISTE</span><span class="on"><i></i>GESENDET</span><span class="${got === its.length ? 'on' : ''}"><i></i>GELIEFERT</span></div>
+        <div class="segs">${its.map(i => `<i class="${i.status === 'geliefert' ? 'ok' : days(lastTouch(i)) >= rd ? 'late' : 'wait'}" title="${esc(fullName(i))}"></i>`).join('')}</div>
+        <div class="seg-l"><span><b>${got}</b> VON ${its.length} GELIEFERT</span><span>${its.length - got} OFFEN</span></div>
+        <div class="timer ${late ? 'late' : w >= 60 ? 'mid' : ''}" style="--n:${rd};--w:${Math.max(4, w)}%"><span class="tk"></span><span class="fill"></span><span class="lbl">${late ? (since - rd ? `${since - rd} T ÜBERFÄLLIG · ERINNERN` : 'HEUTE ERINNERN') : `TAG ${since} VON ${rd}`}</span></div>
       </button>`;
     };
     const oldCart = cart.filter(i => days(i.createdAt) >= 1);
@@ -3003,7 +3021,7 @@ ${attrs}
     }
     // Schnell nachbestellen + Verbrauch
     const sentDates = id => [...new Set(S.items.filter(i => i.libId === id && i.sentAt).map(i => new Date(i.sentAt).toDateString()))].map(d => new Date(d).getTime()).sort((a, b) => a - b);
-    const recent = S.lib.map(t => [t, stats(t.id).last]).filter(x => x[1]).sort((a, b) => b[1] - a[1]).slice(0, 10).map(x => x[0]);
+    const recent = S.lib.map(t => [t, stats(t.id).last]).filter(x => x[1]).sort((a, b) => b[1] - a[1]).slice(0, 30).map(x => x[0]);
     const useBar = t => {
       const st = stats(t.id);
       if (st.inCart) return `<span class="uset">AUF DER LISTE</span>`;
@@ -3011,13 +3029,13 @@ ${attrs}
       const d = sentDates(t.id); if (d.length < 2) return '';
       const avg = (d[d.length - 1] - d[0]) / (d.length - 1) / DAY; if (avg < 1) return '';
       const p = days(d[d.length - 1]) / avg, soon = p >= .85;
-      return `<span class="uset ${soon ? 'soon' : ''}">${soon ? 'BALD NACHBESTELLEN' : `ca. alle ${Math.round(avg)} Tage`}</span><span class="use ${soon ? 'soon' : ''}" style="--w:${Math.min(100, Math.round(p * 100))}%"><i></i></span>`;
+      return `<span class="uset ${soon ? 'soon' : ''}">${soon ? 'BALD NACHBESTELLEN' : `ca. alle ${Math.round(avg)} Tage`}</span><span class="ubar ${soon ? 'soon' : p >= .6 ? 'mid' : ''}" style="--w:${Math.min(100, Math.round(p * 100))}%"><i></i></span>`;
     };
     const cnt = {}; S.items.forEach(i => { if (i.libId && i.status !== 'bedarf') cnt[i.libId] = (cnt[i.libId] || 0) + 1; });
     const top = Object.entries(cnt).map(([id, n]) => [S.lib.find(t => t.id === id), n]).filter(x => x[0]).sort((a, b) => b[1] - a[1]).slice(0, 5);
     const maxN = top.length ? top[0][1] : 1;
     $('v_home').innerHTML = `
-      ${recent.length ? `<div class="sec-h">Schnell nachbestellen</div><div class="recent">${recent.map(t => `<button type="button" class="rc" data-home="re" data-id="${t.id}">${thumb(t.img, '', t)}<span class="rn">${esc(fullName(t))}</span>${useBar(t)}<span class="rp">+</span></button>`).join('')}</div>` : ''}
+      ${recent.length ? `<div class="sec-h">Schnell nachbestellen</div><div class="recent">${recent.slice(0, S.homeAll ? 99 : 6).map(t => `<button type="button" class="rc" data-home="re" data-id="${t.id}">${thumb(t.img, '', t)}<span class="rb"><span class="rn">${esc(fullName(t))}</span>${useBar(t)}</span><span class="rp">+</span></button>`).join('')}</div>${recent.length > 6 ? `<button type="button" class="btn sm rmore" data-home="more">${S.homeAll ? 'Weniger zeigen' : `Alle zeigen (${recent.length})`}</button>` : ''}` : ''}
       ${status}
       <div class="quick">
         <button type="button" class="q-main" data-home="wizard"><span class="qi">${ICON.C}</span><span><b>Neue Bestellung</b><small>Assistent · 4 Schritte</small></span></button>
@@ -3035,6 +3053,7 @@ ${attrs}
     if (a === 'wizard') { openWizard(); return; }
     if (a === 'tool') { openToolWiz(); return; }
     if (a === 'scan') { scanTool(); return; }
+    if (a === 'more') { S.homeAll = !S.homeAll; renderHome(); return; }
     if (a === 'lib') { setView('lib'); return; }
     if (a === 'remind') { setView('orders'); setTimeout(() => $('alarmRemind')?.click(), 60); return; }
     if (a === 'send') { setView('orders'); setTimeout(() => $('sendOpen').click(), 60); return; }
