@@ -330,6 +330,8 @@ input.mono{font-family:var(--f-mono)}
 /* custom fields / options in tool wizard */
 .types .addopt{border-style:dashed;color:var(--muted)}
 .types .optx{margin-left:2px;font-weight:400;opacity:.7}
+.scanbtn{display:inline-flex;align-items:center;justify-content:center;gap:8px}
+.scanbtn svg{width:18px;height:18px;flex:none}
 .tw-scan{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:14px;border:0;border-radius:14px;background:var(--ink);color:var(--bg);font:inherit;cursor:pointer;margin-bottom:6px}
 .tw-scan svg{width:30px;height:30px;flex:none}
 .tw-scan b{display:block;font-family:var(--f-head);font-size:16px;text-transform:uppercase;letter-spacing:.02em}
@@ -549,7 +551,7 @@ h2.long{font-size:20pt}
     <div id="alarm" class="alarm calm"></div>
 
     <div class="card step">
-      <div class="step-h"><span class="no">1</span><h2>Werkzeug suchen</h2><button type="button" class="link" id="goNewTool">+ Neues Werkzeug</button></div>
+      <div class="step-h"><span class="no">1</span><h2>Werkzeug suchen</h2><button type="button" class="link" id="goScan">Etikett scannen</button><button type="button" class="link" id="goNewTool">+ Neues Werkzeug</button></div>
       <input id="pickQ" type="search" autocomplete="off" placeholder="z. B. CNMG, Ø8, R0.8, Artikelnummer …">
       <div id="pickRes" class="rows"></div>
     </div>
@@ -616,6 +618,7 @@ h2.long{font-size:20pt}
   <!-- ================= BIBLIOTHEK ================= -->
   <section id="v_lib" class="view" hidden>
     <button type="button" class="wizstart" id="toolWizStart"><span class="wsi" id="toolWizIco"></span><span><b>Neues Werkzeug</b><small>Werkzeug-Assistent · fragt nur, was zum Typ passt</small></span><span class="arr" aria-hidden="true">→</span></button>
+    <button type="button" class="btn scanbtn" id="libScan" style="width:100%;margin-top:-4px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8V5.5A1.5 1.5 0 0 1 4.5 4H7M17 4h2.5A1.5 1.5 0 0 1 21 5.5V8M21 16v2.5a1.5 1.5 0 0 1-1.5 1.5H17M7 20H4.5A1.5 1.5 0 0 1 3 18.5V16"/><path d="M7 9h10M7 12h7M7 15h9"/></svg>Etikett scannen</button>
 
     <div id="libHome" class="view">
       <input id="libQ" type="search" placeholder="Alle Werkzeuge durchsuchen …" style="background:var(--card)">
@@ -1511,6 +1514,7 @@ window.addEventListener('resize',fit);window.addEventListener('load',fit);fit();
       <button type="button" class="btn primary big" data-ds="order">+ Bestellen</button>
       <div class="ds-acts">
         <button type="button" class="btn" data-ds="edit">Ändern</button>
+        <button type="button" class="btn" data-ds="scan">Etikett lesen</button>
         <button type="button" class="btn" data-ds="copy">Kopie</button>
         <button type="button" class="btn danger" data-ds="del">Löschen</button>
       </div>`;
@@ -1525,6 +1529,7 @@ window.addEventListener('resize',fit);window.addEventListener('load',fit);fit();
     const a = b.dataset.ds;
     if (a === 'order') orderTool(t);
     if (a === 'edit') { closeDetail(); openToolWiz({ tool: t }); }
+    if (a === 'scan') { closeDetail(); scanTool({ tool: t }); }
     if (a === 'copy') { closeDetail(); openToolWiz({ tool: t, copy: true }); }
     if (a === 'del') askConfirmBox('Werkzeug löschen?', `„${fullName(t)}“ wird aus der Bibliothek gelöscht. Alte Bestellungen bleiben im Archiv.`, 'Löschen', () => {
       S.lib = S.lib.filter(x => x.id !== t.id); closeDetail(); commit('Aus Bibliothek gelöscht');
@@ -1679,7 +1684,7 @@ window.addEventListener('resize',fit);window.addEventListener('load',fit);fit();
     return `<div id="wzSelBox">${wzSelHTML()}</div>
       ${(S.sets || []).length ? `<div class="tw-al">SETS</div><div class="types">${S.sets.map(st => `<button type="button" data-wz="set" data-sid="${st.id}">+ ${esc(st.name)}</button>`).join('')}</div>` : ''}
       <input id="wzQ" type="search" autocomplete="off" placeholder="Suchen: CNMG, Ø8, R0.8, Artikelnummer …" value="${esc(W.q)}">
-      <button type="button" class="btn" data-wz="newopen">+ Neues Werkzeug anlegen</button>
+      <div class="row" style="gap:8px"><button type="button" class="btn" data-wz="newopen" style="flex:1">+ Neues Werkzeug</button><button type="button" class="btn scanbtn" data-wz="newscan" style="flex:1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8V5.5A1.5 1.5 0 0 1 4.5 4H7M17 4h2.5A1.5 1.5 0 0 1 21 5.5V8M21 16v2.5a1.5 1.5 0 0 1-1.5 1.5H17M7 20H4.5A1.5 1.5 0 0 1 3 18.5V16"/><path d="M7 9h10M7 12h7M7 15h9"/></svg>Etikett scannen</button></div>
       <div id="wzList" class="rows"></div>`;
   }
   function wzRenderList() {
@@ -1810,6 +1815,10 @@ window.addEventListener('resize',fit);window.addEventListener('load',fit);fit();
       const st = S.sets.find(x => x.id === b.dataset.sid); if (!st) return;
       setTools(st).forEach(x => { if (!W.draft.some(e => e.libId === x.libId)) W.draft.push({ key: 'n' + newId(), libId: x.libId, itemId: null, qty: x.qty || x.t.qty || '', dwg: st.name, note: '' }); });
       $('wzSelBox').innerHTML = wzSelHTML(); wzRenderList(); wzFoot(); toast(`Set „${st.name}“ ausgewählt`); return;
+    }
+    if (a === 'newscan') {
+      scanTool({ onSave: t => { if (!W.draft.some(e => e.libId === t.id)) W.draft.push({ key: 'n' + newId(), libId: t.id, itemId: null, qty: t.qty || '', dwg: '', note: '' }); W.q = ''; renderWiz(); toast('Ausgewählt'); } });
+      return;
     }
     if (a === 'newopen') {
       openToolWiz({ name: W.q, onSave: t => { W.draft.push({ key: 'n' + newId(), libId: t.id, itemId: null, qty: t.qty || '', dwg: '', note: '' }); W.q = ''; renderWiz(); toast('In Bibliothek gespeichert und ausgewählt'); } });
@@ -2239,7 +2248,7 @@ Antworte NUR mit gültigem JSON, alle Werte als Strings in Anführungszeichen: {
          <label class="innm full" style="margin-top:-4px"><input type="checkbox" id="twAuto" ${TW.auto ? 'checked' : ''}><span>Name automatisch</span></label>`
       : `<label class="full">${p.nameLabel} *<input id="twName" class="mono" value="${esc(TW.t.name)}" placeholder="${esc(p.namePh)}"></label>`;
     if (TW.scanBusy) return twBusyHTML();
-    return `${twAiNote()}<div class="namepreview tw-namebar"><span>So heißt es:</span> <b id="twPrev" class="mono"></b></div>
+    return `${twAiNote()}<button type="button" class="btn scanbtn" data-tw="scan" style="width:100%;margin-bottom:10px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8V5.5A1.5 1.5 0 0 1 4.5 4H7M17 4h2.5A1.5 1.5 0 0 1 21 5.5V8M21 16v2.5a1.5 1.5 0 0 1-1.5 1.5H17M7 20H4.5A1.5 1.5 0 0 1 3 18.5V16"/><path d="M7 9h10M7 12h7M7 15h9"/></svg>Etikett scannen – Felder ausfüllen</button><div class="namepreview tw-namebar"><span>So heißt es:</span> <b id="twPrev" class="mono"></b></div>
       <div class="card form"><div class="grid">
         ${p.auto ? '' : nameBlock}
         ${p.attrs.map(twAttrHTML).join('')}
@@ -2291,7 +2300,7 @@ Antworte NUR mit gültigem JSON, alle Werte als Strings in Anführungszeichen: {
   function twStep2() {
     const t = TW.t, f = (k, l, ph, cls = '', extra = '') => `<label class="${cls}">${l}<input data-twf="${k}" class="${['firm','makerArt','qty'].includes(k) ? 'mono' : ''}" value="${esc(t[k] || '')}" placeholder="${ph}" ${extra}></label>`;
     if (TW.scanBusy) return twBusyHTML();
-    return `${twAiNote()}<button type="button" class="btn" data-tw="scan" style="width:100%;margin-bottom:10px">Etikett scannen – Felder ausfüllen</button><div class="card form">
+    return `${twAiNote()}<button type="button" class="btn scanbtn" data-tw="scan" style="width:100%;margin-bottom:10px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8V5.5A1.5 1.5 0 0 1 4.5 4H7M17 4h2.5A1.5 1.5 0 0 1 21 5.5V8M21 16v2.5a1.5 1.5 0 0 1-1.5 1.5H17M7 20H4.5A1.5 1.5 0 0 1 3 18.5V16"/><path d="M7 9h10M7 12h7M7 15h9"/></svg>Etikett scannen – Felder ausfüllen</button><div class="card form">
       <div class="photo">
         <button type="button" class="ph" data-tw="photo" aria-label="Foto">${t.img ? `<img src="${t.img}" alt="">` : toolIcon(t)}</button>
         <div class="row" style="flex-direction:column;align-items:flex-start;gap:4px">
@@ -2420,6 +2429,12 @@ Antworte NUR mit gültigem JSON, alle Werte als Strings in Anführungszeichen: {
     if (a === 'cutdel') { t.cut.splice(+b.dataset.i, 1); renderTW(); return; }
     if (a === 'cutai') { cutAI(); return; }
     if (a === 'ainote') { TW.aiNote = null; renderTW(); return; }
+    if (a === 'usedup') {
+      const d = S.lib.find(x => x.id === b.dataset.id), cb = TW.onSave; if (!d) return;
+      closeToolWiz();
+      if (cb) { cb(d); return; }
+      setView('lib'); openDetail(d.id); return;
+    }
     if (a === 'nophoto') { t.img = ''; renderTW(); return; }
     if (a === 'saveorder') { if (twValidate()) twSave(true); return; }
   });
@@ -2473,7 +2488,8 @@ Antworte NUR mit gültigem JSON, alle Werte als Strings in Anführungszeichen: {
   }
   function twAiNote() {
     const n = TW.aiNote; if (!n) return '';
-    return `<div class="tw-ai"><b>Vom Etikett gelesen – bitte prüfen.</b> ${n.filled.length ? 'Ausgefüllt: ' + esc(n.filled.join(', ')) + '.' : ''}${n.unsure.length ? `<br><b>Unsicher:</b> ${esc(n.unsure.join(' · '))}` : ''} <button type="button" class="link" data-tw="ainote">OK</button></div>`;
+    const dup = n.dup && S.lib.find(x => x.id === n.dup);
+    return `${dup ? `<div class="tw-ai" style="border-color:var(--crit)"><b>Gibt es schon in der Bibliothek:</b> ${esc(fullName(dup))}${dup.firm ? ' · ' + esc(dup.firm) : ''}<div class="row" style="gap:8px;margin-top:8px"><button type="button" class="btn primary sm" data-tw="usedup" data-id="${dup.id}">${TW.onSave ? 'Vorhandenes nehmen' : 'Vorhandenes öffnen'}</button></div></div>` : ''}<div class="tw-ai"><b>Vom Etikett gelesen – bitte prüfen.</b> ${n.filled.length ? 'Ausgefüllt: ' + esc(n.filled.join(', ')) + '.' : ''}${n.unsure.length ? `<br><b>Unsicher:</b> ${esc(n.unsure.join(' · '))}` : ''} <button type="button" class="link" data-tw="ainote">OK</button></div>`;
   }
   const imgToJpeg = (file, max, q) => new Promise((res, rej) => {
     const url = URL.createObjectURL(file), img = new Image();
@@ -2595,10 +2611,15 @@ ${attrs}
     if (!t.img && thumb) { t.img = thumb; filled.push('Foto'); }
     { const rows = cutFromAI(j.cut, 'ETIKETT', t.type); if (rows.length && !(t.cut || []).length) { t.cut = rows; filled.push('Schnittdaten'); } }
     TW.auto = !!p.auto && (!t.name || t.name === autoBase(t));
-    TW.aiNote = { filled, unsure };
+    const nz = v => U(v).replace(/[\s\-.\/]/g, '');
+    const dup = TW.editId ? null : S.lib.find(x => (j.makerArt && x.makerArt && nz(x.makerArt) === nz(j.makerArt)) || (j.name && x.name && nz(x.name) === nz(j.name) && (!x.grade || !j.grade || nz(x.grade) === nz(j.grade))));
+    TW.aiNote = { filled, unsure, dup: dup ? dup.id : null };
     TW.step = 1; renderTW(); twParseName();
     toast(filled.length ? 'Vom Etikett übernommen – bitte prüfen' : 'Kaum etwas erkannt – bitte von Hand ergänzen');
   }
+  function scanTool(opts) { openToolWiz(opts || {}); $('twScanFile').click(); }
+  $('libScan').onclick = () => scanTool();
+  $('goScan').onclick = () => scanTool();
   $('twScanFile').onchange = e => { const f = e.target.files[0]; e.target.value = ''; if (f) twScan(f); };
   $('twBack').onclick = () => { if (TW.scanBusy) return; TW.step = Math.max(0, TW.step - 1); renderTW(); };
   $('twNext').onclick = () => {
@@ -2954,6 +2975,7 @@ ${attrs}
         <button type="button" class="q-main" data-home="wizard"><span class="qi">${ICON.C}</span><span><b>Neue Bestellung</b><small>Assistent · 4 Schritte</small></span></button>
         <button type="button" class="q-sub" data-home="tool"><span class="qi">${ICON.BOHR}</span><b>Neues Werkzeug</b></button>
         <button type="button" class="q-sub" data-home="lib"><span class="qi">${ICON.SPANN}</span><b>Bibliothek</b></button>
+        <button type="button" class="q-sub" data-home="scan" style="grid-column:1/-1"><span class="qi" style="display:grid;place-items:center"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8V5.5A1.5 1.5 0 0 1 4.5 4H7M17 4h2.5A1.5 1.5 0 0 1 21 5.5V8M21 16v2.5a1.5 1.5 0 0 1-1.5 1.5H17M7 20H4.5A1.5 1.5 0 0 1 3 18.5V16"/><path d="M7 9h10M7 12h7M7 15h9"/></svg></span><b>Etikett scannen</b><small class="hint" style="margin-left:auto">Foto → Werkzeug</small></button>
       </div>
       ${att.length ? `<div class="sec-h">Braucht Aufmerksamkeit</div><div class="att">${att.map(x => `<div class="att-i ${x.cls}"><span class="ad"></span><span class="grow"><b>${x.t}</b><small>${x.s}</small></span><button type="button" class="btn sm" data-home="${x.a}">${x.b}</button></div>`).join('')}</div>` : `<div class="allgood"><svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><circle cx="11" cy="11" r="9" stroke="currentColor" stroke-width="1.6" fill="none"/><path class="draw" d="M7 11.5l2.6 2.5L15 8.5" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg><span><b>Alles im Griff</b><small>Nichts offen, nichts überfällig.</small></span></div>`}
       ${recent.length ? `<div class="sec-h">Schnell nachbestellen</div><div class="recent">${recent.map(t => `<button type="button" class="rc" data-home="re" data-id="${t.id}">${thumb(t.img, '', t)}<span class="rn">${esc(fullName(t))}</span><span class="rp">+</span></button>`).join('')}</div>` : ''}
@@ -2969,6 +2991,7 @@ ${attrs}
     if (a === 'month' || a === 'arch') { setView('arch'); return; }
     if (a === 'wizard') { openWizard(); return; }
     if (a === 'tool') { openToolWiz(); return; }
+    if (a === 'scan') { scanTool(); return; }
     if (a === 'lib') { setView('lib'); return; }
     if (a === 'remind') { setView('orders'); setTimeout(() => $('alarmRemind')?.click(), 60); return; }
     if (a === 'send') { setView('orders'); setTimeout(() => $('sendOpen').click(), 60); return; }
