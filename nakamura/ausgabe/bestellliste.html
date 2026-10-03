@@ -548,6 +548,23 @@ input.mono{font-family:var(--f-mono)}
 .aus-f{display:flex;gap:4px}
 .aus-f button{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:4px 10px;font:600 10.5px var(--f-mono);letter-spacing:.04em;color:var(--fg)}
 .aus-f button[aria-pressed="true"]{background:var(--ink);color:var(--on-ink);border-color:var(--ink)}
+.aus-f{flex-wrap:wrap;margin-top:-4px}
+.ser{display:flex;align-items:center;gap:12px;width:100%;padding:12px 14px;border:1.5px dashed var(--line);border-radius:14px;background:var(--card);text-align:left;font:inherit;color:var(--fg)}
+.ser i{width:40px;height:24px;border-radius:12px;background:var(--line);position:relative;flex:none;transition:background .2s}
+.ser i::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:left .2s}
+.ser.on{border-style:solid;border-color:var(--ink)}.ser.on i{background:var(--ink)}.ser.on i::after{left:19px}
+.ser b{display:block;font-family:var(--f-head);font-size:14px;letter-spacing:.03em;text-transform:uppercase}.ser small{display:block;font-size:11.5px;color:var(--muted)}
+.br{display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px dashed var(--line)}
+.br .thumb{width:38px;height:38px}.br .t{flex:1;min-width:0}.br .t b{display:block;font-size:12.5px;line-height:1.2}.br .t small{font-family:var(--f-mono);font-size:10px;color:var(--muted)}
+.locf{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-radius:12px;background:var(--ink);color:var(--on-ink);font:600 12px var(--f-mono);letter-spacing:.04em}
+.locf button{border:0;background:none;color:inherit;font-size:18px;padding:0 4px}
+.jr-sum{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.jr-sum div{padding:10px;border-radius:12px;background:var(--bg);text-align:center}.jr-sum b{display:block;font:600 22px var(--f-mono)}.jr-sum small{font:500 9.5px var(--f-mono);letter-spacing:.08em;color:var(--muted)}
+.jr-bars{display:flex;flex-direction:column;gap:6px}
+.jr-bar{display:grid;grid-template-columns:96px 1fr 44px;gap:8px;align-items:center;font-size:12px}
+.jr-bar span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
+.jr-bar i{display:block;height:8px;border-radius:4px;background:var(--ink)}
+.jr-bar b{font-family:var(--f-mono);text-align:right}
 .aus-list{display:flex;flex-direction:column;gap:6px}
 .al{display:flex;align-items:center;gap:10px;padding:8px 10px;border:0;border-radius:12px;background:var(--card);box-shadow:var(--shadow);text-align:left;font:inherit;color:var(--fg);width:100%}
 .al .thumb{width:40px;height:40px}
@@ -826,11 +843,15 @@ h2.long{font-size:20pt}
       <div class="aus-in"><input id="ausQ" type="search" inputmode="search" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="Handscanner · Art.-Nr. · Name"></div>
       <div id="ausHits" class="aus-hits"></div>
     </div>
+    <div id="ausSer"></div>
+    <div id="ausBatch"></div>
     <div id="ausCard"></div>
     <div id="ausLow"></div>
-    <div class="sec-h">Lager<span class="grow"></span><span class="aus-f" id="ausFilt"></span></div>
+    <div class="sec-h">Lager</div>
+    <div class="aus-f" id="ausFilt"></div>
+    <div id="ausLocF"></div>
     <div id="ausList" class="aus-list"></div>
-    <div class="sec-h">Letzte Buchungen</div>
+    <div class="sec-h">Letzte Buchungen<button type="button" class="link" data-au="journal" style="margin-left:auto">Journal &amp; Export ↗</button></div>
     <div id="ausLog" class="aus-log"></div>
   </section>
 
@@ -937,6 +958,12 @@ h2.long{font-size:20pt}
   <div class="helpsheet" role="dialog" aria-modal="true">
     <div class="row"><h2 class="grow">Sync Handy ↔ PC</h2><button type="button" class="x-btn" id="syncClose" aria-label="Schließen"><svg width="22" height="22" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button></div>
     <div id="syncBody" class="view" style="gap:12px"></div>
+  </div>
+</div>
+<div id="jrnSheet" class="sheetbg" hidden>
+  <div class="helpsheet" role="dialog" aria-modal="true">
+    <div class="row"><h2 class="grow">Journal</h2><button type="button" class="x-btn" id="jrnClose" aria-label="Schließen"><svg width="22" height="22" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button></div>
+    <div id="jrnBody" class="view" style="gap:12px"></div>
   </div>
 </div>
 <div id="lblSheet" class="sheetbg" hidden>
@@ -1845,7 +1872,7 @@ window.addEventListener('resize',fit);window.addEventListener('load',fit);fit();
   // ---------- lightbox ----------
   document.addEventListener('click', e => { const z = e.target.closest('[data-zoom]'); if (!z) return; const im = z.tagName === 'IMG' ? z : z.querySelector('img'); if (!im) return; $('lbImg').src = im.src; $('lightbox').hidden = false; });
   $('lightbox').onclick = () => $('lightbox').hidden = true;
-  document.addEventListener('keydown', e => { if (e.key === 'Escape') { $('lightbox').hidden = true; if (!$('cfm').hidden) $('cfmNo').click(); else if (!$('dsheet').hidden) closeDetail(); else ['tplSheet', 'setSheet', 'impSheet', 'syncSheet', 'setgSheet', 'lblSheet'].forEach(id => { if (!$(id).hidden) { $(id).hidden = true; render(); } }); } });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') { $('lightbox').hidden = true; if (!$('cfm').hidden) $('cfmNo').click(); else if (!$('dsheet').hidden) closeDetail(); else ['tplSheet', 'setSheet', 'impSheet', 'syncSheet', 'setgSheet', 'lblSheet', 'jrnSheet'].forEach(id => { if (!$(id).hidden) { $(id).hidden = true; render(); } }); } });
 
   // ---------- backup ----------
   $('exportBtn').onclick = () => {
@@ -3090,6 +3117,7 @@ ${attrs}
       <input id="setQ" type="search" placeholder="Werkzeug hinzufügen: suchen …" value="${esc(setQ)}">
       <div class="rows" id="setHits">${hits.map(t => `<button type="button" class="lr" data-set="add" data-lid="${t.id}">${thumb(t.img, '', t)}<span class="body"><span class="t">${esc(fullName(t))}</span></span><span class="plus" aria-hidden="true">+</span></button>`).join('')}</div>
       <button type="button" class="btn primary big" data-set="order" ${setTools(st).length ? '' : 'disabled'}>Alle auf die Liste</button>
+      <div class="row" style="gap:8px"><button type="button" class="btn" data-set="issue" style="flex:1" ${setTools(st).length ? '' : 'disabled'}>− Ausgeben</button><button type="button" class="btn" data-set="label" style="flex:1">Etikett</button></div>
       <div class="row"><span class="grow"></span><button type="button" class="btn danger sm" data-set="del">Set löschen</button></div>`;
   }
   function addSetToCart(st) {
@@ -3107,6 +3135,8 @@ ${attrs}
     const a = b.dataset.set;
     if (a === 'add') { st.items.push({ libId: b.dataset.lid, qty: '' }); setQ = ''; save(); renderSet(); return; }
     if (a === 'rm') { st.items = st.items.filter(x => x.libId !== b.dataset.lid); save(); renderSet(); return; }
+    if (a === 'issue') { $('setSheet').hidden = true; AU.mode = 'aus'; setView('aus'); ausSet(st); return; }
+    if (a === 'label') { $('setSheet').hidden = true; openLabels(['set:' + st.id]); return; }
     if (a === 'order') { addSetToCart(st); $('setSheet').hidden = true; setView('orders'); commit(`Set „${st.name}“ auf die Liste`); return; }
     if (a === 'del') askConfirmBox(`Set „${st.name}“ löschen?`, 'Die Werkzeuge bleiben in der Bibliothek.', 'Löschen', () => { S.sets = S.sets.filter(x => x.id !== st.id); $('setSheet').hidden = true; commit('Set gelöscht'); });
   });
@@ -3509,7 +3539,14 @@ ${attrs}
   const LB = Object.assign({ size: 'M', bc: true, qr: true, ico: true, roll: false }, (() => { try { return JSON.parse(lsGet('syncop_bestellliste_lbl') || '{}'); } catch { return {}; } })(), { sel: new Map(), q: '' });
   const lbSaveOpts = () => lsSet('syncop_bestellliste_lbl', JSON.stringify({ size: LB.size, bc: LB.bc, qr: LB.qr, ico: LB.ico, roll: LB.roll }));
   const lbGrid = sz => { const z = LSIZES[sz]; return { cols: Math.floor(194 / z.w), rows: Math.floor(281 / z.h) }; };
+  const appBase = () => location.href.split('#')[0].split('?')[0];
+  const locList = () => [...new Set(S.lib.map(t => U(t.loc)).filter(Boolean))].sort();
   function labelHTML(t, o = LB) {
+    const z0 = LSIZES[o.size];
+    if (t && t.kind === 'set') { const ts = setTools(t.st);
+      return `<div class="lbl s${o.size}"><div class="l-txt"><div class="l-ty">SET · RÜSTSATZ</div><div class="l-nm">${esc(t.st.name)}</div><div class="l-nr">${ts.length} WERKZEUGE</div>${o.size !== 'S' ? `<div class="l-mk">${esc(ts.slice(0, 3).map(x => x.t.name).join(' · '))}${ts.length > 3 ? ' …' : ''}</div>` : ''}</div><div class="l-qr" style="width:${z0.h - 4.5}mm">${qrSVG(appBase() + '#s=' + t.st.id)}</div></div>`; }
+    if (t && t.kind === 'loc') { const ts = S.lib.filter(x => U(x.loc) === t.name);
+      return `<div class="lbl s${o.size}"><div class="l-txt"><div class="l-ty">⌂ LAGERORT</div><div class="l-nm" style="font-size:1.12em;overflow-wrap:normal;word-break:normal;hyphens:none">${esc(t.name)}</div><div class="l-nr">${ts.length} WERKZEUGE</div>${o.size !== 'S' ? `<div class="l-mk">${esc(ts.slice(0, 3).map(x => x.name).join(' · '))}${ts.length > 3 ? ' …' : ''}</div>` : ''}</div><div class="l-qr" style="width:${z0.h - 4.5}mm">${qrSVG(appBase() + '#l=' + encodeURIComponent(t.name))}</div></div>`; }
     const c = toolCode(t), z = LSIZES[o.size], qrmm = z.h - 4.5;
     return `<div class="lbl s${o.size}"><div class="l-txt">
         <div class="l-ty">${o.ico ? `<span class="l-ic">${toolIcon(t)}</span>` : ''}${esc(t.type || '')}</div>
@@ -3554,7 +3591,12 @@ ${attrs}
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=JetBrains+Mono:wght@500;600&display=swap"><style>${css}</style></head>
 <body><p class="info">${o.roll ? `Etikettendrucker · ${z.w} × ${z.h} mm · ${tools.length} Stück` : `A4 · ${z.w} × ${z.h} mm · ${g.cols} × ${g.rows} pro Seite · ${tools.length} Etiketten auf ${pages.length} ${pages.length === 1 ? 'Seite' : 'Seiten'}. Entlang der gestrichelten Linien schneiden – die Striche am Rand zeigen, wo.`}</p>${body}</body></html>`;
   }
-  function lbTools() { const out = []; LB.sel.forEach((n, id) => { const t = S.lib.find(x => x.id === id); if (t) for (let i = 0; i < n; i++) out.push(t); }); return out; }
+  function lbTools() { const out = []; LB.sel.forEach((n, id) => {
+    let t = null;
+    if (id.startsWith('set:')) { const st = (S.sets || []).find(x => x.id === id.slice(4)); if (st) t = { kind: 'set', st }; }
+    else if (id.startsWith('loc:')) t = { kind: 'loc', name: id.slice(4) };
+    else t = S.lib.find(x => x.id === id);
+    if (t) for (let i = 0; i < n; i++) out.push(t); }); return out; }
   function openLabels(preIds) {
     LB.sel = new Map((preIds || []).map(id => [id, 1])); LB.q = '';
     $('lblSheet').hidden = false; renderLabels();
@@ -3570,7 +3612,12 @@ ${attrs}
       <div class="lb-opt"><span class="tw-al">DRUCK</span><div class="types">${chip('roll:0', !LB.roll, 'A4 zum Ausschneiden')}${chip('roll:1', LB.roll, 'Etikettendrucker')}</div></div>
       <div class="lb-prev">${S.lib[0] || lbTools()[0] ? `<div class="lb-pv">${labelHTML(lbTools()[0] || S.lib[0])}</div>` : ''}</div>
       <input id="lbQ" type="search" placeholder="Werkzeuge filtern …" value="${esc(LB.q)}">
-      <div class="lb-list">${groups.map(([ty, ts]) => { const all = ts.every(t => LB.sel.has(t.id));
+      <div class="lb-list">${[['__SETS', 'SETS · RÜSTSÄTZE', (S.sets || []).map(st => ({ id: 'set:' + st.id, n: st.name, s: setTools(st).length + ' Werkzeuge' }))],
+                              ['__LOCS', 'LAGERORTE · FÄCHER', locList().map(l => ({ id: 'loc:' + l, n: l, s: S.lib.filter(x => U(x.loc) === l).length + ' Werkzeuge' }))]].filter(g => g[2].length).map(([gk, gt, es]) => {
+          const all = es.every(e2 => LB.sel.has(e2.id));
+          return `<div class="lb-g"><div class="lb-gh"><b class="grow">${gt}</b><button type="button" class="link" data-lb="allx:${gk}">${all ? 'Keine' : 'Alle'}</button></div>${es.map(e2 => { const n2 = LB.sel.get(e2.id) || 0;
+            return `<div class="lb-r ${n2 ? 'on' : ''}"><button type="button" class="lb-chk" data-lb="tog:${esc(e2.id)}" aria-pressed="${!!n2}">${n2 ? '✓' : ''}</button><span class="grow lb-n" data-lb="tog:${esc(e2.id)}">${esc(e2.n)}<small>${e2.s}</small></span>${n2 ? `<span class="lb-qty"><button type="button" data-lb="dec:${esc(e2.id)}">−</button><b class="mono">${n2}</b><button type="button" data-lb="inc:${esc(e2.id)}">+</button></span>` : ''}</div>`; }).join('')}</div>`; }).join('')}
+        ${groups.map(([ty, ts]) => { const all = ts.every(t => LB.sel.has(t.id));
         return `<div class="lb-g"><div class="lb-gh"><span class="gi">${typeIcon(ty)}</span><b class="grow">${esc(ty)}</b><button type="button" class="link" data-lb="all:${esc(ty)}">${all ? 'Keine' : 'Alle'}</button></div>
           ${ts.map(t => { const n2 = LB.sel.get(t.id) || 0; return `<div class="lb-r ${n2 ? 'on' : ''}"><button type="button" class="lb-chk" data-lb="tog:${t.id}" aria-pressed="${!!n2}">${n2 ? '✓' : ''}</button>
             <span class="grow lb-n" data-lb="tog:${t.id}">${esc(fullName(t))}<small>${esc(toolCode(t) || '– ohne Nr. –')}</small></span>
@@ -3588,6 +3635,7 @@ ${attrs}
     else if (a === 'tog') { LB.sel.has(v) ? LB.sel.delete(v) : LB.sel.set(v, 1); }
     else if (a === 'inc') LB.sel.set(v, Math.min(99, (LB.sel.get(v) || 0) + 1));
     else if (a === 'dec') { const n = (LB.sel.get(v) || 1) - 1; n ? LB.sel.set(v, n) : LB.sel.delete(v); }
+    else if (a === 'allx') { const ids = v === '__SETS' ? (S.sets || []).map(st => 'set:' + st.id) : locList().map(l => 'loc:' + l); const all = ids.every(i => LB.sel.has(i)); ids.forEach(i => all ? LB.sel.delete(i) : LB.sel.set(i, LB.sel.get(i) || 1)); }
     else if (a === 'all') { const ts = S.lib.filter(t => (t.type || 'SONSTIGES') === v && (!LB.q || U(fullName(t)).includes(LB.q))); const all = ts.every(t => LB.sel.has(t.id)); ts.forEach(t => all ? LB.sel.delete(t.id) : LB.sel.set(t.id, LB.sel.get(t.id) || 1)); }
     else if (a === 'go') { $('lblSheet').hidden = true; $('sheetFrame').srcdoc = labelDoc(lbTools()); $('sheetView').hidden = false; document.body.style.overflow = 'hidden'; return; }
     lbSaveOpts(); const st = $('lblBody').querySelector('.lb-list')?.scrollTop; renderLabels(); const l = $('lblBody').querySelector('.lb-list'); if (l && st) l.scrollTop = st;
@@ -3595,6 +3643,9 @@ ${attrs}
   $('lblSheet').addEventListener('input', e => { if (e.target.id === 'lbQ') { LB.q = U(e.target.value); const pos = e.target.selectionStart; renderLabels(); const i = $('lbQ'); i.focus(); try { i.setSelectionRange(pos, pos); } catch {} } });
   $('lblClose').onclick = () => $('lblSheet').hidden = true;
   function openFromHash() {
+    const hs = location.hash.match(/^#s=([\w-]+)/), hl = location.hash.match(/^#l=(.+)$/);
+    if (hs || hl) { history.replaceState(null, '', location.href.split('#')[0]); setView('aus');
+      if (hs) { const st = (S.sets || []).find(x => x.id === hs[1]); st ? ausSet(st) : toast('Set nicht auf diesem Gerät – Sync nutzen'); } else ausLoc(decodeURIComponent(hl[1])); return; }
     const m = location.hash.match(/^#t=([\w-]+)/); if (!m) return;
     const t = S.lib.find(x => x.id === m[1]);
     history.replaceState(null, '', location.href.split('#')[0]);
@@ -3687,7 +3738,25 @@ ${attrs}
   // =====================================================================
   // WERKZEUG-AUSGABE: Lagerbestand, Buchungen, Scanner
   // =====================================================================
-  const AU = { mode: 'aus', sel: null, q: '', qty: 1, mach: '', dwg: '', filt: 'all', unknown: '', assign: false };
+  const AU = { mode: 'aus', sel: null, q: '', qty: 1, mach: '', dwg: '', filt: 'all', unknown: '', assign: false, serial: false, batch: [], locF: '', who: lsGet('syncop_bestellliste_who') };
+  const DAYMS = 86400000;
+  // Verbrauch der letzten 90 Tage → Tagesrate, Reichweite
+  function usageRate(t) {
+    const from = Date.now() - 90 * DAYMS, mv = (S.moves || []).filter(m => m.libId === t.id && m.kind === 'aus' && m.ts >= from);
+    if (!mv.length) return 0;
+    const first = Math.min(...mv.map(m => m.ts)), span = Math.max(14, (Date.now() - first) / DAYMS);
+    return mv.reduce((a, m) => a - m.qty, 0) / span;
+  }
+  function reach(t) { if (!hasStock(t)) return null; const r = usageRate(t); if (!r) return null; const d = Math.max(0, t.stock / r); return { d, date: Date.now() + d * DAYMS }; }
+  const reachTxt = t => { const r = reach(t); if (!r) return ''; return r.d < 1 ? 'LEER' : `REICHT ≈ ${Math.round(r.d)} T · BIS ${fmtDs(r.date)}`; };
+  function idleDays(t) {
+    if (!hasStock(t) || t.stock <= 0) return 0;
+    const mv = (S.moves || []).filter(m => m.libId === t.id); if (!mv.length) return 0;
+    const lastAus = Math.max(0, ...mv.filter(m => m.kind === 'aus').map(m => m.ts));
+    return Math.floor((Date.now() - (lastAus || Math.min(...mv.map(m => m.ts)))) / DAYMS);
+  }
+  const shelfWarmer = () => S.lib.filter(t => idleDays(t) >= 180);
+  const peopleList = () => [...new Set([...(S.meta.people || []), ...(S.moves || []).map(m => m.who).filter(Boolean)])].slice(0, 12);
   const qtyNum = v => { const m = String(v ?? '').replace(',', '.').match(/\d+(\.\d+)?/); return m ? Math.round(parseFloat(m[0])) : 0; };
   const hasStock = t => t && typeof t.stock === 'number';
   const stockOf = t => hasStock(t) ? t.stock : 0;
@@ -3703,6 +3772,8 @@ ${attrs}
         || S.lib.find(t => nzc(t.name) === k) || null;
   }
   function book(t, kind, n, extra = {}) {
+    if (!hasStock(t) && kind === 'aus') {   // ohne Bestandsführung: nur protokollieren
+      const mv = { id: newId(), ts: Date.now(), libId: t.id, kind, qty: -n, after: null, ...extra }; (S.moves ||= []).push(mv); return mv; }
     const before = stockOf(t);
     const after = kind === 'inv' ? n : kind === 'aus' ? before - n : before + n;
     const mv = { id: newId(), ts: Date.now(), libId: t.id, kind, qty: after - before, after, ...extra };
@@ -3718,7 +3789,7 @@ ${attrs}
   }
   function stockUndoDelivery(it) {
     const i = (S.moves || []).findIndex(m => m.itemId === it.id); if (i < 0) return;
-    const mv = S.moves[i], t = S.lib.find(x => x.id === mv.libId); if (t && hasStock(t)) t.stock -= mv.qty;
+    const mv = S.moves[i], t = S.lib.find(x => x.id === mv.libId); if (t && hasStock(t) && mv.after !== null) t.stock -= mv.qty;
     S.moves.splice(i, 1);
   }
   const AU_LABEL = { aus: ['AUSGABE', 'Ausgeben', '−'], ein: ['ZUGANG', 'Einbuchen', '+'], inv: ['INVENTUR', 'Bestand setzen', '='] };
@@ -3745,10 +3816,13 @@ ${attrs}
       <div class="qty"><button type="button" data-au="dec">−</button><input id="auQty" type="number" inputmode="numeric" min="0" value="${n}"><button type="button" data-au="inc">+</button></div>
       <div class="qchips">${[1, 2, 5, 10, qtyNum(t.qty)].filter((v, i, a) => v && a.indexOf(v) === i).map(v => `<button type="button" data-au="set" data-n="${v}">${v}</button>`).join('')}</div>
       ${AU.mode === 'aus' ? `<div class="tplrow"><span class="tw-al">MASCHINE</span><div class="types">${machList().map(m => `<button type="button" data-au="mach" data-v="${esc(m)}" aria-pressed="${AU.mach === m}">${esc(m)}</button>`).join('')}<button type="button" class="addopt" data-au="machnew">+</button></div></div>
+        ${whoHTML()}
         <input id="auDwg" placeholder="Auftrag / Zeichnung (optional)" value="${esc(AU.dwg)}" style="font-family:var(--f-mono)">` : ''}
+      ${reachTxt(t) ? `<div class="hint mono" style="font-size:11px">${reachTxt(t)} · VERBRAUCH ${(usageRate(t) * 7).toFixed(1).replace('.', ',')}/WOCHE</div>` : ''}
       <button type="button" class="bk-go" data-au="go">${L[1]} ${AU.mode === 'inv' ? '= ' + n : L[2] + n} <span style="opacity:.7;font-family:var(--f-mono);font-size:13px">→ ${after}</span></button>
     </div>`;
   }
+  const whoHTML = () => `<div class="tplrow"><span class="tw-al">WER</span><div class="types">${peopleList().map(p => `<button type="button" data-au="who" data-v="${esc(p)}" aria-pressed="${AU.who === p}">${esc(p)}</button>`).join('')}<button type="button" class="addopt" data-au="whonew">+ Name</button></div></div>`;
   function renderAus() {
     document.querySelectorAll('[data-am]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.am === AU.mode)));
     // Treffer beim Tippen
@@ -3756,29 +3830,60 @@ ${attrs}
     $('ausHits').innerHTML = q && !AU.unknown ? S.lib.filter(t => U([fullName(t), t.firm, t.makerArt, t.maker, t.loc, ...(t.codes || [])].join(' ')).includes(q)).slice(0, 6).map(t =>
       `<button type="button" class="aus-hit" data-au="pick" data-id="${t.id}">${thumb(t.img, '', t)}<span><b>${esc(fullName(t))}</b><small>${esc(t.firm || t.makerArt || '')}${t.loc ? ' · ⌂ ' + esc(t.loc) : ''}</small></span><span class="st">${hasStock(t) ? t.stock : '–'}</span></button>`).join('') || '<span class="hint">Nichts gefunden – Enter legt den Code als unbekannt an.</span>' : '';
     $('ausCard').innerHTML = ausCardHTML();
+    $('ausSer').innerHTML = AU.mode === 'inv' ? '' : `<button type="button" class="ser ${AU.serial ? 'on' : ''}" data-au="serial"><i></i><span><b>Serienscan</b><small>${AU.serial ? 'Jeder Scan kommt in den Korb – am Ende alles auf einmal buchen' : 'Mehrere Werkzeuge nacheinander scannen'}</small></span></button>`;
+    $('ausBatch').innerHTML = AU.batch.length && AU.mode !== 'inv' ? `<div class="bk ${AU.mode} batch"><div class="bk-h"><div><b>Korb · ${AU.batch.length} Werkzeuge · ${AU.batch.reduce((a, e2) => a + e2.n, 0)} Stück</b><small>${AU.mode === 'aus' ? 'AUSGABE' : 'ZUGANG'}</small></div><button type="button" class="bk-x" data-au="bclear" aria-label="Korb leeren">×</button></div>
+      ${AU.batch.map(e2 => { const x = S.lib.find(y => y.id === e2.id); if (!x) return ''; return `<div class="br">${thumb(x.img, '', x)}<span class="t"><b>${esc(fullName(x))}</b><small>BESTAND ${hasStock(x) ? x.stock : '–'}${hasStock(x) && AU.mode === 'aus' && e2.n > x.stock ? ' · ZU WENIG' : ''}</small></span><span class="lb-qty"><button type="button" data-au="bdec" data-id="${x.id}">−</button><b class="mono">${e2.n}</b><button type="button" data-au="binc" data-id="${x.id}">+</button></span><button type="button" class="bk-x" data-au="brm" data-id="${x.id}" style="font-size:18px">×</button></div>`; }).join('')}
+      ${AU.mode === 'aus' ? `<div class="tplrow"><span class="tw-al">MASCHINE</span><div class="types">${machList().map(m => `<button type="button" data-au="mach" data-v="${esc(m)}" aria-pressed="${AU.mach === m}">${esc(m)}</button>`).join('')}<button type="button" class="addopt" data-au="machnew">+</button></div></div>${whoHTML()}<input id="auDwg" placeholder="Auftrag / Zeichnung (optional)" value="${esc(AU.dwg)}" style="font-family:var(--f-mono)">` : whoHTML()}
+      <button type="button" class="bk-go" data-au="bgo">${AU.mode === 'aus' ? 'Alle ausgeben' : 'Alle einbuchen'} · ${AU.batch.reduce((a, e2) => a + e2.n, 0)} Stück</button></div>` : '';
     const low = lowStock();
     $('ausLow').innerHTML = low.length ? `<div class="lowc"><div class="row"><b class="grow">${low.length} unter Mindestbestand</b><button type="button" class="btn sm primary" data-au="orderlow">Auf die Bestellliste</button></div><small>${low.slice(0, 4).map(t => esc(fullName(t)) + ' (' + t.stock + '/' + minOf(t) + ')').join(' · ')}${low.length > 4 ? ' …' : ''}</small></div>` : '';
-    $('ausFilt').innerHTML = [['all', 'Alle'], ['low', 'Niedrig'], ['none', 'Nicht erfasst']].map(([k, l]) => `<button type="button" data-au="filt" data-v="${k}" aria-pressed="${AU.filt === k}">${l}</button>`).join('');
+    const sw = shelfWarmer().length, soon = S.lib.filter(t => { const r = reach(t); return r && r.d <= 14; }).length;
+    $('ausFilt').innerHTML = [['all', 'Alle'], ['low', 'Niedrig'], ['soon', `Bald leer${soon ? ' ' + soon : ''}`], ['idle', `Ladenhüter${sw ? ' ' + sw : ''}`], ['none', 'Offen']].map(([k, l]) => `<button type="button" data-au="filt" data-v="${k}" aria-pressed="${AU.filt === k}">${l}</button>`).join('');
     let ls = S.lib.slice();
     if (AU.filt === 'low') ls = ls.filter(t => stockCls(t) === 'low');
     if (AU.filt === 'none') ls = ls.filter(t => !hasStock(t));
+    if (AU.filt === 'soon') ls = ls.filter(t => { const r = reach(t); return r && r.d <= 14; }).sort((a, b) => reach(a).d - reach(b).d);
+    if (AU.filt === 'idle') ls = ls.filter(t => idleDays(t) >= 180);
+    if (AU.locF) ls = ls.filter(t => U(t.loc) === U(AU.locF));
+    $('ausLocF').innerHTML = AU.locF ? `<div class="locf"><span>⌂ ${esc(AU.locF)} · ${ls.length} Werkzeuge</span><button type="button" data-au="locx" aria-label="Filter weg">×</button></div>` : '';
     ls.sort((a, b) => (hasStock(b) - hasStock(a)) || (stockCls(a) === 'low' ? -1 : 0) - (stockCls(b) === 'low' ? -1 : 0) || String(a.loc || '~').localeCompare(String(b.loc || '~')) || fullName(a).localeCompare(fullName(b)));
     $('ausList').innerHTML = ls.map(t => { const mn = minOf(t), cap = Math.max(mn * 2, stockOf(t), 1);
-      return `<button type="button" class="al ${stockCls(t)}" data-au="pick" data-id="${t.id}">${thumb(t.img, '', t)}<span class="t"><b>${esc(fullName(t))}</b><small>${t.loc ? '⌂ ' + esc(t.loc) + ' · ' : ''}${mn ? 'MIN ' + mn : 'KEIN MIN'}</small>${hasStock(t) ? `<span class="mb"><i style="width:${Math.max(3, Math.min(100, stockOf(t) / cap * 100))}%"></i></span>` : ''}</span><span class="s">${hasStock(t) ? t.stock : '–'}<small>${hasStock(t) ? 'STK' : 'OFFEN'}</small></span></button>`; }).join('')
+      return `<button type="button" class="al ${stockCls(t)}" data-au="pick" data-id="${t.id}">${thumb(t.img, '', t)}<span class="t"><b>${esc(fullName(t))}</b><small>${t.loc ? '⌂ ' + esc(t.loc) + ' · ' : ''}${mn ? 'MIN ' + mn : 'KEIN MIN'}${AU.filt === 'idle' ? ' · ' + idleDays(t) + ' T OHNE AUSGABE' : reachTxt(t) ? ' · ' + reachTxt(t) : ''}</small>${hasStock(t) ? `<span class="mb"><i style="width:${Math.max(3, Math.min(100, stockOf(t) / cap * 100))}%"></i></span>` : ''}</span><span class="s">${hasStock(t) ? t.stock : '–'}<small>${hasStock(t) ? 'STK' : 'OFFEN'}</small></span></button>`; }).join('')
       || `<div class="empty"><b>${S.lib.length ? 'Nichts in diesem Filter' : 'Noch keine Werkzeuge'}</b></div>`;
     const mv = (S.moves || []).slice(-25).reverse();
     $('ausLog').innerHTML = mv.length ? mv.map((m, i) => { const t = S.lib.find(x => x.id === m.libId);
-      return `<div class="lg"><span class="d ${m.kind}">${m.kind === 'inv' ? '=' + m.after : (m.qty > 0 ? '+' : '') + m.qty}</span><span class="t"><b>${esc(t ? fullName(t) : 'GELÖSCHT')}</b><small>${new Date(m.ts).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}${m.mach ? ' · ' + esc(m.mach) : ''}${m.dwg ? ' · ' + esc(m.dwg) : ''}${m.note ? ' · ' + esc(m.note) : ''} · BESTAND ${m.after}</small></span>${i === 0 && Date.now() - m.ts < 30 * 60000 ? `<button type="button" class="u" data-au="undo">Rückgängig</button>` : ''}</div>`; }).join('')
+      return `<div class="lg"><span class="d ${m.kind}">${m.kind === 'inv' ? '=' + m.after : (m.qty > 0 ? '+' : '') + m.qty}</span><span class="t"><b>${esc(t ? fullName(t) : 'GELÖSCHT')}</b><small>${new Date(m.ts).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}${m.who ? ' · ' + esc(m.who) : ''}${m.mach ? ' · ' + esc(m.mach) : ''}${m.dwg ? ' · ' + esc(m.dwg) : ''}${m.note ? ' · ' + esc(m.note) : ''}${m.after === null ? ' · OHNE BESTAND' : ' · BESTAND ' + m.after}</small></span>${i === 0 && Date.now() - m.ts < 30 * 60000 ? `<button type="button" class="u" data-au="undo">Rückgängig</button>` : ''}</div>`; }).join('')
       : '<div class="hint" style="padding:8px 2px">Noch keine Buchungen. Scannen oder oben suchen.</div>';
   }
+  function batchAdd(t, n) {
+    const e = AU.batch.find(x => x.id === t.id);
+    if (e) e.n += n; else AU.batch.push({ id: t.id, n });
+  }
   function ausSelect(t, viaScan) {
+    if (AU.serial && AU.mode !== 'inv') {
+      batchAdd(t, AU.mode === 'ein' ? (qtyNum(t.qty) || 1) : 1); AU.q = ''; $('ausQ').value = ''; AU.sel = null; AU.unknown = '';
+      if (viaScan) { beep(); try { navigator.vibrate && navigator.vibrate(30); } catch {} }
+      toast(`+ ${fullName(t)}`); renderAus(); return;
+    }
     AU.sel = t.id; AU.unknown = ''; AU.assign = false; AU.q = ''; $('ausQ').value = '';
     AU.qty = AU.mode === 'inv' ? stockOf(t) : AU.mode === 'ein' ? (qtyNum(t.qty) || 1) : 1;
     AU.mach = AU.mach || U(t.mach || '');
     if (viaScan) { beep(); try { navigator.vibrate && navigator.vibrate(30); } catch {} }
     renderAus(); setTimeout(() => $('ausCard').scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 30);
   }
+  function ausSet(st, viaScan) {
+    if (AU.mode === 'inv') AU.mode = 'aus';
+    AU.serial = true; setTools(st).forEach(x => batchAdd(x.t, qtyNum(x.qty) || 1)); AU.dwg = AU.dwg || U(st.name); AU.sel = null; AU.unknown = '';
+    if (viaScan) beep(); toast(`Set „${st.name}“ · ${setTools(st).length} Werkzeuge`); renderAus();
+    setTimeout(() => $('ausBatch')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 40);
+  }
+  function ausLoc(name, viaScan) {
+    AU.locF = name; AU.filt = 'all'; AU.sel = null; if (viaScan) beep(); renderAus();
+    setTimeout(() => $('ausList').scrollIntoView({ behavior: 'smooth', block: 'start' }), 40);
+  }
   function ausCode(raw, viaScan) {
+    const ms = String(raw).match(/#s=([\w-]+)/); if (ms) { const st = (S.sets || []).find(x => x.id === ms[1]); if (st) { ausSet(st, viaScan); return true; } }
+    const ml = String(raw).match(/#l=([^&]+)/); if (ml) { ausLoc(decodeURIComponent(ml[1]), viaScan); return true; }
     const t = findByCode(raw);
     if (t) { ausSelect(t, viaScan); return true; }
     AU.sel = null; AU.unknown = String(raw).trim(); AU.assign = false; AU.q = ''; $('ausQ').value = '';
@@ -3804,7 +3909,7 @@ ${attrs}
     if (a === 'go' && t) {
       const n = Math.max(0, parseInt($('auQty').value, 10) || 0); if (!n && AU.mode !== 'inv') { toast('Menge fehlt'); return; }
       if (AU.mode === 'aus' && hasStock(t) && n > t.stock) { if (!confirm(`Nur ${t.stock} im Bestand – trotzdem ${n} ausgeben?`)) return; }
-      const mv = book(t, AU.mode, n, AU.mode === 'aus' ? { mach: AU.mach, dwg: U($('auDwg')?.value || '') } : {});
+      const mv = book(t, AU.mode, n, AU.mode === 'aus' ? { mach: AU.mach, who: AU.who, dwg: U($('auDwg')?.value || '') } : { who: AU.who });
       if (AU.mach && AU.mode === 'aus') { (S.meta.machs ||= []).includes(AU.mach) || S.meta.machs.push(AU.mach); }
       AU.dwg = ''; AU.sel = null;
       const low = minOf(t) && t.stock <= minOf(t);
@@ -3812,7 +3917,23 @@ ${attrs}
       if (low && !stats(t.id).inCart && !stats(t.id).waiting) setTimeout(() => toast(`${fullName(t)} unter Minimum – oben „Auf die Bestellliste“`), 2500);
       setTimeout(() => $('ausQ').focus(), 50); return;
     }
-    if (a === 'undo') { const mv = S.moves[S.moves.length - 1]; const x = mv && S.lib.find(y => y.id === mv.libId); if (!mv) return; if (x) x.stock = mv.after - mv.qty; S.moves.pop(); commit('Rückgängig'); return; }
+    if (a === 'undo') { const last = S.moves[S.moves.length - 1]; if (!last) return; let n = 0;
+      while (S.moves.length) { const mv = S.moves[S.moves.length - 1]; if (mv !== last && (!last.batch || mv.batch !== last.batch)) break; const x = S.lib.find(y => y.id === mv.libId); if (x && mv.after !== null) x.stock = mv.after - mv.qty; S.moves.pop(); n++; }
+      commit(n > 1 ? `${n} Buchungen rückgängig` : 'Rückgängig'); return; }
+    if (a === 'serial') { AU.serial = !AU.serial; AU.sel = null; renderAus(); return; }
+    if (a === 'who') { AU.who = AU.who === b.dataset.v ? '' : b.dataset.v; lsSet('syncop_bestellliste_who', AU.who); renderAus(); return; }
+    if (a === 'whonew') { const v = U(prompt('Name') || ''); if (v) { (S.meta.people ||= []).includes(v) || S.meta.people.push(v); AU.who = v; lsSet('syncop_bestellliste_who', v); save(); renderAus(); } return; }
+    if (a === 'bdec' || a === 'binc' || a === 'brm') { const e2 = AU.batch.find(x => x.id === b.dataset.id); if (!e2) return; if (a === 'binc') e2.n++; else if (a === 'bdec') e2.n = Math.max(1, e2.n - 1); else AU.batch = AU.batch.filter(x => x !== e2); renderAus(); return; }
+    if (a === 'bclear') { AU.batch = []; renderAus(); return; }
+    if (a === 'bgo') {
+      if (!AU.batch.length) return; const bid = newId(), dwg = U($('auDwg')?.value || AU.dwg || ''); let n = 0;
+      AU.batch.forEach(e2 => { const x = S.lib.find(y => y.id === e2.id); if (!x) return; book(x, AU.mode, e2.n, { batch: bid, who: AU.who, ...(AU.mode === 'aus' ? { mach: AU.mach, dwg } : {}) }); n += e2.n; });
+      if (AU.mach && AU.mode === 'aus') { (S.meta.machs ||= []).includes(AU.mach) || S.meta.machs.push(AU.mach); }
+      const k = AU.batch.length; AU.batch = []; AU.dwg = '';
+      commit(`${AU.mode === 'aus' ? 'Ausgegeben' : 'Eingebucht'}: ${k} Werkzeuge · ${n} Stück`); return;
+    }
+    if (a === 'locx') { AU.locF = ''; renderAus(); return; }
+    if (a === 'journal') { openJournal(); return; }
     if (a === 'orderlow') { let n = 0; lowStock().forEach(x => { const st = stats(x.id); if (st.inCart || st.waiting) return; addToCart(x, { qty: x.qty || String(Math.max(minOf(x) * 2 - x.stock, 1)) }); n++; }); commit(n ? `${n} auf die Bestellliste gesetzt` : 'Schon auf der Liste oder unterwegs'); return; }
     if (a === 'assign') { AU.assign = true; renderAus(); $('ausQ').focus(); return; }
     if (a === 'link') { const x = S.lib.find(y => y.id === b.dataset.id); if (!x) return; (x.codes ||= []).includes(AU.unknown) || x.codes.push(AU.unknown); const c = AU.unknown; AU.unknown = ''; save(); toast(`Code ${c} gehört jetzt zu ${fullName(x)}`); ausSelect(x); return; }
@@ -3831,6 +3952,77 @@ ${attrs}
   });
   const b2link = x => { (x.codes ||= []).push(AU.unknown); AU.unknown = ''; AU.assign = false; save(); ausSelect(x); };
 
+
+  // ---------- Journal & Export ----------
+  const JR = { per: '30', kind: 'aus', mach: '', who: '' };
+  function jrMoves() {
+    const now = Date.now(), d0 = new Date(); let from = 0;
+    if (JR.per === '7') from = now - 7 * DAYMS; else if (JR.per === '30') from = now - 30 * DAYMS;
+    else if (JR.per === 'm') from = new Date(d0.getFullYear(), d0.getMonth(), 1).getTime(); else if (JR.per === 'y') from = new Date(d0.getFullYear(), 0, 1).getTime();
+    return (S.moves || []).filter(m => m.ts >= from && (JR.kind === 'all' || m.kind === JR.kind) && (!JR.mach || m.mach === JR.mach) && (!JR.who || m.who === JR.who)).slice().sort((a, b) => b.ts - a.ts);
+  }
+  const jrName = m => { const t = S.lib.find(x => x.id === m.libId); return t ? fullName(t) : 'GELÖSCHT'; };
+  function openJournal() { $('jrnSheet').hidden = false; renderJournal(); }
+  function renderJournal() {
+    const mv = jrMoves(), chip = (k, v, on, l) => `<button type="button" data-jr="${k}:${esc(v)}" aria-pressed="${on}">${l}</button>`;
+    const sum = (key) => { const m = {}; mv.forEach(x => { const k = x[key] || '–'; m[k] = (m[k] || 0) + Math.abs(x.qty); }); return Object.entries(m).sort((a, b) => b[1] - a[1]); };
+    const bars = (arr) => { const mx = arr.length ? arr[0][1] : 1; return arr.slice(0, 6).map(([k, n]) => `<div class="jr-bar"><span>${esc(k)}</span><i style="width:${Math.max(4, n / mx * 100)}%"></i><b>${n}</b></div>`).join(''); };
+    const byTool = {}; mv.forEach(x => { byTool[jrName(x)] = (byTool[jrName(x)] || 0) + Math.abs(x.qty); });
+    const tools = Object.entries(byTool).sort((a, b) => b[1] - a[1]);
+    const machs = [...new Set((S.moves || []).map(m => m.mach).filter(Boolean))], ppl = [...new Set((S.moves || []).map(m => m.who).filter(Boolean))];
+    $('jrnBody').innerHTML = `
+      <div class="lb-opt"><span class="tw-al">ZEITRAUM</span><div class="types">${[['7', '7 Tage'], ['30', '30 Tage'], ['m', 'Dieser Monat'], ['y', 'Dieses Jahr'], ['all', 'Alles']].map(([k, l]) => chip('per', k, JR.per === k, l)).join('')}</div></div>
+      <div class="lb-opt"><span class="tw-al">ART</span><div class="types">${[['aus', 'Ausgabe'], ['ein', 'Zugang'], ['inv', 'Inventur'], ['all', 'Alle']].map(([k, l]) => chip('kind', k, JR.kind === k, l)).join('')}</div></div>
+      ${machs.length ? `<div class="lb-opt"><span class="tw-al">MASCHINE</span><div class="types">${chip('mach', '', !JR.mach, 'Alle')}${machs.map(m => chip('mach', m, JR.mach === m, esc(m))).join('')}</div></div>` : ''}
+      ${ppl.length ? `<div class="lb-opt"><span class="tw-al">WER</span><div class="types">${chip('who', '', !JR.who, 'Alle')}${ppl.map(m => chip('who', m, JR.who === m, esc(m))).join('')}</div></div>` : ''}
+      <div class="jr-sum"><div><b>${mv.length}</b><small>BUCHUNGEN</small></div><div><b>${mv.reduce((a, m) => a + Math.abs(m.qty), 0)}</b><small>STÜCK</small></div><div><b>${tools.length}</b><small>WERKZEUGE</small></div></div>
+      ${tools.length ? `<div class="sec-h">Werkzeuge</div><div class="jr-bars">${bars(tools)}</div>` : ''}
+      ${sum('mach').filter(x => x[0] !== '–').length ? `<div class="sec-h">Pro Maschine</div><div class="jr-bars">${bars(sum('mach'))}</div>` : ''}
+      ${sum('who').filter(x => x[0] !== '–').length ? `<div class="sec-h">Pro Person</div><div class="jr-bars">${bars(sum('who'))}</div>` : ''}
+      <div class="sec-h">Buchungen</div>
+      <div class="aus-log" style="max-height:34vh;overflow:auto">${mv.slice(0, 200).map(m => `<div class="lg"><span class="d ${m.kind}">${m.kind === 'inv' ? '=' + m.after : (m.qty > 0 ? '+' : '') + m.qty}</span><span class="t"><b>${esc(jrName(m))}</b><small>${new Date(m.ts).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' })}${m.who ? ' · ' + esc(m.who) : ''}${m.mach ? ' · ' + esc(m.mach) : ''}${m.dwg ? ' · ' + esc(m.dwg) : ''}${m.note ? ' · ' + esc(m.note) : ''}</small></span></div>`).join('') || '<div class="hint">Keine Buchungen in diesem Filter.</div>'}</div>
+      <div class="lb-foot"><button type="button" class="btn" data-jr="csv:" ${mv.length ? '' : 'disabled'}>CSV</button><button type="button" class="btn" data-jr="xls:" ${mv.length ? '' : 'disabled'}>Excel</button><span class="grow"></span><button type="button" class="btn primary" data-jr="pdf:" ${mv.length ? '' : 'disabled'}>Drucken / PDF</button></div>`;
+  }
+  const jrRows = () => jrMoves().map(m => { const t = S.lib.find(x => x.id === m.libId) || {}; return {
+    Datum: new Date(m.ts).toLocaleDateString('de-DE'), Zeit: new Date(m.ts).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }),
+    Art: { aus: 'AUSGABE', ein: 'ZUGANG', inv: 'INVENTUR' }[m.kind], Menge: m.qty, Bestand: m.after ?? '', Werkzeug: jrName(m), Artikelnummer: t.firm || '', Hersteller: t.maker || '',
+    Maschine: m.mach || '', Wer: m.who || '', Auftrag: m.dwg || '', Notiz: m.note || '' }; });
+  const jrFile = ext => `werkzeug-journal-${new Date().toISOString().slice(0, 10)}.${ext}`;
+  const dl = (blob, name) => { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); };
+  function jrCSV() { const rows = jrRows(); if (!rows.length) return; const h = Object.keys(rows[0]); const q = v => `"${String(v).replace(/"/g, '""')}"`;
+    dl(new Blob(['﻿' + [h.join(';'), ...rows.map(r => h.map(k => q(r[k])).join(';'))].join('\r\n')], { type: 'text/csv;charset=utf-8' }), jrFile('csv')); toast('CSV gespeichert'); }
+  async function jrXLS() {
+    try { const X = await loadXLSX(); const ws = X.utils.json_to_sheet(jrRows()); ws['!cols'] = [10, 6, 10, 7, 8, 40, 14, 14, 12, 12, 14, 20].map(w => ({ wch: w }));
+      const wb = X.utils.book_new(); X.utils.book_append_sheet(wb, ws, 'Journal'); X.writeFile(wb, jrFile('xlsx')); toast('Excel gespeichert'); }
+    catch { toast('Excel geht nur online – CSV gespeichert'); jrCSV(); }
+  }
+  function jrPDF() {
+    const rows = jrRows(), per = { '7': 'LETZTE 7 TAGE', '30': 'LETZTE 30 TAGE', m: 'DIESER MONAT', y: 'DIESES JAHR', all: 'ALLES' }[JR.per];
+    const total = rows.reduce((a, r) => a + Math.abs(r.Menge), 0);
+    const doc = `<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Werkzeug-Journal</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=JetBrains+Mono:wght@500;600&display=swap">
+<style>*{box-sizing:border-box}html{background:#E6E7EA}body{margin:0;padding:12px;font-family:system-ui,sans-serif;color:#000;text-transform:uppercase}
+.pg{width:210mm;min-height:297mm;margin:0 auto;background:#fff;padding:14mm;box-shadow:0 2px 12px rgba(0,0,0,.12)}
+.top{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2.5px solid #000;padding-bottom:3mm}
+.k{font:700 13pt "Space Grotesk";letter-spacing:.12em}.m{font:500 9pt "JetBrains Mono";text-align:right}
+h1{font:700 24pt "Space Grotesk";margin:6mm 0 1mm}.sub{font-size:9pt;color:#444;margin-bottom:5mm}
+table{width:100%;border-collapse:collapse;font-size:8pt}th{text-align:left;font:600 7pt "JetBrains Mono";letter-spacing:.06em;border-bottom:1.5px solid #000;padding:2mm 1.5mm}
+td{padding:1.6mm 1.5mm;border-bottom:.2mm solid #ccc;vertical-align:top}td.n{font-family:"JetBrains Mono";text-align:right;white-space:nowrap}
+@media print{html,body{background:#fff;padding:0}.pg{box-shadow:none;margin:0;width:auto;min-height:0}@page{size:A4;margin:12mm}}</style></head><body><div class="pg">
+<div class="top"><span class="k">WERKZEUG-JOURNAL</span><span class="m">${new Date().toLocaleDateString('de-DE')}</span></div>
+<h1>${per}</h1><div class="sub">${rows.length} BUCHUNGEN · ${total} STÜCK${JR.kind !== 'all' ? ' · ' + { aus: 'AUSGABE', ein: 'ZUGANG', inv: 'INVENTUR' }[JR.kind] : ''}${JR.mach ? ' · ' + esc(JR.mach) : ''}${JR.who ? ' · ' + esc(JR.who) : ''}</div>
+<table><thead><tr><th>DATUM</th><th>ART</th><th>WERKZEUG</th><th>ART.-NR.</th><th>MENGE</th><th>BESTAND</th><th>MASCHINE</th><th>WER</th><th>AUFTRAG</th></tr></thead><tbody>
+${rows.map(r => `<tr><td class="n">${r.Datum} ${r.Zeit}</td><td>${r.Art}</td><td>${esc(r.Werkzeug)}</td><td class="n">${esc(r.Artikelnummer)}</td><td class="n">${r.Menge > 0 ? '+' : ''}${r.Menge}</td><td class="n">${r.Bestand}</td><td>${esc(r.Maschine)}</td><td>${esc(r.Wer)}</td><td>${esc(r.Auftrag)}</td></tr>`).join('')}
+</tbody></table></div></body></html>`;
+    $('jrnSheet').hidden = true; $('sheetFrame').srcdoc = doc; $('sheetView').hidden = false; document.body.style.overflow = 'hidden';
+  }
+  $('jrnClose').onclick = () => $('jrnSheet').hidden = true;
+  $('jrnSheet').addEventListener('click', e => {
+    if (e.target === $('jrnSheet')) { $('jrnSheet').hidden = true; return; }
+    const b = e.target.closest('[data-jr]'); if (!b) return; const [k, v] = b.dataset.jr.split(/:(.*)/s);
+    if (k === 'csv') return jrCSV(); if (k === 'xls') return jrXLS(); if (k === 'pdf') return jrPDF();
+    JR[k] = v; renderJournal();
+  });
   // ---------- Kamera-Scanner (BarcodeDetector, sonst ZXing) ----------
   const CAM = { stream: null, timer: null, reader: null, busy: false, last: '', lastTs: 0 };
   const loadScript = src => new Promise((res, rej) => { const s = document.createElement('script'); s.src = src; s.onload = res; s.onerror = rej; document.head.appendChild(s); });
