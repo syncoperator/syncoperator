@@ -89,6 +89,22 @@ button.card:active{transform:scale(.99)}
 .clock{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:clamp(44px,14vw,58px);font-weight:500;letter-spacing:-.035em;line-height:1;margin:14px 0 6px;color:var(--ink)}
 .live-amt{font-family:var(--mono);font-size:14px;color:var(--mut);margin-bottom:16px}
 .live-amt b{font-size:19px;font-weight:600;color:var(--green-t)}
+/* Zeit im Monat / Gleitzeit */
+.gz{display:inline-flex;align-items:center;gap:6px}
+.gzs{width:40px;height:40px;border-radius:11px;background:var(--soft2);font-family:var(--mono);font-size:18px;font-weight:700;color:var(--ink);text-align:center}
+.gz .num{width:96px;height:40px}
+.hz .ln>span:first-child{flex-direction:column;align-items:flex-start;gap:2px}
+.hz .ln span small{display:block;font-size:11px;color:var(--mut);font-weight:400}
+.hz .from,.pay .from{margin:10px 0 0;width:100%}
+/* Gehaltsabrechnung */
+.ktab button{font-size:13px;line-height:1.1;padding:0 4px}
+.pay .calc .ln span em{white-space:normal}
+.pay .calc .ln.grp{padding-top:14px}
+.pay .calc .ln.grp span{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--mut);font-weight:600}
+.pay .calc .ln.minus b{color:var(--ink2)}
+.pay .calc .ln.sub2{border-top:1px solid var(--line);margin-top:2px}
+.pay .calc .ln.sub2 span,.pay .calc .ln.sub2 b{font-weight:600;color:var(--ink)}
+.fld .ro2{font-family:var(--mono);font-size:15px;font-weight:600;color:var(--ink);white-space:nowrap}
 /* Monatsplan */
 #monthMini{background:#fff;box-shadow:inset 0 0 0 1px rgba(30,32,36,.10),0 1px 2px rgba(30,32,36,.04),0 8px 24px rgba(30,32,36,.06)}
 .mplan{margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
@@ -552,7 +568,7 @@ dialog::backdrop{background:rgba(30,32,36,.32)}
     <div class="bignum" id="hNetto"></div>
     <div class="stats">
       <div class="stat"><span>Brutto</span><b id="hBrutto"></b></div>
-      <div class="stat"><span>Stunden</span><b id="hHours"></b></div>
+      <div class="stat"><span>Zeit</span><b id="hHours"></b></div>
       <div class="stat"><span>Einsätze</span><b id="hCount"></b></div>
     </div>
     <div class="wline" id="hVat"><span>Rechnung inkl. 19 % MwSt.</span><b id="hVatV"></b></div>
@@ -561,12 +577,57 @@ dialog::backdrop{background:rgba(30,32,36,.32)}
     <button class="btn2" id="btnAdd2"><svg class="c1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg>Nachtragen</button>
     <button class="btn2" id="btnCsv"><svg class="c4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 4v11m0 0-4-4m4 4 4-4M5 20h14"/></svg>Excel (CSV)</button>
   </div>
+  <div class="card hz" id="hZeit">
+    <div class="eyebrow">Zeit im Monat</div>
+    <div class="calc">
+      <div class="ln"><span>Einsätze gesamt</span><b id="hzRaw"></b></div>
+      <div class="ln"><span>Gleitzeit-Ausgleich<small>z. B. Minus vom Stundenkonto</small></span>
+        <span class="gz"><button type="button" class="gzs" id="gzSign" aria-label="Vorzeichen wechseln">−</button><span class="num"><input id="gzIn" inputmode="numeric" autocomplete="off" placeholder="0"><i>min</i></span></span></div>
+      <div class="ln total"><span>Bezahlt</span><b id="hzPaid"></b></div>
+    </div>
+    <button class="from" id="hToPay"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 13h7M9 17h5"/></svg><span id="hToPayT"></span><em>ansehen</em></button>
+  </div>
   <div class="card list" id="hList"></div>
 </section>
 
 <!-- ================= LOHNRECHNER ================= -->
 <section class="view" id="v-calc" hidden>
-  <div class="seg ktab" id="kTab"><button data-v="month">Monatslohn</button><button data-v="bonus">Sonderzahlungen</button></div>
+  <div class="seg ktab" id="kTab"><button data-v="month">Einsätze</button><button data-v="pay">Abrechnung</button><button data-v="bonus">Sonder&shy;zahlungen</button></div>
+
+  <div class="view pay" id="kPayView" hidden>
+    <div class="mnav">
+      <button id="pPrev" aria-label="Vorheriger Monat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m15 6-6 6 6 6"/></svg></button>
+      <div class="m" id="pName"></div>
+      <button id="pNext" aria-label="Nächster Monat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m9 6 6 6-6 6"/></svg></button>
+    </div>
+    <div class="card hero grad g-teal">
+      <div class="eyebrow"><span>Auszahlungsbetrag</span><span class="r" id="pMode"></span></div>
+      <div class="bignum" id="pAus"></div>
+      <div class="ksub" id="pSub"></div>
+    </div>
+    <div class="card"><div class="eyebrow">Brutto-Bezüge</div><div class="calc" id="pBez"></div></div>
+    <div class="card"><div class="eyebrow">Abzüge</div><div class="calc" id="pAbz"></div></div>
+
+    <div class="sec-title">Lohndaten <em>wie auf der Abrechnung</em></div>
+    <div class="group">
+      <div class="fld"><label class="lb" for="pGrund">Monatsgrundlohn<small id="pGrundH"></small></label><div class="num"><input id="pGrund" inputmode="decimal" autocomplete="off"><i>€</i></div></div>
+      <div class="fld"><label class="lb" for="pWh">Wochenstunden<small>laut Vertrag</small></label><div class="num"><input id="pWh" inputmode="decimal" autocomplete="off"><i>h</i></div></div>
+      <div class="fld"><label class="lb" for="pFac">Wochen pro Monat<small>meist 4,33 oder 4,3</small></label><div class="num"><input id="pFac" inputmode="decimal" autocomplete="off"><i>×</i></div></div>
+      <div class="fld"><span class="lb">Monatsstunden</span><span class="ro2" id="pMh"></span></div>
+      <div class="fld"><label class="lb" for="pRate">Stundenlohn<small id="pRateH"></small></label><div class="num"><input id="pRate" inputmode="decimal" autocomplete="off"><i>€/h</i></div></div>
+      <div class="fld"><label class="lb" for="pZus">Überstunden-Zuschlag<small>auf Einsatz-Stunden</small></label><div class="num"><input id="pZus" inputmode="decimal" autocomplete="off"><i>%</i></div></div>
+      <div class="fld"><label class="lb" for="pPausch">Pauschale Bestückung<small>pro Einsatz</small></label><div class="num"><input id="pPausch" inputmode="decimal" autocomplete="off"><i>€</i></div></div>
+      <div class="fld"><label class="lb" for="pVwlAg">VWL Arbeitgeber-Anteil<small>steuerpflichtig</small></label><div class="num"><input id="pVwlAg" inputmode="decimal" autocomplete="off"><i>€</i></div></div>
+      <div class="fld"><label class="lb" for="pKonto">Kontoführungsgebühr<small>falls gezahlt</small></label><div class="num"><input id="pKonto" inputmode="decimal" autocomplete="off"><i>€</i></div></div>
+    </div>
+    <div class="sec-title">Netto-Abzüge</div>
+    <div class="group">
+      <div class="fld"><label class="lb" for="pVwlSp">Vermögensbildung<small>VWL-Sparrate</small></label><div class="num"><input id="pVwlSp" inputmode="decimal" autocomplete="off"><i>€</i></div></div>
+      <div class="fld"><label class="lb" for="pVor">Abschlag / Vorschuss<small>schon vorher erhalten</small></label><div class="num"><input id="pVor" inputmode="decimal" autocomplete="off"><i>€</i></div></div>
+    </div>
+    <button class="from" id="pToHist"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="4" y="5" width="16" height="15" rx="2.5"/><path d="M4 10h16M9 3v4M15 3v4"/></svg><span id="pToHistT"></span><em>Verlauf</em></button>
+    <p class="hint">Steuerklasse, Kirche und Krankenkasse stellst du unten ein. Einsätze und Gleitzeit-Ausgleich kommen aus dem Verlauf. Stundenlohn = Monatsgrundlohn ÷ Monatsstunden – so wie auf deiner Abrechnung („Stundenlohn/Monatslohn“).</p>
+  </div>
 
   <div class="view" id="kMonthView">
   <div class="card hero grad g-teal">
@@ -597,6 +658,8 @@ dialog::backdrop{background:rgba(30,32,36,.32)}
   <div class="group">
     <div class="fld"><span class="ico i-teal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2M9 2.5h6"/></svg></span>
       <label class="lb" for="cRate">Stundenlohn<small>brutto</small></label><div class="num"><input id="cRate" inputmode="decimal" autocomplete="off"><i>€/h</i></div></div>
+    <div class="fld"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg></span>
+      <label class="lb" for="cZus">Zuschlag<small>auf den Stundenlohn</small></label><div class="num"><input id="cZus" inputmode="decimal" autocomplete="off"><i>%</i></div></div>
     <div class="fld"><span class="ico i-violet"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 3h12M6 21h12M7 3c0 5 10 5 10 9s-10 4-10 9M17 3c0 5-10 5-10 9s10 4 10 9"/></svg></span>
       <label class="lb" for="cHours">Stunden<small>pro Monat</small></label><div class="num"><input id="cHours" inputmode="decimal" autocomplete="off"><i>h</i></div></div>
     <div class="fld"><span class="ico i-orange"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="4" y="5" width="16" height="15" rx="2.5"/><path d="M4 10h16M9 3v4M15 3v4"/></svg></span>
@@ -709,6 +772,9 @@ dialog::backdrop{background:rgba(30,32,36,.32)}
     <div class="fld"><span class="ico i-teal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2M9 2.5h6"/></svg></span>
       <label class="lb" for="sRate">Stundenlohn<small>brutto</small></label>
       <div class="num"><input id="sRate" inputmode="decimal" autocomplete="off"><i>€/h</i></div></div>
+    <div class="fld"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg></span>
+      <label class="lb" for="sZus">Zuschlag<small>z. B. Überstunden 15 % auf den Stundenlohn</small></label>
+      <div class="num"><input id="sZus" inputmode="decimal" autocomplete="off"><i>%</i></div></div>
     <button class="act" id="goPlan"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5"/></svg></span>
       <span>Monatsplan<small id="goPlanSub"></small></span>
       <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 6 6 6-6 6"/></svg></button>
@@ -764,7 +830,7 @@ dialog::backdrop{background:rgba(30,32,36,.32)}
       <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 6 6 6-6 6"/></svg></button>
   </div>
   <p class="hint">Alle Daten liegen nur in diesem Browser auf diesem Gerät. Beim Löschen der Browserdaten sind sie weg – speichere das Backup deshalb z. B. in iCloud Drive oder Google Drive.</p>
-  <div class="foot">CITITOOL SYNCOPERATOR · EINSATZ v3.12</div>
+  <div class="foot">CITITOOL SYNCOPERATOR · EINSATZ v3.14</div>
 </section>
 
 </main></div>
@@ -796,6 +862,7 @@ dialog::backdrop{background:rgba(30,32,36,.32)}
     <div class="fgrid" style="margin-top:8px">
       <div class="f"><label for="fPausch">Pauschale €</label><input id="fPausch" inputmode="decimal"></div>
       <div class="f"><label for="fRate">Stundenlohn €/h</label><input id="fRate" inputmode="decimal"></div>
+      <div class="f"><label for="fZus">Zuschlag %</label><input id="fZus" inputmode="decimal"></div>
     </div>
   </details>
   <div class="dur"><span id="fDur"></span><b id="fDurR"></b></div>
@@ -846,11 +913,12 @@ dialog::backdrop{background:rgba(30,32,36,.32)}
 <script>
 /* ================= Daten ================= */
 const KEY='syncop_einsatz_v1';               // gleicher Schlüssel wie v1/v2 → alte Daten bleiben
-const DEF={pausch:50,rate:20,tax:20,soz:20,round:15,pauschTax:1,vat:false,goal:500,goalDays:0,goalMin:0};
-const CDEF={hours:10,count:4,main:0,stkl:1,zkf:0,kist:false,land:'NW',kvz:2.9,kids:0,over23:true,mode:'normal',rvFree:false,init:false,tab:'month',basis:0,daily:0,bonus:[]};
-function normCalc(x){x=x||{};return{...CDEF,...x,bonus:Array.isArray(x.bonus)?x.bonus.filter(b=>b&&typeof b==='object').map(normBonus):[]}}
+const DEF={pausch:50,rate:20,zus:0,tax:20,soz:20,round:15,pauschTax:1,vat:false,goal:500,goalDays:0,goalMin:0};
+const CDEF={hours:10,count:4,main:0,stkl:1,zkf:0,kist:false,land:'NW',kvz:2.9,kids:0,over23:true,mode:'normal',rvFree:false,init:false,tab:'month',basis:0,daily:0,bonus:[],pay:null};
+const PDEF={grund:0,wh:40,fac:4.33,vwlAg:0,konto:0,vwlSp:0,vor:0};
+function normCalc(x){x=x||{};return{...CDEF,...x,pay:{...PDEF,...(x.pay||{})},bonus:Array.isArray(x.bonus)?x.bonus.filter(b=>b&&typeof b==='object').map(normBonus):[]}}
 function normBonus(b){const n=(v,d)=>isFinite(+v)&&v!==''&&v!=null?+v:d;return{id:b.id||Date.now(),t:b.t||'praemie',mode:['fix','pct','days'].includes(b.mode)?b.mode:'fix',amount:n(b.amount,0),pct:n(b.pct,50),months:Math.min(12,Math.max(0,n(b.months,12))),days:n(b.days,30),month:Math.min(12,Math.max(1,n(b.month,1)))}}
-const RK=['pausch','rate','tax','soz','round','pauschTax'];
+const RK=['pausch','rate','zus','tax','soz','round','pauschTax'];
 const DAY=864e5;
 
 const $=id=>document.getElementById(id);
@@ -885,7 +953,7 @@ function load(){
     entries:(d.entries||[]).filter(validEntry).map(normEntry),
     running:d.running&&isFinite(+d.running.start)?{start:+d.running.start,note:d.running.note||'',s:normS(d.running.s)}:null,
     calc:normCalc(d.calc),
-    lastBackup:d.lastBackup||0,changed:d.changed||0,wizardDone:!!d.wizardDone,wizardSeen:!!d.wizardSeen,planOpen:!!d.planOpen
+    lastBackup:d.lastBackup||0,changed:d.changed||0,wizardDone:!!d.wizardDone,wizardSeen:!!d.wizardSeen,planOpen:!!d.planOpen,months:d.months&&typeof d.months==='object'?d.months:{}
   };
 }
 let db=load();
@@ -897,20 +965,31 @@ function snap(){return normS(db.settings)}
 function calc(ms,s){
   const raw=Math.max(0,ms)/60000;
   const min=s.round>1?Math.ceil(raw/s.round-1e-9)*s.round:Math.round(raw);
-  const h=min/60, lohn=h*s.rate, brutto=s.pausch+lohn;
+  const h=min/60, base=h*s.rate, zuschl=base*(s.zus||0)/100, lohn=base+zuschl, brutto=s.pausch+lohn;
   const pct=(s.tax+s.soz)/100, abz=(s.pauschTax?brutto:lohn)*pct;
-  return{h,lohn,brutto,abz,netto:brutto-abz,vat:brutto*1.19};
+  return{h,base,zuschl,lohn,brutto,abz,netto:brutto-abz,vat:brutto*1.19};
 }
 function calcHTML(c,s){
   const pct=s.tax+s.soz;
   return `<div class="ln"><span><i class="dot" style="background:var(--amber)"></i>Pauschale</span><b>${eur(s.pausch)}</b></div>`+
-    `<div class="ln"><span><i class="dot" style="background:var(--teal)"></i>Zeit <em>${num(c.h)} h × ${eur(s.rate)}</em></span><b>${eur(c.lohn)}</b></div>`+
+    `<div class="ln"><span><i class="dot" style="background:var(--teal)"></i>Zeit <em>${num(c.h)} h × ${eur(s.rate)}</em></span><b>${eur(c.base)}</b></div>`+
+    (s.zus>0?`<div class="ln"><span><i class="dot" style="background:var(--teal);opacity:.55"></i>Zuschlag <em>${pctf(s.zus)} %</em></span><b>${eur(c.zuschl)}</b></div>`:'')+
     `<div class="ln sum"><span>Brutto</span><b>${eur(c.brutto)}</b></div>`+
     `<div class="ln"><span><i class="dot" style="background:var(--rose)"></i>Abzüge <em>${pctf(pct)} %${!s.pauschTax&&pct?' · ohne Pauschale':''}</em></span><b>− ${eur(c.abz)}</b></div>`+
     `<div class="ln total"><span><i class="dot" style="background:var(--green)"></i>Netto</span><b>${eur(c.netto)}</b></div>`+
     (db.settings.vat?`<div class="ln sub"><span>Rechnung inkl. 19 % MwSt.</span><b>${eur(c.vat)}</b></div>`:'');
 }
 function monthEntries(k){return db.entries.filter(e=>ym(new Date(e.start))===k).sort((a,b)=>b.start-a.start)}
+function gzMin(k){const m=db.months&&db.months[k];return m&&isFinite(+m.gz)?+m.gz:0}
+/* Monat inkl. Gleitzeit-Ausgleich: t.min = Minuten aus Einsätzen, t.paidMin = bezahlt */
+function monthTotals(k){
+  const t=totals(monthEntries(k)),adj=gzMin(k);
+  t.min=Math.round(t.h*60);t.adjMin=Math.max(-t.min,adj);t.paidMin=t.min+t.adjMin;
+  if(t.adjMin){const s=db.settings,hr=s.rate*(1+(s.zus||0)/100),br=t.adjMin/60*hr;
+    t.b+=br;t.n+=br*(1-(s.tax+s.soz)/100);t.v+=br*1.19;t.h=t.paidMin/60}
+  return t;
+}
+const mins=m=>{m=Math.round(m);return m+' min'+(Math.abs(m)>=60?' · '+(m<0?'−':'')+Math.floor(Math.abs(m)/60)+':'+pad(Math.abs(m)%60)+' h':'')};
 function totals(es){const t={h:0,b:0,n:0,v:0,count:es.length};es.forEach(e=>{const c=calc(e.end-e.start,e.s);t.h+=c.h;t.b+=c.brutto;t.n+=c.netto;t.v+=c.vat});return t}
 
 /* ================= Lohnsteuer & Sozialversicherung 2026 =================
@@ -1012,7 +1091,7 @@ function fin(o){
 }
 const PK=['brutto','lst','soli','kist','rv','kv','pv','av','steuer','sozial','netto'];
 function lohnResult(c=db.calc,s=db.settings){
-  const E=c.hours*s.rate+c.count*s.pausch;
+  const E=c.hours*s.rate*(1+(s.zus||0)/100)+c.count*s.pausch;
   const useMain=c.mode!=='mini'&&c.stkl!==6&&c.main>0;
   const cc={...c};
   if(c.mode==='mini'&&E>P26.MINI)cc.mode='normal';
@@ -1063,7 +1142,7 @@ function entryHTML(e){
   const c=calc(e.end-e.start,e.s),d=new Date(e.start),we=d.getDay()===0||d.getDay()===6;
   return `<button class="entry" data-id="${e.id}"><div class="day${we?' we':''}"><b>${pad(d.getDate())}</b><span>${wd(e.start)}</span></div>
       <div class="mid"><div class="t">${hm(e.start)}–${hm(e.end)}</div>
-      <div class="n">${num(c.h)} h · ${e.note?esc(e.note):eur(e.s.rate)+'/h'}</div></div>
+      <div class="n">${Math.round(c.h*60)} min · ${e.note?esc(e.note):eur(e.s.rate)+'/h'}</div></div>
       <div class="amt"><b>${eur(c.netto)}</b><span>br. ${eur(c.brutto)}</span></div></button>`;
 }
 function backupDue(){return db.entries.length>=2&&db.changed>db.lastBackup&&Date.now()-db.lastBackup>7*DAY}
@@ -1079,7 +1158,7 @@ function renderNow(){
     pbPrev=-1;tick();return;
   }
   const s=db.settings;
-  $('inSub').textContent=eur(s.pausch)+' Pauschale + '+eur(s.rate)+'/h';
+  $('inSub').textContent=eur(s.pausch)+' Pauschale + '+eur(s.rate)+'/h'+(s.zus>0?' + '+pctf(s.zus)+' %':'');
   $('steps').hidden=db.entries.length>0;
   $('rateMissing').hidden=s.rate>0||!db.wizardDone;
   $('wizNote').hidden=!!db.wizardDone;
@@ -1089,9 +1168,9 @@ function renderNow(){
   $('recentCard').hidden=!last5.length;
   $('recentList').innerHTML=last5.map(entryHTML).join('');
   if(last5.length>1){const t=totals(last5);
-    $('recentSum').innerHTML=`<span>${last5.length} Einsätze · ${num(t.h)} h</span><span>zusammen <b>${eur(t.n)}</b></span>`}
+    $('recentSum').innerHTML=`<span>${last5.length} Einsätze · ${Math.round(t.h*60)} min</span><span>zusammen <b>${eur(t.n)}</b></span>`}
   $('recentSum').hidden=last5.length<2;
-  const k=ym(new Date()),t=totals(monthEntries(k));
+  const k=ym(new Date()),t=monthTotals(k);
   $('mmName').textContent='Diesen Monat · '+monthOnly(k);
   $('mmNetto').textContent=eur(t.n);$('mmBrutto').textContent=eur(t.b);
   $('mmHours').textContent=num(t.h);$('mmCount').textContent=t.count;
@@ -1145,8 +1224,8 @@ let plDays=0;
 function planEstimate(){
   const st=db.settings,h=toNum($('plHrs').value)+toNum($('plMin').value)/60;
   if(!(plDays>0)&&!(h>0))return null;
-  const br=plDays*st.pausch+h*st.rate,pct=(st.tax+st.soz)/100;
-  return{h,net:br-(st.pauschTax?br:h*st.rate)*pct};
+  const hr=st.rate*(1+(st.zus||0)/100),br=plDays*st.pausch+h*hr,pct=(st.tax+st.soz)/100;
+  return{h,net:br-(st.pauschTax?br:h*hr)*pct};
 }
 function planPreview(){
   $('plDays').textContent=plDays;$('plDm').disabled=plDays<=0;$('plDp').disabled=plDays>=31;
@@ -1193,11 +1272,11 @@ function tick(){
   $('pbKnob').style.left=`calc(7px + (100% - 14px) * ${frac.toFixed(4)})`;
   $('pbR').innerHTML=`noch <b>${pad(Math.floor(left/60))}:${pad(left%60)}</b>`;
   if(r.s.round>1){
-    $('pbL').innerHTML=r.s.rate?`Nächste Stufe <b class="up">+${eur(st/60*r.s.rate)}</b>`:'Nächste Stufe';
+    $('pbL').innerHTML=r.s.rate?`Nächste Stufe <b class="up">+${eur(st/60*r.s.rate*(1+(r.s.zus||0)/100))}</b>`:'Nächste Stufe';
     $('rL').textContent='gezählt '+num(c.h)+' h';
     $('rR').textContent='um '+hm(next);
   }else{
-    $('pbL').innerHTML=`Diese Stunde <b class="up">+${eur(r.s.rate)}</b>`;
+    $('pbL').innerHTML=`Diese Stunde <b class="up">+${eur(r.s.rate*(1+(r.s.zus||0)/100))}</b>`;
     $('rL').textContent='minutengenau · '+num(c.h)+' h';
     $('rR').textContent='volle Stunde um '+hm(next);
   }
@@ -1256,7 +1335,7 @@ function openSheet(mode,entry){
   $('fDate').value=isoDay(new Date(start));$('fStart').value=hm(start);$('fEnd').value=hm(end);
   sheetBase={date:$('fDate').value,start:$('fStart').value,end:$('fEnd').value};
   $('fEndWrap').hidden=mode==='run';$('fStartWrap').classList.toggle('full',mode==='run');
-  $('fNote').value=note||'';$('fPausch').value=inp(s.pausch);$('fRate').value=inp(s.rate);$('fRates').open=false;
+  $('fNote').value=note||'';$('fPausch').value=inp(s.pausch);$('fRate').value=inp(s.rate);$('fZus').value=inp(s.zus||0);$('fRates').open=false;
   $('fDel').hidden=mode!=='edit';
   $('fSave').textContent=m[3];$('fSave').className='pri'+(mode==='stop'?' go':'');
   preview();$('sheet').showModal();
@@ -1271,12 +1350,12 @@ function readForm(){
   if(sheetMode==='run'){end=Date.now();if(start>end)start-=DAY}
   else if(live&&$('fEnd').value===sheetBase.end){end=Date.now()}
   else{const [eh,em]=($('fEnd').value||'').split(':').map(Number);end=new Date(y,mo-1,d,eh,em).getTime();if(end<start)end+=DAY}
-  const s={...sheetS,pausch:toNum($('fPausch').value),rate:toNum($('fRate').value)};
+  const s={...sheetS,pausch:toNum($('fPausch').value),rate:toNum($('fRate').value),zus:toNum($('fZus').value)};
   return{start,end,note:$('fNote').value.trim(),s,ok:isFinite(start)&&isFinite(end)};
 }
 function preview(){
   const f=readForm();
-  $('fRatesLbl').textContent='Satz für diesen Einsatz: '+eur(f.s.pausch)+' + '+eur(f.s.rate)+'/h';
+  $('fRatesLbl').textContent='Satz für diesen Einsatz: '+eur(f.s.pausch)+' + '+eur(f.s.rate)+'/h'+(f.s.zus>0?' + '+pctf(f.s.zus)+' %':'');
   if(!f.ok){$('fCalc').innerHTML='';$('fDur').textContent='Zeit unvollständig';$('fDurR').textContent='';return}
   const ms=f.end-f.start;
   $('fDur').textContent=sheetMode==='run'?'läuft seit '+hm(f.start):hm(f.start)+'–'+hm(f.end)+(isoDay(new Date(f.end))!==isoDay(new Date(f.start))?' (+1 Tag)':'');
@@ -1284,7 +1363,7 @@ function preview(){
   $('fCalc').innerHTML=calcHTML(calc(ms,f.s),f.s);
   $('fWarn').hidden=ms<=14*3600e3;
 }
-['fDate','fStart','fEnd','fPausch','fRate'].forEach(id=>$(id).addEventListener('input',preview));
+['fDate','fStart','fEnd','fPausch','fRate','fZus'].forEach(id=>$(id).addEventListener('input',preview));
 $('fCancel').onclick=()=>$('sheet').close();
 $('sheet').addEventListener('click',e=>{
   if(e.target!==$('sheet'))return;const r=$('sheet').getBoundingClientRect();
@@ -1321,9 +1400,17 @@ function renderHist(){
   const cur=ym(new Date());
   $('mName').textContent=monthName(viewMonth);
   $('mNext').disabled=viewMonth>=cur;
-  const es=monthEntries(viewMonth),t=totals(es);
+  const es=monthEntries(viewMonth),t=monthTotals(viewMonth);
   $('hNetto').textContent=eur(t.n);$('hBrutto').textContent=eur(t.b);
-  $('hHours').textContent=num(t.h);$('hCount').textContent=t.count;
+  $('hHours').textContent=t.paidMin+' min';$('hCount').textContent=t.count;
+  /* Zeit & Gleitzeit */
+  const gz=gzMin(viewMonth);
+  if(document.activeElement!==$('gzIn'))$('gzIn').value=gz?Math.abs(gz):'';
+  if(gz)gzSignNeg=gz<0;
+  $('gzSign').textContent=gzSignNeg?'−':'+';
+  $('hzRaw').textContent=mins(t.min);
+  $('hzPaid').textContent=t.paidMin+' min · '+num(t.paidMin/60)+' h';
+  $('hToPayT').textContent='Gehaltsabrechnung '+monthOnly(viewMonth);
   $('hVat').hidden=!db.settings.vat;$('hVatV').textContent=eur(t.v);
   let html='';
   const r=db.running;
@@ -1341,15 +1428,28 @@ $('hList').onclick=e=>{
 };
 function shiftMonth(n){const[y,m]=viewMonth.split('-');viewMonth=ym(new Date(y,m-1+n,1));renderHist()}
 $('mPrev').onclick=()=>shiftMonth(-1);$('mNext').onclick=()=>shiftMonth(1);
+let gzSignNeg=true;
+function gzSave(){
+  const v=toNum($('gzIn').value),k=viewMonth;
+  db.months[k]={...(db.months[k]||{}),gz:v?(gzSignNeg?-v:v):0};commit();renderHist();
+}
+$('gzIn').addEventListener('input',gzSave);
+$('gzIn').addEventListener('focus',()=>{gzSignNeg=gzMin(viewMonth)<=0;setTimeout(()=>$('gzIn').select(),0)});
+$('gzSign').onclick=()=>{gzSignNeg=!gzSignNeg;$('gzSign').textContent=gzSignNeg?'−':'+';gzSave()};
+$('hToPay').onclick=()=>{payMonth=viewMonth;db.calc.tab='pay';save();show('calc')};
 $('btnAdd2').onclick=()=>openSheet('add');
 $('btnCsv').onclick=()=>{
   const es=monthEntries(viewMonth).reverse();
   if(!es.length){toast('Keine Einsätze in diesem Monat');return}
-  const rows=[['Datum','Beginn','Ende','Stunden','Pauschale','Stundenlohn','Lohn','Brutto','Abzuege','Netto','Brutto inkl. MwSt','Notiz']];
+  const rows=[['Datum','Beginn','Ende','Stunden','Pauschale','Stundenlohn','Zuschlag %','Lohn inkl. Zuschlag','Brutto','Abzuege','Netto','Brutto inkl. MwSt','Notiz']];
   const T={h:0,l:0,b:0,a:0,n:0,v:0,p:0};
   es.forEach(e=>{const c=calc(e.end-e.start,e.s);T.h+=c.h;T.l+=c.lohn;T.b+=c.brutto;T.a+=c.abz;T.n+=c.netto;T.v+=c.vat;T.p+=e.s.pausch;
-    rows.push([new Date(e.start).toLocaleDateString('de-DE'),hm(e.start),hm(e.end),num(c.h),num(e.s.pausch),num(e.s.rate),num(c.lohn),num(c.brutto),num(c.abz),num(c.netto),num(c.vat),'"'+(e.note||'').replace(/"/g,'""')+'"'])});
-  rows.push(['Summe','','',num(T.h),num(T.p),'',num(T.l),num(T.b),num(T.a),num(T.n),num(T.v),'']);
+    rows.push([new Date(e.start).toLocaleDateString('de-DE'),hm(e.start),hm(e.end),num(c.h),num(e.s.pausch),num(e.s.rate),pctf(e.s.zus||0),num(c.lohn),num(c.brutto),num(c.abz),num(c.netto),num(c.vat),'"'+(e.note||'').replace(/"/g,'""')+'"'])});
+  const MT=monthTotals(viewMonth);
+  if(MT.adjMin){const s=db.settings,hr=s.rate*(1+(s.zus||0)/100),br=MT.adjMin/60*hr,ab=br*(s.tax+s.soz)/100;
+    rows.push(['Gleitzeit-Ausgleich','','',num(MT.adjMin/60),'','','',num(br),num(br),num(ab),num(br-ab),num(br*1.19),'"'+MT.adjMin+' min"']);
+    T.h+=MT.adjMin/60;T.l+=br;T.b+=br;T.a+=ab;T.n+=br-ab;T.v+=br*1.19}
+  rows.push(['Summe','','',num(T.h),num(T.p),'','',num(T.l),num(T.b),num(T.a),num(T.n),num(T.v),'']);
   download(new Blob(['﻿'+rows.map(r=>r.join(';')).join('\r\n')],{type:'text/csv;charset=utf-8'}),'einsaetze_'+viewMonth+'.csv');
 };
 
@@ -1365,7 +1465,7 @@ const SEG_COL={net:'#2E8A62',soz:'#7B74BA',tax:'#C9776A'};
 function monthSource(){
   let k=ym(new Date()),es=monthEntries(k);
   if(!es.length&&db.entries.length){const last=db.entries.slice().sort((a,b)=>b.start-a.start)[0];k=ym(new Date(last.start));es=monthEntries(k)}
-  const t=totals(es);return{k,count:es.length,h:t.h};
+  const t=monthTotals(k);return{k,count:es.length,h:t.h};
 }
 function initCalc(){
   if(db.calc.init)return;
@@ -1377,7 +1477,7 @@ function renderCalc(full){
   const c=db.calc,s=db.settings;
   if(full){
     const set=(id,v)=>{if(document.activeElement!==$(id))$(id).value=v};
-    set('cRate',inp(s.rate));set('cPausch',inp(s.pausch));set('cHours',inp(c.hours));set('cCount',inp(c.count));
+    set('cRate',inp(s.rate));set('cZus',inp(s.zus||0));set('cPausch',inp(s.pausch));set('cHours',inp(c.hours));set('cCount',inp(c.count));
     set('cMain',c.main?inp(c.main):'');set('cKvz',inp(c.kvz));$('cLand').value=c.land;
   }
   document.querySelectorAll('#cStkl button').forEach(b=>b.classList.toggle('on',+b.dataset.v===c.stkl));
@@ -1445,6 +1545,79 @@ $('kBar').onclick=e=>{
 };
 function calcChanged(){save();renderCalc(false)}
 
+/* ---- Gehaltsabrechnung ---- */
+let payMonth=null;
+function payDefaultMonth(){const k=ym(new Date());if(monthEntries(k).length)return k;const d=new Date();d.setMonth(d.getMonth()-1);const pk=ym(d);return monthEntries(pk).length?pk:k}
+function payBase(){
+  const P=db.calc.pay,s=db.settings,mh=r2(P.wh*P.fac);
+  const grund=P.grund>0?P.grund:r2(s.rate*mh);
+  return{P,s,mh,grund};
+}
+function payCalc(k){
+  const {P,s,mh,grund}=payBase(),t=monthTotals(k);
+  const hrs=r2(t.paidMin/60),std=r2(hrs*s.rate),zus=r2(std*(s.zus||0)/100),pau=r2(t.count*s.pausch);
+  const brutto=r2(grund+P.konto+std+zus+pau+P.vwlAg);
+  const cfg={...db.calc,mode:'normal'};const p=payroll(brutto,cfg);
+  return{P,s,mh,grund,t,hrs,std,zus,pau,brutto,p,aus:p.netto-P.vwlSp-P.vor};
+}
+function renderPay(full){
+  if(!payMonth)payMonth=payDefaultMonth();
+  const k=payMonth,R=payCalc(k),{P,s,p,t}=R,c=db.calc;
+  $('pName').textContent=monthName(k);$('pNext').disabled=k>=ym(new Date());
+  $('pMode').textContent='Klasse '+['','I','II','III','IV','V','VI'][c.stkl];
+  $('pAus').textContent=eur(R.aus);
+  $('pSub').textContent='Netto '+eur(p.netto)+' · Brutto '+eur(R.brutto);
+  const ln=(a,b,cls,em)=>`<div class="ln${cls?' '+cls:''}"><span>${a}${em?` <em>${em}</em>`:''}</span><b>${b}</b></div>`;
+  $('pBez').innerHTML=
+    ln('Monatsgrundlohn',eur(R.grund),'',num(R.mh)+' h')+
+    (P.konto?ln('Kontoführungsgebühren',eur(P.konto)):'')+
+    ln('Stundenlohn Einsätze',eur(R.std),'',`${num(R.hrs)} h × ${eur(s.rate)}`)+
+    (s.zus?ln('Überstd.-Zuschlag',eur(R.zus),'',pctf(s.zus)+' %'):'')+
+    ln('Maschinenbestückung',eur(R.pau),'',`${t.count} × ${eur(s.pausch)}`)+
+    (P.vwlAg?ln('VWL AG-Anteil',eur(P.vwlAg)):'')+
+    ln('Gesamt-Brutto',eur(R.brutto),'total');
+  $('pAbz').innerHTML=
+    ln('Steuer','','grp')+ln('Lohnsteuer','− '+eur(p.lst),'minus')+(p.kist?ln('Kirchensteuer','− '+eur(p.kist),'minus'):'')+(p.soli?ln('Solidaritätszuschlag','− '+eur(p.soli),'minus'):'')+
+    ln('Sozialversicherung','','grp')+ln('Krankenversicherung','− '+eur(p.kv),'minus')+ln('Rentenversicherung','− '+eur(p.rv),'minus')+
+    ln('Arbeitslosenversicherung','− '+eur(p.av),'minus')+ln('Pflegeversicherung','− '+eur(p.pv),'minus')+
+    ln('Netto-Verdienst',eur(p.netto),'sub2')+
+    ((P.vwlSp||P.vor)?ln('Netto-Abzüge','','grp'):'')+
+    (P.vwlSp?ln('Vermögensbildung','− '+eur(P.vwlSp),'minus'):'')+(P.vor?ln('Abschlag / Vorschuss','− '+eur(P.vor),'minus'):'')+
+    ln('Auszahlungsbetrag',eur(R.aus),'total');
+  $('pMh').textContent=num(R.mh)+' h';
+  $('pGrundH').textContent=P.grund>0?'wie auf der Abrechnung':'leer = Stundenlohn × Monatsstunden';
+  $('pRateH').textContent=P.grund>0?'= Grundlohn ÷ Monatsstunden':'brutto';
+  const adj=t.adjMin?` (${t.min} ${t.adjMin<0?'−':'+'} ${Math.abs(t.adjMin)} Gleitzeit)`:'';
+  $('pToHistT').textContent=`${t.count} Einsätze · ${t.paidMin} min${adj}`;
+  if(full!==false){
+    const set=(id,v)=>{if(document.activeElement!==$(id))$(id).value=v};
+    set('pGrund',P.grund?inp(P.grund):'');$('pGrund').placeholder=inp(r2(s.rate*R.mh));
+    set('pWh',inp(P.wh));set('pFac',inp(P.fac));set('pRate',inp(s.rate));set('pZus',inp(s.zus||0));set('pPausch',inp(s.pausch));
+    set('pVwlAg',P.vwlAg?inp(P.vwlAg):'');set('pKonto',P.konto?inp(P.konto):'');set('pVwlSp',P.vwlSp?inp(P.vwlSp):'');set('pVor',P.vor?inp(P.vor):'');
+    ['pVwlAg','pKonto','pVwlSp','pVor'].forEach(id=>$(id).placeholder='0');
+  }
+}
+/* Grundlohn → Stundenlohn & Grundgehalt für den Einsatz-Rechner automatisch abgleichen */
+function paySync(){
+  const P=db.calc.pay,s=db.settings,mh=r2(P.wh*P.fac);
+  if(P.grund>0&&mh>0)s.rate=r2(P.grund/mh);
+  const grund=P.grund>0?P.grund:r2(s.rate*mh);
+  db.calc.main=r2(grund+P.vwlAg+P.konto);
+}
+[['pGrund','grund'],['pWh','wh'],['pFac','fac'],['pVwlAg','vwlAg'],['pKonto','konto'],['pVwlSp','vwlSp'],['pVor','vor']].forEach(([id,k])=>{
+  $(id).addEventListener('input',()=>{db.calc.pay[k]=toNum($(id).value);paySync();settingsChanged();renderPay(false)});
+  $(id).addEventListener('focus',()=>setTimeout(()=>$(id).select(),0));
+  $(id).addEventListener('blur',()=>renderPay(true));
+});
+[['pRate','rate'],['pZus','zus'],['pPausch','pausch']].forEach(([id,k])=>{
+  $(id).addEventListener('input',()=>{db.settings[k]=toNum($(id).value);if(k==='rate')db.calc.pay.grund=0;paySync();settingsChanged();renderPay(false)});
+  $(id).addEventListener('focus',()=>setTimeout(()=>$(id).select(),0));
+  $(id).addEventListener('blur',()=>renderPay(true));
+});
+$('pPrev').onclick=()=>{const[y,m]=payMonth.split('-');payMonth=ym(new Date(y,m-2,1));renderPay(true)};
+$('pNext').onclick=()=>{const[y,m]=payMonth.split('-');payMonth=ym(new Date(y,m,1));renderPay(true)};
+$('pToHist').onclick=()=>{viewMonth=payMonth;show('hist')};
+
 /* ---- Sonderzahlungen ---- */
 /* Typ: [Name, Standard-Monat, Standard-Art, Standard-%] */
 const BTYPES={urlaub:['Urlaubsgeld',6,'days',50],weihnacht:['Weihnachtsgeld',11,'pct',50],m13:['13. Monatsgehalt',11,'pct',100],praemie:['Prämie / Bonus',0,'fix',0]};
@@ -1478,7 +1651,8 @@ function bonusFields(b){
 function renderBonus(full){
   const c=db.calc,{L,auto,D,dailyAuto,cc}=bonusSetup();
   $('kTab').querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.v===c.tab));
-  $('kMonthView').hidden=c.tab!=='month';$('kBonusView').hidden=c.tab!=='bonus';
+  $('kMonthView').hidden=c.tab!=='month';$('kBonusView').hidden=c.tab!=='bonus';$('kPayView').hidden=c.tab!=='pay';
+  if(c.tab==='pay')renderPay(full);
   $('bYearLbl').textContent=String(new Date().getFullYear());
   if(document.activeElement!==$('bBasis'))$('bBasis').value=c.basis>0?inp(c.basis):'';
   $('bBasis').placeholder=inp(r2(auto));
@@ -1535,7 +1709,7 @@ function renderBonus(full){
   else if(!(L>0)&&c.bonus.length){nt='Kein laufender Lohn';nx='Trag im Monatslohn-Rechner Einsätze/Grundgehalt ein oder unten einen Monatslohn – sonst fehlen % und Tagessatz.'}
   $('bNote').hidden=!nt;$('bNoteT').textContent=nt;$('bNoteX').textContent=nx;
 }
-$('kTab').onclick=e=>{const b=e.target.closest('button');if(!b)return;db.calc.tab=b.dataset.v;save();renderBonus(false);$('scroller').scrollTop=0};
+$('kTab').onclick=e=>{const b=e.target.closest('button');if(!b)return;db.calc.tab=b.dataset.v;save();renderBonus(true);$('scroller').scrollTop=0};
 $('bAdd').onclick=e=>{
   const b=e.target.closest('[data-t]');if(!b)return;
   const t=b.dataset.t,[name,mon,mode,pct]=BTYPES[t];
@@ -1574,7 +1748,7 @@ $('bList').addEventListener('click',e=>{
   $(id).addEventListener('focus',()=>setTimeout(()=>$(id).select(),0));
   $(id).addEventListener('blur',()=>renderCalc(true));
 });
-[['cRate','rate'],['cPausch','pausch']].forEach(([id,k])=>{
+[['cRate','rate'],['cZus','zus'],['cPausch','pausch']].forEach(([id,k])=>{
   $(id).addEventListener('input',()=>{db.settings[k]=toNum($(id).value);settingsChanged()});
   $(id).addEventListener('focus',()=>setTimeout(()=>$(id).select(),0));
   $(id).addEventListener('blur',()=>renderCalc(true));
@@ -1600,7 +1774,7 @@ $('kApply').onclick=()=>{
 
 /* ================= EINSTELLUNGEN ================= */
 let touched=false;
-const FIELDS={sPausch:'pausch',sRate:'rate',sTax:'tax',sSoz:'soz'};
+const FIELDS={sPausch:'pausch',sRate:'rate',sZus:'zus',sTax:'tax',sSoz:'soz'};
 function staleThisMonth(){return monthEntries(ym(new Date())).filter(e=>RK.some(k=>e.s[k]!==db.settings[k]))}
 function renderSet(full){
   const s=db.settings;
@@ -1713,7 +1887,7 @@ let w=null,wStep=0;
 function wzInit(){
   const s=db.settings,c=db.calc,bu=c.bonus.find(b=>b.t==='urlaub'),bw=c.bonus.find(b=>b.t==='weihnacht');
   const job=!db.wizardDone?'':c.mode==='mini'?'mini':c.stkl===6?'second':c.main>0?'same':'unknown';
-  return{pausch:s.pausch,rate:s.rate,round:s.round,count:c.count||4,hoursPer:c.count?r2(c.hours/c.count)||2.5:2.5,
+  return{pausch:s.pausch,rate:s.rate,zus:s.zus||0,round:s.round,count:c.count||4,hoursPer:c.count?r2(c.hours/c.count)||2.5:2.5,
     job,main:c.main||0,stkl:c.stkl===6?1:c.stkl,kids:c.kids||0,kist:!!c.kist,land:c.land,kvz:c.kvz,over23:c.over23!==false,rvFree:!!c.rvFree,
     pTax:s.tax,pSoz:s.soz,
     urlaub:{on:!!bu,days:bu&&bu.mode==='days'?bu.days:30,pct:bu&&bu.mode==='days'?bu.pct:50},
@@ -1727,9 +1901,9 @@ function wzCfg(w){
 function wzResult(w){
   let tax,soz;
   if(w.job==='unknown'||!w.job){tax=w.pTax;soz=w.pSoz}
-  else{const R=lohnResult(wzCfg(w),{...db.settings,pausch:w.pausch,rate:w.rate}),p=R.part,E=R.E;
+  else{const R=lohnResult(wzCfg(w),{...db.settings,pausch:w.pausch,rate:w.rate,zus:w.zus}),p=R.part,E=R.E;
     tax=E>0?Math.round(p.steuer/E*1000)/10:0;soz=E>0?Math.round(p.sozial/E*1000)/10:0}
-  const br=w.pausch+w.hoursPer*w.rate;
+  const br=w.pausch+w.hoursPer*w.rate*(1+w.zus/100);
   return{tax,soz,br,net:br*(1-(tax+soz)/100)};
 }
 const WZ=[
@@ -1739,6 +1913,7 @@ const WZ=[
    <div class="group">
     <div class="fld"><label class="lb" for="wPausch">Pauschale<small>fürs Kommen, pro Einsatz</small></label><div class="num"><input id="wPausch" data-k="pausch" inputmode="decimal" autocomplete="off" value="${inp(w.pausch)}"><i>€</i></div></div>
     <div class="fld"><label class="lb" for="wRate">Stundenlohn<small>brutto</small></label><div class="num"><input id="wRate" data-k="rate" inputmode="decimal" autocomplete="off" value="${inp(w.rate)}"><i>€/h</i></div></div>
+    <div class="fld"><label class="lb" for="wZus">Zuschlag<small>z. B. Überstunden 15 % · sonst 0</small></label><div class="num"><input id="wZus" data-k="zus" inputmode="decimal" autocomplete="off" value="${inp(w.zus)}"><i>%</i></div></div>
    </div>`,ok:()=>w.rate>0},
  {id:'often',ill:'cal',h:'Wie oft kommst du?',body:()=>`<p class="wz-p">Ungefähr reicht – das braucht man nur, um die Steuer richtig zu schätzen.</p>
    <div class="group">
@@ -1798,7 +1973,7 @@ const WZ=[
  {id:'done',ill:'ok',h:'Fertig!',next:'Speichern',body:()=>{
    const r=wzResult(w),job={same:'Zusammen mit dem Lohn',second:'Zweitjob · Klasse VI',mini:'Minijob',unknown:'Prozente selbst eingetragen'}[w.job];
    const rd={1:'minutengenau',15:'15 min aufrunden',30:'30 min aufrunden',60:'1 h aufrunden'}[w.round];
-   const L=w.job==='same'?w.main+w.count*w.hoursPer*w.rate+w.count*w.pausch:0;
+   const L=w.job==='same'?w.main+w.count*w.hoursPer*w.rate*(1+w.zus/100)+w.count*w.pausch:0;
    const bon=(w.urlaub.on&&w.job==='same'?`<div class="ln"><span>Urlaubsgeld</span><b>${eur(w.urlaub.days*(L*3/65)*w.urlaub.pct/100)}</b></div>`:'')+
      (w.weihn.on&&w.job==='same'?`<div class="ln"><span>Weihnachtsgeld</span><b>${eur(L*w.weihn.pct/100)}</b></div>`:'');
    return `<p class="wz-p">Ein Abend mit ${pctf(w.hoursPer)} Stunden bringt dir ungefähr:</p>
@@ -1806,7 +1981,7 @@ const WZ=[
     <div class="ksub">von ${eur(r.br)} brutto</div></div><div class="wz-gap"></div>
    <div class="card wz-sum"><div class="calc">
     <div class="ln"><span>Pauschale</span><b>${eur(w.pausch)}</b></div>
-    <div class="ln"><span>Stundenlohn</span><b>${eur(w.rate)}/h</b></div>
+    <div class="ln"><span>Stundenlohn</span><b>${eur(w.rate)}/h${w.zus>0?' + '+pctf(w.zus)+' %':''}</b></div>
     <div class="ln"><span>Abrechnung</span><b style="font-family:inherit">${job}</b></div>
     ${w.job==='same'?`<div class="ln"><span>Steuerklasse</span><b>${['','I','II','III','IV','V'][w.stkl]}</b></div>`:''}
     <div class="ln"><span>Abzüge Steuern</span><b>${pctf(r.tax)} %</b></div>
@@ -1865,7 +2040,7 @@ $('wzNext').onclick=()=>{
 function wzApply(){
   const prev=clone({settings:db.settings,calc:db.calc,wizardDone:db.wizardDone});
   const r=wzResult(w),s=db.settings;
-  s.pausch=w.pausch;s.rate=w.rate;s.round=w.round;s.tax=r.tax;s.soz=r.soz;s.pauschTax=1;
+  s.pausch=w.pausch;s.rate=w.rate;s.zus=w.zus;s.round=w.round;s.tax=r.tax;s.soz=r.soz;s.pauschTax=1;
   const cfg=wzCfg(w);
   ['stkl','zkf','kids','kist','land','kvz','over23','mode','rvFree','main','hours','count'].forEach(k=>db.calc[k]=cfg[k]);
   db.calc.init=true;
