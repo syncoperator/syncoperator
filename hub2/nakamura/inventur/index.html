@@ -352,6 +352,31 @@ details.bulk textarea{margin-top:8px;min-height:96px;font-family:var(--f-mono);f
 .keys button.op{background:var(--soft);box-shadow:none}
 .keys button:active{transform:scale(.95);background:var(--line)}
 .keys button:disabled{opacity:.3}
+.tcalc{border-radius:16px;background:var(--card);border:1.5px solid var(--ink);padding:10px 12px;display:flex;flex-direction:column;gap:8px}
+.tcalc.ed{border-color:var(--warn);background:var(--warn-bg)}
+.ttape{display:flex;flex-wrap:wrap;gap:6px;max-height:76px;overflow-y:auto;min-height:30px;align-content:flex-start}
+.tp{display:inline-flex;align-items:center;gap:4px;padding:5px 7px 5px 10px;border-radius:9px;border:1px solid var(--line);background:var(--bg);font-family:var(--f-mono);font-size:14px;font-weight:600;text-transform:none}
+.tp em{font-style:normal;color:var(--warn);font-weight:700}
+.tp span{font-size:9px;color:var(--muted);margin-left:3px}
+.tph{font-size:12px;color:var(--muted);text-transform:none;line-height:1.35}
+.tcur{display:flex;align-items:baseline;gap:8px;min-height:42px;border-top:1px dashed var(--line);padding-top:6px}
+.tcur em{font-style:normal;font-family:var(--f-mono);font-size:24px;font-weight:700;color:var(--warn);white-space:nowrap}
+.tcur .e{flex:1;min-width:0;font-family:var(--f-mono);font-size:32px;font-weight:600;white-space:nowrap;overflow:hidden;line-height:1.1}
+.tcur .e i{display:inline-block;width:2px;height:28px;background:var(--fg);vertical-align:-4px;margin-left:2px;animation:blink 1s steps(1) infinite}
+.tcur .pv{font-family:var(--f-mono);font-size:12px;color:var(--muted);text-transform:none;white-space:nowrap}
+.tsum{display:flex;align-items:baseline;justify-content:space-between;border-top:1px solid var(--line);padding-top:7px}
+.tsum span{font-family:var(--f-mono);font-size:11px;letter-spacing:.1em;color:var(--muted)}
+.tsum b{font-family:var(--f-mono);font-size:26px;font-weight:700;letter-spacing:-.02em;text-transform:none}
+.tql{display:flex;align-items:center;gap:8px}
+.tql .types{flex:1;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
+.tql .types::-webkit-scrollbar{display:none}
+.tql .types button{font-family:var(--f-mono);font-size:14px;padding:9px 13px;text-transform:none;background:var(--card);white-space:nowrap;box-shadow:var(--shadow)}
+.keys.km button{height:52px}
+.keys .plus{grid-row:span 2;height:auto!important;background:var(--ink);color:var(--on-ink);border-color:var(--ink);font-size:30px}
+.wlist summary{cursor:pointer;list-style:none;font-family:var(--f-mono);font-size:10.5px;letter-spacing:.1em;color:var(--muted);padding:2px 2px 6px}
+.wlist summary::-webkit-details-marker{display:none}
+.wlist summary::after{content:" ▾"}
+.wlist[open] summary::after{content:" ▴"}
 .mw-go.ok{background:var(--ok);border-color:var(--ok);color:#fff}
 .wnext{display:flex;flex-direction:column;gap:8px;width:100%;margin-top:6px}
 .wnext .btn{width:100%;padding:15px;font-size:15px;border-radius:14px}
@@ -541,7 +566,28 @@ window.addEventListener('load',ctFit);window.addEventListener('resize',ctFit);se
     if (!fromNav && location.hash === '#zaehlen') { if (history.state && history.state.wz) history.back(); else history.replaceState(null, '', location.pathname); }
     render();
   }
-  function wMeters() { const v = calc(W.expr, true); return v == null ? null : W.unit === 'mm' ? v / 1000 : v; }
+  // ---------- Stück-Rechner: jede Stange einzeln (+), gleiche Stangen Anzahl ×, Schnell-Längen, mm automatisch ----------
+  const MM_AUTO = 20;   // Werte über 20 gelten als mm – keine Stange ist länger als 20 m
+  const T = { tape: [], inp: '', cnt: null };
+  const fl = v => String(Math.round(v * 1000) / 1000).replace('.', ',');
+  function tReset() { T.tape = []; T.inp = ''; T.cnt = null; }
+  function inpVal() { if (!T.inp) return null; const v = parseFloat(T.inp.replace(',', '.')); if (!isFinite(v) || v <= 0) return null; const mm = W.unit === 'mm' || v > MM_AUTO; return { m: mm ? v / 1000 : v, mm, raw: v }; }
+  const tapeSum = () => T.tape.reduce((a, p) => a + p.n * p.len, 0);
+  const totalNow = () => { const c = inpVal(); return Math.round((tapeSum() + (c ? (T.cnt || 1) * c.m : 0)) * 1e6) / 1e6; };
+  const pieceCount = () => T.tape.reduce((a, p) => a + p.n, 0) + (inpVal() ? (T.cnt || 1) : 0);
+  function tapeAdd(len) { if (!(len > 0)) return false; T.tape.push({ n: T.cnt || 1, len: Math.round(len * 1e6) / 1e6 }); T.cnt = null; T.inp = ''; return true; }
+  const toExpr = () => T.tape.map(p => p.n > 1 ? `${p.n}×${fl(p.len)}` : fl(p.len)).join('+');
+  function piecesOf(e) {   // gespeicherte Rechnung → einzelne Stangen
+    const f = e.unit === 'mm' ? 1 / 1000 : 1, parts = String(e.expr || '').split('+');
+    if (/[−-]/.test(e.expr) || parts.some(p => calc(p.replace(/^\d+×/, '')) == null)) return [{ n: 1, len: e.m }];
+    return parts.map(p => { const mm = p.split('×'); return mm.length === 2 && /^\d+$/.test(mm[0]) ? { n: +mm[0], len: calc(mm[1]) * f } : { n: 1, len: calc(p) * f }; });
+  }
+  function quickLens(m) {
+    const c = {}; D.entries.filter(e => e.mat === m.id).forEach(e => piecesOf(e).forEach(p => { const k = Math.round(p.len * 1000) / 1000; if (k >= .5) c[k] = (c[k] || 0) + p.n; }));
+    const top = Object.entries(c).sort((a, b) => b[1] - a[1]).map(x => +x[0]).slice(0, 3);
+    [6, 3].forEach(d => { if (!top.includes(d) && top.length < 4) top.push(d); });
+    return top.slice(0, 4);
+  }
   function nextPos(mid, d) {
     const m = mat(mid); if (!m) return null; const ps = posOf(m), i = ps.indexOf(d);
     if (i >= 0 && i + 1 < ps.length) return { mat: m.id, d: ps[i + 1] };
@@ -556,33 +602,46 @@ window.addEventListener('load',ctFit);window.addEventListener('resize',ctFit);se
       else if (k === ',' && !W.expr.includes(',')) W.expr = (W.expr || '0') + ',';
       wDisp(); return;
     }
-    const ops = ['+', '×', '−'];
-    if (k === 'back') W.expr = W.expr.slice(0, -1);
-    else if (k === 'clr') { W.expr = ''; if (W.edit) { W.edit = null; wRender(); return; } }
-    else if (ops.includes(k)) { if (!W.expr && k !== '−') return; W.expr = /[+×−]$/.test(W.expr) ? W.expr.slice(0, -1) + k : W.expr + k; }
-    else if (k === ',') { const last = W.expr.split(/[+×−]/).pop(); if (last.includes(',')) return; W.expr += last ? ',' : '0,'; }
-    else if (/^\d$/.test(k)) { if (W.expr.length > 60) return; W.expr += k; }
+    if (/^\d$/.test(k)) { if (T.inp.replace(',', '').length >= 6) return; T.inp = T.inp === '0' ? k : T.inp + k; }
+    else if (k === ',') { if (T.inp.includes(',')) return; T.inp = (T.inp || '0') + ','; }
+    else if (k === 'back') { if (T.inp) T.inp = T.inp.slice(0, -1); else if (T.cnt != null) { T.inp = String(T.cnt); T.cnt = null; } else if (T.tape.length) T.tape.pop(); }
+    else if (k === 'clr') {
+      if (T.inp || T.cnt != null) { T.inp = ''; T.cnt = null; }
+      else if (T.tape.length) { const old = T.tape.slice(); T.tape = []; toast('Streifen geleert', () => { T.tape = old; wDisp(); }); }
+      else if (W.edit) { W.edit = null; wRender(); return; }
+    }
+    else if (k === '×') { const n = parseInt(T.inp, 10); if (!T.inp || T.inp.includes(',') || !(n > 0) || n > 999) { toast('Erst Anzahl tippen, dann ×'); return; } T.cnt = n; T.inp = ''; }
+    else if (k === '+') { const c = inpVal(); if (!c) { if (T.cnt) toast('Länge fehlt'); return; } tapeAdd(c.m); vib(8); }
     wDisp();
   }
   const keysHTML = dMode => `<div class="keys" id="wKeys">
     ${['7', '8', '9', 'back', '4', '5', '6', '+', '1', '2', '3', '×', ',', '0', '−', 'clr'].map(k => `<button type="button" class="${/^\d$|^,$/.test(k) ? '' : 'op'}" data-k="${k}" ${dMode && /^[+×−]$/.test(k) ? 'disabled' : ''}>${k === 'back' ? '⌫' : k === 'clr' ? 'C' : k}</button>`).join('')}</div>`;
+  const keysM = () => `<div class="keys km" id="wKeys">${[['7'], ['8'], ['9'], ['back', '⌫', 'op'], ['4'], ['5'], ['6'], ['×', '×', 'op'], ['1'], ['2'], ['3'], ['+', '+', 'plus'], [','], ['0'], ['clr', 'C', 'op']].map(([k, l, c]) => `<button type="button" class="${c || ''}" data-k="${k}">${l || k}</button>`).join('')}</div>`;
   function wDisp() {
+    if (W.step === 'm') {
+      const tp = $('wTape'); if (!tp) return; const c = inpVal(), tot = totalNow(), go = $('wGo');
+      tp.innerHTML = T.tape.length ? T.tape.map((p, i) => `<button type="button" class="tp" data-w="tdel" data-i="${i}" aria-label="Entfernen">${p.n > 1 ? `<em>${p.n}×</em>` : ''}${fl(p.len)}<span>✕</span></button>`).join('')
+        : '<span class="tph">Jede Stange: Länge tippen → <b>+</b>. Gleiche Stangen: Anzahl <b>×</b> Länge. Über 20 gilt als mm.</span>';
+      tp.scrollTop = 1e5;
+      $('wCur').innerHTML = `${T.cnt ? `<em>${T.cnt} ×</em>` : ''}<span class="e">${esc(T.inp)}<i></i></span><span class="pv">${c ? (c.mm ? `${fl(c.raw)} mm = ${fm(c.m)} m` : (T.cnt ? `= ${fm(T.cnt * c.m)} m` : 'm')) : (T.cnt ? 'LÄNGE?' : '')}</span>`;
+      $('wSum').innerHTML = `<span>${pieceCount()} STÜCK</span><b>${fm(tot)} m</b>`;
+      if (go) { go.disabled = !(tot > 0); go.innerHTML = `${W.edit ? 'Ändern' : 'Buchen'}${tot > 0 ? `<small>${fm(tot)} m</small>` : ''}`; }
+      return;
+    }
     const e = $('wE'), r = $('wR'), go = $('wGo'); if (!e) return;
     e.innerHTML = `${esc(W.expr)}<i></i>`; e.scrollLeft = 1e5;
     if (W.step === 'd') { const ok = !!dKey(W.expr); if (go) { go.disabled = !ok; go.innerHTML = `Ø${ok ? fd(dKey(W.expr)) : ''} übernehmen →`; } return; }
-    const v = wMeters(), ok = v != null && v > 0;
-    r.innerHTML = v != null && (hasOp(W.expr) || W.unit === 'mm') ? `=<b>${fm(v)} m</b>` : '';
-    if (go) { go.disabled = !ok; go.innerHTML = `${W.edit ? 'Ändern' : 'Buchen'}${ok ? `<small>${fm(v)} m</small>` : ''}`; }
   }
   function wBook() {
     const m = mat(W.mat); if (!m || !W.d) return;
-    const v = wMeters(); if (v == null || v <= 0) { toast('Meter eingeben'); return; }
-    const expr = W.expr.replace(/[+×−,]+$/, '');
-    if (W.edit) { const e = D.entries.find(x => x.id === W.edit); if (e) { e.expr = expr; e.unit = W.unit; e.m = v; e.ets = Date.now(); } W.edit = null; W.expr = ''; save(); toast('Geändert · ' + fm(v) + ' m'); vib(10); wRender(); return; }
+    const c = inpVal(); if (c) tapeAdd(c.m);
+    const v = Math.round(tapeSum() * 1e6) / 1e6; if (!(v > 0)) { toast('Länge eingeben'); return; }
+    const expr = toExpr();
+    if (W.edit) { const e = D.entries.find(x => x.id === W.edit); if (e) { e.expr = expr; e.unit = 'm'; e.m = v; e.ets = Date.now(); } W.edit = null; tReset(); save(); toast('Geändert · ' + fm(v) + ' m'); vib(10); wRender(); return; }
     const cl = curLoc() || ''; if (cl && !locOf(m, W.d)) m.locs[W.d] = cl;
-    const e = { id: uid(), ts: Date.now(), mat: m.id, d: W.d, expr, unit: W.unit, m: v, loc: cl || locOf(m, W.d) };
+    const e = { id: uid(), ts: Date.now(), mat: m.id, d: W.d, expr, unit: 'm', m: v, n: T.tape.reduce((a, p) => a + p.n, 0), loc: cl || locOf(m, W.d) };
     D.entries.push(e); save(); vib([10, 30, 14]);
-    W.last = e.id; W.expr = ''; W.step = 'ok'; wRender();
+    W.last = e.id; tReset(); W.step = 'ok'; wRender();
   }
   function wRender() {
     const m = mat(W.mat), si = STEPS.indexOf(W.step === 'ok' ? 'm' : W.step);
@@ -610,10 +669,10 @@ window.addEventListener('load',ctFit);window.addEventListener('resize',ctFit);se
       body = `<div class="wpos" style="--c:${m.color}"><span class="bar"></span><div class="t"><h3>${esc(m.name)} · Ø${fd(W.d)}</h3>
           <div class="chips"><button type="button" class="wchip ${l ? '' : 'miss'}" data-w="loc">${IC.loc}${l ? esc(l) : 'LAGERORT?'}</button><button type="button" class="wchip ${a ? '' : 'miss'}" data-w="art">${IC.art}${a ? esc(a) : 'ART.-NR.?'}</button></div></div>
           <div class="s"><b>${fm(sumOf(es), 2)}</b><small>M · ${es.length}×</small></div></div>
-        ${es.length ? `<div class="wents">${es.slice(-3).reverse().map(e => `<div class="wen ${W.edit === e.id ? 'ed' : ''}" data-w="edit" data-id="${e.id}"><span class="x">${esc(showExpr(e))} · ${hm(e.ts)}</span><b>${fm(e.m)}</b><button type="button" data-w="del" data-id="${e.id}" aria-label="Löschen">✕</button></div>`).join('')}${es.length > 3 ? `<div class="hint" style="padding-top:4px">+ ${es.length - 3} weitere in „Liste“</div>` : ''}</div>` : ''}
-        <div class="urow"><span class="lab">${W.edit ? 'EINTRAG ÄNDERN' : 'z. B. 3×6+2,4'}</span><div class="unit"><button type="button" data-w="unit" data-u="m" aria-pressed="${W.unit === 'm'}">m</button><button type="button" data-w="unit" data-u="mm" aria-pressed="${W.unit === 'mm'}">mm</button></div></div>
-        <div class="disp"><span class="k">${W.unit === 'mm' ? 'LÄNGE<br>MM' : 'METER'}</span><span class="e" id="wE"></span><span class="r" id="wR"></span></div>
-        ${keysHTML(false)}`;
+        ${es.length ? `<details class="wlist" ${W.edit ? 'open' : ''}><summary>${es.length} ${es.length === 1 ? 'EINTRAG' : 'EINTRÄGE'} · ANSEHEN / ÄNDERN</summary><div class="wents">${es.slice().reverse().map(e => `<div class="wen ${W.edit === e.id ? 'ed' : ''}" data-w="edit" data-id="${e.id}"><span class="x">${esc(showExpr(e))} · ${hm(e.ts)}</span><b>${fm(e.m)}</b><button type="button" data-w="del" data-id="${e.id}" aria-label="Löschen">✕</button></div>`).join('')}</div></details>` : ''}
+        <div class="tcalc ${W.edit ? 'ed' : ''}"><div class="ttape" id="wTape"></div><div class="tcur" id="wCur"></div><div class="tsum" id="wSum"></div></div>
+        <div class="tql"><div class="types">${quickLens(m).map(l => `<button type="button" data-w="ql" data-len="${l}">${fl(l)} m</button>`).join('')}</div><div class="unit"><button type="button" data-w="unit" data-u="m" aria-pressed="${W.unit === 'm'}">m</button><button type="button" data-w="unit" data-u="mm" aria-pressed="${W.unit === 'mm'}">mm</button></div></div>
+        ${keysM()}`;
       foot = `<button type="button" class="btn" data-w="${W.edit ? 'edx' : 'back'}">${W.edit ? 'Abbruch' : '← Ø'}</button><button type="button" class="btn primary mw-go" id="wGo" data-w="book" disabled>Buchen</button>`;
     } else if (W.step === 'ok' && m) {
       const e = D.entries.find(x => x.id === W.last), es = entsOf(m.id, W.d), nx = nextPos(m.id, W.d), nm = nx && mat(nx.mat);
@@ -630,6 +689,7 @@ window.addEventListener('load',ctFit);window.addEventListener('resize',ctFit);se
     }
     $('wzBody').innerHTML = `<div class="mw-in">${body}</div>`; $('wzFoot').innerHTML = `<div class="mw-in">${foot}</div>`; $('wzBody').scrollTop = 0;
     if (W.step === 'm' || (W.step === 'd' && $('wE'))) wDisp();
+    if (W.step === 'm') { const pk = W.mat + '|' + W.d; if (W._tpos !== pk) { W._tpos = pk; if (!W.edit) { tReset(); wDisp(); } } }
   }
   const newMatForm = () => `<div class="card mm"><div class="fld"><label>NAME</label><input id="wnName" placeholder="z. B. 1.4122" autocapitalize="characters"></div>
     <div class="f2"><div class="fld"><label>STANDARD-ART.-NR.</label><input id="wnArt" placeholder="optional"></div><div class="fld"><label>STANDARD-LAGERORT</label><input id="wnLoc" placeholder="optional"></div></div>
@@ -654,11 +714,13 @@ window.addEventListener('load',ctFit);window.addEventListener('resize',ctFit);se
     if (a === 'dback') { W.newD = false; W.expr = ''; wRender(); return; }
     if (a === 'dok') { const d = dKey(W.expr); if (!d || !m) return; if (!posOf(m).includes(d)) { m.ds[d] = m.ds[d] || ''; save(); } const cl = curLoc(); if (cl && !locOf(m, d)) { m.locs[d] = cl; save(); } W.d = d; W.newD = false; W.expr = ''; W.step = 'm'; wRender(); return; }
     if (a === 'back') { if (W.step === 'm') { W.step = 'd'; W.edit = null; W.expr = ''; } else if (W.step === 'd') { W.step = 'mat'; W.newD = false; W.expr = ''; } wRender(); return; }
-    if (a === 'unit') { W.unit = b.dataset.u; lsSet(KEY + '_unit', W.unit); wRender(); return; }
+    if (a === 'unit') { W.unit = b.dataset.u; lsSet(KEY + '_unit', W.unit); b.parentNode.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', String(x === b))); wDisp(); return; }
     if (a === 'book') { wBook(); return; }
-    if (a === 'edx') { W.edit = null; W.expr = ''; wRender(); return; }
-    if (a === 'del') { e.stopPropagation(); const i = D.entries.findIndex(x => x.id === b.dataset.id); if (i < 0) return; const [rm] = D.entries.splice(i, 1); if (W.edit === rm.id) { W.edit = null; W.expr = ''; } save(); wRender(); toast(`Gelöscht · ${fm(rm.m)} m`, () => { D.entries.splice(i, 0, rm); save(); wRender(); }); return; }
-    if (a === 'edit') { const x = D.entries.find(y => y.id === b.dataset.id); if (!x) return; W.edit = x.id; W.expr = x.expr; W.unit = x.unit || 'm'; wRender(); return; }
+    if (a === 'edx') { W.edit = null; tReset(); wRender(); return; }
+    if (a === 'ql') { tapeAdd(+b.dataset.len); vib(8); wDisp(); return; }
+    if (a === 'tdel') { T.tape.splice(+b.dataset.i, 1); vib(6); wDisp(); return; }
+    if (a === 'del') { e.stopPropagation(); const i = D.entries.findIndex(x => x.id === b.dataset.id); if (i < 0) return; const [rm] = D.entries.splice(i, 1); if (W.edit === rm.id) { W.edit = null; tReset(); } save(); wRender(); toast(`Gelöscht · ${fm(rm.m)} m`, () => { D.entries.splice(i, 0, rm); save(); wRender(); }); return; }
+    if (a === 'edit') { const x = D.entries.find(y => y.id === b.dataset.id); if (!x) return; W.edit = x.id; T.tape = piecesOf(x); T.inp = ''; T.cnt = null; wRender(); return; }
     if (a === 'loc' || a === 'art') { openSheet(a); return; }
     if (a === 'curloc') { openSheet('cur'); return; }
     if (a === 'more') { W.step = 'm'; W.expr = ''; wRender(); return; }
@@ -672,7 +734,7 @@ window.addEventListener('load',ctFit);window.addEventListener('resize',ctFit);se
     if ($('wz').hidden || !$('edsh').hidden || e.target.closest('input,textarea') || e.metaKey || e.ctrlKey) return;
     if (W.step !== 'm' && !(W.step === 'd' && $('wE'))) { if (e.key === 'Enter' && W.step === 'ok') { e.preventDefault(); $('wzFoot').querySelector('.mw-go')?.click(); } return; }
     const k = e.key; let m = null;
-    if (/^\d$/.test(k)) m = k; else if (k === ',' || k === '.') m = ','; else if (k === '+') m = '+'; else if (k === '*' || k === 'x' || k === 'X') m = '×'; else if (k === '-') m = '−';
+    if (/^\d$/.test(k)) m = k; else if (k === ',' || k === '.') m = ','; else if (k === '+') m = '+'; else if (k === '*' || k === 'x' || k === 'X') m = '×'; else if (k === '-' && W.step !== 'm') m = '−';
     else if (k === 'Backspace') m = 'back'; else if (k === 'Escape') m = 'clr'; else if (k === 'Enter') { e.preventDefault(); $('wGo') && !$('wGo').disabled && $('wGo').click(); return; }
     if (m) { e.preventDefault(); wKey(m); }
   });
