@@ -1,0 +1,1100 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#F2F3F5">
+<meta name="format-detection" content="telephone=no,date=no,address=no,email=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Inventur">
+<title>CitiTool · Inventur Stangen</title>
+<script>(function(){try{var H=document.documentElement,t=localStorage.getItem('cititool_theme');if(t==='light'||t==='dark')H.setAttribute('data-theme',t);if(/[?&]druck=/.test(location.search))H.classList.add('druck')}catch(e){}})();</script>
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%2064%2064%22%3E%3Crect%20width=%2264%22%20height=%2264%22%20rx=%2215%22%20fill=%22%23111214%22/%3E%3Ccircle%20cx=%2219%22%20cy=%2225%22%20r=%226%22%20fill=%22none%22%20stroke=%22%23fff%22%20stroke-width=%224%22/%3E%3Ccircle%20cx=%2219%22%20cy=%2241%22%20r=%226%22%20fill=%22none%22%20stroke=%22%23fff%22%20stroke-width=%224%22/%3E%3Cpath%20d=%22M26%2019h26v12H26M26%2035h22v12H26%22%20fill=%22none%22%20stroke=%22%23fff%22%20stroke-width=%224%22/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap">
+<style>
+:root{
+  --bg:#F2F3F5; --card:#FFFFFF; --card-solid:#FFFFFF; --fg:#111214; --muted:#6B6F76; --line:#E1E3E7; --ink:#111214; --on-ink:#FFFFFF; --soft:#ECEDF0;
+  --warn:#B45309; --warn-bg:#FEF3E2; --crit:#B42318; --crit-bg:#FDECEA; --ok:#1E7A46; --ok-bg:#E6F4EC;
+  --shadow:0 1px 2px rgba(17,18,20,.05),0 6px 18px rgba(17,18,20,.06);
+  --f-head:"Space Grotesk",system-ui,-apple-system,"Segoe UI",sans-serif; --f-body:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; --r:14px;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#141518; --card:#1D1F23; --card-solid:#1D1F23; --fg:#ECEDEF; --muted:#9A9EA6; --line:#2E3136; --ink:#ECEDEF; --on-ink:#141518; --soft:#26282D;
+  --warn:#F5B35C; --warn-bg:#3A2A12; --crit:#FF8A80; --crit-bg:#3D1C1A; --ok:#6FD39A; --ok-bg:#16301F; --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 18px rgba(0,0,0,.25); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#141518; --card:#1D1F23; --card-solid:#1D1F23; --fg:#ECEDEF; --muted:#9A9EA6; --line:#2E3136; --ink:#ECEDEF; --on-ink:#141518; --soft:#26282D;
+  --warn:#F5B35C; --warn-bg:#3A2A12; --crit:#FF8A80; --crit-bg:#3D1C1A; --ok:#6FD39A; --ok-bg:#16301F; --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 18px rgba(0,0,0,.25); color-scheme:dark}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none!important}
+html{padding-top:env(safe-area-inset-top,0px)}
+html.druck body{visibility:hidden}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.45;text-transform:uppercase;-webkit-text-size-adjust:100%}
+button{font:inherit;color:inherit;cursor:pointer;text-transform:uppercase}
+a{color:inherit}
+input,textarea{font:inherit;font-size:15px;text-transform:uppercase;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;width:100%;min-width:0}
+input::placeholder,textarea::placeholder{text-transform:none;color:var(--muted);opacity:.8}
+h1,h2,h3{font-family:var(--f-head);margin:0}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.wrap{max-width:760px;margin:0 auto;padding:20px 16px 60px;display:flex;flex-direction:column;gap:16px}
+.view{display:flex;flex-direction:column;gap:14px}
+svg{flex:none}
+
+/* Kopf + Navigation (wie Bestellliste) */
+.top-row{display:flex;align-items:flex-end;justify-content:space-between;gap:12px}
+.brand{display:flex;align-items:center;gap:7px;font-family:var(--f-mono);font-size:11px;letter-spacing:.14em;color:var(--muted)}
+.brand .bm{width:13px;height:15px;color:var(--fg)}
+h1{font-size:26px;font-weight:700}
+.hbtns{display:flex;gap:8px;align-items:center}
+.iconbtn{width:42px;height:42px;border-radius:50%;border:1.5px solid var(--ink);background:var(--card);display:grid;place-items:center;padding:0;color:var(--fg);text-decoration:none}
+.iconbtn.plus{background:var(--ink);color:var(--on-ink)}
+.iconbtn svg{width:20px;height:20px}
+.ruler{height:10px;background:repeating-linear-gradient(90deg,var(--line) 0 1px,transparent 1px 8px),repeating-linear-gradient(90deg,var(--muted) 0 1px,transparent 1px 40px);background-size:auto 5px,auto 10px;background-repeat:repeat-x;background-position:bottom;opacity:.7}
+.nav{display:grid;grid-template-columns:repeat(5,1fr);border:1.5px solid var(--ink);border-radius:12px;overflow:hidden}
+.nav button{position:relative;border:0;background:var(--card);font-family:var(--f-head);font-weight:700;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:3px;padding:9px 2px 8px;min-width:0}
+.nav button+button{border-left:1.5px solid var(--ink)}
+.nav button[aria-pressed="true"]{background:var(--ink);color:var(--on-ink)}
+.nav .ni{width:22px;height:22px;display:block}.nav .ni svg{width:100%;height:100%}
+.nav .nl{font-size:9.5px;letter-spacing:0;max-width:100%;overflow:hidden;white-space:nowrap}
+.nav .n{font-family:var(--f-mono);font-size:10px;font-weight:600;opacity:.7;position:absolute;top:5px;right:7px}
+.nav .n.alert{opacity:1;background:var(--crit);color:#fff;border-radius:6px;padding:0 5px}
+
+.card{background:var(--card);border-radius:var(--r);box-shadow:var(--shadow);padding:16px}
+.sec-h{font-family:var(--f-mono);font-size:11px;letter-spacing:.14em;color:var(--muted);display:flex;align-items:center;gap:8px;padding-top:4px}
+.sec-h::after{content:"";flex:1;height:1px;background:var(--line)}
+.sec-h em{order:2;font-style:normal;letter-spacing:.06em}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px solid var(--line);background:var(--card);border-radius:10px;padding:10px 14px;font-weight:600;font-size:14px;letter-spacing:.02em;text-decoration:none}
+.btn.primary{background:var(--ink);color:var(--on-ink);border-color:var(--ink)}
+.btn.sm{padding:7px 11px;font-size:13px}
+.btn:disabled{opacity:.35}
+.link{background:none;border:0;color:var(--muted);font-size:12px;text-decoration:underline;padding:0;letter-spacing:.04em}
+.hint{font-size:12px;color:var(--muted);text-transform:none}
+.empty{text-align:center;color:var(--muted);padding:24px 16px;border:1px dashed var(--line);border-radius:12px;font-size:13px}
+.empty b{display:block;color:var(--fg);font-family:var(--f-head);font-size:15px;margin-bottom:4px}
+.dot{width:10px;height:10px;border-radius:50%;flex:none;background:var(--c,#888)}
+.types{display:flex;flex-wrap:wrap;gap:6px}
+.types button{border:1px solid var(--line);background:var(--bg);border-radius:999px;padding:6px 12px;font-size:12px;font-weight:600;letter-spacing:.03em;display:inline-flex;gap:6px;align-items:center}
+.types button[aria-pressed="true"]{background:var(--ink);color:var(--on-ink);border-color:var(--ink)}
+.types button small{opacity:.6;font-size:10px;font-family:var(--f-mono)}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(24px + env(safe-area-inset-bottom,0px));z-index:90;width:max-content;max-width:calc(100% - 32px);background:var(--ink);color:var(--on-ink);padding:10px 14px 10px 16px;border-radius:12px;font-size:13px;font-weight:600;box-shadow:var(--shadow);display:flex;align-items:center;gap:12px}
+.toast button{border:0;background:var(--on-ink);color:var(--ink);border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700}
+body.wz-open .toast{bottom:calc(96px + env(safe-area-inset-bottom,0px))}
+
+/* Mini-Master (gleich wie Werkzeugausgabe) */
+.mq{display:flex;flex-direction:column;gap:8px}
+.mq-main{display:flex;align-items:center;gap:14px;width:100%;padding:16px;border:0;border-radius:18px;background:var(--ink);color:var(--on-ink);text-align:left;box-shadow:var(--shadow);transition:transform .12s}
+.mq-main:active,.mq-row button:active{transform:scale(.98)}
+.mq-main .mi{width:52px;height:52px;border-radius:14px;background:var(--on-ink);color:var(--ink);display:grid;place-items:center;flex:none}
+.mq-main .mi svg{width:30px;height:30px}
+.mq-main b{display:block;font-family:var(--f-head);font-size:20px;letter-spacing:.06em}
+.mq-main small{display:block;font-family:var(--f-mono);font-size:10px;letter-spacing:.1em;opacity:.65;margin-top:3px}
+.mq-main .ar{margin-left:auto;font-size:22px;opacity:.8}
+.mq-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.mq-row button{display:flex;align-items:center;gap:10px;padding:13px 12px;border:1px solid var(--line);border-radius:16px;background:var(--card);box-shadow:var(--shadow);text-align:left;transition:transform .12s}
+.mq-row .mi{width:38px;height:38px;border-radius:11px;background:var(--soft);display:grid;place-items:center;font-family:var(--f-mono);font-size:19px;font-weight:700;flex:none}
+.mq-row .mi svg{width:22px;height:22px}
+.mq-row b{display:block;font-family:var(--f-head);font-size:14px;letter-spacing:.05em}
+.mq-row small{display:block;font-family:var(--f-mono);font-size:8.5px;letter-spacing:.08em;color:var(--muted);margin-top:2px}
+
+.mw{position:fixed;inset:0;z-index:42;background:var(--bg);display:flex;flex-direction:column;animation:mwIn .26s cubic-bezier(.2,.8,.2,1)}
+@keyframes mwIn{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+.mw-top{background:var(--card);box-shadow:var(--shadow);padding:calc(12px + env(safe-area-inset-top,0px)) 16px 12px;position:relative;z-index:1}
+.mw-in{max-width:620px;margin:0 auto;width:100%}
+.mw-h{display:flex;align-items:center;gap:10px}
+.mw-mode{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:999px;background:var(--ink);color:var(--on-ink);font-family:var(--f-mono);font-size:10.5px;font-weight:600;letter-spacing:.12em}
+.mw-mode.ein{background:var(--ok);color:#fff}.mw-mode.inv{background:var(--soft);color:var(--fg);border:1px solid var(--line)}
+.mw-h .sp{flex:1}
+.mw-x{width:40px;height:40px;border-radius:12px;border:1px solid var(--line);background:var(--card);display:grid;place-items:center;flex:none}
+.mw-x svg{width:18px;height:18px}
+.mw-title{font-family:var(--f-head);font-size:24px;font-weight:700;letter-spacing:.02em;margin:10px 0 0;line-height:1.1}
+.mw-prog{display:flex;gap:5px;margin-top:12px}
+.mw-prog i{flex:1;height:4px;border-radius:2px;background:var(--line);transition:background .25s}
+.mw-prog i.on{background:var(--ink)}
+.mw-body{flex:1;overflow:auto;-webkit-overflow-scrolling:touch;padding:16px}
+.mw-body .mw-in{display:flex;flex-direction:column;gap:12px}
+.mw-foot{background:var(--card);box-shadow:0 -1px 0 var(--line);padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px))}
+.mw-foot .mw-in{display:flex;gap:8px}
+.mw-foot .btn{padding:15px 16px;font-size:15px;border-radius:14px}
+.mw-go{flex:1;min-width:0;font-family:var(--f-head);font-weight:700;letter-spacing:.05em;font-size:16px!important}
+.mw-go small{font-family:var(--f-mono);font-weight:500;font-size:12px;opacity:.7;margin-left:4px;letter-spacing:.04em}
+.mw-go:disabled{opacity:.35}
+.mw-scan{display:flex;align-items:center;gap:16px;width:100%;padding:22px 18px;border:0;border-radius:20px;background:var(--ink);color:var(--on-ink);text-align:left;box-shadow:var(--shadow)}
+.mw-scan svg{width:44px;height:44px;flex:none}
+.mw-scan b{display:block;font-family:var(--f-head);font-size:22px;letter-spacing:.06em}
+.mw-scan small{display:block;font-family:var(--f-mono);font-size:10.5px;letter-spacing:.08em;opacity:.65;margin-top:3px}
+.mw-q{width:100%;padding:15px 16px;border-radius:14px;border:1px solid var(--line);background:var(--card);font-family:var(--f-mono);font-size:15px;color:var(--fg);text-transform:uppercase}
+.mw-sec{font-family:var(--f-mono);font-size:10.5px;letter-spacing:.16em;color:var(--muted);margin-top:4px;display:flex;align-items:center;gap:8px}
+.mw-sec::after{content:"";flex:1;height:1px;background:var(--line)}
+.mw-list{display:flex;flex-direction:column;gap:8px}
+.mw-hit{display:flex;align-items:center;gap:12px;width:100%;padding:10px 12px 10px 10px;border:1px solid var(--line);border-radius:15px;background:var(--card);text-align:left;box-shadow:var(--shadow)}
+.mw-hit:active{transform:scale(.99)}
+.mw-hit .t{flex:1;min-width:0}
+.mw-hit .t b{display:block;font-family:var(--f-head);font-size:14px;line-height:1.2;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.mw-hit .t small{display:block;font-family:var(--f-mono);font-size:10px;letter-spacing:.06em;color:var(--muted);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mw-hit .s{font-family:var(--f-mono);font-size:20px;font-weight:600;text-align:right;line-height:1}
+.mw-hit .s small{display:block;font-size:8.5px;color:var(--muted);letter-spacing:.08em;margin-top:3px;font-weight:400}
+.mw-hit.low .s{color:var(--crit)}
+.mw-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:8px}
+.mw-tile{display:flex;flex-direction:column;align-items:flex-start;gap:6px;padding:9px;border:1px solid var(--line);border-radius:15px;background:var(--card);box-shadow:var(--shadow);text-align:left;min-height:128px;position:relative}
+.mw-tile .thumb{width:48px;height:48px}
+.mw-tile b{font-family:var(--f-head);font-size:11.5px;line-height:1.2;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}
+.mw-tile .st{position:absolute;top:9px;right:9px;font-family:var(--f-mono);font-size:13px;font-weight:600}
+.mw-tile.low .st{color:var(--crit)}
+.mw-tool{display:flex;align-items:center;gap:14px;padding:14px;border-radius:18px;background:var(--card);border:1px solid var(--line);box-shadow:var(--shadow)}
+.mw-tool .thumb{width:76px;height:76px;border-radius:14px}
+.mw-tool .t{flex:1;min-width:0}
+.mw-tool .ty{font-family:var(--f-mono);font-size:10px;letter-spacing:.12em;color:var(--muted)}
+.mw-tool b{display:block;font-family:var(--f-head);font-size:17px;line-height:1.2;margin-top:2px;overflow-wrap:anywhere}
+.mw-tool .meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:7px}
+.chipl{display:inline-flex;align-items:center;gap:5px;padding:4px 8px;border-radius:8px;background:var(--soft);font-family:var(--f-mono);font-size:10.5px;font-weight:600;letter-spacing:.04em}
+.chipl.loc{background:var(--ink);color:var(--on-ink)}
+.chipl svg{width:11px;height:11px}
+.mw-tool .open{align-self:flex-start;border:0;background:none;color:var(--muted);font-family:var(--f-mono);font-size:10px;letter-spacing:.08em;padding:4px}
+.mw-stk{display:flex;align-items:center;justify-content:center;gap:14px;font-family:var(--f-mono);font-size:13px;letter-spacing:.06em;color:var(--muted)}
+.mw-stk b{font-size:22px;color:var(--fg);font-weight:600}
+.mw-stk b.neg{color:var(--crit)}
+.mw-stk .ar{font-size:18px}
+.mw-step{display:grid;grid-template-columns:76px 1fr 76px;gap:10px;align-items:center}
+.mw-step button{height:76px;border-radius:22px;border:1px solid var(--line);background:var(--card);font-size:34px;font-weight:500;box-shadow:var(--shadow)}
+.mw-step button:active{transform:scale(.95);background:var(--soft)}
+.mw-step input{width:100%;min-width:0;height:96px;border:0;background:transparent;text-align:center;font-family:var(--f-mono);font-size:72px;font-weight:600;letter-spacing:-.04em;color:var(--fg);-moz-appearance:textfield}
+.mw-step input::-webkit-inner-spin-button,.mw-step input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+.mw-chips{display:flex;justify-content:center;flex-wrap:wrap;gap:8px}
+.mw-chips button{min-width:56px;padding:11px 14px;border-radius:12px;border:1px solid var(--line);background:var(--card);font-family:var(--f-mono);font-size:15px;font-weight:600}
+.mw-chips button[aria-pressed="true"]{background:var(--ink);color:var(--on-ink);border-color:var(--ink)}
+.mw-warn{padding:11px 13px;border-radius:12px;background:var(--crit-bg);color:var(--crit);font-size:13px;font-weight:600}
+.mw-people{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.mw-p{display:flex;align-items:center;gap:11px;padding:13px 12px;border:1px solid var(--line);border-radius:16px;background:var(--card);box-shadow:var(--shadow);text-align:left;min-height:64px}
+.mw-p .av{width:38px;height:38px;border-radius:50%;background:var(--soft);display:grid;place-items:center;font-family:var(--f-head);font-weight:700;font-size:14px;flex:none}
+.mw-p b{font-family:var(--f-head);font-size:15px;line-height:1.15;overflow-wrap:anywhere}
+.mw-p[aria-pressed="true"]{background:var(--ink);color:var(--on-ink);border-color:var(--ink)}
+.mw-p[aria-pressed="true"] .av{background:var(--on-ink);color:var(--ink)}
+.mw-p.add{border-style:dashed;box-shadow:none;color:var(--muted)}
+.mw-p.add .av{background:transparent;border:1.5px dashed var(--line)}
+.mw-p.none{box-shadow:none;background:transparent}
+.mw-sum{padding:14px;border-radius:16px;border:1px dashed var(--line);font-family:var(--f-mono);font-size:12px;letter-spacing:.04em;line-height:1.6;color:var(--muted)}
+.mw-sum b{color:var(--fg)}
+.mw-done{display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px;padding:22px 6px 6px}
+.mw-ok{width:96px;height:96px;border-radius:50%;background:var(--ok);color:#fff;display:grid;place-items:center;animation:okPop .45s cubic-bezier(.2,1.6,.4,1)}
+.mw-ok.ein{background:var(--ink);color:var(--on-ink)}
+.mw-ok svg{width:50px;height:50px}
+.mw-ok path{stroke-dasharray:30;stroke-dashoffset:30;animation:okDraw .4s .2s ease forwards}
+@keyframes okPop{from{transform:scale(.4);opacity:0}to{transform:none;opacity:1}}
+@keyframes okDraw{to{stroke-dashoffset:0}}
+.mw-done h3{font-size:24px;letter-spacing:.04em}
+.mw-done p{margin:0;font-size:14px;color:var(--muted);max-width:340px}
+.mw-done .now{font-family:var(--f-mono);font-size:13px;letter-spacing:.06em}
+.mw-done .now b{font-size:30px;color:var(--fg);display:block;margin-top:2px}
+.mw-low{display:flex;align-items:center;gap:10px;width:100%;padding:12px 14px;border-radius:14px;background:var(--crit-bg);color:var(--crit);text-align:left}
+.mw-low span{flex:1;font-size:13px;font-weight:600}
+
+.seg3{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;padding:4px;border-radius:12px;background:var(--soft);border:1px solid var(--line)}
+.seg3 button{padding:10px 6px;border:0;border-radius:9px;background:transparent;font-weight:600;font-size:13px;display:flex;align-items:center;justify-content:center;gap:6px}
+.seg3 button svg{width:15px;height:15px}
+.seg3 button[aria-pressed="true"]{background:var(--card);box-shadow:var(--shadow)}
+
+.mq-row3{grid-template-columns:1fr 1fr}
+
+/* Start */
+.tot{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 12px}
+.tot b{white-space:nowrap;font-family:var(--f-mono);font-size:34px;font-weight:600;letter-spacing:-.03em;line-height:1}
+.tot small{font-family:var(--f-mono);font-size:10.5px;letter-spacing:.1em;color:var(--muted)}
+.ibar{display:flex;height:12px;border-radius:6px;overflow:hidden;background:var(--soft);gap:2px;margin-top:12px}
+.ibar i{display:block;height:100%}
+.ileg{display:grid;grid-template-columns:1fr 1fr;gap:7px 16px;margin-top:12px}
+.ileg button{display:flex;align-items:center;gap:8px;border:0;background:none;padding:0;text-align:left;font-size:13px;min-width:0}
+.ileg b{font-family:var(--f-head);font-weight:700;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ileg span{font-family:var(--f-mono);font-size:12px;color:var(--muted);white-space:nowrap}
+.warnc{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:var(--r);background:var(--warn-bg);color:var(--warn)}
+.warnc b{display:block;font-size:14px}.warnc small{display:block;font-size:11.5px;opacity:.85;text-transform:none}
+.warnc .btn{margin-left:auto;background:var(--warn);color:#fff;border-color:var(--warn)}
+.en{display:flex;align-items:center;gap:10px;padding:10px 2px;border-top:1px dashed var(--line)}
+.en:first-child{border-top:0}
+.en .t{flex:1;min-width:0}
+.en .t b{display:block;font-family:var(--f-head);font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.en .t small{display:block;font-family:var(--f-mono);font-size:10.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-transform:none}
+.en .v{font-family:var(--f-mono);font-size:15px;font-weight:600;white-space:nowrap}
+.en .x{border:0;background:var(--soft);width:30px;height:30px;border-radius:9px;color:var(--muted);flex:none}
+
+/* Liste */
+.om{padding:0;overflow:hidden}
+.om-h{display:flex;align-items:center;gap:10px;padding:14px 16px}
+.om-h b{font-family:var(--f-head);font-size:17px}
+.om-h .s{margin-left:auto;text-align:right}
+.om-h .s b{font-family:var(--f-mono);font-size:17px;display:block}
+.om-h .s small{font-family:var(--f-mono);font-size:10px;color:var(--muted)}
+.ob{height:4px;background:var(--soft)}.ob i{display:block;height:100%;background:var(--c)}
+.pr{display:grid;grid-template-columns:64px 1fr auto;gap:2px 10px;align-items:center;width:100%;padding:11px 16px;border:0;border-top:1px solid var(--line);background:none;text-align:left}
+.pr:active{background:var(--soft)}
+.pr .d{font-family:var(--f-mono);font-weight:700;font-size:15px;grid-row:span 2}
+.pr .a{font-family:var(--f-mono);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pr .l{font-family:var(--f-mono);font-size:10.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pr .miss{color:var(--warn)}
+.pr .m{font-family:var(--f-mono);font-weight:600;font-size:15px;text-align:right;grid-row:span 2;white-space:nowrap}
+.pr .m small{display:block;font-size:10px;color:var(--muted);font-weight:400}
+.grand{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-radius:var(--r);background:var(--ink);color:var(--on-ink)}
+.grand b{font-family:var(--f-mono);font-size:24px}
+.grand span{font-family:var(--f-mono);font-size:11px;letter-spacing:.1em;opacity:.75}
+
+/* Material */
+.mm{display:flex;flex-direction:column;gap:10px}
+.mm-h{display:flex;align-items:center;gap:8px}
+.sw{width:32px;height:32px;border-radius:9px;background:var(--c);border:0;flex:none}
+.mm-h input{flex:1;font-family:var(--f-head);font-weight:700;font-size:16px}
+.mm-h .ic{border:1px solid var(--line);background:var(--card);border-radius:10px;width:38px;height:40px;display:grid;place-items:center;flex:none;color:var(--muted)}
+.fld{display:flex;flex-direction:column;gap:4px}
+.fld label{font-family:var(--f-mono);font-size:10px;letter-spacing:.12em;color:var(--muted)}
+.fld input{font-family:var(--f-mono);font-size:14px}
+.f2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.dt{display:flex;flex-direction:column;gap:6px}
+.dh,.dr{display:grid;grid-template-columns:62px 1fr 1fr 34px;gap:6px;align-items:center}
+.dh span{font-family:var(--f-mono);font-size:9.5px;letter-spacing:.1em;color:var(--muted);padding-left:2px}
+.dr input{padding:9px 9px;font-family:var(--f-mono);font-size:13.5px;border-radius:9px}
+.dr .dd{font-family:var(--f-mono);font-weight:700;font-size:14px;padding-left:2px}
+.dr button{border:0;background:var(--soft);border-radius:9px;height:38px;color:var(--muted)}
+.dr.new input{border-style:dashed}
+.dr.new button{background:var(--ink);color:var(--on-ink);font-size:18px}
+details.bulk summary{cursor:pointer;font-family:var(--f-mono);font-size:11px;letter-spacing:.08em;color:var(--muted);list-style:none}
+details.bulk summary::-webkit-details-marker{display:none}
+details.bulk textarea{margin-top:8px;min-height:96px;font-family:var(--f-mono);font-size:13px}
+.palette{display:flex;flex-wrap:wrap;gap:6px}
+.palette button{width:32px;height:32px;border-radius:9px;border:2px solid transparent;background:var(--c)}
+.palette button[aria-pressed="true"]{border-color:var(--fg);box-shadow:inset 0 0 0 2px var(--card)}
+
+/* Etiketten */
+.lb-opt{display:flex;flex-direction:column;gap:6px}
+.tw-al{font-family:var(--f-mono);font-size:10px;letter-spacing:.12em;color:var(--muted)}
+.lb-prev{display:flex;justify-content:center;padding:12px;background:var(--bg);border-radius:12px;overflow:hidden;border:1px solid var(--line)}
+#lbPv{display:block}
+.lb-g{display:flex;flex-direction:column}
+.lb-gh{display:flex;align-items:center;gap:8px;font-family:var(--f-head);font-size:13px;letter-spacing:.04em;padding:4px 2px 8px;border-bottom:1px solid var(--line)}
+.lb-r{display:flex;align-items:center;gap:10px;padding:8px 2px;border-bottom:1px dashed var(--line)}
+.lb-chk{width:28px;height:28px;border-radius:8px;border:1.5px solid var(--line);background:var(--card);display:grid;place-items:center;font-size:15px;font-weight:700;flex:none;padding:0}
+.lb-r.on .lb-chk{background:var(--ink);color:var(--on-ink);border-color:var(--ink)}
+.lb-n{flex:1;min-width:0;cursor:pointer;font-family:var(--f-mono);font-weight:700;font-size:14px}
+.lb-n small{display:block;font-weight:400;font-size:10.5px;color:var(--muted)}
+.lb-qty{display:flex;align-items:center;gap:6px}
+.lb-qty button{width:30px;height:30px;border-radius:8px;border:1px solid var(--line);background:var(--card);padding:0;font-size:16px}
+.lb-foot{position:sticky;bottom:0;display:flex;align-items:center;gap:12px;padding:12px 0 calc(10px + env(safe-area-inset-bottom,0px));background:var(--bg);border-top:1px solid var(--line);z-index:4}
+.lb-foot .grow{flex:1}
+.lb-foot small{display:block;color:var(--muted);font-size:11.5px}
+.lb-foot .btn{white-space:nowrap}
+
+/* Export */
+.acts{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.acts .btn{padding:14px 10px;flex-direction:column;gap:3px}
+.acts .btn small{font-family:var(--f-mono);font-size:9.5px;font-weight:500;color:var(--muted);letter-spacing:.04em}
+.acts .btn.primary small{color:inherit;opacity:.7}
+.arch{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px dashed var(--line)}
+.arch:first-child{border-top:0}
+.arch .t{flex:1;min-width:0}
+.arch b{font-family:var(--f-head);font-size:14px}
+.arch small{display:block;font-family:var(--f-mono);font-size:10px;color:var(--muted)}
+
+/* Master: Material- und Ø-Kacheln, Rechner */
+.wm-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.wmt{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:6px;padding:16px 14px 14px 18px;min-height:96px;border:1px solid var(--line);border-radius:18px;background:var(--card);box-shadow:var(--shadow);text-align:left;overflow:hidden}
+.wmt::before{content:"";position:absolute;left:0;top:0;bottom:0;width:6px;background:var(--c)}
+.wmt b{font-family:var(--f-head);font-size:22px;letter-spacing:.01em;line-height:1}
+.wmt small{font-family:var(--f-mono);font-size:11px;color:var(--muted)}
+.wmt.add{border-style:dashed;box-shadow:none;background:transparent;color:var(--muted);align-items:center;justify-content:center}
+.wmt.add::before{display:none}
+.wmt:active,.wdt:active{transform:scale(.97)}
+.wd-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.wdt{display:flex;flex-direction:column;align-items:flex-start;gap:3px;padding:12px 11px 10px;min-height:84px;border:1px solid var(--line);border-radius:16px;background:var(--card);box-shadow:var(--shadow);text-align:left;position:relative}
+.wdt b{font-family:var(--f-mono);font-size:20px;font-weight:700;letter-spacing:-.02em}
+.wdt small{font-family:var(--f-mono);font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.wdt .m{margin-top:auto;font-family:var(--f-mono);font-size:11.5px;font-weight:600}
+.wdt.done{border-color:var(--ok)}
+.wdt.done::after{content:"✓";position:absolute;top:8px;right:10px;color:var(--ok);font-weight:700;font-size:13px}
+.wdt.cur{background:var(--ink);color:var(--on-ink);border-color:var(--ink)}.wdt.cur small{color:inherit;opacity:.7}
+.wdt.add{border-style:dashed;box-shadow:none;background:transparent;color:var(--muted);justify-content:center;align-items:center}
+.wpos{display:flex;align-items:flex-start;gap:12px;padding:14px;border-radius:18px;background:var(--card);border:1px solid var(--line);box-shadow:var(--shadow)}
+.wpos .bar{width:6px;align-self:stretch;border-radius:3px;background:var(--c);flex:none}
+.wpos .t{flex:1;min-width:0}
+.wpos h3{font-size:22px;line-height:1.1;letter-spacing:.01em}
+.wpos .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.wchip{display:inline-flex;align-items:center;gap:5px;padding:6px 9px;border-radius:9px;border:1px solid var(--line);background:var(--bg);font-family:var(--f-mono);font-size:12px;font-weight:600}
+.wchip svg{width:12px;height:12px}
+.wchip.miss{border-color:var(--warn);color:var(--warn);background:var(--warn-bg)}
+.wpos .s{text-align:right;flex:none}
+.wpos .s b{display:block;font-family:var(--f-mono);font-size:22px;font-weight:600;letter-spacing:-.02em}
+.wpos .s small{font-family:var(--f-mono);font-size:10px;color:var(--muted)}
+.wents{display:flex;flex-direction:column}
+.wen{display:flex;align-items:center;gap:10px;padding:7px 2px;border-top:1px dashed var(--line);font-family:var(--f-mono);font-size:13px}
+.wen:first-child{border-top:0}
+.wen .x{flex:1;min-width:0;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-transform:none}
+.wen b{font-weight:600}
+.wen button{border:0;background:var(--soft);width:28px;height:28px;border-radius:8px;color:var(--muted)}
+.wen.ed{background:var(--warn-bg);border-radius:8px;padding-left:6px}
+.disp{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:14px;background:var(--card);border:1.5px solid var(--ink);min-height:66px}
+.disp .k{font-family:var(--f-mono);font-size:9.5px;letter-spacing:.12em;color:var(--muted);flex:none;width:44px;line-height:1.25}
+.disp .e{flex:1;min-width:0;font-family:var(--f-mono);font-size:26px;font-weight:600;white-space:nowrap;overflow:hidden;text-transform:none}
+.disp .e i{display:inline-block;width:2px;height:26px;background:var(--fg);vertical-align:-4px;margin-left:1px;animation:blink 1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+.disp .r{font-family:var(--f-mono);font-size:13px;color:var(--muted);text-align:right;flex:none;text-transform:none}
+.disp .r b{display:block;font-size:18px;color:var(--fg)}
+.urow{display:flex;align-items:center;gap:8px}
+.urow .lab{flex:1;font-family:var(--f-mono);font-size:10px;letter-spacing:.1em;color:var(--muted)}
+.unit{display:flex;gap:4px}
+.unit button{border:1px solid var(--line);background:var(--card);border-radius:9px;padding:5px 10px;font-family:var(--f-mono);font-size:12px;font-weight:600;text-transform:none}
+.unit button[aria-pressed="true"]{background:var(--ink);color:var(--on-ink);border-color:var(--ink)}
+.keys{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
+.keys button{height:54px;border-radius:14px;border:1px solid var(--line);background:var(--card);font-family:var(--f-mono);font-size:23px;font-weight:600;touch-action:manipulation;box-shadow:var(--shadow)}
+.keys button.op{background:var(--soft);box-shadow:none}
+.keys button:active{transform:scale(.95);background:var(--line)}
+.keys button:disabled{opacity:.3}
+.mw-go.ok{background:var(--ok);border-color:var(--ok);color:#fff}
+.wnext{display:flex;flex-direction:column;gap:8px;width:100%;margin-top:6px}
+.wnext .btn{width:100%;padding:15px;font-size:15px;border-radius:14px}
+.wnext .row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.edsh{position:fixed;inset:0;z-index:70;background:rgba(10,10,12,.45);display:flex;align-items:flex-end;justify-content:center}
+.edsh .in{width:100%;max-width:560px;background:var(--card);border-radius:20px 20px 0 0;padding:18px 16px calc(16px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:12px}
+.edsh h3{font-size:18px}
+.edsh input{font-family:var(--f-mono);font-size:18px;padding:13px 14px}
+.edsh .row{display:flex;gap:8px}
+.edsh .row .btn{flex:1;padding:14px}
+.edsh input[type=checkbox]{width:20px;height:20px;padding:0;flex:none}
+
+/* Kamera */
+.cam{position:fixed;inset:0;z-index:95;background:#000;display:flex;flex-direction:column}
+.cam video{flex:1;width:100%;object-fit:cover}
+.cam .fr{position:absolute;left:12%;right:12%;top:30%;height:26%;border:2.5px solid rgba(255,255,255,.9);border-radius:16px;box-shadow:0 0 0 999px rgba(0,0,0,.35)}
+.cam .msg{position:absolute;left:0;right:0;top:calc(18px + env(safe-area-inset-top,0px));text-align:center;color:#fff;font-family:var(--f-mono);font-size:12px;letter-spacing:.12em}
+.cam .bar{padding:14px 16px calc(14px + env(safe-area-inset-bottom,0px));display:flex;justify-content:flex-end;background:#000}
+#printArea{display:none}
+@media print{
+  @page{size:A4;margin:12mm}
+  body{background:#fff;color:#000}
+  body > *:not(#printArea){display:none!important}
+  #printArea{display:block;font-family:"Space Grotesk",system-ui,sans-serif;text-transform:uppercase}
+  #printArea h1{font-size:20pt;margin:0}
+  #printArea .pm{font:9pt "JetBrains Mono",monospace;color:#444;margin:1mm 0 5mm}
+  #printArea table{width:100%;border-collapse:collapse;font-size:9.5pt;margin-bottom:5mm}
+  #printArea th{text-align:left;font:600 7.5pt "JetBrains Mono",monospace;letter-spacing:.08em;border-bottom:1.5px solid #000;padding:1.5mm 2mm}
+  #printArea td{padding:1.6mm 2mm;border-bottom:.2mm solid #bbb}
+  #printArea td.n{text-align:right;font-family:"JetBrains Mono",monospace;white-space:nowrap}
+  #printArea tr.mh td{font-weight:700;font-size:11pt;border-bottom:1px solid #000;padding-top:4mm}
+  #printArea tr.tot td{font-weight:700;border-bottom:0}
+  #printArea .gt{font:700 13pt "JetBrains Mono",monospace;text-align:right;border-top:2px solid #000;padding-top:2mm}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top-row">
+    <div>
+      <div class="brand"><svg class="bm" viewBox="0 0 160 186" aria-hidden="true"><path fill="currentColor" d="M77 5L8 45Q5 48 5 54L6 134Q6 139 13 141L71 174Q76 178 82 177L112 160L44 121Q38 117 38 110L40 66Q40 62 47 60L113 23L85 6Q81 3 77 5ZM93 45L153 80V49Q153 46 150 44L122 28ZM153 104L93 139L120 155L146 141Q153 138 153 134Z"/></svg>CITITOOL · INVENTUR</div>
+      <h1>STANGEN</h1>
+    </div>
+    <div class="hbtns">
+      <button type="button" class="iconbtn plus" data-go="wz" aria-label="Zählen"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg></button>
+      <a class="iconbtn" href="../../index.html" aria-label="Zum Hub"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11l8-7 8 7v9h-5v-6H9v6H4z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg></a>
+    </div>
+  </header>
+  <div class="ruler" aria-hidden="true"></div>
+  <nav class="nav" id="nav" aria-label="Bereich">
+    <button type="button" data-tab="start" aria-pressed="true"><span class="ni"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M4 11l8-7 8 7v9h-5v-6H9v6H4z"/></svg></span><span class="nl">Start</span></button>
+    <button type="button" data-tab="liste" aria-pressed="false"><span class="ni"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 4h14v16H5zM8.5 9h7M8.5 13h7M8.5 17h4"/></svg></span><span class="nl">Liste</span><span class="n" id="nListe"></span></button>
+    <button type="button" data-tab="mat" aria-pressed="false"><span class="ni"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><circle cx="5.5" cy="8" r="2.5"/><circle cx="5.5" cy="16" r="2.5"/><path d="M8 5.5h12.5v5H8M8 13.5h10v5H8"/></svg></span><span class="nl">Material</span><span class="n" id="nMat"></span></button>
+    <button type="button" data-tab="etik" aria-pressed="false"><span class="ni"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 6.5h17v11h-17z"/><path d="M6.5 9.5v5M8.5 9.5v5M10.5 9.5v5M12.5 9.5v5M15 9.5h3v3h-3z"/></svg></span><span class="nl">Etiketten</span></button>
+    <button type="button" data-tab="export" aria-pressed="false"><span class="ni"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11m-4-4 4 4 4-4M5 19h14"/></svg></span><span class="nl">Export</span></button>
+  </nav>
+  <section id="v_start" class="view"></section>
+  <section id="v_liste" class="view" hidden></section>
+  <section id="v_mat" class="view" hidden></section>
+  <section id="v_etik" class="view" hidden></section>
+  <section id="v_export" class="view" hidden></section>
+</div>
+
+<div id="wz" class="mw" hidden role="dialog" aria-modal="true"><div class="mw-top" id="wzTop"></div><div class="mw-body" id="wzBody"></div><div class="mw-foot" id="wzFoot"></div></div>
+<div id="edsh" class="edsh" hidden><div class="in" id="edIn"></div></div>
+<div id="cam" class="cam" hidden><video id="camV" playsinline muted></video><div class="fr"></div><div class="msg" id="camMsg">ETIKETT IN DEN RAHMEN</div><div class="bar"><button type="button" class="btn primary" id="camX">Fertig</button></div></div>
+<div class="toast" id="toast" hidden></div>
+<div id="printArea"></div>
+<input type="file" id="fileIn" accept="application/json,.json" hidden>
+
+<script>
+(() => {
+  'use strict';
+  // ---------- Druckseite (?druck=1): Etiketten als echte Seite → Drucken klappt überall ----------
+  if (/[?&]druck=/.test(location.search)) {
+    let rec = null; try { rec = JSON.parse(sessionStorage.getItem('cititool_inv_druck') || 'null'); } catch {}
+    if (rec && rec.doc) {
+      const head = `<meta name="format-detection" content="telephone=no,date=no,address=no,email=no"><style>
+.ct-pbar{position:fixed;top:0;left:0;right:0;z-index:999;display:flex;align-items:center;gap:10px;padding:calc(10px + env(safe-area-inset-top,0px)) 14px 10px;background:rgba(242,243,245,.94);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border-bottom:1px solid #D9DBE0;font:600 14px system-ui,-apple-system,"Segoe UI",sans-serif;text-transform:none;color:#111214}
+.ct-pbar button{font:inherit;white-space:nowrap;flex:none;text-transform:uppercase;letter-spacing:.04em;padding:11px 15px;border-radius:11px;border:1px solid #D9DBE0;background:#fff;color:#111214;cursor:pointer}
+.ct-pbar .p{margin-left:auto;background:#111214;color:#fff;border-color:#111214}
+.ct-pbar span{font-size:12px;color:#6B6F76;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+@media screen{body{padding-top:calc(76px + env(safe-area-inset-top,0px))!important}body > :not(.ct-pbar):not(script){zoom:var(--ctz,1)}}
+@media print{.ct-pbar{display:none!important}}
+a[x-apple-data-detectors],a[href^="tel:"]{color:inherit!important;text-decoration:none!important;font:inherit!important;pointer-events:none}
+</style>`;
+      const bar = `<div class="ct-pbar"><button type="button" onclick="ctBack()">← Zurück</button><span>${String(rec.title || '').replace(/[<&]/g, '')}</span><button type="button" class="p" onclick="window.print()">Drucken / PDF</button></div>`;
+      const tail = `<script>function ctBack(){var u=location.pathname+(${JSON.stringify(rec.ret ? '#' + rec.ret : '')});if(history.length>1)history.back();else location.replace(u);}
+function ctFit(){var d=document.documentElement;d.style.setProperty('--ctz',1);var w=0;[].forEach.call(document.body.children,function(e){if(e.className!=='ct-pbar')w=Math.max(w,e.scrollWidth)});d.style.setProperty('--ctz',Math.min(1,(d.clientWidth-8)/(w||1)))}
+window.addEventListener('load',ctFit);window.addEventListener('resize',ctFit);setTimeout(ctFit,60);<\/script>`;
+      let html = rec.doc.replace(/<head>/i, '<head>' + head).replace(/<body([^>]*)>/i, m => m + bar);
+      html = /<\/body>/i.test(html) ? html.replace(/<\/body>/i, tail + '</body>') : html + tail;
+      document.addEventListener('DOMContentLoaded', () => { document.open(); document.write(html); document.close(); });
+      return;
+    }
+    document.documentElement.classList.remove('druck'); history.replaceState(null, '', location.pathname + location.hash);
+  }
+
+  const KEY = 'cititool_inventur_v1';
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const U = s => String(s ?? '').trim().toUpperCase();
+  const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  const fm = (v, d = 3) => (v || 0).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: d });
+  const fd = d => String(d).replace('.', ',');
+  const hm = ts => new Date(ts).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+  const dt = ts => new Date(ts).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  const vib = n => { try { navigator.vibrate && navigator.vibrate(n); } catch {} };
+  const lsGet = k => { try { return localStorage.getItem(k) || ''; } catch { return ''; } };
+  const lsSet = (k, v) => { try { localStorage.setItem(k, v); return true; } catch { return false; } };
+  const COLORS = ['#C9A227', '#B26A2E', '#3E6E8E', '#6B7A8C', '#2F3338', '#2D6B47', '#7A4FA0', '#B42318', '#0E7C86', '#9A7415'];
+  const DEF_MATS = [['MS58', '#C9A227'], ['F75', '#B26A2E'], ['1.4112', '#3E6E8E'], ['1.4104', '#6B7A8C'], ['1.0718', '#2F3338']];
+  const IC = {
+    x: '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>',
+    scan: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M3 8V5.5A1.5 1.5 0 0 1 4.5 4H7M17 4h2.5A1.5 1.5 0 0 1 21 5.5V8M21 16v2.5a1.5 1.5 0 0 1-1.5 1.5H17M7 20H4.5A1.5 1.5 0 0 1 3 18.5V16"/><path d="M7 8v8M10 8v8M13 8v8M16.5 8v8" stroke-width="1.4"/></svg>',
+    bar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><circle cx="5.5" cy="8" r="2.5"/><circle cx="5.5" cy="16" r="2.5"/><path d="M8 5.5h12.5v5H8M8 13.5h10v5H8"/></svg>',
+    loc: '<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 5.2 6 1.5l4.5 3.7V10.5h-9z" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>',
+    art: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M2 4v8M4.5 4v8M7 4v8M9 4v8M12 4v8M14 4v8"/></svg>',
+    lbl: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 6.5h17v11h-17z"/><path d="M6.5 9.5v5M8.5 9.5v5M10.5 9.5v5M12.5 9.5v5M15 9.5h3v3h-3z"/></svg>',
+    ok: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>'
+  };
+
+  // ---------- Daten ----------
+  let D;
+  function blank() { return { v: 2, name: 'Inventur ' + new Date().getFullYear(), started: Date.now(), mats: DEF_MATS.map(([n, c]) => ({ id: uid(), name: n, color: c, art: '', loc: '', ds: {}, locs: {} })), entries: [], archive: [] }; }
+  function load() {
+    try { D = JSON.parse(lsGet(KEY) || 'null'); } catch { D = null; }
+    if (!D || !Array.isArray(D.mats)) D = blank();
+    D.entries ||= []; D.archive ||= []; D.mats.forEach(m => { m.ds ||= {}; m.locs ||= {}; m.art ||= ''; m.loc ||= ''; });
+  }
+  let saveOk = true;
+  function save() { if (lsSet(KEY, JSON.stringify(D))) saveOk = true; else { if (saveOk) toast('Speichern fehlgeschlagen – Speicher voll?'); saveOk = false; } }
+  load();
+  const mat = id => D.mats.find(m => m.id === id);
+  const dKey = v => { const n = parseFloat(String(v).replace(',', '.')); return isFinite(n) && n > 0 && n < 2000 ? String(Math.round(n * 100) / 100) : null; };
+  const artOf = (m, d) => (m && (m.ds[d] || m.art)) || '';
+  const locOf = (m, d) => (m && (m.locs[d] || m.loc)) || '';
+  const entsOf = (mid, d) => D.entries.filter(e => e.mat === mid && (d == null || e.d === d));
+  const sumOf = es => es.reduce((a, e) => a + (e.m || 0), 0);
+  const posOf = m => [...new Set([...Object.keys(m.ds), ...Object.keys(m.locs), ...D.entries.filter(e => e.mat === m.id).map(e => e.d)])].filter(Boolean).sort((a, b) => parseFloat(a) - parseFloat(b));
+  const allLocs = () => [...new Set([...D.mats.flatMap(m => [m.loc, ...Object.values(m.locs)]), ...D.entries.map(e => e.loc)].filter(Boolean).map(U))].sort((a, b) => a.localeCompare(b, 'de', { numeric: true }));
+  const missing = () => { let a = 0, l = 0; D.mats.forEach(m => posOf(m).forEach(d => { if (!entsOf(m.id, d).length) return; if (!artOf(m, d)) a++; if (!locOf(m, d)) l++; })); return { a, l }; };
+
+  // ---------- Rechner ----------
+  function calc(expr, partial) {
+    let s = String(expr).replace(/,/g, '.').replace(/×/g, '*').replace(/−/g, '-').replace(/\s/g, '');
+    if (partial) s = s.replace(/[+\-*.]+$/, '');
+    if (!s || !/^[\d.+\-*]+$/.test(s)) return null;
+    let i = 0;
+    const num = () => { let neg = false; while (s[i] === '-') { neg = !neg; i++; } const m = /^\d*\.?\d+|^\d+\.?/.exec(s.slice(i)); if (!m) throw 0; i += m[0].length; const v = parseFloat(m[0]); return neg ? -v : v; };
+    const term = () => { let v = num(); while (s[i] === '*') { i++; v *= num(); } return v; };
+    const ex = () => { let v = term(); while (s[i] === '+' || s[i] === '-') { const o = s[i++]; const w = term(); v = o === '+' ? v + w : v - w; } return v; };
+    try { const v = ex(); if (i !== s.length || !isFinite(v)) return null; return Math.round(v * 1e6) / 1e6; } catch { return null; }
+  }
+  const hasOp = e => /[+×−]/.test(String(e).slice(1));
+  const showExpr = e => e.expr + (e.unit === 'mm' ? ' mm' : ' m');
+
+  // ---------- Toast ----------
+  let tT = 0, tUndo = null;
+  function toast(msg, undo) {
+    const el = $('toast'); tUndo = undo || null;
+    el.innerHTML = `<span>${esc(msg)}</span>${undo ? '<button type="button" id="tUndo">Rückgängig</button>' : ''}`; el.hidden = false;
+    clearTimeout(tT); tT = setTimeout(() => el.hidden = true, undo ? 4500 : 2200);
+  }
+  $('toast').addEventListener('click', e => { if (e.target.id === 'tUndo' && tUndo) { tUndo(); tUndo = null; $('toast').hidden = true; } });
+
+  // ======================================================================
+  // MASTER: Material → Ø → Meter (Rechner) → Weiter
+  // ======================================================================
+  const W = { step: 'mat', mat: null, d: null, expr: '', unit: lsGet(KEY + '_unit') === 'mm' ? 'mm' : 'm', edit: null, newD: false, last: null, newMat: false };
+  const STEPS = ['mat', 'd', 'm'];
+  function wOpen(mid, d, fromNav) {
+    W.mat = mid && mat(mid) ? mid : null; W.d = W.mat && d ? d : null; W.expr = ''; W.edit = null; W.newD = false; W.last = null; W.newMat = false;
+    W.step = W.d ? 'm' : W.mat ? 'd' : 'mat';
+    $('wz').hidden = false; document.body.classList.add('wz-open'); document.body.style.overflow = 'hidden';
+    if (!fromNav && location.hash !== '#zaehlen') history.pushState({ wz: 1 }, '', location.pathname + '#zaehlen');
+    wRender();
+  }
+  function wClose(fromNav) {
+    $('wz').hidden = true; document.body.classList.remove('wz-open'); document.body.style.overflow = ''; closeSheet();
+    if (!fromNav && location.hash === '#zaehlen') { if (history.state && history.state.wz) history.back(); else history.replaceState(null, '', location.pathname); }
+    render();
+  }
+  function wMeters() { const v = calc(W.expr, true); return v == null ? null : W.unit === 'mm' ? v / 1000 : v; }
+  function nextPos(mid, d) {
+    const m = mat(mid); if (!m) return null; const ps = posOf(m), i = ps.indexOf(d);
+    if (i >= 0 && i + 1 < ps.length) return { mat: m.id, d: ps[i + 1] };
+    const mi = D.mats.indexOf(m);
+    for (let k = 1; k <= D.mats.length; k++) { const n = D.mats[(mi + k) % D.mats.length]; const p2 = posOf(n); if (n !== m && p2.length) return { mat: n.id, d: p2[0], newMat: true }; }
+    return null;
+  }
+  function wKey(k) {
+    if (W.step === 'd') {
+      if (k === 'back') W.expr = W.expr.slice(0, -1); else if (k === 'clr') W.expr = '';
+      else if (/^\d$/.test(k)) W.expr = (W.expr + k).slice(0, 7);
+      else if (k === ',' && !W.expr.includes(',')) W.expr = (W.expr || '0') + ',';
+      wDisp(); return;
+    }
+    const ops = ['+', '×', '−'];
+    if (k === 'back') W.expr = W.expr.slice(0, -1);
+    else if (k === 'clr') { W.expr = ''; if (W.edit) { W.edit = null; wRender(); return; } }
+    else if (ops.includes(k)) { if (!W.expr && k !== '−') return; W.expr = /[+×−]$/.test(W.expr) ? W.expr.slice(0, -1) + k : W.expr + k; }
+    else if (k === ',') { const last = W.expr.split(/[+×−]/).pop(); if (last.includes(',')) return; W.expr += last ? ',' : '0,'; }
+    else if (/^\d$/.test(k)) { if (W.expr.length > 60) return; W.expr += k; }
+    wDisp();
+  }
+  const keysHTML = dMode => `<div class="keys" id="wKeys">
+    ${['7', '8', '9', 'back', '4', '5', '6', '+', '1', '2', '3', '×', ',', '0', '−', 'clr'].map(k => `<button type="button" class="${/^\d$|^,$/.test(k) ? '' : 'op'}" data-k="${k}" ${dMode && /^[+×−]$/.test(k) ? 'disabled' : ''}>${k === 'back' ? '⌫' : k === 'clr' ? 'C' : k}</button>`).join('')}</div>`;
+  function wDisp() {
+    const e = $('wE'), r = $('wR'), go = $('wGo'); if (!e) return;
+    e.innerHTML = `${esc(W.expr)}<i></i>`; e.scrollLeft = 1e5;
+    if (W.step === 'd') { const ok = !!dKey(W.expr); if (go) { go.disabled = !ok; go.innerHTML = `Ø${ok ? fd(dKey(W.expr)) : ''} übernehmen →`; } return; }
+    const v = wMeters(), ok = v != null && v > 0;
+    r.innerHTML = v != null && (hasOp(W.expr) || W.unit === 'mm') ? `=<b>${fm(v)} m</b>` : '';
+    if (go) { go.disabled = !ok; go.innerHTML = `${W.edit ? 'Ändern' : 'Buchen'}${ok ? `<small>${fm(v)} m</small>` : ''}`; }
+  }
+  function wBook() {
+    const m = mat(W.mat); if (!m || !W.d) return;
+    const v = wMeters(); if (v == null || v <= 0) { toast('Meter eingeben'); return; }
+    const expr = W.expr.replace(/[+×−,]+$/, '');
+    if (W.edit) { const e = D.entries.find(x => x.id === W.edit); if (e) { e.expr = expr; e.unit = W.unit; e.m = v; e.ets = Date.now(); } W.edit = null; W.expr = ''; save(); toast('Geändert · ' + fm(v) + ' m'); vib(10); wRender(); return; }
+    const e = { id: uid(), ts: Date.now(), mat: m.id, d: W.d, expr, unit: W.unit, m: v, loc: locOf(m, W.d) };
+    D.entries.push(e); save(); vib([10, 30, 14]);
+    W.last = e.id; W.expr = ''; W.step = 'ok'; wRender();
+  }
+  function wRender() {
+    const m = mat(W.mat), si = STEPS.indexOf(W.step === 'ok' ? 'm' : W.step);
+    const titles = { mat: 'Welches Material?', d: 'Welcher Durchmesser?', m: 'Wie viele Meter?', ok: 'Gebucht' };
+    $('wzTop').innerHTML = `<div class="mw-in"><div class="mw-h"><span class="mw-mode">INVENTUR · STANGEN</span><span class="sp"></span>
+      ${W.step !== 'ok' ? `<span class="mono" style="font-size:11px;color:var(--muted);letter-spacing:.1em">${si + 1} / 3</span>` : ''}<button type="button" class="mw-x" data-w="close" aria-label="Schließen">${IC.x}</button></div>
+      <h2 class="mw-title">${W.step === 'd' && m ? esc(m.name) + ' · Ø?' : titles[W.step]}</h2>
+      <div class="mw-prog">${STEPS.map((s, i) => `<i class="${W.step === 'ok' || i <= si ? 'on' : ''}"></i>`).join('')}</div></div>`;
+    let body = '', foot = '';
+    if (W.step === 'mat') {
+      body = W.newMat ? newMatForm() : `<button type="button" class="mw-scan" data-w="scan">${IC.scan}<span><b>Etikett scannen</b><small>QR ODER STRICHCODE AM REGAL</small></span></button>
+        <div class="wm-grid">${D.mats.map(x => { const es = entsOf(x.id); return `<button type="button" class="wmt" data-w="mat" data-id="${x.id}" style="--c:${x.color}"><b>${esc(x.name)}</b><small>${es.length ? fm(sumOf(es), 2) + ' m · ' + posOf(x).filter(d => entsOf(x.id, d).length).length + ' Ø' : posOf(x).length + ' Ø angelegt'}</small></button>`; }).join('')}
+        <button type="button" class="wmt add" data-w="newmat"><b>+</b><small>Neues Material</small></button></div>`;
+      foot = W.newMat ? `<button type="button" class="btn" data-w="nmx">Abbrechen</button><button type="button" class="btn primary mw-go" data-w="nmok">Anlegen →</button>` : `<button type="button" class="btn" data-w="close" style="flex:1">Fertig</button>`;
+    } else if (W.step === 'd' && m) {
+      const ps = posOf(m);
+      body = W.newD || !ps.length ? `<div class="hint">Neuen Durchmesser für <b>${esc(m.name)}</b> in mm eintippen.</div>
+          <div class="disp"><span class="k">Ø<br>MM</span><span class="e" id="wE"></span><span class="r" id="wR"></span></div>${keysHTML(true)}`
+        : `<div class="wd-grid">${ps.map(d => { const es = entsOf(m.id, d), l = locOf(m, d); return `<button type="button" class="wdt ${es.length ? 'done' : ''}" data-w="d" data-d="${d}"><b>Ø${fd(d)}</b><small>${l ? '⌂ ' + esc(l) : artOf(m, d) ? esc(artOf(m, d)) : '—'}</small><span class="m">${es.length ? fm(sumOf(es), 2) + ' m' : ''}</span></button>`; }).join('')}
+          <button type="button" class="wdt add" data-w="newd"><b>+ Ø</b><small>neu</small></button></div>`;
+      foot = W.newD || !ps.length ? `<button type="button" class="btn" data-w="${ps.length ? 'dback' : 'back'}">←</button><button type="button" class="btn primary mw-go" id="wGo" data-w="dok" disabled>Ø übernehmen →</button>`
+        : `<button type="button" class="btn" data-w="back">← Material</button>`;
+    } else if (W.step === 'm' && m) {
+      const es = entsOf(m.id, W.d), a = artOf(m, W.d), l = locOf(m, W.d);
+      body = `<div class="wpos" style="--c:${m.color}"><span class="bar"></span><div class="t"><h3>${esc(m.name)} · Ø${fd(W.d)}</h3>
+          <div class="chips"><button type="button" class="wchip ${l ? '' : 'miss'}" data-w="loc">${IC.loc}${l ? esc(l) : 'LAGERORT?'}</button><button type="button" class="wchip ${a ? '' : 'miss'}" data-w="art">${IC.art}${a ? esc(a) : 'ART.-NR.?'}</button></div></div>
+          <div class="s"><b>${fm(sumOf(es), 2)}</b><small>M · ${es.length}×</small></div></div>
+        ${es.length ? `<div class="wents">${es.slice(-3).reverse().map(e => `<div class="wen ${W.edit === e.id ? 'ed' : ''}" data-w="edit" data-id="${e.id}"><span class="x">${esc(showExpr(e))} · ${hm(e.ts)}</span><b>${fm(e.m)}</b><button type="button" data-w="del" data-id="${e.id}" aria-label="Löschen">✕</button></div>`).join('')}${es.length > 3 ? `<div class="hint" style="padding-top:4px">+ ${es.length - 3} weitere in „Liste“</div>` : ''}</div>` : ''}
+        <div class="urow"><span class="lab">${W.edit ? 'EINTRAG ÄNDERN' : 'z. B. 3×6+2,4'}</span><div class="unit"><button type="button" data-w="unit" data-u="m" aria-pressed="${W.unit === 'm'}">m</button><button type="button" data-w="unit" data-u="mm" aria-pressed="${W.unit === 'mm'}">mm</button></div></div>
+        <div class="disp"><span class="k">${W.unit === 'mm' ? 'LÄNGE<br>MM' : 'METER'}</span><span class="e" id="wE"></span><span class="r" id="wR"></span></div>
+        ${keysHTML(false)}`;
+      foot = `<button type="button" class="btn" data-w="${W.edit ? 'edx' : 'back'}">${W.edit ? 'Abbruch' : '← Ø'}</button><button type="button" class="btn primary mw-go" id="wGo" data-w="book" disabled>Buchen</button>`;
+    } else if (W.step === 'ok' && m) {
+      const e = D.entries.find(x => x.id === W.last), es = entsOf(m.id, W.d), nx = nextPos(m.id, W.d), nm = nx && mat(nx.mat);
+      body = `<div class="mw-done"><div class="mw-ok">${IC.ok}</div>
+        <h3>+${fm(e ? e.m : 0)} m</h3><p>${esc(m.name)} · Ø${fd(W.d)}${locOf(m, W.d) ? ' · ⌂ ' + esc(locOf(m, W.d)) : ''}</p>
+        <div class="now">AN DIESER POSITION<b>${fm(sumOf(es), 2)} m</b></div>
+        <div class="wnext">
+          <button type="button" class="btn primary" data-w="more">+ Mehr bei Ø${fd(W.d)}</button>
+          ${nx ? `<button type="button" class="btn" data-w="next">Nächste Position → ${nm ? esc(nm.name) + ' ' : ''}Ø${fd(nx.d)}${locOf(nm, nx.d) ? ' · ⌂ ' + esc(locOf(nm, nx.d)) : ''}</button>` : ''}
+          <div class="row2"><button type="button" class="btn" data-w="otherd">Anderer Ø</button><button type="button" class="btn" data-w="othermat">Anderes Material</button></div>
+          <button type="button" class="link" data-w="undo" style="align-self:center;margin-top:4px">Rückgängig</button>
+        </div></div>`;
+      foot = `<button type="button" class="btn" data-w="close">Fertig</button><button type="button" class="btn primary mw-go" data-w="${nx ? 'next' : 'newd2'}">${nx ? 'Weiter →' : 'Neuer Ø →'}</button>`;
+    }
+    $('wzBody').innerHTML = `<div class="mw-in">${body}</div>`; $('wzFoot').innerHTML = `<div class="mw-in">${foot}</div>`; $('wzBody').scrollTop = 0;
+    if (W.step === 'm' || (W.step === 'd' && $('wE'))) wDisp();
+  }
+  const newMatForm = () => `<div class="card mm"><div class="fld"><label>NAME</label><input id="wnName" placeholder="z. B. 1.4122" autocapitalize="characters"></div>
+    <div class="f2"><div class="fld"><label>STANDARD-ART.-NR.</label><input id="wnArt" placeholder="optional"></div><div class="fld"><label>STANDARD-LAGERORT</label><input id="wnLoc" placeholder="optional"></div></div>
+    <div class="palette" id="wnPal">${COLORS.map((c, i) => `<button type="button" data-c="${c}" style="--c:${c}" aria-pressed="${i === D.mats.length % COLORS.length}" aria-label="Farbe"></button>`).join('')}</div></div>`;
+  function addMaterial(name, art, loc, color) {
+    const n = U(name); if (!n) { toast('Name fehlt'); return null; }
+    if (D.mats.some(m => m.name === n)) { toast('Gibt es schon'); return null; }
+    const m = { id: uid(), name: n, color: color || COLORS[D.mats.length % COLORS.length], art: U(art), loc: U(loc), ds: {}, locs: {} }; D.mats.push(m); save(); toast(`${n} angelegt`); return m;
+  }
+  $('wz').addEventListener('click', e => {
+    const pal = e.target.closest('#wnPal button'); if (pal) { $('wnPal').querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', String(x === pal))); return; }
+    const k = e.target.closest('[data-k]'); if (k && !k.disabled) { wKey(k.dataset.k); vib(4); return; }
+    const b = e.target.closest('[data-w]'); if (!b) return; const a = b.dataset.w, m = mat(W.mat);
+    if (a === 'close') { wClose(); return; }
+    if (a === 'scan') { scan(); return; }
+    if (a === 'mat') { W.mat = b.dataset.id; W.d = null; W.newD = false; W.expr = ''; W.step = 'd'; vib(6); wRender(); return; }
+    if (a === 'newmat') { W.newMat = true; wRender(); setTimeout(() => $('wnName')?.focus(), 60); return; }
+    if (a === 'nmx') { W.newMat = false; wRender(); return; }
+    if (a === 'nmok') { const c = ($('wnPal').querySelector('[aria-pressed="true"]') || {}).dataset?.c; const nm2 = addMaterial($('wnName').value, $('wnArt').value, $('wnLoc').value, c); if (!nm2) return; W.newMat = false; W.mat = nm2.id; W.step = 'd'; W.newD = true; W.expr = ''; wRender(); return; }
+    if (a === 'd') { W.d = b.dataset.d; W.step = 'm'; W.expr = ''; W.edit = null; vib(6); wRender(); return; }
+    if (a === 'newd') { W.newD = true; W.expr = ''; wRender(); return; }
+    if (a === 'dback') { W.newD = false; W.expr = ''; wRender(); return; }
+    if (a === 'dok') { const d = dKey(W.expr); if (!d || !m) return; if (!posOf(m).includes(d)) { m.ds[d] = m.ds[d] || ''; save(); } W.d = d; W.newD = false; W.expr = ''; W.step = 'm'; wRender(); if (!locOf(m, d)) setTimeout(() => openSheet('loc'), 150); return; }
+    if (a === 'back') { if (W.step === 'm') { W.step = 'd'; W.edit = null; W.expr = ''; } else if (W.step === 'd') { W.step = 'mat'; W.newD = false; W.expr = ''; } wRender(); return; }
+    if (a === 'unit') { W.unit = b.dataset.u; lsSet(KEY + '_unit', W.unit); wRender(); return; }
+    if (a === 'book') { wBook(); return; }
+    if (a === 'edx') { W.edit = null; W.expr = ''; wRender(); return; }
+    if (a === 'del') { e.stopPropagation(); const i = D.entries.findIndex(x => x.id === b.dataset.id); if (i < 0) return; const [rm] = D.entries.splice(i, 1); if (W.edit === rm.id) { W.edit = null; W.expr = ''; } save(); wRender(); toast(`Gelöscht · ${fm(rm.m)} m`, () => { D.entries.splice(i, 0, rm); save(); wRender(); }); return; }
+    if (a === 'edit') { const x = D.entries.find(y => y.id === b.dataset.id); if (!x) return; W.edit = x.id; W.expr = x.expr; W.unit = x.unit || 'm'; wRender(); return; }
+    if (a === 'loc' || a === 'art') { openSheet(a); return; }
+    if (a === 'more') { W.step = 'm'; W.expr = ''; wRender(); return; }
+    if (a === 'next') { const nx = nextPos(W.mat, W.d); if (!nx) { W.step = 'mat'; wRender(); return; } W.mat = nx.mat; W.d = nx.d; W.step = 'm'; W.expr = ''; wRender(); if (nx.newMat) toast('Nächstes Material: ' + mat(nx.mat).name); return; }
+    if (a === 'newd2') { W.step = 'd'; W.newD = true; W.expr = ''; wRender(); return; }
+    if (a === 'otherd') { W.step = 'd'; W.newD = false; W.expr = ''; wRender(); return; }
+    if (a === 'othermat') { W.step = 'mat'; W.expr = ''; wRender(); return; }
+    if (a === 'undo') { const i = D.entries.findIndex(x => x.id === W.last); if (i >= 0) { D.entries.splice(i, 1); save(); } W.last = null; W.step = 'm'; wRender(); toast('Rückgängig'); return; }
+  });
+  document.addEventListener('keydown', e => {
+    if ($('wz').hidden || !$('edsh').hidden || e.target.closest('input,textarea') || e.metaKey || e.ctrlKey) return;
+    if (W.step !== 'm' && !(W.step === 'd' && $('wE'))) { if (e.key === 'Enter' && W.step === 'ok') { e.preventDefault(); $('wzFoot').querySelector('.mw-go')?.click(); } return; }
+    const k = e.key; let m = null;
+    if (/^\d$/.test(k)) m = k; else if (k === ',' || k === '.') m = ','; else if (k === '+') m = '+'; else if (k === '*' || k === 'x' || k === 'X') m = '×'; else if (k === '-') m = '−';
+    else if (k === 'Backspace') m = 'back'; else if (k === 'Escape') m = 'clr'; else if (k === 'Enter') { e.preventDefault(); $('wGo') && !$('wGo').disabled && $('wGo').click(); return; }
+    if (m) { e.preventDefault(); wKey(m); }
+  });
+
+  // ---------- Lagerort / Art.-Nr. bearbeiten ----------
+  let SH = null;
+  function openSheet(kind, mid, d) {
+    const m = mat(mid || W.mat); d = d || W.d; if (!m || !d) return;
+    SH = { kind, mid: m.id, d };
+    const cur = kind === 'loc' ? (m.locs[d] || '') : (m.ds[d] || ''), def = kind === 'loc' ? m.loc : m.art;
+    const sugg = kind === 'loc' ? allLocs().slice(0, 16) : [];
+    $('edIn').innerHTML = `<h3>${kind === 'loc' ? 'Lagerort' : 'Artikelnummer'} · ${esc(m.name)} Ø${fd(d)}</h3>
+      <input id="edV" value="${esc(cur)}" placeholder="${def ? esc(def) + ' (Standard)' : kind === 'loc' ? 'z. B. REGAL 3 / FACH B' : 'Art.-Nr.'}" autocapitalize="characters" autocomplete="off" ${kind === 'art' ? 'inputmode="text"' : ''}>
+      ${sugg.length ? `<div class="types">${sugg.map(s => `<button type="button" data-sv="${esc(s)}" aria-pressed="${U(cur) === s}">${esc(s)}</button>`).join('')}</div>` : ''}
+      ${kind === 'loc' ? `<label class="hint" style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="edAll" style="width:auto"> Für alle Ø von ${esc(m.name)} ohne eigenen Lagerort</label>` : ''}
+      <div class="row"><button type="button" class="btn" data-sh="x">Abbrechen</button><button type="button" class="btn primary" data-sh="ok">Speichern</button></div>`;
+    $('edsh').hidden = false; setTimeout(() => { const i = $('edV'); i && (i.focus(), i.select()); }, 60);
+  }
+  function closeSheet() { $('edsh').hidden = true; SH = null; }
+  function sheetSave(v) {
+    if (!SH) return; const m = mat(SH.mid); if (!m) return; v = U(v);
+    if (SH.kind === 'loc') { if ($('edAll') && $('edAll').checked) { m.loc = v; } else m.locs[SH.d] = v; if (!v) delete m.locs[SH.d]; }
+    else { m.ds[SH.d] = v; }
+    save(); closeSheet(); toast('Gespeichert'); if (!$('wz').hidden) wRender(); else render();
+  }
+  $('edsh').addEventListener('click', e => {
+    if (e.target === $('edsh')) { closeSheet(); return; }
+    const s = e.target.closest('[data-sv]'); if (s) { sheetSave(s.dataset.sv); return; }
+    const b = e.target.closest('[data-sh]'); if (!b) return; if (b.dataset.sh === 'x') closeSheet(); else sheetSave($('edV').value);
+  });
+  $('edsh').addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.id === 'edV') { e.preventDefault(); sheetSave(e.target.value); } if (e.key === 'Escape') closeSheet(); });
+
+  // ---------- Scanner (QR vom eigenen Etikett oder Strichcode = Art.-Nr.) ----------
+  const CAM = { stream: null, timer: null, reader: null };
+  const loadScript = src => new Promise((res, rej) => { const s = document.createElement('script'); s.src = src; s.onload = res; s.onerror = rej; document.head.appendChild(s); });
+  const nz = v => U(v).replace(/[\s\-.\/_]/g, '');
+  function findPos(raw) {
+    const v = String(raw || '').trim(), mp = v.match(/#p=([^&\s]+)/);
+    if (mp) { const [mid, d] = decodeURIComponent(mp[1]).split('|'); if (mat(mid)) return { mat: mid, d }; }
+    const k = nz(v); if (!k) return null;
+    for (const m of D.mats) for (const d of posOf(m)) if (nz(m.ds[d]) === k) return { mat: m.id, d };
+    for (const m of D.mats) if (m.art && nz(m.art) === k) return { mat: m.id, d: null };
+    return null;
+  }
+  function onCode(raw) {
+    camStop(); const p = findPos(raw);
+    if (!p) { toast('Code unbekannt: ' + String(raw).slice(0, 24)); return; }
+    vib(30); if ($('wz').hidden) wOpen(p.mat, p.d); else { W.mat = p.mat; W.d = p.d; W.step = p.d ? 'm' : 'd'; W.expr = ''; wRender(); }
+  }
+  async function scan() {
+    $('cam').hidden = false; $('camMsg').textContent = 'KAMERA STARTET …'; const v = $('camV');
+    let last = '', lastTs = 0; const hit = raw => { const n = Date.now(); if (raw === last && n - lastTs < 2000) return; last = raw; lastTs = n; onCode(raw); };
+    try {
+      if ('BarcodeDetector' in window) {
+        CAM.stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false });
+        v.srcObject = CAM.stream; await v.play();
+        let f = ['qr_code', 'code_128', 'ean_13', 'code_39']; try { const sup = await BarcodeDetector.getSupportedFormats(); f = f.filter(x => sup.includes(x)); } catch {}
+        const det = new BarcodeDetector({ formats: f });
+        const tick = async () => { if (!CAM.stream) return; try { const r = await det.detect(v); if (r && r[0]) { hit(r[0].rawValue); return; } } catch {} CAM.timer = setTimeout(tick, 140); };
+        $('camMsg').textContent = 'ETIKETT IN DEN RAHMEN'; tick();
+      } else {
+        $('camMsg').textContent = 'SCANNER LÄDT …';
+        if (!window.ZXing) { try { await loadScript('https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js'); } catch { await loadScript('https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js'); } }
+        const reader = new ZXing.BrowserMultiFormatReader(); CAM.reader = reader;
+        await reader.decodeFromConstraints({ video: { facingMode: { ideal: 'environment' } }, audio: false }, v, res => { if (res && res.getText) hit(res.getText()); });
+        CAM.stream = v.srcObject; $('camMsg').textContent = 'ETIKETT IN DEN RAHMEN';
+      }
+    } catch (err) { camStop(); toast(err && err.name === 'NotAllowedError' ? 'Kamera nicht erlaubt' : 'Kamera-Scan geht hier nicht'); }
+  }
+  function camStop() {
+    clearTimeout(CAM.timer); try { CAM.reader && CAM.reader.reset(); } catch {} CAM.reader = null;
+    if (CAM.stream) { try { CAM.stream.getTracks().forEach(t => t.stop()); } catch {} CAM.stream = null; }
+    $('camV').srcObject = null; $('cam').hidden = true;
+  }
+  $('camX').onclick = camStop;
+
+  // ======================================================================
+  // ETIKETTEN (Strichcode = Art.-Nr., QR → öffnet Zählen an dieser Position)
+  // ======================================================================
+  const C128 = '212222 222122 222221 121223 121322 131222 122213 122312 132212 221213 221312 231212 112232 122132 122231 113222 123122 123221 223211 221132 221231 213212 223112 312131 311222 321122 321221 312212 322112 322211 212123 212321 232121 111323 131123 131321 112313 132113 132311 211313 231113 231311 112133 112331 132131 113123 113321 133121 313121 211331 231131 213113 213311 213131 311123 311321 331121 312113 312311 332111 314111 221411 431111 111224 111422 121124 121421 141122 141221 112214 112412 122114 122411 142112 142211 241211 221114 413111 241112 134111 111242 121142 121241 114212 124112 124211 411212 421112 421211 212141 214121 412121 111143 111341 131141 114113 114311 411113 411311 113141 114131 311141 411131 211412 211214 211232 2331112'.split(' ');
+  const asciiCode = v => U(v).replace(/Ä/g, 'AE').replace(/Ö/g, 'OE').replace(/Ü/g, 'UE').replace(/ß/g, 'SS').replace(/Ø/g, 'D').replace(/[^\x20-\x7E]/g, '').trim();
+  function code128SVG(text, h = 60) {
+    const t = asciiCode(text); if (!t) return '';
+    const vals = [104, ...[...t].map(ch => ch.charCodeAt(0) - 32)];
+    let sum = 104; vals.slice(1).forEach((v, i) => sum += v * (i + 1));
+    vals.push(sum % 103, 106);
+    let x = 10, bars = '';
+    vals.forEach(v => [...C128[v]].forEach((w, k) => { w = +w; if (k % 2 === 0) bars += `M${x} 0h${w}v${h}h-${w}z`; x += w; }));
+    return `<svg class="bc" viewBox="0 0 ${x + 10} ${h}" preserveAspectRatio="none" role="img" aria-label="Strichcode ${esc(t)}"><rect width="${x + 10}" height="${h}" fill="#fff"/><path d="${bars}" fill="#000"/></svg>`;
+  }
+  // --- QR
+  const QRV = [null, [10,1,16,0,0],[16,1,28,0,0],[26,1,44,0,0],[18,2,32,0,0],[24,2,43,0,0],[16,4,27,0,0],[18,4,31,0,0],[22,2,38,2,39],[22,3,36,2,37],[26,4,43,1,44]];
+  const QRA = [null, [], [6,18], [6,22], [6,26], [6,30], [6,34], [6,22,38], [6,24,42], [6,26,46], [6,28,50]];
+  const GF = (() => { const e = new Array(512), l = new Array(256); let x = 1; for (let i = 0; i < 255; i++) { e[i] = x; l[x] = i; x <<= 1; if (x & 256) x ^= 0x11d; } for (let i = 255; i < 512; i++) e[i] = e[i - 255]; return { e, l, mul: (a, b) => a && b ? e[l[a] + l[b]] : 0 }; })();
+  function rsEc(data, n) {
+    let g = [1];
+    for (let i = 0; i < n; i++) { const ng = new Array(g.length + 1).fill(0); g.forEach((c, j) => { ng[j] ^= c; ng[j + 1] ^= GF.mul(c, GF.e[i]); }); g = ng; }
+    const r = new Array(n).fill(0);
+    data.forEach(d => { const f = d ^ r[0]; r.shift(); r.push(0); if (f) for (let j = 0; j < n; j++) r[j] ^= GF.mul(g[j + 1], f); });
+    return r;
+  }
+  function qrMatrix(text) {
+    const bytes = [...new TextEncoder().encode(text)];
+    let ver = 1; for (; ver <= 10; ver++) { const [, b1, d1, b2, d2] = QRV[ver]; const cap = b1 * d1 + b2 * d2; if (4 + (ver < 10 ? 8 : 16) + bytes.length * 8 <= cap * 8) break; }
+    if (ver > 10) return null;
+    const [ecn, b1, d1, b2, d2] = QRV[ver], total = b1 * d1 + b2 * d2;
+    const bits = []; const put = (v, n) => { for (let i = n - 1; i >= 0; i--) bits.push((v >> i) & 1); };
+    put(4, 4); put(bytes.length, ver < 10 ? 8 : 16); bytes.forEach(b => put(b, 8));
+    put(0, Math.min(4, total * 8 - bits.length)); while (bits.length % 8) bits.push(0);
+    const data = []; for (let i = 0; i < bits.length; i += 8) data.push(parseInt(bits.slice(i, i + 8).join(''), 2));
+    for (let p = 0; data.length < total; p++) data.push(p % 2 ? 0x11 : 0xEC);
+    const blocks = []; let o = 0;
+    for (let i = 0; i < b1 + b2; i++) { const n = i < b1 ? d1 : d2; const d = data.slice(o, o + n); o += n; blocks.push({ d, e: rsEc(d, ecn) }); }
+    const seq = []; const maxD = Math.max(d1, d2);
+    for (let i = 0; i < maxD; i++) blocks.forEach(b => { if (i < b.d.length) seq.push(b.d[i]); });
+    for (let i = 0; i < ecn; i++) blocks.forEach(b => seq.push(b.e[i]));
+    const N = ver * 4 + 17, M = Array.from({ length: N }, () => new Array(N).fill(null)), F = Array.from({ length: N }, () => new Array(N).fill(false));
+    const set = (r, c, v) => { M[r][c] = v ? 1 : 0; F[r][c] = true; };
+    const finder = (r, c) => { for (let i = -1; i <= 7; i++) for (let j = -1; j <= 7; j++) { const rr = r + i, cc = c + j; if (rr < 0 || cc < 0 || rr >= N || cc >= N) continue;
+      set(rr, cc, i >= 0 && i <= 6 && j >= 0 && j <= 6 && (i === 0 || i === 6 || j === 0 || j === 6 || (i >= 2 && i <= 4 && j >= 2 && j <= 4))); } };
+    finder(0, 0); finder(0, N - 7); finder(N - 7, 0);
+    for (let i = 8; i < N - 8; i++) { set(6, i, i % 2 === 0); set(i, 6, i % 2 === 0); }
+    const al = QRA[ver];
+    const aL = al[al.length - 1]; al.forEach(r => al.forEach(c => { if ((r === 6 && c === 6) || (r === 6 && c === aL) || (r === aL && c === 6)) return; for (let i = -2; i <= 2; i++) for (let j = -2; j <= 2; j++) set(r + i, c + j, Math.max(Math.abs(i), Math.abs(j)) !== 1); }));
+    set(N - 8, 8, 1);
+    for (let i = 0; i < 9; i++) { if (!F[8][i]) { F[8][i] = true; M[8][i] = 0; } if (!F[i][8]) { F[i][8] = true; M[i][8] = 0; } }
+    for (let i = 0; i < 8; i++) { F[8][N - 1 - i] = true; M[8][N - 1 - i] = 0; F[N - 1 - i][8] = true; M[N - 1 - i][8] = 0; }
+    if (ver >= 7) { let v = ver << 12, g = ver << 12; for (let i = 17; i >= 12; i--) if (g >> i & 1) g ^= 0x1f25 << (i - 12); v |= g;
+      for (let i = 0; i < 18; i++) { const b = (v >> i) & 1, r = Math.floor(i / 3), c = N - 11 + (i % 3); set(r, c, b); set(c, r, b); } }
+    const dbits = []; seq.forEach(b => { for (let i = 7; i >= 0; i--) dbits.push((b >> i) & 1); });
+    let k = 0;
+    for (let c = N - 1; c > 0; c -= 2) { if (c === 6) c--; for (let t = 0; t < N; t++) { const up = ((N - 1 - c) >> 1) % 2 === 0 ? 1 : 0; const r = up ? N - 1 - t : t;
+      for (let j = 0; j < 2; j++) { const cc = c - j; if (F[r][cc]) continue; M[r][cc] = k < dbits.length ? dbits[k++] : 0; } } }
+    const MASK = [(r, c) => (r + c) % 2 === 0, r => r % 2 === 0, (r, c) => c % 3 === 0, (r, c) => (r + c) % 3 === 0, (r, c) => (Math.floor(r / 2) + Math.floor(c / 3)) % 2 === 0,
+      (r, c) => (r * c) % 2 + (r * c) % 3 === 0, (r, c) => ((r * c) % 2 + (r * c) % 3) % 2 === 0, (r, c) => ((r + c) % 2 + (r * c) % 3) % 2 === 0];
+    const fmt = m => { const d = (0 << 3) | m; let g = d << 10; for (let i = 14; i >= 10; i--) if (g >> i & 1) g ^= 0x537 << (i - 10); return ((d << 10) | g) ^ 0x5412; };
+    const build = m => {
+      const X = M.map((row, r) => row.map((v, c) => F[r][c] ? v : (v ^ (MASK[m](r, c) ? 1 : 0))));
+      const f = fmt(m);
+      for (let i = 0; i < 15; i++) { const b = (f >> i) & 1;
+        if (i < 6) X[i][8] = b; else if (i < 8) X[i + 1][8] = b; else X[N - 15 + i][8] = b;
+        if (i < 8) X[8][N - 1 - i] = b; else if (i < 9) X[8][7] = b; else X[8][14 - i] = b; }
+      X[N - 8][8] = 1; return X; };
+    const penalty = X => { let p = 0;
+      for (let r = 0; r < N; r++) for (const line of [X[r], X.map(row => row[r])]) { let run = 1; for (let i = 1; i < N; i++) { if (line[i] === line[i - 1]) { run++; if (run === 5) p += 3; else if (run > 5) p++; } else run = 1; }
+        const s = line.join(''); p += 40 * ((s.match(/1011101(?=0000)/g) || []).length + (s.match(/(?<=0000)1011101/g) || []).length); }
+      for (let r = 0; r < N - 1; r++) for (let c = 0; c < N - 1; c++) { const v = X[r][c]; if (v === X[r][c + 1] && v === X[r + 1][c] && v === X[r + 1][c + 1]) p += 3; }
+      const dark = X.flat().reduce((a, b) => a + b, 0); p += Math.floor(Math.abs(dark * 100 / (N * N) - 50) / 5) * 10; return p; };
+    let best = null, bp = Infinity; for (let m = 0; m < 8; m++) { const X = build(m), p = penalty(X); if (p < bp) { bp = p; best = X; } }
+    return best;
+  }
+  function qrSVG(text) {
+    const X = qrMatrix(text); if (!X) return '';
+    const N = X.length, q = 4; let d = '';
+    X.forEach((row, r) => row.forEach((v, c) => { if (v) d += `M${c + q} ${r + q}h1v1h-1z`; }));
+    return `<svg class="qr" viewBox="0 0 ${N + 2 * q} ${N + 2 * q}" shape-rendering="crispEdges" role="img" aria-label="QR-Code"><rect width="100%" height="100%" fill="#fff"/><path d="${d}" fill="#000"/></svg>`;
+  }
+
+  const LSIZES = { S: { w: 48, h: 25, t: 'Klein' }, M: { w: 64, h: 34, t: 'Mittel' }, L: { w: 97, h: 45, t: 'Groß' } };
+  const LB = Object.assign({ size: 'M', bc: true, qr: true, roll: false, loc: '' }, (() => { try { return JSON.parse(lsGet(KEY + '_lbl') || '{}'); } catch { return {}; } })());
+  LB.sel = new Map(Array.isArray(LB.sel) ? LB.sel : []);
+  const lbSave = () => lsSet(KEY + '_lbl', JSON.stringify({ size: LB.size, bc: LB.bc, qr: LB.qr, roll: LB.roll, loc: LB.loc, sel: [...LB.sel] }));
+  const lbGrid = sz => { const z = LSIZES[sz]; return { cols: Math.floor(194 / z.w), rows: Math.floor(281 / z.h) }; };
+  const qrBase = () => location.href.split('#')[0].split('?')[0].replace(/index\.html$/, '');
+  const posLink = (m, d) => qrBase() + '#p=' + encodeURIComponent(m.id + '|' + d);
+  const lbItems = () => { const out = []; LB.sel.forEach((n, k) => { const [mid, d] = k.split('|'), m = mat(mid); if (m) for (let i = 0; i < n; i++) out.push({ m, d }); }); return out; };
+  function labelCSS(o) {
+    const z = LSIZES[o.size], fs = { S: [5.5, 15, 6, 5.2, 4.6], M: [6.5, 20, 7.4, 6, 6.2], L: [8, 28, 10, 7.5, 9] }[o.size];
+    return `.lbl{width:${z.w}mm;height:${z.h}mm;background:#fff;color:#000;display:flex;gap:1.6mm;padding:${o.size === 'S' ? '1.6mm 2mm' : '2.4mm 3mm'};overflow:hidden;font-family:"Space Grotesk",system-ui,sans-serif;text-transform:uppercase;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.l-txt{flex:1;min-width:0;display:flex;flex-direction:column;gap:.4mm}
+.l-ty{display:flex;align-items:center;gap:1.2mm;font:600 ${fs[0]}pt "JetBrains Mono",monospace;letter-spacing:.06em;white-space:nowrap;overflow:hidden}
+.l-mat{border:.35mm solid #000;border-radius:.8mm;padding:.1mm 1mm;font-weight:700}
+.l-ty .k{color:#444;font-weight:500}
+.l-d{font:700 ${fs[1]}pt "JetBrains Mono",monospace;letter-spacing:-.02em;line-height:1;margin-top:.4mm;white-space:nowrap}
+.l-d small{font-size:.38em;font-weight:600;letter-spacing:.04em;margin-left:.6mm}
+.l-loc{font:500 ${fs[3]}pt "JetBrains Mono",monospace;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.l-loc .k{color:#333}.l-loc b{font-weight:700}
+.l-code{margin-top:auto;display:flex;flex-direction:column}
+.l-bc{height:${fs[4]}mm}.l-bc svg{width:100%;height:100%;display:block}
+.l-nr{font:600 ${fs[2]}pt "JetBrains Mono",monospace;letter-spacing:.08em;line-height:1.05;text-align:center;margin-top:.4mm;white-space:nowrap;overflow:hidden}
+.l-code .l-nr:only-child{text-align:left}
+.l-qr{flex:none;display:flex;align-items:center;justify-content:flex-end}.l-qr svg{width:100%;height:auto;display:block}
+a[x-apple-data-detectors]{color:inherit!important;text-decoration:none!important}`;
+  }
+  function labelHTML(it, o) {
+    const { m, d } = it, z = LSIZES[o.size], art = artOf(m, d), loc = locOf(m, d), c = asciiCode(art);
+    return `<div class="lbl s${o.size}"><div class="l-txt">
+      <div class="l-ty"><span class="l-mat">${esc(m.name)}</span><span class="k">STANGE</span></div>
+      <div class="l-d">Ø${esc(fd(d))}<small>MM</small></div>
+      ${loc ? `<div class="l-loc"><span class="k">LAGERORT:</span> <b>${esc(loc)}</b></div>` : ''}
+      ${c ? `<div class="l-code">${o.bc ? `<div class="l-bc">${code128SVG(c, 40)}</div>` : ''}<div class="l-nr">${esc(art)}</div></div>` : ''}
+    </div>${o.qr ? `<div class="l-qr" style="width:${z.h - (o.size === 'S' ? 4.5 : 6.5)}mm">${qrSVG(posLink(m, d))}</div>` : ''}</div>`;
+  }
+  function labelDoc(items, o) {
+    const z = LSIZES[o.size], g = lbGrid(o.size), per = g.cols * g.rows;
+    const gw = g.cols * z.w, gh = g.rows * z.h, ml = (210 - gw) / 2, mt = (297 - gh) / 2;
+    const pages = []; for (let i = 0; i < items.length; i += o.roll ? 1 : per) pages.push(items.slice(i, i + (o.roll ? 1 : per)));
+    const marks = n => { const rws = Math.ceil(n / g.cols), hh = rws * z.h; let s = '';
+      for (let c = 0; c <= g.cols; c++) { const x = ml + c * z.w; s += `<i class="cm v" style="left:${x}mm;top:${mt - 6}mm"></i><i class="cm v" style="left:${x}mm;top:${mt + hh + 1}mm"></i>`; }
+      for (let r = 0; r <= rws; r++) { const y = mt + r * z.h; s += `<i class="cm h" style="top:${y}mm;left:${ml - 6}mm"></i><i class="cm h" style="top:${y}mm;left:${ml + gw + 1}mm"></i>`; }
+      return s + `<span class="sc" style="left:${ml - 6.5}mm;top:${mt - 6.5}mm">✂</span>`; };
+    const css = `*{box-sizing:border-box}html{background:#E6E7EA}body{margin:0;padding:12px;color:#000}
+.info{font:12px system-ui;color:#555;margin:0 auto 10px;max-width:210mm}
+.pg{position:relative;width:210mm;height:297mm;background:#fff;margin:0 auto 12px;box-shadow:0 2px 12px rgba(0,0,0,.12);overflow:hidden}
+.grid{position:absolute;left:${ml}mm;top:${mt}mm;display:grid;grid-template-columns:repeat(${g.cols},${z.w}mm);grid-auto-rows:${z.h}mm;border-left:.3mm dashed #999;border-top:.3mm dashed #999}
+.grid .lbl{border-right:.3mm dashed #999;border-bottom:.3mm dashed #999}
+.cm{position:absolute;background:#000}.cm.v{width:.25mm;height:5mm;margin-left:-.12mm}.cm.h{height:.25mm;width:5mm;margin-top:-.12mm}
+.sc{position:absolute;font-size:12pt;line-height:1;color:#555}
+.roll{display:flex;flex-direction:column;align-items:center;gap:10px}.roll .lbl{box-shadow:0 1px 6px rgba(0,0,0,.15)}
+${labelCSS(o)}
+@media print{html,body{background:#fff;padding:0}.info{display:none}
+ @page{${o.roll ? `size:${z.w}mm ${z.h}mm;margin:0` : 'size:A4;margin:0'}}
+ .pg{margin:0;box-shadow:none;page-break-after:always;break-after:page}.pg:last-child{page-break-after:auto;break-after:auto}
+ .roll{display:block}.roll .lbl{box-shadow:none;page-break-after:always;break-after:page}}`;
+    const body = o.roll ? `<div class="roll">${items.map(it => labelHTML(it, o)).join('')}</div>`
+      : pages.map(pg => `<div class="pg">${marks(pg.length)}<div class="grid">${pg.map(it => labelHTML(it, o)).join('')}</div></div>`).join('');
+    return `<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="format-detection" content="telephone=no"><title>Etiketten Stangen</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=JetBrains+Mono:wght@500;600;700&display=swap"><style>${css}</style></head>
+<body><p class="info">${o.roll ? `Etikettendrucker · ${z.w} × ${z.h} mm · ${items.length} Stück` : `A4 · ${z.w} × ${z.h} mm · ${g.cols} × ${g.rows} pro Seite · ${items.length} Etiketten auf ${pages.length} ${pages.length === 1 ? 'Seite' : 'Seiten'}. Entlang der gestrichelten Linien schneiden.`}</p>${body}</body></html>`;
+  }
+  function showDoc(doc, title, ret) {
+    try { sessionStorage.setItem('cititool_inv_druck', JSON.stringify({ doc, title, ret })); } catch { toast('Zu groß zum Drucken'); return; }
+    history.replaceState(null, '', location.pathname + (ret ? '#' + ret : ''));
+    location.href = location.pathname + '?druck=1';
+  }
+  function renderEtik() {
+    const n = lbItems().length, g = lbGrid(LB.size), pages = LB.roll ? n : Math.ceil(n / (g.cols * g.rows));
+    const chip = (k, on, l) => `<button type="button" data-lb="${k}" aria-pressed="${on}">${l}</button>`;
+    const locs = allLocs();
+    $('v_etik').innerHTML = `
+      <div class="lb-opt"><span class="tw-al">GRÖSSE</span><div class="types">${Object.entries(LSIZES).map(([k, z]) => { const gg = lbGrid(k); return chip('size:' + k, LB.size === k, `${z.t} <small>${z.w}×${z.h} · ${gg.cols * gg.rows}/A4</small>`); }).join('')}</div></div>
+      <div class="lb-opt"><span class="tw-al">INHALT · DRUCK</span><div class="types">${chip('bc', LB.bc, 'Strichcode')}${chip('qr', LB.qr, 'QR → Zählen')}${chip('roll:0', !LB.roll, 'A4 zum Ausschneiden')}${chip('roll:1', LB.roll, 'Etikettendrucker')}</div></div>
+      <div class="lb-prev"><span id="lbPv"></span></div>
+      ${locs.length ? `<div class="lb-opt"><span class="tw-al">NACH LAGERORT</span><div class="types">${chip('loc:', !LB.loc, 'Alle')}${locs.map(l => chip('loc:' + esc(l), LB.loc === l, esc(l))).join('')}</div></div>` : ''}
+      ${D.mats.map(m => { const ps = posOf(m).filter(d => !LB.loc || locOf(m, d) === LB.loc); if (!ps.length) return ''; const all = ps.every(d => LB.sel.has(m.id + '|' + d));
+        return `<div class="lb-g"><div class="lb-gh"><span class="dot" style="--c:${m.color}"></span><b style="flex:1">${esc(m.name)}</b><button type="button" class="link" data-lb="all:${m.id}">${all ? 'Keine' : 'Alle'}</button></div>
+          ${ps.map(d => { const k = m.id + '|' + d, n2 = LB.sel.get(k) || 0, a = artOf(m, d), l = locOf(m, d);
+            return `<div class="lb-r ${n2 ? 'on' : ''}"><button type="button" class="lb-chk" data-lb="tog:${k}" aria-pressed="${!!n2}">${n2 ? '✓' : ''}</button><span class="lb-n" data-lb="tog:${k}">Ø${fd(d)}<small>${[a || 'OHNE ART.-NR.', l && '⌂ ' + l].filter(Boolean).map(esc).join(' · ')}</small></span>
+              ${n2 ? `<span class="lb-qty"><button type="button" data-lb="dec:${k}">−</button><b class="mono">${n2}</b><button type="button" data-lb="inc:${k}">+</button></span>` : ''}</div>`; }).join('')}</div>`; }).join('') || '<div class="empty"><b>Noch keine Positionen</b>Unter „Material“ Ø anlegen oder einfach zählen.</div>'}
+      <div class="lb-foot"><span class="grow"><b>${n} ${n === 1 ? 'Etikett' : 'Etiketten'}</b><small>${n ? (LB.roll ? 'einzeln' : `${pages} ${pages === 1 ? 'Seite' : 'Seiten'} A4`) : 'Positionen antippen'}</small></span>
+        <button type="button" class="btn primary" data-lb="go" ${n ? '' : 'disabled'}>Vorschau &amp; Drucken</button></div>`;
+    const host = $('lbPv'), it = lbItems()[0] || (() => { for (const m of D.mats) { const p = posOf(m)[0]; if (p) return { m, d: p }; } return D.mats[0] ? { m: D.mats[0], d: '20' } : null; })();
+    if (host && it) { const sr = host.attachShadow({ mode: 'open' }); sr.innerHTML = `<style>:host{display:block}*{box-sizing:border-box}.lbl{box-shadow:0 1px 8px rgba(0,0,0,.18);border-radius:1mm}${labelCSS(LB)}</style>${labelHTML(it, LB)}`;
+      host.style.zoom = Math.min(1.35, ((host.parentNode.clientWidth || 300) - 26) / (LSIZES[LB.size].w * 3.7795)).toFixed(3); }
+  }
+  $('v_etik').addEventListener('click', e => {
+    const b = e.target.closest('[data-lb]'); if (!b) return;
+    const [a, v] = b.dataset.lb.split(/:(.*)/s);
+    if (a === 'size') LB.size = v; else if (a === 'bc' || a === 'qr') LB[a] = !LB[a]; else if (a === 'roll') LB.roll = v === '1'; else if (a === 'loc') LB.loc = v || '';
+    else if (a === 'tog') LB.sel.has(v) ? LB.sel.delete(v) : LB.sel.set(v, 1);
+    else if (a === 'inc') LB.sel.set(v, Math.min(99, (LB.sel.get(v) || 0) + 1));
+    else if (a === 'dec') { const n = (LB.sel.get(v) || 1) - 1; n ? LB.sel.set(v, n) : LB.sel.delete(v); }
+    else if (a === 'all') { const m = mat(v); if (!m) return; const ks = posOf(m).filter(d => !LB.loc || locOf(m, d) === LB.loc).map(d => m.id + '|' + d); const all = ks.every(k => LB.sel.has(k)); ks.forEach(k => all ? LB.sel.delete(k) : LB.sel.set(k, LB.sel.get(k) || 1)); }
+    else if (a === 'go') { lbSave(); const its = lbItems(); showDoc(labelDoc(its, LB), `${its.length} ${its.length === 1 ? 'Etikett' : 'Etiketten'}`, 'etiketten'); return; }
+    lbSave(); const y = window.scrollY; renderEtik(); window.scrollTo(0, y);
+  });
+
+  // ======================================================================
+  // ANSICHTEN
+  // ======================================================================
+  let TAB = 'start';
+  function setTab(t, keepScroll) {
+    TAB = t; document.querySelectorAll('#nav [data-tab]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.tab === t)));
+    ['start', 'liste', 'mat', 'etik', 'export'].forEach(k => $('v_' + k).hidden = k !== t);
+    if (!keepScroll) window.scrollTo(0, 0); render();
+  }
+  function renderStart() {
+    const tot = sumOf(D.entries), mi = missing(), ms = D.mats.map(m => ({ m, s: sumOf(entsOf(m.id)) }));
+    const last = D.entries.slice(-8).reverse();
+    $('v_start').innerHTML = `
+      <div class="mq">
+        <button type="button" class="mq-main" data-go="wz"><span class="mi">${IC.bar}</span><span><b>Zählen</b><small>MATERIAL · Ø · METER · WEITER</small></span><span class="ar">→</span></button>
+        <div class="mq-row"><button type="button" data-go="scan"><span class="mi">${IC.scan}</span><span><b>Scannen</b><small>ETIKETT AM REGAL</small></span></button>
+          <button type="button" data-tab2="etik"><span class="mi">${IC.lbl}</span><span><b>Etiketten</b><small>DRUCKEN</small></span></button></div>
+      </div>
+      <div class="card"><div class="tot"><b>${fm(tot, 2)} m</b><small>${D.entries.length} EINTRÄGE · ${esc(D.name)}</small></div>
+        ${tot ? `<div class="ibar">${ms.filter(x => x.s).map(x => `<i style="width:${x.s / tot * 100}%;background:${x.m.color}"></i>`).join('')}</div>` : ''}
+        <div class="ileg">${ms.map(x => `<button type="button" data-wmat="${x.m.id}"><span class="dot" style="--c:${x.m.color}"></span><b>${esc(x.m.name)}</b><span>${x.s ? fm(x.s, 2) + ' m' : '—'}</span></button>`).join('')}</div></div>
+      ${mi.a || mi.l ? `<div class="warnc"><span><b>${[mi.a && mi.a + ' ohne Art.-Nr.', mi.l && mi.l + ' ohne Lagerort'].filter(Boolean).join(' · ')}</b><small>Gezählte Positionen ergänzen – für Export und Etiketten.</small></span><button type="button" class="btn sm" data-tab2="mat">Ergänzen</button></div>` : ''}
+      <div class="sec-h">Zuletzt gezählt</div>
+      ${last.length ? `<div class="card" style="padding:6px 14px">${last.map(e => { const m = mat(e.mat); return `<div class="en"><span class="dot" style="--c:${m ? m.color : '#888'}"></span><span class="t"><b>${esc(m ? m.name : '?')} · Ø${fd(e.d)}</b><small>${esc(showExpr(e))} · ${hm(e.ts)}${e.loc ? ' · ⌂ ' + esc(e.loc) : ''}</small></span><span class="v">${fm(e.m)}</span><button type="button" class="x" data-del="${e.id}" aria-label="Löschen">✕</button></div>`; }).join('')}</div>`
+        : '<div class="empty"><b>Noch nichts gezählt</b>Oben „Zählen“ antippen: Material, Ø, Meter – fertig.</div>'}`;
+  }
+  function renderListe() {
+    const tot = sumOf(D.entries), mx = Math.max(1, ...D.mats.map(m => sumOf(entsOf(m.id))));
+    $('v_liste').innerHTML = `<div class="grand"><span>GESAMT · ${D.entries.length} EINTRÄGE</span><b>${fm(tot, 2)} m</b></div>
+      ${D.mats.map(m => { const ps = posOf(m), t = sumOf(entsOf(m.id));
+        return `<div class="card om" style="--c:${m.color}"><div class="om-h"><span class="dot"></span><b>${esc(m.name)}</b><span class="s"><b>${fm(t, 2)} m</b><small>${ps.filter(d => entsOf(m.id, d).length).length} / ${ps.length} Ø GEZÄHLT</small></span></div>
+          <div class="ob"><i style="width:${t / mx * 100}%"></i></div>
+          ${ps.map(d => { const es = entsOf(m.id, d), a = artOf(m, d), l = locOf(m, d); return `<button type="button" class="pr" data-wpos="${m.id}|${d}"><span class="d">Ø${fd(d)}</span><span class="a ${a ? '' : 'miss'}">${a ? esc(a) : 'ART.-NR. FEHLT'}</span><span class="m">${es.length ? fm(sumOf(es)) : '—'}<small>${es.length ? es.length + '×' : 'OFFEN'}</small></span><span class="l ${l ? '' : 'miss'}">${l ? '⌂ ' + esc(l) : 'LAGERORT FEHLT'}</span></button>`; }).join('')}
+          <button type="button" class="pr" data-wnew="${m.id}" style="color:var(--muted)"><span class="d">+ Ø</span><span class="a">NEUER DURCHMESSER</span></button></div>`; }).join('')}`;
+  }
+  function renderMat() {
+    $('v_mat').innerHTML = `<p class="hint">Pro Material: Standard-Artikelnummer und -Lagerort. Pro Ø eigene Werte – leer = Standard. Liste einfügen: eine Zeile pro Ø, z. B. <b>20;100520;R3</b>.</p>
+      ${D.mats.map((m, i) => `<div class="card mm" data-mid="${m.id}" style="--c:${m.color}">
+        <div class="mm-h"><button type="button" class="sw" data-act="color" aria-label="Farbe"></button><input data-f="name" value="${esc(m.name)}" aria-label="Name">
+          <button type="button" class="ic" data-act="up" ${i ? '' : 'disabled'} aria-label="Nach oben">↑</button><button type="button" class="ic" data-act="delmat" aria-label="Löschen">✕</button></div>
+        <div class="f2"><div class="fld"><label>STANDARD-ART.-NR.</label><input data-f="art" value="${esc(m.art)}" placeholder="optional"></div><div class="fld"><label>STANDARD-LAGERORT</label><input data-f="loc" value="${esc(m.loc)}" placeholder="optional"></div></div>
+        <div class="dt"><div class="dh"><span>Ø MM</span><span>ART.-NR.</span><span>LAGERORT</span><span></span></div>
+          ${posOf(m).map(d => `<div class="dr"><span class="dd">Ø${fd(d)}</span><input data-f="dsart" data-d="${d}" value="${esc(m.ds[d] || '')}" placeholder="${esc(m.art || '–')}"><input data-f="dsloc" data-d="${d}" value="${esc(m.locs[d] || '')}" placeholder="${esc(m.loc || '–')}"><button type="button" data-act="deld" data-d="${d}" aria-label="Ø entfernen">✕</button></div>`).join('')}
+          <div class="dr new"><input data-f="newd" placeholder="Ø" inputmode="decimal"><input data-f="newart" placeholder="Art.-Nr."><input data-f="newloc" placeholder="Lagerort"><button type="button" data-act="addd" aria-label="Hinzufügen">+</button></div></div>
+        <details class="bulk"><summary>▸ LISTE EINFÜGEN (Ø ; ART.-NR. ; LAGERORT)</summary><textarea data-f="bulk" placeholder="12;100512;R1&#10;16;100516;R1&#10;20;100520;R2"></textarea><button type="button" class="btn sm" data-act="bulk" style="margin-top:6px">Übernehmen</button></details>
+      </div>`).join('')}
+      <div class="card mm" id="newMat"><div class="sec-h">NEUES MATERIAL</div>
+        <div class="fld"><label>NAME</label><input id="nmName" placeholder="z. B. 1.4122"></div>
+        <div class="f2"><div class="fld"><label>STANDARD-ART.-NR.</label><input id="nmArt" placeholder="optional"></div><div class="fld"><label>STANDARD-LAGERORT</label><input id="nmLoc" placeholder="optional"></div></div>
+        <div class="palette" id="nmPal">${COLORS.map((c, i) => `<button type="button" data-c="${c}" style="--c:${c}" aria-pressed="${i === D.mats.length % COLORS.length}" aria-label="Farbe"></button>`).join('')}</div>
+        <button type="button" class="btn primary" data-act="addmat">+ Material anlegen</button></div>`;
+  }
+  function renderExport() {
+    const th = lsGet('cititool_theme') || 'auto';
+    $('v_export').innerHTML = `<div class="card mm"><div class="fld"><label>NAME DER INVENTUR</label><input id="lName" value="${esc(D.name)}"></div>
+        <div class="hint">Begonnen ${dt(D.started)} · ${D.entries.length} Einträge · ${fm(sumOf(D.entries), 2)} m</div></div>
+      <div class="sec-h">EXPORT</div>
+      <div class="acts">
+        <button type="button" class="btn primary" data-act="xlsx">Excel<small>SUMME + EINZELN</small></button>
+        <button type="button" class="btn" data-act="print">Liste drucken<small>A4 / PDF</small></button>
+        <button type="button" class="btn" data-act="csv">CSV<small>FÜR BIOS</small></button>
+        <button type="button" class="btn" data-act="copy">Kopieren<small>IN EXCEL EINFÜGEN</small></button>
+      </div>
+      <div class="sec-h">SICHERUNG</div>
+      <div class="acts"><button type="button" class="btn" data-act="bk">Backup speichern<small>.JSON</small></button><button type="button" class="btn" data-act="bkin">Backup laden<small>.JSON</small></button></div>
+      <p class="hint">Daten liegen nur auf diesem Gerät (in diesem Browser). Nach der Zählung Excel oder Backup speichern.</p>
+      <div class="sec-h">DARSTELLUNG</div>
+      <div class="seg3">${[['light', 'Hell'], ['dark', 'Dunkel'], ['auto', 'Auto']].map(([k, l]) => `<button type="button" data-th="${k}" aria-pressed="${th === k}">${l}</button>`).join('')}</div>
+      <div class="sec-h">ABSCHLIESSEN</div>
+      <button type="button" class="btn" data-act="close" ${D.entries.length ? '' : 'disabled'}>Inventur abschließen &amp; neue beginnen</button>
+      <p class="hint">Die Zählung kommt ins Archiv. Materialien, Artikelnummern und Lagerorte bleiben.</p>
+      ${D.archive.length ? `<div class="sec-h">ARCHIV</div><div class="card">${D.archive.map((a, i) => `<div class="arch"><span class="t"><b>${esc(a.name)}</b><small>${dt(a.started)} – ${dt(a.ended)} · ${a.entries.length} EINTRÄGE · ${fm(sumOf(a.entries), 2)} M</small></span><button type="button" class="btn sm" data-act="axlsx" data-i="${i}">Excel</button><button type="button" class="btn sm" data-act="adel" data-i="${i}">✕</button></div>`).join('')}</div>` : ''}`;
+  }
+  function render() {
+    const mi = missing();
+    $('nListe').textContent = D.entries.length || ''; $('nMat').textContent = mi.a + mi.l ? mi.a + mi.l : ''; $('nMat').className = 'n' + (mi.a + mi.l ? ' alert' : '');
+    if (TAB === 'start') renderStart(); if (TAB === 'liste') renderListe(); if (TAB === 'mat') renderMat(); if (TAB === 'etik') renderEtik(); if (TAB === 'export') renderExport();
+  }
+
+  // ---------- Export ----------
+  function rowsOf(src) {
+    const out = [];
+    (src.mats || D.mats).forEach(m => { const ds = [...new Set(src.entries.filter(e => e.mat === m.id).map(e => e.d))].sort((a, b) => parseFloat(a) - parseFloat(b));
+      ds.forEach(d => { const es = src.entries.filter(e => e.mat === m.id && e.d === d); out.push({ m: m.name, d, art: artOf(m, d), loc: locOf(m, d) || es[es.length - 1].loc || '', n: es.length, sum: sumOf(es) }); }); });
+    return out;
+  }
+  const fname = (ext, name) => `${(name || D.name).replace(/[^\wäöüÄÖÜß.-]+/g, '_')}_${new Date().toISOString().slice(0, 10)}.${ext}`;
+  function download(blob, name) { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); }
+  const n3 = v => (Math.round(v * 1000) / 1000).toString().replace('.', ',');
+  function csv() { const r = rowsOf(D); download(new Blob(['﻿' + ['Artikelnummer;Material;Durchmesser mm;Lagerort;Meter;Einträge', ...r.map(x => [x.art, x.m, fd(x.d), x.loc, n3(x.sum), x.n].join(';'))].join('\r\n')], { type: 'text/csv;charset=utf-8' }), fname('csv')); }
+  async function xlsx(src, name) {
+    toast('Excel wird erstellt …');
+    try { if (!window.XLSX) await loadScript('https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'); } catch { toast('Excel-Modul nicht ladbar – CSV nutzen'); return; }
+    const r = rowsOf(src), wb = XLSX.utils.book_new(), mats = src.mats || D.mats;
+    const ws = XLSX.utils.aoa_to_sheet([['Material', 'Ø mm', 'Artikelnummer', 'Lagerort', 'Einträge', 'Meter'], ...r.map(x => [x.m, parseFloat(x.d), x.art, x.loc, x.n, Math.round(x.sum * 1000) / 1000]), [], ['GESAMT', '', '', '', src.entries.length, Math.round(sumOf(src.entries) * 1000) / 1000]]);
+    ws['!cols'] = [{ wch: 12 }, { wch: 8 }, { wch: 18 }, { wch: 14 }, { wch: 9 }, { wch: 11 }]; XLSX.utils.book_append_sheet(wb, ws, 'Summe');
+    const ws2 = XLSX.utils.aoa_to_sheet([['Datum', 'Uhrzeit', 'Material', 'Ø mm', 'Artikelnummer', 'Lagerort', 'Rechnung', 'Meter'], ...src.entries.slice().sort((a, b) => a.ts - b.ts).map(e => { const m = mats.find(x => x.id === e.mat); return [dt(e.ts), hm(e.ts), m ? m.name : '?', parseFloat(e.d), artOf(m, e.d), e.loc || locOf(m, e.d), showExpr(e), Math.round(e.m * 1000) / 1000]; })]);
+    ws2['!cols'] = [{ wch: 11 }, { wch: 7 }, { wch: 10 }, { wch: 7 }, { wch: 16 }, { wch: 14 }, { wch: 22 }, { wch: 10 }]; XLSX.utils.book_append_sheet(wb, ws2, 'Einzeln');
+    download(new Blob([XLSX.write(wb, { bookType: 'xlsx', type: 'array' })], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }), fname('xlsx', name));
+  }
+  async function copy() { const r = rowsOf(D); try { await navigator.clipboard.writeText(['Artikelnummer\tMaterial\tØ mm\tLagerort\tMeter\tEinträge', ...r.map(x => [x.art, x.m, fd(x.d), x.loc, n3(x.sum), x.n].join('\t'))].join('\n')); toast('Kopiert – in Excel einfügen'); } catch { toast('Kopieren nicht möglich – CSV nutzen'); } }
+  function printList() {
+    const r = rowsOf(D);
+    $('printArea').innerHTML = `<h1>INVENTUR STANGEN · ${esc(D.name)}</h1><div class="pm">STAND ${dt(Date.now())} ${hm(Date.now())} · ${D.entries.length} EINTRÄGE · CITITOOL</div>
+      <table><thead><tr><th>MATERIAL / Ø</th><th>ARTIKELNUMMER</th><th>LAGERORT</th><th style="text-align:right">EINTR.</th><th style="text-align:right">METER</th></tr></thead><tbody>
+      ${D.mats.map(m => { const rr = r.filter(x => x.m === m.name); if (!rr.length) return ''; return `<tr class="mh"><td colspan="5">${esc(m.name)}</td></tr>${rr.map(x => `<tr><td>Ø ${fd(x.d)} MM</td><td>${esc(x.art) || '—'}</td><td>${esc(x.loc) || '—'}</td><td class="n">${x.n}</td><td class="n">${fm(x.sum)}</td></tr>`).join('')}<tr class="tot"><td colspan="4">SUMME ${esc(m.name)}</td><td class="n">${fm(rr.reduce((a, x) => a + x.sum, 0))}</td></tr>`; }).join('')}
+      </tbody></table><div class="gt">GESAMT ${fm(sumOf(D.entries))} M</div>`;
+    setTimeout(() => window.print(), 50);
+  }
+
+  // ---------- Ereignisse ----------
+  $('nav').addEventListener('click', e => { const b = e.target.closest('[data-tab]'); if (b) setTab(b.dataset.tab); });
+  document.addEventListener('click', e => {
+    const g = e.target.closest('[data-go]'); if (g && !g.closest('#wz')) { if (g.dataset.go === 'wz') wOpen(); if (g.dataset.go === 'scan') scan(); return; }
+    const t2 = e.target.closest('[data-tab2]'); if (t2) { setTab(t2.dataset.tab2); return; }
+    const wm = e.target.closest('[data-wmat]'); if (wm) { wOpen(wm.dataset.wmat); return; }
+    const wp = e.target.closest('[data-wpos]'); if (wp) { const [mid, d] = wp.dataset.wpos.split('|'); wOpen(mid, d); return; }
+    const wn = e.target.closest('[data-wnew]'); if (wn) { wOpen(wn.dataset.wnew); W.newD = true; wRender(); return; }
+    const dl = e.target.closest('[data-del]'); if (dl) { const i = D.entries.findIndex(x => x.id === dl.dataset.del); if (i < 0) return; const [rm] = D.entries.splice(i, 1); save(); render(); toast(`Gelöscht · ${fm(rm.m)} m`, () => { D.entries.splice(i, 0, rm); save(); render(); }); return; }
+    const th = e.target.closest('[data-th]'); if (th) { lsSet('cititool_theme', th.dataset.th); applyTheme(); renderExport(); return; }
+  });
+  $('v_mat').addEventListener('change', e => {
+    const card = e.target.closest('[data-mid]'); if (!card) return; const m = mat(card.dataset.mid), f = e.target.dataset.f; if (!m || !f || f.startsWith('new') || f === 'bulk') return;
+    if (f === 'name') { const v = U(e.target.value); if (v) m.name = v; else e.target.value = m.name; }
+    if (f === 'art') m.art = U(e.target.value);
+    if (f === 'loc') m.loc = U(e.target.value);
+    if (f === 'dsart') m.ds[e.target.dataset.d] = U(e.target.value);
+    if (f === 'dsloc') { const v = U(e.target.value); if (v) m.locs[e.target.dataset.d] = v; else delete m.locs[e.target.dataset.d]; }
+    save(); render(); toast('Gespeichert');
+  });
+  $('v_mat').addEventListener('click', e => {
+    const pal = e.target.closest('#nmPal button'); if (pal) { $('nmPal').querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', String(x === pal))); return; }
+    const b = e.target.closest('[data-act]'); if (!b) return; const a = b.dataset.act;
+    if (a === 'addmat') { const c = ($('nmPal').querySelector('[aria-pressed="true"]') || {}).dataset?.c; if (addMaterial($('nmName').value, $('nmArt').value, $('nmLoc').value, c)) renderMat(); return; }
+    const card = e.target.closest('[data-mid]'); if (!card) return; const m = mat(card.dataset.mid); if (!m) return;
+    if (a === 'color') { m.color = COLORS[(COLORS.indexOf(m.color) + 1) % COLORS.length]; save(); renderMat(); return; }
+    if (a === 'up') { const i = D.mats.indexOf(m); if (i > 0) { D.mats.splice(i, 1); D.mats.splice(i - 1, 0, m); save(); renderMat(); } return; }
+    if (a === 'delmat') { const n = entsOf(m.id).length; if (!confirm(n ? `${m.name} löschen? ${n} gezählte Einträge werden mit gelöscht.` : `${m.name} löschen?`)) return; D.mats = D.mats.filter(x => x !== m); D.entries = D.entries.filter(x => x.mat !== m.id); save(); render(); return; }
+    if (a === 'deld') { const d = b.dataset.d; if (entsOf(m.id, d).length) { if (!confirm(`Ø${fd(d)} hat gezählte Einträge. Nur Art.-Nr. und Lagerort leeren?`)) return; m.ds[d] = ''; delete m.locs[d]; } else { delete m.ds[d]; delete m.locs[d]; } save(); renderMat(); return; }
+    if (a === 'addd') { const q = f => card.querySelector(`[data-f="${f}"]`); const d = dKey(q('newd').value); if (!d) { toast('Ø eingeben'); q('newd').focus(); return; } m.ds[d] = U(q('newart').value); if (U(q('newloc').value)) m.locs[d] = U(q('newloc').value); save(); renderMat(); setTimeout(() => document.querySelector(`[data-mid="${m.id}"] [data-f="newd"]`)?.focus(), 30); toast(`Ø${fd(d)} gespeichert`); return; }
+    if (a === 'bulk') { let n = 0;
+      card.querySelector('[data-f="bulk"]').value.split(/\r?\n/).forEach(line => { const p = line.trim().replace(/^[ØøDd]\s*/, '').split(/\s*[;\t|]\s*|\s*=\s*/); const d = dKey((p[0] || '').replace(/mm$/i, '')); if (!d) return; m.ds[d] = U(p[1] || m.ds[d] || ''); if (p[2]) m.locs[d] = U(p[2]); n++; });
+      save(); renderMat(); toast(n ? `${n} Zeilen übernommen` : 'Nichts erkannt – Format: 20;100520;R3'); return; }
+  });
+  $('v_mat').addEventListener('keydown', e => { if (e.key !== 'Enter') return; const f = e.target.dataset.f; if (f && f.startsWith('new')) { e.preventDefault(); e.target.closest('[data-mid]').querySelector('[data-act="addd"]').click(); } if (['nmName', 'nmArt', 'nmLoc'].includes(e.target.id)) { e.preventDefault(); document.querySelector('[data-act="addmat"]').click(); } });
+  $('v_export').addEventListener('change', e => { if (e.target.id === 'lName') { D.name = e.target.value.trim() || D.name; save(); toast('Gespeichert'); } });
+  $('v_export').addEventListener('click', e => {
+    const b = e.target.closest('[data-act]'); if (!b) return; const a = b.dataset.act;
+    if (a === 'xlsx') xlsx(D); if (a === 'csv') csv(); if (a === 'copy') copy(); if (a === 'print') printList();
+    if (a === 'bk') download(new Blob([JSON.stringify(D, null, 1)], { type: 'application/json' }), fname('json', 'cititool-inventur'));
+    if (a === 'bkin') $('fileIn').click();
+    if (a === 'close') { if (!confirm(`„${D.name}“ abschließen? Die Zählung (${D.entries.length} Einträge) kommt ins Archiv.`)) return;
+      D.archive.unshift({ name: D.name, started: D.started, ended: Date.now(), mats: JSON.parse(JSON.stringify(D.mats)), entries: D.entries }); D.archive = D.archive.slice(0, 8);
+      D.entries = []; D.started = Date.now(); D.name = 'Inventur ' + new Date().getFullYear(); save(); render(); toast('Archiviert – neue Inventur begonnen'); }
+    if (a === 'axlsx') { const ar = D.archive[+b.dataset.i]; if (ar) xlsx(ar, ar.name); }
+    if (a === 'adel') { const ar = D.archive[+b.dataset.i]; if (ar && confirm(`„${ar.name}“ löschen?`)) { D.archive.splice(+b.dataset.i, 1); save(); render(); } }
+  });
+  $('fileIn').addEventListener('change', async e => {
+    const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+    try { const j = JSON.parse(await f.text()); if (!j || !Array.isArray(j.mats) || !Array.isArray(j.entries)) throw 0;
+      if (!confirm(`Backup laden? ${j.entries.length} Einträge, ${j.mats.length} Materialien. Aktuelle Liste wird ersetzt.`)) return;
+      lsSet(KEY, JSON.stringify(j)); load(); render(); toast('Backup geladen'); } catch { toast('Keine Inventur-Sicherung'); }
+  });
+  function applyTheme() { const t = lsGet('cititool_theme'); if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t); else document.documentElement.removeAttribute('data-theme'); }
+  // Navigation: #zaehlen (Master offen), #p= (QR vom Etikett), #etiketten (zurück vom Druck)
+  function route() {
+    const h = location.hash, mp = h.match(/^#p=(.+)$/);
+    if (mp) { const p = findPos(h); history.replaceState(null, '', location.pathname); if (p) wOpen(p.mat, p.d); else toast('Position nicht auf diesem Gerät'); return; }
+    if (h === '#etiketten') { history.replaceState(null, '', location.pathname); setTab('etik'); return; }
+    if (h !== '#zaehlen' && !$('wz').hidden) wClose(true);
+  }
+  window.addEventListener('hashchange', route);
+  window.addEventListener('popstate', () => { if (location.hash !== '#zaehlen' && !$('wz').hidden) wClose(true); });
+  window.addEventListener('pageshow', e => { if (e.persisted) { load(); render(); } });
+  window.addEventListener('storage', e => { if (e.key === KEY) { load(); render(); } if (e.key === 'cititool_theme') applyTheme(); });
+  if (location.hash === '#zaehlen') history.replaceState(null, '', location.pathname);
+  setTab('start'); route();
+})();
+</script>
+</body>
+</html>
