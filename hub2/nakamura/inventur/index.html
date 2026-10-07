@@ -1,0 +1,617 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#F2F3F5">
+<meta name="format-detection" content="telephone=no,date=no,address=no,email=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Inventur">
+<title>CitiTool · Inventur Stangen</title>
+<script>(function(){try{var t=localStorage.getItem('cititool_theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}})();</script>
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%2064%2064%22%3E%3Crect%20width=%2264%22%20height=%2264%22%20rx=%2215%22%20fill=%22%23111214%22/%3E%3Cpath%20d=%22M14%2024h36M14%2032h36M14%2040h36%22%20stroke=%22%23fff%22%20stroke-width=%225%22%20stroke-linecap=%22round%22/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap">
+<style>
+:root{
+  --bg:#F2F3F5; --card:#FFFFFF; --fg:#111214; --muted:#6B6F76; --line:#E1E3E7; --ink:#111214; --on-ink:#FFFFFF; --soft:#ECEDF0;
+  --warn:#B45309; --warn-bg:#FEF3E2; --crit:#B42318; --crit-bg:#FDECEA; --ok:#1E7A46; --ok-bg:#E6F4EC;
+  --shadow:0 1px 2px rgba(17,18,20,.05),0 6px 18px rgba(17,18,20,.06);
+  --f-head:"Space Grotesk",system-ui,-apple-system,"Segoe UI",sans-serif; --f-body:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; --padh:360px;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#141518; --card:#1D1F23; --fg:#ECEDEF; --muted:#9A9EA6; --line:#2E3136; --ink:#ECEDEF; --on-ink:#141518; --soft:#26282D;
+  --warn:#F5B35C; --warn-bg:#3A2A12; --crit:#FF8A80; --crit-bg:#3D1C1A; --ok:#6FD39A; --ok-bg:#16301F; --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 18px rgba(0,0,0,.25); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#141518; --card:#1D1F23; --fg:#ECEDEF; --muted:#9A9EA6; --line:#2E3136; --ink:#ECEDEF; --on-ink:#141518; --soft:#26282D;
+  --warn:#F5B35C; --warn-bg:#3A2A12; --crit:#FF8A80; --crit-bg:#3D1C1A; --ok:#6FD39A; --ok-bg:#16301F; --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 18px rgba(0,0,0,.25); color-scheme:dark}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none!important}
+html{background:var(--bg)}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.4;text-transform:uppercase;-webkit-text-size-adjust:100%}
+button{font:inherit;color:inherit;cursor:pointer;text-transform:uppercase}
+input,textarea{font:inherit;color:var(--fg)}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.wrap{max-width:760px;margin:0 auto;padding:max(14px,env(safe-area-inset-top)) 16px 24px;display:flex;flex-direction:column;gap:14px}
+body.zaehlen .wrap{padding-bottom:calc(var(--padh) + 16px)}
+
+/* Kopf */
+header{display:flex;align-items:center;gap:12px}
+.home{width:44px;height:44px;border-radius:13px;background:var(--ink);color:var(--on-ink);display:grid;place-items:center;flex:none}
+.home svg{width:22px;height:25px}
+.hd{flex:1;min-width:0}
+.brand{font-family:var(--f-mono);font-size:10.5px;letter-spacing:.14em;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+h1{font-family:var(--f-head);font-size:26px;line-height:1.05;margin:2px 0 0;letter-spacing:.02em}
+.htot{text-align:right;flex:none}
+.htot b{display:block;font-family:var(--f-mono);font-size:19px;font-weight:600;letter-spacing:-.02em}
+.htot span{display:block;font-family:var(--f-mono);font-size:9.5px;letter-spacing:.1em;color:var(--muted);margin-top:2px}
+.ruler{height:9px;background:repeating-linear-gradient(90deg,var(--muted) 0 1px,transparent 1px 8px) bottom/100% 5px no-repeat,repeating-linear-gradient(90deg,var(--muted) 0 1px,transparent 1px 40px) bottom/100% 9px no-repeat;opacity:.4;margin:-2px 0}
+.tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;padding:4px;border-radius:14px;background:var(--card);box-shadow:var(--shadow);position:sticky;top:6px;z-index:5}
+.tabs button{border:0;background:transparent;border-radius:10px;padding:10px 4px;font-family:var(--f-head);font-weight:700;font-size:12.5px;letter-spacing:.04em}
+.tabs button[aria-pressed="true"]{background:var(--ink);color:var(--on-ink)}
+.sec{display:flex;align-items:center;gap:8px;font-family:var(--f-mono);font-size:10.5px;letter-spacing:.16em;color:var(--muted);margin-top:2px}
+.sec::after{content:"";flex:1;height:1px;background:var(--line)}
+.sec em{order:2;font-style:normal;letter-spacing:.08em}
+.card{background:var(--card);border-radius:16px;box-shadow:var(--shadow);padding:14px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px solid var(--line);background:var(--card);border-radius:11px;padding:11px 14px;font-weight:600;font-size:14px;letter-spacing:.02em}
+.btn.primary{background:var(--ink);color:var(--on-ink);border-color:var(--ink)}
+.btn.sm{padding:7px 11px;font-size:12.5px}
+.btn:disabled{opacity:.35}
+.hint{font-size:12px;color:var(--muted);text-transform:none}
+.empty{text-align:center;color:var(--muted);padding:22px 14px;border:1px dashed var(--line);border-radius:14px;font-size:13px}
+.view{display:flex;flex-direction:column;gap:12px}
+.dot{width:10px;height:10px;border-radius:50%;flex:none;background:var(--c,#888)}
+
+/* Material-Leiste */
+.mats{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(104px,1fr);gap:8px;overflow-x:auto;scrollbar-width:none;margin:0 -16px;padding:2px 16px 4px;scroll-snap-type:x proximity;scroll-padding-inline:16px}
+.mats::-webkit-scrollbar{display:none}
+.mt{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding:11px 12px 10px;border:1px solid var(--line);border-radius:15px;background:var(--card);box-shadow:var(--shadow);text-align:left;overflow:hidden;scroll-snap-align:start;min-height:74px}
+.mt::before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px;background:var(--c)}
+.mt b{font-family:var(--f-head);font-size:17px;letter-spacing:.02em;line-height:1.1}
+.mt small{font-family:var(--f-mono);font-size:10.5px;color:var(--muted);letter-spacing:.02em}
+.mt[aria-pressed="true"]{background:var(--ink);color:var(--on-ink);border-color:var(--ink)}
+.mt[aria-pressed="true"] small{color:inherit;opacity:.7}
+.mt.add{border-style:dashed;box-shadow:none;background:transparent;color:var(--muted);align-items:center;justify-content:center}
+.mt.add::before{display:none}
+.mt.add b{font-size:22px}
+
+/* Ø-Chips */
+.ds{display:flex;flex-wrap:wrap;gap:7px}
+.dc{display:inline-flex;flex-direction:column;align-items:flex-start;min-width:64px;padding:8px 11px 7px;border:1px solid var(--line);border-radius:12px;background:var(--card);text-align:left}
+.dc b{font-family:var(--f-mono);font-size:15px;font-weight:600;letter-spacing:-.01em}
+.dc small{font-family:var(--f-mono);font-size:9.5px;color:var(--muted);margin-top:1px}
+.dc[aria-pressed="true"]{background:var(--ink);color:var(--on-ink);border-color:var(--ink)}
+.dc[aria-pressed="true"] small{color:inherit;opacity:.7}
+.dc.add{border-style:dashed;color:var(--muted);justify-content:center;align-items:center}
+.dc.add[aria-pressed="true"]{background:var(--soft);color:var(--fg);border-color:var(--ink);border-style:solid}
+.dc.noart{box-shadow:inset 0 -2px 0 var(--warn)}
+
+/* aktuelle Position */
+.cur{display:flex;align-items:center;gap:12px}
+.cur .t{flex:1;min-width:0}
+.cur h2{font-family:var(--f-head);font-size:22px;margin:0;letter-spacing:.02em;line-height:1.1}
+.cur .art{display:inline-flex;align-items:center;gap:6px;margin-top:6px;padding:5px 9px;border-radius:9px;border:1px solid var(--line);background:var(--bg);font-family:var(--f-mono);font-size:12px;font-weight:600}
+.cur .art.miss{border-color:var(--warn);color:var(--warn);background:var(--warn-bg)}
+.cur .art svg{width:12px;height:12px}
+.cur .sum{text-align:right}
+.cur .sum b{display:block;font-family:var(--f-mono);font-size:24px;font-weight:600;letter-spacing:-.02em}
+.cur .sum span{font-family:var(--f-mono);font-size:10px;color:var(--muted);letter-spacing:.08em}
+.ents{display:flex;flex-direction:column;margin-top:10px}
+.en{display:flex;align-items:center;gap:10px;padding:9px 2px;border-top:1px dashed var(--line)}
+.en .x{flex:1;min-width:0;font-family:var(--f-mono);font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-transform:none}
+.en .v{font-family:var(--f-mono);font-size:15px;font-weight:600}
+.en .tm{font-family:var(--f-mono);font-size:10px;color:var(--muted)}
+.en button{border:0;background:var(--soft);width:30px;height:30px;border-radius:9px;font-size:15px;color:var(--muted);flex:none}
+.en.ed{background:var(--warn-bg);border-radius:10px;padding-left:8px}
+
+/* Rechner (unten fest) */
+.pad{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--card);box-shadow:0 -6px 24px rgba(17,18,20,.10);border-radius:20px 20px 0 0;padding:10px 12px calc(10px + env(safe-area-inset-bottom,0px))}
+.pad-in{max-width:620px;margin:0 auto;display:flex;flex-direction:column;gap:8px}
+.disp{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:14px;background:var(--bg);border:1.5px solid var(--line);min-height:62px}
+.disp.d{border-color:var(--ink)}
+.disp .k{font-family:var(--f-mono);font-size:9.5px;letter-spacing:.12em;color:var(--muted);flex:none;width:44px;line-height:1.25}
+.disp .e{flex:1;min-width:0;font-family:var(--f-mono);font-size:24px;font-weight:600;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-transform:none}
+.disp .e i{display:inline-block;width:2px;height:24px;background:var(--fg);vertical-align:-4px;margin-left:1px;animation:blink 1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+.disp .r{font-family:var(--f-mono);font-size:13px;color:var(--muted);text-align:right;flex:none;max-width:42%;text-transform:none}
+.disp .r b{display:block;font-size:17px;color:var(--fg)}
+.unit{display:flex;gap:4px}
+.unit button{text-transform:none;border:1px solid var(--line);background:var(--bg);border-radius:9px;padding:5px 9px;font-family:var(--f-mono);font-size:11px;font-weight:600}
+.unit button[aria-pressed="true"]{background:var(--ink);color:var(--on-ink);border-color:var(--ink)}
+.prow{display:flex;align-items:center;gap:8px}
+.prow .lab{flex:1;font-family:var(--f-mono);font-size:10px;letter-spacing:.1em;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.keys{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.keys button{height:50px;border-radius:13px;border:1px solid var(--line);background:var(--bg);font-family:var(--f-mono);font-size:22px;font-weight:600;touch-action:manipulation}
+.keys button.op{background:var(--soft);font-size:22px}
+.keys button:active{transform:scale(.95);background:var(--line)}
+.keys button:disabled{opacity:.3}
+.go{width:100%;height:56px;border:0;border-radius:15px;background:var(--ink);color:var(--on-ink);font-family:var(--f-head);font-weight:700;font-size:17px;letter-spacing:.05em;display:flex;align-items:center;justify-content:center;gap:8px}
+.go small{font-family:var(--f-mono);font-weight:500;font-size:13px;opacity:.75;letter-spacing:.02em}
+.go:disabled{opacity:.3}
+.go.ok{background:var(--ok);color:#fff}
+.prow2{display:flex;gap:8px}
+.prow2 .go{flex:1}
+.prow2 .btn{height:56px;border-radius:15px}
+
+/* Übersicht */
+.ov{display:flex;flex-direction:column;gap:10px}
+.om{padding:0;overflow:hidden}
+.om-h{display:flex;align-items:center;gap:10px;padding:13px 14px}
+.om-h b{font-family:var(--f-head);font-size:17px}
+.om-h .s{margin-left:auto;text-align:right;font-family:var(--f-mono)}
+.om-h .s b{font-family:var(--f-mono);font-size:17px;display:block}
+.om-h .s small{font-size:10px;color:var(--muted)}
+.ob{height:5px;background:var(--soft)}.ob i{display:block;height:100%;background:var(--c)}
+table.ot{width:100%;border-collapse:collapse;font-size:13px}
+.ot td{padding:9px 14px;border-top:1px solid var(--line)}
+.ot td.n{font-family:var(--f-mono);text-align:right;white-space:nowrap}
+.ot td.d{font-family:var(--f-mono);font-weight:600;width:72px}
+.ot td.a{font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+.ot td.a.miss{color:var(--warn)}
+.ot tr{cursor:pointer}
+.ot tr:active td{background:var(--soft)}
+.grand{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-radius:16px;background:var(--ink);color:var(--on-ink)}
+.grand b{font-family:var(--f-mono);font-size:24px}
+.grand span{font-family:var(--f-mono);font-size:11px;letter-spacing:.1em;opacity:.75}
+
+/* Material */
+.mm{display:flex;flex-direction:column;gap:10px}
+.mm-h{display:flex;align-items:center;gap:10px}
+.sw{width:30px;height:30px;border-radius:9px;background:var(--c);border:0;flex:none;box-shadow:inset 0 0 0 2px rgba(255,255,255,.25)}
+.mm-h input{flex:1;min-width:0;border:1px solid var(--line);background:var(--bg);border-radius:10px;padding:9px 11px;font-family:var(--f-head);font-weight:700;font-size:16px;text-transform:uppercase}
+.mm-h .ic{border:1px solid var(--line);background:var(--card);border-radius:10px;width:36px;height:38px;display:grid;place-items:center;flex:none;color:var(--muted)}
+.fld{display:flex;flex-direction:column;gap:4px}
+.fld label{font-family:var(--f-mono);font-size:10px;letter-spacing:.12em;color:var(--muted)}
+.fld input,.fld textarea{border:1px solid var(--line);background:var(--bg);border-radius:10px;padding:10px 11px;font-family:var(--f-mono);font-size:14px;text-transform:uppercase;width:100%}
+.dt{display:flex;flex-direction:column;gap:6px}
+.dr{display:grid;grid-template-columns:78px 1fr 34px;gap:6px;align-items:center}
+.dr input{border:1px solid var(--line);background:var(--bg);border-radius:9px;padding:9px 10px;font-family:var(--f-mono);font-size:14px;width:100%;min-width:0;text-transform:uppercase}
+.dr .dd{font-family:var(--f-mono);font-weight:700;font-size:14px;padding-left:4px}
+.dr button{border:0;background:var(--soft);border-radius:9px;height:36px;color:var(--muted)}
+.dr.new input{border-style:dashed}
+.dr.new button{background:var(--ink);color:var(--on-ink);font-size:18px}
+details.bulk summary{cursor:pointer;font-family:var(--f-mono);font-size:11px;letter-spacing:.08em;color:var(--muted);list-style:none}
+details.bulk summary::-webkit-details-marker{display:none}
+details.bulk textarea{margin-top:8px;min-height:90px}
+.palette{display:flex;flex-wrap:wrap;gap:6px}
+.palette button{width:30px;height:30px;border-radius:9px;border:2px solid transparent;background:var(--c)}
+.palette button[aria-pressed="true"]{border-color:var(--fg)}
+
+/* Liste */
+.acts{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.acts .btn{padding:14px 10px;flex-direction:column;gap:3px}
+.acts .btn small{font-family:var(--f-mono);font-size:9.5px;font-weight:500;color:var(--muted);letter-spacing:.04em}
+.acts .btn.primary small{color:inherit;opacity:.7}
+.arch{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px dashed var(--line)}
+.arch .t{flex:1;min-width:0}
+.arch b{font-family:var(--f-head);font-size:14px}
+.arch small{display:block;font-family:var(--f-mono);font-size:10px;color:var(--muted)}
+.toast{position:fixed;left:50%;transform:translateX(-50%);width:max-content;bottom:calc(var(--toastb,24px) + env(safe-area-inset-bottom,0px));z-index:60;background:var(--ink);color:var(--on-ink);padding:10px 16px;border-radius:12px;font-size:13px;font-weight:600;box-shadow:var(--shadow);max-width:calc(100% - 32px);display:flex;gap:12px;align-items:center}
+.toast button{border:0;background:var(--on-ink);color:var(--ink);border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700}
+body.zaehlen .toast{--toastb:calc(var(--padh) + 10px)}
+#printArea{display:none}
+@media print{
+  @page{size:A4;margin:12mm}
+  body{background:#fff;color:#000}
+  body > *:not(#printArea){display:none!important}
+  #printArea{display:block;font-family:"Space Grotesk",system-ui,sans-serif;text-transform:uppercase}
+  #printArea h1{font-size:20pt;margin:0}
+  #printArea .pm{font:9pt "JetBrains Mono",monospace;color:#444;margin:1mm 0 5mm}
+  #printArea table{width:100%;border-collapse:collapse;font-size:9.5pt;margin-bottom:5mm;break-inside:auto}
+  #printArea th{text-align:left;font:600 7.5pt "JetBrains Mono",monospace;letter-spacing:.08em;border-bottom:1.5px solid #000;padding:1.5mm 2mm}
+  #printArea td{padding:1.6mm 2mm;border-bottom:.2mm solid #bbb}
+  #printArea td.n{text-align:right;font-family:"JetBrains Mono",monospace;white-space:nowrap}
+  #printArea tr.mh td{font-weight:700;font-size:11pt;border-bottom:1px solid #000;padding-top:4mm}
+  #printArea tr.tot td{font-weight:700;border-bottom:0}
+  #printArea .gt{font:700 13pt "JetBrains Mono",monospace;text-align:right;border-top:2px solid #000;padding-top:2mm}
+}
+</style>
+</head>
+<body class="zaehlen">
+<div class="wrap">
+  <header>
+    <a class="home" href="../../index.html" aria-label="Zum Hub"><svg viewBox="0 0 160 186" aria-hidden="true"><path fill="currentColor" d="M77 5L8 45Q5 48 5 54L6 134Q6 139 13 141L71 174Q76 178 82 177L112 160L44 121Q38 117 38 110L40 66Q40 62 47 60L113 23L85 6Q81 3 77 5ZM93 45L153 80V49Q153 46 150 44L122 28ZM153 104L93 139L120 155L146 141Q153 138 153 134Z"/></svg></a>
+    <div class="hd"><div class="brand">CITITOOL · INVENTUR</div><h1>Stangen</h1></div>
+    <div class="htot"><b id="hTot">0 m</b><span id="hSub"></span></div>
+  </header>
+  <div class="ruler" aria-hidden="true"></div>
+  <nav class="tabs" id="tabs">
+    <button type="button" data-tab="z" aria-pressed="true">Zählen</button>
+    <button type="button" data-tab="u" aria-pressed="false">Übersicht</button>
+    <button type="button" data-tab="m" aria-pressed="false">Material</button>
+    <button type="button" data-tab="l" aria-pressed="false">Liste</button>
+  </nav>
+
+  <section id="v_z" class="view">
+    <div class="mats" id="mats"></div>
+    <div class="sec" id="dsHead">Durchmesser</div>
+    <div class="ds" id="ds"></div>
+    <div class="card" id="cur"></div>
+  </section>
+  <section id="v_u" class="view" hidden></section>
+  <section id="v_m" class="view" hidden></section>
+  <section id="v_l" class="view" hidden></section>
+</div>
+
+<div class="pad" id="pad">
+  <div class="pad-in">
+    <div class="prow"><span class="lab" id="padLab"></span><div class="unit" id="unit"><button type="button" data-u="m">m</button><button type="button" data-u="mm">mm</button></div></div>
+    <div class="disp" id="disp"><span class="k" id="dispK">METER</span><span class="e" id="dispE"></span><span class="r" id="dispR"></span></div>
+    <div class="keys" id="keys">
+      <button type="button" data-k="7">7</button><button type="button" data-k="8">8</button><button type="button" data-k="9">9</button><button type="button" class="op" data-k="back" aria-label="Löschen">⌫</button>
+      <button type="button" data-k="4">4</button><button type="button" data-k="5">5</button><button type="button" data-k="6">6</button><button type="button" class="op" data-k="+">+</button>
+      <button type="button" data-k="1">1</button><button type="button" data-k="2">2</button><button type="button" data-k="3">3</button><button type="button" class="op" data-k="×">×</button>
+      <button type="button" data-k=",">,</button><button type="button" data-k="0">0</button><button type="button" class="op" data-k="−">−</button><button type="button" class="op" data-k="clr">C</button>
+    </div>
+    <div class="prow2" id="goRow"></div>
+  </div>
+</div>
+<div class="toast" id="toast" hidden></div>
+<div id="printArea"></div>
+<input type="file" id="fileIn" accept="application/json,.json" hidden>
+
+<script>
+(() => {
+  'use strict';
+  const KEY = 'cititool_inventur_v1', DAY = 864e5;
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const U = s => String(s == null ? '' : s).toUpperCase().trim();
+  const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  const fm = (v, d = 3) => (v || 0).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: d });
+  const fd = d => String(d).replace('.', ',');
+  const hm = ts => new Date(ts).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+  const dt = ts => new Date(ts).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  const vib = n => { try { navigator.vibrate && navigator.vibrate(n); } catch {} };
+  const COLORS = ['#C9A227', '#B26A2E', '#3E6E8E', '#6B7A8C', '#2F3338', '#2D6B47', '#7A4FA0', '#B42318', '#0E7C86', '#9A7415'];
+  const DEF_MATS = [['MS58', '#C9A227'], ['F75', '#B26A2E'], ['1.4112', '#3E6E8E'], ['1.4104', '#6B7A8C'], ['1.0718', '#2F3338']];
+
+  // ---------- Daten ----------
+  let D;
+  function blank() { return { v: 1, name: 'Inventur ' + new Date().getFullYear(), started: Date.now(), mats: DEF_MATS.map(([n, c]) => ({ id: uid(), name: n, color: c, art: '', ds: {} })), entries: [], archive: [] }; }
+  function load() {
+    try { D = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch { D = null; }
+    if (!D || !Array.isArray(D.mats)) D = blank();
+    D.entries ||= []; D.archive ||= []; D.mats.forEach(m => { m.ds ||= {}; m.art ||= ''; });
+  }
+  let saveOk = true;
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(D)); saveOk = true; } catch { if (saveOk) toast('Speichern fehlgeschlagen – Speicher voll?'); saveOk = false; } }
+  load();
+
+  const S = { tab: 'z', mat: null, d: null, target: 'm', expr: '', unit: 'm', edit: null, lastD: {} };
+  try { const st = JSON.parse(localStorage.getItem(KEY + '_ui') || '{}'); S.mat = st.mat || null; S.lastD = st.lastD || {}; S.unit = st.unit === 'mm' ? 'mm' : 'm'; } catch {}
+  const saveUI = () => { try { localStorage.setItem(KEY + '_ui', JSON.stringify({ mat: S.mat, lastD: S.lastD, unit: S.unit })); } catch {} };
+  const mat = id => D.mats.find(m => m.id === id);
+  if (!mat(S.mat)) S.mat = D.mats[0] ? D.mats[0].id : null;
+  if (S.mat && S.lastD[S.mat] != null) S.d = S.lastD[S.mat];
+  if (S.d == null) S.target = 'd';
+
+  // Ø-Schlüssel: Zahl als Text mit Punkt
+  const dKey = v => { const n = parseFloat(String(v).replace(',', '.')); return isFinite(n) && n > 0 ? String(Math.round(n * 100) / 100) : null; };
+  const artOf = (m, d) => (m && (m.ds[d] || m.art)) || '';
+  const entsOf = (mid, d) => D.entries.filter(e => e.mat === mid && (d == null || e.d === d));
+  const sumOf = es => es.reduce((a, e) => a + (e.m || 0), 0);
+  const dsOf = m => [...new Set([...Object.keys(m.ds), ...D.entries.filter(e => e.mat === m.id).map(e => e.d)])].sort((a, b) => parseFloat(a) - parseFloat(b));
+
+  // ---------- Rechner ----------
+  function calc(expr, partial) {
+    let s = String(expr).replace(/,/g, '.').replace(/×/g, '*').replace(/÷/g, '/').replace(/−/g, '-').replace(/\s/g, '');
+    if (partial) s = s.replace(/[+\-*/.]+$/, '');
+    if (!s || !/^[\d.+\-*/]+$/.test(s)) return null;
+    let i = 0;
+    const num = () => { let neg = false; while (s[i] === '-') { neg = !neg; i++; } const m = /^\d*\.?\d+|^\d+\.?/.exec(s.slice(i)); if (!m) throw 0; i += m[0].length; const v = parseFloat(m[0]); return neg ? -v : v; };
+    const term = () => { let v = num(); while (s[i] === '*' || s[i] === '/') { const o = s[i++]; const w = num(); v = o === '*' ? v * w : v / w; } return v; };
+    const ex = () => { let v = term(); while (s[i] === '+' || s[i] === '-') { const o = s[i++]; const w = term(); v = o === '+' ? v + w : v - w; } return v; };
+    try { const v = ex(); if (i !== s.length || !isFinite(v)) return null; return Math.round(v * 1e6) / 1e6; } catch { return null; }
+  }
+  const hasOp = e => /[+×−*/\-]/.test(String(e).replace(/^−/, ''));
+  const meters = () => { const v = calc(S.expr, true); return v == null ? null : S.unit === 'mm' ? v / 1000 : v; };
+
+  function key(k) {
+    if (S.target === 'd') {
+      if (k === 'back') S.expr = S.expr.slice(0, -1);
+      else if (k === 'clr') S.expr = '';
+      else if (/^\d$/.test(k)) S.expr = (S.expr + k).slice(0, 7);
+      else if (k === ',' && !S.expr.includes(',')) S.expr = (S.expr || '0') + ',';
+      renderPad(); return;
+    }
+    const ops = ['+', '×', '−'];
+    if (k === 'back') S.expr = S.expr.slice(0, -1);
+    else if (k === 'clr') { S.expr = ''; if (S.edit) { S.edit = null; renderCur(); } }
+    else if (ops.includes(k)) { if (!S.expr && k !== '−') return; S.expr = /[+×−]$/.test(S.expr) ? S.expr.slice(0, -1) + k : S.expr + k; }
+    else if (k === ',') { const last = S.expr.split(/[+×−]/).pop(); if (last.includes(',')) return; S.expr += last ? ',' : '0,'; }
+    else if (/^\d$/.test(k)) { if (S.expr.length > 60) return; S.expr += k; }
+    renderPad();
+  }
+  function setD(d) {
+    S.d = d; S.target = 'm'; S.expr = ''; S.edit = null; S.lastD[S.mat] = d; saveUI(); render();
+  }
+  function commit() {
+    const m = mat(S.mat); if (!m) { toast('Material wählen'); return; }
+    if (S.target === 'd') {
+      const d = dKey(S.expr); if (!d) { toast('Ø eingeben'); return; }
+      if (!(d in m.ds) && !D.entries.some(e => e.mat === m.id && e.d === d)) { m.ds[d] = ''; save(); }
+      vib(10); setD(d); return;
+    }
+    const v = meters(); if (v == null || v <= 0) { toast('Meter eingeben'); return; }
+    const expr = S.expr.replace(/[+×−,]+$/, '');
+    if (S.edit) {
+      const e = D.entries.find(x => x.id === S.edit);
+      if (e) { e.expr = expr; e.unit = S.unit; e.m = v; e.ets = Date.now(); }
+      S.edit = null; save(); toast('Geändert · ' + fm(v) + ' m');
+    } else {
+      const e = { id: uid(), ts: Date.now(), mat: m.id, d: S.d, expr, unit: S.unit, m: v };
+      D.entries.push(e); save();
+      toast(`+ ${fm(v)} m · ${m.name} Ø${fd(S.d)}`, () => { D.entries = D.entries.filter(x => x.id !== e.id); save(); render(); });
+    }
+    vib([10, 30, 10]); S.expr = ''; render();
+    const g = document.querySelector('.go'); if (g) { g.classList.add('ok'); setTimeout(() => g.classList.remove('ok'), 380); }
+  }
+
+  // ---------- Darstellung ----------
+  function renderHead() {
+    const tot = sumOf(D.entries);
+    $('hTot').textContent = fm(tot, 2) + ' m';
+    $('hSub').textContent = `${D.entries.length} EINTRÄGE`;
+  }
+  function renderMats() {
+    $('mats').innerHTML = D.mats.map(m => { const t = sumOf(entsOf(m.id)); return `<button type="button" class="mt" data-mat="${m.id}" aria-pressed="${S.mat === m.id}" style="--c:${m.color}"><b>${esc(m.name)}</b><small>${t ? fm(t, 2) + ' m' : '—'}</small></button>`; }).join('')
+      + `<button type="button" class="mt add" data-go="m-new"><b>+</b><small>Material</small></button>`;
+    const sel = $('mats').querySelector('[aria-pressed="true"]'); if (sel && !renderMats.done) { sel.scrollIntoView({ inline: 'nearest', block: 'nearest' }); renderMats.done = 1; }
+  }
+  function renderDs() {
+    const m = mat(S.mat);
+    $('dsHead').textContent = m ? `Ø · ${m.name}` : 'Durchmesser';
+    if (!m) { $('ds').innerHTML = '<div class="empty" style="width:100%">Material anlegen</div>'; return; }
+    $('ds').innerHTML = dsOf(m).map(d => { const t = sumOf(entsOf(m.id, d)); return `<button type="button" class="dc ${artOf(m, d) ? '' : 'noart'}" data-d="${d}" aria-pressed="${S.target === 'm' && S.d === d}"><b>Ø${fd(d)}</b><small>${t ? fm(t, 2) + ' m' : '—'}</small></button>`; }).join('')
+      + `<button type="button" class="dc add" data-d="new" aria-pressed="${S.target === 'd'}"><b>+ Ø</b><small>neu</small></button>`;
+  }
+  function renderCur() {
+    const m = mat(S.mat);
+    if (!m) { $('cur').innerHTML = '<div class="empty">Unter „Material“ ein Material anlegen.</div>'; return; }
+    if (S.target === 'd' || S.d == null) {
+      const last = D.entries.slice(-6).reverse();
+      $('cur').innerHTML = `<div class="cur"><div class="t"><h2>${esc(m.name)} · Ø ?</h2><div class="hint" style="margin-top:6px">Ø unten eintippen oder oben antippen.</div></div></div>
+        ${last.length ? `<div class="sec" style="margin-top:12px">ZULETZT</div><div class="ents">${last.map(e => { const mm = mat(e.mat); return `<div class="en"><span class="dot" style="--c:${mm ? mm.color : '#888'}"></span><span class="x">${esc(mm ? mm.name : '?')} Ø${fd(e.d)} · ${esc(showExpr(e))}</span><span class="v">${fm(e.m)}</span><span class="tm">${hm(e.ts)}</span></div>`; }).join('')}</div>` : ''}`;
+      return;
+    }
+    const es = entsOf(m.id, S.d), a = artOf(m, S.d);
+    $('cur').innerHTML = `<div class="cur"><span class="dot" style="--c:${m.color};width:14px;height:14px"></span><div class="t"><h2>${esc(m.name)} · Ø${fd(S.d)}</h2>
+        <button type="button" class="art ${a ? '' : 'miss'}" data-act="art"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M2 4v8M4.5 4v8M7 4v8M9 4v8M12 4v8M14 4v8"/></svg>${a ? 'ART.-NR. ' + esc(a) : 'ART.-NR. FEHLT · TIPPEN'}</button></div>
+        <div class="sum"><b>${fm(sumOf(es), 2)}</b><span>M · ${es.length}×</span></div></div>
+      <div class="ents">${es.slice().reverse().map(e => `<div class="en ${S.edit === e.id ? 'ed' : ''}" data-e="${e.id}"><span class="x">${esc(showExpr(e))}</span><span class="v">${fm(e.m)}</span><span class="tm">${hm(e.ts)}</span><button type="button" data-act="del" data-id="${e.id}" aria-label="Löschen">✕</button></div>`).join('') || '<div class="hint" style="padding:8px 2px">Noch nichts gezählt. Meter unten eintippen – z. B. 3×6+2,4</div>'}</div>`;
+  }
+  const showExpr = e => (hasOp(e.expr) ? e.expr : e.expr) + (e.unit === 'mm' ? ' mm' : ' m');
+  function renderPad() {
+    const m = mat(S.mat), isD = S.target === 'd';
+    $('disp').classList.toggle('d', isD);
+    $('dispK').innerHTML = isD ? 'Ø<br>MM' : S.edit ? 'ÄNDERN' : (S.unit === 'mm' ? 'LÄNGE<br>MM' : 'METER');
+    $('dispE').innerHTML = `<span>${esc(S.expr) || ''}</span><i></i>`; $('dispE').scrollLeft = 1e5;
+    const v = isD ? null : meters();
+    $('dispR').innerHTML = isD ? '' : v != null && (hasOp(S.expr) || S.unit === 'mm') ? `=<b>${fm(v)} m</b>` : '';
+    $('padLab').textContent = m ? (isD ? `${m.name} · NEUER DURCHMESSER` : S.d != null ? `${m.name} · Ø${fd(S.d)}${artOf(m, S.d) ? ' · ' + artOf(m, S.d) : ''}` : m.name) : 'MATERIAL WÄHLEN';
+    $('unit').hidden = isD;
+    $('unit').querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.u === S.unit)));
+    document.querySelectorAll('#keys [data-k="+"],#keys [data-k="×"],#keys [data-k="−"]').forEach(b => b.disabled = isD);
+    const ok = isD ? !!dKey(S.expr) : v != null && v > 0;
+    $('goRow').innerHTML = isD
+      ? `${S.d != null ? '<button type="button" class="btn" data-act="cancelD">Zurück</button>' : ''}<button type="button" class="go" data-act="go" ${ok ? '' : 'disabled'}>Ø${S.expr ? fd(dKey(S.expr) || S.expr) : ''} übernehmen →</button>`
+      : `${S.edit ? '<button type="button" class="btn" data-act="cancelE">Abbruch</button>' : ''}<button type="button" class="go" data-act="go" ${ok && m && S.d != null ? '' : 'disabled'}>${S.edit ? 'Ändern' : 'Buchen'}${ok ? `<small>${fm(v)} m</small>` : ''}</button>`;
+    document.documentElement.style.setProperty('--padh', $('pad').offsetHeight + 'px');
+  }
+
+  function renderU() {
+    const tot = sumOf(D.entries), mx = Math.max(1, ...D.mats.map(m => sumOf(entsOf(m.id))));
+    const miss = D.mats.reduce((a, m) => a + dsOf(m).filter(d => entsOf(m.id, d).length && !artOf(m, d)).length, 0);
+    $('v_u').innerHTML = `<div class="grand"><span>GESAMT · ${D.entries.length} EINTRÄGE</span><b>${fm(tot, 2)} m</b></div>
+      ${miss ? `<div class="card" style="background:var(--warn-bg);color:var(--warn);font-size:13px;font-weight:600">${miss} Position${miss === 1 ? '' : 'en'} ohne Artikelnummer – Zeile antippen.</div>` : ''}
+      <div class="ov">${D.mats.map(m => { const ds = dsOf(m).filter(d => entsOf(m.id, d).length), t = sumOf(entsOf(m.id));
+        return `<div class="card om" style="--c:${m.color}"><div class="om-h"><span class="dot"></span><b>${esc(m.name)}</b><span class="s"><b>${fm(t, 2)} m</b><small>${ds.length} Ø · ${entsOf(m.id).length}×</small></span></div>
+          <div class="ob"><i style="width:${t / mx * 100}%"></i></div>
+          ${ds.length ? `<table class="ot">${ds.map(d => { const es = entsOf(m.id, d), a = artOf(m, d); return `<tr data-jump="${m.id}|${d}"><td class="d">Ø${fd(d)}</td><td class="a ${a ? '' : 'miss'}">${a ? esc(a) : 'ART.-NR. FEHLT'}</td><td class="n">${es.length}×</td><td class="n"><b>${fm(sumOf(es))}</b> m</td></tr>`; }).join('')}</table>` : ''}</div>`; }).join('')}</div>`;
+  }
+
+  function renderM() {
+    $('v_m').innerHTML = `<p class="hint">Artikelnummer pro Material (Standard) und pro Durchmesser. Ist für einen Ø keine eigene Nummer eingetragen, gilt die Standard-Nummer.</p>
+      ${D.mats.map((m, i) => `<div class="card mm" data-mid="${m.id}" style="--c:${m.color}">
+        <div class="mm-h"><button type="button" class="sw" data-act="color" aria-label="Farbe"></button><input data-f="name" value="${esc(m.name)}" aria-label="Name">
+          <button type="button" class="ic" data-act="up" ${i ? '' : 'disabled'} aria-label="Nach oben">↑</button><button type="button" class="ic" data-act="delmat" aria-label="Löschen">✕</button></div>
+        <div class="fld"><label>STANDARD-ART.-NR.</label><input data-f="art" value="${esc(m.art)}" placeholder="z. B. 4711" inputmode="text"></div>
+        <div class="fld"><label>Ø → ARTIKELNUMMER</label><div class="dt">
+          ${Object.keys(m.ds).concat(D.entries.filter(e => e.mat === m.id).map(e => e.d)).filter((d, j, a) => a.indexOf(d) === j).sort((a, b) => parseFloat(a) - parseFloat(b)).map(d => `<div class="dr"><span class="dd">Ø${fd(d)}</span><input data-f="dsart" data-d="${d}" value="${esc(m.ds[d] || '')}" placeholder="${m.art ? esc(m.art) + ' (Standard)' : 'Art.-Nr.'}"><button type="button" data-act="deld" data-d="${d}" aria-label="Ø entfernen">✕</button></div>`).join('')}
+          <div class="dr new"><input data-f="newd" placeholder="Ø" inputmode="decimal"><input data-f="newart" placeholder="Art.-Nr."><button type="button" data-act="addd" aria-label="Hinzufügen">+</button></div>
+        </div></div>
+        <details class="bulk"><summary>▸ LISTE EINFÜGEN (Ø ; ART.-NR. PRO ZEILE)</summary><textarea data-f="bulk" placeholder="12;100512&#10;16;100516&#10;20;100520"></textarea><button type="button" class="btn sm" data-act="bulk" style="margin-top:6px">Übernehmen</button></details>
+      </div>`).join('')}
+      <div class="card mm" id="newMat"><div class="sec">NEUES MATERIAL</div>
+        <div class="fld"><label>NAME</label><input id="nmName" placeholder="z. B. 1.4122" autocapitalize="characters"></div>
+        <div class="fld"><label>STANDARD-ART.-NR. (OPTIONAL)</label><input id="nmArt" placeholder="Art.-Nr."></div>
+        <div class="palette" id="nmPal">${COLORS.map((c, i) => `<button type="button" data-c="${c}" style="--c:${c}" aria-pressed="${i === D.mats.length % COLORS.length}" aria-label="Farbe"></button>`).join('')}</div>
+        <button type="button" class="btn primary" data-act="addmat">+ Material anlegen</button></div>`;
+  }
+
+  function renderL() {
+    const tot = sumOf(D.entries);
+    $('v_l').innerHTML = `<div class="card mm"><div class="fld"><label>NAME DER INVENTUR</label><input id="lName" value="${esc(D.name)}"></div>
+        <div class="hint">Begonnen ${dt(D.started)} · ${D.entries.length} Einträge · ${fm(tot, 2)} m</div></div>
+      <div class="sec">EXPORT</div>
+      <div class="acts">
+        <button type="button" class="btn primary" data-act="xlsx">Excel<small>MATERIAL · Ø · ART.-NR. · METER</small></button>
+        <button type="button" class="btn" data-act="print">Drucken / PDF<small>A4-LISTE</small></button>
+        <button type="button" class="btn" data-act="csv">CSV<small>FÜR BIOS / EXCEL</small></button>
+        <button type="button" class="btn" data-act="copy">Kopieren<small>IN EXCEL EINFÜGEN</small></button>
+      </div>
+      <div class="sec">SICHERUNG</div>
+      <div class="acts"><button type="button" class="btn" data-act="bk">Backup speichern<small>.JSON</small></button><button type="button" class="btn" data-act="bkin">Backup laden<small>.JSON</small></button></div>
+      <p class="hint">Daten liegen nur auf diesem Gerät (in diesem Browser). Nach der Zählung ein Backup oder Excel speichern.</p>
+      <div class="sec">ABSCHLIESSEN</div>
+      <button type="button" class="btn" data-act="close" ${D.entries.length ? '' : 'disabled'}>Inventur abschließen &amp; neue beginnen</button>
+      <p class="hint">Die Zählung wird archiviert, Materialien und Artikelnummern bleiben.</p>
+      ${D.archive.length ? `<div class="sec">ARCHIV</div><div class="card">${D.archive.map((a, i) => `<div class="arch"><span class="t"><b>${esc(a.name)}</b><small>${dt(a.started)} – ${dt(a.ended)} · ${a.entries.length} EINTRÄGE · ${fm(sumOf(a.entries), 2)} M</small></span><button type="button" class="btn sm" data-act="axlsx" data-i="${i}">Excel</button><button type="button" class="btn sm" data-act="adel" data-i="${i}">✕</button></div>`).join('')}</div>` : ''}`;
+  }
+
+  function render() {
+    renderHead();
+    if (S.tab === 'z') { renderMats(); renderDs(); renderCur(); renderPad(); }
+    if (S.tab === 'u') renderU();
+    if (S.tab === 'm') renderM();
+    if (S.tab === 'l') renderL();
+  }
+  function setTab(t) {
+    S.tab = t; document.querySelectorAll('#tabs [data-tab]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.tab === t)));
+    ['z', 'u', 'm', 'l'].forEach(k => $('v_' + k).hidden = k !== t);
+    $('pad').hidden = t !== 'z'; document.body.classList.toggle('zaehlen', t === 'z');
+    window.scrollTo(0, 0); render();
+  }
+
+  // ---------- Toast ----------
+  let tT = 0, tUndo = null;
+  function toast(msg, undo) {
+    const el = $('toast'); tUndo = undo || null;
+    el.innerHTML = `<span>${esc(msg)}</span>${undo ? '<button type="button" id="tUndo">Rückgängig</button>' : ''}`; el.hidden = false;
+    clearTimeout(tT); tT = setTimeout(() => el.hidden = true, undo ? 4500 : 2200);
+  }
+  $('toast').addEventListener('click', e => { if (e.target.id === 'tUndo' && tUndo) { tUndo(); tUndo = null; $('toast').hidden = true; toast('Rückgängig'); } });
+
+  // ---------- Export ----------
+  function rowsOf(src) {
+    const out = [];
+    (src.mats || D.mats).forEach(m => dsOf2(m, src.entries).forEach(d => { const es = src.entries.filter(e => e.mat === m.id && e.d === d); if (es.length) out.push({ m: m.name, d, art: artOf(m, d), n: es.length, sum: sumOf(es) }); }));
+    return out;
+  }
+  const dsOf2 = (m, ents) => [...new Set(ents.filter(e => e.mat === m.id).map(e => e.d))].sort((a, b) => parseFloat(a) - parseFloat(b));
+  const fname = (ext, name) => `${(name || D.name).replace(/[^\wäöüÄÖÜß.-]+/g, '_')}_${new Date().toISOString().slice(0, 10)}.${ext}`;
+  function download(blob, name) { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); }
+  const n3 = v => (Math.round(v * 1000) / 1000).toString().replace('.', ',');
+  function csv() {
+    const r = rowsOf(D), lines = ['Artikelnummer;Material;Durchmesser mm;Meter;Einträge', ...r.map(x => [x.art, x.m, fd(x.d), n3(x.sum), x.n].join(';'))];
+    download(new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' }), fname('csv'));
+  }
+  const loadScript = src => new Promise((res, rej) => { const s = document.createElement('script'); s.src = src; s.onload = res; s.onerror = rej; document.head.appendChild(s); });
+  async function xlsx(src, name) {
+    toast('Excel wird erstellt …');
+    try { if (!window.XLSX) await loadScript('https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js'); }
+    catch { toast('Excel-Modul nicht ladbar – CSV nutzen'); return; }
+    const r = rowsOf(src), wb = XLSX.utils.book_new();
+    const sum = [['Material', 'Ø mm', 'Artikelnummer', 'Einträge', 'Meter'], ...r.map(x => [x.m, parseFloat(x.d), x.art, x.n, Math.round(x.sum * 1000) / 1000]), [], ['GESAMT', '', '', src.entries.length, Math.round(sumOf(src.entries) * 1000) / 1000]];
+    const ws = XLSX.utils.aoa_to_sheet(sum); ws['!cols'] = [{ wch: 12 }, { wch: 8 }, { wch: 18 }, { wch: 9 }, { wch: 11 }]; XLSX.utils.book_append_sheet(wb, ws, 'Summe');
+    const mats = src.mats || D.mats, mn = id => (mats.find(m => m.id === id) || {}).name || '?';
+    const det = [['Datum', 'Uhrzeit', 'Material', 'Ø mm', 'Artikelnummer', 'Rechnung', 'Meter'], ...src.entries.slice().sort((a, b) => a.ts - b.ts).map(e => { const m = mats.find(x => x.id === e.mat); return [dt(e.ts), hm(e.ts), mn(e.mat), parseFloat(e.d), artOf(m, e.d), showExpr(e), Math.round(e.m * 1000) / 1000]; })];
+    const ws2 = XLSX.utils.aoa_to_sheet(det); ws2['!cols'] = [{ wch: 11 }, { wch: 7 }, { wch: 10 }, { wch: 7 }, { wch: 16 }, { wch: 22 }, { wch: 10 }]; XLSX.utils.book_append_sheet(wb, ws2, 'Einzeln');
+    const out = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+    download(new Blob([out], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }), fname('xlsx', name));
+  }
+  async function copy() {
+    const r = rowsOf(D), t = ['Artikelnummer\tMaterial\tØ mm\tMeter\tEinträge', ...r.map(x => [x.art, x.m, fd(x.d), n3(x.sum), x.n].join('\t'))].join('\n');
+    try { await navigator.clipboard.writeText(t); toast('Kopiert – in Excel einfügen'); } catch { toast('Kopieren nicht möglich – CSV nutzen'); }
+  }
+  function printList() {
+    const r = rowsOf(D);
+    $('printArea').innerHTML = `<h1>INVENTUR STANGEN · ${esc(D.name)}</h1><div class="pm">STAND ${dt(Date.now())} ${hm(Date.now())} · ${D.entries.length} EINTRÄGE · CITITOOL</div>
+      <table><thead><tr><th>MATERIAL / Ø</th><th>ARTIKELNUMMER</th><th style="text-align:right">EINTRÄGE</th><th style="text-align:right">METER</th></tr></thead><tbody>
+      ${D.mats.map(m => { const rr = r.filter(x => x.m === m.name); if (!rr.length) return ''; return `<tr class="mh"><td colspan="4">${esc(m.name)}</td></tr>${rr.map(x => `<tr><td>Ø ${fd(x.d)} MM</td><td>${esc(x.art) || '—'}</td><td class="n">${x.n}</td><td class="n">${fm(x.sum)}</td></tr>`).join('')}<tr class="tot"><td colspan="3">SUMME ${esc(m.name)}</td><td class="n">${fm(rr.reduce((a, x) => a + x.sum, 0))}</td></tr>`; }).join('')}
+      </tbody></table><div class="gt">GESAMT ${fm(sumOf(D.entries))} M</div>`;
+    setTimeout(() => window.print(), 50);
+  }
+
+  // ---------- Ereignisse ----------
+  $('tabs').addEventListener('click', e => { const b = e.target.closest('[data-tab]'); if (b) setTab(b.dataset.tab); });
+  $('keys').addEventListener('click', e => { const b = e.target.closest('[data-k]'); if (b && !b.disabled) { key(b.dataset.k); vib(4); } });
+  $('unit').addEventListener('click', e => { const b = e.target.closest('[data-u]'); if (!b) return; S.unit = b.dataset.u; saveUI(); renderPad(); });
+  $('pad').addEventListener('click', e => {
+    const b = e.target.closest('[data-act]'); if (!b) return; const a = b.dataset.act;
+    if (a === 'go') commit();
+    if (a === 'cancelD') { S.target = 'm'; S.expr = ''; render(); }
+    if (a === 'cancelE') { S.edit = null; S.expr = ''; render(); }
+  });
+  $('v_z').addEventListener('click', e => {
+    const mb = e.target.closest('[data-mat]');
+    if (mb) { S.mat = mb.dataset.mat; S.edit = null; S.expr = ''; S.d = S.lastD[S.mat] ?? null; S.target = S.d == null ? 'd' : 'm'; saveUI(); vib(6); render(); return; }
+    const db = e.target.closest('[data-d]');
+    if (db) { if (db.dataset.d === 'new') { S.target = 'd'; S.expr = ''; S.edit = null; render(); } else setD(db.dataset.d); return; }
+    if (e.target.closest('[data-go="m-new"]')) { setTab('m'); setTimeout(() => { $('newMat').scrollIntoView({ behavior: 'smooth', block: 'center' }); $('nmName').focus(); }, 60); return; }
+    const b = e.target.closest('[data-act]');
+    if (b && b.dataset.act === 'art') { const m = mat(S.mat); const v = prompt(`Artikelnummer für ${m.name} Ø${fd(S.d)}`, m.ds[S.d] || m.art || ''); if (v === null) return; m.ds[S.d] = U(v); save(); render(); return; }
+    if (b && b.dataset.act === 'del') { const id = b.dataset.id, i = D.entries.findIndex(x => x.id === id); if (i < 0) return; const [rm] = D.entries.splice(i, 1); if (S.edit === id) { S.edit = null; S.expr = ''; } save(); render(); toast(`Gelöscht · ${fm(rm.m)} m`, () => { D.entries.splice(i, 0, rm); save(); render(); }); return; }
+    const en = e.target.closest('[data-e]');
+    if (en) { const x = D.entries.find(y => y.id === en.dataset.e); if (!x) return; S.edit = x.id; S.expr = x.expr; S.unit = x.unit || 'm'; S.target = 'm'; render(); }
+  });
+  $('v_u').addEventListener('click', e => {
+    const tr = e.target.closest('[data-jump]'); if (!tr) return; const [mid, d] = tr.dataset.jump.split('|');
+    const m = mat(mid); if (!m) return;
+    if (!artOf(m, d)) { const v = prompt(`Artikelnummer für ${m.name} Ø${fd(d)}`, ''); if (v) { m.ds[d] = U(v); save(); renderU(); renderHead(); } return; }
+    S.mat = mid; S.d = d; S.lastD[mid] = d; S.target = 'm'; S.expr = ''; saveUI(); setTab('z');
+  });
+  $('v_m').addEventListener('change', e => {
+    const card = e.target.closest('[data-mid]'); if (!card) return; const m = mat(card.dataset.mid), f = e.target.dataset.f; if (!m) return;
+    if (f === 'name') { const v = U(e.target.value); if (v) m.name = v; else e.target.value = m.name; }
+    if (f === 'art') m.art = U(e.target.value);
+    if (f === 'dsart') m.ds[e.target.dataset.d] = U(e.target.value);
+    save(); renderHead(); toast('Gespeichert');
+  });
+  $('v_m').addEventListener('click', e => {
+    const b = e.target.closest('[data-act]'); if (!b) return; const a = b.dataset.act;
+    const pal = e.target.closest('#nmPal button'); if (pal) { $('nmPal').querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', String(x === pal))); return; }
+    if (a === 'addmat') {
+      const n = U($('nmName').value); if (!n) { toast('Name fehlt'); $('nmName').focus(); return; }
+      if (D.mats.some(m => m.name === n)) { toast('Gibt es schon'); return; }
+      const c = ($('nmPal').querySelector('[aria-pressed="true"]') || {}).dataset?.c || COLORS[D.mats.length % COLORS.length];
+      const m = { id: uid(), name: n, color: c, art: U($('nmArt').value), ds: {} }; D.mats.push(m); save();
+      S.mat = m.id; S.d = null; S.target = 'd'; saveUI(); toast(`${n} angelegt`); setTab('z'); return;
+    }
+    const card = e.target.closest('[data-mid]'); if (!card) return; const m = mat(card.dataset.mid); if (!m) return;
+    if (a === 'color') { m.color = COLORS[(COLORS.indexOf(m.color) + 1) % COLORS.length]; save(); renderM(); return; }
+    if (a === 'up') { const i = D.mats.indexOf(m); if (i > 0) { D.mats.splice(i, 1); D.mats.splice(i - 1, 0, m); save(); renderM(); } return; }
+    if (a === 'delmat') {
+      const n = D.entries.filter(x => x.mat === m.id).length;
+      if (!confirm(n ? `${m.name} löschen? ${n} gezählte Einträge werden mit gelöscht.` : `${m.name} löschen?`)) return;
+      D.mats = D.mats.filter(x => x !== m); D.entries = D.entries.filter(x => x.mat !== m.id); if (S.mat === m.id) { S.mat = D.mats[0] ? D.mats[0].id : null; S.d = null; S.target = 'd'; } save(); saveUI(); renderM(); renderHead(); return;
+    }
+    if (a === 'deld') { const d = b.dataset.d; if (D.entries.some(x => x.mat === m.id && x.d === d)) { if (!confirm(`Ø${fd(d)} hat gezählte Einträge. Nur die Artikelnummer entfernen?`)) return; m.ds[d] = ''; } else delete m.ds[d]; save(); renderM(); return; }
+    if (a === 'addd') { const nd = card.querySelector('[data-f="newd"]'), na = card.querySelector('[data-f="newart"]'); const d = dKey(nd.value); if (!d) { toast('Ø eingeben'); nd.focus(); return; } m.ds[d] = U(na.value); save(); renderM(); setTimeout(() => { const c2 = document.querySelector(`[data-mid="${m.id}"] [data-f="newd"]`); c2 && c2.focus(); }, 30); toast(`Ø${fd(d)} gespeichert`); return; }
+    if (a === 'bulk') {
+      const tx = card.querySelector('[data-f="bulk"]').value; let n = 0;
+      tx.split(/\r?\n/).forEach(line => { const mm = line.trim().match(/^[ØøDd]?\s*(\d+(?:[.,]\d+)?)\s*(?:mm)?\s*[;:=\t, ]\s*(\S.*)$/); if (!mm) return; const d = dKey(mm[1]); if (!d) return; m.ds[d] = U(mm[2]).replace(/^[;:=\s]+/, ''); n++; });
+      save(); renderM(); toast(n ? `${n} Artikelnummern übernommen` : 'Nichts erkannt – Format: 20;123456'); return;
+    }
+  });
+  $('v_m').addEventListener('keydown', e => { if (e.key === 'Enter' && (e.target.dataset.f === 'newart' || e.target.dataset.f === 'newd')) { e.preventDefault(); e.target.closest('[data-mid]').querySelector('[data-act="addd"]').click(); } if (e.key === 'Enter' && (e.target.id === 'nmName' || e.target.id === 'nmArt')) { e.preventDefault(); document.querySelector('[data-act="addmat"]').click(); } });
+  $('v_l').addEventListener('change', e => { if (e.target.id === 'lName') { D.name = e.target.value.trim() || D.name; save(); renderHead(); toast('Gespeichert'); } });
+  $('v_l').addEventListener('click', e => {
+    const b = e.target.closest('[data-act]'); if (!b) return; const a = b.dataset.act;
+    if (a === 'xlsx') xlsx(D);
+    if (a === 'csv') csv();
+    if (a === 'copy') copy();
+    if (a === 'print') printList();
+    if (a === 'bk') download(new Blob([JSON.stringify(D, null, 1)], { type: 'application/json' }), fname('json', 'cititool-inventur'));
+    if (a === 'bkin') $('fileIn').click();
+    if (a === 'close') { if (!confirm(`„${D.name}“ abschließen? Die Zählung (${D.entries.length} Einträge) kommt ins Archiv, die Liste ist danach leer.`)) return;
+      D.archive.unshift({ name: D.name, started: D.started, ended: Date.now(), mats: JSON.parse(JSON.stringify(D.mats)), entries: D.entries });
+      D.archive = D.archive.slice(0, 8); D.entries = []; D.started = Date.now(); D.name = 'Inventur ' + new Date().getFullYear(); save(); renderL(); renderHead(); toast('Archiviert – neue Inventur begonnen'); }
+    if (a === 'axlsx') { const ar = D.archive[+b.dataset.i]; if (ar) xlsx(ar, ar.name); }
+    if (a === 'adel') { const ar = D.archive[+b.dataset.i]; if (ar && confirm(`„${ar.name}“ aus dem Archiv löschen?`)) { D.archive.splice(+b.dataset.i, 1); save(); renderL(); } }
+  });
+  $('fileIn').addEventListener('change', async e => {
+    const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+    try { const j = JSON.parse(await f.text()); if (!j || !Array.isArray(j.mats) || !Array.isArray(j.entries)) throw 0;
+      if (!confirm(`Backup laden? ${j.entries.length} Einträge, ${j.mats.length} Materialien. Die aktuelle Liste wird ersetzt.`)) return;
+      D = j; D.archive ||= []; save(); render(); toast('Backup geladen'); } catch { toast('Datei ist kein Inventur-Backup'); }
+  });
+  // Tastatur (PC / Bluetooth-Tastatur)
+  document.addEventListener('keydown', e => {
+    if (S.tab !== 'z' || e.target.closest('input,textarea') || e.metaKey || e.ctrlKey) return;
+    const k = e.key; let m = null;
+    if (/^\d$/.test(k)) m = k; else if (k === ',' || k === '.') m = ','; else if (k === '+') m = '+'; else if (k === '*' || k === 'x' || k === 'X') m = '×'; else if (k === '-') m = '−';
+    else if (k === 'Backspace') m = 'back'; else if (k === 'Escape') m = 'clr'; else if (k === 'Enter') { e.preventDefault(); commit(); return; }
+    if (m) { e.preventDefault(); key(m); }
+  });
+  window.addEventListener('storage', e => { if (e.key === KEY) { load(); render(); } if (e.key === 'cititool_theme') location.reload(); });
+  window.addEventListener('resize', () => document.documentElement.style.setProperty('--padh', $('pad').offsetHeight + 'px'));
+  setTab('z');
+})();
+</script>
+</body>
+</html>
