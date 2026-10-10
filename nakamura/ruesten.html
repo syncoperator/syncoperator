@@ -274,6 +274,12 @@ button.card:active{transform:scale(.99)}
 .sw::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.22);transition:left .2s,background .2s}
 .sw[aria-checked="true"]{background:var(--ink)}
 .sw[aria-checked="true"]::after{left:23px;background:var(--on-ink)}
+.sw.sm{width:38px;height:22px;border-radius:11px}
+.sw.sm::after{width:16px;height:16px}
+.sw.sm[aria-checked="true"]::after{left:19px}
+.eyebrow .dedr{display:inline-flex;align-items:center;gap:8px;color:var(--mute);font-weight:500;letter-spacing:.12em}
+.ico.i-del{background:var(--alert-bg);color:var(--alert)}
+.act.danger{color:var(--alert)}
 .step{display:flex;align-items:center;background:var(--soft);border:1px solid var(--line);border-radius:12px;height:46px;flex:none}
 .step button{width:42px;height:44px;display:grid;place-items:center;font-size:21px;font-weight:500;text-align:center;color:var(--ink)}
 .step button:disabled{opacity:.3}
@@ -633,7 +639,7 @@ dialog::backdrop{background:var(--scrim)}
     <div class="card hero grad g-run">
       <div class="eyebrow"><span class="pulse"></span><span id="runSince"></span></div>
       <div class="clock" id="clock">00:00:00</div>
-      <div class="live-amt">bis jetzt <b id="liveNet"></b> netto</div>
+      <div class="live-amt">bis jetzt <b id="liveNet"></b> <span id="liveLbl">netto</span></div>
       <div class="pbar" id="pbar">
         <div class="pb-top"><span id="pbL"></span><span id="pbR"></span></div>
         <div class="pb-track" id="pbTrack"><div class="pb-ticks"></div><div class="pb-fill" id="pbFill"></div><div class="pb-knob" id="pbKnob"></div></div>
@@ -670,7 +676,7 @@ dialog::backdrop{background:var(--scrim)}
     <button id="mNext" aria-label="Nächster Monat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m9 6 6 6-6 6"/></svg></button>
   </div>
   <div class="card grad g-violet">
-    <div class="eyebrow">Netto im Monat</div>
+    <div class="eyebrow"><span id="hLbl">Netto im Monat</span><span class="r dedr">Abzüge<button type="button" class="sw sm" id="hDed" role="switch" aria-label="Steuern und Abgaben abziehen"></button></span></div>
     <div class="bignum" id="hNetto"></div>
     <div class="stats">
       <div class="stat"><span>Brutto</span><b id="hBrutto"></b></div>
@@ -724,7 +730,7 @@ dialog::backdrop{background:var(--scrim)}
       <div class="fld"><span class="lb">Monatsstunden</span><span class="ro2" id="pMh"></span></div>
       <div class="fld"><label class="lb" for="pRate">Stundenlohn<small id="pRateH"></small></label><div class="num"><input id="pRate" inputmode="decimal" autocomplete="off"><i>€/h</i></div></div>
       <div class="fld"><label class="lb" for="pZus">Überstunden-Zuschlag<small>auf Einsatz-Stunden</small></label><div class="num"><input id="pZus" inputmode="decimal" autocomplete="off"><i>%</i></div></div>
-      <div class="fld"><label class="lb" for="pPausch">Pauschale Bestückung<small>pro Einsatz</small></label><div class="num"><input id="pPausch" inputmode="decimal" autocomplete="off"><i>€</i></div></div>
+      <div class="fld"><label class="lb" for="pPausch">Einsatz-Pauschale<small>pro Einsatz</small></label><div class="num"><input id="pPausch" inputmode="decimal" autocomplete="off"><i>€</i></div></div>
       <div class="fld"><label class="lb" for="pVwlAg">VWL Arbeitgeber-Anteil<small>steuerpflichtig</small></label><div class="num"><input id="pVwlAg" inputmode="decimal" autocomplete="off"><i>€</i></div></div>
       <div class="fld"><label class="lb" for="pKonto">Kontoführungsgebühr<small>falls gezahlt</small></label><div class="num"><input id="pKonto" inputmode="decimal" autocomplete="off"><i>€</i></div></div>
     </div>
@@ -883,7 +889,7 @@ dialog::backdrop{background:var(--scrim)}
       <label class="lb" for="sRate">Stundenlohn<small>brutto</small></label>
       <div class="num"><input id="sRate" inputmode="decimal" autocomplete="off"><i>€/h</i></div></div>
     <div class="fld"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14"/></svg></span>
-      <label class="lb" for="sZus">Zuschlag<small>z. B. Überstunden 15 % auf den Stundenlohn</small></label>
+      <label class="lb" for="sZus">Zuschlag<small>auf den Stundenlohn · sonst 0</small></label>
       <div class="num"><input id="sZus" inputmode="decimal" autocomplete="off"><i>%</i></div></div>
     <button class="act" id="goPlan"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5"/></svg></span>
       <span>Monatsplan<small id="goPlanSub"></small></span>
@@ -892,19 +898,22 @@ dialog::backdrop{background:var(--scrim)}
 
   <div class="sec-title">Abzüge pro Einsatz <em>Schätzung</em></div>
   <div class="group">
-    <button class="act" id="goCalc"><span class="ico i-green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="5" y="3" width="14" height="18" rx="2.5"/><path d="M8 7h8M8 11h2M12 11h2M8 15h2M12 15h2M16 11v4"/></svg></span>
+    <div class="fld"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 5 5 19"/><circle cx="7" cy="7" r="2.5"/><circle cx="17" cy="17" r="2.5"/></svg></span>
+      <span class="lb">Steuern &amp; Abgaben abziehen<small id="sDedHint"></small></span>
+      <button class="sw" id="sDed" role="switch" aria-label="Steuern und Abgaben abziehen"></button></div>
+    <button class="act ded-x" id="goCalc"><span class="ico i-green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="5" y="3" width="14" height="18" rx="2.5"/><path d="M8 7h8M8 11h2M12 11h2M8 15h2M12 15h2M16 11v4"/></svg></span>
       <span>Mit Lohnrechner genau berechnen<small>Steuerklasse, Kirche, Krankenkasse …</small></span>
       <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 6 6 6-6 6"/></svg></button>
-    <div class="fld"><span class="ico i-rose"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 5 5 19"/><circle cx="7" cy="7" r="2.5"/><circle cx="17" cy="17" r="2.5"/></svg></span>
+    <div class="fld ded-x"><span class="ico i-rose"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M19 5 5 19"/><circle cx="7" cy="7" r="2.5"/><circle cx="17" cy="17" r="2.5"/></svg></span>
       <label class="lb" for="sTax">Steuern<small>Lohnsteuer, Soli, Kirche</small></label>
       <div class="num"><input id="sTax" inputmode="decimal" autocomplete="off"><i>%</i></div></div>
-    <div class="fld"><span class="ico i-violet"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 3 4 6v6c0 4.5 3.4 8.3 8 9 4.6-.7 8-4.5 8-9V6z"/></svg></span>
+    <div class="fld ded-x"><span class="ico i-violet"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 3 4 6v6c0 4.5 3.4 8.3 8 9 4.6-.7 8-4.5 8-9V6z"/></svg></span>
       <label class="lb" for="sSoz">Sozialabgaben<small>Rente, Kranken-, Pflege-, AV</small></label>
       <div class="num"><input id="sSoz" inputmode="decimal" autocomplete="off"><i>%</i></div></div>
-    <div class="fld"><span class="ico i-orange"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="8"/><path d="M14.5 9.5a3 3 0 1 0 0 5M8.5 11h5M8.5 13h5"/></svg></span>
+    <div class="fld ded-x"><span class="ico i-orange"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="8"/><path d="M14.5 9.5a3 3 0 1 0 0 5M8.5 11h5M8.5 13h5"/></svg></span>
       <span class="lb">Pauschale auch abziehen<small>Aus = Pauschale ohne Abzug</small></span>
       <button class="sw" id="sPT" role="switch" aria-label="Pauschale auch abziehen"></button></div>
-    <div class="fld total"><span class="lb">Abzüge gesamt</span><b id="sTotal"></b></div>
+    <div class="fld total ded-x"><span class="lb">Abzüge gesamt</span><b id="sTotal"></b></div>
   </div>
 
   <div class="sec-title">Zeit</div>
@@ -938,9 +947,11 @@ dialog::backdrop{background:var(--scrim)}
     <button class="act" id="btnImport"><span class="ico i-violet"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 20V9m0 0-4 4m4-4 4 4M5 4h14"/></svg></span>
       <span>Backup laden<small>.json-Datei wiederherstellen</small></span>
       <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 6 6 6-6 6"/></svg></button>
+    <button class="act danger" id="btnWipe"><span class="ico i-del"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg></span>
+      <span>Alle Daten löschen<small>Einsätze, Sätze, Lohndaten – vorher Backup</small></span></button>
   </div>
   <p class="hint">Alle Daten liegen nur in diesem Browser auf diesem Gerät. Beim Löschen der Browserdaten sind sie weg – speichere das Backup deshalb z. B. in iCloud Drive oder Google Drive.</p>
-  <div class="foot"><a href="../index.html">CITITOOL</a> · Einsatz v3.15<br>Nur für mich · Daten bleiben in diesem Browser</div>
+  <div class="foot"><a href="../index.html">CITITOOL</a> · Einsatz v3.16<br>Nur für mich · Daten bleiben in diesem Browser</div>
 </section>
 
 </main></div>
@@ -990,7 +1001,7 @@ dialog::backdrop{background:var(--scrim)}
   <h3 id="plHead" tabindex="-1" autofocus><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5"/></svg></span>Monatsplan</h3>
   <div class="sub">Was willst du im Monat schaffen? 0 = ohne Ziel.</div>
   <div class="group" style="margin-top:14px">
-    <div class="fld"><label class="lb" for="plSum">Summe<small>netto im Monat</small></label><div class="num"><input id="plSum" inputmode="decimal" autocomplete="off"><i>€</i></div></div>
+    <div class="fld"><label class="lb" for="plSum">Summe<small id="plSumH">netto im Monat</small></label><div class="num"><input id="plSum" inputmode="decimal" autocomplete="off"><i>€</i></div></div>
     <div class="fld"><span class="lb">Tage<small>Anzahl Einsätze</small></span>
       <div class="step"><button type="button" id="plDm" aria-label="weniger">−</button><b id="plDays">0</b><button type="button" id="plDp" aria-label="mehr">+</button></div></div>
     <div class="fld"><span class="lb">Zeit<small>Stunden und Minuten</small></span>
@@ -1024,7 +1035,7 @@ dialog::backdrop{background:var(--scrim)}
 <script>
 /* ================= Daten ================= */
 const KEY='syncop_einsatz_v1';               // gleicher Schlüssel wie v1/v2 → alte Daten bleiben
-const DEF={pausch:50,rate:20,zus:0,tax:20,soz:20,round:15,pauschTax:1,vat:false,goal:500,goalDays:0,goalMin:0};
+const DEF={pausch:0,rate:0,zus:0,tax:20,soz:20,round:15,pauschTax:1,ded:1,vat:false,goal:0,goalDays:0,goalMin:0};   // keine persönlichen Werte – alles über Assistent/Einstellungen
 const CDEF={hours:10,count:4,main:0,stkl:1,zkf:0,kist:false,land:'NW',kvz:2.9,kids:0,over23:true,mode:'normal',rvFree:false,init:false,tab:'month',basis:0,daily:0,bonus:[],pay:null};
 const PDEF={grund:0,wh:40,fac:4.33,vwlAg:0,konto:0,vwlSp:0,vor:0};
 function normCalc(x){x=x||{};return{...CDEF,...x,pay:{...PDEF,...(x.pay||{})},bonus:Array.isArray(x.bonus)?x.bonus.filter(b=>b&&typeof b==='object').map(normBonus):[]}}
@@ -1078,11 +1089,20 @@ function calc(ms,s){
   const raw=Math.max(0,ms)/60000;
   const min=s.round>1?Math.ceil(raw/s.round-1e-9)*s.round:Math.round(raw);
   const h=min/60, base=h*s.rate, zuschl=base*(s.zus||0)/100, lohn=base+zuschl, brutto=s.pausch+lohn;
-  const pct=(s.tax+s.soz)/100, abz=(s.pauschTax?brutto:lohn)*pct;
+  const pct=abzRate(s), abz=(s.pauschTax?brutto:lohn)*pct;
   return{h,base,zuschl,lohn,brutto,abz,netto:brutto-abz,vat:brutto*1.19};
 }
+/* Tumbler: Steuern & Abgaben abziehen (an = netto, aus = brutto) – gilt für alle Einsätze */
+const dedOn=()=>!(db.settings.ded===0||db.settings.ded===false);
+const abzRate=s=>dedOn()?((+s.tax||0)+(+s.soz||0))/100:0;
+const NL=()=>dedOn()?'netto':'brutto';
 function calcHTML(c,s){
   const pct=s.tax+s.soz;
+  if(!dedOn())return `<div class="ln"><span><i class="dot" style="background:var(--amber)"></i>Pauschale</span><b>${eur(s.pausch)}</b></div>`+
+    `<div class="ln"><span><i class="dot" style="background:var(--teal)"></i>Zeit <em>${num(c.h)} h × ${eur(s.rate)}</em></span><b>${eur(c.base)}</b></div>`+
+    (s.zus>0?`<div class="ln"><span><i class="dot" style="background:var(--teal);opacity:.55"></i>Zuschlag <em>${pctf(s.zus)} %</em></span><b>${eur(c.zuschl)}</b></div>`:'')+
+    `<div class="ln total"><span><i class="dot" style="background:var(--green)"></i>Brutto <em>ohne Abzüge</em></span><b>${eur(c.brutto)}</b></div>`+
+    (db.settings.vat?`<div class="ln sub"><span>Rechnung inkl. 19 % MwSt.</span><b>${eur(c.vat)}</b></div>`:'');
   return `<div class="ln"><span><i class="dot" style="background:var(--amber)"></i>Pauschale</span><b>${eur(s.pausch)}</b></div>`+
     `<div class="ln"><span><i class="dot" style="background:var(--teal)"></i>Zeit <em>${num(c.h)} h × ${eur(s.rate)}</em></span><b>${eur(c.base)}</b></div>`+
     (s.zus>0?`<div class="ln"><span><i class="dot" style="background:var(--teal);opacity:.55"></i>Zuschlag <em>${pctf(s.zus)} %</em></span><b>${eur(c.zuschl)}</b></div>`:'')+
@@ -1098,7 +1118,7 @@ function monthTotals(k){
   const t=totals(monthEntries(k)),adj=gzMin(k);
   t.min=Math.round(t.h*60);t.adjMin=Math.max(-t.min,adj);t.paidMin=t.min+t.adjMin;
   if(t.adjMin){const s=db.settings,hr=s.rate*(1+(s.zus||0)/100),br=t.adjMin/60*hr;
-    t.b+=br;t.n+=br*(1-(s.tax+s.soz)/100);t.v+=br*1.19;t.h=t.paidMin/60}
+    t.b+=br;t.n+=br*(1-abzRate(s));t.v+=br*1.19;t.h=t.paidMin/60}
   return t;
 }
 const mins=m=>{m=Math.round(m);return m+' min'+(Math.abs(m)>=60?' · '+(m<0?'−':'')+Math.floor(Math.abs(m)/60)+':'+pad(Math.abs(m)%60)+' h':'')};
@@ -1285,7 +1305,7 @@ function entryHTML(e){
   return `<button class="entry" data-id="${e.id}"><div class="day${we?' we':''}"><b>${pad(d.getDate())}</b><span>${wd(e.start)}</span></div>
       <div class="mid"><div class="t">${hm(e.start)}–${hm(e.end)}</div>
       <div class="n">${Math.round(c.h*60)} min · ${e.note?esc(e.note):eur(e.s.rate)+'/h'}</div></div>
-      <div class="amt"><b>${eur(c.netto)}</b><span>br. ${eur(c.brutto)}</span></div></button>`;
+      <div class="amt"><b>${eur(c.netto)}</b><span>${dedOn()?'br. '+eur(c.brutto):'brutto'}</span></div></button>`;
 }
 function backupDue(){return db.entries.length>=2&&db.changed>db.lastBackup&&Date.now()-db.lastBackup>7*DAY}
 function renderNow(){
@@ -1297,10 +1317,11 @@ function renderNow(){
     const st=r.s.round>1?r.s.round:60,parts=st===15?3:st===30?3:4;
     $('pbTrack').style.setProperty('--mi',st===15?15:st===30?6:12);
     $('pbScale').innerHTML=[...Array(parts+1)].map((_,i)=>`<span>${Math.round(st/parts*i)}${i===parts?' min':''}</span>`).join('');
+    $('liveLbl').textContent=NL();
     pbPrev=-1;tick();return;
   }
   const s=db.settings;
-  $('inSub').textContent=eur(s.pausch)+' Pauschale + '+eur(s.rate)+'/h'+(s.zus>0?' + '+pctf(s.zus)+' %':'');
+  $('inSub').textContent=!(s.pausch>0||s.rate>0)?'Noch kein Satz eingetragen':eur(s.pausch)+' Pauschale + '+eur(s.rate)+'/h'+(s.zus>0?' + '+pctf(s.zus)+' %':'')+(dedOn()?'':' · brutto');
   $('steps').hidden=db.entries.length>0;
   $('rateMissing').hidden=s.rate>0||!db.wizardDone;
   $('wizNote').hidden=!!db.wizardDone;
@@ -1313,7 +1334,7 @@ function renderNow(){
     $('recentSum').innerHTML=`<span>${last5.length} Einsätze · ${Math.round(t.h*60)} min</span><span>zusammen <b>${eur(t.n)}</b></span>`}
   $('recentSum').hidden=last5.length<2;
   const k=ym(new Date()),t=monthTotals(k);
-  $('mmName').textContent='Diesen Monat · '+monthOnly(k);
+  $('mmName').textContent='Diesen Monat · '+monthOnly(k)+(dedOn()?'':' · brutto');
   $('mmNetto').textContent=eur(t.n);$('mmBrutto').textContent=eur(t.b);
   $('mmHours').textContent=num(t.h);$('mmCount').textContent=t.count;
   renderMonthBar(k,t);
@@ -1329,7 +1350,7 @@ function renderMonthBar(k,t){
   const es=monthEntries(k).slice().reverse();
   const vals=es.map(e=>{const c=calc(e.end-e.start,e.s);return{n:c.netto,h:c.h}});
   const M=[
-    {k:'sum',label:'Netto',goal:G.sum,cur:Math.max(0,t.n),step:v=>v.n,fmt:v=>eur(v),rest:v=>eur(v),
+    {k:'sum',label:dedOn()?'Netto':'Brutto',goal:G.sum,cur:Math.max(0,t.n),step:v=>v.n,fmt:v=>eur(v),rest:v=>eur(v),
       col:'--c:var(--mp1);--c2:var(--mp1b)'},
     {k:'days',label:'Tage',goal:G.days,cur:t.count,step:()=>1,fmt:v=>String(v),rest:v=>plural(v,'Tag','Tage'),
       col:'--c:var(--mp2);--c2:var(--mp2b)'},
@@ -1366,17 +1387,17 @@ let plDays=0;
 function planEstimate(){
   const st=db.settings,h=toNum($('plHrs').value)+toNum($('plMin').value)/60;
   if(!(plDays>0)&&!(h>0))return null;
-  const hr=st.rate*(1+(st.zus||0)/100),br=plDays*st.pausch+h*hr,pct=(st.tax+st.soz)/100;
+  const hr=st.rate*(1+(st.zus||0)/100),br=plDays*st.pausch+h*hr,pct=abzRate(st);
   return{h,net:br-(st.pauschTax?br:h*hr)*pct};
 }
 function planPreview(){
   $('plDays').textContent=plDays;$('plDm').disabled=plDays<=0;$('plDp').disabled=plDays>=31;
   const e=planEstimate();$('plCalc').hidden=!e;
-  if(e)$('plCalcT').textContent=`${plural(plDays,'Tag','Tage')} · ${hmin(e.h*60)} h ≈ ${eur(e.net)} netto`;
+  if(e)$('plCalcT').textContent=`${plural(plDays,'Tag','Tage')} · ${hmin(e.h*60)} h ≈ ${eur(e.net)} ${NL()}`;
 }
 function openPlan(){
   const G=planGoals();plDays=G.days;
-  $('plSum').value=G.sum?inp(G.sum):'';$('plHrs').value=G.min?Math.floor(G.min/60):'';$('plMin').value=G.min?G.min%60:'';
+  $('plSumH').textContent=NL()+' im Monat';$('plSum').value=G.sum?inp(G.sum):'';$('plHrs').value=G.min?Math.floor(G.min/60):'';$('plMin').value=G.min?G.min%60:'';
   planPreview();$('planSheet').showModal();$('plHead').focus({preventScroll:true});
 }
 $('plDm').onclick=()=>{plDays=Math.max(0,plDays-1);planPreview()};
@@ -1518,16 +1539,16 @@ $('fSave').onclick=()=>{
   if(sheetMode==='stop'){
     if(!db.running){$('sheet').close();return}
     db.entries.push({id:Date.now(),start:f.start,end:f.end,note:f.note,s:f.s});db.running=null;
-    viewMonth=ym(new Date(f.start));buzz();toast('Gespeichert · '+eur(c.netto)+' netto');
+    viewMonth=ym(new Date(f.start));buzz();toast('Gespeichert · '+eur(c.netto)+' '+NL());
   }else if(sheetMode==='run'){
     if(!db.running){$('sheet').close();return}
     Object.assign(db.running,{start:f.start,note:f.note,s:f.s});toast('Korrigiert');
   }else if(sheetMode==='edit'){
     const x=db.entries.find(e=>e.id==sheetId);if(x)Object.assign(x,{start:f.start,end:f.end,note:f.note,s:f.s});
-    viewMonth=ym(new Date(f.start));toast('Geändert · '+eur(c.netto)+' netto');
+    viewMonth=ym(new Date(f.start));toast('Geändert · '+eur(c.netto)+' '+NL());
   }else{
     db.entries.push({id:Date.now(),start:f.start,end:f.end,note:f.note,s:f.s});
-    viewMonth=ym(new Date(f.start));toast('Nachgetragen · '+eur(c.netto)+' netto');
+    viewMonth=ym(new Date(f.start));toast('Nachgetragen · '+eur(c.netto)+' '+NL());
   }
   commit();$('sheet').close();render();
 };
@@ -1543,6 +1564,7 @@ function renderHist(){
   $('mName').textContent=monthName(viewMonth);
   $('mNext').disabled=viewMonth>=cur;
   const es=monthEntries(viewMonth),t=monthTotals(viewMonth);
+  $('hLbl').textContent=dedOn()?'Netto im Monat':'Brutto im Monat';$('hDed').setAttribute('aria-checked',dedOn());
   $('hNetto').textContent=eur(t.n);$('hBrutto').textContent=eur(t.b);
   $('hHours').textContent=t.paidMin+' min';$('hCount').textContent=t.count;
   /* Zeit & Gleitzeit */
@@ -1588,7 +1610,7 @@ $('btnCsv').onclick=()=>{
   es.forEach(e=>{const c=calc(e.end-e.start,e.s);T.h+=c.h;T.l+=c.lohn;T.b+=c.brutto;T.a+=c.abz;T.n+=c.netto;T.v+=c.vat;T.p+=e.s.pausch;
     rows.push([new Date(e.start).toLocaleDateString('de-DE'),hm(e.start),hm(e.end),num(c.h),num(e.s.pausch),num(e.s.rate),pctf(e.s.zus||0),num(c.lohn),num(c.brutto),num(c.abz),num(c.netto),num(c.vat),'"'+(e.note||'').replace(/"/g,'""')+'"'])});
   const MT=monthTotals(viewMonth);
-  if(MT.adjMin){const s=db.settings,hr=s.rate*(1+(s.zus||0)/100),br=MT.adjMin/60*hr,ab=br*(s.tax+s.soz)/100;
+  if(MT.adjMin){const s=db.settings,hr=s.rate*(1+(s.zus||0)/100),br=MT.adjMin/60*hr,ab=br*abzRate(s);
     rows.push(['Gleitzeit-Ausgleich','','',num(MT.adjMin/60),'','','',num(br),num(br),num(ab),num(br-ab),num(br*1.19),'"'+MT.adjMin+' min"']);
     T.h+=MT.adjMin/60;T.l+=br;T.b+=br;T.a+=ab;T.n+=br-ab;T.v+=br*1.19}
   rows.push(['Summe','','',num(T.h),num(T.p),'','',num(T.l),num(T.b),num(T.a),num(T.n),num(T.v),'']);
@@ -1715,7 +1737,7 @@ function renderPay(full){
     (P.konto?ln('Kontoführungsgebühren',eur(P.konto)):'')+
     ln('Stundenlohn Einsätze',eur(R.std),'',`${num(R.hrs)} h × ${eur(s.rate)}`)+
     (s.zus?ln('Überstd.-Zuschlag',eur(R.zus),'',pctf(s.zus)+' %'):'')+
-    ln('Maschinenbestückung',eur(R.pau),'',`${t.count} × ${eur(s.pausch)}`)+
+    ln('Einsatz-Pauschale',eur(R.pau),'',`${t.count} × ${eur(s.pausch)}`)+
     (P.vwlAg?ln('VWL AG-Anteil',eur(P.vwlAg)):'')+
     ln('Gesamt-Brutto',eur(R.brutto),'total');
   $('pAbz').innerHTML=
@@ -1923,6 +1945,9 @@ function renderSet(full){
   if(full)Object.entries(FIELDS).forEach(([id,k])=>{if(document.activeElement!==$(id))$(id).value=inp(s[k])});
   document.querySelectorAll('#sRound button').forEach(b=>b.classList.toggle('on',+b.dataset.v===+s.round));
   $('sPT').setAttribute('aria-checked',!!s.pauschTax);$('sVat').setAttribute('aria-checked',!!s.vat);
+  $('sDed').setAttribute('aria-checked',dedOn());
+  $('sDedHint').textContent=dedOn()?'An – Einsätze werden netto gerechnet':'Aus – Beträge brutto, ohne Abzug';
+  document.querySelectorAll('#v-set .ded-x').forEach(el=>el.hidden=!dedOn());
   $('sTotal').textContent=pctf(s.tax+s.soz)+' %';
   {const G=planGoals(),pp=[G.sum?eur(G.sum):'',G.days?plural(G.days,'Tag','Tage'):'',G.min?hmin(G.min)+' h':''].filter(Boolean);
    $('goPlanSub').textContent=pp.length?pp.join(' · '):'kein Ziel gesetzt'}
@@ -1947,6 +1972,9 @@ Object.entries(FIELDS).forEach(([id,k])=>{
 $('sRound').onclick=e=>{const b=e.target.closest('button');if(!b)return;db.settings.round=+b.dataset.v;settingsChanged()};
 $('sPT').onclick=()=>{db.settings.pauschTax=db.settings.pauschTax?0:1;settingsChanged()};
 $('sVat').onclick=()=>{db.settings.vat=!db.settings.vat;commit();renderSet(false)};
+function setDed(on){db.settings.ded=on?1:0;commit();render();toast(on?'Mit Abzügen · Beträge netto':'Ohne Abzüge · Beträge brutto')}
+$('sDed').onclick=()=>setDed(!dedOn());
+$('hDed').onclick=()=>setDed(!dedOn());
 $('goCalc').onclick=()=>show('calc');
 
 $('btnApply').onclick=()=>{
@@ -1975,6 +2003,15 @@ async function exportBackup(){
   toast('Backup gespeichert · '+plural(db.entries.length,'Einsatz','Einsätze'));
 }
 $('btnExport').onclick=exportBackup;
+$('btnWipe').onclick=async()=>{
+  const v=await ask('Alle Daten löschen?','Alle Einsätze, Sätze (Stundenlohn, Pauschale), Lohndaten und Sonderzahlungen werden von diesem Gerät entfernt. Speichere vorher ein Backup, wenn du sie noch brauchst.',
+    [{label:'Abbrechen',v:'no'},{label:'Löschen',v:'yes',cls:'pri dark'}]);
+  if(v!=='yes')return;
+  const prev=clone(db);
+  try{localStorage.removeItem(KEY)}catch(e){}
+  db=load();payMonth=null;viewMonth=ym(new Date());render();
+  toast('Alle Daten gelöscht','Rückgängig',()=>{db=prev;save();render()});
+};
 $('btnImport').onclick=()=>$('fileIn').click();
 $('fileIn').onchange=async()=>{
   const file=$('fileIn').files[0];$('fileIn').value='';if(!file)return;
@@ -2040,35 +2077,38 @@ function prHours(k){
   return `<section class="pd">${pdHead('Stundennachweis',monthName(k),[['Name',''],['Monat',monthName(k)],['Einsätze',String(es.length)],['Bezahlt',num(t.paidMin/60)+' h']])}`+
     pdTable(head,rows,foot,'Keine Einsätze in diesem Monat')+
     `<div class="pd-2" style="margin-top:12px"><div class="pd-note">${note}</div><div>${sum}</div></div>`+
-    pdSig()+pdFoot('Arbeitszeit-Nachweis · Maschinenbestückung außerhalb der regulären Arbeitszeit.')+'</section>';
+    pdSig()+pdFoot('Arbeitszeit-Nachweis · Einsätze außerhalb der regulären Arbeitszeit.')+'</section>';
 }
 
 /* 2 · Einsätze & Verdienst – mit Beträgen */
 function prEarn(k){
   const es=monthEntries(k).slice().reverse(),t=monthTotals(k),S=db.settings;
-  const zus=es.some(e=>e.s.zus>0)||(t.adjMin&&S.zus>0),vat=!!S.vat;
+  const zus=es.some(e=>e.s.zus>0)||(t.adjMin&&S.zus>0),vat=!!S.vat,ded=dedOn();
   const T={m:0,p:0,l:0,z:0,b:0,a:0,n:0,v:0};
-  const row=(d,z,m,p,l,lr,zz,b,a,n,v)=>'<tr>'+td(d)+td(z,1)+td(m,1)+td(p,1)+td(l+(lr?`<br><span class="mu sm">${lr}</span>`:''),1)+(zus?td(zz,1):'')+td(b,1)+td(a,1)+td('<b>'+n+'</b>',1)+(vat?td(v,1):'')+'</tr>';
+  const row=(d,z,m,p,l,lr,zz,b,a,n,v)=>'<tr>'+td(d)+td(z,1)+td(m,1)+td(p,1)+td(l+(lr?`<br><span class="mu sm">${lr}</span>`:''),1)+(zus?td(zz,1):'')+(ded?td(b,1)+td(a,1)+td('<b>'+n+'</b>',1):td('<b>'+b+'</b>',1))+(vat?td(v,1):'')+'</tr>';
   const rows=es.map(e=>{
     const c=calc(e.end-e.start,e.s),m=Math.round(c.h*60);
     T.m+=m;T.p+=e.s.pausch;T.l+=c.base;T.z+=c.zuschl;T.b+=c.brutto;T.a+=c.abz;T.n+=c.netto;T.v+=c.vat;
     return row(dDE(e.start).slice(0,6)+' '+wd(e.start),hm(e.start)+'–'+hm(e.end),m,num(e.s.pausch),num(c.base),num(e.s.rate)+' €/h',c.zuschl?num(c.zuschl):'–',num(c.brutto),num(c.abz),num(c.netto),num(c.vat));
   });
   if(t.adjMin){
-    const base=t.adjMin/60*S.rate,z=base*(S.zus||0)/100,br=base+z,ab=br*(S.tax+S.soz)/100;
+    const base=t.adjMin/60*S.rate,z=base*(S.zus||0)/100,br=base+z,ab=br*abzRate(S);
     T.m+=t.adjMin;T.l+=base;T.z+=z;T.b+=br;T.a+=ab;T.n+=br-ab;T.v+=br*1.19;
     rows.push(row('Gleitzeit-Ausgleich','',pm(t.adjMin),'–',sn(base),num(S.rate)+' €/h',z?sn(z):'–',sn(br),sn(ab),sn(br-ab),sn(br*1.19)));
   }
-  const head=[['Datum'],['Zeit',1],['Min',1],['Pauschale €',1],['Lohn €',1]].concat(zus?[['Zuschlag €',1]]:[],[['Brutto €',1],['Abzüge €',1],['Netto €',1]],vat?[['inkl. MwSt €',1]]:[]);
-  const foot=rows.length?'<tr><td colspan="2">Summe</td>'+td(T.m,1)+td(num(T.p),1)+td(num(T.l),1)+(zus?td(num(T.z),1):'')+td(num(T.b),1)+td(num(T.a),1)+td(num(T.n),1)+(vat?td(num(T.v),1):'')+'</tr>':'';
-  const sum=pdKV([
+  const head=[['Datum'],['Zeit',1],['Min',1],['Pauschale €',1],['Lohn €',1]].concat(zus?[['Zuschlag €',1]]:[],ded?[['Brutto €',1],['Abzüge €',1],['Netto €',1]]:[['Brutto €',1]],vat?[['inkl. MwSt €',1]]:[]);
+  const foot=rows.length?'<tr><td colspan="2">Summe</td>'+td(T.m,1)+td(num(T.p),1)+td(num(T.l),1)+(zus?td(num(T.z),1):'')+(ded?td(num(T.b),1)+td(num(T.a),1)+td(num(T.n),1):td(num(T.b),1))+(vat?td(num(T.v),1):'')+'</tr>':'';
+  const sum=pdKV(ded?[
     ['Brutto',eur(t.b)],
     ['Abzüge',(t.b-t.n>0?'− ':'')+eur(t.b-t.n),'','geschätzt'],
     ['Netto',eur(t.n),'t'],
     vat?['Rechnung inkl. 19 % MwSt.',eur(t.v)]:null
+  ]:[
+    ['Brutto',eur(t.b),'t','ohne Abzüge'],
+    vat?['Rechnung inkl. 19 % MwSt.',eur(t.v)]:null
   ]);
-  const note=`Satz aktuell: ${eur(S.pausch)} Pauschale je Einsatz · ${eur(S.rate)}/h${S.zus?' · '+pctf(S.zus)+' % Zuschlag':''}. Abzüge geschätzt mit ${pctf(S.tax)} % Steuern + ${pctf(S.soz)} % Sozialabgaben${S.pauschTax?'':' (Pauschale ohne Abzug)'} – genau: Gehaltsabrechnung.`;
-  return `<section class="pd">${pdHead('Einsätze & Verdienst',monthName(k),[['Monat',monthName(k)],['Einsätze',String(es.length)],['Bezahlte Zeit',t.paidMin+' min'],['Netto',eur(t.n)]])}`+
+  const note=`Satz aktuell: ${eur(S.pausch)} Pauschale je Einsatz · ${eur(S.rate)}/h${S.zus?' · '+pctf(S.zus)+' % Zuschlag':''}. `+(ded?`Abzüge geschätzt mit ${pctf(S.tax)} % Steuern + ${pctf(S.soz)} % Sozialabgaben${S.pauschTax?'':' (Pauschale ohne Abzug)'} – genau: Gehaltsabrechnung.`:'Beträge brutto, ohne Steuern und Sozialabgaben.');
+  return `<section class="pd">${pdHead('Einsätze & Verdienst',monthName(k),[['Monat',monthName(k)],['Einsätze',String(es.length)],['Bezahlte Zeit',t.paidMin+' min'],[ded?'Netto':'Brutto',eur(t.n)]])}`+
     pdTable(head,rows,foot,'Keine Einsätze in diesem Monat')+
     `<div class="pd-2" style="margin-top:12px"><div class="pd-note">${note}</div><div>${sum}</div></div>`+
     pdFoot('Beträge in Euro. Lohn = gezählte Stunden × Stundenlohn.')+'</section>';
@@ -2082,7 +2122,7 @@ function prPay(k){
     P.konto?['Kontoführungsgebühren','','',P.konto]:null,
     ['Stundenlohn Einsätze',num(R.hrs)+' h',eur(s.rate),R.std],
     s.zus?['Überstunden-Zuschlag',num(R.hrs)+' h',pctf(s.zus)+' %',R.zus]:null,
-    ['Maschinenbestückung',t.count+' ×',eur(s.pausch),R.pau],
+    ['Einsatz-Pauschale',t.count+' ×',eur(s.pausch),R.pau],
     P.vwlAg?['VWL Arbeitgeber-Anteil','','',P.vwlAg]:null
   ].filter(Boolean).map(([a,m,sz,v])=>'<tr>'+td(a)+td(m,1)+td(sz,1)+td(num(v),1)+'</tr>');
   const bez=pdTable([['Bezüge'],['Menge',1],['Satz',1],['Betrag €',1]],rows,`<tr><td colspan="3">Gesamt-Brutto</td>${td(num(R.brutto),1)}</tr>`);
@@ -2267,7 +2307,7 @@ const WZ=[
    <div class="group">
     <div class="fld"><label class="lb" for="wPausch">Pauschale<small>fürs Kommen, pro Einsatz</small></label><div class="num"><input id="wPausch" data-k="pausch" inputmode="decimal" autocomplete="off" value="${inp(w.pausch)}"><i>€</i></div></div>
     <div class="fld"><label class="lb" for="wRate">Stundenlohn<small>brutto</small></label><div class="num"><input id="wRate" data-k="rate" inputmode="decimal" autocomplete="off" value="${inp(w.rate)}"><i>€/h</i></div></div>
-    <div class="fld"><label class="lb" for="wZus">Zuschlag<small>z. B. Überstunden 15 % · sonst 0</small></label><div class="num"><input id="wZus" data-k="zus" inputmode="decimal" autocomplete="off" value="${inp(w.zus)}"><i>%</i></div></div>
+    <div class="fld"><label class="lb" for="wZus">Zuschlag<small>z. B. Überstunden-Zuschlag · sonst 0</small></label><div class="num"><input id="wZus" data-k="zus" inputmode="decimal" autocomplete="off" value="${inp(w.zus)}"><i>%</i></div></div>
    </div>`,ok:()=>w.rate>0},
  {id:'often',ill:'cal',h:'Wie oft kommst du?',body:()=>`<p class="wz-p">Ungefähr reicht – das braucht man nur, um die Steuer richtig zu schätzen.</p>
    <div class="group">
