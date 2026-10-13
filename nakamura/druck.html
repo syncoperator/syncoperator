@@ -656,6 +656,7 @@ dialog::backdrop{background:var(--scrim)}
 .foot2{text-align:center;font-family:var(--mono);font-size:9.5px;color:var(--dim);letter-spacing:.18em;text-transform:uppercase;margin:14px 0 4px;line-height:1.7}
 .foot2 a{color:var(--ink);font-weight:600}
 .pp{--u:calc(1 * var(--u))}
+@media print{.pimg{width:100%;break-after:page;page-break-after:always}.pimg:last-child{break-after:auto;page-break-after:auto}.pimg img{display:block;width:100%;height:auto}}
 @media print{.pp.fitp{width:100%;container-type:inline-size;display:flex;align-items:center;justify-content:center;overflow:hidden;margin:0 auto}}
 /* Etikett · Stil Werkzeug (wie in der Werkzeug-App) */
 .pp .wl{position:absolute;inset:0;display:flex;gap:calc(1.5 * var(--u));overflow:hidden;color:#000;text-transform:uppercase;font-family:var(--sans)}
@@ -1505,6 +1506,7 @@ function edPreview(){
   const all=ed.t.perCopy?edPages(ed.copies):pages,p0=pages[0]||{w:210,h:297};
   const info=ed.t.info?ed.t.info(ed.d,all,ed.copies):plural(pages.length*(ed.t.perCopy?1:ed.copies),'Seite','Seiten')+' · '+(p0.w===210&&p0.h===297?'A4 hoch':p0.w===297&&p0.h===210?'A4 quer':p0.w+'×'+p0.h+' mm');
   $('edPg').innerHTML=`<span>${info}</span>${ov?'<span class="ovf">Text passt nicht ganz aufs Blatt – kürzen</span>':''}`;
+  snapSchedule();
 }
 window.addEventListener('resize',()=>{if(ed){clearTimeout(pvT);pvT=setTimeout(edPreview,120)}});
 $('edX').onclick=()=>$('ed').close();
@@ -1512,6 +1514,15 @@ $('ed').addEventListener('close',()=>{if($('ed').open)return;ed=null;$('edPv').i
 $('edCm').onclick=()=>{if(ed.copies>1){ed.copies--;$('edCn').textContent=ed.copies+'×';edPreview()}};
 $('edCp').onclick=()=>{if(ed.copies<50){ed.copies++;$('edCn').textContent=ed.copies+'×';edPreview()}};
 $('edPrint').onclick=async()=>{
+  if(!ed)return;
+  const fp=edFitPages();
+  if(fp){
+    const name=ed.t.label(ed.d),js=JSON.stringify(ed.d),file=(ed.t.name+'_'+name).replace(/[^\wäöüÄÖÜß.-]+/g,'_').slice(0,60);
+    pr.recent=[{id:Date.now(),tpl:ed.id,name,data:clone(ed.d),ts:Date.now()},...pr.recent.filter(r=>!(r.tpl===ed.id&&JSON.stringify(r.data)===js))].slice(0,10);prSave();
+    const key=JSON.stringify(fp.map(p=>[p.w,p.h,p.html]));
+    if(snapImgs&&snapKey===key){printImgs(snapImgs,file);return}
+    toast('Blatt wird vorbereitet …');const imgs=await snapPrepare(fp);printImgs(imgs,file);return;
+  }
   await fontsOk;if(!ed)return;
   let pages=edPages(ed.copies);
   if(!ed.t.perCopy&&ed.copies>1){const b=pages;pages=[];for(let i=0;i<ed.copies;i++)pages=pages.concat(b)}
@@ -1645,6 +1656,153 @@ function migrateOld(){
   });
   prSave();
 }
+
+/* ---------- Maschinen-Statuskarte (für die Magnettafel) ---------- */
+const STAT={
+  lauf:  {t:'Läuft',   sub:'Produktion',            ic:'<circle cx="12" cy="12" r="10"/><path d="M10 8.3v7.4l6-3.7z" fill="currentColor"/>'},
+  ruest: {t:'Rüsten',  sub:'Einrichten · Umbau',    ic:'<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.8-3.8a6 6 0 0 1-7.9 7.9l-6.9 6.9a2.1 2.1 0 0 1-3-3l6.9-6.9a6 6 0 0 1 7.9-7.9z"/>'},
+  wart:  {t:'Wartung', sub:'Instandhaltung',        ic:'<circle cx="12" cy="12" r="3.2"/><circle cx="12" cy="12" r="6.6"/><path d="M12 2.2v3.2M12 18.6v3.2M2.2 12h3.2M18.6 12h3.2M5.1 5.1l2.2 2.2M16.7 16.7l2.2 2.2M5.1 18.9l2.2-2.2M16.7 7.3l2.2-2.2"/>'},
+  wartet:{t:'Wartet',  sub:'Material · Programm · Prüfung', ic:'<circle cx="12" cy="12" r="10"/><path d="M12 6.5V12l3.6 2.4"/>'},
+  stoer: {t:'Störung', sub:'Bitte nicht starten',   ic:'<path d="M12 2.8 1.8 20.5h20.4z"/><path d="M12 9.8v4.6M12 17.4h.01"/>'},
+  gesp:  {t:'Gesperrt',sub:'Nicht benutzen',        ic:'<circle cx="12" cy="12" r="10"/><path d="M4.9 4.9l14.2 14.2"/>'},
+  frei:  {t:'Frei',    sub:'Bereit für Auftrag',    ic:'<circle cx="12" cy="12" r="10"/><path d="m7.4 12.4 3.1 3.1 6.1-6.6"/>'}
+};
+const STAT_ORDER=['lauf','ruest','wart','wartet','stoer','gesp','frei'];
+const SFMT={a4:{cols:1,rows:1},a5:{cols:1,rows:2},a6:{cols:2,rows:2}};
+function statusCard(it,w,h,d){
+  const S=it.s==='eigen'?{t:d.eigen||'Status',sub:'',ic:'<circle cx="12" cy="12" r="10"/><path d="M12 7v6M12 16.5h.01"/>'}:STAT[it.s];
+  const inv=it.s==='stoer',fg=inv?'#fff':'#111214',u=Math.min(w,h*1.414)/100,fi=Math.max(2.5,u*3),p=u*5.5;
+  const iw=w-2*fi-2*p,row=w>h*1.2;
+  let frame;
+  if(it.s==='gesp'){const id='st'+(++uid),b=u*5.5;
+    frame=`<svg style="position:absolute;left:${fi}mm;top:${fi}mm;width:${w-2*fi}mm;height:${h-2*fi}mm" viewBox="0 0 ${w-2*fi} ${h-2*fi}"><defs><pattern id="${id}" width="${u*5}" height="${u*5}" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="${u*2.5}" height="${u*5}" fill="#111214"/></pattern></defs><path fill="url(#${id})" fill-rule="evenodd" d="M0 0H${w-2*fi}V${h-2*fi}H0Z M${b} ${b}V${h-2*fi-b}H${w-2*fi-b}V${b}Z"/></svg>`}
+  else{const bw={lauf:u*1.6,frei:u*.45,ruest:u*1.2,wart:u*1.8,wartet:u*1.1,eigen:u*1}[it.s]||u,bs={ruest:'dashed',wart:'double',wartet:'dotted'}[it.s]||'solid';
+    frame=`<div style="position:absolute;left:${fi}mm;top:${fi}mm;right:${fi}mm;bottom:${fi}mm;border:${inv?0:bw.toFixed(2)}mm ${bs} #111214;border-radius:${(u*2.2).toFixed(2)}mm;${inv?'background:#111214':''}"></div>`}
+  const pad=fi+p+(it.s==='gesp'?u*4:0),cw=w-2*pad;
+  const name=it.m||'Maschine',ns=fitS(name,cw-u*22,u*9,{max:u*6.4});
+  const isz=row?Math.min((h-2*pad)*0.42,cw*0.24):Math.min(cw*0.36,(h-2*pad)*0.24);
+  const ws=fitS(S.t,row?cw-isz-u*5:cw,isz*0.95,{max:u*(row?15:17),ls:.03,up:1});
+  const F=[['Auftrag',d.auftrag],['Seit',d.seit],...(['wart','gesp','stoer','ruest','wartet'].includes(it.s)?[['Bis vorauss.',d.bis]]:[]),['Name',d.name]].filter(f=>d.lines||f[1]);
+  const logo=`<div style="${inv?'filter:invert(1);':''}flex:none">${logoRow(Math.max(2.6,u*2.6))}</div>`;
+  const sub=d.notiz||S.sub;
+  return frame+`<div style="position:absolute;left:${pad}mm;top:${pad}mm;right:${pad}mm;bottom:${pad}mm;display:flex;flex-direction:column;color:${fg}">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:${u*3}mm;flex:none">
+      <div style="font-weight:700;font-size:${ns}mm;line-height:1.05;white-space:nowrap;letter-spacing:-.01em">${esc(name)}</div>${logo}</div>
+    <div style="height:${(u*.35).toFixed(2)}mm;background:${fg};margin-top:${u*2.2}mm;flex:none;opacity:.9"></div>
+    <div style="flex:1;min-height:0;display:flex;${row?'flex-direction:row':'flex-direction:column'};align-items:center;justify-content:center;gap:${u*(row?5:3)}mm;text-align:center">
+      <svg viewBox="0 0 24 24" style="width:${isz.toFixed(2)}mm;height:${isz.toFixed(2)}mm;flex:none;color:${fg}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${S.ic}</svg>
+      <div style="display:flex;flex-direction:column;align-items:${row?'flex-start':'center'};min-width:0">
+        <div style="font-weight:700;font-size:${ws}mm;line-height:1;letter-spacing:.03em;text-transform:uppercase;white-space:nowrap">${esc(S.t)}</div>
+        ${sub?`<div class="mo" style="font-size:${(u*2.6).toFixed(2)}mm;letter-spacing:.18em;text-transform:uppercase;margin-top:${u*2.2}mm;opacity:.75;white-space:nowrap;max-width:${(row?cw-isz-u*5:cw).toFixed(2)}mm;overflow:hidden;text-overflow:ellipsis">${esc(sub)}</div>`:''}
+      </div>
+    </div>
+    ${F.length?`<div style="display:grid;grid-template-columns:repeat(${F.length},1fr);gap:${u*3.5}mm;flex:none">${F.map(([l,v])=>`<div style="min-width:0"><div class="mo" style="font-size:${(u*1.7).toFixed(2)}mm;letter-spacing:.16em;text-transform:uppercase;opacity:.7">${l}</div><div class="mo" style="font-size:${(u*3).toFixed(2)}mm;font-weight:600;min-height:${(u*6).toFixed(2)}mm;border-bottom:${(u*.3).toFixed(2)}mm solid ${fg};padding-top:${u}mm;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(v||'')}</div></div>`).join('')}</div>`:''}
+  </div>`;
+}
+TPL.status={name:'Maschinen-Status',sub:'Karten für die Magnettafel',ic:'status',perCopy:true,
+  def:()=>({masch:'WT-250 II · M1',mode:'set',status:'lauf',eigen:'',fmt:'a5',lines:true,auftrag:'',seit:'',bis:'',name:'',notiz:''}),
+  fields:[
+    {k:'masch',t:'area',rows:2,l:'Maschine(n)',ph:'WT-250 II · M1\nWT-250 II · M2',hint:'Eine Zeile = eine Maschine'},
+    {k:'mode',t:'seg',l:'Drucken',o:[['set','Ganzer Satz'],['one','Ein Status']],hint:d=>d.mode==='set'?'Alle '+(STAT_ORDER.length+(d.eigen?1:0))+' Karten pro Maschine – einmal drucken, an der Tafel tauschen':''},
+    {k:'status',t:'sel',l:'Status',o:[...STAT_ORDER.map(k=>[k,STAT[k].t+' – '+STAT[k].sub]),['eigen','Eigener Status']],show:d=>d.mode==='one'},
+    {k:'eigen',l:'Eigener Status',ph:'z. B. PROBELAUF',show:d=>d.mode==='set'||d.status==='eigen',hint:d=>d.mode==='set'?'optional – kommt als zusätzliche Karte dazu':''},
+    {k:'fmt',t:'seg',l:'Größe',o:[['a4','A4'],['a5','A5 · 2/Blatt'],['a6','A6 · 4/Blatt']]},
+    {t:'h',l:'Angaben'},
+    {k:'lines',t:'tog',l:'Schreibfelder',sub:'Auftrag · Seit · Name zum Ausfüllen mit Stift'},
+    {k:'auftrag',l:'Auftrag / Teil',half:1,mono:1},{k:'seit',l:'Seit',half:1,ph:'13.10. 6:00'},
+    {k:'bis',l:'Bis voraussichtlich',half:1},{k:'name',l:'Name',half:1},
+    {k:'notiz',l:'Zusatzzeile',ph:'statt Standardtext, z. B. Spindel wird getauscht'}],
+  items(d){
+    const M=lns(d.masch);const ms=M.length?M:[''];
+    const ss=d.mode==='one'?[d.status||'lauf']:[...STAT_ORDER,...(d.eigen?['eigen']:[])];
+    return ms.flatMap(m=>ss.map(s=>({m,s})));
+  },
+  pages(d,copies=1){
+    let it=TPL.status.items(d);if(copies>1)it=it.flatMap(x=>Array(copies).fill(x));
+    const f=SFMT[d.fmt]||SFMT.a5,per=f.cols*f.rows,cw=210/f.cols,ch=297/f.rows,pages=[];
+    for(let i=0;i<it.length;i+=per){
+      const pg=it.slice(i,i+per);let h='';
+      pg.forEach((x,k)=>{const r=Math.floor(k/f.cols),c=k%f.cols;
+        h+=`<div class="lc" style="left:${c*cw}mm;top:${r*ch}mm;width:${cw}mm;height:${ch}mm">${statusCard(x,cw,ch,d)}</div>`});
+      for(let c=1;c<f.cols;c++)h+=`<div style="position:absolute;left:${c*cw}mm;top:0;bottom:0;border-left:.25mm dashed #9A9EA6"></div>`;
+      for(let r=1;r<f.rows;r++)h+=`<div style="position:absolute;top:${r*ch}mm;left:0;right:0;border-top:.25mm dashed #9A9EA6"></div>`;
+      pages.push({w:210,h:297,fit:1,html:h});
+    }
+    return pages;
+  },
+  info:(d,pages,copies)=>{const n=TPL.status.items(d).length*copies;return plural(n,'Karte','Karten')+' · '+plural(pages.length,'Blatt','Blätter')+' A4'},
+  label:d=>(lns(d.masch)[0]||'Maschine')+' · '+(d.mode==='set'?'Satz':(d.status==='eigen'?d.eigen:(STAT[d.status]||STAT.lauf).t))};
+ICP.status='<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="12" r="2.6"/><path d="M13.5 10h5M13.5 14h3"/>';
+ORDER.splice(ORDER.indexOf('aushang')+1,0,'status');
+
+/* ---------- Druck als Bild: Seite → SVG (Schriften eingebettet) → <img>. Was in der Vorschau steht, kommt aufs Papier. ---------- */
+const FONT_URL='https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Poppins:wght@600&family=Space+Grotesk:wght@400;500;600;700&display=swap';
+let fontP=null;
+function fontCSS(){
+  if(fontP)return fontP;
+  fontP=(async()=>{
+    const css=await (await fetch(FONT_URL)).text();
+    const blocks=css.split(/(?=\/\*)/).filter(b=>/\/\*\s*latin(-ext)?\s*\*\//.test(b));
+    const out=await Promise.all(blocks.map(async b=>{
+      const m=b.match(/url\((https:[^)]+)\)/);if(!m)return'';
+      const buf=await (await fetch(m[1])).arrayBuffer();let s='';const u=new Uint8Array(buf);
+      for(let i=0;i<u.length;i+=0x8000)s+=String.fromCharCode.apply(null,u.subarray(i,i+0x8000));
+      return b.replace(m[1],'data:font/woff2;base64,'+btoa(s)).replace(/^\/\*[^*]*\*\//,'');
+    }));
+    return out.join('\n');
+  })().catch(e=>{fontP=null;return''});
+  return fontP;
+}
+let ppCSSCache='';
+function ppCSS(){
+  if(ppCSSCache)return ppCSSCache;
+  let t='';
+  for(const sh of document.styleSheets){let rs;try{rs=sh.cssRules}catch(e){continue}
+    for(const r of rs)if(r.selectorText&&/\.pp\b/.test(r.selectorText)&&!/\.ed-pv|\.fitp/.test(r.selectorText))t+=r.cssText+'\n'}
+  return ppCSSCache=t;
+}
+const PX=96/25.4;
+async function pageImg(p){
+  const W=p.w,H=p.h,A=W<H?1.33:0.62,OH=W*A,k=Math.min(1,OH/H),ox=(W-W*k)/2,oy=(OH-H*k)/2;
+  const host=document.createElement('div');host.innerHTML=`<div class="pp" style="width:${W}mm;height:${H}mm;--u:1mm">${p.html}</div>`;
+  const xhtml=new XMLSerializer().serializeToString(host.firstChild);
+  const fonts=await fontCSS();
+  const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="${W}mm" height="${OH.toFixed(2)}mm" viewBox="0 0 ${(W*PX).toFixed(2)} ${(OH*PX).toFixed(2)}">
+<rect width="100%" height="100%" fill="#fff"/>
+<g transform="translate(${(ox*PX).toFixed(2)} ${(oy*PX).toFixed(2)}) scale(${k.toFixed(5)})"><foreignObject x="0" y="0" width="${(W*PX).toFixed(2)}" height="${(H*PX).toFixed(2)}">
+<style>${fonts}
+.pp{--sans:'Space Grotesk',system-ui,-apple-system,'Segoe UI',sans-serif;--mono:'JetBrains Mono',ui-monospace,Menlo,monospace;margin:0}
+${ppCSS()}</style>${xhtml}</foreignObject></g></svg>`;
+  const img=new Image();img.alt='';img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
+  try{await img.decode()}catch(e){await new Promise(r=>{img.onload=img.onerror=r;if(img.complete)r()})}
+  return img;
+}
+/* vorbereitete Bilder für den aktuellen Editor-Stand (damit Drucken sofort im Tipp passiert – iPhone mag kein verzögertes print()) */
+let snapKey='',snapImgs=null,snapBusy=null,snapT=0;
+function snapPrepare(pages){
+  const key=JSON.stringify(pages.map(p=>[p.w,p.h,p.html]));
+  if(key===snapKey&&(snapImgs||snapBusy))return snapBusy||Promise.resolve(snapImgs);
+  snapKey=key;snapImgs=null;
+  const my=snapBusy=Promise.all(pages.map(pageImg)).then(imgs=>{if(snapKey===key){snapImgs=imgs;snapBusy=null}return imgs});
+  return my;
+}
+function snapSchedule(){clearTimeout(snapT);snapT=setTimeout(()=>{if(!ed)return;const pg=edFitPages();if(pg)snapPrepare(pg)},450)}
+function edFitPages(){
+  let pages=edPages(ed.copies);if(!pages.length||!pages[0].fit)return null;
+  if(!ed.t.perCopy&&ed.copies>1){const b=pages;pages=[];for(let i=0;i<ed.copies;i++)pages=pages.concat(b)}
+  return pages;
+}
+function printImgs(imgs,name){
+  let st=$('ppCss');if(!st){st=document.createElement('style');st.id='ppCss';document.head.appendChild(st)}
+  st.textContent='@media print{@page{size:A4;margin:0}}';
+  if(imgs[0]&&imgs[0].naturalWidth>imgs[0].naturalHeight)st.textContent='@media print{@page{size:A4 landscape;margin:0}}';
+  const pa=$('printArea');pa.innerHTML='';
+  imgs.forEach(im=>{const d=document.createElement('div');d.className='pimg';d.appendChild(im.cloneNode());pa.appendChild(d)});
+  const t0=document.title;document.title=name;
+  const back=()=>{document.title=t0;removeEventListener('afterprint',back)};addEventListener('afterprint',back);
+  try{window.print()}catch(e){back();toast('Drucken wird hier nicht unterstützt')}
+}
+fontCSS();
 
 
 /* ---------- Sichern / Laden (Vorlagen, Absender, Logo) ---------- */
