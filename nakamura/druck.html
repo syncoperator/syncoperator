@@ -704,7 +704,7 @@ dialog::backdrop{background:var(--scrim)}
     <button class="act" id="dExport"><span class="ico i-green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 4v11m0 0-4-4m4 4 4-4M5 20h14"/></svg></span><span>Sichern<small>Vorlagen, Absender &amp; Logo als Datei</small></span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 6 6 6-6 6"/></svg></button>
     <button class="act" id="dImport"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 20V9m0 0-4 4m4-4 4 4M5 4h14"/></svg></span><span>Laden<small>.json-Datei · auch Einsatz-Backup</small></span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 6 6 6-6 6"/></svg></button>
   </div>
-  <p class="hint">Im Druckdialog <b>Ränder: Keine</b> und <b>Skalierung 100 %</b> wählen – dann sitzen Etiketten millimetergenau. Am iPhone: im Druckdialog zum PDF aufziehen, um es zu sichern oder zu teilen. Vorlagen und Absender liegen nur auf diesem Gerät – über „Sichern“ als Datei speichern.</p>
+  <p class="hint">Dokumente passen immer auf <b>eine Seite</b> – auch am iPhone mit seinen festen Rändern. Etiketten und Brief bleiben millimetergenau: im Druckdialog <b>Skalierung 100 %</b> lassen. Am iPhone: Vorschau mit zwei Fingern aufziehen = PDF zum Sichern oder Teilen. Vorlagen und Absender liegen nur auf diesem Gerät – über „Sichern“ als Datei speichern.</p>
 </section>
 
 <div class="foot2"><a href="../index.html">CITITOOL</a> · Drucken v1.0<br>Nur für mich · Daten bleiben in diesem Browser</div>
@@ -1053,7 +1053,7 @@ function wlHTML(it,w,h,o){
 }
 function sheetPages(items,f,cellHTML,frame,start){
   const fr=frame?' fr':'';
-  if(!f.sheet)return items.map(x=>({w:f.w,h:f.h,html:`<div class="lc${fr}" style="left:0;top:0;width:${f.w}mm;height:${f.h}mm">${cellHTML(x,f.w,f.h)}</div>`}));
+  if(!f.sheet)return items.map(x=>({w:f.w,h:f.h,m:[0,0],html:`<div class="lc${fr}" style="left:0;top:0;width:${f.w}mm;height:${f.h}mm">${cellHTML(x,f.w,f.h)}</div>`}));
   const per=f.cols*f.rows,skip=Math.max(0,Math.min(per-1,(parseInt(start)||1)-1)),slots=Array(skip).fill(null).concat(items);
   const ml=(210-f.cols*f.lw)/2,mt=(297-f.rows*f.lh)/2,pages=[];
   const marks=n=>{const rw=Math.ceil(n/f.cols),hh=rw*f.lh,gw=f.cols*f.lw;let m='';
@@ -1062,7 +1062,7 @@ function sheetPages(items,f,cellHTML,frame,start){
     return m+`<span class="sc" style="left:${ml-6.8}mm;top:${mt-6.8}mm">✂</span>`};
   for(let i=0;i<slots.length;i+=per){
     const pg=slots.slice(i,i+per),cut=f.cut?' ct':'';
-    pages.push({w:210,h:297,html:(f.cut?marks(pg.length):'')+pg.map((x,k)=>{const r=Math.floor(k/f.cols),c=k%f.cols;
+    pages.push({w:210,h:297,m:[Math.max(0,Math.min(8,mt)),Math.max(0,Math.min(8,ml))],html:(f.cut?marks(pg.length):'')+pg.map((x,k)=>{const r=Math.floor(k/f.cols),c=k%f.cols;
       return `<div class="lc${x?fr+cut+(x&&f.cut&&c===0?' c0':'')+(x&&f.cut&&(r===0||!pg[k-f.cols])?' r0':''):''}" style="left:${(ml+c*f.lw).toFixed(2)}mm;top:${(mt+r*f.lh).toFixed(2)}mm;width:${f.lw}mm;height:${f.lh}mm">${x?cellHTML(x,f.lw,f.lh):''}</div>`}).join('')});
   }
   return pages;
@@ -1092,7 +1092,7 @@ TPL.deckblatt={name:'Deckblatt',sub:'Einrichteblatt · Auftrag · Ordner',ic:'de
     {k:'f1l',l:'Feld 1',half:1,show:d=>d.lay==='klassik'},{k:'f1v',l:'Wert 1',half:1,show:d=>d.lay==='klassik'},
     {k:'f2l',l:'Feld 2',half:1,show:d=>d.lay==='klassik'},{k:'f2v',l:'Wert 2',half:1,show:d=>d.lay==='klassik'},
     {k:'f3l',l:'Feld 3',half:1,show:d=>d.lay==='klassik'},{k:'f3v',l:'Wert 3',half:1,show:d=>d.lay==='klassik'},
-    {k:'rahmen',t:'seg',l:'Rahmen',o:[['max','Maximal'],['gross','Groß'],['normal','Normal']],show:d=>d.lay==='klassik',hint:'Maximal = 5 mm Rand · bei abgeschnittenem Rahmen „Groß“ wählen'},
+    {k:'rahmen',t:'seg',l:'Rahmen',o:[['max','Maximal'],['gross','Groß'],['normal','Normal']],show:d=>d.lay==='klassik',hint:'Abstand des Rahmens zum Blattrand'},
     /* Auftrag */
     {t:'h',l:'Kopf'},
     {k:'kat',l:'Art',chips:['Auftrag','Prüfung','Ordner','Projekt','Muster'],show:d=>d.lay==='auftrag'},
@@ -1112,7 +1112,7 @@ TPL.deckblatt={name:'Deckblatt',sub:'Einrichteblatt · Auftrag · Ordner',ic:'de
     {t:'h',l:'Unten'},
     {k:'hinweis',t:'area',rows:3,l:'Hinweis',ph:'z. B. Gratfrei! Erstteil zur QS',show:d=>d.lay==='auftrag'},
     {k:'pruef',t:'tog',l:'Prüfvermerk-Felder',sub:'Erstteil · Zwischenprüfung · Endkontrolle',show:d=>d.lay==='auftrag'}],
-  pages:d=>[{w:210,h:297,html:d.lay==='auftrag'?deckHTML(d):klassikHTML(d)}],
+  pages:d=>[{w:210,h:297,fit:1,html:d.lay==='auftrag'?deckHTML(d):klassikHTML(d)}],
   label:d=>d.lay==='auftrag'?((d.titel||'').split('\n')[0]||d.nr||'Deckblatt'):(d.mach||d.title||'Deckblatt')};
 function deckHTML(d){
   const W=178,kv=[['Zeichnungs-Nr.',d.zeich,1],['Teil',d.teil],['Material',d.mat],['Menge',d.menge],['Maschine',d.masch],['Kunde',d.kunde],['Termin',dS(d.termin)]].filter(r=>r[1]);
@@ -1200,7 +1200,7 @@ TPL.brief={name:'Brief',sub:'DIN 5008 · Fensterkuvert',ic:'brief',
     {k:'kopf',t:'seg',l:'Briefkopf',o:[['logo','Mit Logo'],['gross','Name groß'],['klein','Schlicht']]},
     {k:'fs',t:'seg',l:'Schriftgröße',o:[['10','10 pt'],['11','11 pt'],['12','12 pt']]},
     {k:'falz',t:'tog',l:'Falz- & Lochmarken'}],
-  pages:d=>[{w:210,h:297,html:briefHTML(d)}],
+  pages:d=>[{w:210,h:297,m:[14,8],html:briefHTML(d)}],
   label:d=>d.betreff||lns(d.empf)[0]||'Brief'};
 function profLine(){const P=pr.profile;return[P.firma||P.name,P.str,P.ort].filter(Boolean).join(' · ')}
 function briefHTML(d){
@@ -1208,17 +1208,17 @@ function briefHTML(d){
   const who=P.firma||P.name||'',contact=[P.str,P.ort,P.tel&&'Tel. '+P.tel,P.mail].filter(Boolean).map(esc);
   let h='';
   if(d.kopf==='logo'){
-    h+=box(25,12,165,31,'',`<div style="display:flex;justify-content:space-between;align-items:flex-end;gap:8mm">${logoRow(10)}
+    h+=box(25,15,165,29,'',`<div style="display:flex;justify-content:space-between;align-items:flex-end;gap:8mm">${logoRow(10)}
       <div style="text-align:right;font-size:2.7mm;line-height:1.45;color:#4A4D55">${who?`<b style="color:#111214;font-size:3.2mm">${esc(who)}</b><br>`:''}${P.firma&&P.name?esc(P.name)+'<br>':''}${contact.join('<br>')}</div></div>
       <div style="height:.5mm;background:#111214;margin-top:3mm"></div>`);
   }else if(d.kopf==='gross'){
     const ns=fitS(who||'Absender',165,12,{max:8.5,ls:.06,up:1});
-    h+=box(25,13,165,30,'',`<div style="font-weight:700;font-size:${ns}mm;letter-spacing:.06em;text-transform:uppercase;line-height:1;${who?'':'color:#C4C7CC'}">${esc(who||'Absender')}</div>
+    h+=box(25,15,165,29,'',`<div style="font-weight:700;font-size:${ns}mm;letter-spacing:.06em;text-transform:uppercase;line-height:1;${who?'':'color:#C4C7CC'}">${esc(who||'Absender')}</div>
       ${P.firma&&P.name||P.abt?`<div style="font-size:3.5mm;font-weight:600;margin-top:1.8mm">${esc([P.firma?P.name:'',P.abt].filter(Boolean).join(' · '))}</div>`:''}
       <div class="mo" style="font-size:2.5mm;color:#6B6F76;margin-top:2.4mm;letter-spacing:.03em">${contact.join('&nbsp;&nbsp;·&nbsp;&nbsp;')}</div>
       <div style="height:.5mm;background:#111214;margin-top:3mm"></div>`);
   }else{
-    h+=box(110,13,80,30,'text-align:right;font-size:3.1mm;line-height:1.4',`<b style="font-size:3.6mm">${esc(who)}</b>${P.firma&&P.name?'<br>'+esc(P.name):''}${contact.length?'<br>'+contact.join('<br>'):''}`);
+    h+=box(110,15,80,29,'text-align:right;font-size:3.1mm;line-height:1.4',`<b style="font-size:3.6mm">${esc(who)}</b>${P.firma&&P.name?'<br>'+esc(P.name):''}${contact.length?'<br>'+contact.join('<br>'):''}`);
   }
   const ret=[who,P.str,P.ort].filter(Boolean).join(' · ');
   h+=box(20,45,85,45,'padding-left:5mm',`<div style="height:17.7mm;display:flex;align-items:flex-end;padding-bottom:1.4mm"><span style="font-size:2.1mm;text-decoration:underline;text-underline-offset:.5mm;color:#4A4D55">${esc(ret)}</span></div><div style="font-size:${Math.min(pt,3.9)}mm;line-height:1.3">${nl(d.empf)}</div>`);
@@ -1230,7 +1230,7 @@ function briefHTML(d){
     ${d.anrede?`<p style="margin:0 0 ${g}mm">${esc(d.anrede)}</p>`:''}${paras(d.text,g)}
     ${d.gruss?`<p style="margin:0">${esc(d.gruss)}</p>`:''}<div style="height:${g*2.6}mm"></div>${d.sign?`<p style="margin:0">${esc(d.sign)}</p>`:''}
     ${anl.length?`<div style="margin-top:${g*1.4}mm;font-size:${pt*0.9}mm"><b>Anlage${anl.length>1?'n':''}</b><br>${anl.map(esc).join('<br>')}</div>`:''}</div>`;
-  if(d.falz)h+=[[105,5],[148.5,8],[210,5]].map(([y,l])=>`<div style="position:absolute;left:3mm;top:${y}mm;width:${l}mm;border-top:.2mm solid #9A9EA6"></div>`).join('');
+  if(d.falz)h+=[[105,5],[148.5,8],[210,5]].map(([y,l])=>`<div style="position:absolute;left:9mm;top:${y}mm;width:${l}mm;border-top:.25mm solid #9A9EA6"></div>`).join('');
   return h;
 }
 
@@ -1244,7 +1244,7 @@ TPL.notiz={name:'Notiz',sub:'Liniert · Kariert · Punkte',ic:'notiz',
     {k:'bg',t:'seg',l:'Hintergrund',o:[['none','Leer'],['lin','Liniert'],['karo','Kariert'],['dot','Punkte']]},
     {k:'gr',t:'seg',l:'Zeilenabstand',o:[['s','Eng'],['m','Mittel'],['l','Weit']]},
     {k:'ori',t:'seg',l:'Format',o:[['p','A4 hoch'],['l','A4 quer']]}],
-  pages:d=>{const[w,h]=d.ori==='l'?[297,210]:[210,297];return[{w,h,html:notizHTML(d,w,h)}]},
+  pages:d=>{const[w,h]=d.ori==='l'?[297,210]:[210,297];return[{w,h,fit:1,html:notizHTML(d,w,h)}]},
   label:d=>d.titel||'Notiz'};
 function notizHTML(d,W,H){
   const g={s:6.5,m:8,l:10}[d.gr]||8,X=15,bw=W-2*X,top=13,bt=top+18,step=d.bg==='lin'?g:5,bh=Math.floor((H-bt-14)/step)*step;
@@ -1273,7 +1273,7 @@ TPL.aushang={name:'Aushang',sub:'Schild · Hinweis · Gesperrt',ic:'warn',
     {k:'band',l:'Bandtext',half:1,ph:'automatisch'},{k:'name',l:'Name',half:1},
     {k:'datum',t:'tog',l:'Datum drucken'},
     {k:'ori',t:'seg',l:'Format',o:[['p','A4 hoch'],['l','A4 quer']]}],
-  pages:d=>{const[w,h]=d.ori==='l'?[297,210]:[210,297];return[{w,h,html:aushangHTML(d,w,h)}]},
+  pages:d=>{const[w,h]=d.ori==='l'?[297,210]:[210,297];return[{w,h,fit:1,html:aushangHTML(d,w,h)}]},
   label:d=>(d.titel||'').split('\n')[0]||d.band||'Aushang'};
 function aushangHTML(d,W,H){
   const L=W>H,st=WICO[d.stil]?d.stil:'achtung',band=(d.band||{info:'Hinweis',achtung:'Achtung',gesperrt:'Gesperrt'}[st]),fi=st==='gesperrt'?13:8;
@@ -1323,7 +1323,7 @@ function planWoche(d,W,H){
   const tt=d.titel||'Wochenplan',tblTop=33,hh=11,avail=H-tblTop-14-hh,per=Math.max(1,Math.floor(avail/8)),c1=W>H?42:30,pages=[];
   for(let p=0;p<rows.length;p+=per){
     const ch=rows.slice(p,p+per),rh=Math.min(36,avail/ch.length);
-    pages.push({w:W,h:H,html:planHead(W,tt,`<div class="mo" style="font-size:7mm;font-weight:600;line-height:1">KW ${kw(mon)}</div>`,ddmm(days[0])+'–'+ddmm(days[n-1])+days[n-1].getFullYear())+
+    pages.push({w:W,h:H,fit:1,html:planHead(W,tt,`<div class="mo" style="font-size:7mm;font-weight:600;line-height:1">KW ${kw(mon)}</div>`,ddmm(days[0])+'–'+ddmm(days[n-1])+days[n-1].getFullYear())+
       `<table class="pt" style="left:12mm;top:${tblTop}mm;width:${W-24}mm"><colgroup><col style="width:${c1}mm">${days.map(()=>'<col>').join('')}</colgroup>
       <thead><tr style="height:${hh}mm"><th></th>${days.map(x=>`<th class="${x.getDay()%6===0?'we':''}">${x.toLocaleDateString('de-DE',{weekday:'long'})}<span>${ddmm(x)}</span></th>`).join('')}</tr></thead>
       <tbody>${ch.map(r=>`<tr style="height:${rh.toFixed(2)}mm"><td class="rn">${esc(r.n)}</td>${days.map((x,i)=>`<td class="${x.getDay()%6===0?'we':''}">${esc(r.c[i]||'')}</td>`).join('')}</tr>`).join('')}</tbody></table>`+
@@ -1338,7 +1338,7 @@ function planListe(d,W,H){
   const fmtB=b=>/^\d{4}-\d{2}-\d{2}$/.test(b)?dS(b):b;
   for(let p=0;p<np;p++){
     const ch=rows.slice(p*per,(p+1)*per);
-    pages.push({w:W,h:H,html:planHead(W,tt,`<div class="mo" style="font-size:4mm;font-weight:600">${esc(d.unter||'')}</div>`,np>1?'Seite '+(p+1)+' / '+np:'')+
+    pages.push({w:W,h:H,fit:1,html:planHead(W,tt,`<div class="mo" style="font-size:4mm;font-weight:600">${esc(d.unter||'')}</div>`,np>1?'Seite '+(p+1)+' / '+np:'')+
       `<table class="pt" style="left:12mm;top:${top}mm;width:${W-24}mm"><colgroup><col style="width:10mm"><col style="width:11mm"><col><col style="width:${W>H?44:30}mm"><col style="width:24mm"><col style="width:${W>H?40:26}mm"></colgroup>
       <thead><tr style="height:${rh}mm"><th>Nr</th><th class="c">✓</th><th>Aufgabe</th><th>Wer</th><th>Bis</th><th>Erledigt</th></tr></thead>
       <tbody>${ch.map((r,i)=>`<tr style="height:${rh}mm"><td class="mo c" style="color:#6B6F76;font-size:2.8mm">${r?p*per+i+1:''}</td><td class="c"><span class="cb"></span></td><td style="vertical-align:middle">${r?esc(r.a):''}</td><td style="vertical-align:middle">${r?esc(r.w):''}</td><td class="mo" style="vertical-align:middle;font-size:3mm">${r?esc(fmtB(r.b)):''}</td><td></td></tr>`).join('')}</tbody></table>`+
@@ -1358,7 +1358,7 @@ TPL.ruecken={name:'Ordnerrücken',sub:'Schmal · Breit · zum Einschieben',ic:'b
     const w=+d.br||60,h=+d.ho||190,L=lns(d.liste).map(l=>{const c=cut(l);return{t:c[0]||'',z:c[1]||'',nr:c[2]||''}});
     let it=L.length?L:[{t:'',z:'',nr:''}];if(copies>1)it=it.flatMap(x=>Array(copies).fill(x));
     const land=h<=200,PW=land?297:210,PH=land?210:297,per=Math.max(1,Math.floor((PW-10)/w)),x0=(PW-per*w)/2,y0=(PH-h)/2,pages=[];
-    for(let i=0;i<it.length;i+=per)pages.push({w:PW,h:PH,html:it.slice(i,i+per).map((x,k)=>`<div class="lc fr" style="left:${x0+k*w}mm;top:${y0}mm;width:${w}mm;height:${h}mm">${rueHTML(x,w,h,d.logo)}</div>`).join('')});
+    for(let i=0;i<it.length;i+=per)pages.push({w:PW,h:PH,m:[Math.max(0,Math.min(8,y0-1)),Math.max(0,Math.min(8,x0-1))],html:it.slice(i,i+per).map((x,k)=>`<div class="lc fr" style="left:${x0+k*w}mm;top:${y0}mm;width:${w}mm;height:${h}mm">${rueHTML(x,w,h,d.logo)}</div>`).join('')});
     return pages;
   },
   info:(d,pages,copies)=>plural(Math.max(1,lns(d.liste).length)*copies,'Rücken','Rücken')+' · '+plural(pages.length,'Blatt','Blätter')+' A4 '+(+d.ho<=200?'quer':'hoch'),
@@ -1440,7 +1440,7 @@ async function calibrate(){
   $('askX').onclick=null;
   if(v!=='ok'&&v!=='test')return;
   pr.cal=c;prSave();renderDruck();
-  if(v==='test')printPages([{w:210,h:297,html:testHTML()}],'Testblatt');
+  if(v==='test')printPages([{w:210,h:297,m:[8,8],html:testHTML()}],'Testblatt');
 }
 
 /* ---------- Editor ---------- */
@@ -1518,10 +1518,23 @@ $('edPrint').onclick=async()=>{
   pr.recent=[{id:Date.now(),tpl:ed.id,name,data:clone(ed.d),ts:Date.now()},...pr.recent.filter(r=>!(r.tpl===ed.id&&JSON.stringify(r.data)===js))].slice(0,10);prSave();
   printPages(pages,(ed.t.name+'_'+name).replace(/[^\wäöüÄÖÜß.-]+/g,'_').slice(0,60));
 };
+/* Zwei Druckarten – weil iPhone/Safari @page-Ränder ignoriert und eigene Ränder (≈12–14 mm oben/unten) erzwingt:
+   fit   = Dokumente: ganzes Layout wird in eine sichere Fläche (14 mm oben/unten, 8 mm seitlich) eingepasst → immer 1 Seite.
+   exakt = Brief & Etiketten: Maße bleiben 1:1, nur der Randstreifen m=[oben/unten, seitlich] wird weggeschnitten. */
 function printPages(pages,name){
-  const c=pr.cal,p0=pages[0],tr=c.dx||c.dy?`transform:translate(${c.dx}mm,${c.dy}mm);`:'';
-  const html=pages.map(p=>`<div class="pp" style="width:${p0.w}mm;height:${(p0.h-0.5).toFixed(1)}mm"><div class="pi" style="width:${p.w}mm;height:${p.h}mm;${tr}">${p.html}</div></div>`).join('');
-  doPrint(html,name,`@page{size:${p0.w}mm ${p0.h}mm;margin:0}`);
+  const c=pr.cal,p0=pages[0],W=p0.w,H=p0.h,dx=+c.dx||0,dy=+c.dy||0;
+  let my,mx,inner;
+  if(p0.fit){
+    [my,mx]=W>H?[10,14]:[14,8];
+    const aw=W-2*mx,ah=H-2*my,k=Math.min(aw/W,ah/H),ox=(aw-W*k)/2+dx,oy=(ah-H*k)/2+dy;
+    inner=`transform:translate(${ox.toFixed(2)}mm,${oy.toFixed(2)}mm) scale(${k.toFixed(4)});transform-origin:0 0;`;
+  }else{
+    [my,mx]=p0.m||[0,0];
+    inner=(mx||my||dx||dy)?`transform:translate(${(dx-mx).toFixed(2)}mm,${(dy-my).toFixed(2)}mm);`:'';
+  }
+  const pw=W-2*mx,ph=H-2*my-0.6;
+  const html=pages.map(p=>`<div class="pp" style="width:${pw}mm;height:${ph.toFixed(1)}mm"><div class="pi" style="width:${p.w}mm;height:${p.h}mm;${inner}">${p.html}</div></div>`).join('');
+  doPrint(html,name,`@page{size:${W}mm ${H}mm;margin:${my}mm ${mx}mm}`);
 }
 $('edMenu').onclick=async()=>{
   const s=ed.saved&&pr.saved.find(x=>x.id===ed.saved.id),b=[];
@@ -1583,29 +1596,37 @@ async function logoMenu(){
 }
 
 /* ---------- Deckblatt-Layout „Einrichteblatt“ (vom alten deckblatt.html übernommen, jetzt in mm) ---------- */
-const DSIZE={max:[200,287],gross:[194,272],normal:[186,255]};
+const DINSET={max:6,gross:11,normal:16};
 function rulerSVG(w,h){let s='';for(let i=0;i<=60;i++){const x=i*10+(i===60?-0.6:0)+(i===0?0.6:0),big=i%5===0;
   s+=`<line x1="${x}" x2="${x}" y1="${big?2:14}" y2="30" stroke="${big?'#111214':'#9A9EA6'}" stroke-width="${big?1.4:0.9}"/>`}
   return `<svg viewBox="0 0 600 32" preserveAspectRatio="none" style="display:block;width:${w}mm;height:${h}mm">${s}</svg>`}
+/* Aufbau: Logo oben · Titelblock optisch mittig · Felder unten – alles in mm, u = 1 % der Rahmenbreite */
 function klassikHTML(d){
-  const [W,H]=DSIZE[d.rahmen]||DSIZE.max,u=W/100,k=+d.lsz||1,x0=(210-W)/2,y0=(297-H)/2,iw=W-14*u;
+  const ins=DINSET[d.rahmen]!=null?DINSET[d.rahmen]:6,W=210-2*ins,H=297-2*ins,u=W/100,k=+d.lsz||1,iw=W-15*u;
   const c=v=>(v*u).toFixed(2)+'mm';
-  const ts=fitS(d.title||' ',iw,99,{max:10.2*u,ls:-.025}),ms=fitS(d.mach||' ',iw,99,{max:3.1*u,mono:1,wt:500,ls:.09}),cs=fitS(d.ctrl||' ',iw,99,{max:3.1*u,mono:1,wt:500,ls:.09});
-  const F=[[d.f1l,d.f1v],[d.f2l,d.f2v],[d.f3l,d.f3v]];
-  return `<div style="position:absolute;left:${x0}mm;top:${y0}mm;width:${W}mm;height:${H}mm;border:${c(.32)} solid #111214;display:flex;flex-direction:column;align-items:center;text-align:center;padding:${c(6.5)} ${c(7)} ${c(5.5)};overflow:hidden">
-    ${logoBig(22*k*u)}
-    ${d.brand?`<div class="mo" style="font-size:${c(1.75)};letter-spacing:.32em;padding-left:.32em;color:#6B6F76;margin-top:${c(4.2)}">${esc(d.brand)}</div>`:''}
-    ${d.year?`<div class="mo" style="font-size:${c(1.75)};letter-spacing:.22em;padding-left:.22em;color:#6B6F76;margin-top:${c(1.4)}">${esc(d.year)}</div>`:''}
-    ${d.ruler?`<div style="margin-top:${c(6)}">${rulerSVG(iw,3.2*u)}</div>`:`<div style="height:${c(6)}"></div>`}
-    ${d.kick?`<div class="mo" style="font-size:${c(1.85)};letter-spacing:.42em;padding-left:.42em;color:#2E3036;margin-top:${c(.8)};white-space:nowrap">${esc(d.kick)}</div>`:''}
-    <div style="font-weight:700;font-size:${ts}mm;letter-spacing:-.025em;line-height:1;white-space:nowrap;margin-top:${c(3.6)};${d.title?'':'color:#C4C7CC'}">${esc(d.title||'TITEL')}</div>
-    <div style="width:${c(17)};height:${c(.42)};background:#111214;margin:${c(5)} 0 ${c(5.2)};flex:none"></div>
-    ${d.mach?`<div class="mo" style="font-weight:500;font-size:${ms}mm;letter-spacing:.09em;padding-left:.09em;white-space:nowrap">${esc(d.mach)}</div>`:''}
-    ${d.ctrl?`<div class="mo" style="font-weight:500;font-size:${cs}mm;letter-spacing:.09em;padding-left:.09em;white-space:nowrap;margin-top:${c(1.1)}">${esc(d.ctrl)}</div>`:''}
-    ${d.desc?`<div style="font-size:${c(2.25)};color:#5A5E66;margin-top:${c(3.2)};line-height:1.35">${nl(d.desc)}</div>`:''}
-    <div style="margin-top:auto;width:100%;border-top:.25mm solid #C9CCD1;padding-top:${c(3.4)};display:grid;grid-template-columns:repeat(3,1fr);gap:${c(4)};text-align:left">
-      ${F.map(([l,v])=>`<div style="min-width:0"><span class="mo" style="display:block;font-size:${c(1.5)};letter-spacing:.2em;color:#6B6F76;min-height:${c(1.9)}">${esc(l||'')}</span><span class="mo" style="display:block;font-size:${c(2.4)};font-weight:600;margin-top:${c(1.6)};min-height:${c(5.2)};border-bottom:.25mm solid #111214;padding-bottom:${c(.6)};overflow-wrap:anywhere">${esc(v||'')}</span></div>`).join('')}
-    </div></div>`;
+  const ts=fitS(d.title||'TITEL',iw,99,{max:11.5*u,ls:-.02}),ms=fitS(d.mach||' ',iw,99,{max:3.8*u,mono:1,wt:500,ls:.08}),cs=fitS(d.ctrl||' ',iw,99,{max:3.3*u,mono:1,wt:500,ls:.08});
+  const F=[[d.f1l,d.f1v],[d.f2l,d.f2v],[d.f3l,d.f3v]].filter(f=>f[0]||f[1]);
+  return `<div style="position:absolute;left:${ins}mm;top:${ins}mm;width:${W}mm;height:${H}mm;border:${c(.34)} solid #111214;display:flex;flex-direction:column;align-items:center;text-align:center;padding:${c(8)} ${c(7.5)} ${c(6.5)};overflow:hidden">
+    <div style="display:flex;flex-direction:column;align-items:center;flex:none">
+      ${logoBig(16*k*u)}
+      ${d.brand?`<div class="mo" style="font-size:${c(2)};letter-spacing:.34em;padding-left:.34em;color:#6B6F76;margin-top:${c(3.8)}">${esc(d.brand)}</div>`:''}
+      ${d.year?`<div class="mo" style="font-size:${c(2)};letter-spacing:.24em;padding-left:.24em;color:#6B6F76;margin-top:${c(1.2)}">${esc(d.year)}</div>`:''}
+    </div>
+    <div style="flex:1 1 0;min-height:${c(5)}"></div>
+    <div style="width:100%;display:flex;flex-direction:column;align-items:center;flex:none">
+      ${d.ruler?rulerSVG(iw,3.4*u):''}
+      ${d.kick?`<div class="mo" style="font-size:${c(2.2)};letter-spacing:.42em;padding-left:.42em;color:#2E3036;margin-top:${c(d.ruler?1.2:0)};white-space:nowrap">${esc(d.kick)}</div>`:''}
+      <div style="font-weight:700;font-size:${ts}mm;letter-spacing:-.02em;line-height:1;white-space:nowrap;margin-top:${c(3.4)};${d.title?'':'color:#C4C7CC'}">${esc(d.title||'TITEL')}</div>
+      <div style="width:${c(16)};height:${c(.5)};background:#111214;margin:${c(4.6)} 0 ${c(4.6)};flex:none"></div>
+      ${d.mach?`<div class="mo" style="font-weight:500;font-size:${ms}mm;letter-spacing:.08em;padding-left:.08em;white-space:nowrap">${esc(d.mach)}</div>`:''}
+      ${d.ctrl?`<div class="mo" style="font-weight:500;font-size:${cs}mm;letter-spacing:.08em;padding-left:.08em;white-space:nowrap;margin-top:${c(1.3)}">${esc(d.ctrl)}</div>`:''}
+      ${d.desc?`<div style="font-size:${c(2.7)};color:#4A4D55;margin-top:${c(3.4)};line-height:1.4;max-width:${c(70)}">${nl(d.desc)}</div>`:''}
+    </div>
+    <div style="flex:1.25 1 0;min-height:${c(5)}"></div>
+    ${F.length?`<div style="width:100%;border-top:.3mm solid #C9CCD1;padding-top:${c(3.8)};display:grid;grid-template-columns:repeat(${F.length},1fr);gap:${c(4.5)};text-align:left;flex:none">
+      ${F.map(([l,v])=>`<div style="min-width:0"><span class="mo" style="display:block;font-size:${c(1.75)};letter-spacing:.2em;color:#6B6F76;min-height:${c(2.2)}">${esc(l||'')}</span><span class="mo" style="display:block;font-size:${c(2.9)};font-weight:600;margin-top:${c(1.8)};min-height:${c(6.2)};border-bottom:.3mm solid #111214;padding-bottom:${c(.8)};overflow-wrap:anywhere">${esc(v||'')}</span></div>`).join('')}
+    </div>`:''}
+  </div>`;
 }
 /* alte Deckblätter aus deckblatt.html einmalig als Vorlagen übernehmen */
 function migrateOld(){
@@ -1614,7 +1635,7 @@ function migrateOld(){
   if(o&&Array.isArray(o.covers))o.covers.forEach((c,i)=>{
     if(!c||typeof c!=='object')return;
     if(c.logo&&!pr.logo)pr.logo=c.logo;
-    const data={...TPL.deckblatt.def(),lay:'klassik',rahmen:DSIZE[sz]?sz:'max',lsz:String(c.logoSize||1),ruler:c.ruler!==false};
+    const data={...TPL.deckblatt.def(),lay:'klassik',rahmen:DINSET[sz]!=null?sz:'max',lsz:String(c.logoSize||1),ruler:c.ruler!==false};
     ['brand','year','kick','title','mach','ctrl','desc','f1l','f1v','f2l','f2v','f3l','f3v'].forEach(k=>{if(c[k]!=null)data[k]=String(c[k])});
     pr.saved.push({id:Date.now()+i,tpl:'deckblatt',name:c.mach||c.title||'Deckblatt '+(i+1),data,ts:Date.now()});
   });
