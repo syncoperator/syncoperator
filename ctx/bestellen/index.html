@@ -928,6 +928,8 @@ h2.long{font-size:20pt}
 .bo-unit{display:flex;justify-content:center;gap:6px;margin-top:-4px}
 .bo-unit button{padding:7px 13px;border-radius:10px;border:1px solid var(--line);background:transparent;font-family:var(--f-mono);font-size:12px;font-weight:700;letter-spacing:.1em;color:var(--muted)}
 .bo-unit button[aria-pressed="true"]{border-color:var(--ink);color:var(--fg);background:var(--card)}
+.bo-search{display:flex;gap:8px}.bo-search .mw-q{flex:1;min-width:0}
+.bo-bc{flex:none;width:54px;border-radius:14px;border:1px solid var(--line);background:var(--card);display:grid;place-items:center;color:var(--fg)}.bo-bc svg{width:26px;height:26px}
 .bo-more{align-self:center;border:0;background:none;color:var(--muted);font-family:var(--f-mono);font-size:11px;letter-spacing:.08em;text-decoration:underline;text-underline-offset:3px;padding:8px}
 .bo-f2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .bo-f2 label{display:flex;flex-direction:column;gap:5px;font-family:var(--f-mono);font-size:9.5px;letter-spacing:.12em;color:var(--muted);min-width:0}
@@ -1125,7 +1127,7 @@ html.druck body{visibility:hidden}
 
   <!-- ================= BESTELLEN ================= -->
   <section id="v_orders" class="view" hidden>
-    <button type="button" class="bo-go-card" id="boStart"><span class="mi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M3 8V5.5A1.5 1.5 0 0 1 4.5 4H7M17 4h2.5A1.5 1.5 0 0 1 21 5.5V8M21 16v2.5a1.5 1.5 0 0 1-1.5 1.5H17M7 20H4.5A1.5 1.5 0 0 1 3 18.5V16"/><path d="M7 8v8M10 8v8M13 8v8M16.5 8v8" stroke-width="1.4"/></svg></span><span><b>Scannen &amp; bestellen</b><small>EIGENE SEITE · SCHRITT FÜR SCHRITT</small></span><span class="ar">→</span></button>
+    <button type="button" class="bo-go-card" id="boStart"><span class="mi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M3 8V5.5A1.5 1.5 0 0 1 4.5 4H7M17 4h2.5A1.5 1.5 0 0 1 21 5.5V8M21 16v2.5a1.5 1.5 0 0 1-1.5 1.5H17M7 20H4.5A1.5 1.5 0 0 1 3 18.5V16"/><path d="M7 8v8M10 8v8M13 8v8M16.5 8v8" stroke-width="1.4"/></svg></span><span><b>Scannen &amp; bestellen</b><small>NEUES WERKZEUG SCANNEN ODER AUS BIBLIOTHEK</small></span><span class="ar">→</span></button>
     <button type="button" class="wizstart" id="wizStart"><span class="wsi" id="wizIco"></span><span><b>Neue Bestellung</b><small>Bestell-Assistent · Schritt für Schritt</small></span><span class="arr" aria-hidden="true">→</span></button>
     <div id="bkWarn" class="bkwarn" hidden></div>
     <div id="alarm" class="alarm calm"></div>
@@ -2766,7 +2768,7 @@ window.addEventListener('resize',fit);window.addEventListener('load',fit);fit();
   });
 
   $('wizStart').onclick = openWizard;
-  $('boStart').onclick = () => boOpen(null, false, true);
+  $('boStart').onclick = () => boOpen();
 
   // =====================================================================
   // WERKZEUG-ASSISTENT — fragt je Typ nur, was wichtig ist
@@ -2893,7 +2895,7 @@ window.addEventListener('resize',fit);window.addEventListener('load',fit);fit();
     if (!opts.tool && opts.type) { TW.t.type = opts.type; const pp = profileOf(opts.type); TW.t.inName = { ...(pp.inName || {}) }; Object.entries(pp.defaults || {}).forEach(([k, v]) => { if (!TW.t[k]) TW.t[k] = v; }); }
     TW.edit = false; TW.cfOpen = false; TW.typeEdit = false; TW.newBase = ''; TW.aiNote = null; TW.scanBusy = null;
     TW.editId = opts.tool && !opts.copy ? opts.tool.id : null;
-    TW.onSave = opts.onSave || null;
+    TW.onSave = opts.onSave || null; TW.quick = !!opts.quick;
     TW.copy = !!opts.copy;
     TW.step = opts.tool || opts.type ? 1 : 0;
     TW.auto = TW.t.type ? (profileOf(TW.t.type).auto ? (!TW.t.name || TW.t.name === autoBase(TW.t)) : false) : true;
@@ -2903,7 +2905,7 @@ window.addEventListener('resize',fit);window.addEventListener('load',fit);fit();
   }
   function closeToolWiz() {
     $('twiz').hidden = true;
-    if ($('wiz').hidden) document.body.style.overflow = '';
+    if ($('wiz').hidden && $('bo').hidden && $('mw').hidden) document.body.style.overflow = '';
   }
   $('twClose').onclick = closeToolWiz;
 
@@ -2915,9 +2917,9 @@ window.addEventListener('resize',fit);window.addEventListener('load',fit);fit();
     $('twSub').textContent = TW.step === 1 ? (p?.hint || 'Nur ausfüllen, was du weißt. * = Pflicht') : TWSTEPS[TW.step].s;
     $('twBack').hidden = TW.step === 0;
     $('twNext').hidden = TW.step === 0;
-    $('twNext').textContent = TW.step === 3 ? (TW.editId ? 'Speichern' : 'In Bibliothek speichern') : 'Weiter →';
+    $('twNext').textContent = TW.step === 3 ? (TW.editId ? 'Speichern' : TW.quick ? 'Speichern → Bestellen' : 'In Bibliothek speichern') : TW.quick && TW.step === 1 ? 'Speichern → Bestellen' : 'Weiter →';
     const B = $('twBody');
-    B.innerHTML = [twStep0, twStep1, twStep2, twStep3][TW.step]();
+    B.innerHTML = [twStep0, twStep1, twStep2, twStep3][TW.step]() + (TW.quick && TW.step === 1 && !TW.scanBusy ? '<button type="button" class="btn ghost" data-tw="more" style="width:100%;margin-top:6px">Mehr Angaben (Art.-Nr., Lagerort, Bestand) →</button>' : '');
     if (TW.step === 1) twUpdateName();
     if (TW._ls !== TW.step) $('twBodyWrap').scrollTop = 0;
     TW._ls = TW.step;
@@ -3120,7 +3122,7 @@ Antworte NUR mit gültigem JSON, alle Werte als Strings in Anführungszeichen: {
         ${t.note ? `<div class="note">${esc(t.note)}</div>` : ''}
       </div></article>
       ${cutView(t)}
-      ${TW.editId || TW.onSave ? '' : `<button type="button" class="btn" data-tw="saveorder">Speichern + gleich auf die Liste</button>`}`;
+      ${TW.editId || TW.onSave ? '' : `<button type="button" class="btn" data-tw="saveorder">Speichern + gleich bestellen</button>`}`;
   }
 
   function twValidate() {
@@ -3144,7 +3146,7 @@ Antworte NUR mit gültigem JSON, alle Werte als Strings in Anführungszeichen: {
     const cb = TW.onSave;
     closeToolWiz();
     if (cb) { save(); cb(tool); return; }
-    if (andOrder) { addToCart(tool, {}); setView('orders'); return; }
+    if (andOrder) { save(); render(); boOpen(tool); return; }
     commit(TW.editId ? 'Gespeichert' : 'In Bibliothek gespeichert');
   }
 
@@ -3226,6 +3228,7 @@ Antworte NUR mit gültigem JSON, alle Werte als Strings in Anführungszeichen: {
     }
     if (a === 'nophoto') { t.img = ''; renderTW(); return; }
     if (a === 'saveorder') { if (twValidate()) twSave(true); return; }
+    if (a === 'more') { if (!twValidate()) return; TW.step = 2; renderTW(); return; }
   });
   $('twBody').addEventListener('input', e => {
     const el = e.target, t = TW.t;
@@ -3414,7 +3417,7 @@ ${attrs}
   $('twBack').onclick = () => { if (TW.scanBusy) return; TW.step = Math.max(0, TW.step - 1); renderTW(); };
   $('twNext').onclick = () => {
     if (TW.scanBusy) return;
-    if (TW.step === 1) { if (!twValidate()) return; }
+    if (TW.step === 1) { if (!twValidate()) return; if (TW.quick) { twSave(false); return; } }
     if (TW.step === 3) { if (twValidate()) twSave(false); return; }
     TW.step++; renderTW();
   };
@@ -3828,7 +3831,7 @@ Antworte NUR mit JSON: {"map":{"feld":"Spaltenname"},"typ":"häufigster Werkzeug
     const top = Object.entries(cnt).map(([id, n]) => [S.lib.find(t => t.id === id), n]).filter(x => x[0]).sort((a, b) => b[1] - a[1]).slice(0, 5);
     const maxN = top.length ? top[0][1] : 1;
     $('v_home').innerHTML = `
-      <button type="button" class="bo-go-card" data-home="bo"><span class="mi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M3 8V5.5A1.5 1.5 0 0 1 4.5 4H7M17 4h2.5A1.5 1.5 0 0 1 21 5.5V8M21 16v2.5a1.5 1.5 0 0 1-1.5 1.5H17M7 20H4.5A1.5 1.5 0 0 1 3 18.5V16"/><path d="M7 8v8M10 8v8M13 8v8M16.5 8v8" stroke-width="1.4"/></svg></span><span><b>Scannen &amp; bestellen</b><small>ETIKETT → MENGE → SENDEN → ERINNERUNG</small></span><span class="ar">→</span></button>
+      <button type="button" class="bo-go-card" data-home="bo"><span class="mi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M3 8V5.5A1.5 1.5 0 0 1 4.5 4H7M17 4h2.5A1.5 1.5 0 0 1 21 5.5V8M21 16v2.5a1.5 1.5 0 0 1-1.5 1.5H17M7 20H4.5A1.5 1.5 0 0 1 3 18.5V16"/><path d="M7 8v8M10 8v8M13 8v8M16.5 8v8" stroke-width="1.4"/></svg></span><span><b>Scannen &amp; bestellen</b><small>NEUES WERKZEUG SCANNEN ODER AUS BIBLIOTHEK</small></span><span class="ar">→</span></button>
       ${recent.length ? `<div class="sec-h">Schnell nachbestellen<span class="hint" style="margin-left:auto">${recent.length} · wischen →</span></div><div class="recent">${recent.map(t => `<button type="button" class="rc ${stats(t.id).inCart || stats(t.id).waiting ? 'busy' : ''}" data-home="re" data-id="${t.id}">${thumb(t.img, '', t)}<span class="rb"><span class="rty">${esc(t.type || '')}</span><span class="rn">${esc(shortName(t) || fullName(t))}</span>${useBar(t)}</span><span class="rp">+</span></button>`).join('')}</div>` : ''}
       ${open.length ? `<div class="sec-h">Unterwegs · wartet auf Lieferung<button type="button" class="link" data-home="img" style="margin-left:auto">Als Bild ↗</button></div><div class="list">${open.map(o => orderBlock(o, false)).join('')}</div>` : ''}
       ${status}
@@ -3857,7 +3860,7 @@ Antworte NUR mit JSON: {"map":{"feld":"Spaltenname"},"typ":"häufigster Werkzeug
     if (a === 'lib') { setView('lib'); return; }
     if (a === 'remind') { setView('orders'); setTimeout(() => $('alarmRemind')?.click(), 60); return; }
     if (a === 'send') { boOpen(); boGo('korb'); return; }
-    if (a === 'bo') { boOpen(null, false, true); return; }
+    if (a === 'bo') { boOpen(); return; }
     if (a === 'backup') { $('exportBtn').click(); return; }
     const t = S.lib.find(x => x.id === b.dataset.id); if (!t) return;
     if (a === 're') { orderTool(t); return; }
@@ -5186,24 +5189,23 @@ Antworte NUR mit JSON: {"map":["feld oder leer", ...]} – gleiche Reihenfolge u
   const boTool = () => BO.t && S.lib.find(x => x.id === BO.t);
   const boVib = p => { try { navigator.vibrate && navigator.vibrate(p); } catch {} };
   const qtyParse = v => { const m = String(v ?? '').trim().match(/^(\d+)\s*(.*)$/); return m ? { n: +m[1], u: U(m[2]) || 'STK' } : { n: 0, u: 'STK' }; };
-  const openOrders = () => S.orders.filter(o => orderItems(o).some(i => i.status === 'gesendet'));
   // Erinnerungsdatum einer Bestellung: letzte Berührung (gesendet / nachgefragt) + Tage dieser Bestellung
   const ordDue = o => { const w = orderItems(o).filter(i => i.status === 'gesendet'); return (w.length ? Math.max(...w.map(lastTouch)) : o.sentAt) + ordRd(o) * DAY; };
   const workDay = ts => { const d = new Date(ts), w = d.getDay(); if (w === 6) d.setDate(d.getDate() + 2); if (w === 0) d.setDate(d.getDate() + 1); return d.getTime(); };   // Sa/So → Montag
   const fmtWd = ts => U(new Date(ts).toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit' })).replace('.,', ',');
   const IC_CAL = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/><path d="M12 13v3.2l2 1.3"/></svg>';
+  const IC_CAM = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d="M3 8.5A2 2 0 0 1 5 6.5h2.2l1.6-2.2h6.4l1.6 2.2H19a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><circle cx="12" cy="13" r="3.8"/><path d="M17.5 9.5h.01" stroke-width="2.2" stroke-linecap="round"/></svg>';
   const IC_MAIL = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5.5" width="18" height="13" rx="2"/><path d="M3.5 7l8.5 6.5L20.5 7"/></svg>';
   const IC_PDF = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" aria-hidden="true"><path d="M6 2.5h8.5L19 7v14.5H6z M14.5 2.5V7H19"/><path d="M9 12.5h7M9 16h5"/></svg>';
   const IC_SHARE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7.5 7.5 12 3l4.5 4.5"/><path d="M5 12v7.5A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5V12"/></svg>';
   const IC_COPY = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="8" width="12.5" height="12.5" rx="2"/><path d="M16 8V5a1.5 1.5 0 0 0-1.5-1.5h-9A1.5 1.5 0 0 0 4 5v9.5A1.5 1.5 0 0 0 5.5 16H8"/></svg>';
 
   function boOpen(t, fromHash, scan) {
-    BO.o = null; BO.tried = ''; BO.copy = ''; BO.unknown = ''; BO.code = ''; BO.q = ''; BO.rcpt = false;
+    BO.o = null; BO.tried = ''; BO.copy = ''; BO.unknown = ''; BO.code = ''; BO.q = ''; BO.rcpt = false; BO.all = false;
     BO.step = 'scan'; BO.t = null; BO.item = null; if (t) boPick(t, false, true);
     $('bo').hidden = false; document.body.style.overflow = 'hidden';
     if (!fromHash && location.hash !== '#bestellen') history.pushState({ ct: 'bo' }, '', location.pathname + '#bestellen');
     boRender();
-    if (scan) setTimeout(boScan, 250);
   }
   function boClose(fromHash) {
     if ($('bo').hidden) return;
@@ -5295,34 +5297,24 @@ Antworte NUR mit JSON: {"map":["feld oder leer", ...]} – gleiche Reihenfolge u
   const boHit = x => { const s = stats(x.id), low = stockCls(x) === 'low';
     const tag = s.inCart ? '<span class="bo-tag cart">AUF LISTE</span>' : s.waiting ? '<span class="bo-tag wait">UNTERWEGS</span>' : low ? `<span class="bo-tag low">${x.stock}${minOf(x) ? ' / MIN ' + minOf(x) : ''}</span>` : hasStock(x) ? `<span class="bo-tag">${x.stock} STK</span>` : '';
     return `<button type="button" class="mw-hit" data-bo="pick" data-id="${x.id}">${thumb(x.img, '', x)}<span class="t"><b>${esc(fullName(x))}</b><small>${[x.firm || x.makerArt, x.loc && '⌂ ' + U(x.loc)].filter(Boolean).map(esc).join(' · ') || esc(x.type || '')}</small></span>${tag}</button>`; };
-  function boOrderRow(o) {
-    const w = orderItems(o).filter(i => i.status === 'gesendet'), due = ordDue(o), late = Date.now() >= due;
-    return `<div class="bo-o ${late ? 'late' : ''}"><div class="t"><b>${esc(o.nr)}</b><small>${late ? `FÄLLIG ${days(due) ? 'SEIT ' + days(due) + ' T' : 'HEUTE'} · ` : ''}${w.length} OFFEN${o.to ? ' · ' + esc(o.to) : ''}</small></div>
-      ${late ? `<button type="button" class="ask" data-bo="ask" data-id="${o.id}">Nachfragen</button>` : `<span class="d">ERINNERUNG<br>${fmtWd(workDay(due))}</span>`}<button type="button" data-bo="got" data-id="${o.id}" aria-label="Alles erhalten">Da ✓</button></div>`;
-  }
-
   function boRender() {
     const t = boTool(), cart = cartItems(), key = BO.step, si = BO_STEPS.indexOf(key), o = BO.o && S.orders.find(x => x.id === BO.o);
-    const titles = { scan: 'Was fehlt?', qty: BO.item ? 'Menge ändern' : 'Wie viele bestellen?', korb: 'Alles drauf?', send: 'An wen & wie?', rem: 'Wann erinnern?' };
+    const titles = { scan: 'Was bestellen?', qty: BO.item ? 'Menge ändern' : 'Wie viele bestellen?', korb: 'Alles drauf?', send: 'An wen & wie?', rem: 'Wann erinnern?' };
     $('boTop').innerHTML = `<div class="mw-in"><div class="mw-h"><span class="mw-mode best">BESTELLEN</span>${(key === 'scan' || key === 'qty') && cart.length ? `<button type="button" class="bo-cart" data-bo="korb">KORB <b>${cart.length}</b></button>` : ''}<span class="sp"></span>
       <span class="mono" style="font-size:11px;color:var(--muted);letter-spacing:.1em">${si + 1} / 5</span><button type="button" class="mw-x" data-bo="close" aria-label="Schließen">${IC_X}</button></div>
       <h2 class="mw-title">${titles[key]}</h2>
       <div class="mw-prog">${BO_STEPS.map((s, i) => `<i class="${i <= si ? 'on' : ''}"></i>`).join('')}</div></div>`;
     let body = '', foot = '';
     if (key === 'scan') {
-      const q = U(BO.q), hits = q ? S.lib.filter(x => match(hay(x), q)).slice(0, 15) : [];
-      const low = lowStock().filter(x => { const s = stats(x.id); return !s.inCart && !s.waiting; }).slice(0, 6);
-      const recIds = [...new Set(S.items.filter(i => i.libId && i.status !== 'bedarf').sort((a, b) => (b.sentAt || b.createdAt) - (a.sentAt || a.createdAt)).map(i => i.libId))];
-      const rec = (recIds.length ? recIds.map(id => S.lib.find(x => x.id === id)).filter(Boolean) : S.lib.slice().sort((a, b) => (b.updatedAt || b.createdAt || 0) - (a.updatedAt || a.createdAt || 0))).slice(0, 9);
-      const oo = openOrders().sort((a, b) => ordDue(a) - ordDue(b)), late = oo.filter(x => Date.now() >= ordDue(x));
-      body = `${late.length ? `<div class="mw-list">${late.map(boOrderRow).join('')}</div>` : ''}
-        <button type="button" class="mw-scan" data-bo="scan">${IC_SCAN}<span><b>Etikett scannen</b><small>QR ODER STRICHCODE · DANN MENGE</small></span></button>
-        ${BO.unknown ? `<div class="bo-unk"><div><b>Code unbekannt</b><span class="mono">${esc(BO.unknown)}</span></div><div class="row"><button type="button" class="btn sm" data-bo="unkq">Suchen</button><button type="button" class="btn sm primary" data-bo="unknew">+ Neues Werkzeug</button></div><small>Wählst du danach ein Werkzeug, wird der Code daran gemerkt.</small></div>` : ''}
-        <input class="mw-q" id="boQ" type="search" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="ODER NAME · ART.-NR. · Ø TIPPEN" value="${esc(BO.q)}">
-        ${q ? `<div class="mw-list">${hits.map(boHit).join('') || `<div class="empty"><b>Nichts gefunden</b><button type="button" class="link" data-bo="new">„${esc(q)}“ neu anlegen</button></div>`}</div>`
-          : `${low.length ? `<div class="mw-sec">UNTER MINDESTBESTAND</div><div class="mw-list">${low.map(boHit).join('')}</div>` : ''}
-             ${rec.length ? `<div class="mw-sec">${recIds.length ? 'ZULETZT BESTELLT' : 'WERKZEUGE'}</div><div class="mw-grid">${rec.map(x => { const s = stats(x.id); return `<button type="button" class="mw-tile ${stockCls(x) === 'low' ? 'low' : ''}" data-bo="pick" data-id="${x.id}">${thumb(x.img, '', x)}<span class="ty">${esc(x.type || '')}</span><b>${esc(shortName(x) || fullName(x))}</b>${s.inCart ? '<span class="st bo-tt cart">LISTE</span>' : s.waiting ? '<span class="st bo-tt wait">UNTERWEGS</span>' : ''}</button>`; }).join('')}</div>` : '<div class="empty"><b>Noch keine Werkzeuge</b>Scannen oder in der Bibliothek anlegen.</div>'}
-             ${oo.length > late.length ? `<div class="mw-sec">UNTERWEGS · ERINNERUNG</div><div class="mw-list">${oo.filter(x => !late.includes(x)).map(boOrderRow).join('')}</div>` : ''}`}`;
+      const q = U(BO.q), last = id => Math.max(0, ...S.items.filter(i => i.libId === id).map(i => i.sentAt || i.createdAt || 0));
+      let list = q ? S.lib.filter(x => match(hay(x), q)) : S.lib.slice().sort((a, b) => last(b.id) - last(a.id) || (b.createdAt || 0) - (a.createdAt || 0));
+      const total = list.length, lim = q || BO.all ? 300 : 30; list = list.slice(0, lim);
+      body = `<button type="button" class="mw-scan" data-bo="newscan">${IC_CAM}<span><b>Neues Werkzeug scannen</b><small>FOTO VOM ETIKETT · KI LEGT AN · DANN BESTELLEN</small></span></button>
+        ${BO.unknown ? `<div class="bo-unk"><div><b>Code unbekannt</b><span class="mono">${esc(BO.unknown)}</span></div><div class="row"><button type="button" class="btn sm primary" data-bo="newscan">Als neues Werkzeug scannen</button></div><small>Oder unten aus der Bibliothek wählen – der Code wird daran gemerkt.</small></div>` : ''}
+        <div class="mw-sec">AUS DER BIBLIOTHEK · ${S.lib.length}</div>
+        <div class="bo-search"><input class="mw-q" id="boQ" type="search" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="NAME · ART.-NR. · Ø" value="${esc(BO.q)}"><button type="button" class="bo-bc" data-bo="scan" aria-label="Strichcode / QR scannen">${IC_SCAN}</button></div>
+        <div class="mw-list">${list.map(boHit).join('') || (q ? `<div class="empty"><b>Nichts gefunden</b><button type="button" class="link" data-bo="new">„${esc(q)}“ neu anlegen</button></div>` : '<div class="empty"><b>Bibliothek ist leer</b>Oben das erste Werkzeug scannen.</div>')}</div>
+        ${!q && total > lim ? `<button type="button" class="bo-more" data-bo="all">Alle ${total} zeigen</button>` : ''}`;
       foot = `<button type="button" class="btn" data-bo="close">Schließen</button>${cart.length ? `<button type="button" class="btn primary mw-go" data-bo="korb">Korb · ${cart.length} →</button>` : ''}`;
     } else if (key === 'qty' && t) {
       const s = stats(t.id), it = BO.item && S.items.find(i => i.id === BO.item), wait = S.items.filter(i => i.libId === t.id && i.status === 'gesendet');
@@ -5393,6 +5385,8 @@ Antworte NUR mit JSON: {"map":["feld oder leer", ...]} – gleiche Reihenfolge u
     const it = b.dataset.id && S.items.find(i => i.id === b.dataset.id);
     if (a === 'close') { boClose(); return; }
     if (a === 'scan') { boScan(); return; }
+    if (a === 'newscan') { scanTool({ quick: true, onSave: x => boPick(x) }); return; }
+    if (a === 'all') { BO.all = true; boRender(); return; }
     if (a === 'pick') { const x = S.lib.find(y => y.id === b.dataset.id); if (x) boPick(x); return; }
     if (a === 'korb') { boGo('korb'); return; }
     if (a === 'card' && t) { openDetail(t.id); return; }
@@ -5409,7 +5403,6 @@ Antworte NUR mit JSON: {"map":["feld oder leer", ...]} – gleiche Reihenfolge u
     if (a === 'tosearch') { BO.t = null; BO.item = null; boGo('scan'); setTimeout(() => $('boQ')?.focus(), 60); return; }
     if (a === 'tosend') { boGo('send'); return; }
     if (a === 'tokorb') { boGo('korb'); return; }
-    if (a === 'unkq') { BO.q = BO.unknown; boRender(); return; }
     if (a === 'unknew' || a === 'new') { const nm = a === 'new' ? BO.q : '';
       openToolWiz({ name: nm, onSave: x => { BO.unknown = ''; boPick(x); } }); return; }
     if (a === 'rcpt') { BO.rcpt = true; boRender(); setTimeout(() => $('boTo')?.focus(), 50); return; }
@@ -5425,9 +5418,6 @@ Antworte NUR mit JSON: {"map":["feld oder leer", ...]} – gleiche Reihenfolge u
     if (a === 'rd') { const o = S.orders.find(x => x.id === BO.o); if (o) { o.rd = +b.dataset.d; save(); boRender(); } return; }
     if (a === 'cal') { const o = S.orders.find(x => x.id === BO.o); if (o) boCalendar(o); return; }
     if (a === 'again') { BO.o = null; BO.t = null; BO.item = null; BO.tried = ''; BO.code = ''; BO.unknown = ''; BO.step = 'scan'; boRender(); return; }
-    if (a === 'ask') { const o = S.orders.find(x => x.id === b.dataset.id); if (!o) return; const ids = orderItems(o).filter(i => i.status === 'gesendet').map(i => i.id); boClose(); setView('orders'); openSend('reminder', ids, [o.id]); return; }
-    if (a === 'got') { const o = S.orders.find(x => x.id === b.dataset.id); if (!o) return;
-      askConfirmBox(`${o.nr} komplett da?`, 'Alle offenen Positionen als erhalten abhaken – Bestand wird erhöht.', 'Alles erhalten', () => { orderItems(o).filter(i => i.status === 'gesendet').forEach(i => { i.status = 'geliefert'; i.deliveredAt = Date.now(); stockFromDelivery(i); }); commit(`${o.nr} komplett erhalten`); boRender(); }); return; }
   });
   $('bo').addEventListener('input', e => {
     const id = e.target.id;
