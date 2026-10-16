@@ -1,6 +1,6 @@
 /* Werkzeug-Bestellliste – Offline-Cache.
    Betrifft NUR die Bestellliste-Dateien; alle anderen Seiten von syncoperator.github.io laufen unverändert durch. */
-const CACHE = 'bestellliste-v9';
+const CACHE = 'bestellliste-v10';
 const OWN = ['bestellliste.html', 'bestellliste.webmanifest', 'bestellliste-icon-180.png', 'bestellliste-icon-192.png', 'bestellliste-icon-512.png', 'bestellliste-icon-maskable-512.png'];
 const EXT = ['fonts.googleapis.com', 'fonts.gstatic.com', 'cdnjs.cloudflare.com', 'cdn.jsdelivr.net', 'unpkg.com'];
 // Seite kann als bestellliste.html ODER als index.html / Ordner-URL ausgeliefert werden
