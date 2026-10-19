@@ -1,0 +1,48 @@
+# docker compose up -d --build   →   дашборд: http://localhost:8000
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: sqandal
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-sqandal}
+      POSTGRES_DB: sqandal
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sqandal -d sqandal"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  api:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+psycopg://sqandal:${POSTGRES_PASSWORD:-sqandal}@db:5432/sqandal
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend/config:/app/config:ro
+    depends_on:
+      db:
+        condition: service_healthy
+
+  worker:
+    build: .
+    restart: unless-stopped
+    command: ["python", "-m", "sqandal.worker"]
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+psycopg://sqandal:${POSTGRES_PASSWORD:-sqandal}@db:5432/sqandal
+    volumes:
+      - models:/models          # кэш модели эмбеддингов (~0.5 ГБ, скачивается один раз)
+      - ./backend/config:/app/config:ro   # sources.yaml / tags.yaml / artists.yaml без пересборки
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata:
+  models:
