@@ -1,0 +1,225 @@
+# Источники мониторинга. Проверено 19–21.10.2026 — у части сайтов RSS нет, их берём
+# со страницы-листинга (kind: web): ссылки по link_pattern → разбор каждой статьи
+# (заголовок, дата первоисточника, текст) по стандартной разметке JSON-LD/meta.
+#
+# Поля:
+#   key, name, kind (rss|web|telegram), scene (ru|de|us|intl), url, enabled
+#   interval_min     — свой интервал (по умолчанию COLLECT_INTERVAL_MIN = 15)
+#   filter: hiphop   — общее СМИ: пропускать только хип-хоп (ключевые слова + вотчлист)
+#   exclude_pattern  — регулярка по заголовку: совпало → не новость (рейтинги, подборки)
+#   discover         — url указывает на HTML-страницу, фид найти на ней (discover_match)
+#   link_pattern     — (web) регулярка URL статей на листинге
+#   render: browser  — (web) страница рисуется JavaScript'ом → Playwright
+#   tz               — часовой пояс для дат без зоны
+#   channel          — (telegram) @username публичного канала
+
+sources:
+  # ───────────────────────── US Hip-Hop ─────────────────────────
+  - key: xxl
+    name: XXL
+    kind: rss
+    scene: us
+    url: https://www.xxlmag.com/feed/
+    note: "RSS работает, но в нём только тизеры — полный текст докачивается перед генерацией"
+
+  - key: tmz_hiphop
+    name: TMZ
+    kind: web
+    scene: us
+    url: https://www.tmz.com/hip-hop/
+    link_pattern: '^https://www\.tmz\.com/20\d{2}/\d{2}/\d{2}/[a-z0-9\-]+/?$'
+    filter: hiphop
+    tz: America/Los_Angeles
+    note: "Рубрика Hip-Hop (листинг); в общей RSS TMZ рубрик нет"
+
+  - key: tmz_rss
+    name: TMZ
+    kind: rss
+    scene: us
+    url: https://www.tmz.com/rss.xml
+    filter: hiphop
+    note: "Общая лента TMZ — пропускаем только хип-хоп. Дубли с рубрикой склеятся по URL"
+
+  - key: hiphopdx
+    name: HipHopDX
+    kind: web
+    scene: us
+    url: https://hiphopdx.com/news
+    link_pattern: '^https://hiphopdx\.com/news/(?!page/)[a-z0-9\-]+/?$'
+    note: "Открытого RSS не нашлось — листинг /news"
+
+  - key: complex
+    name: Complex
+    kind: web
+    scene: us
+    url: https://www.complex.com/music
+    link_pattern: '^https://www\.complex\.com/music/a/[^/]+/[a-z0-9\-]+/?$'
+    render: browser
+    filter: hiphop
+    exclude_pattern: '\branked\b|\bbest\b.*\b(albums?|songs?|verses?)\b|\bguide\b'
+    note: "JS-сайт, RSS не отдаётся — рендер через Playwright; рейтинги/подборки отсекаются"
+
+  - key: thesource
+    name: The Source
+    kind: rss
+    scene: us
+    url: https://thesource.com/feed/
+    note: "RSS с точным временем; бывают спорт и игры — их отсекает фильтр хип-хопа"
+    filter: hiphop
+
+  - key: allhiphop
+    name: AllHipHop
+    kind: rss
+    scene: us
+    url: https://allhiphop.com/feed/
+    note: "Быстро подхватывает истории инсайдеров (SayCheese, Akademiks, No Jumper) — сами они живут в X/Instagram"
+
+  - key: hotnewhiphop
+    name: HotNewHipHop
+    kind: web
+    scene: us
+    url: https://www.hotnewhiphop.com/
+    link_pattern: '^https://www\.hotnewhiphop\.com/\d{5,}-[a-z0-9\-]+/?$'
+    filter: hiphop
+    note: "RSS нет; на листинге только даты — время берётся из статьи. Кроссовки и спорт отсекает фильтр"
+
+  # ───────────────────────── Deutschrap ─────────────────────────
+  - key: hiphopde
+    name: Hiphop.de
+    kind: web
+    scene: de
+    url: https://hiphop.de/
+    link_pattern: '^https://hiphop\.de/magazin/news/[a-z0-9\-]+-\d+/?$'
+    tz: Europe/Berlin
+    note: "RSS нет — новости с главной (/magazin/news/…-ID)"
+
+  - key: bild
+    name: BILD
+    kind: rss
+    scene: de
+    url: https://www.bild.de/rss-feeds/rss-16725492,feed=home.bild.html
+    discover: true
+    discover_match: 'unterhaltung|musik|leute|stars'
+    filter: hiphop
+    note: "Страница со списком фидов BILD: нужный фид находится автоматически. Если вёрстка сменится — впиши прямой URL фида и discover: false. В облачном сборе по кнопке BILD недоступен"
+
+  - key: raptastisch
+    name: Raptastisch
+    kind: web
+    scene: de
+    url: https://raptastisch.net/
+    link_pattern: '^https://raptastisch\.net/20\d{2}/\d{2}/\d{2}/[^/?#]+/?$'
+    render: browser
+    tz: Europe/Berlin
+    note: "Уличные конфликты и инста-бифы Deutschrap; лента на JS и за Cloudflare — Playwright"
+
+  - key: rap2soul
+    name: Rap2Soul
+    kind: rss
+    scene: de
+    url: https://www.rap2soul.de/feed
+    filter: hiphop
+    note: "Урбан-медиа с 2002 года: US и Deutschrap на немецком, есть R&B и поп — фильтр хип-хопа"
+
+  - key: watson
+    name: watson
+    kind: web
+    scene: de
+    url: https://www.watson.ch/
+    link_pattern: '^https://www\.watson\.ch/[a-z\-]+(/[a-z\-]+)?/\d{6,}-[a-z0-9\-]+/?$'
+    filter: hiphop
+    tz: Europe/Zurich
+    note: "Швейцария: общее СМИ — пропускаем только рэп"
+
+  - key: rapde
+    name: rap.de
+    kind: rss
+    scene: de
+    url: https://rap.de/feed/
+    enabled: false
+    note: "Закрыт издателем (Piranha Media): на сайте заглушка, лента не обновляется с 2022"
+
+  # ───────────────────────── RU / СНГ ───────────────────────────
+  - key: theflow
+    name: The Flow
+    kind: web
+    scene: ru
+    url: https://the-flow.ru/
+    link_pattern: '^https://the-flow\.ru/news/[a-z0-9\-]+/?$'
+    tz: Europe/Moscow
+    note: "RSS нет — новости с главной (/news/…)"
+
+  - key: rapru
+    name: RAP.RU
+    kind: web
+    scene: ru
+    url: https://rap.ru/news
+    link_pattern: '^https://rap\.ru/(news|article|latest)/[^/?#]+/?$'
+    render: browser
+    tz: Europe/Moscow
+    enabled: false
+    note: "Выключен 21.10.2026: лента рисуется скриптом (Tilda), сбор видит пустую страницу. Включай только с Playwright"
+
+  # ─────────────── Telegram ───────────────
+  # Нужны TG_API_ID / TG_API_HASH / TG_SESSION (см. README → «Telegram-парсер»).
+  # insider: true — новость без подтверждения СМИ получит пометку «по данным
+  # инсайдеров» и предупреждение в редакторе.
+  - key: tg_rhymes
+    name: Рифмы и Панчи
+    kind: telegram
+    scene: ru
+    channel: rhymestg
+    filter: hiphop
+    note: "Крупнейший рэп-канал СНГ; много мемов и не-рэпа — фильтр хип-хопа"
+
+  - key: tg_theflow
+    name: The Flow
+    kind: telegram
+    scene: ru
+    channel: superslowflow
+    insider: false
+    note: "Канал The Flow — то же издание, что сайт: публикации склеятся в один источник"
+
+  - key: tg_nr
+    name: NR
+    kind: telegram
+    scene: ru
+    channel: nrpublic
+
+  - key: tg_mash
+    name: Mash
+    kind: telegram
+    scene: ru
+    channel: breakingmash
+    filter: hiphop
+    note: "Общие новости — берём только про рэперов: задержания, суды, силовики"
+
+  - key: tg_baza
+    name: Baza
+    kind: telegram
+    scene: ru
+    channel: bazabazon
+    filter: hiphop
+    note: "Общие новости — только про рэперов"
+
+  - key: tg_shot
+    name: SHOT
+    kind: telegram
+    scene: ru
+    channel: shot_shot
+    filter: hiphop
+    note: "Общие новости — только про рэперов"
+
+  # Свои каналы — по образцу:
+  #
+  # - key: tg_insider_ru
+  #   name: Инсайд RU
+  #   kind: telegram
+  #   scene: ru
+  #   channel: username_канала
+  #
+  # - key: tg_insider_de
+  #   name: Insider DE
+  #   kind: telegram
+  #   scene: de
+  #   channel: kanal_username

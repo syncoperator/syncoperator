@@ -1,0 +1,166 @@
+# Авто-теги и веса приоритета. Регулярки — Python re (регистр не важен), Юникод.
+#   weight   — вклад в priority_score (CRITICAL ≥ 60, HIGH ≥ 30, см. thresholds)
+#   patterns — RU / DE / EN: новости приходят на трёх языках
+#   exclude  — ложные срабатывания: совпадение внутри такого фрагмента не считается
+#              («Death Row Records» — не смерть, «выпустили под залог» — не релиз)
+
+thresholds:
+  CRITICAL: 60
+  HIGH: 30
+
+bonuses:
+  extra_source: 10        # за каждый независимый источник сверх первого…
+  extra_source_cap: 30    # …но не больше
+  breaking_sources: 3     # ≥ N источников за breaking_window_h часов → «горит»
+  breaking_window_h: 2
+  breaking: 15
+  artist_tier1: 10
+  artist_tier2: 3
+  insider_only: -5        # только Telegram-инсайды, без СМИ
+  stale: -40              # первоисточник старше STALE_AFTER_HOURS
+  second_tag_factor: 0.3  # остальные теги сюжета добавляют 30% своего веса
+
+tags:
+  Смерть:
+    emoji: "🕊"
+    weight: 70
+    patterns:
+      - '\bумер(ла|ли)?\b'
+      - '\bскончал(ся|ась|ись)\b'
+      - '\bпогиб(ла|ли)?\b'
+      - '\bне стало\b'
+      - '\bзастрел(ен|ена|или|ил)\b'
+      - '\bубит(а|ы)?\b'
+      - '\b(gestorben|verstorben|erschossen|getötet|ums leben gekommen)\b'
+      - '\bist tot\b'
+      - '\b(dies|died|dead|death|passed away|shot dead)\b'
+      - '\b(was|were|got) killed\b'
+      - '\bkilled in\b'
+      - '\bfatally (shot|stabbed|struck|wounded)\b'
+      - '\b(autopsy|вскрыти\w*|obduktion\w*)\b'
+    exclude:
+      - '\bdeath row\b'
+      - '\bdeath threats?\b'
+      - '\bnear-death\b'
+      - '\bугроз\w* (убийством|смертью)\b'
+      - '\btodesdrohung\w*'
+      - '\bdead serious\b'
+      - '\bwrongful death\b'
+
+  Задержание:
+    emoji: "🚨"
+    weight: 60
+    patterns:
+      - '\bзадерж(ан|ана|аны|али|ал|ание|ания|анию)\b'
+      - '\bарест(ован|ована|ованы|овали|а|ом|е|у)?\b'
+      - '\bсизо\b'
+      - '\bпод стражу\b'
+      - '\bобыск(и|а|ом|ами)?\b'
+      - '\b(festgenommen|festnahme|verhaftet|verhaftung|u-haft|untersuchungshaft|in gewahrsam|razzia|durchsuchung)\b'
+      - '\b(arrested|detained|in custody|taken into custody|booked into|jailed|police raid)\b'
+
+  Суд:
+    emoji: "⚖️"
+    weight: 35
+    patterns:
+      - '\bсуд(а|е|у|ом|ы|ов|ам|ами|ах)?\b'
+      - '\bсудебн\w*'
+      - '\bсудь(я|и|ю|ей)\b'
+      - '\bприговор\w*'
+      - '\bпод залог\b'
+      - '\bобвинени\w*'
+      - '\bобвиня\w*'
+      - '\bиск(а|у|ом|и|ов)?\b'
+      - '\bуголовн\w+ дел\w*'
+      - '\bст\.\s?\d+'
+      - '\bадвокат\w*'
+      - '\bпрокурор\w*'
+      - '\b(gericht\w*|urteil\w*|anklage\w*|angeklagt\w*|prozess\w*|verklagt\w*|klage|klagt|staatsanwalt\w*|bewährung\w*|haftstrafe\w*)\b'
+      - '§\s?\d+'
+      - '\b(court|lawsuit|sued|sues|suing|sentenced|trial|indicted|indictment|charged with|felony|misdemeanor|prosecutors?|plea deal|pleaded|probation|verdict|jury|bail|bond hearing|wrongful death)\b'
+      - '\bkaution\b'
+      - '\b(a|the|federal|district) judge\b'
+
+  Здоровье:
+    emoji: "🏥"
+    weight: 40
+    patterns:
+      - '\bгоспитализ\w*'
+      - '\bреанимаци\w*'
+      - '\bв коме\b'
+      - '\bв больниц\w*'
+      - '\bпередозировк\w*'
+      - '\bинсульт\w*'
+      - '\bинфаркт\w*'
+      - '\bдтп\b'
+      - '\b(krankenhaus\w*|intensivstation|notoperation|überdosis)\b'
+      - '\b(hospitali[sz]ed|in the hospital|icu|emergency surgery|overdose\w*|health scare|car crash|seizures?)\b'
+
+  Скандал:
+    emoji: "🔥"
+    weight: 30
+    patterns:
+      - '\bскандал\w*'
+      - '\bконфликт\w*'
+      - '\bбиф\w*'
+      - '\bдисс\w*'
+      - '\bдрак(а|и|у|ой)\b'
+      - '\bпотасовк\w*'
+      - '\bоскорб\w*'
+      - '\bугрож\w*'
+      - '\b(skandal\w*|beef|disst?|disstrack\w*|streit\w*|eklat\w*|schlägerei\w*|vorwürf\w*|shitstorm|zoff)\b'
+      - '\b(stichel\w*|seitenhieb\w*|attackiert\w*|schießt gegen|teilt gegen \w+ aus)\b'
+      - '\b(diss|diss track|feud\w*|controvers\w*|scandal\w*|brawl\w*|fires back|claps back|slams|accus\w+|allegations?)\b'
+
+  Тур:
+    emoji: "🎤"
+    weight: 15
+    patterns:
+      - '\bконцерт\w*'
+      - '\bтур(а|е|ом)?\b'
+      - '\bтурне\b'
+      - '\bфестивал\w*'
+      - '\bотмен(ил|ила|или|ён|ен|ена|ены|а)\b'
+      - '\bперенес(ли|ён|ен|ена)\b'
+      - '\b(konzert\w*|tour|tournee|festival\w*|abgesagt|absage\w*|verschoben)\b'
+      - '\b(tour|tours|touring|concerts?|festivals?|canceled|cancelled|postponed)\b'
+    exclude:
+      - '\bотмен\w* (приговор|решени)\w*'
+
+  Релиз:
+    emoji: "💿"
+    weight: 10
+    # Только контекст выхода релиза. Слово «альбом» само по себе встречается в исках,
+    # интервью и подборках: «спор о правах на два альбома» — не релиз.
+    patterns:
+      - '\bрелиз\w*'
+      - '\bтреклист\w*'
+      - '\bпремьер\w* (трек|клип|альбом|сингл|видео)\w*'
+      - '\b(вы(шел|шла|шло|шли|ходит|йдет|йдёт|йдут)|выпусти(л|ла|ли|т)|представи(л|ла|ли)|анонсирова(л|ла|ли)|презентова(л|ла|ли)|дропну(л|ла|ли)) (сво\w+ )?(нов\w+ |совместн\w+ |дебютн\w+ |перв\w+ )?((альбом|сингл|трек|клип|мини-альбом|микстейп|делюкс|лонгплей)\w*|ep\b)'
+      - '\bнов(ый|ая|ое|ые|ым|ом|ого|ую|ой|ыми|ых) ((альбом|сингл|трек|клип|мини-альбом|микстейп)\w*|ep\b)'
+      - '\b(альбом|сингл|трек|клип|мини-альбом|микстейп)\w* (вы(шел|шла|шло|йдет|йдёт|ходит))'
+      - '\bвыход\w* (нов\w+ )?(альбом|сингл|трек|клип|мини-альбом|микстейп)\w*'
+      - '\bveröffentlich\w* (sein\w* |ihr\w* |das |die |den |ein\w* |neue\w* |erste\w* )*(alben|album|eps?|singles?|songs?|tracks?|mixtapes?|platten?|musikvideos?|deluxe)\b'
+      - '\b(neue[snmr]?|kommende[snmr]?) (alben|album|eps?|singles?|songs?|tracks?|mixtapes?|platten?|musikvideos?)\b'
+      - '\b(album|ep|single|song|mixtape|platte)\w* (erscheint|erschien|kommt am)\b'
+      - '\b(tracklist\w*|musikvideo\w*|debütalbum\w*|albumrelease|album-release|releasedatum)\b'
+      - '\b(new|debut|upcoming|sophomore|surprise|joint|collab) (album|single|song|ep|mixtape|lp|track|music video)\b'
+      - '\b(drops?|dropped|dropping|releases?|released|releasing|unveils?|unveiled|announces?|announced|shares?|shared|premieres?|premiered|debuts?|debuted) (his |her |their |a |an |the |new |surprise |debut |sophomore |joint |collaborative |long-awaited |upcoming |latest )*(album|single|song|ep|mixtape|lp|music video|deluxe|tracklist)\b'
+      - '\b(release date|music video|deluxe edition|deluxe version|out now)\b'
+    exclude:
+      - '\bвыпуст\w* (под залог|из сизо|на свободу|из-под стражи)'
+      - '\bпресс-релиз\w*'
+      - '\b(press release|pressemitteilung)\b'
+
+# Это вообще хип-хоп? Для общих СМИ (TMZ, BILD) с `filter: hiphop`.
+# Совпадение с артистом из artists.yaml тоже засчитывается.
+hiphop_keywords:
+  - '\bрэп\w*'
+  - '\bреп(ер|ера|еру|ером|еры|еров|ерша)\b'
+  - '\bхип-?хоп\w*'
+  - '\bбаттл\w*'
+  - '\b\w*(?<![tcw])rapper(in|innen|n|s)?\b'
+  - '\b(deutschrap\w*|deutsch-rap|hip-?hop\w*|gangsta-?rap)\b'
+  - '\brap(?!\s+sheet)\b'
+  - '\b(trap|drill) (artist|rapper|music)\b'
+  - '\b(mixtape|diss track|disstrack)\b'
