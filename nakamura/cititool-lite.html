@@ -2036,7 +2036,7 @@ body.on-home .sheet .seg-b.on{background:#F2F3F5!important;color:#15161A!importa
 #sim-codelist .sim-hot .lc{font-weight:700;}
 #sim-codelist .sim-cur{background:#ECEDE9!important;box-shadow:inset 3px 0 0 #15161A!important;}
 /* ── LITE: Reste der Revolver-Logik ausblenden ── */
-#pill-rev,button[onclick="copyToolToOther()"],.hb-b[onclick^="hbSwap"],[onclick*="toggleLibRev"],.revdiv{display:none!important}
+button[onclick="copyToolToOther()"],.hb-b[onclick^="hbSwap"],[onclick*="toggleLibRev"]{display:none!important}
 /* lange Fräser-Namen (Unterstriche) umbrechen */
 .op-title,.lrow-nm,.gs-nm,.libnm{overflow-wrap:anywhere;word-break:break-word;min-width:0}
 </style>
@@ -2881,12 +2881,21 @@ function lrow(t,i,listName){
 function render(){
   const p=P(); if(!p.oben)p.oben=[]; if(!p.unten)p.unten=[];
   const c=document.getElementById('content');
-  const total=p.oben.length;
-  document.getElementById('cnt-used').textContent=p.oben.filter(t=>t.nm).length;
+  const total=p.oben.length+p.unten.length;
+  document.getElementById('cnt-used').textContent=p.oben.filter(t=>t.nm).length+p.unten.filter(t=>t.nm).length;
   document.getElementById('cnt-total').textContent=total;
   if(!total){c.innerHTML=emptyHTML();return;}
   const rowFn=viewMode==='liste'?lrow:opCard;
-  c.innerHTML=p.oben.map((t,i)=>rowFn(t,i,'oben')).join('')+'<div style="height:20px"></div>';stagger('.nzv-grid');
+  const hd=(n,t)=>'<div class="revdiv" onclick="renameSection(\''+n+'\')" style="cursor:pointer">'+esc(t)+'</div>';
+  let html='';
+  // Lite: Überschriften nur, wenn ein (importiertes) Projekt auch eine zweite Liste hat
+  if(p.unten.length&&p.oben.length)html+=hd('oben',/REVOLVER/i.test(p.titleOben||'')||!p.titleOben?'Liste 1':p.titleOben);
+  html+=p.oben.map((t,i)=>rowFn(t,i,'oben')).join('');
+  if(p.unten.length){
+    if(p.oben.length)html+=hd('unten',/REVOLVER/i.test(p.titleUnten||'')||!p.titleUnten?'Liste 2':p.titleUnten);
+    html+=p.unten.map((t,i)=>rowFn(t,i,'unten')).join('');
+  }
+  c.innerHTML=html+'<div style="height:20px"></div>';stagger('.nzv-grid');
   setTimeout(()=>{bindToolLongPress();bindListDrag();},20);
   if(_firstPaint){stagger('#content');_firstPaint=false;}
 }
@@ -2988,6 +2997,7 @@ function openToolModal(i=null,listName=null){
   document.getElementById('nm-chips').innerHTML='';
   document.getElementById('bem-chips').innerHTML='';
   syncPill('sonder');syncPill('rev');
+  {const pr=document.getElementById('pill-rev');if(pr)pr.style.display=(editList==='unten')?'':'none';}
   open_('m-tool');
 }
 function togglePill(k){const cb=document.getElementById('t-'+k);cb.checked=!cb.checked;syncPill(k);}
@@ -4781,7 +4791,8 @@ function makePDF(){
     }
   };
   const oben=p.oben||[],unten=p.unten||[];
-  addSection((p.titleOben&&!/REVOLVER/i.test(p.titleOben)?p.titleOben:'Werkzeugliste').toUpperCase(),oben);
+  addSection((unten.length?(p.titleOben&&!/REVOLVER/i.test(p.titleOben)?p.titleOben:'Liste 1'):(p.titleOben&&!/REVOLVER/i.test(p.titleOben)?p.titleOben:'Werkzeugliste')).toUpperCase(),oben);
+  if(unten.length)addSection((p.titleUnten&&!/REVOLVER/i.test(p.titleUnten)?p.titleUnten:'Liste 2').toUpperCase(),unten);
   const tot=pages.length;
   const html=pages.map((pg,i)=>page(pg.title,pg.rows,i+1,tot)).join('');
   document.getElementById('print-area').innerHTML=html;
