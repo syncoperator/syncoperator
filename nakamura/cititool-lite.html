@@ -2080,6 +2080,21 @@ html.intro-on .intro{display:flex}
 .wiz-grip svg{width:18px;height:18px;fill:var(--ink3);stroke:none}
 /* Sonderwerkzeug-Schalter ausgeblendet (Wert bleibt erhalten) */
 #pill-sonder{display:none!important}
+/* ── Druck: Umbruch-Auswahl ── */
+.pb-sum{font-family:var(--mono);font-size:11px;color:var(--ink3);letter-spacing:.5px;margin-bottom:12px}
+.pb-sec{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:2px;color:var(--ink3);margin:14px 2px 6px;text-transform:uppercase}
+.pb-page{display:flex;align-items:baseline;gap:10px;padding:6px 4px;font-family:var(--mono);font-size:11px;color:var(--ink3)}
+.pb-page b{color:var(--ink);letter-spacing:1px}
+.pb-row{display:flex;align-items:center;gap:10px;padding:9px 12px;border:1px solid var(--line2);border-radius:10px;background:var(--card)}
+.pb-row b{font-family:var(--mono);font-size:13px;font-weight:800;min-width:44px}
+.pb-row span{flex:1;min-width:0;font-weight:700;font-size:13px;overflow-wrap:anywhere}
+.pb-brk{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;margin:3px 0;padding:6px 10px;border:1px dashed transparent;border-radius:9px;background:transparent;color:var(--ink3);font-family:var(--mono);font-size:10.5px;letter-spacing:.6px;cursor:pointer;min-height:26px}
+.pb-brk:hover{border-color:var(--line2)}
+.pb-brk.on{border:1.5px solid var(--ink);background:var(--ink);color:var(--card);margin:8px 0}
+.pb-brk.on b{letter-spacing:1px}
+.pb-brk.on.auto{background:transparent;color:var(--ink);border:1.5px dashed var(--ink)}
+.pb-actions{position:sticky;bottom:0;display:flex;gap:10px;padding:12px 0 2px;margin-top:10px;background:var(--bg)}
+.pb-actions .sbtn{flex:1}
 </style>
 </head>
 <body>
@@ -2114,6 +2129,15 @@ html.intro-on .intro{display:flex}
 <g id="i26"><circle cx="9" cy="6" r="1.5"/><circle cx="15" cy="6" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="9" cy="18" r="1.5"/><circle cx="15" cy="18" r="1.5"/></g>
 </defs></svg>
 
+<div class="overlay" id="m-pbreak" onclick="if(event.target===this)close_('m-pbreak')">
+  <div class="sheet" style="max-width:520px">
+    <div class="sheet-bar"></div>
+    <div class="sheet-title" style="margin-bottom:4px">Drucken · Seitenumbruch</div>
+    <div class="pb-sum" id="pb-sum"></div>
+    <div id="pb-body"></div>
+    <div class="pb-actions"><button class="sbtn sec" onclick="pbReset()">Zurücksetzen</button><button class="sbtn save" onclick="pbPrint()">Drucken</button></div>
+  </div>
+</div>
 <div id="toast"></div>
 <div id="print-area"></div>
 
@@ -4762,8 +4786,9 @@ function cloudDelete(i){
 }
 
 // ═══ PDF ═══
-function makePDF(){
-  closeDrawer();
+function makePDF(){closeDrawer();pbOpen();}
+function doPDF(brk){
+  brk=brk||{};
   const p=P();
   const meta=ensureMeta(p);
   const metaRows=meta.map((f,idx)=>`<div style="display:flex;justify-content:space-between;${idx<meta.length-1?'border-bottom:.5px solid #000;':''}"><span>${esc(f.label)}</span><span>${esc(f.value)||'-'}</span></div>`).join('');
@@ -4786,15 +4811,15 @@ function makePDF(){
   };
   // paginate: fixed rows per A4 page, frame never overflows
   const pages=[];
-  const addSection=(title,rows)=>{
+  const addSection=(title,rows,key)=>{
     if(!rows.length){pages.push({title,rows:[]});return;}
-    for(let i=0;i<rows.length;i+=PER_PAGE){
-      pages.push({title:i===0?title:title+' (FORTSETZUNG)',rows:rows.slice(i,i+PER_PAGE)});
-    }
+    pbChunks(rows.length,brk[key]).forEach(([a,b],ix)=>{
+      pages.push({title:ix===0?title:title+' (FORTSETZUNG)',rows:rows.slice(a,b)});
+    });
   };
   const oben=p.oben||[],unten=p.unten||[];
-  addSection((unten.length?(p.titleOben&&!/REVOLVER/i.test(p.titleOben)?p.titleOben:'Liste 1'):(p.titleOben&&!/REVOLVER/i.test(p.titleOben)?p.titleOben:'Werkzeugliste')).toUpperCase(),oben);
-  if(unten.length)addSection((p.titleUnten&&!/REVOLVER/i.test(p.titleUnten)?p.titleUnten:'Liste 2').toUpperCase(),unten);
+  addSection((unten.length?(p.titleOben&&!/REVOLVER/i.test(p.titleOben)?p.titleOben:'Liste 1'):(p.titleOben&&!/REVOLVER/i.test(p.titleOben)?p.titleOben:'Werkzeugliste')).toUpperCase(),oben,'oben');
+  if(unten.length)addSection((p.titleUnten&&!/REVOLVER/i.test(p.titleUnten)?p.titleUnten:'Liste 2').toUpperCase(),unten,'unten');
   const tot=pages.length;
   const html=pages.map((pg,i)=>page(pg.title,pg.rows,i+1,tot)).join('');
   document.getElementById('print-area').innerHTML=html;
@@ -5097,6 +5122,51 @@ function wizDragEnd(){
   const old=wiz.ops;
   wiz.ops=[...box.querySelectorAll('.wiz-op')].map(r=>old[+r.dataset.i]);
   wizSnapshot();wizRender();
+}
+
+
+// ── Druck: Seitenumbruch-Auswahl ──
+const PB_PER=13;
+let _pb={oben:new Set(),unten:new Set()};
+function pbChunks(n,set){
+  const cuts=[0].concat([...(set||[])].filter(i=>i>0&&i<n).sort((a,b)=>a-b),[n]);
+  const out=[];
+  for(let k=0;k<cuts.length-1;k++){for(let s=cuts[k];s<cuts[k+1];s+=PB_PER)out.push([s,Math.min(s+PB_PER,cuts[k+1])]);}
+  return out;
+}
+function pbOpen(){
+  const p=P();
+  if(Math.max((p.oben||[]).length,(p.unten||[]).length)<=PB_PER){doPDF({});return;}   // passt auf eine Seite je Liste
+  _pb={oben:new Set(),unten:new Set()};
+  pbRender();open_('m-pbreak');
+}
+function pbToggle(k,i){const s=_pb[k];if(s.has(i))s.delete(i);else s.add(i);hap(8);pbRender(true);}
+function pbReset(){_pb={oben:new Set(),unten:new Set()};pbRender(true);}
+function pbPrint(){const b=_pb;close_('m-pbreak');setTimeout(()=>doPDF(b),220);}
+function pbRender(keepScroll){
+  const p=P();
+  const lists=[['oben',p.oben||[]],['unten',p.unten||[]]].filter(l=>l[1].length);
+  const sheet=document.querySelector('#m-pbreak .sheet'),st=sheet?sheet.scrollTop:0;
+  let page=0,html='';
+  lists.forEach(([k,rows])=>{
+    if(lists.length>1)html+='<div class="pb-sec">'+(k==='oben'?'Liste 1':'Liste 2')+'</div>';
+    const starts=new Map(pbChunks(rows.length,_pb[k]).map(([a,b])=>[a,b-a]));
+    rows.forEach((t,i)=>{
+      const n=starts.get(i);
+      if(n){
+        page++;
+        if(i===0)html+='<div class="pb-page"><b>Seite '+page+'</b><span>'+n+' Werkzeuge</span></div>';
+        else{const man=_pb[k].has(i);
+          html+='<button type="button" class="pb-brk on'+(man?'':' auto')+'" onclick="pbToggle(\''+k+'\','+i+')"><b>Seite '+page+'</b><span>'+n+' Werkzeuge · '+(man?'Umbruch entfernen':'automatisch · antippen = fest')+'</span></button>';}
+      }else if(i>0){
+        html+='<button type="button" class="pb-brk" onclick="pbToggle(\''+k+'\','+i+')"><span>＋ Umbruch hier</span></button>';
+      }
+      html+='<div class="pb-row"><b>'+esc(t.id||'T—')+'</b><span>'+esc(t.nm||'—')+'</span></div>';
+    });
+  });
+  document.getElementById('pb-body').innerHTML=html;
+  document.getElementById('pb-sum').textContent=page+(page===1?' Seite':' Seiten')+' · max. '+PB_PER+' Werkzeuge pro Seite';
+  if(sheet&&keepScroll)sheet.scrollTop=st;
 }
 
 // ═══ VERSION ═══
