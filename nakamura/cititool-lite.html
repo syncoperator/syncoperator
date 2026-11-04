@@ -2095,6 +2095,20 @@ html.intro-on .intro{display:flex}
 .pb-brk.on.auto{background:transparent;color:var(--ink);border:1.5px dashed var(--ink)}
 .pb-actions{position:sticky;bottom:0;display:flex;gap:10px;padding:12px 0 2px;margin-top:10px;background:var(--bg)}
 .pb-actions .sbtn{flex:1}
+/* ── unslop Polish ── */
+.op>.hoverbar,.lrow>.hoverbar{position:absolute!important}
+.op-title,.lrow-nm,.gs-nm,.libnm,.wiz-op .wiz-tool-nm,.pb-row span{overflow-wrap:break-word;word-break:normal;min-width:0}
+.opc{box-shadow:none;border-color:transparent;background:transparent;color:var(--ink3)}
+.opc:active{background:var(--card-soft)}
+.meta-grip,.meta-del{opacity:.3;transition:opacity .15s}
+.metacell:focus-within .meta-grip,.metacell:focus-within .meta-del{opacity:1}
+.meta-add{width:auto!important;padding:8px 14px!important;font-size:12px!important;font-family:var(--mono);color:var(--ink3)!important;border:1px dashed var(--line2)!important;background:transparent!important;box-shadow:none!important}
+.meta-add svg{stroke:currentColor!important;width:14px!important;height:14px!important}
+.mgrp-h{pointer-events:none;cursor:default}
+.mgrp-ch,.mgrp-n{display:none}
+.mgrp.open .mgrp-ic{background:transparent}
+.mgrp.open .mgrp-ic svg{stroke:var(--ink2)}
+.mgrp.open .mgrp-t{color:var(--ink3)}
 </style>
 </head>
 <body>
@@ -2196,7 +2210,7 @@ html.intro-on .intro{display:flex}
 
   <div class="metagrid" id="metagrid"></div>
   <div style="padding:0 18px 14px">
-    <button class="bb" style="width:100%;padding:12px;font-size:14px" onclick="addMetaField()">
+    <button class="bb meta-add" onclick="addMetaField()">
       <svg style="width:16px;height:16px;stroke:var(--ink);fill:none;stroke-width:2.2" viewBox="0 0 24 24"><use href="#i11"/></svg>
       Eigenes Feld
     </button>
@@ -2209,7 +2223,7 @@ html.intro-on .intro{display:flex}
       <div class="sechead-title" id="sec-title">Werkzeugliste</div>
     </div>
     <div class="sechead-count">
-      <div><b id="cnt-used">0</b><span> / <span id="cnt-total">0</span></span></div>
+      <div><b id="cnt-total">0</b><span hidden><span id="cnt-used"></span></span></div>
       <small>Werkzeuge</small>
     </div>
   </div>
@@ -2329,7 +2343,7 @@ html.intro-on .intro{display:flex}
 <div class="overlay" id="m-set" onclick="if(event.target===this)close_('m-set')">
   <div class="sheet" style="max-width:520px">
     <div class="sheet-bar"></div>
-    <div class="sheet-title" style="margin-bottom:14px">Einstellungen &amp; Statistik</div>
+    <div class="sheet-title" style="margin-bottom:14px">Einstellungen</div>
     <div id="set-body"></div>
   </div>
 </div>
@@ -2601,9 +2615,8 @@ const SIM_PAUSE='<svg class="ic" viewBox="0 0 24 24"><rect x="6" y="5" width="4"
 
 if(!db.length){ db.push(newProject()); }
 function defaultMeta(){return[
-  {label:'LAUFZEIT',value:''},{label:'MATERIAL',value:''},
-  {label:'SÄGELÄNGE',value:''},{label:'ABSTAND',value:''},
-  {label:'GREIFBACKEN',value:'',wide:true}
+  {label:'MATERIAL',value:''},{label:'SPANNMITTEL',value:''},
+  {label:'NULLPUNKT',value:''},{label:'LAUFZEIT',value:''}
 ];}
 function newProject(){return{num:'',name:'',titleOben:'Werkzeugliste',titleUnten:'',meta:defaultMeta(),oben:[],unten:[]};}
 function P(){return db[cur];}
@@ -2691,6 +2704,7 @@ async function brainCloudPull(silent){
     if(!silent)toast('Werkzeug-Speicher geladen');
   }catch(e){if(!silent)toast(/secret/i.test(e.message||'')?'Falscher Zugangscode':'Fehler');}
 }
+function nmH(s){return esc(s).replace(/_/g,'_<wbr>');}
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function toast(m){hap(10);
   {const _t=document.getElementById('toast');if(_t){_t.classList.remove('mit-undo');_t.textContent='';}}buzz();const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2200);}
@@ -2741,22 +2755,8 @@ function promptOk(){const v=document.getElementById('prompt-input').value;close_
 
 
 
-function mgrpToggle(g){
-  const el=document.querySelector('.mgrp[data-g="'+g+'"]');if(!el)return;
-  const was=el.classList.contains('open');
-  document.querySelectorAll('.mgrp').forEach(x=>x.classList.remove('open'));
-  if(!was){el.classList.add('open');hap(12);
-    setTimeout(()=>el.scrollIntoView({block:'nearest',behavior:'smooth'}),240);}
-  else hap(8);
-  try{localStorage.setItem('CTL_MGRP',was?'':g);}catch(e){}
-}
-function mgrpRestore(){
-  document.querySelectorAll('.mgrp').forEach(x=>x.classList.remove('open'));
-  let g='';try{g=localStorage.getItem('CTL_MGRP')||'';}catch(e){}
-  if(!g)return;
-  const el=document.querySelector('.mgrp[data-g="'+g+'"]');
-  if(el)el.classList.add('open');
-}
+function mgrpToggle(){}
+function mgrpRestore(){document.querySelectorAll('.mgrp').forEach(x=>x.classList.add('open'));}
 function openDrawer(){applyMenu();setTimeout(setzeModalKlasse,10);mgrpRestore();document.getElementById('drawer').classList.add('open');}
 function closeDrawer(){setTimeout(setzeModalKlasse,10);document.getElementById('drawer').classList.remove('open');}
 function dNav(fn){closeDrawer();setTimeout(()=>{try{fn();}catch(e){}},170);}
@@ -2874,10 +2874,10 @@ function opCard(t,i,listName){
         <div class="op-ctrls">
           <button class="opc" onclick="moveIn('${listName}',${i},-1)"><svg viewBox="0 0 24 24"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg></button>
           <button class="opc" onclick="moveIn('${listName}',${i},1)"><svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg></button>
-          <button class="opc x" onclick="delIn('${listName}',${i})"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+          
         </div>
       </div>
-      <div class="op-title ${t.nm?'':'empty'}" onclick="editIn('${listName}',${i})">${esc(t.nm||'Leer — antippen')}</div>
+      <div class="op-title ${t.nm?'':'empty'}" onclick="editIn('${listName}',${i})">${nmH(t.nm||'Leer — antippen')}</div>
       <div class="op-tags">
         ${opTyp(t).lbl?'<span class="op-typ"><i></i>'+opTyp(t).lbl+'</span>':''}
         
@@ -2892,7 +2892,7 @@ function lrow(t,i,listName){
     ${hovBarHTML(listName,i)}
     ${dragHandleHTML()}<span class="lrow-idx">${String(i+1).padStart(2,'0')}</span>
     <span class="lrow-id">${esc(t.id||'T—')}</span>
-    <span class="lrow-nm">${esc(t.nm||'Leer')}</span>
+    <span class="lrow-nm">${nmH(t.nm||'Leer')}</span>
     ${t.dia?`<span class="lrow-dia">Ø ${esc(t.dia).replace(/\n+/g,' / ')}</span>`:''}
     
   </div>`;
@@ -2915,7 +2915,7 @@ function render(){
     if(p.oben.length)html+=hd('unten',/REVOLVER/i.test(p.titleUnten||'')||!p.titleUnten?'Liste 2':p.titleUnten);
     html+=p.unten.map((t,i)=>rowFn(t,i,'unten')).join('');
   }
-  c.innerHTML=html+'<div style="height:20px"></div>';stagger('.nzv-grid');
+  c.innerHTML=html+'<div style="height:132px"></div>';stagger('.nzv-grid');
   setTimeout(()=>{bindToolLongPress();bindListDrag();},20);
   if(_firstPaint){stagger('#content');_firstPaint=false;}
 }
@@ -3085,7 +3085,7 @@ function openProjModal(edit=false){
   open_('m-proj');
 }
 // ═══ NEUES-PROJEKT WIZARD ═══
-const WIZ_META=['LAUFZEIT','MATERIAL','SÄGELÄNGE','ABSTAND','GREIFBACKEN'];
+const WIZ_META=['MATERIAL','SPANNMITTEL','NULLPUNKT','LAUFZEIT'];
 let wiz={step:0,num:'',name:'',meta:[],oben:'',unten:'',ops:[]};
 function openWizard(){
   wiz={step:0,num:'',name:'',meta:WIZ_META.map(l=>({label:l,value:''})),oben:'',unten:'',ops:[]};
@@ -3137,7 +3137,7 @@ function wizRender(){
   }else{
     const ops=wiz.ops||[];
     const grip='<svg viewBox="0 0 24 24"><circle cx="9" cy="6" r="1.5"/><circle cx="15" cy="6" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="9" cy="18" r="1.5"/><circle cx="15" cy="18" r="1.5"/></svg>';
-    const rows=ops.length?ops.map((o,i)=>`<div class="wiz-op${o.on?'':' off'}" data-i="${i}"><label class="wiz-chk"><input type="checkbox" ${o.on?'checked':''} onchange="wizOpToggle(${i},this.checked)"><i></i></label><span class="wiz-tool-id">${esc(o.id||'T—')}</span><span class="wiz-tool-nm">${esc(o.nm||'—')}</span><span class="wiz-grip" title="Ziehen">${grip}</span></div>`).join(''):'<div class="wiz-tool-empty">Keine Werkzeuge — Programm in Schritt 3 laden</div>';
+    const rows=ops.length?ops.map((o,i)=>`<div class="wiz-op${o.on?'':' off'}" data-i="${i}"><label class="wiz-chk"><input type="checkbox" ${o.on?'checked':''} onchange="wizOpToggle(${i},this.checked)"><i></i></label><span class="wiz-tool-id">${esc(o.id||'T—')}</span><span class="wiz-tool-nm">${nmH(o.nm||'—')}</span><span class="wiz-grip" title="Ziehen">${grip}</span></div>`).join(''):'<div class="wiz-tool-empty">Keine Werkzeuge — Programm in Schritt 3 laden</div>';
     b.innerHTML=`<div class="f"><label>ZEICHNUNG-NR.</label><input id="wiz-num" value="${esc(wiz.num)}" placeholder="231850" oninput="this.value=this.value.toUpperCase()"></div>
     <div class="f"><label>BEZEICHNUNG</label><input id="wiz-name" value="${esc(wiz.name)}" placeholder="BUCHSE" oninput="this.value=this.value.toUpperCase()"></div>
     ${wizMetaRows()}
@@ -3222,7 +3222,9 @@ function pGruppen(rows,zeile){
   }).join('');
 }
 
+let _pInit=false;
 function openProjList(){
+  if(!_pInit){_pInit=true;if(db.length<=12)db.forEach(p=>pOffen.add(pKreis(p.num)||'sonst'));}
   const body=document.getElementById('projlist-body');
   const qEl=document.getElementById('proj-q');const q=(qEl?qEl.value:'').toUpperCase().trim();
   let rows=db.map((p,i)=>({p,i}));
@@ -4087,26 +4089,7 @@ function applyMenu(){
   });
 }
 function openSet(){renderSet();open_('m-set');}
-function renderSet(){
-  const h=menuHidden();
-  const items=[...document.querySelectorAll('.mnav-i[data-k]')].map(el=>[el.dataset.k,(el.querySelector('.mc-lbl')||{}).textContent||el.dataset.k]);
-  document.getElementById('set-body').innerHTML=
-    `<div class="st-card" style="margin-bottom:12px">
-      <div class="st-l" style="margin:0 0 6px">Speicher lokal</div>
-      <div class="st-n" style="font-size:20px">${dataSize()}</div>
-      <div style="font-family:var(--mono);font-size:10.5px;color:var(--ink3);line-height:1.6;margin-top:8px">
-        Daten liegen nur in diesem Browser. Safari kann sie löschen! Regelmäßig sichern oder Cloud nutzen.</div>
-      <div style="display:flex;gap:8px;margin-top:10px">
-        <button class="sbtn sec" style="flex:1;font-size:13px" onclick="exportAll()">Sicherung speichern</button>
-        <label class="sbtn sec" style="flex:1;font-size:13px;text-align:center;cursor:pointer">Wiederherstellen<input type="file" accept=".json" style="display:none" onchange="importAll(this)"></label>
-      </div>
-    </div>
-    <div class="st-l" style="margin:14px 0 8px">Menüpunkte anzeigen</div>`
-    +items.map(([k,l])=>`<div class="pill ${!h.includes(k)?'on':''}" onclick="menuToggle('${k}')" style="cursor:pointer;padding:12px 14px">
-        <div class="pill-l" style="${h.includes(k)?'opacity:.45':''}">${esc(l)}</div>
-        <span class="pstat ${h.includes(k)?'neu':'ok'}"><i></i></span></div>`).join('')
-    +`<div style="font-family:var(--mono);font-size:10.5px;color:var(--ink3);margin-top:10px;line-height:1.6">Ausgeblendete Punkte verschwinden aus dem Menü.</div>`;
-}
+function renderSet(){renderSettings();}
 
 
 // ═══ DRAG & DROP · LISTE SORTIEREN ═══
@@ -4365,34 +4348,21 @@ function renderSettings(){
   const nP=db.length;
   const nT=db.reduce((a,p)=>a+(p.oben||[]).length+(p.unten||[]).length,0);
   const nL=(brain.library||[]).length;
-  const nC=db.filter(p=>projStatus(p)==='ok').length;
-  const nW=db.filter(p=>projStatus(p)==='wip').length;
-  const nProg=db.filter(p=>(p.codeOben||p.codeUnten)).length;
-  const nN=(brain.notes||[]).length;
-  document.getElementById('set-body').innerHTML=`
-    <div class="stat-grid">
-      <div class="stat-box"><div class="stat-num">${nP}</div><div class="stat-cap">Projekte</div></div>
-      <div class="stat-box"><div class="stat-num">${nT}</div><div class="stat-cap">Operationen</div></div>
-      <div class="stat-box"><div class="stat-num">${nL}</div><div class="stat-cap">Bibliothek</div></div>
-      <div class="stat-box"><div class="stat-num">${nProg}</div><div class="stat-cap">Programme</div></div>
-      <div class="stat-box"><div class="stat-num" style="color:#2F6B4F">${nC}</div><div class="stat-cap">Fertig</div></div>
-      <div class="stat-box"><div class="stat-num" style="color:#C6880B">${nW}</div><div class="stat-cap">In Arbeit</div></div>
-    </div>
-    <div class="pill on" onclick="cycleIntro()">
-      <div><div class="pill-l">Intro beim Start</div><div class="pill-s">${introLabel()} · antippen zum Wechseln</div></div>
-      <span class="pstat ok"><i></i></span></div>
-    <div class="pill" onclick="close_('m-set');setTimeout(()=>introPlay(true),250)">
-      <div><div class="pill-l">Intro jetzt ansehen</div><div class="pill-s">Animation abspielen</div></div>
-      <span class="pstat neu"><i></i></span></div>
-    <div class="pill ${prefs.dark?'on':''}" onclick="toggleDark()">
-      <div><div class="pill-l">Dunkles Design</div><div class="pill-s">Ganze App · schont die Augen</div></div>
-      <span class="pstat ${prefs.dark?'ok':'neu'}"><i></i></span></div>
-    <div class="pill ${prefs.haptic!==false?'on':''}" onclick="toggleHaptic()">
-      <div><div class="pill-l">Vibration</div><div class="pill-s">Rückmeldung beim Tippen</div></div>
-      <span class="pstat ${prefs.haptic!==false?'ok':'neu'}"><i></i></span></div>
-    <div class="pill ${prefs.sound?'on':''}" onclick="toggleSound()">
-      <div><div class="pill-l">Signalton</div><div class="pill-s">Bei Fertig / Gespeichert</div></div>
-      <span class="pstat ${prefs.sound?'ok':'neu'}"><i></i></span></div>`;
+  const pill=(on,fn,l,sub)=>'<div class="pill '+(on?'on':'')+'" onclick="'+fn+'"><div><div class="pill-l">'+l+'</div><div class="pill-s">'+sub+'</div></div><span class="pstat '+(on?'ok':'neu')+'"><i></i></span></div>';
+  document.getElementById('set-body').innerHTML=
+    '<div class="st-card" style="margin-bottom:12px">'+
+      '<div class="st-l" style="margin:0 0 6px">Speicher lokal</div>'+
+      '<div class="st-n" style="font-size:20px">'+dataSize()+'</div>'+
+      '<div style="font-family:var(--mono);font-size:10.5px;color:var(--ink3);line-height:1.6;margin-top:8px">'+nP+' Projekte · '+nT+' Werkzeuge · '+nL+' in der Bibliothek<br>Daten liegen nur in diesem Browser. Safari kann sie löschen. Regelmäßig sichern oder Cloud nutzen.</div>'+
+      '<div style="display:flex;gap:8px;margin-top:10px">'+
+        '<button class="sbtn sec" style="flex:1;font-size:13px" onclick="exportAll()">Sicherung speichern</button>'+
+        '<label class="sbtn sec" style="flex:1;font-size:13px;text-align:center;cursor:pointer">Wiederherstellen<input type="file" accept=".json" style="display:none" onchange="importAll(this)"></label>'+
+      '</div></div>'+
+    pill(prefs.dark,'toggleDark()','Dunkles Design','Ganze App')+
+    pill(prefs.haptic!==false,'toggleHaptic()','Vibration','Rückmeldung beim Tippen')+
+    pill(prefs.sound,'toggleSound()','Signalton','Bei Fertig und Gespeichert')+
+    pill(introMode()!=='off','cycleIntro()','Intro beim Start',introLabel()+' · antippen zum Wechseln')+
+    '<div class="pill" onclick="close_(\'m-set\');setTimeout(()=>introPlay(true),250)"><div><div class="pill-l">Intro ansehen</div><div class="pill-s">Animation abspielen</div></div><span class="pstat neu"><i></i></span></div>';
 }
 // ── Rechner ──
 // ── Gruß ──
@@ -5161,7 +5131,7 @@ function pbRender(keepScroll){
       }else if(i>0){
         html+='<button type="button" class="pb-brk" onclick="pbToggle(\''+k+'\','+i+')"><span>＋ Umbruch hier</span></button>';
       }
-      html+='<div class="pb-row"><b>'+esc(t.id||'T—')+'</b><span>'+esc(t.nm||'—')+'</span></div>';
+      html+='<div class="pb-row"><b>'+esc(t.id||'T—')+'</b><span>'+nmH(t.nm||'—')+'</span></div>';
     });
   });
   document.getElementById('pb-body').innerHTML=html;
