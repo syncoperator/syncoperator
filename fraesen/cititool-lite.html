@@ -2694,6 +2694,8 @@ const SIM_PLAY='<svg class="ic" viewBox="0 0 24 24"><polygon points="6 4 20 12 6
 const SIM_PAUSE='<svg class="ic" viewBox="0 0 24 24"><rect x="6" y="5" width="4" height="14" fill="currentColor" stroke="none"/><rect x="14" y="5" width="4" height="14" fill="currentColor" stroke="none"/></svg>';
 
 if(!db.length){ db.push(newProject()); }
+try{const s=JSON.parse(localStorage.getItem('CTLITE_CUR')||'null');if(s){let k=-1;if(s.num||s.name)k=db.findIndex(p=>(p.num||'')===s.num&&(p.name||'')===s.name);if(k<0&&s.i>=0&&s.i<db.length)k=s.i;if(k>=0)cur=k;}}catch(e){}
+function saveCur(){try{const p=db[cur];localStorage.setItem('CTLITE_CUR',JSON.stringify({i:cur,num:(p&&p.num)||'',name:(p&&p.name)||''}));}catch(e){}}
 function defaultMeta(){return[
   {label:'MATERIAL',value:''},{label:'SPANNMITTEL',value:''},
   {label:'NULLPUNKT',value:''},{label:'LAUFZEIT',value:''}
@@ -2714,6 +2716,7 @@ function ensureMeta(p){
   return p.meta;
 }
 function persist(){
+  saveCur();
   try{ localStorage.setItem(DB,JSON.stringify(db)); }
   catch(e){ console.warn('Speicher voll?',e); toast('Speicher voll — Bilder entfernen'); }
   try{ scheduleCloudSync(); }catch(e){ console.warn('Cloud später',e); }
@@ -3328,7 +3331,7 @@ function openProjList(){
     : emptyBox('<svg viewBox="0 0 24 24"><use href="#i13"/></svg>','Nichts gefunden','Andere Schreibweise probieren oder Filter zurücksetzen','<button class="empty-a" onclick="clearSearches()">Filter zurücksetzen</button>');
   if(!document.getElementById('m-projlist').classList.contains('active'))open_('m-projlist');
 }
-function selectProject(i){cur=i;close_('m-projlist');hideHome();renderHeader();render();}
+function selectProject(i){cur=i;saveCur();close_('m-projlist');hideHome();renderHeader();render();}
 function delProjectByIdx(i){uiConfirm('Projekt löschen?',()=>{db.splice(i,1);if(!db.length)db.push(newProject());if(cur>=db.length)cur=0;persist();openProjList();renderHeader();render();});}
 
 
