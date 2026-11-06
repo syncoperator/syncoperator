@@ -1250,6 +1250,14 @@ html.druck body{visibility:hidden}
 .tw-tychg{display:inline-block;margin-top:4px;font-size:12px}
 .pick-more{width:100%;margin-top:4px}
 .sent-go{border-color:var(--ok);color:var(--ok)}
+.ico-btn{position:relative;border:0;cursor:pointer;font:inherit}
+.ico-btn .ico-ed{position:absolute;right:-4px;bottom:-4px;width:20px;height:20px;border-radius:10px;background:var(--ink);color:var(--on-ink);display:grid;place-items:center}
+html.worker .ico-btn .ico-ed{display:none}
+.ico-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:8px;margin-top:12px}
+.ico-o{display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 4px 8px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--fg);font-size:11px;line-height:14px;text-align:center;cursor:pointer;transition:border-color .15s cubic-bezier(.22,1,.36,1),background-color .15s cubic-bezier(.22,1,.36,1)}
+.ico-o .i{width:40px;height:40px}
+.ico-o[aria-pressed="true"]{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+.tw-rescan{width:100%;margin:-4px 0 10px}
 </style>
 </head>
 <body>
@@ -1398,7 +1406,7 @@ html.druck body{visibility:hidden}
     </div>
     <div id="libTypeView" class="view" hidden>
       <button type="button" class="lt-back" id="ltBack">← Alle Typen</button>
-      <div class="lt-head"><span class="ico" id="ltIco"></span><div class="ttl"><h2 id="ltName"></h2><small id="ltCount"></small></div><button type="button" class="btn sm" id="ltLabels" title="Etiketten für alle drucken">Etiketten</button><button type="button" class="btn primary sm" id="ltNew">+ Neu</button></div>
+      <div class="lt-head"><button type="button" class="ico ico-btn" id="ltIco" aria-label="Icon ändern"></button><div class="ttl"><h2 id="ltName"></h2><small id="ltCount"></small></div><button type="button" class="btn sm" id="ltLabels" title="Etiketten für alle drucken">Etiketten</button><button type="button" class="btn primary sm" id="ltNew">+ Neu</button></div>
       <input id="ltQ" type="search" placeholder="Suchen" style="background:var(--card)">
       <div id="ltFilters" class="types"></div>
       <div class="lt-sort types" id="ltSort"><span>SORTIEREN</span><button type="button" data-sort="size">Größe</button><button type="button" data-sort="name">Name</button><button type="button" data-sort="recent">Zuletzt bestellt</button></div>
@@ -1524,6 +1532,13 @@ html.druck body{visibility:hidden}
   <div class="helpsheet" role="dialog" aria-modal="true">
     <div class="row"><h2 class="grow">Set</h2><button type="button" class="x-btn" id="setClose" aria-label="Schließen"><svg width="22" height="22" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button></div>
     <div id="setBody" class="view" style="gap:12px"></div>
+  </div>
+</div>
+<div id="icoSheet" class="sheetbg" hidden>
+  <div class="helpsheet" role="dialog" aria-modal="true" aria-labelledby="icoTitle">
+    <div class="row"><h2 class="grow" id="icoTitle">Icon wählen</h2><button type="button" class="x-btn" id="icoClose" aria-label="Schließen"><svg width="22" height="22" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button></div>
+    <p class="hint" id="icoHint"></p>
+    <div id="icoGrid" class="ico-grid"></div>
   </div>
 </div>
 <div id="impSheet" class="sheetbg" hidden>
@@ -1691,6 +1706,7 @@ window.addEventListener('load',ctFit);window.addEventListener('resize',ctFit);se
     ANBOHR: ico(`<rect ${iT} x="2" y="16.2" width="30" height="15.6" rx="1.5"/><path ${iT} d="M32 16.2H36L42 24L36 31.8H32Z"/><path ${iA} d="M36 16.2L42 24L36 31.8Z"/><path d="M14 16.2V31.8" ${iL}/>`, 1),
     SPANN: ico(`<circle ${iT} cx="24" cy="24" r="19"/><circle cx="24" cy="24" r="5"/>${[0, 120, 240].map(r => `<rect ${iA} x="20.5" y="6" width="7" height="11" rx="1.5" transform="rotate(${r} 24 24)"/>`).join('')}`),
     ZANGE: ico(`<path ${iT} d="M5 17H31L41 12V36L31 31H5Z"/><path d="M18 24H41M24 19.5L41 15.5M24 28.5L41 32.5" ${iL}/><path ${iA} d="M41 12V36L44 34V14Z"/>`),
+    ERZANGE2: ico(`<path ${iT} d="M15 11L44 15V33L15 37Z"/><path ${iA} d="M12 13.5H15V34.5H12Z"/><path ${iT} d="M4 17L12 12.5V35.5L4 31Z"/><path d="M4 24H31"/><path d="M24 17.6H44M24 30.4H44" stroke-width="1.6"/><path d="M8 19.6V20.4M8 27.6V28.4" stroke-width="2.6"/>`),
     ERZANGE: ico(`<path ${iT} d="M5 20L14 13H34L43 20V28L34 35H14L5 28Z"/><path d="M14 13V35M34 13V35" ${iL}/><path d="M24 13V22M19 26V35M29 26V35" stroke-width="1.6"/><circle cx="24" cy="24" r="0.1" stroke-width="0"/>`),
     BUCHSE: ico(`<path ${iT} d="M4 14H12V18H40L44 21V27L40 30H12V34H4Z"/><path d="M12 18V30" ${iL}/><path d="M28 24H44" stroke-width="1.6"/><path ${iA} d="M40 18L44 21V27L40 30Z" fill-opacity=".85"/>`),
     WBACKE: ico(`<path ${iT} d="M5 13H27V21H35V29H43V37H5Z"/><path d="M5 37L8 34L11 37L14 34L17 37L20 34L23 37L26 34L29 37L32 34L35 37L38 34L41 37" stroke-width="1.5"/><circle cx="12" cy="22" r="2.5"/><circle cx="20" cy="22" r="2.5"/>`),
@@ -1700,8 +1716,10 @@ window.addEventListener('load',ctFit);window.addEventListener('resize',ctFit);se
 
   function iconKey(t = {}) {
     const ty = String(t.type || '').toUpperCase(), nm = String(t.name || '').toUpperCase().trim();
+    const ov = !t.noOv && S.meta && S.meta.icons && S.meta.icons[ty];
+    if (ov && ICON[ov]) return ov;
     const base = S.meta && S.meta.types[ty] && S.meta.types[ty].base;
-    if (base && base !== ty && BASE_TYPES.includes(base)) return iconKey({ ...t, type: base });
+    if (base && base !== ty && BASE_TYPES.includes(base)) return iconKey({ ...t, type: base, noOv: true });
     const has = k => ty.includes(k);
     if (has('ZANGE')) return /(^|[\s-])ER(\d|[\s-]|$)/.test(ty) ? 'ERZANGE' : 'ZANGE';
     if (has('BUCHSE')) return 'BUCHSE';
@@ -2326,7 +2344,7 @@ window.addEventListener('resize',fit);window.addEventListener('load',fit);fit();
     }
     // ---- type page
     const ty = S.libType, all = toolsOf(ty);
-    $('ltIco').innerHTML = typeIcon(ty);
+    $('ltIco').innerHTML = typeIcon(ty) + '<span class="ico-ed" aria-hidden="true"><svg viewBox="0 0 16 16" width="12" height="12"><path d="M10.5 2.5l3 3L6 13H3v-3z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg></span>';
     $('ltName').textContent = ty;
     $('ltCount').textContent = all.length ? `${all.length} ${all.length === 1 ? 'Werkzeug' : 'Werkzeuge'}` : 'noch leer';
     $('ltQ').placeholder = `In ${ty} suchen …`;
@@ -2368,6 +2386,31 @@ window.addEventListener('resize',fit);window.addEventListener('load',fit);fit();
   [$('libCats'), $('ltList')].forEach(el => el.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.matches('.lr')) e.target.click(); }));
   $('libQ').addEventListener('input', e => { S.libQ = U(e.target.value); renderLib(); });
   $('ltQ').addEventListener('input', e => { S.ltQ = U(e.target.value); renderLib(); });
+
+  // ---- Icon pro Typ
+  const ICON_NAMES = { C: 'Platte C 80°', D: 'Platte D 55°', V: 'Platte V 35°', T: 'Platte T', W: 'Platte W', S: 'Platte S', R: 'Platte rund', STECH: 'Stechplatte', GPLATTE: 'Gewindeplatte',
+    HALTER: 'Halter', KOPIER: 'Kopierstahl', BSTANGE: 'Bohrstange', STECHST: 'Stechstahl', GSTAHL: 'Gewindestahl', BOHR: 'Bohrer', FRAES: 'Fräser', REIB: 'Reibahle', GEWIND: 'Gewindebohrer',
+    SENK: 'Senker', ZENTR: 'Zentrierbohrer', ANBOHR: 'Anbohrer', SPANN: 'Spannfutter', ZANGE: 'Spannzange', ERZANGE: 'ER-Zange', ERZANGE2: 'ER-Zange seitlich', BUCHSE: 'Buchse',
+    WBACKE: 'Weiche Backe', HBACKE: 'Harte Backe', ETC: 'Sonstiges' };
+  function openIcoPick(ty) {
+    if (!can('adm')) { accDeny(); return; }
+    S.icoTy = ty; const cur = (S.meta.icons || {})[ty] || '';
+    const auto = ICON[iconKey({ type: ty, noOv: true })];
+    $('icoTitle').textContent = `Icon für ${ty}`;
+    $('icoHint').textContent = 'Gilt für alle Werkzeuge dieses Typs ohne Foto. „Automatisch“ wählt bei Wendeplatten die Form aus dem Namen.';
+    $('icoGrid').innerHTML = `<button type="button" class="ico-o" data-ico="" aria-pressed="${!cur}"><span class="i">${auto}</span><span>Automatisch</span></button>` +
+      Object.keys(ICON_NAMES).filter(k => ICON[k]).map(k => `<button type="button" class="ico-o" data-ico="${k}" aria-pressed="${cur === k}"><span class="i">${ICON[k]}</span><span>${esc(ICON_NAMES[k])}</span></button>`).join('');
+    $('icoSheet').hidden = false;
+  }
+  $('ltIco').onclick = () => openIcoPick(S.libType);
+  $('icoClose').onclick = () => $('icoSheet').hidden = true;
+  $('icoSheet').addEventListener('click', e => { if (e.target.id === 'icoSheet') $('icoSheet').hidden = true; });
+  $('icoGrid').addEventListener('click', e => {
+    const b = e.target.closest('[data-ico]'); if (!b || !S.icoTy) return;
+    const k = b.dataset.ico; S.meta.icons = { ...(S.meta.icons || {}) };
+    if (k) S.meta.icons[S.icoTy] = k; else delete S.meta.icons[S.icoTy];
+    $('icoSheet').hidden = true; commit(k ? `Icon für ${S.icoTy}: ${ICON_NAMES[k] || k}` : `Icon für ${S.icoTy}: automatisch`);
+  });
   $('ltBack').onclick = () => { S.libType = ''; renderLib(); window.scrollTo(0, 0); };
   $('ltNew').onclick = () => openToolWiz({ type: S.libType });
   $('ltLabels').onclick = () => openLabels(S.lib.filter(t => (t.type || 'SONSTIGES') === S.libType).map(t => t.id));
@@ -3115,7 +3158,7 @@ window.addEventListener('resize',fit);window.addEventListener('load',fit);fit();
         ${TW.typeEdit && isCustomType(ty) ? `<span class="del" data-tw="deltype" data-type="${esc(ty)}" role="button" aria-label="Typ löschen">×</span>` : ''}</button>`;
     const guess = TW.newBase || '';
     if (TW.scanBusy) return twBusyHTML();
-    return `<button type="button" class="tw-scan" data-tw="scan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8V5.5A1.5 1.5 0 0 1 4.5 4H7M17 4h2.5A1.5 1.5 0 0 1 21 5.5V8M21 16v2.5a1.5 1.5 0 0 1-1.5 1.5H17M7 20H4.5A1.5 1.5 0 0 1 3 18.5V16"/><path d="M7 9h10M7 12h7M7 15h9"/></svg><div><b>Etikett scannen</b><span>Foto von Schachtel oder Etikett – die App füllt alles aus</span></div></button>` + catList().map(c => `<div class="tw-cat">${esc(c.t.toUpperCase())}</div><div class="tw-tiles">${c.types.map(tile).join('')}</div>`).join('') +
+    return `<button type="button" class="tw-scan" data-tw="scan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8V5.5A1.5 1.5 0 0 1 4.5 4H7M17 4h2.5A1.5 1.5 0 0 1 21 5.5V8M21 16v2.5a1.5 1.5 0 0 1-1.5 1.5H17M7 20H4.5A1.5 1.5 0 0 1 3 18.5V16"/><path d="M7 9h10M7 12h7M7 15h9"/></svg><div><b>Etikett scannen</b><span>Foto von Schachtel oder Etikett – die App füllt alles aus</span></div></button>${TW.lastScan ? '<button type="button" class="btn ghost sm tw-rescan" data-tw="rescan">Letztes Foto nochmal lesen</button>' : ''}` + catList().map(c => `<div class="tw-cat">${esc(c.t.toUpperCase())}</div><div class="tw-tiles">${c.types.map(tile).join('')}</div>`).join('') +
       `<div class="tw-cf" style="margin-top:6px">
         <div class="row"><b class="grow" style="font-family:var(--f-head)">Eigener Typ</b>${S.customTypes.length ? `<button type="button" class="link" data-tw="typeedit">${TW.typeEdit ? 'Fertig' : 'Eigene Typen löschen'}</button>` : ''}</div>
         <input id="twNewType" placeholder="z. B. Stufenbohrer, Anschlag, Ausdrehkopf">
@@ -3218,7 +3261,7 @@ Antworte NUR mit gültigem JSON, alle Werte als Strings in Anführungszeichen: {
       : `<label class="full">${p.nameLabel} *<input id="twName" class="mono" value="${esc(TW.t.name)}" placeholder="${esc(p.namePh)}"></label>
          ${TW.t.type === 'SONSTIGES' ? '' : `<label class="innm full" style="margin-top:-4px"><input type="checkbox" id="twTypeIn" ${TW.t.inName?.type === false ? '' : 'checked'}><span>Name automatisch: Typ + Bezeichnung + Maße</span></label>`}`;
     if (TW.scanBusy) return twBusyHTML();
-    return `${twAiNote()}<button type="button" class="btn scanbtn" data-tw="scan" style="width:100%;margin-bottom:10px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8V5.5A1.5 1.5 0 0 1 4.5 4H7M17 4h2.5A1.5 1.5 0 0 1 21 5.5V8M21 16v2.5a1.5 1.5 0 0 1-1.5 1.5H17M7 20H4.5A1.5 1.5 0 0 1 3 18.5V16"/><path d="M7 9h10M7 12h7M7 15h9"/></svg>Etikett scannen – Felder ausfüllen</button><div class="namepreview tw-namebar"><span>So heißt es:</span> <b id="twPrev" class="mono"></b></div>
+    return `${twAiNote()}<button type="button" class="btn scanbtn" data-tw="scan" style="width:100%;margin-bottom:10px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8V5.5A1.5 1.5 0 0 1 4.5 4H7M17 4h2.5A1.5 1.5 0 0 1 21 5.5V8M21 16v2.5a1.5 1.5 0 0 1-1.5 1.5H17M7 20H4.5A1.5 1.5 0 0 1 3 18.5V16"/><path d="M7 9h10M7 12h7M7 15h9"/></svg>Etikett scannen – Felder ausfüllen</button>${TW.lastScan ? '<button type="button" class="btn ghost sm tw-rescan" data-tw="rescan">Letztes Foto nochmal lesen</button>' : ''}<div class="namepreview tw-namebar"><span>So heißt es:</span> <b id="twPrev" class="mono"></b></div>
       <div class="card form"><div class="grid">
         ${p.auto ? '' : nameBlock}
         ${p.attrs.map(twAttrHTML).join('')}
@@ -3270,7 +3313,7 @@ Antworte NUR mit gültigem JSON, alle Werte als Strings in Anführungszeichen: {
   function twStep2() {
     const t = TW.t, f = (k, l, ph, cls = '', extra = '') => `<label class="${cls}">${l}<input data-twf="${k}" class="${['firm','makerArt','qty'].includes(k) ? 'mono' : ''}" value="${esc(t[k] || '')}" placeholder="${ph}" ${extra}></label>`;
     if (TW.scanBusy) return twBusyHTML();
-    return `${twAiNote()}<button type="button" class="btn scanbtn" data-tw="scan" style="width:100%;margin-bottom:10px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8V5.5A1.5 1.5 0 0 1 4.5 4H7M17 4h2.5A1.5 1.5 0 0 1 21 5.5V8M21 16v2.5a1.5 1.5 0 0 1-1.5 1.5H17M7 20H4.5A1.5 1.5 0 0 1 3 18.5V16"/><path d="M7 9h10M7 12h7M7 15h9"/></svg>Etikett scannen – Felder ausfüllen</button><div class="card form">
+    return `${twAiNote()}<button type="button" class="btn scanbtn" data-tw="scan" style="width:100%;margin-bottom:10px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8V5.5A1.5 1.5 0 0 1 4.5 4H7M17 4h2.5A1.5 1.5 0 0 1 21 5.5V8M21 16v2.5a1.5 1.5 0 0 1-1.5 1.5H17M7 20H4.5A1.5 1.5 0 0 1 3 18.5V16"/><path d="M7 9h10M7 12h7M7 15h9"/></svg>Etikett scannen – Felder ausfüllen</button>${TW.lastScan ? '<button type="button" class="btn ghost sm tw-rescan" data-tw="rescan">Letztes Foto nochmal lesen</button>' : ''}<div class="card form">
       <div class="photo">
         <button type="button" class="ph" data-tw="photo" aria-label="Foto">${t.img ? `<img src="${t.img}" alt="">` : toolIcon(t)}</button>
         <div class="row" style="flex-direction:column;align-items:flex-start;gap:4px">
@@ -3405,6 +3448,8 @@ Antworte NUR mit gültigem JSON, alle Werte als Strings in Anführungszeichen: {
     }
     if (a === 'photo') { $('twFile').click(); return; }
     if (a === 'scan') { $('twScanFile').click(); return; }
+    if (a === 'scancancel') { if (TW.scanAbort) TW.scanAbort.abort(); return; }
+    if (a === 'rescan') { if (TW.lastScan && !TW.scanBusy) twScan(TW.lastScan); return; }
     if (a === 'cutadd') { (t.cut ||= []).push({ wst: (t.cut.length ? '' : (av(t, 'werkst').split(' ')[0] || 'ALLE')) || 'ALLE' }); renderTW(); return; }
     if (a === 'cutdel') { t.cut.splice(+b.dataset.i, 1); renderTW(); return; }
     if (a === 'cutai') { cutAI(); return; }
@@ -3466,7 +3511,7 @@ Antworte NUR mit gültigem JSON, alle Werte als Strings in Anführungszeichen: {
   const AI_URL = () => (lsGet('syncop_bestellliste_aiurl') || 'https://cititool-ai.russianflow.workers.dev').trim();
   const AI_MODEL = 'claude-sonnet-4-6';
   function twBusyHTML() {
-    return `<div class="tw-busy">${TW.scanBusy.img ? `<img src="${TW.scanBusy.img}" alt="">` : ''}<div class="tw-spin"></div><b style="font-family:var(--f-head)">${esc(TW.scanBusy.msg || 'Lese Etikett …')}</b><span class="hint">Dauert meist 5–15 Sekunden.</span></div>`;
+    return `<div class="tw-busy">${TW.scanBusy.img ? `<img src="${TW.scanBusy.img}" alt="">` : ''}<div class="tw-spin"></div><b style="font-family:var(--f-head)">${esc(TW.scanBusy.msg || 'Lese Etikett …')}</b><span class="hint"><span class="mono" id="twBusyT">${Math.round((Date.now() - (TW.scanBusy.t0 || Date.now())) / 1000)} s</span> · meist 5–15 Sekunden</span><button type="button" class="btn ghost sm" data-tw="scancancel">Abbrechen</button></div>`;
   }
   function twAiNote() {
     const n = TW.aiNote; if (!n) return '';
@@ -3484,20 +3529,35 @@ Antworte NUR mit gültigem JSON, alle Werte als Strings in Anführungszeichen: {
     img.onerror = () => { URL.revokeObjectURL(url); rej(new Error('BILD')); };
     img.src = url;
   });
-  async function aiCall(messages, maxTok, onInfo) {
+  async function aiCall(messages, maxTok, onInfo, opt = {}) {
     const body = JSON.stringify({ model: AI_MODEL, max_tokens: maxTok || 1200, messages });
     const h = { 'Content-Type': 'application/json' };
     const tok = lsGet('syncop_bestellliste_aitoken'); if (tok) h['X-App-Token'] = tok;
-    let r, last = '';
-    for (let i = 0; i < 3; i++) {
-      if (i && onInfo) onInfo(`Server ausgelastet – Versuch ${i + 1} von 3 …`);
-      r = await fetch(AI_URL(), { method: 'POST', headers: h, body });
+    const tries = opt.tries || 3, wait = ms => new Promise(s => setTimeout(s, ms));
+    const RETRY = [408, 425, 429, 500, 502, 503, 504, 520, 522, 524, 529];
+    let r = null, last = '';
+    for (let i = 0; i < tries; i++) {
+      if (opt.signal && opt.signal.aborted) throw new Error('ABBRUCH');
+      if (i && onInfo) onInfo(`${last === 'ZEIT' ? 'Keine Antwort' : 'Server ausgelastet'} – Versuch ${i + 1} von ${tries} …`);
+      const ac = new AbortController(), stop = () => ac.abort();
+      const tm = setTimeout(stop, (opt.timeout || 60000) + i * 10000);
+      if (opt.signal) opt.signal.addEventListener('abort', stop, { once: true });
+      try { r = await fetch(AI_URL(), { method: 'POST', headers: h, body, signal: ac.signal }); }
+      catch (e) {
+        r = null; clearTimeout(tm);
+        if (opt.signal && opt.signal.aborted) throw new Error('ABBRUCH');
+        last = ac.signal.aborted ? 'ZEIT' : 'NETZ';
+        if (i < tries - 1) { await wait(1200 * (i + 1)); continue; }
+        break;
+      }
+      clearTimeout(tm);
       if (r.ok) break;
-      let msg = ''; try { msg = (await r.clone().json())?.error || ''; } catch {}
+      let msg = ''; try { msg = (await r.clone().json())?.error || ''; if (typeof msg === 'object') msg = msg.message || JSON.stringify(msg); } catch {}
       last = msg || ('HTTP ' + r.status);
-      if ((r.status === 503 || r.status === 429) && i < 2) { await new Promise(s => setTimeout(s, 2500 * (i + 1))); continue; }
+      if (RETRY.includes(r.status) && i < tries - 1) { await wait(2000 * (i + 1)); continue; }
       break;
     }
+    if (!r) throw new Error(last);
     if (!r.ok) throw new Error(last || ('HTTP ' + r.status));
     const d = await r.json();
     const c = d.content || (d.message && d.message.content) || [];
@@ -3543,23 +3603,37 @@ ${attrs}
   }
   async function twScan(file) {
     let big, thumb;
-    try { [big, thumb] = await Promise.all([imgToJpeg(file, 1600, 0.85), imgToJpeg(file, 480, 0.72)]); }
+    try { [big, thumb] = await Promise.all([imgToJpeg(file, 1280, 0.82), imgToJpeg(file, 480, 0.72)]); }
     catch { toast('Bild konnte nicht gelesen werden'); return; }
-    const back = TW.step;
-    TW.scanBusy = { img: thumb, msg: 'Lese Etikett …' }; renderTW();
+    TW.lastScan = file;
+    const back = TW.step, ac = new AbortController();
+    TW.scanAbort = ac;
+    TW.scanBusy = { img: thumb, msg: 'Lese Etikett …', t0: Date.now() }; renderTW();
+    const tick = setInterval(() => { const el = $('twBusyT'); if (el && TW.scanBusy) el.textContent = Math.round((Date.now() - TW.scanBusy.t0) / 1000) + ' s'; }, 1000);
+    const content = [
+      { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: big.split(',')[1] } },
+      { type: 'text', text: scanPrompt() }];
     try {
-      const txt = await aiCall([{ role: 'user', content: [
-        { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: big.split(',')[1] } },
-        { type: 'text', text: scanPrompt() }] }], 2000, info => { if (TW.scanBusy) { TW.scanBusy.msg = info; renderTW(); } });
-      const j = aiJSON(txt);
-      TW.scanBusy = null;
+      let txt = await aiCall([{ role: 'user', content }], 1200, info => { if (TW.scanBusy) { TW.scanBusy.msg = info; renderTW(); } }, { timeout: 30000, signal: ac.signal });
+      let j;
+      try { j = aiJSON(txt); }
+      catch (e) {
+        // eine Antwort ohne JSON: einmal knapp nachfragen statt aufzugeben
+        if (TW.scanBusy) { TW.scanBusy.msg = 'Antwort unklar – frage nochmal …'; renderTW(); }
+        txt = await aiCall([{ role: 'user', content }, { role: 'assistant', content: '{' }], 1200, null, { timeout: 30000, signal: ac.signal, tries: 2 });
+        j = aiJSON('{' + txt);
+      }
+      clearInterval(tick); TW.scanBusy = null; TW.scanAbort = null;
       twApplyScan(j, thumb);
     } catch (e) {
-      TW.scanBusy = null; TW.step = back; renderTW();
+      clearInterval(tick); TW.scanBusy = null; TW.scanAbort = null; TW.step = back; renderTW();
       const m = String(e.message || '');
+      if (m === 'ABBRUCH') { toast('Abgebrochen'); return; }
       toast(!navigator.onLine ? 'Offline – Etikett lesen geht nur mit Internet'
+        : m === 'ZEIT' ? 'Keine Antwort vom Server – Netz prüfen, dann „Nochmal lesen“'
+        : m === 'NETZ' ? 'Verbindung abgebrochen – „Nochmal lesen“ tippen'
         : m === 'KEIN_JSON' || e instanceof SyntaxError ? 'Nichts erkannt – näher ran, Etikett gerade und scharf'
-        : /überlastet|overload|503|429/i.test(m) ? 'KI gerade ausgelastet – gleich nochmal versuchen'
+        : /überlastet|overload|503|529|429/i.test(m) ? 'KI gerade ausgelastet – gleich „Nochmal lesen“'
         : 'Etikett lesen fehlgeschlagen: ' + m.slice(0, 60));
     }
   }
