@@ -1258,6 +1258,9 @@ html.worker .ico-btn .ico-ed{display:none}
 .ico-o .i{width:40px;height:40px}
 .ico-o[aria-pressed="true"]{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
 .tw-rescan{width:100%;margin:-4px 0 10px}
+.ico-img{width:100%;height:100%;object-fit:contain;display:block}
+.ico-up{border-style:dashed}
+.lt-head h2{overflow-wrap:normal;word-break:normal;hyphens:manual}.lt-head h2.long{font-size:18px}.lt-head h2.xlong{font-size:16px;overflow-wrap:anywhere}
 </style>
 </head>
 <body>
@@ -1539,6 +1542,7 @@ html.worker .ico-btn .ico-ed{display:none}
     <div class="row"><h2 class="grow" id="icoTitle">Icon wählen</h2><button type="button" class="x-btn" id="icoClose" aria-label="Schließen"><svg width="22" height="22" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button></div>
     <p class="hint" id="icoHint"></p>
     <div id="icoGrid" class="ico-grid"></div>
+    <input type="file" id="icoFile" accept="image/*,.svg,image/svg+xml" hidden>
   </div>
 </div>
 <div id="impSheet" class="sheetbg" hidden>
@@ -1747,8 +1751,9 @@ window.addEventListener('load',ctFit);window.addEventListener('resize',ctFit);se
     }
     return 'ETC';
   }
-  const toolIcon = t => ICON[iconKey(t)];
-  const typeIcon = ty => ICON[iconKey({ type: ty })];
+  const ownIcon = ty => { const o = S.meta && S.meta.iconImg && S.meta.iconImg[String(ty || '').toUpperCase()]; return !o ? '' : o.svg ? o.svg : o.img ? `<img class="ico-img" src="${o.img}" alt="">` : ''; };
+  const toolIcon = t => ownIcon(t.type) || ICON[iconKey(t)];
+  const typeIcon = ty => ownIcon(ty) || ICON[iconKey({ type: ty })];
   const thumb = (src, cls='', t) => `<span class="thumb ico ${cls}">${src ? `<img src="${src}" alt="">` : (t ? toolIcon(t) : icoTool)}</span>`;
   const thumbBtn = (src, cls='', t) => src ? `<button type="button" class="thumb ${cls}" data-zoom="1"><img src="${src}" alt="Foto"></button>` : thumb('', cls, t);
 
@@ -2345,7 +2350,7 @@ window.addEventListener('resize',fit);window.addEventListener('load',fit);fit();
     // ---- type page
     const ty = S.libType, all = toolsOf(ty);
     $('ltIco').innerHTML = typeIcon(ty) + '<span class="ico-ed" aria-hidden="true"><svg viewBox="0 0 16 16" width="12" height="12"><path d="M10.5 2.5l3 3L6 13H3v-3z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg></span>';
-    $('ltName').textContent = ty;
+    $('ltName').textContent = ty; $('ltName').classList.toggle('long', ty.length > 9); $('ltName').classList.toggle('xlong', ty.length > 13);
     $('ltCount').textContent = all.length ? `${all.length} ${all.length === 1 ? 'Werkzeug' : 'Werkzeuge'}` : 'noch leer';
     $('ltQ').placeholder = `In ${ty} suchen …`;
     const vals = [...new Set(all.flatMap(t => Object.values(t.attrs || {}).flat().filter(Boolean)))].sort();
@@ -2397,17 +2402,64 @@ window.addEventListener('resize',fit);window.addEventListener('load',fit);fit();
     S.icoTy = ty; const cur = (S.meta.icons || {})[ty] || '';
     const auto = ICON[iconKey({ type: ty, noOv: true })];
     $('icoTitle').textContent = `Icon für ${ty}`;
-    $('icoHint').textContent = 'Gilt für alle Werkzeuge dieses Typs ohne Foto. „Automatisch“ wählt bei Wendeplatten die Form aus dem Namen.';
-    $('icoGrid').innerHTML = `<button type="button" class="ico-o" data-ico="" aria-pressed="${!cur}"><span class="i">${auto}</span><span>Automatisch</span></button>` +
-      Object.keys(ICON_NAMES).filter(k => ICON[k]).map(k => `<button type="button" class="ico-o" data-ico="${k}" aria-pressed="${cur === k}"><span class="i">${ICON[k]}</span><span>${esc(ICON_NAMES[k])}</span></button>`).join('');
+    $('icoHint').textContent = 'Gilt für alle Werkzeuge dieses Typs ohne Foto. „Eigenes Icon“: SVG, PNG oder Foto hochladen. „Automatisch“ wählt bei Wendeplatten die Form aus dem Namen.';
+    const own = ownIcon(ty);
+    $('icoGrid').innerHTML = `<button type="button" class="ico-o ico-up" data-ico="__up"><span class="i"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V4M7.5 8.5 12 4l4.5 4.5M5 14v4.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V14"/></svg></span><span>Eigenes Icon</span></button>` +
+      (own ? `<button type="button" class="ico-o" data-ico="__own" aria-pressed="true"><span class="i">${own}</span><span>Eigenes (aktiv)</span></button>` : '') +
+      `<button type="button" class="ico-o" data-ico="" aria-pressed="${!cur && !own}"><span class="i">${auto}</span><span>Automatisch</span></button>` +
+      Object.keys(ICON_NAMES).filter(k => ICON[k]).map(k => `<button type="button" class="ico-o" data-ico="${k}" aria-pressed="${!own && cur === k}"><span class="i">${ICON[k]}</span><span>${esc(ICON_NAMES[k])}</span></button>`).join('');
     $('icoSheet').hidden = false;
   }
   $('ltIco').onclick = () => openIcoPick(S.libType);
+  // eigenes Icon: SVG wird bereinigt und eingebettet (folgt dann der Textfarbe), Bilder werden auf 128 px verkleinert
+  function cleanSvg(txt) {
+    let doc; try { doc = new DOMParser().parseFromString(txt, 'image/svg+xml'); } catch { return ''; }
+    const svg = doc.documentElement;
+    if (!svg || svg.nodeName.toLowerCase() !== 'svg' || doc.querySelector('parsererror')) return '';
+    svg.querySelectorAll('script,foreignObject,iframe,object,embed,style,link,meta,title,desc,metadata').forEach(n => n.remove());
+    svg.querySelectorAll('*').forEach(n => [...n.attributes].forEach(a => {
+      const nm = a.name.toLowerCase(), v = a.value.trim().toLowerCase();
+      if (nm.startsWith('on') || ((nm === 'href' || nm === 'xlink:href') && !v.startsWith('#') && !v.startsWith('data:image/png') && !v.startsWith('data:image/jpeg')) || /javascript:|url\(\s*['"]?(?!#)/.test(v)) n.removeAttribute(a.name);
+    }));
+    [...svg.attributes].forEach(a => { if (a.name.toLowerCase().startsWith('on')) svg.removeAttribute(a.name); });
+    if (!svg.getAttribute('viewBox')) { const w = parseFloat(svg.getAttribute('width')), h = parseFloat(svg.getAttribute('height')); if (w && h) svg.setAttribute('viewBox', `0 0 ${w} ${h}`); }
+    svg.setAttribute('width', '100%'); svg.setAttribute('height', '100%'); svg.setAttribute('aria-hidden', 'true');
+    const out = new XMLSerializer().serializeToString(svg).replace(/\s+xmlns:xlink="[^"]*"/, m => m);
+    return out.length <= 40000 ? out : '';
+  }
+  const imgToPng = (file, max) => new Promise((res, rej) => {
+    const url = URL.createObjectURL(file), img = new Image();
+    img.onload = () => {
+      const k = Math.min(1, max / Math.max(img.width, img.height)), c = document.createElement('canvas');
+      c.width = Math.max(1, Math.round(img.width * k)); c.height = Math.max(1, Math.round(img.height * k));
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); URL.revokeObjectURL(url);
+      let d = c.toDataURL('image/png'); if (d.length > 60000) d = c.toDataURL('image/jpeg', 0.8); res(d);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); rej(new Error('BILD')); };
+    img.src = url;
+  });
+  $('icoFile').onchange = async e => {
+    const f = e.target.files[0]; e.target.value = ''; if (!f || !S.icoTy) return;
+    let o = null;
+    if (/svg/i.test(f.type) || /\.svg$/i.test(f.name)) {
+      const svg = cleanSvg(await f.text()); if (!svg) { toast('SVG konnte nicht gelesen werden'); return; }
+      o = { svg };
+    } else {
+      try { o = { img: await imgToPng(f, 128) }; } catch { toast('Bild konnte nicht gelesen werden'); return; }
+    }
+    S.meta.iconImg = { ...(S.meta.iconImg || {}), [S.icoTy]: o };
+    S.meta.icons = { ...(S.meta.icons || {}) }; delete S.meta.icons[S.icoTy];
+    $('icoSheet').hidden = true; commit(`Eigenes Icon für ${S.icoTy}`);
+  };
   $('icoClose').onclick = () => $('icoSheet').hidden = true;
   $('icoSheet').addEventListener('click', e => { if (e.target.id === 'icoSheet') $('icoSheet').hidden = true; });
   $('icoGrid').addEventListener('click', e => {
     const b = e.target.closest('[data-ico]'); if (!b || !S.icoTy) return;
-    const k = b.dataset.ico; S.meta.icons = { ...(S.meta.icons || {}) };
+    const k = b.dataset.ico;
+    if (k === '__up') { $('icoFile').click(); return; }
+    if (k === '__own') { $('icoSheet').hidden = true; return; }
+    S.meta.icons = { ...(S.meta.icons || {}) }; S.meta.iconImg = { ...(S.meta.iconImg || {}) };
+    delete S.meta.iconImg[S.icoTy];
     if (k) S.meta.icons[S.icoTy] = k; else delete S.meta.icons[S.icoTy];
     $('icoSheet').hidden = true; commit(k ? `Icon für ${S.icoTy}: ${ICON_NAMES[k] || k}` : `Icon für ${S.icoTy}: automatisch`);
   });
