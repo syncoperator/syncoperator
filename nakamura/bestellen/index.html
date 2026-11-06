@@ -1626,7 +1626,7 @@ window.addEventListener('load',ctFit);window.addEventListener('resize',ctFit);se
   const DAY = 86400000;
   const K = { items:'syncop_bestellliste_v1', lib:'syncop_bestellliste_lib_v1', orders:'syncop_bestellliste_orders_v1', types:'syncop_bestellliste_types_v1', meta:'syncop_bestellliste_meta_v1', lastBackup:'syncop_bestellliste_lastbackup', sets:'syncop_bestellliste_sets_v1', moves:'syncop_bestellliste_moves_v1',
               name:'syncop_bestellliste_name', to:'syncop_bestellliste_to', mail:'syncop_bestellliste_mail', remind:'syncop_bestellliste_remind' };
-  const BASE_TYPES = ['WENDEPLATTE','STECHPLATTE','GEWINDEPLATTE','HALTER','KOPIERSTAHL','STECHSTAHL','GEWINDESTAHL','BOHRSTANGE','BOHRER','ZENTRIERBOHRER','ANBOHRER','FRÄSER','REIBAHLE','GEWINDE','SENKER','SPANNZANGE','ER-SPANNZANGE','FÜHRUNGSBUCHSE','WEICHE BACKEN','HARTE BACKEN','SPANNMITTEL','SONSTIGES'];
+  const BASE_TYPES = ['WENDEPLATTE','STECHPLATTE','GEWINDEPLATTE','HALTER','KOPIERSTAHL','STECHSTAHL','GEWINDESTAHL','BOHRSTANGE','BOHRER','MULTIDRILL','ZENTRIERBOHRER','ANBOHRER','FRÄSER','REIBAHLE','GEWINDE','SENKER','SPANNZANGE','ER-SPANNZANGE','FÜHRUNGSBUCHSE','WEICHE BACKEN','HARTE BACKEN','SPANNMITTEL','SONSTIGES'];
 
   const $ = id => document.getElementById(id);
   const S = { items: [], lib: [], orders: [], customTypes: [], meta: { types: {}, opts: {}, fields: {} }, libEdit: false, ltQ: '', ltFilter: [], ltSort: 'size', view: 'home', pickQ: '', pickOpen: null, libQ: '', libType: '', archQ: '',
@@ -1737,7 +1737,7 @@ window.addEventListener('load',ctFit);window.addEventListener('resize',ctFit);se
     if (has('REIB')) return 'REIB';
     if (has('SENK')) return 'SENK';
     if (has('FRÄS') || has('FRAES')) return 'FRAES';
-    if (has('BOHR')) return 'BOHR';
+    if (has('BOHR') || has('DRILL')) return 'BOHR';
     if (has('SPANN') || has('FUTTER')) return 'SPANN';
     if (has('WENDE') || has('PLATTE') || !ty) {
       if (/^\d{2}\s?[EI]R\b|^\d{2}[EI]R/.test(nm)) return 'GPLATTE';
@@ -2286,7 +2286,7 @@ window.addEventListener('resize',fit);window.addEventListener('load',fit);fit();
   const CATS = [
     { t: 'Schneidplatten',  types: ['WENDEPLATTE', 'STECHPLATTE', 'GEWINDEPLATTE'] },
     { t: 'Halter',          types: ['HALTER', 'KOPIERSTAHL', 'STECHSTAHL', 'GEWINDESTAHL', 'BOHRSTANGE'] },
-    { t: 'Bohren & Fräsen', types: ['BOHRER', 'ZENTRIERBOHRER', 'ANBOHRER', 'FRÄSER', 'REIBAHLE', 'GEWINDE', 'SENKER'] },
+    { t: 'Bohren & Fräsen', types: ['BOHRER', 'MULTIDRILL', 'ZENTRIERBOHRER', 'ANBOHRER', 'FRÄSER', 'REIBAHLE', 'GEWINDE', 'SENKER'] },
     { t: 'Spannmittel',     types: ['SPANNZANGE', 'ER-SPANNZANGE', 'FÜHRUNGSBUCHSE', 'WEICHE BACKEN', 'HARTE BACKEN', 'SPANNMITTEL'] },
   ];
   const catOf = ty => {
@@ -3052,6 +3052,8 @@ window.addEventListener('resize',fit);window.addEventListener('load',fit);fit();
     BOHRSTANGE:    { nameLabel: 'Bezeichnung', namePh: 'z. B. S20S-SCLCR09', specs: ['d', 'l'], labels: { d: 'Ø Schaft', l: 'L Länge' }, attrs: ['bsmat', 'hand', 'ik', 'platte', 'minbohr'], inName: { d: false, l: false } },
     BOHRER:        { word: 'BOHRER', auto: t => [av(t, 'mat'), 'BOHRER', av(t, 'ld'), ikTok(t)], specs: ['d', 'w', 'l'], labels: { w: '∠ Spitze', l: 'L Gesamt' },
                      attrs: ['mat', 'ld', 'ik', 'schaftform'], req: ['d'], inName: { d: true, w: false, l: false } },
+    MULTIDRILL:    { word: 'MULTIDRILL', auto: t => [av(t, 'mat'), 'MULTIDRILL', av(t, 'ld'), ikTok(t)], specs: ['d', 'w', 'l'], labels: { w: '∠ Spitze', l: 'L Gesamt' },
+                     attrs: ['mat', 'ld', 'ik', 'schaftform'], req: ['d'], inName: { d: true, w: false, l: false } },
     'FRÄSER':      { word: 'FRÄSER', auto: t => [av(t, 'mat'), av(t, 'fart') || 'FRÄSER', ikTok(t)], specs: ['d', 'r', 'z', 'l'], labels: { r: 'R Eckradius', l: 'L Schneide' },
                      attrs: ['mat', 'fart', 'ik'], req: ['d'], inName: { d: true, r: true, z: true, l: false } },
     REIBAHLE:      { word: 'REIBAHLE', auto: t => [av(t, 'mat'), 'REIBAHLE', av(t, 'tol'), ikTok(t)], specs: ['d', 'l'], attrs: ['mat', 'tol', 'ik'], req: ['d'], inName: { d: true, l: false } },
@@ -3193,7 +3195,7 @@ window.addEventListener('resize',fit);window.addEventListener('load',fit);fit();
   // ---------- Schnittdaten ----------
   const CUTF = {
     WENDEPLATTE: ['vc','f','ap'], KOPIERSTAHL: ['vc','f','ap'], STECHPLATTE: ['vc','f'], GEWINDEPLATTE: ['vc','ap'],
-    BOHRER: ['vc','f'], ZENTRIERBOHRER: ['vc','f'], ANBOHRER: ['vc','f'], REIBAHLE: ['vc','f'], SENKER: ['vc','f'], 'FRÄSER': ['vc','f','ap'], GEWINDE: ['vc'],
+    BOHRER: ['vc','f'], MULTIDRILL: ['vc','f'], ZENTRIERBOHRER: ['vc','f'], ANBOHRER: ['vc','f'], REIBAHLE: ['vc','f'], SENKER: ['vc','f'], 'FRÄSER': ['vc','f','ap'], GEWINDE: ['vc'],
   };
   const CUTL = (type, k) => ({ vc: 'vc m/min', f: baseOf(type) === 'FRÄSER' ? 'fz mm/Z' : 'f mm/U', ap: baseOf(type) === 'GEWINDEPLATTE' ? 'Zustell.' : 'ap mm' })[k];
   const CUTU = (type, k) => ({ vc: ' m/min', f: baseOf(type) === 'FRÄSER' ? ' mm/Z' : ' mm/U', ap: baseOf(type) === 'GEWINDEPLATTE' ? '×' : ' mm' })[k];
@@ -3610,7 +3612,7 @@ Antworte NUR mit gültigem JSON, alle Werte als Strings in Anführungszeichen: {
 Lies die Angaben aus dem Bild. Antworte NUR mit JSON, ohne Erklärung:
 {"type":"","name":"","maker":"","makerArt":"","grade":"","d":null,"r":null,"b":null,"l":null,"z":null,"w":null,"p":null,"qty":"","attrs":{},"cut":[],"unsicher":[]}
 Regeln:
-- "type": genau einer aus: ${types}. Wendeplatte zum Drehen = WENDEPLATTE, Stechplatte/Abstechplatte = STECHPLATTE, Gewindeplatte = GEWINDEPLATTE.
+- "type": genau einer aus: ${types}. Wendeplatte zum Drehen = WENDEPLATTE, Stechplatte/Abstechplatte = STECHPLATTE, Gewindeplatte = GEWINDEPLATTE, Sumitomo MultiDrill (z. B. MDW, MDS, MDE …) = MULTIDRILL.
 - "name": die Bezeichnung wie aufgedruckt, z. B. "CNMG 120408-PM", "LST 082040-008FR-P", "VNBR 0420-02". Großbuchstaben.
 - "maker": Herstellername. "makerArt": Bestell- oder Artikelnummer des Herstellers (oft 6–8 Ziffern oder Code), NICHT die Bezeichnung wiederholen, wenn keine eigene Nummer da ist.
 - "grade": Sorte/Schneidstoff, z. B. "4325", "AP5020", "PR930", "IC908".
@@ -5159,7 +5161,7 @@ Antworte NUR mit JSON: {"map":[{"key":"","id":"","vorschlag":""}]}
   // Bohrtiefe prüfen (77)
   function depthCheck(r) {
     const t = r.libId && S.lib.find(x => x.id === r.libId); if (!t || !r.depth) return '';
-    const base = baseOf(t.type); if (!['BOHRER', 'ZENTRIERBOHRER', 'ANBOHRER', 'REIBAHLE', 'GEWINDE'].includes(base)) return '';
+    const base = baseOf(t.type); if (!['BOHRER', 'MULTIDRILL', 'ZENTRIERBOHRER', 'ANBOHRER', 'REIBAHLE', 'GEWINDE'].includes(base)) return '';
     const d = parseFloat(String(t.d || '').replace(',', '.')), ld = parseFloat(av(t, 'ld')), L = parseFloat(String(t.l || '').replace(',', '.'));
     const max = d && ld ? d * ld : L ? L * .7 : 0;
     if (!max) return `TIEFE ${num(r.depth)} MM – LÄNGE UNBEKANNT`;
