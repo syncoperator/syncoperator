@@ -3219,13 +3219,22 @@ window.addEventListener('resize',fit);window.addEventListener('load',fit);fit();
     return `<div><div class="tw-al" style="margin-bottom:4px">SCHNITTDATEN${rows.some(r => r.src === 'KI') ? ' <span class="hint">(KI-Richtwerte)</span>' : ''}</div><table class="cuttab"><tr><th>WST</th>${fs.map(k => `<th>${esc(CUTL(t.type, k).toUpperCase())}</th>`).join('')}</tr>
       ${rows.map(r => `<tr><td>${esc(r.wst || 'ALLE')}</td>${fs.map(k => `<td>${esc(r[k] || '–')}</td>`).join('')}</tr>`).join('')}</table></div>`;
   }
+  // nimmt die Antwort in jeder üblichen Form an: Liste, Objekt nach Werkstoff, andere Feldnamen, Zahlen, {min,max}
+  const CUT_KEYS = { vc: /^(vc|v_c|vcmin|schnittgeschw|cutting.?speed|speed)/i, f: /^(fz|fn|f|f_?z|f_?n|vorschub|feed)/i, ap: /^(ap|a_p|zustell|schnitttiefe|depth|tiefe)/i, wst: /^(wst|werkstoff|iso|gruppe|material|group)/i };
+  const cutVal = v => v == null ? '' : typeof v === 'object' ? (v.min != null || v.max != null ? [v.min, v.max].filter(x => x != null && x !== '').join('–') : (v.von != null ? [v.von, v.bis].filter(Boolean).join('–') : '')) : String(v);
   const cutFromAI = (arr, src, type) => {
     const fs = cutFields(type);
-    return (Array.isArray(arr) ? arr : []).map(r => {
-      const o = { wst: CWST.includes(U(r.wst)) ? U(r.wst) : 'ALLE', src };
-      fs.forEach(k => { const v = cutClean(r[k]); if (v) o[k] = v; });
+    let list = arr;
+    if (list && !Array.isArray(list) && typeof list === 'object') list = Object.entries(list).map(([k, v]) => (v && typeof v === 'object' && !Array.isArray(v)) ? { wst: k, ...v } : null).filter(Boolean);
+    return (Array.isArray(list) ? list : []).map(r => {
+      if (!r || typeof r !== 'object') return null;
+      const n = {};
+      Object.entries(r).forEach(([k, v]) => { for (const [key, re] of Object.entries(CUT_KEYS)) if (re.test(k) && n[key] == null) { n[key] = v; break; } });
+      const w = (String(n.wst || '').toUpperCase().match(/\b([PMKNSH])\b/) || String(n.wst || '').toUpperCase().match(/^([PMKNSH])/) || [])[1];
+      const o = { wst: w && CWST.includes(w) ? w : 'ALLE', src };
+      fs.forEach(k => { const v = cutClean(cutVal(n[k])); if (/\d/.test(v)) o[k] = v; });
       return o;
-    }).filter(o => fs.some(k => o[k])).slice(0, 6);
+    }).filter(o => o && fs.some(k => o[k])).slice(0, 6);
   };
   async function cutAI() {
     const t = TW.t, fs = cutFields(t.type);
@@ -3242,12 +3251,21 @@ Antworte NUR mit gültigem JSON, alle Werte als Strings in Anführungszeichen: {
 - "sicher": false, wenn du die Sorte/Geometrie nicht genau kennst und nur allgemeine Werte gibst. In "hinweis" kurz warum.
 - Keine exakten Katalogwerte vortäuschen: allgemeine Startwerte sind erlaubt, dann "sicher": false.`;
     try {
-      const j = aiJSON(await aiCall([{ role: 'user', content: [{ type: 'text', text: prompt }] }], 2000, info => { if (TW.scanBusy) { TW.scanBusy.msg = info; renderTW(); } }));
-      const rows = cutFromAI(j.cut, 'KI', t.type);
+      const raw = await aiCall([{ role: 'user', content: [{ type: 'text', text: prompt }] }], 2000, info => { if (TW.scanBusy) { TW.scanBusy.msg = info; renderTW(); } });
+      let j = {};
+      const rt = String(raw || '').replace(/```(json)?/gi, ''), ia = rt.indexOf('['), io = rt.indexOf('{');
+      if (ia >= 0 && (io < 0 || ia < io)) { try { j = { cut: JSON.parse(rt.slice(ia, rt.lastIndexOf(']') + 1)) }; } catch {} }
+      if (!j.cut) { try { j = aiJSON(raw); } catch {} }
+      if (Array.isArray(j)) j = { cut: j };
+      if (!(j.cut || j.schnittdaten || j.daten || j.werte || j.cutting) && Object.keys(j).some(k => CUT_KEYS.vc.test(k))) j = { cut: [j] };
+      const rows = cutFromAI(j.cut || j.schnittdaten || j.daten || j.werte || j.cutting, 'KI', t.type);
       TW.scanBusy = null; TW.step = back;
-      if (!rows.length) { renderTW(); toast(j.hinweis ? 'Keine Werte: ' + String(j.hinweis).slice(0, 90) : 'Keine Schnittdaten gefunden'); return; }
+      if (!rows.length) {
+        TW.aiNote = { kind: 'cut', filled: [], unsure: [j.hinweis ? 'KI: ' + String(j.hinweis).slice(0, 160) : 'Antwort der KI: ' + String(raw || '(leer)').replace(/\s+/g, ' ').slice(0, 220)] };
+        renderTW(); toast('Keine Schnittdaten gefunden – Antwort steht oben'); return;
+      }
       t.cut = [...(t.cut || []).filter(r => r.src !== 'KI' && fs.some(k => r[k])), ...rows];
-      TW.aiNote = { filled: ['Schnittdaten'], unsure: [j.sicher === false ? 'Nur allgemeine Werte' : '', String(j.hinweis || '')].filter(Boolean) };
+      TW.aiNote = { kind: 'cut', filled: ['Schnittdaten'], unsure: [j.sicher === false ? 'Nur allgemeine Werte' : '', String(j.hinweis || '')].filter(Boolean) };
       renderTW(); toast('Richtwerte eingetragen – bitte prüfen');
     } catch (e) {
       TW.scanBusy = null; TW.step = back; renderTW();
@@ -3518,7 +3536,7 @@ Antworte NUR mit gültigem JSON, alle Werte als Strings in Anführungszeichen: {
   function twAiNote() {
     const n = TW.aiNote; if (!n) return '';
     const dup = n.dup && S.lib.find(x => x.id === n.dup);
-    return `${dup ? `<div class="tw-ai" style="border-color:var(--crit)"><b>Gibt es schon in der Bibliothek:</b> ${esc(fullName(dup))}${dup.firm ? ' · ' + esc(dup.firm) : ''}<div class="row" style="gap:8px;margin-top:8px"><button type="button" class="btn primary sm" data-tw="usedup" data-id="${dup.id}">${TW.onSave ? 'Vorhandenes nehmen' : 'Vorhandenes öffnen'}</button></div></div>` : ''}<div class="tw-ai"><b>Vom Etikett gelesen – bitte prüfen.</b> ${n.filled.length ? 'Ausgefüllt: ' + esc(n.filled.join(', ')) + '.' : ''}${n.unsure.length ? `<br><b>Unsicher:</b> ${esc(n.unsure.join(' · '))}` : ''} <button type="button" class="link" data-tw="ainote">OK</button></div>`;
+    return `${dup ? `<div class="tw-ai" style="border-color:var(--crit)"><b>Gibt es schon in der Bibliothek:</b> ${esc(fullName(dup))}${dup.firm ? ' · ' + esc(dup.firm) : ''}<div class="row" style="gap:8px;margin-top:8px"><button type="button" class="btn primary sm" data-tw="usedup" data-id="${dup.id}">${TW.onSave ? 'Vorhandenes nehmen' : 'Vorhandenes öffnen'}</button></div></div>` : ''}<div class="tw-ai"><b>${n.kind === 'cut' ? 'KI-Richtwerte' : 'Vom Etikett gelesen'} – bitte prüfen.</b> ${n.filled.length ? 'Ausgefüllt: ' + esc(n.filled.join(', ')) + '.' : ''}${n.unsure.length ? `<br><b>Unsicher:</b> ${esc(n.unsure.join(' · '))}` : ''} <button type="button" class="link" data-tw="ainote">OK</button></div>`;
   }
   const imgToJpeg = (file, max, q) => new Promise((res, rej) => {
     const url = URL.createObjectURL(file), img = new Image();
