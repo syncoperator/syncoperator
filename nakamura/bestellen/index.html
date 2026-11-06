@@ -1261,6 +1261,14 @@ html.worker .ico-btn .ico-ed{display:none}
 .ico-img{width:100%;height:100%;object-fit:contain;display:block}
 .ico-up{border-style:dashed}
 .lt-head h2{overflow-wrap:normal;word-break:normal;hyphens:manual}.lt-head h2.long{font-size:18px}.lt-head h2.xlong{font-size:16px;overflow-wrap:anywhere}
+.rv-tool{display:flex;gap:12px;align-items:center;margin-top:8px}.rv-tool img,.rv-tool .rv-ic{width:52px;height:52px;border-radius:12px;object-fit:cover;flex:none;background:var(--soft);padding:0}.rv-tool .rv-ic{padding:8px;color:var(--fg)}
+.rv-tool b{display:block;font-family:var(--f-head);font-size:15px;line-height:1.25}.rv-tool small{display:block;color:var(--muted);font-size:12px;margin-top:2px}
+.rv-step{display:grid;grid-template-columns:56px 1fr 56px;gap:8px}.rv-step .btn{font-size:22px;padding:0;height:56px}
+.rv-step input{height:56px;text-align:center;font:600 26px var(--f-mono);border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--fg);width:100%;min-width:0}
+.rv-quick{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.rv-quick [aria-pressed="true"]{border-color:var(--ink)}
+.rv-rest{display:flex!important;flex-direction:row!important;gap:8px;align-items:center;justify-content:flex-start;text-align:left;margin-top:14px;font-size:13px;letter-spacing:0;color:var(--fg)}.rv-rest input{width:20px;height:20px;flex:none;margin:0}.rv-rest b{display:inline}
+.rv-step input{-moz-appearance:textfield;appearance:textfield}.rv-step input::-webkit-outer-spin-button,.rv-step input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.rv-sum{margin-top:10px}
 </style>
 </head>
 <body>
@@ -1535,6 +1543,12 @@ html.worker .ico-btn .ico-ed{display:none}
   <div class="helpsheet" role="dialog" aria-modal="true">
     <div class="row"><h2 class="grow">Set</h2><button type="button" class="x-btn" id="setClose" aria-label="Schließen"><svg width="22" height="22" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button></div>
     <div id="setBody" class="view" style="gap:12px"></div>
+  </div>
+</div>
+<div id="recvSheet" class="sheetbg" hidden>
+  <div class="helpsheet" role="dialog" aria-modal="true" aria-labelledby="recvTitle">
+    <div class="row"><h2 class="grow" id="recvTitle">Wareneingang</h2><button type="button" class="x-btn" data-rv="close" aria-label="Schließen"><svg width="22" height="22" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button></div>
+    <div id="recvBody"></div>
   </div>
 </div>
 <div id="icoSheet" class="sheetbg" hidden>
@@ -2246,8 +2260,8 @@ window.addEventListener('resize',fit);window.addEventListener('load',fit);fit();
     const z = e.target.closest('[data-zoom]'); if (z) return;
     const g = e.target.closest('[data-got]');
     if (g) { const it = S.items.find(i => i.id === g.dataset.got); if (!it) return;
-      if (it.status === 'geliefert') { it.status = 'gesendet'; delete it.deliveredAt; stockUndoDelivery(it); } else { it.status = 'geliefert'; it.deliveredAt = Date.now(); stockFromDelivery(it); }
-      commit(it.status === 'geliefert' ? 'Erhalten' : 'Zurückgesetzt'); return; }
+      if (it.status === 'geliefert') { it.status = 'gesendet'; delete it.deliveredAt; stockUndoDelivery(it); commit('Zurückgesetzt'); return; }
+      openRecv(it.id); return; }
     const b = e.target.closest('[data-oa]'); if (!b) return;
     const o = S.orders.find(x => x.id === b.dataset.id); if (!o) return;
     const act = b.dataset.oa, its = orderItems(o);
@@ -2259,6 +2273,61 @@ window.addEventListener('resize',fit);window.addEventListener('load',fit);fit();
     if (act === 'delno') { S.confirmArchDel = null; render(); }
     if (act === 'delyes') { S.confirmArchDel = null; const ids = new Set(o.itemIds); S.items = S.items.filter(i => !ids.has(i.id)); S.orders = S.orders.filter(x => x.id !== o.id); commit('Bestellung gelöscht'); }
   }
+
+  // ---- Wareneingang: erhaltene Menge eintragen, Rest optional offen lassen
+  const setQty = (q, n) => /\d/.test(String(q ?? '')) ? String(q).replace(/\d+([.,]\d+)?/, n) : String(n);
+  const RV = {};
+  function openRecv(id) {
+    if (!can('ein')) { accDeny(); return; }
+    const it = S.items.find(i => i.id === id); if (!it) return;
+    RV.id = id; RV.ord = qtyNum(it.qty) || 1; RV.n = RV.ord; RV.rest = true;
+    renderRecv(); $('recvSheet').hidden = false;
+    setTimeout(() => { const q = $('rvQ'); if (q) { q.focus(); q.select(); } }, 120);
+  }
+  function renderRecv() {
+    const it = S.items.find(i => i.id === RV.id); if (!it) return;
+    const t = libOf(it), st = t ? stockOf(t) : 0, track = t && hasStock(t), n = RV.n, short = n < RV.ord, img = imgOf(it);
+    $('recvBody').innerHTML = `<div class="rv-tool">${img ? `<img src="${img}" alt="">` : `<span class="rv-ic">${toolIcon(t || it)}</span>`}<div><b>${esc(fullName(it))}</b><small>Bestellt: <span class="mono">${esc(String(it.qty || RV.ord))}</span>${t ? ` · Bestand jetzt: <span class="mono">${track ? st : '–'}</span>` : ' · nicht in der Bibliothek'}</small></div></div>
+      <div class="tw-al" style="margin:14px 0 6px">ERHALTEN</div>
+      <div class="rv-step"><button type="button" class="btn" data-rv="minus" aria-label="weniger">−</button><input id="rvQ" type="number" inputmode="numeric" min="0" step="1" value="${n}"><button type="button" class="btn" data-rv="plus" aria-label="mehr">+</button></div>
+      <div class="rv-quick">${[...new Set([RV.ord, Math.ceil(RV.ord / 2), 1].filter(x => x > 0))].map(x => `<button type="button" class="btn ghost sm" data-rv="set" data-n="${x}" aria-pressed="${x === n}">${x === RV.ord ? `Alles (${x})` : x}</button>`).join('')}</div>
+      ${short && n > 0 ? `<label class="rv-rest"><input type="checkbox" id="rvRest" ${RV.rest ? 'checked' : ''}> Rest <b class="mono">${RV.ord - n}</b> bleibt offen und wird weiter erwartet</label>` : ''}
+      ${n > RV.ord ? `<p class="hint">Mehr als bestellt – wird so eingebucht.</p>` : ''}
+      <p class="hint rv-sum">${t ? (n > 0 ? `Neuer Bestand: <b class="mono">${st + n}</b>` : 'Nichts angekommen – bleibt offen.') : 'Ohne Bibliothek-Eintrag wird nur als erhalten markiert.'}</p>
+      <div class="row" style="gap:8px;margin-top:12px"><button type="button" class="btn ghost" data-rv="close">Abbrechen</button><button type="button" class="btn primary grow" data-rv="ok" ${n > 0 ? '' : 'disabled'}>Einbuchen</button></div>`;
+  }
+  function doRecv() {
+    const it = S.items.find(i => i.id === RV.id); if (!it) return;
+    const n = Math.max(0, Math.round(RV.n)); if (!n) return;
+    const ord = RV.ord, o = S.orders.find(x => x.id === it.orderId);
+    if (n < ord && RV.rest) {
+      const ni = { ...it, id: newId(), qty: setQty(it.qty, ord - n), status: 'gesendet', splitFrom: it.id }; delete ni.deliveredAt;
+      S.items.push(ni);
+      if (o) { const k = o.itemIds.indexOf(it.id); o.itemIds.splice(k < 0 ? o.itemIds.length : k + 1, 0, ni.id); }
+    }
+    if (n !== ord) { it.ordQty = it.ordQty || it.qty; it.qty = setQty(it.qty, n); }
+    it.status = 'geliefert'; it.deliveredAt = Date.now();
+    const t = libOf(it);
+    if (t) { try { book(t, 'ein', n, { itemId: it.id, note: 'LIEFERUNG ' + (o ? o.nr : '') }); } catch { return; } }
+    $('recvSheet').hidden = true;
+    commit(t ? `+${n} im Lager · ${fullName(t)}${n < ord && RV.rest ? ` · ${ord - n} offen` : ''}` : 'Erhalten');
+  }
+  $('recvSheet').addEventListener('click', e => {
+    if (e.target.id === 'recvSheet') { $('recvSheet').hidden = true; return; }
+    const b = e.target.closest('[data-rv]'); if (!b) return;
+    const a = b.dataset.rv;
+    if (a === 'close') { $('recvSheet').hidden = true; return; }
+    if (a === 'ok') { doRecv(); return; }
+    if (a === 'minus') RV.n = Math.max(0, RV.n - 1);
+    if (a === 'plus') RV.n = RV.n + 1;
+    if (a === 'set') RV.n = +b.dataset.n;
+    renderRecv();
+  });
+  $('recvSheet').addEventListener('input', e => {
+    if (e.target.id === 'rvQ') { RV.n = Math.max(0, parseInt(e.target.value, 10) || 0); const pos = e.target.selectionStart; renderRecv(); const q = $('rvQ'); q.focus(); try { q.setSelectionRange(pos, pos); } catch {} }
+  });
+  $('recvSheet').addEventListener('change', e => { if (e.target.id === 'rvRest') RV.rest = e.target.checked; });
+  $('recvSheet').addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.id === 'rvQ') { e.preventDefault(); doRecv(); } });
   $('waiting').addEventListener('click', onOrderClick);
   $('archList').addEventListener('click', onOrderClick);
 
