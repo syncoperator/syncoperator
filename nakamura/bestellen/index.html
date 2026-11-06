@@ -3233,17 +3233,19 @@ window.addEventListener('resize',fit);window.addEventListener('load',fit);fit();
     const back = TW.step;
     TW.scanBusy = { img: '', msg: 'Suche Schnittdaten …' }; renderTW();
     const prompt = `Werkzeug: ${t.type} "${fullName(t)}"${t.maker ? `, Hersteller ${t.maker}` : ''}${t.makerArt ? `, Art.-Nr. ${t.makerArt}` : ''}${t.grade ? `, Sorte ${t.grade}` : ''}.
-Gib die Start-Schnittdaten (Richtwerte) laut Herstellerkatalog für die passenden ISO-Werkstoffgruppen (P, M, K, N, S, H). Nur Gruppen, für die das Werkzeug empfohlen ist.
+Gib Start-Schnittdaten (Richtwerte) für die passenden ISO-Werkstoffgruppen (P, M, K, N, S, H).
+Kennst du die Katalogwerte genau dieser Sorte/Geometrie, nimm sie. Sonst gib die üblichen Startwerte für diese Werkzeugart, Größe und Schneidstoffklasse (z. B. beschichtetes Hartmetall, VHM, HSS), wie sie in Herstellerkatalogen typisch sind, und setze "sicher": false.
+Gib immer mindestens eine Zeile mit Werten, außer die Werkzeugart hat keine Schnittdaten.
 Antworte NUR mit gültigem JSON, alle Werte als Strings in Anführungszeichen: {"cut":[{"wst":"P","vc":"","f":"","ap":""}],"sicher":true,"hinweis":""}
 - vc in m/min, ${baseOf(t.type) === 'FRÄSER' ? 'f = Vorschub pro Zahn fz in mm/Z' : 'f in mm/U'}, ${baseOf(t.type) === 'GEWINDEPLATTE' ? 'ap = Anzahl Zustellungen' : 'ap in mm'}. Bereiche als "min–max".
 - Nur Felder: ${fs.join(', ')}. Was du nicht weißt, leer lassen.
 - "sicher": false, wenn du die Sorte/Geometrie nicht genau kennst und nur allgemeine Werte gibst. In "hinweis" kurz warum.
-- Keine Werte erfinden.`;
+- Keine exakten Katalogwerte vortäuschen: allgemeine Startwerte sind erlaubt, dann "sicher": false.`;
     try {
       const j = aiJSON(await aiCall([{ role: 'user', content: [{ type: 'text', text: prompt }] }], 2000, info => { if (TW.scanBusy) { TW.scanBusy.msg = info; renderTW(); } }));
       const rows = cutFromAI(j.cut, 'KI', t.type);
       TW.scanBusy = null; TW.step = back;
-      if (!rows.length) { renderTW(); toast('Keine Schnittdaten gefunden'); return; }
+      if (!rows.length) { renderTW(); toast(j.hinweis ? 'Keine Werte: ' + String(j.hinweis).slice(0, 90) : 'Keine Schnittdaten gefunden'); return; }
       t.cut = [...(t.cut || []).filter(r => r.src !== 'KI' && fs.some(k => r[k])), ...rows];
       TW.aiNote = { filled: ['Schnittdaten'], unsure: [j.sicher === false ? 'Nur allgemeine Werte' : '', String(j.hinweis || '')].filter(Boolean) };
       renderTW(); toast('Richtwerte eingetragen – bitte prüfen');
