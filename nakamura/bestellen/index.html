@@ -3508,7 +3508,7 @@ Antworte NUR mit gültigem JSON, alle Werte als Strings in Anführungszeichen: {
   // =====================================================================
   // ETIKETT SCANNEN (KI über Cititool-Worker)
   // =====================================================================
-  const AI_URL = () => (lsGet('syncop_bestellliste_aiurl') || 'https://cititool-ai.russianflow.workers.dev').trim();
+  const AI_URL = () => { const u = (lsGet('syncop_bestellliste_aiurl') || '').trim(); return u && !/\/\/cititool-ai\./.test(u) ? u : 'https://cititoolbestellen.russianflow.workers.dev'; };
   const AI_MODEL = 'claude-sonnet-4-6';
   function twBusyHTML() {
     return `<div class="tw-busy">${TW.scanBusy.img ? `<img src="${TW.scanBusy.img}" alt="">` : ''}<div class="tw-spin"></div><b style="font-family:var(--f-head)">${esc(TW.scanBusy.msg || 'Lese Etikett …')}</b><span class="hint"><span class="mono" id="twBusyT">${Math.round((Date.now() - (TW.scanBusy.t0 || Date.now())) / 1000)} s</span> · meist 5–15 Sekunden</span><button type="button" class="btn ghost sm" data-tw="scancancel">Abbrechen</button></div>`;
@@ -3614,14 +3614,15 @@ ${attrs}
       { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: big.split(',')[1] } },
       { type: 'text', text: scanPrompt() }];
     try {
-      let txt = await aiCall([{ role: 'user', content }], 1200, info => { if (TW.scanBusy) { TW.scanBusy.msg = info; renderTW(); } }, { timeout: 30000, signal: ac.signal });
+      let txt = await aiCall([{ role: 'user', content }], 2000, info => { if (TW.scanBusy) { TW.scanBusy.msg = info; renderTW(); } }, { timeout: 45000, signal: ac.signal, tries: 2 });
       let j;
       try { j = aiJSON(txt); }
       catch (e) {
         // eine Antwort ohne JSON: einmal knapp nachfragen statt aufzugeben
         if (TW.scanBusy) { TW.scanBusy.msg = 'Antwort unklar – frage nochmal …'; renderTW(); }
-        txt = await aiCall([{ role: 'user', content }, { role: 'assistant', content: '{' }], 1200, null, { timeout: 30000, signal: ac.signal, tries: 2 });
-        j = aiJSON('{' + txt);
+        const again = [...content.slice(0, -1), { type: 'text', text: scanPrompt() + '\n\nWICHTIG: Gib ausschließlich das JSON-Objekt zurück, beginnend mit { und endend mit }.' }];
+        txt = await aiCall([{ role: 'user', content: again }], 2000, null, { timeout: 45000, signal: ac.signal, tries: 1 });
+        j = aiJSON(txt);
       }
       clearInterval(tick); TW.scanBusy = null; TW.scanAbort = null;
       twApplyScan(j, thumb);
