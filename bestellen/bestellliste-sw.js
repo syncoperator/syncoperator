@@ -1,6 +1,6 @@
 // CitiTool Bestellliste – Service Worker
 // Netz zuerst: jede neue Version kommt sofort an, offline gilt die letzte Kopie.
-const CACHE = 'bestellliste-v15';
+const CACHE = 'bestellliste-v16';
 
 self.addEventListener('install', e => {
   self.skipWaiting();
