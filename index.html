@@ -1,64 +1,500 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="de">
 <head>
-    <meta charset="UTF-8">
-    <title>SyncOp X Professional</title>
-    <link rel="stylesheet" href="style.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script> </head>
-<body class="bg-slate-100">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>CITITOOL · Apps für die CNC-Werkstatt</title>
+<meta name="description" content="CITITOOL: Werkzeugausgabe, Werkzeuglisten und Inventur für die CNC-Werkstatt. Läuft im Browser, ohne Installation.">
+<meta name="theme-color" content="#F2F3F5">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 160 186'%3E%3Cpath fill='%23111214' d='M77 5L8 45Q5 48 5 54L6 134Q6 139 13 141L71 174Q76 178 82 177L112 160L44 121Q38 117 38 110L40 66Q40 62 47 60L113 23L85 6Q81 3 77 5ZM93 45L153 80V49Q153 46 150 44L122 28ZM153 104L93 139L120 155L146 141Q153 138 153 134Z'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F2F3F5; --card:#FFFFFF; --fg:#111214; --muted:#6B7079; --line:rgba(17,18,20,.10);
+  --ink:#111214; --on-ink:#F2F3F5; --acc:#C2410C; --acc-soft:#FDEEE6;
+  --f:"Instrument Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --m:"JetBrains Mono",ui-monospace,Menlo,monospace;
+  --ease:cubic-bezier(.22,1,.36,1);
+  --shadow:0 1px 2px rgba(17,18,20,.04),0 8px 24px rgba(17,18,20,.06);
+  --shadow-hi:0 2px 4px rgba(17,18,20,.06),0 16px 36px rgba(17,18,20,.12);
+  --head:64px;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#0F1012; --card:#18191C; --fg:#ECEDEF; --muted:#9097A1; --line:rgba(236,237,239,.10);
+  --ink:#ECEDEF; --on-ink:#111214; --acc:#E8853D; --acc-soft:#33221A;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.25); --shadow-hi:0 2px 4px rgba(0,0,0,.35),0 16px 36px rgba(0,0,0,.4)}}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;scroll-padding-top:calc(var(--head) + 16px)}
+@media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}}
+body{margin:0;background:var(--bg);color:var(--fg);font:400 16px/1.5 var(--f);-webkit-font-smoothing:antialiased;overflow-x:hidden}
+a{color:inherit}
+img{display:block;max-width:100%}
+.wrap{max-width:1120px;margin:0 auto;padding:0 24px}
 
-    <header class="app-header">
-        <div class="text-2xl font-black italic tracking-tighter">SyncOp <span class="text-blue-500">X</span></div>
-        <div class="flex gap-3">
-            <button onclick="App.exportPDF('tools')" class="px-5 py-2 bg-slate-800 text-white font-bold text-xs uppercase hover:bg-slate-700">Werkzeugliste</button>
-            <button onclick="App.exportPDF('plan')" class="px-5 py-2 bg-blue-600 text-white font-bold text-xs uppercase hover:bg-blue-500 shadow-lg">Export Plan</button>
-        </div>
-    </header>
+/* ---------- Kopfleiste: klebt oben, Lineal zeigt den Fortschritt ---------- */
+.bar{position:sticky;top:0;z-index:20;padding-top:env(safe-area-inset-top);
+  background:color-mix(in srgb,var(--bg) 82%,transparent);-webkit-backdrop-filter:blur(14px) saturate(1.4);backdrop-filter:blur(14px) saturate(1.4);
+  transition:box-shadow .3s var(--ease)}
+.bar.up{box-shadow:0 1px 0 var(--line),0 10px 30px -18px rgba(17,18,20,.35)}
+.bar .row{display:flex;align-items:center;gap:24px;height:var(--head)}
+.brand{display:flex;align-items:center;gap:10px;font:600 15px var(--f);letter-spacing:.08em;text-decoration:none}
+.brand svg{width:22px;height:26px}
+.links{display:flex;gap:4px;margin-left:auto}
+.links a{font:500 11.5px var(--m);letter-spacing:.1em;text-transform:uppercase;text-decoration:none;color:var(--muted);padding:10px 12px;border-radius:10px;transition:color .25s var(--ease),background-color .25s var(--ease)}
+.links a:hover,.links a.on{color:var(--fg);background:color-mix(in srgb,var(--fg) 6%,transparent)}
+.btn{display:inline-flex;align-items:center;gap:10px;min-height:48px;padding:0 20px;border-radius:14px;font:600 14px var(--f);letter-spacing:.06em;text-transform:uppercase;text-decoration:none;border:1.5px solid transparent;cursor:pointer;
+  transition:transform .3s var(--ease),box-shadow .3s var(--ease),background-color .3s var(--ease),color .3s var(--ease)}
+.btn svg{width:18px;height:18px;transition:transform .3s var(--ease)}
+.btn.sm{min-height:40px;padding:0 14px;font-size:12px;border-radius:12px}
+.btn.dark{background:var(--ink);color:var(--on-ink)}
+.btn.acc{background:var(--acc);color:#fff;box-shadow:0 10px 24px -12px color-mix(in srgb,var(--acc) 80%,transparent)}
+.btn.line{border-color:var(--fg);color:var(--fg)}
+@media (hover:hover){.btn:hover{transform:translateY(-2px)}.btn:hover svg{transform:translateX(3px)}.btn.acc:hover{box-shadow:0 16px 30px -12px color-mix(in srgb,var(--acc) 85%,transparent)}}
+.btn:active{transform:scale(.97)}
+.btn:focus-visible,.links a:focus-visible,.app:focus-visible,.q button:focus-visible{outline:3px solid var(--acc);outline-offset:3px}
 
-    <div class="flex bg-slate-200 border-b border-slate-300">
-        <button id="tab-1" onclick="App.switchChannel('1')" class="tab-btn flex-1 py-4 font-black uppercase text-xs tracking-widest transition-all">Kanal 1</button>
-        <button id="tab-2" onclick="App.switchChannel('2')" class="tab-btn flex-1 py-4 font-black uppercase text-xs tracking-widest transition-all">Kanal 2</button>
+.ruler{position:relative;height:12px;border-bottom:1px solid var(--line);
+  background:repeating-linear-gradient(90deg,var(--muted) 0 1px,transparent 1px 48px) bottom/100% 11px no-repeat,
+             repeating-linear-gradient(90deg,rgba(107,112,121,.45) 0 1px,transparent 1px 8px) bottom/100% 5px no-repeat}
+.ruler i{position:absolute;left:0;bottom:-1px;height:3px;width:100%;background:var(--acc);transform-origin:left;transform:scaleX(var(--p,0));border-radius:0 2px 2px 0}
+
+/* ---------- Einstieg ---------- */
+.hero{position:relative;padding:72px 0 0}
+.hero .wrap{display:grid;gap:22px}
+.kick{font:600 12px var(--m);letter-spacing:.14em;color:var(--acc);text-transform:uppercase}
+h1{margin:0;font:600 clamp(40px,8.4vw,92px)/.98 var(--f);letter-spacing:-.025em;text-transform:uppercase}
+h1 .ln{display:block;overflow:hidden;padding-bottom:.04em}
+h1 .ln>span{display:inline-block}
+h1 .acc{color:var(--acc)}
+.lead{margin:0;font-size:clamp(17px,2.2vw,21px);line-height:1.5;color:var(--muted);max-width:620px}
+.cta{display:flex;gap:12px;flex-wrap:wrap;margin-top:6px}
+.stage{position:relative;margin-top:56px;height:clamp(260px,46vw,560px);overflow:hidden}
+.tablet{position:absolute;left:50%;top:0;width:min(1000px,92vw);transform:translate(-50%,var(--ty,0px)) rotate(var(--rot,-3deg));transform-origin:center top;
+  padding:12px;border-radius:28px;background:#1E2024;box-shadow:0 40px 80px -30px rgba(17,18,20,.45),0 0 0 1px rgba(255,255,255,.04) inset}
+.tablet img{border-radius:18px;width:100%}
+.stage::after{content:"";position:absolute;left:0;right:0;bottom:0;height:90px;background:linear-gradient(transparent,var(--bg))}
+
+/* ---------- Abschnitte ---------- */
+section.s{padding:96px 0 0}
+.sec{display:flex;align-items:center;gap:12px;margin:0 0 20px;font:600 12px var(--m);letter-spacing:.14em;color:var(--acc);text-transform:uppercase}
+.sec::after{content:"";flex:1;height:1px;background:var(--line)}
+h2{margin:0;font:600 clamp(30px,5vw,52px)/1.02 var(--f);letter-spacing:-.02em;text-transform:uppercase}
+h2 span{color:var(--acc)}
+.sub{margin:16px 0 0;color:var(--muted);font-size:18px;max-width:600px}
+
+/* Apps */
+.apps{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+.app{position:relative;display:flex;flex-direction:column;gap:16px;min-height:220px;padding:24px;border-radius:20px;background:var(--card);border:1px solid var(--line);box-shadow:var(--shadow);text-decoration:none;
+  transition:transform .35s var(--ease),box-shadow .35s var(--ease)}
+.app .ic{width:52px;height:52px;border-radius:14px;display:grid;place-items:center;background:var(--bg);color:var(--fg)}
+.app .ic svg{width:28px;height:28px}
+.app .no{position:absolute;top:24px;right:24px;font:500 12px var(--m);letter-spacing:.1em;color:var(--muted)}
+.app h3{margin:0;font:600 24px/1.1 var(--f);text-transform:uppercase}
+.app p{margin:6px 0 0;color:var(--muted);font-size:15px;line-height:1.45}
+.go{margin-top:auto;display:flex;align-items:center;gap:8px;font:600 12px var(--m);letter-spacing:.12em;text-transform:uppercase}
+.go svg{width:18px;height:18px;transition:transform .35s var(--ease)}
+.app.main{grid-column:1/-1;background:var(--ink);color:var(--on-ink);border-color:transparent;min-height:240px}
+.app.main .ic{background:var(--acc);color:#fff}
+.app.main p,.app.main .no{color:color-mix(in srgb,var(--on-ink) 65%,transparent)}
+.app.main .go{color:var(--acc)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chips span{font:500 11px var(--m);letter-spacing:.1em;text-transform:uppercase;padding:6px 10px;border-radius:8px;border:1px solid color-mix(in srgb,var(--on-ink) 22%,transparent)}
+@media (hover:hover){.app:hover{transform:translateY(-4px);box-shadow:var(--shadow-hi)}.app:hover .go svg{transform:translateX(4px)}}
+.app:active{transform:scale(.98)}
+
+/* Ablauf: Schritte links, Bild rechts klebt */
+.flow{display:grid;grid-template-columns:1fr 1.15fr;gap:48px;align-items:start;margin-top:40px}
+.steps{display:grid}
+.step{display:grid;grid-template-columns:64px 1fr;gap:8px;padding:28px 0;border-top:1px solid var(--line);transition:opacity .4s var(--ease)}
+.step:last-child{border-bottom:1px solid var(--line)}
+.step .n{font:600 28px/1 var(--m);color:var(--muted);transition:color .4s var(--ease)}
+.step h3{margin:0;font:600 22px/1.15 var(--f);text-transform:uppercase}
+.step p{margin:6px 0 0;color:var(--muted)}
+.step.on .n{color:var(--acc)}
+@media (min-width:861px){.step{opacity:.4}.step.on{opacity:1}}
+.shot{position:sticky;top:calc(var(--head) + 40px)}
+.shot .frame{padding:10px;border-radius:24px;background:#1E2024;box-shadow:0 30px 60px -30px rgba(17,18,20,.45)}
+.shot .frame>div{position:relative;border-radius:16px;overflow:hidden;aspect-ratio:1600/1111;background:#111}
+.shot img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transform:scale(1.02);transition:opacity .5s var(--ease),transform .6s var(--ease)}
+.shot img.on{opacity:1;transform:none}
+.shot .cap{margin-top:12px;font:500 11px var(--m);letter-spacing:.12em;color:var(--muted);text-transform:uppercase}
+
+/* Funktionen */
+.feats{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:40px}
+.feat{padding:24px;border-radius:20px;background:var(--card);border:1px solid var(--line);box-shadow:var(--shadow);display:grid;gap:10px;align-content:start}
+.feat .ic{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;background:var(--acc-soft);color:var(--acc)}
+.feat .ic svg{width:24px;height:24px}
+.feat h3{margin:4px 0 0;font:600 18px/1.2 var(--f);text-transform:uppercase}
+.feat p{margin:0;color:var(--muted);font-size:15px}
+
+/* Fakten */
+.facts{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.fact{border-top:2px solid var(--fg);padding-top:14px}
+.fact b{display:block;font:600 16px var(--f);text-transform:uppercase;letter-spacing:.02em}
+.fact span{display:block;margin-top:4px;color:var(--muted);font-size:15px}
+
+/* Fragen */
+.qs{margin-top:32px;border-top:1px solid var(--line)}
+.q{border-bottom:1px solid var(--line)}
+.q button{all:unset;box-sizing:border-box;width:100%;display:flex;align-items:center;gap:16px;padding:22px 4px;cursor:pointer;font:600 18px/1.3 var(--f);text-transform:uppercase}
+.q button i{margin-left:auto;flex:none;width:32px;height:32px;border-radius:16px;border:1.5px solid var(--line);display:grid;place-items:center;transition:transform .35s var(--ease),background-color .3s var(--ease),border-color .3s var(--ease)}
+.q button i svg{width:14px;height:14px}
+.q.open button i{transform:rotate(45deg);background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.q .a{display:grid;grid-template-rows:0fr;transition:grid-template-rows .4s var(--ease)}
+.q.open .a{grid-template-rows:1fr}
+.q .a>div{overflow:hidden}
+.q .a p{margin:0;padding:0 56px 22px 4px;color:var(--muted);max-width:720px}
+
+/* Abschluss */
+.end{margin:96px 0 0;padding:56px 40px;border-radius:28px;background:var(--ink);color:var(--on-ink);display:grid;grid-template-columns:1fr auto;gap:24px;align-items:end}
+.end h2 span{color:var(--acc)}
+.end p{margin:12px 0 0;color:color-mix(in srgb,var(--on-ink) 65%,transparent);max-width:520px}
+.end .btn.acc{min-height:56px;padding:0 24px}
+footer{margin:40px 0 0;padding:16px 0 40px;border-top:1px solid var(--line);display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;font:500 11px var(--m);letter-spacing:.12em;color:var(--muted);text-transform:uppercase}
+
+.top{position:fixed;right:20px;bottom:calc(20px + env(safe-area-inset-bottom));z-index:15;width:48px;height:48px;border-radius:24px;border:0;background:var(--ink);color:var(--on-ink);display:grid;place-items:center;cursor:pointer;
+  opacity:0;transform:translateY(12px);pointer-events:none;transition:opacity .3s var(--ease),transform .3s var(--ease);box-shadow:var(--shadow-hi)}
+.top.on{opacity:1;transform:none;pointer-events:auto}
+.top svg{width:20px;height:20px}
+
+
+/* App-Abschnitte */
+.split{display:grid;grid-template-columns:1fr 1fr;gap:56px;align-items:center;margin-top:8px}
+.split.flip .txt{order:2}
+.txt{display:grid;gap:18px;align-content:start}
+.txt .sub{margin:0}
+.txt .btn{justify-self:start;margin-top:6px}
+.fl{list-style:none;margin:0;padding:0;display:grid}
+.fl li{display:grid;grid-template-columns:18px 1fr;gap:10px;align-items:baseline;padding:11px 0;border-top:1px solid var(--line);color:var(--muted);font-size:15.5px}
+.fl li:last-child{border-bottom:1px solid var(--line)}
+.fl li svg{width:10px;height:10px;color:var(--acc);transform:translateY(-1px)}
+.fl li b{color:var(--fg);font-weight:600}
+.mk{border-radius:22px;background:var(--card);border:1px solid var(--line);box-shadow:var(--shadow-hi);padding:20px;font-family:var(--m)}
+.mk.dark{background:#16171A;color:#E6E7EA;border-color:transparent}
+.mk-h{display:flex;justify-content:space-between;align-items:center;gap:12px;font:600 11px var(--m);letter-spacing:.12em;color:var(--muted);padding-bottom:14px;border-bottom:1px solid var(--line);margin-bottom:8px}
+.mk.dark .mk-h{border-color:rgba(255,255,255,.08);color:#8A9099}
+.tabs{display:flex;gap:6px}.tabs b{font-weight:600;padding:6px 10px;border-radius:8px;background:rgba(255,255,255,.06)}.tabs b.on{background:#E8853D;color:#16171A}
+.code{font:500 13px/1.85 var(--m)}
+.code div{display:grid;grid-template-columns:30px 1fr}
+.code .ln{color:#5C626B}
+.code b{color:#E8853D;font-weight:600}.code i{font-style:normal;color:#fff;background:rgba(232,133,61,.18);padding:0 4px;border-radius:4px}.code em{font-style:normal;color:#7C838D}
+.tr{display:grid;grid-template-columns:64px 1fr auto;gap:12px;align-items:center;padding:12px 2px;border-bottom:1px solid var(--line);font-size:12.5px}
+.tr:last-child{border-bottom:0}
+.tn{font-weight:600;color:var(--acc)}
+.tnm{font-family:var(--f);font-weight:600;font-size:14px;letter-spacing:.01em}
+.td{color:var(--muted)}.td.big{color:var(--fg);font-weight:600;font-size:14px}
+.chs{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px}
+.chh{font:600 11px var(--m);letter-spacing:.1em;padding:8px 10px;border-radius:10px;background:var(--ink);color:var(--on-ink);margin-bottom:6px}
+.op{display:grid;grid-template-columns:28px 1fr auto;gap:8px;padding:10px;border-radius:10px;font-size:12px;background:var(--bg);margin-top:6px}
+.op span:nth-child(2){font-family:var(--f);font-weight:600;font-size:13px}
+.op span:last-child{color:var(--muted)}
+.op.sy{background:var(--acc-soft);color:var(--acc)}.op.sy span:last-child{color:var(--acc)}
+@media (max-width:860px){.split{grid-template-columns:1fr;gap:28px}.split.flip .txt{order:0}}
+@media (max-width:600px){.mk{padding:16px;border-radius:18px}.code{font-size:11.5px}.tr{grid-template-columns:52px 1fr auto}.tnm{font-size:12.5px}.chs{gap:8px}.op{grid-template-columns:22px 1fr;}.op span:last-child{display:none}.txt .btn{justify-self:stretch;justify-content:center}}
+/* ---------- Bewegung ---------- */
+.rv{opacity:0;transform:translateY(24px)}
+.rv.in{opacity:1;transform:none;transition:opacity .8s var(--ease),transform .8s var(--ease)}
+.js h1 .ln>span{transform:translateY(105%)}
+.js.ready h1 .ln>span{transform:none;transition:transform 1s var(--ease)}
+.js.ready h1 .ln:nth-child(2)>span{transition-delay:.08s}
+.js.ready h1 .ln:nth-child(3)>span{transition-delay:.16s}
+.js .tablet{opacity:0;--ty:80px}
+.js.ready .tablet{opacity:1;transition:opacity 1s var(--ease) .25s}
+@media (prefers-reduced-motion:reduce){
+  .rv{opacity:1;transform:none}.js h1 .ln>span{transform:none}.js .tablet{opacity:1;--ty:0px}
+  .app,.btn,.go svg,.shot img,.q .a,.q button i{transition:none}}
+
+@media (max-width:1060px){.links{display:none}.bar .btn{margin-left:auto}}
+@media (max-width:860px){
+  .links{display:none}
+  .bar .btn{margin-left:auto}
+  .flow{grid-template-columns:1fr;gap:24px}
+  .shot{position:relative;top:0;order:-1}
+  .feats{grid-template-columns:1fr 1fr}
+  .end{grid-template-columns:1fr;padding:40px 24px}
+}
+@media (max-width:600px){
+  .wrap{padding:0 16px}
+  .hero{padding-top:44px}
+  .stage{margin-top:40px}
+  .apps,.facts{grid-template-columns:1fr}
+  .app,.app.main{min-height:0}
+  section.s{padding-top:72px}
+  .q .a p{padding-right:4px}
+  .cta{flex-direction:column}
+  .cta .btn{justify-content:center;min-height:54px}
+  .feats{grid-template-columns:1fr 1fr;gap:10px}
+  .feat{padding:16px;border-radius:16px;gap:8px}
+  .feat h3{font-size:15px}
+  .feat p{font-size:13.5px}
+}
+</style>
+</head>
+<body>
+<script>document.documentElement.classList.add('js')</script>
+
+<header class="bar" id="bar">
+  <div class="wrap row">
+    <a class="brand" href="#" aria-label="CITITOOL Start">
+      <svg viewBox="0 0 160 186" aria-hidden="true"><path fill="currentColor" d="M77 5L8 45Q5 48 5 54L6 134Q6 139 13 141L71 174Q76 178 82 177L112 160L44 121Q38 117 38 110L40 66Q40 62 47 60L113 23L85 6Q81 3 77 5ZM93 45L153 80V49Q153 46 150 44L122 28ZM153 104L93 139L120 155L146 141Q153 138 153 134Z"/></svg>
+      CITITOOL
+    </a>
+    <nav class="links" aria-label="Seite">
+      <a href="#apps">Apps</a><a href="#ablauf">Ausgabe</a><a href="#drehen">Drehen</a><a href="#fraesen">Fräsen</a><a href="#ctx">CTX</a><a href="#inventur">Inventur</a><a href="#fragen">Fragen</a>
+    </nav>
+    <a class="btn sm dark" href="https://syncoperator.github.io/nakamura/bestellen/">Öffnen</a>
+  </div>
+  <div class="wrap"><div class="ruler" aria-hidden="true"><i id="prog"></i></div></div>
+</header>
+
+<main>
+  <section class="hero">
+    <div class="wrap">
+      <span class="kick rv">Werkstatt-Apps für die CNC-Fertigung</span>
+      <h1><span class="ln"><span>Werkzeug</span></span><span class="ln"><span>im Griff.</span></span><span class="ln acc"><span>Ohne Zettel.</span></span></h1>
+      <p class="lead rv">Werkzeugausgabe, Werkzeuglisten für Drehen und Fräsen, Programmplan für die CTX und Inventur – direkt im Browser, auf Tablet, Handy und PC.</p>
+      <div class="cta rv">
+        <a class="btn acc" href="https://syncoperator.github.io/nakamura/bestellen/">Werkzeugausgabe öffnen <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+        <a class="btn line" href="#apps">Alle Apps</a>
+      </div>
     </div>
-
-    <div id="ui-root" class="max-w-3xl mx-auto p-6"></div>
-
-    <div id="modal" class="modal-overlay hidden">
-        <div class="modal-content">
-            <h2 class="font-black uppercase text-sm mb-6 border-b pb-2">Slot Konfiguration</h2>
-            <div class="space-y-4">
-                <div>
-                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Bezeichnung</label>
-                    <input type="text" id="in-title" class="w-full border-2 border-slate-100 p-3 font-bold focus:border-blue-500 outline-none">
-                </div>
-                <div>
-                    <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Spezifikation</label>
-                    <input type="text" id="in-tool-name" class="w-full border-2 border-slate-100 p-3 text-sm focus:border-blue-500 outline-none">
-                </div>
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">T-Nummer</label>
-                        <input type="text" id="in-tool" class="w-full border-2 border-slate-100 p-3 font-mono text-center focus:border-blue-500 outline-none">
-                    </div>
-                    <div>
-                        <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Spindel</label>
-                        <select id="in-spindle" class="w-full border-2 border-slate-100 p-3 font-bold bg-white outline-none">
-                            <option value="SP4">Spindel 4</option>
-                            <option value="SP3">Spindel 3</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
-            <div class="flex gap-3 mt-8">
-                <button onclick="App.closeModal()" class="flex-1 py-3 bg-slate-100 font-bold uppercase text-[10px]">Abbrechen</button>
-                <button onclick="App.saveSlot()" class="flex-1 py-3 bg-blue-600 text-white font-bold uppercase text-[10px]">Speichern</button>
-            </div>
-        </div>
+    <div class="stage" aria-hidden="true">
+      <div class="tablet" id="tablet"><img src="img/k_idle.webp" alt="" width="1600" height="1111"></div>
     </div>
+  </section>
 
-    <div id="pdf-buffer" style="position: absolute; left: -9999px;"></div>
+  <section class="s" id="apps">
+    <div class="wrap">
+      <div class="sec rv">Apps</div>
+      <div class="apps">
+        <!-- Adressen hier anpassen -->
+        <a class="app main rv" href="https://syncoperator.github.io/nakamura/bestellen/">
+          <span class="no">01</span>
+          <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><path d="M4 8V5.5A1.5 1.5 0 0 1 5.5 4H8M16 4h2.5A1.5 1.5 0 0 1 20 5.5V8M20 16v2.5a1.5 1.5 0 0 1-1.5 1.5H16M8 20H5.5A1.5 1.5 0 0 1 4 18.5V16M8 8v8M11 8v8M13.5 8v8M16 8v8"/></svg></span>
+          <div><h3>Werkzeugausgabe</h3><p>Scannen, entnehmen, rechtzeitig nachbestellen. Mit Ausgabestation am Tablet, Lager, Bestellungen und Berichten.</p></div>
+          <div class="chips"><span>Ausgabestation</span><span>Bestellen</span><span>Wareneingang</span><span>Probleme</span></div>
+          <span class="go">Öffnen <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+        </a>
+        <a class="app rv" href="https://syncoperator.github.io/syncoperator/nakamura/index.html">
+          <span class="no">02</span>
+          <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h4M17 12h4"/><rect x="7" y="8" width="10" height="8" rx="1.5"/><path d="M10 8V6M14 8V6M10 16v2M14 16v2"/></svg></span>
+          <div><h3>Werkzeugliste Drehen</h3><p>Werkzeuglisten und G-Code für die Nakamura WT-250. Revolver oben und unten.</p></div>
+          <span class="go">Öffnen <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+        </a>
+        <a class="app rv" href="https://syncoperator.github.io/syncoperator/fraesen/index.html">
+          <span class="no">03</span>
+          <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v9"/><path d="M9 12h6l-1 4h-4z"/><path d="M12 16v5"/><path d="M8 21h8"/></svg></span>
+          <div><h3>Werkzeugliste Fräsen</h3><p>Programm laden, Werkzeuge mit Namen auslesen, 21 pro Druckseite.</p></div>
+          <span class="go">Öffnen <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+        </a>
+        <a class="app rv" href="https://syncoperator.github.io/syncoperator/ctx/indexm.html">
+          <span class="no">04</span>
+          <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="8" height="14" rx="1.5"/><rect x="13" y="5" width="8" height="14" rx="1.5"/><path d="M6 9h2M6 12h2M16 9h2M16 15h2M11 12h2"/></svg></span>
+          <div><h3>CTX Sync</h3><p>Programmplan für zwei Kanäle, Werkzeuge verknüpfen, MPF für Siemens 840D.</p></div>
+          <span class="go">Öffnen <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+        </a>
+        <a class="app rv" href="https://syncoperator.github.io/nakamura/inventur/">
+          <span class="no">05</span>
+          <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8h18M3 12h18M3 16h18"/><circle cx="6" cy="8" r="1"/><circle cx="6" cy="12" r="1"/><circle cx="6" cy="16" r="1"/></svg></span>
+          <div><h3>Inventur Stangen</h3><p>Stangenmaterial in Metern zählen. Zähllisten für die Inventur.</p></div>
+          <span class="go">Öffnen <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+        </a>
+      </div>
+    </div>
+  </section>
 
-    <script src="renderer.js"></script>
-    <script src="app.js"></script>
+  <section class="s" id="ablauf">
+    <div class="wrap">
+      <div class="sec rv">01 · Werkzeugausgabe</div>
+      <h2 class="rv">Scannen. Entnehmen.<br><span>Fertig.</span></h2>
+      <p class="sub rv">Am Tablet direkt an der Ausgabe. Eine Frage pro Bildschirm, große Tasten.</p>
+      <div class="flow">
+        <div class="steps">
+          <div class="step on" data-img="0"><span class="n">01</span><div><h3>Etikett scannen</h3><p>Etikett vor die Kamera halten. Ohne Etikett: oft genommene Werkzeuge als Kacheln oder suchen.</p></div></div>
+          <div class="step" data-img="1"><span class="n">02</span><div><h3>Menge, Name, Maschine</h3><p>Antippen, nicht tippen. Der Name bleibt drei Minuten für das nächste Werkzeug.</p></div></div>
+          <div class="step" data-img="1"><span class="n">03</span><div><h3>Bestand stimmt</h3><p>Sofort gebucht. Unter Minimum geht das Werkzeug auf die Bestellliste.</p></div></div>
+          <div class="step" data-img="2"><span class="n">04</span><div><h3>Problem melden</h3><p>Fach leer, Bestand falsch, Werkzeug defekt – in vier Tipps gemeldet.</p></div></div>
+        </div>
+        <div class="shot rv" aria-hidden="true">
+          <div class="frame"><div>
+            <img class="on" src="img/k_idle.webp" alt="" loading="lazy">
+            <img src="img/k_tool.webp" alt="" loading="lazy">
+            <img src="img/k_prob1.webp" alt="" loading="lazy">
+          </div></div>
+          <div class="cap" id="shotCap">Ausgabestation · Startbild</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="s" id="funktionen">
+    <div class="wrap">
+      <div class="sec rv">Werkzeugausgabe · Funktionen</div>
+      <h2 class="rv">Vom Regal<br><span>bis zur Bestellung.</span></h2>
+      <div class="feats">
+        <div class="feat rv"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M8 21h8"/></svg></span><h3>Ausgabestation</h3><p>Tablet zeigt nur die Entnahme. Beenden nur mit Admin-PIN.</p></div>
+        <div class="feat rv"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4 21 19.5H3z M12 10v4M12 16.8v.2"/></svg></span><h3>Probleme</h3><p>Meldungen und Auffälligkeiten an einem Ort, offen und erledigt.</p></div>
+        <div class="feat rv"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h2l2 11h10l2-8H7"/><circle cx="9" cy="20" r="1.3"/><circle cx="17" cy="20" r="1.3"/></svg></span><h3>Bestellen</h3><p>Unter Minimum automatisch auf der Liste. Senden per E-Mail oder WhatsApp.</p></div>
+        <div class="feat rv"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7l9-4 9 4v10l-9 4-9-4z"/><path d="M3 7l9 4 9-4M12 11v10"/></svg></span><h3>Wareneingang</h3><p>Erhaltene Menge eintragen, Restmenge bleibt offen.</p></div>
+        <div class="feat rv"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h9l4 4v14H6z"/><path d="M9 17v-3M12 17v-6M15 17v-4"/></svg></span><h3>Berichte</h3><p>Nach Person, Maschine, Lagerort. Drucken, Excel, BIOS.</p></div>
+        <div class="feat rv"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/><rect x="7" y="7" width="10" height="10" rx="2"/><path d="M10 12h4"/></svg></span><h3>KI-Werkstatt</h3><p>Etikett lesen, Rüstsatz aus NC-Programm, Werkzeug-Berater.</p></div>
+      </div>
+      <div class="facts" style="margin-top:56px">
+        <div class="fact rv"><b>Ohne Installation</b><span>Läuft im Browser, auf Wunsch als App auf dem Startbildschirm.</span></div>
+        <div class="fact rv"><b>Tablet · Handy · PC</b><span>Überall derselbe Stand.</span></div>
+        <div class="fact rv"><b>Auch offline</b><span>Arbeitet ohne Netz weiter und gleicht später ab.</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="s" id="drehen">
+    <div class="wrap">
+      <div class="sec rv">02 · Werkzeugliste Drehen</div>
+      <div class="split">
+        <div class="txt">
+          <h2 class="rv">Werkzeugliste und Programm.<br><span>Für die Nakamura.</span></h2>
+          <p class="sub rv">Werkzeuglisten für Revolver oben und unten, G-Code bearbeiten, prüfen und drucken – für die Nakamura WT-250 mit Fanuc.</p>
+          <ul class="fl rv"><li><svg viewBox="0 0 10 10" aria-hidden="true"><path d="M5 1.2L8.8 5 5 8.8 1.2 5Z" fill="currentColor"/></svg><span><b>Zeichnung lesen</b> – Foto oder PDF, die KI erkennt die Maße</span></li><li><svg viewBox="0 0 10 10" aria-hidden="true"><path d="M5 1.2L8.8 5 5 8.8 1.2 5Z" fill="currentColor"/></svg><span><b>Kontur zeichnen</b> – Linien, Fasen, Radien, RO · G54 und RU · G55</span></li><li><svg viewBox="0 0 10 10" aria-hidden="true"><path d="M5 1.2L8.8 5 5 8.8 1.2 5Z" fill="currentColor"/></svg><span><b>Code-Editor</b> – Suchen und Ersetzen, Befehle mit einem Tipp</span></li><li><svg viewBox="0 0 10 10" aria-hidden="true"><path d="M5 1.2L8.8 5 5 8.8 1.2 5Z" fill="currentColor"/></svg><span><b>Simulation</b> – Werkzeugweg oben, unten oder beide gegen das Rohteil</span></li><li><svg viewBox="0 0 10 10" aria-hidden="true"><path d="M5 1.2L8.8 5 5 8.8 1.2 5Z" fill="currentColor"/></svg><span><b>Vorlagen und Zyklen</b> – G71, G70, G76 und eigene</span></li><li><svg viewBox="0 0 10 10" aria-hidden="true"><path d="M5 1.2L8.8 5 5 8.8 1.2 5Z" fill="currentColor"/></svg><span><b>Drucken</b> – Einstellblatt, Deckblatt, Etiketten, Werkzeugliste</span></li><li><svg viewBox="0 0 10 10" aria-hidden="true"><path d="M5 1.2L8.8 5 5 8.8 1.2 5Z" fill="currentColor"/></svg><span><b>Cloud</b> – Projekte zwischen Handy und PC</span></li></ul>
+          <a class="btn dark rv" href="https://syncoperator.github.io/syncoperator/nakamura/index.html">Werkzeugliste Drehen öffnen <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+        </div>
+        <div class="mock rv" aria-hidden="true"><div class="mk dark"><div class="mk-h"><span class="tabs"><b class="on">RO · G54</b><b>RU · G55</b></span><span>CODE</span></div><div class="code"><div><span class="ln">01</span><span>O4711 <em>(WELLE Ø20 H7)</em></span></div><div><span class="ln">02</span><span>N10 <b>G28</b> U0 W0</span></div><div><span class="ln">03</span><span><i>T0101</i> <em>(SCHRUPPEN CNMG 120408)</em></span></div><div><span class="ln">04</span><span><b>G96</b> S220 <b>M3</b></span></div><div><span class="ln">05</span><span><b>G0</b> X42. Z2. <b>M8</b></span></div><div><span class="ln">06</span><span><b>G71</b> U2. R0.5</span></div><div><span class="ln">07</span><span><b>G71</b> P20 Q30 U0.4 W0.1 F0.25</span></div><div><span class="ln">08</span><span><i>T0303</i> <em>(SCHLICHTEN VBMT 160404)</em></span></div><div><span class="ln">09</span><span><b>G70</b> P20 Q30</span></div><div><span class="ln">10</span><span><b>M30</b></span></div></div></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="s" id="fraesen">
+    <div class="wrap">
+      <div class="sec rv">03 · Werkzeugliste Fräsen</div>
+      <div class="split flip">
+        <div class="txt">
+          <h2 class="rv">Werkzeugliste fürs Fräsen.<br><span>Schlank und schnell.</span></h2>
+          <p class="sub rv">Programm laden – jeder T-Aufruf wird mit seinem Namen aus dem Kommentar ausgelesen. Fertig zum Drucken.</p>
+          <ul class="fl rv"><li><svg viewBox="0 0 10 10" aria-hidden="true"><path d="M5 1.2L8.8 5 5 8.8 1.2 5Z" fill="currentColor"/></svg><span><b>Programm laden</b> – NC, .O, .H oder .TXT, „T141 M6“ samt Kommentar</span></li><li><svg viewBox="0 0 10 10" aria-hidden="true"><path d="M5 1.2L8.8 5 5 8.8 1.2 5Z" fill="currentColor"/></svg><span><b>Werkzeug-Bibliothek</b> – in alle Projekte übernehmen, in und aus der Cloud</span></li><li><svg viewBox="0 0 10 10" aria-hidden="true"><path d="M5 1.2L8.8 5 5 8.8 1.2 5Z" fill="currentColor"/></svg><span><b>Sonderwerkzeug und Blaukiste</b> – gleich markiert</span></li><li><svg viewBox="0 0 10 10" aria-hidden="true"><path d="M5 1.2L8.8 5 5 8.8 1.2 5Z" fill="currentColor"/></svg><span><b>Liste oder Karten</b> – wie es gerade passt</span></li><li><svg viewBox="0 0 10 10" aria-hidden="true"><path d="M5 1.2L8.8 5 5 8.8 1.2 5Z" fill="currentColor"/></svg><span><b>Text-Import</b> – „T-NR ; NAME ; Ø ; BEMERKUNG“</span></li><li><svg viewBox="0 0 10 10" aria-hidden="true"><path d="M5 1.2L8.8 5 5 8.8 1.2 5Z" fill="currentColor"/></svg><span><b>Drucken</b> – 21 Werkzeuge pro Seite</span></li><li><svg viewBox="0 0 10 10" aria-hidden="true"><path d="M5 1.2L8.8 5 5 8.8 1.2 5Z" fill="currentColor"/></svg><span><b>Cloud und Sicherungen</b> – die letzten fünf bleiben</span></li></ul>
+          <a class="btn dark rv" href="https://syncoperator.github.io/syncoperator/fraesen/index.html">Werkzeugliste Fräsen öffnen <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+        </div>
+        <div class="mock rv" aria-hidden="true"><div class="mk"><div class="mk-h"><span>WERKZEUGLISTE · 6 / 21</span><span>FRÄSEN</span></div><div class="tr"><span class="tn">T141</span><span class="tnm">SCHLICHT MESSERKOPF D63 · 100 LANG</span><span class="td">Ø63</span></div><div class="tr"><span class="tn">T22</span><span class="tnm">BOHRER VHM D8,5 IK</span><span class="td">Ø8,5</span></div><div class="tr"><span class="tn">T31</span><span class="tnm">GEWINDEFRÄSER M10</span><span class="td">M10</span></div><div class="tr"><span class="tn">T47</span><span class="tnm">SCHAFTFRÄSER D12 Z4</span><span class="td">Ø12</span></div><div class="tr"><span class="tn">T58</span><span class="tnm">FASENFRÄSER 90°</span><span class="td">Ø16</span></div><div class="tr"><span class="tn">T63</span><span class="tnm">REIBAHLE D10 H7</span><span class="td">Ø10</span></div></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="s" id="ctx">
+    <div class="wrap">
+      <div class="sec rv">04 · CTX Sync</div>
+      <div class="split">
+        <div class="txt">
+          <h2 class="rv">Programmplan für die CTX.<br><span>Zwei Kanäle, ein Plan.</span></h2>
+          <p class="sub rv">Operationen für beide Kanäle planen, Werkzeuge verknüpfen und das MPF-Programm für Siemens 840D erzeugen.</p>
+          <ul class="fl rv"><li><svg viewBox="0 0 10 10" aria-hidden="true"><path d="M5 1.2L8.8 5 5 8.8 1.2 5Z" fill="currentColor"/></svg><span><b>Programmplan</b> – Kanal 1, Kanal 2 und Synchron</span></li><li><svg viewBox="0 0 10 10" aria-hidden="true"><path d="M5 1.2L8.8 5 5 8.8 1.2 5Z" fill="currentColor"/></svg><span><b>MPF und Werkzeugliste laden</b> – vorhandene Programme einlesen</span></li><li><svg viewBox="0 0 10 10" aria-hidden="true"><path d="M5 1.2L8.8 5 5 8.8 1.2 5Z" fill="currentColor"/></svg><span><b>Verknüpfen</b> – Operation ⇄ Werkzeug</span></li><li><svg viewBox="0 0 10 10" aria-hidden="true"><path d="M5 1.2L8.8 5 5 8.8 1.2 5Z" fill="currentColor"/></svg><span><b>Check · Arbeitsablauf</b> – Schritt für Schritt prüfen</span></li><li><svg viewBox="0 0 10 10" aria-hidden="true"><path d="M5 1.2L8.8 5 5 8.8 1.2 5Z" fill="currentColor"/></svg><span><b>Sägelänge</b> – Stangenlänge und Abschnitte berechnen</span></li><li><svg viewBox="0 0 10 10" aria-hidden="true"><path d="M5 1.2L8.8 5 5 8.8 1.2 5Z" fill="currentColor"/></svg><span><b>NC-Dateien erstellen</b> – fertiges MPF-Programm</span></li><li><svg viewBox="0 0 10 10" aria-hidden="true"><path d="M5 1.2L8.8 5 5 8.8 1.2 5Z" fill="currentColor"/></svg><span><b>Begriffe kurz erklärt</b> – Kanal, CROSS, WAITM, NOP</span></li></ul>
+          <a class="btn dark rv" href="https://syncoperator.github.io/syncoperator/ctx/indexm.html">CTX Sync öffnen <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+        </div>
+        <div class="mock rv" aria-hidden="true"><div class="mk"><div class="mk-h"><span>PROGRAMMPLAN</span><span>SIEMENS 840D</span></div><div class="chs"><div class="chn"><div class="chh">KANAL 1 · 1000</div><div class="op"><span>10</span><span>PLANEN</span><span>T1</span></div><div class="op"><span>20</span><span>SCHRUPPEN</span><span>T2</span></div><div class="op sy"><span>—</span><span>WAITM 1</span><span>SYNC</span></div><div class="op"><span>30</span><span>BOHREN Ø8</span><span>T5</span></div></div><div class="chn"><div class="chh">KANAL 2 · 2000</div><div class="op"><span>10</span><span>ÜBERNAHME</span><span>—</span></div><div class="op"><span>20</span><span>RÜCKSEITE</span><span>T12</span></div><div class="op sy"><span>—</span><span>WAITM 1</span><span>SYNC</span></div><div class="op"><span>30</span><span>ABSTECHEN</span><span>T14</span></div></div></div></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="s" id="inventur">
+    <div class="wrap">
+      <div class="sec rv">05 · Inventur Stangen</div>
+      <div class="split flip">
+        <div class="txt">
+          <h2 class="rv">Stangenmaterial zählen.<br><span>In Metern.</span></h2>
+          <p class="sub rv">Inventur ohne Taschenrechner: Material und Ø wählen, Meter eintragen – die Zählliste ist fertig.</p>
+          <ul class="fl rv"><li><svg viewBox="0 0 10 10" aria-hidden="true"><path d="M5 1.2L8.8 5 5 8.8 1.2 5Z" fill="currentColor"/></svg><span><b>Material und Ø</b> – MS58, 1.4104, 1.4122, F75 und mehr</span></li><li><svg viewBox="0 0 10 10" aria-hidden="true"><path d="M5 1.2L8.8 5 5 8.8 1.2 5Z" fill="currentColor"/></svg><span><b>Meter statt Stück</b> – so, wie Stangen wirklich liegen</span></li><li><svg viewBox="0 0 10 10" aria-hidden="true"><path d="M5 1.2L8.8 5 5 8.8 1.2 5Z" fill="currentColor"/></svg><span><b>Zähllisten</b> – als Blätter austeilen und wieder einlesen</span></li><li><svg viewBox="0 0 10 10" aria-hidden="true"><path d="M5 1.2L8.8 5 5 8.8 1.2 5Z" fill="currentColor"/></svg><span><b>Artikelnummer</b> – ergibt sich aus Material und Ø</span></li></ul>
+          <a class="btn dark rv" href="https://syncoperator.github.io/nakamura/inventur/">Inventur Stangen öffnen <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+        </div>
+        <div class="mock rv" aria-hidden="true"><div class="mk"><div class="mk-h"><span>ZÄHLLISTE · LAGER 2</span><span>METER</span></div><div class="tr"><span class="tn">MS58</span><span class="tnm">Ø20</span><span class="td big">12,40 m</span></div><div class="tr"><span class="tn">1.4104</span><span class="tnm">Ø16</span><span class="td big">8,75 m</span></div><div class="tr"><span class="tn">1.4122</span><span class="tnm">Ø30</span><span class="td big">21,10 m</span></div><div class="tr"><span class="tn">F75</span><span class="tnm">Ø12</span><span class="td big">4,30 m</span></div><div class="tr"><span class="tn">1.0718</span><span class="tnm">Ø25</span><span class="td big">17,60 m</span></div></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="s" id="fragen">
+    <div class="wrap">
+      <div class="sec rv">Fragen</div>
+      <h2 class="rv">Kurz<br><span>beantwortet.</span></h2>
+      <div class="qs">
+        <div class="q rv"><button type="button" aria-expanded="false">Muss man etwas installieren?<i><svg viewBox="0 0 14 14" aria-hidden="true"><path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></i></button><div class="a"><div><p>Nein. Die Apps laufen im Browser. Auf Wunsch legt man sie als App auf den Startbildschirm.</p></div></div></div>
+        <div class="q rv"><button type="button" aria-expanded="false">Geht es ohne Internet?<i><svg viewBox="0 0 14 14" aria-hidden="true"><path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></i></button><div class="a"><div><p>Ja. Ausgeben, zählen und bestellen gehen weiter, abgeglichen wird später. Nur die KI braucht Netz.</p></div></div></div>
+        <div class="q rv"><button type="button" aria-expanded="false">Brauchen wir einen Etikettendrucker?<i><svg viewBox="0 0 14 14" aria-hidden="true"><path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></i></button><div class="a"><div><p>Nein. A4-Bögen zum Ausschneiden genügen, ein Etikettendrucker geht auch.</p></div></div></div>
+        <div class="q rv"><button type="button" aria-expanded="false">Geht ein Handscanner?<i><svg viewBox="0 0 14 14" aria-hidden="true"><path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></i></button><div class="a"><div><p>Ja. USB- oder Bluetooth-Scanner tippen den Code einfach ins Suchfeld.</p></div></div></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="wrap">
+    <div class="end rv">
+      <div><h2>Weniger Blindflug.<br><span>Mehr Überblick.</span></h2><p>Werkstatt, Lager und Einkauf arbeiten mit demselben Stand.</p></div>
+      <a class="btn acc" href="https://syncoperator.github.io/nakamura/bestellen/">Werkzeugausgabe öffnen <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+    </div>
+    <footer><span>© CITITOOL</span><span>Für die CNC-Werkstatt</span></footer>
+  </div>
+</main>
+
+<button class="top" id="toTop" type="button" aria-label="Nach oben"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M6 11l6-6 6 6"/></svg></button>
+
+<script>
+(() => {
+  const root = document.documentElement;
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  requestAnimationFrame(() => requestAnimationFrame(() => root.classList.add('ready')));
+
+  // Einblenden beim Scrollen, Geschwister leicht versetzt
+  if (!reduce && 'IntersectionObserver' in window) {
+    const io = new IntersectionObserver(es => es.forEach(e => {
+      if (!e.isIntersecting) return;
+      const sibs = [...e.target.parentElement.children].filter(x => x.classList.contains('rv'));
+      e.target.style.transitionDelay = Math.min(sibs.indexOf(e.target), 5) * 70 + 'ms';
+      e.target.classList.add('in'); io.unobserve(e.target);
+    }), { rootMargin: '0px 0px -8% 0px' });
+    document.querySelectorAll('.rv').forEach(el => io.observe(el));
+  } else document.querySelectorAll('.rv').forEach(el => el.classList.add('in'));
+
+  // Kopfleiste, Lineal als Fortschritt, Tablet hebt sich, Knopf nach oben
+  const bar = document.getElementById('bar'), prog = document.getElementById('prog'), tab = document.getElementById('tablet'), top = document.getElementById('toTop');
+  let ticking = false;
+  const onScroll = () => {
+    ticking = false;
+    const y = scrollY, max = document.documentElement.scrollHeight - innerHeight;
+    bar.classList.toggle('up', y > 8);
+    prog.style.setProperty('--p', max > 0 ? Math.min(1, y / max).toFixed(4) : 0);
+    top.classList.toggle('on', y > innerHeight * 1.2);
+    if (!reduce && tab) {
+      const k = Math.min(1, y / (innerHeight * .9));
+      tab.style.setProperty('--ty', (-k * 60).toFixed(1) + 'px');
+      tab.style.setProperty('--rot', (-3 + k * 3).toFixed(2) + 'deg');
+    }
+  };
+  addEventListener('scroll', () => { if (!ticking) { ticking = true; requestAnimationFrame(onScroll); } }, { passive: true });
+  onScroll();
+  top.onclick = () => scrollTo({ top: 0, behavior: reduce ? 'auto' : 'smooth' });
+
+  // Ablauf: aktiver Schritt wechselt das Bild
+  const steps = [...document.querySelectorAll('.step')], imgs = [...document.querySelectorAll('.shot img')], cap = document.getElementById('shotCap');
+  const caps = ['Ausgabestation · Startbild', 'Ausgabestation · Menge, Name, Maschine', 'Ausgabestation · Problem melden'];
+  const setStep = s => {
+    steps.forEach(x => x.classList.toggle('on', x === s));
+    const i = +s.dataset.img; imgs.forEach((im, j) => im.classList.toggle('on', j === i)); cap.textContent = caps[i];
+  };
+  if ('IntersectionObserver' in window) {
+    const so = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) setStep(e.target); }), { rootMargin: '-45% 0px -45% 0px' });
+    steps.forEach(s => so.observe(s));
+  }
+  steps.forEach(s => s.addEventListener('click', () => setStep(s)));
+
+  // Aktiver Link oben
+  const links = [...document.querySelectorAll('.links a')];
+  if ('IntersectionObserver' in window) {
+    const lo = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) links.forEach(a => a.classList.toggle('on', a.getAttribute('href') === '#' + e.target.id)); }), { rootMargin: '-40% 0px -55% 0px' });
+    document.querySelectorAll('section.s[id]').forEach(s => lo.observe(s));
+  }
+
+  // Fragen auf- und zuklappen
+  document.querySelectorAll('.q button').forEach(b => b.addEventListener('click', () => {
+    const q = b.parentElement, open = !q.classList.contains('open');
+    q.classList.toggle('open', open); b.setAttribute('aria-expanded', String(open));
+  }));
+})();
+</script>
 </body>
 </html>
