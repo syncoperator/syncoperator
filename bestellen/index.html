@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#F2F3F5">
 <meta name="format-detection" content="telephone=no,date=no,address=no,email=no">
-<script>(function(){try{var H=document.documentElement,t=localStorage.getItem('cititool_theme');if(t==='light'||t==='dark')H.setAttribute('data-theme',t);var m=localStorage.getItem('cititool_intro')||'day',ln=localStorage.getItem('cititool_launch')!=='off',deep=/#(a|t|s|l)=|#etiketten|#bestellen|#bericht|#zurueck-|[?&](view|re|scan|mw|druck|kiosk|station)=/.test(location.href),nl=0;if(localStorage.getItem('cititool_kiosk')==='1'||/[?&](kiosk|station)=1/.test(location.search)){H.classList.add('kiosk');deep=true}if(!/[?&]druck=/.test(location.search)){try{nl=sessionStorage.getItem('cititool_noln');sessionStorage.removeItem('cititool_noln')}catch(e){}}if(nl)deep=true;if(/[?&]druck=/.test(location.search))H.classList.add('druck');if(!deep){if(m!=='off'&&(m==='always'||localStorage.getItem('cititool_intro_day')!==new Date().toDateString()))H.classList.add('intro-on');else if(ln){H.classList.add('intro-on');H.classList.add('ln-quick')}}}catch(e){}})();</script>
+<script>(function(){try{var H=document.documentElement,t=localStorage.getItem('cititool_aus_theme')||'light';if(t==='light'||t==='dark')H.setAttribute('data-theme',t);var m=localStorage.getItem('cititool_intro')||'day',ln=localStorage.getItem('cititool_launch')!=='off',deep=/#(a|t|s|l)=|#etiketten|#bestellen|#bericht|#zurueck-|[?&](view|re|scan|mw|druck|kiosk|station)=/.test(location.href),nl=0;if(localStorage.getItem('cititool_kiosk')==='1'||/[?&](kiosk|station)=1/.test(location.search)){H.classList.add('kiosk');deep=true}if(!/[?&]druck=/.test(location.search)){try{nl=sessionStorage.getItem('cititool_noln');sessionStorage.removeItem('cititool_noln')}catch(e){}}if(nl)deep=true;if(/[?&]druck=/.test(location.search))H.classList.add('druck');if(!deep){if(m!=='off'&&(m==='always'||localStorage.getItem('cititool_intro_day')!==new Date().toDateString()))H.classList.add('intro-on');else if(ln){H.classList.add('intro-on');H.classList.add('ln-quick')}}}catch(e){}})();</script>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Ausgabe">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -1580,6 +1580,10 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .nav-ind.ready{transition:transform .42s cubic-bezier(.3,1.25,.4,1),width .42s cubic-bezier(.3,1.25,.4,1),opacity .2s}
 @media (prefers-reduced-motion:reduce){.nav-ind.ready{transition:none}.nav.seven .ni{transition:none}}
 @media (max-width:619px){.nav.seven{border-radius:18px}.nav.seven .nl{font-size:10px!important;letter-spacing:.02em!important}.nav.seven button{padding:9px 0 7px}}
+
+/* Handy: kein Auto-Zoom beim Tippen in Felder, kein Doppeltipp-Zoom */
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%;touch-action:manipulation}
+@media (pointer:coarse){input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]),select,textarea{font-size:16px!important}}
 </style>
 </head>
 <body>
@@ -1993,6 +1997,17 @@ window.addEventListener('load',ctFit);window.addEventListener('resize',ctFit);se
   const fmtDs = ts => ts ? new Date(ts).toLocaleDateString('de-DE', { day:'2-digit', month:'2-digit' }) : '';
   const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
   const toast = msg => { const t = $('toast'); t.textContent = msg; t.hidden = false; clearTimeout(toast._t); toast._t = setTimeout(() => t.hidden = true, 2400); };
+  // Handy: Hintergrund beim Öffnen von Fenstern fest halten und danach an dieselbe Stelle zurück (iOS springt sonst)
+  if (matchMedia('(pointer:coarse)').matches) {
+    let ly = 0, locked = false; const bs = document.body.style;
+    new MutationObserver(() => {
+      const want = bs.overflow === 'hidden';
+      if (want && !locked) { locked = true; ly = scrollY; bs.position = 'fixed'; bs.top = -ly + 'px'; bs.left = '0'; bs.right = '0'; }
+      else if (!want && locked) { locked = false; bs.position = ''; bs.top = ''; bs.left = ''; bs.right = ''; scrollTo({ top: ly, left: 0, behavior: 'instant' }); }
+    }).observe(document.body, { attributes: true, attributeFilter: ['style'] });
+    // seitlich verrutscht (z. B. nach Tastatur) → zurück an den linken Rand
+    if (window.visualViewport) visualViewport.addEventListener('resize', () => { if (!locked && visualViewport.scale <= 1.01 && scrollX) scrollTo(0, scrollY); });
+  }
   const lsGet = k => { try { return localStorage.getItem(k) || '' } catch { return '' } };
   const lsSet = (k,v) => { try { localStorage.setItem(k, v); return true } catch { return false } };
   const num = v => String(v).replace('.', ',');
@@ -2015,8 +2030,11 @@ window.addEventListener('load',ctFit);window.addEventListener('resize',ctFit);se
   // Typwort vorn (für Typen ohne Auto-Namen), abschaltbar pro Werkzeug
   const typeWord = t => { if (!t || !t.type || !t.name) return ''; const p = profileOf(t.type); if (p.auto || t.type === 'SONSTIGES') return ''; if (t.inName && t.inName.type === false) return '';
     const w = U(p.word && TP[t.type] ? p.word : t.type); return U(t.name).startsWith(w) ? '' : w; };
-  const fullName = t => [typeWord(t), t.name, ...specsIn(t)].filter(Boolean).join(' ');
-  const shortName = t => [t.name, ...specsIn(t)].filter(Boolean).join(' ');   // ohne Typwort (Typ steht extra drüber)
+  // ISO-Plattenform vom Rest trennen: CCGT09T304FN-Z → CCGT 09T304FN-Z (nur 4 Buchstaben + Größencode)
+  const isoSp = v => String(v || '').replace(/(^|\s)([A-Z]{4})(\d{2}[\dT]\d{2})/g, '$1$2 $3');
+  const isoUnsp = v => String(v || '').replace(/(^|\s)([A-Z]{4}) (\d{2}[\dT]\d{2})/g, '$1$2$3');
+  const fullName = t => [typeWord(t), isoSp(t.name), ...specsIn(t)].filter(Boolean).join(' ');
+  const shortName = t => [isoSp(t.name), ...specsIn(t)].filter(Boolean).join(' ');   // ohne Typwort (Typ steht extra drüber)
   const specFieldsHTML = (t, pre) => SPEC.map(sp => `<div class="spec">
       <label class="innm" title="Im Namen anzeigen"><input type="checkbox" data-innm="${sp.k}" ${inName(t, sp) ? 'checked' : ''}><span>${sp.label}</span></label>
       <input type="text" id="${pre}${sp.k}" data-e="${sp.k}" class="mono" ${sp.k === 'grade' ? '' : 'inputmode="decimal"'} value="${esc(t[sp.k] || '')}" placeholder="${sp.ph}">
@@ -2240,7 +2258,7 @@ window.addEventListener('load',ctFit);window.addEventListener('resize',ctFit);se
   }
   const cartItems = () => S.items.filter(i => i.status === 'bedarf').sort((a,b) => a.createdAt - b.createdAt);
 
-  const hay = t => [t.name, t.type, ...specs(t), ...SPEC_KEYS.map(k => t[k]), ...Object.values(t.attrs || {}).flat(), ...(t.uses || []).flatMap(u => [u.wst, u.text]), t.firm, t.maker, t.makerArt, t.mach, t.note, t.dwg].join(' ').toUpperCase().replace(/,/g,'.');
+  const hay = t => [t.name, String(t.name || '').replace(/\s+/g, ''), t.type, ...specs(t), ...SPEC_KEYS.map(k => t[k]), ...Object.values(t.attrs || {}).flat(), ...(t.uses || []).flatMap(u => [u.wst, u.text]), t.firm, t.maker, t.makerArt, t.mach, t.note, t.dwg].join(' ').toUpperCase().replace(/,/g,'.');
   const match = (h, q) => q.split(/\s+/).filter(Boolean).every(w => h.includes(w.replace(/,/g,'.')));
   const stats = libId => { const its = S.items.filter(i => i.libId === libId); return { count: its.length, last: Math.max(0, ...its.map(i => i.createdAt || 0)), inCart: its.some(i => i.status === 'bedarf'), waiting: its.some(i => i.status === 'gesendet') }; };
 
@@ -3063,7 +3081,7 @@ window.addEventListener('resize',fit);window.addEventListener('load',fit);fit();
         Object.entries(data.meta.opts || {}).forEach(([k, v]) => S.meta.opts[k] = [...new Set([...(S.meta.opts[k] || []), ...v])]);
         Object.entries(data.meta.fields || {}).forEach(([ty, fs]) => { const cur = S.meta.fields[ty] || []; fs.forEach(f => { if (!cur.some(c => c.k === f.k)) cur.push(f); }); S.meta.fields[ty] = cur; });
       }
-      migrate(); commit(`${b} Werkzeuge, ${c} Bestellungen geladen`);
+      migrate(); isoMigrate(true); commit(`${b} Werkzeuge, ${c} Bestellungen geladen`);
     } catch { toast('Datei ist kein gültiges Backup'); }
   };
 
@@ -3881,7 +3899,7 @@ Antworte NUR mit gültigem JSON, alle Werte als Strings in Anführungszeichen: {
   }
   function twSave(andOrder) {
     const d = TW.t;
-    d.name = U(d.name);
+    d.name = isoSp(U(d.name));
     { const fs = cutFields(d.type); d.cut = (d.cut || []).filter(r => fs.some(k => r[k])); if (!d.cut.length) delete d.cut; }
     if (d.firm && S.lib.some(x => x.firm && nzc(x.firm) === nzc(d.firm) && x.id !== TW.editId)) { toast(`Artikelnummer ${d.firm} gibt es schon`); TW.step = 2; renderTW(); return; }
     let tool;
@@ -4551,7 +4569,7 @@ Antworte NUR mit JSON: {"map":{"feld":"Spaltenname"},"typ":"häufigster Werkzeug
   function undoSync() {
     const b = $('impUndo'); if (!b) return;
     let s = null; try { s = JSON.parse(lsGet(UNDO_K) || 'null'); } catch {}
-    b.hidden = !s; if (s) b.textContent = `Import rückgängig · ${new Date(s.ts).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })} ${new Date(s.ts).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}`;
+    b.hidden = !s; if (s) b.title = s.label || ''; if (s) b.textContent = `Rückgängig · ${new Date(s.ts).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })} ${new Date(s.ts).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}`;
   }
   $('impUndo').onclick = () => {
     let s = null; try { s = JSON.parse(lsGet(UNDO_K) || 'null'); } catch {}
@@ -4705,6 +4723,7 @@ Antworte NUR mit JSON: {"map":{"feld":"Spaltenname"},"typ":"häufigster Werkzeug
       if (prof(type).auto) t.name = autoBase(t) || U(L[0]);
       if (!t.name) t.name = U(L[0]);
       if (t.maker && !prof(type).auto && U(t.name).startsWith(t.maker + ' ') && t.name.length > t.maker.length + 4) t.name = t.name.slice(t.maker.length + 1);
+      t.name = isoSp(t.name);
       // Notiz: Herstellercode + Rest, kurz
       const parts = [];
       if (prof(type).auto) {
@@ -4869,7 +4888,7 @@ Antworte NUR mit JSON: {"map":{"feld":"Spaltenname"},"typ":"häufigster Werkzeug
       const r = idx.get(f);
       if (!r) { add(`b:nr:${t.id}:${f}`, 'bnr', t, `Nummer ${f} nicht im BIOS-Katalog – prüfen`); return; }
       const want = BIOSP.U(fullName(t)), have = catLine1(r);
-      if (want && want !== have) { const short = BIOSP.U([t.name, ...specsIn(t)].filter(Boolean).join(' ')); add(`b:name:${t.id}:${want}`, 'bname', t, `„${have || '—'}“ → „${want}“${want.length > 30 ? ` · ${want.length} Zeichen, BEZ_1 max. 30${short !== want && short.length <= 30 ? ` · kurz: „${short}“` : ''}` : ''}`, want); if (want.length > 30 && short !== want && short.length <= 30) out[out.length - 1].copy2 = short; }
+      if (want && want !== have && isoUnsp(want) !== isoUnsp(have)) { const short = BIOSP.U([t.name, ...specsIn(t)].filter(Boolean).join(' ')); add(`b:name:${t.id}:${want}`, 'bname', t, `„${have || '—'}“ → „${want}“${want.length > 30 ? ` · ${want.length} Zeichen, BEZ_1 max. 30${short !== want && short.length <= 30 ? ` · kurz: „${short}“` : ''}` : ''}`, want); if (want.length > 30 && short !== want && short.length <= 30) out[out.length - 1].copy2 = short; }
       const kb = BIOSP.U(r.k), fam = kbFam(t), ok = KB_OK[fam];
       if (ok && kb && !ok.includes(kb) && (KB_ALL.has(kb) || BIOSP.BRANDS.includes(kb))) add(`b:kb:${t.id}:${kbWant(t)}`, 'bkb', t, `KB „${kb}“ → „${kbWant(t)}“`, kbWant(t));
       const mk = BIOSP.U(t.maker).split(' ')[0];
@@ -5175,7 +5194,20 @@ Antworte NUR mit JSON: {"map":{"feld":"Spaltenname"},"typ":"häufigster Werkzeug
     else { const g = fbGroups(false).find(x => x.k === k); if (g) { const ids = new Set(g.ids); S.moves.forEach(m => { if (ids.has(m.id)) delete m.bios; }); } }
     save(); biosRenderFb();
   });
+  // Bestehende Karten einmalig angleichen (mit Rückgängig), danach still nach jedem Sync
+  function isoMigrate(quiet) {
+    try {
+      const hits = S.lib.filter(t => t.name && isoSp(t.name) !== t.name); if (!hits.length) return 0;
+      const first = lsGet('cititool_iso_sp') !== '1';
+      if (first && !undoSnap('Leerzeichen in ISO-Bezeichnungen')) return 0;
+      hits.forEach(t => { t.name = isoSp(t.name); });
+      lsSet('cititool_iso_sp', '1'); save();
+      if (first && !quiet) setTimeout(() => toast(`${hits.length} Bezeichnungen mit Leerzeichen (z. B. CCGT 09T304) · Rückgängig: Zahnrad › Excel`), 600);
+      return hits.length;
+    } catch (e) { return 0; }
+  }
   biosBtnSync();
+  isoMigrate();
 
 
 
@@ -7326,9 +7358,9 @@ Antworte NUR mit JSON: {"map":["feld oder leer", ...]} – gleiche Reihenfolge u
   $('v_aus').addEventListener('click', e => { const b = e.target.closest('[data-mq]'); if (!b) return; const a = b.dataset.mq; if (a === 'inv') ivOpen(); else mwOpen(a); });
 
   // ---------- Darstellung (Hell / Dunkel / Auto) + Intro ----------
-  const THEME_K = 'cititool_theme', INTRO_K = 'cititool_intro';
+  const THEME_K = 'cititool_aus_theme', INTRO_K = 'cititool_intro';
   function applyTheme(v) {
-    v = v || lsGet(THEME_K) || 'auto';
+    v = v || lsGet(THEME_K) || 'light';
     if (v === 'light' || v === 'dark') document.documentElement.setAttribute('data-theme', v); else document.documentElement.removeAttribute('data-theme');
     const dark = v === 'dark' || (v === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches);
     document.querySelector('meta[name="theme-color"]')?.setAttribute('content', dark ? '#141518' : '#F2F3F5');
@@ -7336,7 +7368,7 @@ Antworte NUR mit JSON: {"map":["feld oder leer", ...]} – gleiche Reihenfolge u
   matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', () => applyTheme());
   applyTheme();
   function renderLook() {
-    const th = lsGet(THEME_K) || 'auto', im = lsGet(INTRO_K) || 'day';
+    const th = lsGet(THEME_K) || 'light', im = lsGet(INTRO_K) || 'day';
     const SUN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M4.6 4.6l1.4 1.4M18 18l1.4 1.4M2.5 12h2M19.5 12h2M4.6 19.4 6 18M18 6l1.4-1.4"/></svg>';
     const MOON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>';
     const AUTO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/></svg>';
@@ -7571,7 +7603,7 @@ Antworte NUR mit JSON: {"map":["feld oder leer", ...]} – gleiche Reihenfolge u
       }
     } catch (e) { SY.err = navigator.onLine ? 'Server nicht erreichbar' : 'Offline – wird später synchronisiert'; }
     SY.busy = false; syStatus(); if (!$('syncSheet').hidden) renderSync();
-    if (!SY.err) catSync();
+    if (!SY.err) { catSync(); if (isoMigrate(true)) render(); }
     if (manual && SY.msg && !SY.conflict) toast(SY.msg);
   }
   function syStatus() {
