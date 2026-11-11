@@ -1162,7 +1162,7 @@ h1,.sechead-title,.nzv-title,.eb-title,.splash-name{letter-spacing:-.028em;}
 @keyframes sheetOut{to{opacity:0;transform:translateY(12px) scale(.985)}}
 
 /* Fenster, die über einem anderen Fenster geöffnet werden */
-#m-oed.active,#m-kdlg.active,#m-spop.active,#m-confirm.active,#m-prompt.active{z-index:100060!important;}
+#m-oed.active,#m-kdlg.active,#m-spop.active,#m-wza.active,#m-confirm.active,#m-prompt.active{z-index:100060!important;}
 #m-confirm.active,#m-prompt.active{z-index:100080!important;}
 body.splash-an .statusdock,body.splash-an .hdr-mini,body.splash-an .fab,
 body.on-home .statusdock,body.on-home .hdr-mini,body.on-home .fab{display:none!important;}
@@ -1607,6 +1607,36 @@ body.modal-an .fab,body.drawer-an .fab{opacity:0;pointer-events:none;transform:s
 .f textarea{resize:none;font-family:var(--mono);font-size:14px;}
 .f2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
 .chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:8px;}
+/* ── Werkzeugausgabe: Auswahl im Bemerkungsfeld ── */
+.wza-wrap{position:relative;}
+.wza-wrap input{padding-right:46px!important;}
+.wza-btn{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:34px;height:34px;
+  display:flex;align-items:center;justify-content:center;background:var(--field);border:1px solid var(--line2);
+  border-radius:9px;color:var(--ink2);cursor:pointer;padding:0;transition:.14s;}
+.wza-btn:active{transform:translateY(-50%) scale(.94);}
+.wza-btn svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;}
+.wza-tabs{display:flex;gap:7px;margin:4px 0 12px;}
+.wza-tab{flex:1;padding:10px 12px;background:#fff;border:1px solid var(--line2);border-radius:var(--r-sm);
+  font-family:var(--mono);font-size:12px;font-weight:600;letter-spacing:1px;text-transform:uppercase;
+  color:var(--ink2);cursor:pointer;box-shadow:var(--sh-1);transition:.14s;}
+.wza-tab.on{background:var(--ink);border-color:var(--ink);color:#fff;}
+.wza-list{max-height:52dvh;overflow-y:auto;-webkit-overflow-scrolling:touch;margin:0 -2px;padding:0 2px;}
+.wza-grp{display:flex;align-items:baseline;gap:8px;font-family:var(--mono);font-size:10px;letter-spacing:2px;
+  text-transform:uppercase;color:var(--ink3);margin:14px 2px 7px;}
+.wza-grp:first-child{margin-top:2px;}
+.wza-grp b{font-weight:400;color:var(--ink3);}
+.wza-row{display:block;width:100%;text-align:left;background:#fff;border:1px solid var(--line2);
+  border-radius:var(--r-md);padding:11px 13px;margin-bottom:7px;cursor:pointer;box-shadow:var(--sh-1);transition:.14s;}
+.wza-row:active{transform:scale(.99);}
+.wza-nm{font-family:var(--mono);font-size:14px;font-weight:600;color:var(--ink);line-height:1.3;
+  word-break:break-word;}
+.wza-sub{font-family:var(--mono);font-size:11px;color:var(--ink3);margin-top:4px;letter-spacing:.5px;}
+.wza-loc{color:var(--ink);font-weight:600;}
+.wza-sub .warn{color:var(--amber);font-weight:600;}
+.wza-leer{text-align:center;padding:26px 14px;color:var(--ink3);font-size:13px;line-height:1.6;}
+body.dark .wza-row,body.dark .wza-tab{background:#1E2128!important;border-color:#343945!important;color:#EDEFF3;}
+body.dark .wza-tab.on{background:#EDEFF3!important;color:#15161A!important;border-color:#EDEFF3!important;}
+body.dark .wza-btn{background:#282A31;border-color:#363841;}
 .chip{background:#fff;border:1px solid var(--line2);padding:8px 13px;border-radius:var(--r-sm);font-family:var(--mono);font-size:13px;font-weight:600;cursor:pointer;box-shadow:var(--sh-1);transition:.14s;}
 .chip:hover{background:var(--ink);color:#fff;border-color:var(--ink);}
 .pill{display:flex;align-items:center;justify-content:space-between;padding:15px;background:#fff;border:1px solid var(--line2);border-radius:var(--r-md);margin-bottom:11px;cursor:pointer;box-shadow:var(--sh-1);transition:border-color .15s,box-shadow .15s;}
@@ -2578,6 +2608,21 @@ body.on-home .sheet .seg-b.on{background:#F2F3F5!important;color:#15161A!importa
   </div>
 </div>
 
+<!-- WERKZEUGAUSGABE — NUR LESEN -->
+<div class="overlay" id="m-wza" onclick="if(event.target===this)close_('m-wza')">
+  <div class="sheet">
+    <div class="sheet-bar"></div>
+    <div class="sheet-title">WERKZEUGAUSGABE</div>
+    <div class="f"><input id="wza-q" placeholder="SUCHEN — NAME, NUMMER, FACH" autocomplete="off" oninput="wzaRender()"></div>
+    <div class="wza-tabs">
+      <button type="button" class="wza-tab on" id="wza-tab-pl" onclick="wzaFilter('pl')">Platten</button>
+      <button type="button" class="wza-tab" id="wza-tab-all" onclick="wzaFilter('all')">Alle</button>
+    </div>
+    <div id="wza-list" class="wza-list"></div>
+    <div class="sheet-btns"><button class="sbtn full" onclick="close_('m-wza')">Schliessen</button></div>
+  </div>
+</div>
+
 <!-- TOOL / OP MODAL -->
 <div class="overlay" id="m-tool" onclick="if(event.target===this)close_('m-tool')">
   <div class="sheet">
@@ -2595,7 +2640,10 @@ body.on-home .sheet .seg-b.on{background:#F2F3F5!important;color:#15161A!importa
     <div class="f"><label>Ø / TOLERANZ</label><textarea id="t-dia" rows="2" placeholder="23.90-24.20&#10;26.40-26.60" style="font-family:var(--mono);font-size:15px;resize:vertical;line-height:1.5"></textarea></div>
     <div class="f">
       <label>BEMERKUNG / KOMMENTAR</label>
-      <input id="t-bem" placeholder="FACH B2" oninput="chips('bem',this.value)" onfocus="chips('bem',this.value)">
+      <div class="wza-wrap">
+        <input id="t-bem" placeholder="FACH B2" oninput="chips('bem',this.value)" onfocus="chips('bem',this.value)">
+        <button type="button" class="wza-btn" onclick="wzaOpen()" title="Aus Werkzeugausgabe"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18"/><path d="M10 7h4"/><path d="M10 14h4"/></svg></button>
+      </div>
       <div id="bem-chips" class="chips"></div>
     </div>
     <div class="pill" id="pill-sonder" onclick="togglePill('sonder')">
@@ -3542,6 +3590,129 @@ function renameSection(n){
 }
 
 // ═══ TOOL MODAL ═══
+
+// ═══ WERKZEUGAUSGABE — NUR LESEN ═══
+// Liest die Bibliothek der getrennten App (gleiche Domain). Es wird dort
+// NIE etwas geschrieben: keine ihrer Tasten wird gesetzt, kein bl_push.
+const WZA_LIB='syncop_bestellliste_lib_v1';
+const WZA_CODE='syncop_bestellliste_synccode';
+const WZA_CACHE='CT_WZA_CACHE';          // eigener Zwischenspeicher von CitiTool
+const WZA_SB={url:'https://hmovohlcesuoplazunzt.supabase.co',
+  key:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhtb3ZvaGxjZXN1b3BsYXp1bnp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA5MjY3NzQsImV4cCI6MjEwNjUwMjc3NH0.5UbYDgmZn6DmojwurSyFSmTn2k0lprIyr751Hq8rXig'};
+const WZA_PLATTEN=['WENDEPLATTE','STECHPLATTE','GEWINDEPLATTE','WENDESCHNEIDPLATTE','PLATTE'];
+let wzaMode='pl', wzaBusy=false, _wzaPick=null;
+
+function wzaLokal(){
+  try{const v=JSON.parse(localStorage.getItem(WZA_LIB)||'[]');return Array.isArray(v)?v:[];}catch(e){return [];}
+}
+function wzaCacheLesen(){
+  try{const v=JSON.parse(localStorage.getItem(WZA_CACHE)||'null');
+      return (v&&Array.isArray(v.lib))?v.lib:[];}catch(e){return [];}
+}
+function wzaListe(){
+  const l=wzaLokal();
+  return l.length?l:wzaCacheLesen();
+}
+async function wzaPull(){
+  const code=(localStorage.getItem(WZA_CODE)||'').trim();
+  if(!code){toast('Kein Sync-Code der Werkzeugausgabe');return 0;}
+  if(wzaBusy)return 0; wzaBusy=true; wzaRender();
+  try{
+    const r=await fetch(WZA_SB.url+'/rest/v1/rpc/bl_pull',{method:'POST',
+      headers:{apikey:WZA_SB.key,Authorization:'Bearer '+WZA_SB.key,'Content-Type':'application/json'},
+      body:JSON.stringify({p_code:code})});
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    const j=await r.json(); const row=Array.isArray(j)?j[0]:j;
+    const lib=(row&&row.data&&Array.isArray(row.data.lib))?row.data.lib:[];
+    if(!lib.length)throw new Error('leer');
+    // nur in den EIGENEN Zwischenspeicher, ohne Bilder
+    const schlank=lib.map(x=>({id:x.id,name:x.name,type:x.type,loc:x.loc,firm:x.firm,
+      maker:x.maker,grade:x.grade,stock:x.stock,min:x.min}));
+    try{localStorage.setItem(WZA_CACHE,JSON.stringify({ts:Date.now(),lib:schlank}));}catch(e){}
+    toast(schlank.length+' Werkzeuge geladen');
+    return schlank.length;
+  }catch(e){ toast('Laden fehlgeschlagen — '+e.message); return 0; }
+  finally{ wzaBusy=false; wzaRender(); }
+}
+function wzaIstPlatte(w){
+  const ty=String(w.type||'').toUpperCase();
+  return WZA_PLATTEN.some(p=>ty.indexOf(p)>=0);
+}
+function wzaFilter(m){
+  wzaMode=m;
+  document.getElementById('wza-tab-pl').classList.toggle('on',m==='pl');
+  document.getElementById('wza-tab-all').classList.toggle('on',m==='all');
+  wzaRender();
+}
+function wzaOpen(){
+  wzaMode='pl'; wzaFilter('pl');
+  const q=document.getElementById('wza-q'); if(q)q.value='';
+  open_('m-wza'); wzaRender();
+  // nichts auf dem Gerät? einmal aus der Cloud holen
+  if(!wzaListe().length&&(localStorage.getItem(WZA_CODE)||'').trim()) wzaPull();
+}
+function wzaRender(){
+  const box=document.getElementById('wza-list'); if(!box)return;
+  const alle=wzaListe();
+  if(wzaBusy){box.innerHTML='<div class="wza-leer">Wird geladen …</div>';return;}
+  if(!alle.length){
+    const hatCode=!!(localStorage.getItem(WZA_CODE)||'').trim();
+    box.innerHTML='<div class="wza-leer">Keine Daten der Werkzeugausgabe auf diesem Gerät.<br>'+
+      'Die Werkzeugausgabe einmal in diesem Browser öffnen.'+
+      (hatCode?'<br><br><button class="sbtn" onclick="wzaPull()">Aus Cloud laden</button>':'')+'</div>';
+    return;
+  }
+  const q=(document.getElementById('wza-q').value||'').toUpperCase().trim();
+  let l=alle.filter(w=>w&&w.name);
+  if(wzaMode==='pl'){ const p=l.filter(wzaIstPlatte); if(p.length)l=p; }
+  if(q){ l=l.filter(w=>[w.name,w.loc,w.firm,w.maker,w.grade,w.type]
+          .map(x=>String(x||'').toUpperCase()).join(' ').indexOf(q)>=0); }
+  if(!l.length){box.innerHTML='<div class="wza-leer">Nichts gefunden</div>';return;}
+  l.sort((a,b)=>String(a.type||'').localeCompare(String(b.type||''))||
+                String(a.name||'').localeCompare(String(b.name||'')));
+  const grp={};
+  l.slice(0,400).forEach(w=>{const k=String(w.type||'OHNE TYP').toUpperCase();(grp[k]=grp[k]||[]).push(w);});
+  let h='';
+  Object.keys(grp).forEach(k=>{
+    h+='<div class="wza-grp">'+esc(k)+' <b>'+grp[k].length+'</b></div>';
+    grp[k].forEach(w=>{
+      const st=Number(w.stock), mn=Number(w.min);
+      const niedrig=isFinite(st)&&isFinite(mn)&&mn>0&&st<=mn;
+      const sub=[];
+      if(w.loc)sub.push('<span class="wza-loc">'+esc(String(w.loc).toUpperCase())+'</span>');
+      if(w.firm)sub.push(esc(String(w.firm).toUpperCase()));
+      if(isFinite(st))sub.push('<span class="'+(niedrig?'warn':'')+'">BESTAND '+st+(niedrig?' · NIEDRIG':'')+'</span>');
+      h+='<button type="button" class="wza-row" data-wza="'+esc(String(w.id||w.name))+'">'+
+         '<div class="wza-nm">'+esc(String(w.name).toUpperCase())+'</div>'+
+         (sub.length?'<div class="wza-sub">'+sub.join(' · ')+'</div>':'')+'</button>';
+    });
+  });
+  box.innerHTML=h;
+  if(!box._wzaGebunden){
+    box._wzaGebunden=1;
+    box.addEventListener('click',function(ev){
+      const r=ev.target.closest&&ev.target.closest('.wza-row');
+      if(r&&r.dataset.wza)wzaWaehle(r.dataset.wza);
+    });
+  }
+}
+function wzaWaehle(id){
+  const w=wzaListe().find(x=>String(x.id||x.name)===String(id));
+  if(!w)return;
+  const el=document.getElementById('t-bem'); if(!el)return;
+  const kopf=[String(w.name||'').toUpperCase().trim(),String(w.loc||'').toUpperCase().trim()]
+             .filter(Boolean).join(' · ');
+  const alt=el.value||'';
+  const i=alt.indexOf(' — ');
+  // nur einen zuvor eingesetzten Kopf ersetzen, eigenen Text nie anfassen
+  const rest=(_wzaPick&&i>=0)?alt.slice(i+3):alt.trim();
+  el.value=kopf+' — '+rest;
+  _wzaPick={nm:String(w.name||''),loc:String(w.loc||''),art:String(w.firm||''),typ:String(w.type||'')};
+  close_('m-wza');
+  const bc=document.getElementById('bem-chips'); if(bc)bc.innerHTML='';
+  setTimeout(()=>{try{el.focus();const n=el.value.length;el.setSelectionRange(n,n);}catch(e){}},140);
+}
+
 let editList='oben';
 function openToolModal(i=null,listName=null){
   tEdit=i;
@@ -3555,12 +3726,14 @@ function openToolModal(i=null,listName=null){
     document.getElementById('t-nm').value=t.nm||'';
     document.getElementById('t-dia').value=t.dia||'';
     document.getElementById('t-bem').value=t.bem||'';
+    _wzaPick=t.wza||null;
     document.getElementById('t-sonder').checked=!!t.isSonder;
     document.getElementById('t-rev').checked=(editList==='unten');
     document.getElementById('tool-title').textContent='Operation '+(i+1);
     document.getElementById('tool-del').style.display='block';
   }else{
     fields.forEach(f=>document.getElementById(f).value='');
+    _wzaPick=null;
     document.getElementById('t-sonder').checked=false;
     document.getElementById('t-rev').checked=(editList==='unten');
     document.getElementById('tool-title').textContent='Neue Operation';
@@ -3584,7 +3757,8 @@ function saveTool(){
   const t={
     slot:document.getElementById('t-slot').value.toUpperCase().trim(),
     id:document.getElementById('t-id').value.toUpperCase().trim()||'T—',
-    nm,dia,bem,isSonder:document.getElementById('t-sonder').checked
+    nm,dia,bem,isSonder:document.getElementById('t-sonder').checked,
+    wza:(_wzaPick&&bem.indexOf(String(_wzaPick.nm||'').toUpperCase())>=0)?_wzaPick:null
   };
   // learn
   if(nm){
@@ -3636,7 +3810,8 @@ function chips(type,val){
   m.forEach(x=>{
     const c=document.createElement('div');c.className='chip';c.textContent=x;
     c.onclick=()=>{document.getElementById('t-'+type).value=x;cont.innerHTML='';
-      if(type==='nm'&&brain.pairs[x])document.getElementById('t-bem').value=brain.pairs[x];};
+      if(type==='nm'&&brain.pairs[x]){const _b=document.getElementById('t-bem');
+        if(!_b.value.trim()||!(_wzaPick&&_b.value.indexOf(' — ')>=0))_b.value=brain.pairs[x];}};
     cont.appendChild(c);
   });
 }
@@ -9203,7 +9378,7 @@ function pdfPickPrint(i){
   setTimeout(makePDF,150);
 }
 // ═══ PIN KEYPAD ═══
-const APP_VER='20260905-0631';
+const APP_VER='20261111-0845';
 console.log('CITITOOL Version',APP_VER);
 let pinVal='';
 // Tasten direkt an pointerdown hängen — click kann auf iOS/Chrome verschluckt werden
