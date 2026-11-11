@@ -1633,6 +1633,22 @@ body.modal-an .fab,body.drawer-an .fab{opacity:0;pointer-events:none;transform:s
 .wza-sub{font-family:var(--mono);font-size:11px;color:var(--ink3);margin-top:4px;letter-spacing:.5px;}
 .wza-loc{color:var(--ink);font-weight:600;}
 .wza-sub .warn{color:var(--amber);font-weight:600;}
+.wza-sel{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 10px;}
+.wza-sel:empty{display:none;}
+.wza-chip{display:inline-flex;align-items:center;gap:7px;background:var(--ink);color:#fff;
+  border-radius:999px;padding:7px 8px 7px 12px;font-family:var(--mono);font-size:11px;
+  font-weight:600;letter-spacing:.5px;max-width:100%;}
+.wza-chip span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.wza-chip b{display:flex;align-items:center;justify-content:center;width:18px;height:18px;flex:none;
+  border-radius:50%;background:rgba(255,255,255,.22);font-size:13px;font-weight:400;line-height:1;cursor:pointer;}
+.wza-row{position:relative;}
+.wza-row.on{border-color:var(--ink);box-shadow:0 0 0 1px var(--ink);}
+.wza-hk{position:absolute;right:11px;top:50%;transform:translateY(-50%);width:20px;height:20px;
+  border-radius:50%;border:1.5px solid var(--line2);display:flex;align-items:center;justify-content:center;}
+.wza-row.on .wza-hk{background:var(--ink);border-color:var(--ink);}
+.wza-hk svg{width:12px;height:12px;fill:none;stroke:#fff;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;opacity:0;}
+.wza-row.on .wza-hk svg{opacity:1;}
+.wza-row .wza-nm,.wza-row .wza-sub{padding-right:26px;}
 .wza-leer{text-align:center;padding:26px 14px;color:var(--ink3);font-size:13px;line-height:1.6;}
 body.dark .wza-row,body.dark .wza-tab{background:#1E2128!important;border-color:#343945!important;color:#EDEFF3;}
 body.dark .wza-tab.on{background:#EDEFF3!important;color:#15161A!important;border-color:#EDEFF3!important;}
@@ -2618,8 +2634,12 @@ body.on-home .sheet .seg-b.on{background:#F2F3F5!important;color:#15161A!importa
       <button type="button" class="wza-tab on" id="wza-tab-pl" onclick="wzaFilter('pl')">Platten</button>
       <button type="button" class="wza-tab" id="wza-tab-all" onclick="wzaFilter('all')">Alle</button>
     </div>
+    <div id="wza-sel" class="wza-sel"></div>
     <div id="wza-list" class="wza-list"></div>
-    <div class="sheet-btns"><button class="sbtn full" onclick="close_('m-wza')">Schliessen</button></div>
+    <div class="sheet-btns">
+      <button class="sbtn" onclick="close_('m-wza')">Abbrechen</button>
+      <button class="sbtn save" id="wza-ok" onclick="wzaUebernehmen()">Übernehmen</button>
+    </div>
   </div>
 </div>
 
@@ -3600,7 +3620,8 @@ const WZA_CACHE='CT_WZA_CACHE';          // eigener Zwischenspeicher von CitiToo
 const WZA_SB={url:'https://hmovohlcesuoplazunzt.supabase.co',
   key:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhtb3ZvaGxjZXN1b3BsYXp1bnp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA5MjY3NzQsImV4cCI6MjEwNjUwMjc3NH0.5UbYDgmZn6DmojwurSyFSmTn2k0lprIyr751Hq8rXig'};
 const WZA_PLATTEN=['WENDEPLATTE','STECHPLATTE','GEWINDEPLATTE','WENDESCHNEIDPLATTE','PLATTE'];
-let wzaMode='pl', wzaBusy=false, _wzaPick=null;
+let wzaMode='pl', wzaBusy=false, _wzaPick=null;   // _wzaPick = Liste der gewählten Werkzeuge
+let wzaTmp=[];                                   // Auswahl im offenen Fenster
 
 function wzaLokal(){
   try{const v=JSON.parse(localStorage.getItem(WZA_LIB)||'[]');return Array.isArray(v)?v:[];}catch(e){return [];}
@@ -3634,6 +3655,15 @@ async function wzaPull(){
   }catch(e){ toast('Laden fehlgeschlagen — '+e.message); return 0; }
   finally{ wzaBusy=false; wzaRender(); }
 }
+function wzaAlsListe(v){
+  if(!v)return [];
+  return (Array.isArray(v)?v:[v]).filter(x=>x&&x.nm);
+}
+function wzaKopf(list){
+  return wzaAlsListe(list).map(w=>[String(w.nm||'').toUpperCase().trim(),
+    String(w.loc||'').toUpperCase().trim()].filter(Boolean).join(' · ')).join(' + ');
+}
+function wzaSchluessel(w){ return String(w.id||w.name||''); }
 function wzaIstPlatte(w){
   const ty=String(w.type||'').toUpperCase();
   return WZA_PLATTEN.some(p=>ty.indexOf(p)>=0);
@@ -3645,7 +3675,14 @@ function wzaFilter(m){
   wzaRender();
 }
 function wzaOpen(){
-  wzaMode='pl'; wzaFilter('pl');
+  wzaMode='pl';
+  // frühere Wahl wiederfinden: über den Namen, die Nummer der Ausgabe wird nicht gespeichert
+  wzaTmp=wzaAlsListe(_wzaPick).map(w=>{
+    const nm=String(w.nm||'').toUpperCase().trim();
+    const hit=wzaListe().find(x=>String(x.name||'').toUpperCase().trim()===nm);
+    return {...w,key:hit?wzaSchluessel(hit):('nm:'+nm)};
+  });
+  wzaFilter('pl');
   const q=document.getElementById('wza-q'); if(q)q.value='';
   open_('m-wza'); wzaRender();
   // nichts auf dem Gerät? einmal aus der Cloud holen
@@ -3682,32 +3719,56 @@ function wzaRender(){
       if(w.loc)sub.push('<span class="wza-loc">'+esc(String(w.loc).toUpperCase())+'</span>');
       if(w.firm)sub.push(esc(String(w.firm).toUpperCase()));
       if(isFinite(st))sub.push('<span class="'+(niedrig?'warn':'')+'">BESTAND '+st+(niedrig?' · NIEDRIG':'')+'</span>');
-      h+='<button type="button" class="wza-row" data-wza="'+esc(String(w.id||w.name))+'">'+
+      const k=wzaSchluessel(w), an=wzaTmp.some(x=>x.key===k);
+      h+='<button type="button" class="wza-row'+(an?' on':'')+'" data-wza="'+esc(k)+'">'+
          '<div class="wza-nm">'+esc(String(w.name).toUpperCase())+'</div>'+
-         (sub.length?'<div class="wza-sub">'+sub.join(' · ')+'</div>':'')+'</button>';
+         (sub.length?'<div class="wza-sub">'+sub.join(' · ')+'</div>':'')+
+         '<span class="wza-hk"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span></button>';
     });
   });
   box.innerHTML=h;
+  wzaSelRender();
   if(!box._wzaGebunden){
     box._wzaGebunden=1;
     box.addEventListener('click',function(ev){
       const r=ev.target.closest&&ev.target.closest('.wza-row');
       if(r&&r.dataset.wza)wzaWaehle(r.dataset.wza);
     });
+    const bar=document.getElementById('wza-sel');
+    if(bar)bar.addEventListener('click',function(ev){
+      const x=ev.target.closest&&ev.target.closest('[data-wzax]');
+      if(!x)return;
+      wzaTmp.splice(Number(x.dataset.wzax),1); wzaRender();
+    });
   }
 }
+function wzaSelRender(){
+  const bar=document.getElementById('wza-sel');
+  if(bar) bar.innerHTML=wzaTmp.map((w,i)=>
+    '<span class="wza-chip"><span>'+esc(String(w.nm).toUpperCase())+
+    (w.loc?' · '+esc(String(w.loc).toUpperCase()):'')+'</span><b data-wzax="'+i+'">×</b></span>').join('');
+  const ok=document.getElementById('wza-ok');
+  if(ok){ ok.textContent=wzaTmp.length?('Übernehmen · '+wzaTmp.length):'Übernehmen';
+          ok.disabled=!wzaTmp.length; ok.style.opacity=wzaTmp.length?'':'.45'; }
+}
 function wzaWaehle(id){
-  const w=wzaListe().find(x=>String(x.id||x.name)===String(id));
+  const w=wzaListe().find(x=>wzaSchluessel(x)===String(id));
   if(!w)return;
+  const k=wzaSchluessel(w), i=wzaTmp.findIndex(x=>x.key===k);
+  if(i>=0) wzaTmp.splice(i,1);
+  else wzaTmp.push({key:k,nm:String(w.name||''),loc:String(w.loc||''),
+                    art:String(w.firm||''),typ:String(w.type||'')});
+  wzaRender();
+}
+function wzaUebernehmen(){
+  if(!wzaTmp.length)return;
   const el=document.getElementById('t-bem'); if(!el)return;
-  const kopf=[String(w.name||'').toUpperCase().trim(),String(w.loc||'').toUpperCase().trim()]
-             .filter(Boolean).join(' · ');
   const alt=el.value||'';
   const i=alt.indexOf(' — ');
   // nur einen zuvor eingesetzten Kopf ersetzen, eigenen Text nie anfassen
-  const rest=(_wzaPick&&i>=0)?alt.slice(i+3):alt.trim();
-  el.value=kopf+' — '+rest;
-  _wzaPick={nm:String(w.name||''),loc:String(w.loc||''),art:String(w.firm||''),typ:String(w.type||'')};
+  const rest=(wzaAlsListe(_wzaPick).length&&i>=0)?alt.slice(i+3):alt.trim();
+  _wzaPick=wzaTmp.map(({key,...w})=>w);
+  el.value=wzaKopf(_wzaPick)+' — '+rest;
   close_('m-wza');
   const bc=document.getElementById('bem-chips'); if(bc)bc.innerHTML='';
   setTimeout(()=>{try{el.focus();const n=el.value.length;el.setSelectionRange(n,n);}catch(e){}},140);
@@ -3758,7 +3819,8 @@ function saveTool(){
     slot:document.getElementById('t-slot').value.toUpperCase().trim(),
     id:document.getElementById('t-id').value.toUpperCase().trim()||'T—',
     nm,dia,bem,isSonder:document.getElementById('t-sonder').checked,
-    wza:(_wzaPick&&bem.indexOf(String(_wzaPick.nm||'').toUpperCase())>=0)?_wzaPick:null
+    wza:(function(){const l=wzaAlsListe(_wzaPick)
+        .filter(w=>bem.indexOf(String(w.nm||'').toUpperCase())>=0);return l.length?l:null;})()
   };
   // learn
   if(nm){
@@ -9378,7 +9440,7 @@ function pdfPickPrint(i){
   setTimeout(makePDF,150);
 }
 // ═══ PIN KEYPAD ═══
-const APP_VER='20261111-0845';
+const APP_VER='20260905-0631';
 console.log('CITITOOL Version',APP_VER);
 let pinVal='';
 // Tasten direkt an pointerdown hängen — click kann auf iOS/Chrome verschluckt werden
