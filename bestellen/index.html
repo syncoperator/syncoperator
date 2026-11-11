@@ -1634,6 +1634,33 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%;touch-action:manipulati
 .stn-ic{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;background:var(--acc-soft,var(--bg));color:var(--acc)}.stn-ic svg{width:18px;height:18px}
 .stn-t{display:grid;gap:2px;flex:1;min-width:0}.stn-t b{font-size:15px}.stn-t small{font-size:12px;color:var(--muted)}
 .stn-go{font-size:22px;color:var(--muted)}
+
+/* Inventur: Ziffernblock, Liste, Fortsetzen */
+.iv-row .iv-num{all:unset;box-sizing:border-box;display:block;width:100%;height:auto;border:0;background:none;cursor:pointer;color:var(--fg);font-family:var(--f-mono);font-size:84px;font-weight:600;letter-spacing:-.05em;line-height:1;text-align:center;border-radius:16px}
+.iv-row .iv-num:focus-visible{outline:2px solid var(--acc);outline-offset:2px}.iv-row .iv-num.ent{color:var(--acc)}
+.iv-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:8px 0 2px}
+.iv-pad button{height:54px;border-radius:14px;border:1px solid var(--line);background:var(--card);color:var(--fg);font:600 24px var(--f-mono);cursor:pointer;touch-action:manipulation}
+.iv-pad button:active{transform:scale(.96);background:var(--bg)}.iv-pad button.ok{background:var(--ink);color:var(--on-ink);border-color:var(--ink);font-family:var(--f-head);font-size:20px}
+#ivFoot .iv-pad{grid-column:1/-1;width:100%}
+#ivFoot .mw-in{flex-wrap:wrap}
+.iv-padwrap{display:block!important}
+.iv-sel{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:0 2px 4px}.iv-sel b{font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.iv-sel small{font:600 11px var(--f-mono);color:var(--muted);flex:none}
+.iv-tb{all:unset;cursor:pointer;display:inline-grid;place-items:center;min-width:36px;height:36px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--fg);margin-right:6px}
+.iv-tb.txt{padding:0 10px;font:600 12px var(--f-body)}.iv-tb:focus-visible{outline:2px solid var(--acc)}
+.iv-resume{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 14px;margin-bottom:12px;border-radius:16px;background:var(--warn-bg);border:1px solid var(--line)}
+.iv-resume div{flex:1;min-width:160px;display:grid;gap:2px}.iv-resume small{font-size:12px;color:var(--muted)}
+.iv-view{margin-bottom:12px}
+.ivl{display:grid;gap:4px;padding-bottom:12px}
+.ivl-h{margin:10px 2px 2px;font:600 11px var(--f-mono);letter-spacing:.06em;color:var(--muted)}
+.ivl-r{display:grid;grid-template-columns:1fr 44px 56px 44px 44px;align-items:center;gap:6px;padding:8px 8px 8px 12px;border-radius:12px;background:var(--card);border:1.5px solid var(--line);cursor:pointer}
+.ivl-r.sel{border-color:var(--acc);box-shadow:0 0 0 2px color-mix(in srgb,var(--acc) 25%,transparent)}
+.ivl-r.ok{background:var(--bg)}
+.ivl-n{display:grid;min-width:0}.ivl-n b{font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ivl-n small{font:11px var(--f-mono);color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ivl-s{text-align:right;color:var(--muted);font-size:14px}
+.ivl-ist{text-align:center;font-size:18px;font-weight:600;padding:6px 0;border-radius:8px;background:var(--bg)}.ivl-r.sel .ivl-ist{background:var(--acc-soft,var(--bg));color:var(--acc)}.ivl-ist.ent{color:var(--acc)}
+.ivl-d{text-align:center;font-size:12px;font-weight:700}.ivl-d.z{color:var(--ok)}.ivl-d.p{color:var(--warn)}.ivl-d.m{color:var(--crit)}
+.ivl-ok{width:40px;height:40px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--ok);font-size:18px;font-weight:700;cursor:pointer}
+@media (max-width:420px){.ivl-r{grid-template-columns:1fr 34px 48px 36px 40px;gap:4px;padding-left:10px}}
 </style>
 </head>
 <body>
@@ -7383,12 +7410,54 @@ Antworte NUR mit JSON: {"map":["feld oder leer", ...]} – gleiche Reihenfolge u
   const ivTool = () => S.lib.find(x => x.id === IV.list[IV.i]);
   const ivSoll = t => hasStock(t) ? t.stock : null;
   const ivCnt = t => IV.cnt[t.id] ?? (hasStock(t) ? Math.max(0, t.stock) : 0);
+  // Ansicht (einzeln / Liste), Eingabe über Ziffernblock, Pause zum Fortsetzen
+  const IV_RUN = 'cititool_iv_run', IV_VIEW = 'cititool_iv_view';
+  IV.view = lsGet(IV_VIEW) === 'list' ? 'list' : 'one'; IV.ent = ''; IV.pad = false;
+  const ivRunSave = () => { if (IV.phase !== 'count') return; try { lsSet(IV_RUN, JSON.stringify({ list: IV.list, i: IV.i, cnt: IV.cnt, done: IV.done, bid: IV.bid, label: IV.label, ts: Date.now() })); } catch {} };
+  const ivRunGet = () => { try { const r = JSON.parse(lsGet(IV_RUN) || 'null'); return r && r.list && r.list.length ? r : null; } catch { return null; } };
+  const ivRunClear = () => { try { localStorage.removeItem(IV_RUN); } catch {} };
+  function ivResume() {
+    const r = ivRunGet(); if (!r) return;
+    IV.list = r.list.filter(id => S.lib.some(t => t.id === id)); IV.cnt = r.cnt || {}; IV.done = r.done || {}; IV.bid = r.bid || newId(); IV.label = r.label || '';
+    IV.i = Math.min(r.i || 0, Math.max(0, IV.list.length - 1)); if (IV.view === 'list') IV.i = ivNextOpen(0);
+    IV.phase = IV.list.length ? 'count' : 'scope'; IV.ent = ''; ivRender();
+  }
+  const ivNextOpen = from => { for (let k = 0; k < IV.list.length; k++) { const j = (from + k) % IV.list.length; if (!IV.done[IV.list[j]]) return j; } return -1; };
+  function ivCommit(t, n) {
+    const s = ivSoll(t); IV.cnt[t.id] = n;
+    if (s === null || n !== s) book(t, 'inv', n, { batch: IV.bid, who: AU.who, note: 'INVENTUR' });
+    t.invAt = Date.now(); IV.done[t.id] = { from: s, to: n }; save(); ivRunSave();
+  }
+  function ivJump(raw) {   // Etikett scannen → zu diesem Werkzeug springen
+    const t = findByCode(raw); if (!t) { beep(true); toast('Code unbekannt'); return; }
+    let j = IV.list.indexOf(t.id);
+    if (j < 0) { IV.list.splice(IV.i + (IV.view === 'one' ? 0 : 1), 0, t.id); j = IV.list.indexOf(t.id); toast('Nicht in dieser Auswahl – hinzugefügt'); }
+    IV.i = j; IV.ent = ''; beep(); ivRender(0); ivRunSave();
+    if (IV.view === 'list') setTimeout(() => $('ivBody').querySelector('.ivl-r.sel')?.scrollIntoView({ block: 'center', behavior: 'smooth' }), 30);
+  }
+  function ivKey(k) {   // Ziffernblock
+    const t = ivTool(); if (!t) return;
+    if (k === 'bs') IV.ent = IV.ent.slice(0, -1);
+    else if (k === 'ok') {
+      const n = IV.ent !== '' ? +IV.ent : ivCnt(t); IV.ent = '';
+      if (IV.view === 'list') { ivCommit(t, n); const j = ivNextOpen(IV.i + 1); if (j < 0) { IV.phase = 'sum'; ivRunClear(); ivRender(); return; } IV.i = j; ivRender(0); setTimeout(() => $('ivBody').querySelector('.ivl-r.sel')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }), 20); return; }
+      ivSet(n, true); ivNext(false); return;
+    } else if (IV.ent.length < 5) IV.ent = (IV.ent === '0' ? '' : IV.ent) + k;
+    if (IV.view === 'list') { const c = $('ivBody').querySelector('.ivl-r.sel .ivl-ist'); if (c) { c.textContent = IV.ent || ivCnt(t); c.classList.toggle('ent', !!IV.ent); } return; }
+    const el = $('ivNum'); if (el) { el.textContent = IV.ent || ivCnt(t); el.classList.toggle('ent', !!IV.ent); }
+    if (!IV.ent) { ivMeta(); return; }
+    const v = +IV.ent, so = ivSoll(t), d = so === null ? null : v - so;
+    $('ivDiff').innerHTML = so === null ? `<span class="n">NEU ERFASST</span>` : d === 0 ? `<span>✓ PASST</span>` : `<span class="${d > 0 ? 'p' : 'm'}">${d > 0 ? '+' : ''}${d} ZUM BESTAND</span>`;
+    const g = $('ivGo'); if (g) g.innerHTML = `OK · ${IV.ent}<small>weiter</small>`;
+  }
+  const ivPadHTML = () => `<div class="iv-pad" role="group" aria-label="Ziffernblock">${['1', '2', '3', '4', '5', '6', '7', '8', '9'].map(d => `<button type="button" data-ivk="${d}">${d}</button>`).join('')}<button type="button" data-ivk="bs" aria-label="Löschen">⌫</button><button type="button" data-ivk="0">0</button><button type="button" class="ok" data-ivk="ok">OK</button></div>`;
+  const IC_SCAN_S = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M3 8V5.5A1.5 1.5 0 0 1 4.5 4H7M17 4h2.5A1.5 1.5 0 0 1 21 5.5V8M21 16v2.5a1.5 1.5 0 0 1-1.5 1.5H17M7 20H4.5A1.5 1.5 0 0 1 3 18.5V16M7 8v8M10.5 8v8M14 8v8M17 8v8"/></svg>';
   function ivOpen() { if (!can('adm')) { accDeny(); return; } IV.phase = 'scope'; $('iv').hidden = false; document.body.style.overflow = 'hidden'; ivRender(); }
-  function ivClose() { $('iv').hidden = true; document.body.style.overflow = ''; render(); }
+  function ivClose() { if (IV.phase === 'count') ivRunSave(); $('iv').hidden = true; document.body.style.overflow = ''; render(); }
   function ivStart(filter, label) {
     IV.list = S.lib.filter(filter).sort((a, b) => locKey(a).localeCompare(locKey(b)) || fullName(a).localeCompare(fullName(b))).map(t => t.id);
     if (!IV.list.length) { toast('Keine Werkzeuge in dieser Auswahl'); return; }
-    IV.i = 0; IV.cnt = {}; IV.done = {}; IV.bid = newId(); IV.phase = 'count'; IV.label = label; ivRender();
+    IV.i = 0; IV.cnt = {}; IV.done = {}; IV.bid = newId(); IV.phase = 'count'; IV.label = label; IV.ent = ''; ivRunSave(); ivRender();
   }
   function ivSet(v, bump) {
     const t = ivTool(); if (!t) return; const n = Math.max(0, v); if (n === ivCnt(t) && IV.cnt[t.id] !== undefined) return;
@@ -7399,16 +7468,12 @@ Antworte NUR mit JSON: {"map":["feld oder leer", ...]} – gleiche Reihenfolge u
   function ivMeta() {
     const t = ivTool(); if (!t) return; const n = ivCnt(t), s = ivSoll(t), d = s === null ? null : n - s;
     $('ivDiff').innerHTML = s === null ? `<span class="n">NEU ERFASST</span>` : d === 0 ? `<span>✓ PASST</span>` : `<span class="${d > 0 ? 'p' : 'm'}">${d > 0 ? '+' : ''}${d} ZUM BESTAND</span>`;
-    const g = $('ivGo'); if (g) g.innerHTML = s !== null && d === 0 ? '✓ Passt · Weiter' : `Weiter<small>Bestand = ${n}</small>`;
+    const g = $('ivGo'); if (g) g.innerHTML = s !== null && d === 0 ? `✓ Stimmt<small>Bestand ${n} · weiter</small>` : `Weiter<small>Bestand = ${n}</small>`;
   }
   function ivNext(skip) {
     const t = ivTool(); if (!t) return;
-    if (!skip) {
-      const n = ivCnt(t), s = ivSoll(t);
-      if (s === null || n !== s) { book(t, 'inv', n, { batch: IV.bid, who: AU.who, note: 'INVENTUR' }); }
-      t.invAt = Date.now(); IV.done[t.id] = { from: s, to: n }; save();
-    }
-    IV.i++; if (IV.i >= IV.list.length) IV.phase = 'sum';
+    if (!skip) ivCommit(t, ivCnt(t));
+    IV.ent = ''; IV.i++; if (IV.i >= IV.list.length) { IV.phase = 'sum'; ivRunClear(); } else ivRunSave();
     ivRender(skip ? 0 : 1);
   }
   function ivRender(dir) {
@@ -7417,8 +7482,11 @@ Antworte NUR mit JSON: {"map":["feld oder leer", ...]} – gleiche Reihenfolge u
       const locs = [...new Set(S.lib.map(t => U(t.loc || '')).filter(Boolean))].sort();
       const open = S.lib.filter(t => !hasStock(t)).length, old = S.lib.filter(t => !t.invAt || Date.now() - t.invAt > 90 * DAYMS).length;
       $('ivTop').innerHTML = `<div class="mw-in"><div class="mw-h"><span class="mw-mode inv">INVENTUR =</span><span class="sp"></span><button type="button" class="mw-x" data-iv="close" aria-label="Schließen">${IC_X}</button></div><h2 class="mw-title">Was zählst du?</h2></div>`;
+      const run = ivRunGet(), runDone = run ? Object.keys(run.done || {}).length : 0;
       $('ivBody').innerHTML = `<div class="mw-in">
-        <div class="iv-help">${IC_SWIPE}<span>Ein Werkzeug pro Bildschirm. <b>Nach rechts wischen = +1</b>, nach links = −1. Ziehen und halten zählt schneller. „Weiter“ speichert.</span></div>
+        ${run ? `<div class="iv-resume"><div><b>Inventur pausiert</b><small>${esc(run.label || '')} · ${runDone} von ${run.list.length} gezählt · ${fmtD(run.ts)}</small></div><button type="button" class="btn primary sm" data-iv="resume">Fortsetzen</button><button type="button" class="link" data-iv="drop">Verwerfen</button></div>` : ''}
+        <div class="seg3 iv-view" style="grid-template-columns:1fr 1fr"><button type="button" data-iv="view" data-v="one" aria-pressed="${IV.view === 'one'}">Einzeln</button><button type="button" data-iv="view" data-v="list" aria-pressed="${IV.view === 'list'}">Liste</button></div>
+        <div class="iv-help">${IC_SWIPE}<span>${IV.view === 'list' ? 'Alle Werkzeuge eines Ortes als Liste. Zeile antippen, Zahl tippen, <b>OK</b> – weiter zur nächsten. <b>✓</b> = stimmt.' : 'Ein Werkzeug pro Bildschirm. <b>Zahl antippen</b> = Ziffernblock, <b>Wischen</b> = ±1. „✓ Stimmt“ = wie gebucht.'} Etikett scannen springt zum Werkzeug.</span></div>
         <div class="iv-scope">
           <button type="button" class="iv-sc main" data-iv="all"><span class="mi">${IC_SWIPE}</span><span><b>Alles zählen</b><small>NACH LAGERORT SORTIERT</small></span><span class="n">${S.lib.length}</span></button>
           ${old && old !== S.lib.length ? `<button type="button" class="iv-sc" data-iv="old"><span class="mi">⏱</span><span><b>Lange nicht gezählt</b><small>ÄLTER ALS 90 TAGE</small></span><span class="n">${old}</span></button>` : ''}
@@ -7442,32 +7510,55 @@ Antworte NUR mit JSON: {"map":["feld oder leer", ...]} – gleiche Reihenfolge u
       $('ivFoot').innerHTML = `<div class="mw-in">${diff.length ? `<button type="button" class="btn" data-iv="undoall">Alles zurück</button>` : ''}<button type="button" class="btn primary mw-go" data-iv="close">Fertig</button></div>`;
       return;
     }
+    if (IV.view === 'list') {
+      const t0 = ivTool(); if (!t0) { IV.phase = 'sum'; ivRunClear(); ivRender(); return; }
+      $('ivTop').innerHTML = `<div class="mw-in"><div class="mw-h"><span class="mw-mode inv">INVENTUR =</span><span class="sp"></span><button type="button" class="iv-tb" data-iv="scan" aria-label="Etikett scannen">${IC_SCAN_S}</button><button type="button" class="iv-tb txt" data-iv="finish">Beenden</button><span class="mono" style="font-size:12px;font-weight:600">${Object.keys(IV.done).length} / ${tot}</span><button type="button" class="mw-x" data-iv="close" aria-label="Pause">${IC_X}</button></div>
+        <div class="mw-prog" style="margin-top:10px"><i class="on" style="flex:${Object.keys(IV.done).length || 0.001}"></i><i style="flex:${Math.max(0.001, tot - Object.keys(IV.done).length)}"></i></div></div>`;
+      let lastLoc = null;
+      $('ivBody').innerHTML = `<div class="mw-in ivl">${IV.list.map((id, j) => { const t = S.lib.find(x => x.id === id); if (!t) return ''; const lk = t.loc ? U(t.loc) : 'OHNE LAGERORT', hd = lk !== lastLoc ? `<div class="ivl-h">⌂ ${esc(lk)}</div>` : ''; lastLoc = lk;
+          const sl = ivSoll(t), d = IV.done[id], sel = j === IV.i, ist = sel && IV.ent ? IV.ent : d ? d.to : '–', df = d && d.from !== null ? d.to - d.from : null;
+          return `${hd}<div class="ivl-r ${sel ? 'sel' : ''} ${d ? 'ok' : ''}" data-iv="row" data-j="${j}"><span class="ivl-n"><b>${esc(shortName(t) || fullName(t))}</b><small>${esc(t.type || '')}${t.firm ? ' · ' + esc(t.firm) : ''}</small></span>
+            <span class="ivl-s mono">${sl === null ? '–' : sl}</span><span class="ivl-ist mono ${sel && IV.ent ? 'ent' : ''}">${ist}</span>
+            <span class="ivl-d mono ${df === null ? '' : df > 0 ? 'p' : df < 0 ? 'm' : 'z'}">${d ? (df === null ? 'NEU' : df === 0 ? '✓' : (df > 0 ? '+' : '') + df) : ''}</span>
+            ${sl !== null && !d ? `<button type="button" class="ivl-ok" data-iv="rowok" data-j="${j}" aria-label="Stimmt">✓</button>` : '<span class="ivl-ok0"></span>'}</div>`; }).join('')}</div>`;
+      $('ivFoot').innerHTML = `<div class="mw-in iv-padwrap"><div class="iv-sel"><b>${esc(shortName(t0) || fullName(t0))}</b><small>SOLL ${ivSoll(t0) === null ? '–' : ivSoll(t0)}</small></div>${ivPadHTML()}</div>`;
+      return;
+    }
     const t = ivTool(); if (!t) { IV.phase = 'sum'; ivRender(); return; }
     const s = ivSoll(t), n = ivCnt(t), prevLoc = IV.i > 0 ? locKey(S.lib.find(x => x.id === IV.list[IV.i - 1]) || {}) : null, newLoc = prevLoc !== null && prevLoc !== locKey(t);
-    $('ivTop').innerHTML = `<div class="mw-in"><div class="mw-h"><span class="mw-mode inv">INVENTUR =</span><span class="sp"></span><span class="mono" style="font-size:12px;font-weight:600">${IV.i + 1} / ${tot}</span><button type="button" class="mw-x" data-iv="close" aria-label="Schließen">${IC_X}</button></div>
+    $('ivTop').innerHTML = `<div class="mw-in"><div class="mw-h"><span class="mw-mode inv">INVENTUR =</span><span class="sp"></span><button type="button" class="iv-tb" data-iv="scan" aria-label="Etikett scannen">${IC_SCAN_S}</button><button type="button" class="iv-tb txt" data-iv="finish">Beenden</button><span class="mono" style="font-size:12px;font-weight:600">${IV.view === 'list' ? Object.keys(IV.done).length : IV.i + 1} / ${tot}</span><button type="button" class="mw-x" data-iv="close" aria-label="Schließen">${IC_X}</button></div>
       <div class="mw-prog" style="margin-top:10px"><i class="on" style="flex:${IV.i + 1}"></i><i style="flex:${Math.max(0.001, tot - IV.i - 1)}"></i></div>
       <div class="iv-loc"><span>${t.loc ? `⌂ <b>${esc(U(t.loc))}</b>` : 'OHNE LAGERORT'}${newLoc ? ' · <b style="color:var(--warn)">NEUER ORT</b>' : ''}</span><span>${Object.keys(IV.done).length} GEZÄHLT</span></div></div>`;
     $('ivBody').innerHTML = `<div class="mw-in">
       <div class="iv-card" style="animation:mwIn .22s ease">${thumb(t.img, '', t)}<div class="ty">${esc(t.type || 'WERKZEUG')}</div><h3>${esc(shortName(t) || fullName(t))}</h3>
         <div class="meta">${t.firm || t.makerArt ? `<span class="chipl">${esc(t.firm || t.makerArt)}</span>` : ''}<span class="chipl">SOLL ${s === null ? '–' : s}</span>${minOf(t) ? `<span class="chipl">MIN ${minOf(t)}</span>` : ''}</div></div>
-      <div class="iv-zone" id="ivZone"><div class="iv-row"><button type="button" data-iv="dec" aria-label="Minus eins">−</button><div class="iv-num" id="ivNum">${n}</div><button type="button" data-iv="inc" aria-label="Plus eins">+</button></div>
-        <div class="iv-diff" id="ivDiff"></div><div class="iv-hint"><span>← −1</span><span><span class="t-touch">WISCHEN</span><span class="t-pc">← → TASTEN · ENTER = WEITER</span></span><span>+1 →</span></div><i class="iv-trk"></i></div>
+      <div class="iv-zone" id="ivZone"><div class="iv-row"><button type="button" data-iv="dec" aria-label="Minus eins">−</button><button type="button" class="iv-num" id="ivNum" data-iv="pad" aria-label="Zahl eingeben">${IV.ent || n}</button><button type="button" data-iv="inc" aria-label="Plus eins">+</button></div>
+        <div class="iv-diff" id="ivDiff"></div><div class="iv-hint"><span>← −1</span><span><span class="t-touch">ZAHL ANTIPPEN · WISCHEN</span><span class="t-pc">ZIFFERN TIPPEN · ← → · ENTER</span></span><span>+1 →</span></div><i class="iv-trk"></i></div>
     </div>`;
-    $('ivFoot').innerHTML = `<div class="mw-in"><button type="button" class="btn" data-iv="prev" ${IV.i ? '' : 'disabled'} aria-label="Zurück">←</button><button type="button" class="btn" data-iv="skip">Später</button><button type="button" class="btn primary mw-go" id="ivGo" data-iv="next"></button></div>`;
+    $('ivFoot').innerHTML = `<div class="mw-in"><button type="button" class="btn" data-iv="prev" ${IV.i ? '' : 'disabled'} aria-label="Zurück">←</button><button type="button" class="btn" data-iv="skip">Später</button><button type="button" class="btn primary mw-go" id="ivGo" data-iv="next"></button></div>${IV.pad ? ivPadHTML() : ''}`;
     ivMeta(); ivSwipe();
   }
   function ivSwipe() {
     const z = $('ivZone'), num = $('ivNum'); if (!z) return;
     let x0 = null, base = 0, pid = null, moved = false;
-    z.addEventListener('pointerdown', e => { if (e.target.closest('button')) return; x0 = e.clientX; pid = e.pointerId; moved = false; base = ivCnt(ivTool()); z.classList.add('drag'); try { z.setPointerCapture(pid); } catch {} });
-    z.addEventListener('pointermove', e => { if (x0 === null || e.pointerId !== pid) return; const dx = e.clientX - x0; if (Math.abs(dx) > 8) moved = true;
+    z.addEventListener('pointerdown', e => { if (e.target.closest('[data-iv="dec"],[data-iv="inc"]')) return; x0 = e.clientX; pid = e.pointerId; moved = false; base = ivCnt(ivTool()); z.classList.add('drag'); });
+    z.addEventListener('pointermove', e => { if (x0 === null || e.pointerId !== pid) return; const dx = e.clientX - x0; if (!moved && Math.abs(dx) > 8) { moved = true; try { z.setPointerCapture(pid); } catch {} } if (!moved) return;
       num.style.transform = `translateX(${Math.max(-60, Math.min(60, dx * .35))}px)`; const step = Math.trunc(dx / 34); ivSet(base + step, false); });
-    const end = e => { if (x0 === null) return; x0 = null; z.classList.remove('drag'); num.style.transform = ''; if (moved) { num.classList.remove('bump'); void num.offsetWidth; num.classList.add('bump'); } };
+    const end = e => { if (x0 === null) return; x0 = null; IV.swiped = moved; setTimeout(() => { IV.swiped = false; }, 60); if (moved) IV.ent = ''; z.classList.remove('drag'); num.style.transform = ''; if (moved) { num.classList.remove('bump'); void num.offsetWidth; num.classList.add('bump'); } };
     z.addEventListener('pointerup', end); z.addEventListener('pointercancel', end); z.addEventListener('lostpointercapture', end);
   }
   $('iv').addEventListener('click', e => {
+    const kb = e.target.closest('[data-ivk]'); if (kb) { ivKey(kb.dataset.ivk); return; }
     const b = e.target.closest('[data-iv]'); if (!b || b.disabled) return; const a = b.dataset.iv;
-    if (a === 'close') { if (IV.phase === 'count' && Object.keys(IV.done).length && !confirm('Inventur beenden? Gezählte Werkzeuge bleiben gespeichert.')) return; if (IV.phase === 'count' && Object.keys(IV.done).length) { IV.phase = 'sum'; ivRender(); return; } ivClose(); return; }
+    if (a === 'close') { if (IV.phase === 'count') { ivRunSave(); toast('Inventur pausiert · unter Inventur fortsetzen'); } ivClose(); return; }
+    if (a === 'view') { IV.view = b.dataset.v; lsSet(IV_VIEW, IV.view); ivRender(); return; }
+    if (a === 'resume') return ivResume();
+    if (a === 'drop') { if (!confirm('Pausierte Inventur verwerfen? Schon Gezähltes bleibt gebucht.')) return; ivRunClear(); ivRender(); return; }
+    if (a === 'finish') { IV.phase = 'sum'; ivRunClear(); ivRender(); return; }
+    if (a === 'scan') { camStart(raw => { document.body.style.overflow = 'hidden'; ivJump(raw); }, 'INVENTUR · SPRINGEN'); return; }
+    if (a === 'pad') { if (IV.swiped) return; IV.pad = !IV.pad; ivRender(0); return; }
+    if (a === 'row') { IV.i = +b.dataset.j; IV.ent = ''; ivRender(0); return; }
+    if (a === 'rowok') { const t = S.lib.find(x => x.id === IV.list[+b.dataset.j]); if (t) { IV.i = +b.dataset.j; IV.ent = ''; ivCommit(t, ivSoll(t)); const j = ivNextOpen(IV.i + 1); if (j < 0) { IV.phase = 'sum'; ivRunClear(); } else IV.i = j; ivRender(0); } return; }
     if (a === 'all') return ivStart(() => true, 'Alle Werkzeuge');
     if (a === 'old') return ivStart(t => !t.invAt || Date.now() - t.invAt > 90 * DAYMS, 'Lange nicht gezählt');
     if (a === 'open') return ivStart(t => !hasStock(t), 'Bestand offen');
@@ -7484,11 +7575,26 @@ Antworte NUR mit JSON: {"map":["feld oder leer", ...]} – gleiche Reihenfolge u
       Object.entries(IV.done).forEach(([id, v]) => { if (v.from === null) { const x = S.lib.find(y => y.id === id); if (x) delete x.stock; } });
       IV.done = {}; save(); toast('Inventur zurückgenommen'); ivClose(); return; }
   });
+  const IVK = { buf: '', t0: 0, last: 0 };
   document.addEventListener('keydown', e => {
-    if ($('iv').hidden || IV.phase !== 'count') return;
-    if (e.key === 'ArrowRight') { e.preventDefault(); const t = ivTool(); t && ivSet(ivCnt(t) + 1, true); }
-    if (e.key === 'ArrowLeft') { e.preventDefault(); const t = ivTool(); t && ivSet(ivCnt(t) - 1, true); }
-    if (e.key === 'Enter') { e.preventDefault(); ivNext(false); }
+    if ($('iv').hidden || IV.phase !== 'count' || e.target.matches('input,textarea')) return;
+    const now = performance.now();
+    if (e.key.length === 1 && !e.ctrlKey && !e.metaKey) { if (now - IVK.last > 80) { IVK.buf = ''; IVK.t0 = now; } IVK.buf += e.key; IVK.last = now; }
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const fast = IVK.buf.length >= 4 && (now - IVK.t0) / IVK.buf.length < 40; const code = IVK.buf; IVK.buf = '';
+      if (fast) { IV.ent = ''; ivJump(code); return; }   // Handscanner
+      ivKey('ok'); return;
+    }
+    if (/^[0-9]$/.test(e.key)) { e.preventDefault(); setTimeout(() => { if (!(IVK.buf.length >= 4 && (performance.now() - IVK.t0) / IVK.buf.length < 40)) ivKey(e.key); }, 0); return; }
+    if (e.key === 'Backspace') { e.preventDefault(); ivKey('bs'); return; }
+    if (IV.view === 'list') {
+      if (e.key === 'ArrowDown') { e.preventDefault(); IV.i = Math.min(IV.list.length - 1, IV.i + 1); IV.ent = ''; ivRender(0); }
+      if (e.key === 'ArrowUp') { e.preventDefault(); IV.i = Math.max(0, IV.i - 1); IV.ent = ''; ivRender(0); }
+      return;
+    }
+    if (e.key === 'ArrowRight') { e.preventDefault(); IV.ent = ''; const t = ivTool(); t && ivSet(ivCnt(t) + 1, true); }
+    if (e.key === 'ArrowLeft') { e.preventDefault(); IV.ent = ''; const t = ivTool(); t && ivSet(ivCnt(t) - 1, true); }
   });
   $('v_aus').addEventListener('click', e => { const b = e.target.closest('[data-mq]'); if (!b) return; const a = b.dataset.mq; if (a === 'inv') ivOpen(); else mwOpen(a); });
 
