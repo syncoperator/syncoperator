@@ -1584,15 +1584,39 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 /* Handy: kein Auto-Zoom beim Tippen in Felder, kein Doppeltipp-Zoom */
 html{-webkit-text-size-adjust:100%;text-size-adjust:100%;touch-action:manipulation}
 @media (pointer:coarse){input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]),select,textarea{font-size:16px!important}}
+
+/* Sync: Punkt + Plakette */
+.sydot{all:unset;box-sizing:border-box;position:relative;width:22px;height:22px;display:inline-grid;place-items:center;cursor:pointer;margin-left:-2px;vertical-align:middle}
+.sydot::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--muted)}
+.sydot[data-k="ok"]::before{background:#1F9D55;box-shadow:0 0 0 3px rgba(31,157,85,.18),0 0 8px rgba(31,157,85,.55)}
+.sydot[data-k="warn"]::before{background:#E08A00;box-shadow:0 0 0 3px rgba(224,138,0,.2);animation:syBlink 1.6s ease-in-out infinite}
+.sydot[data-k="bad"]::before{background:#D93025;box-shadow:0 0 0 3px rgba(217,48,37,.2);animation:syPulse 1.2s ease-in-out infinite}
+.sydot:focus-visible{outline:2px solid var(--acc);outline-offset:1px;border-radius:50%}
+@keyframes syBlink{50%{opacity:.35}}
+@keyframes syPulse{50%{box-shadow:0 0 0 7px rgba(217,48,37,0)}}
+.sypill{position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 10px);z-index:9000;transform:translate(-50%,-140%);display:flex;align-items:center;gap:9px;max-width:min(92vw,520px);
+  padding:9px 14px 9px 12px;border-radius:999px;background:#16171A;color:#F2F3F5;font:600 13px/1.25 var(--f-body);box-shadow:0 10px 30px rgba(0,0,0,.25);transition:transform .35s cubic-bezier(.2,.8,.2,1),opacity .25s;opacity:0;pointer-events:none}
+.sypill.on{transform:translate(-50%,0);opacity:1;pointer-events:auto}
+.sypill i{flex:none;width:10px;height:10px;border-radius:50%;background:#9097A1}
+.sypill[data-k="ok"]{background:#13301F;color:#DDF5E6}.sypill[data-k="ok"] i{background:#2ECC71;box-shadow:0 0 10px #2ECC71}
+.sypill[data-k="warn"]{background:#3A2A0C;color:#FCE9C6}.sypill[data-k="warn"] i{background:#F0A020}
+.sypill[data-k="bad"]{background:#3D1512;color:#FFDCD8}.sypill[data-k="bad"] i{background:#FF4D40;box-shadow:0 0 10px #FF4D40}
+.sypill[data-k="busy"] i{border:2px solid #9097A1;border-top-color:transparent;background:none;width:10px;height:10px;animation:sySpin .8s linear infinite}
+.sypill button{all:unset;cursor:pointer;margin-left:4px;padding:3px 10px;border-radius:999px;background:rgba(255,255,255,.14);font-size:12px}
+.sypill,.sypill *{text-transform:none;letter-spacing:0}
+.sypill span{min-width:0}
+@keyframes sySpin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.sydot::before,.sypill i{animation:none!important}.sypill{transition:opacity .2s}}
 </style>
 </head>
 <body>
 <div id="intro" class="intro" aria-hidden="true"></div>
 
 <div class="wrap">
+  <div class="sypill" id="syPill" role="status" aria-live="polite"><i></i><span></span><button type="button" hidden>Erneut</button></div>
   <header class="top-row">
     <div>
-      <div class="brand"><svg class="bm" viewBox="0 0 160 186" aria-hidden="true"><path fill="currentColor" d="M77 5L8 45Q5 48 5 54L6 134Q6 139 13 141L71 174Q76 178 82 177L112 160L44 121Q38 117 38 110L40 66Q40 62 47 60L113 23L85 6Q81 3 77 5ZM93 45L153 80V49Q153 46 150 44L122 28ZM153 104L93 139L120 155L146 141Q153 138 153 134Z"/></svg>CITITOOL<button type="button" class="acc-chip" id="accChip" hidden></button></div>
+      <div class="brand"><svg class="bm" viewBox="0 0 160 186" aria-hidden="true"><path fill="currentColor" d="M77 5L8 45Q5 48 5 54L6 134Q6 139 13 141L71 174Q76 178 82 177L112 160L44 121Q38 117 38 110L40 66Q40 62 47 60L113 23L85 6Q81 3 77 5ZM93 45L153 80V49Q153 46 150 44L122 28ZM153 104L93 139L120 155L146 141Q153 138 153 134Z"/></svg>CITITOOL<button type="button" class="sydot" id="syDot" hidden aria-label="Sync-Status"></button><button type="button" class="acc-chip" id="accChip" hidden></button></div>
       <h1>WERKZEUGAUSGABE</h1>
     </div>
     <div class="hbtns"><button type="button" class="iconbtn plus" id="plusBtn" aria-label="Neu …" aria-haspopup="menu" aria-expanded="false"><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg></button><div class="pmenu" id="plusMenu" role="menu" hidden><button type="button" role="menuitem" data-pm="scanaus"><span class="pi"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><path d="M3 8V5.5A1.5 1.5 0 0 1 4.5 4H7M17 4h2.5A1.5 1.5 0 0 1 21 5.5V8M21 16v2.5a1.5 1.5 0 0 1-1.5 1.5H17M7 20H4.5A1.5 1.5 0 0 1 3 18.5V16"/><path d="M7 8v8M10 8v8M13 8v8M16.5 8v8" stroke-width="1.5"/></svg></span><span><b>Ausgabe scannen</b><small>Werkzeug entnehmen · Kamera</small></span></button><button type="button" role="menuitem" data-pm="ki"><span class="pi"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.9 4.6L18.5 9.5l-4.6 1.9L12 16l-1.9-4.6L5.5 9.5l4.6-1.9z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg></span><span><b>KI-Werkstatt</b><small>NC-Programm, Zeichnung, Katalog, BIOS …</small></span></button><button type="button" role="menuitem" data-pm="order"><span class="pi"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h2.2l2 10.2a1.5 1.5 0 0 0 1.5 1.2h8.1a1.5 1.5 0 0 0 1.5-1.1L20 8H6.2"/><circle cx="9.5" cy="19.2" r="1.2"/><circle cx="17" cy="19.2" r="1.2"/></svg></span><span><b>Neue Bestellung</b><small>Assistent · 4 Schritte</small></span></button><button type="button" role="menuitem" data-pm="tool"><span class="pi"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 6.5l3-3 3 3-3 3M17.5 3.5L9 12M4 20l4.5-1.5L17 10l-3-3-8.5 8.5z"/></svg></span><span><b>Neues Werkzeug anlegen</b><small>Werkzeug-Assistent</small></span></button><button type="button" role="menuitem" data-pm="scan"><span class="pi"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8V5.5A1.5 1.5 0 0 1 4.5 4H7M17 4h2.5A1.5 1.5 0 0 1 21 5.5V8M21 16v2.5a1.5 1.5 0 0 1-1.5 1.5H17M7 20H4.5A1.5 1.5 0 0 1 3 18.5V16"/><path d="M7 9h10M7 12h7M7 15h9"/></svg></span><span><b>Etikett scannen</b><small>Foto → Werkzeug ausfüllen</small></span></button><button type="button" role="menuitem" data-pm="find"><span class="pi"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.3-4.3"/></svg></span><span><b>Werkzeug suchen</b><small>In der Bibliothek</small></span></button><button type="button" role="menuitem" data-pm="set"><span class="pi"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><path d="M17 14v6M14 17h6"/></svg></span><span><b>Neues Set</b><small>Rüstsatz für ein Teil</small></span></button><button type="button" role="menuitem" data-pm="labels"><span class="pi"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 7.5V5A1.5 1.5 0 0 1 5 3.5h7.6a1.5 1.5 0 0 1 1 .44l6 6a1.5 1.5 0 0 1 0 2.12l-7.5 7.5a1.5 1.5 0 0 1-2.12 0l-6-6a1.5 1.5 0 0 1-.48-1.06z"/><circle cx="8" cy="8" r="1.5"/></svg></span><span><b>Etiketten drucken</b><small>Mehrere · Strichcode · QR · A4</small></span></button><button type="button" role="menuitem" data-pm="img"><span class="pi"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="15" rx="2"/><circle cx="9" cy="10" r="1.8"/><path d="M20.5 16l-5-5L6 19.5"/></svg></span><span><b>Status als Bild</b><small>PNG zum Teilen</small></span></button></div><button type="button" class="iconbtn" id="setBtn" aria-label="Einstellungen und Daten" style="position:relative"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span class="setdot" id="setDot" hidden></span></button><button type="button" class="iconbtn" id="helpBtn" aria-label="Hilfe und Touren">?</button></div>
@@ -1868,7 +1892,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%;touch-action:manipulati
   </div>
 </div>
 <div id="kiosk" class="ks" hidden>
-  <header class="ks-h"><span class="ks-br"><svg viewBox="0 0 160 186" aria-hidden="true" id="ksLogo"></svg>CITITOOL · WERKZEUGAUSGABE</span><span class="ks-clock mono" id="ksClock"></span><button type="button" class="ks-pbtn" data-ks="kpOpen"><span class="ks-pbi" id="ksPbi"></span>Problem melden</button><button type="button" class="ks-lock" data-ks="lock" aria-label="Ausgabestation beenden"></button></header>
+  <header class="ks-h"><span class="ks-br"><svg viewBox="0 0 160 186" aria-hidden="true" id="ksLogo"></svg>CITITOOL · WERKZEUGAUSGABE<button type="button" class="sydot" id="ksSyDot" hidden aria-label="Sync-Status"></button></span><span class="ks-clock mono" id="ksClock"></span><button type="button" class="ks-pbtn" data-ks="kpOpen"><span class="ks-pbi" id="ksPbi"></span>Problem melden</button><button type="button" class="ks-lock" data-ks="lock" aria-label="Ausgabestation beenden"></button></header>
   <div class="ruler ks-ruler"></div>
   <main class="ks-main">
     <section class="ks-cam" id="ksCam"><video id="ksVideo" playsinline muted autoplay></video><div class="ks-frame"></div><div class="ks-cammsg" id="ksCamMsg"></div><button type="button" class="ks-flip" data-ks="flip" aria-label="Kamera wechseln"></button></section>
@@ -2032,6 +2056,9 @@ window.addEventListener('load',ctFit);window.addEventListener('resize',ctFit);se
     const w = U(p.word && TP[t.type] ? p.word : t.type); return U(t.name).startsWith(w) ? '' : w; };
   // ISO-Plattenform vom Rest trennen: CCGT09T304FN-Z → CCGT 09T304FN-Z (nur 4 Buchstaben + Größencode)
   const isoSp = v => String(v || '').replace(/(^|\s)([A-Z]{4})(\d{2}[\dT]\d{2})/g, '$1$2 $3');
+  // Temporäre Artikelnummer, solange es in BIOS noch keinen Artikel gibt: NEU-0001, NEU-0002 …
+  const isNeu = f => /^NEU-\d{4}$/i.test(String(f || '').trim());
+  const nextNeu = () => { let mx = 0; S.lib.forEach(t => [t.firm, ...(t.codes || [])].forEach(c => { const m = String(c || '').trim().match(/^NEU-(\d{4})$/i); if (m) mx = Math.max(mx, +m[1]); })); return 'NEU-' + String(mx + 1).padStart(4, '0'); };
   const isoUnsp = v => String(v || '').replace(/(^|\s)([A-Z]{4}) (\d{2}[\dT]\d{2})/g, '$1$2$3');
   const fullName = t => [typeWord(t), isoSp(t.name), ...specsIn(t)].filter(Boolean).join(' ');
   const shortName = t => [isoSp(t.name), ...specsIn(t)].filter(Boolean).join(' ');   // ohne Typwort (Typ steht extra drüber)
@@ -2433,7 +2460,7 @@ window.addEventListener('load',ctFit);window.addEventListener('resize',ctFit);se
       const L = [`▸ ${fullName(i)}`, `  MENGE: ${i.qty || '–'}`];
       if (attrsShown(i).length) L.push(`  DETAILS: ${attrsShown(i).join(' · ')}`);
       if (specsOut(i).length) L.push(`  MASSE: ${specsOut(i).join(' · ')}`);
-      if (i.firm) L.push(`  ARTIKELNUMMER: ${i.firm}`);
+      if (i.firm) L.push(`  ARTIKELNUMMER: ${i.firm}${isNeu(i.firm) ? ' (noch kein BIOS-Artikel)' : ''}`);
       if (i.maker || i.makerArt) L.push(`  HERSTELLER: ${[i.maker, i.makerArt && `ART.-NR. ${i.makerArt}`].filter(Boolean).join(' · ')}`);
       if (i.dwg) L.push(`  ZEICHNUNG / AUFTRAG: ${i.dwg}`);
       if (i.note) L.push(`  NOTIZ: ${i.note}`);
@@ -2505,7 +2532,7 @@ window.addEventListener('load',ctFit);window.addEventListener('resize',ctFit);se
         <td class="box"><span></span></td>
         <td class="img">${img ? `<img src="${img}" alt="">` : `<span class="sico">${toolIcon(i)}</span>`}</td>
         <td><div class="nm">${esc(fullName(i))}</div>${sub ? `<div class="s-sub">${sub}</div>` : ''}</td>
-        <td class="m">${esc(i.firm || '')}</td>
+        <td class="m">${esc(i.firm || '')}${isNeu(i.firm) ? '<div class="s-sub">noch kein BIOS-Artikel</div>' : ''}</td>
         <td>${esc(i.maker || '')}${i.makerArt ? `<div class="s-sub mono">${esc(i.makerArt)}</div>` : ''}</td>
         <td class="qty">${esc(i.qty || '')}</td>
       </tr>`;
@@ -3859,7 +3886,7 @@ Antworte NUR mit gültigem JSON, alle Werte als Strings in Anführungszeichen: {
         </div>
       </div>
       <div class="grid">
-        ${(TW.fromCat || TW.editId) && TW.t.firm && catIndex().has(BIOSP.DIG(TW.t.firm)) && !TW.firmOpen ? f('firm', 'Artikelnummer (aus BIOS) · <button type="button" class="link" data-tw="firmopen">ändern</button>', '', 'span2', 'readonly') : f('firm', 'Artikelnummer (unsere)', 'z. B. 10234', 'span2')}
+        ${(TW.fromCat || TW.editId) && TW.t.firm && catIndex().has(BIOSP.DIG(TW.t.firm)) && !TW.firmOpen ? f('firm', 'Artikelnummer (aus BIOS) · <button type="button" class="link" data-tw="firmopen">ändern</button>', '', 'span2', 'readonly') : f('firm', `Artikelnummer (unsere)${String(TW.t.firm || '').trim() ? '' : ' · <button type="button" class="link" data-tw="tmpnr">Temporäre Nummer</button>'}`, 'z. B. 2228003101', 'span2')}
         ${f('qty', 'Standard-Menge', 'z. B. 10 STK')}
         ${f('maker', 'Hersteller', 'z. B. Sandvik', '', 'list="dl_maker"')}
         ${f('makerArt', 'Hersteller Artikel-Nr.', 'Bestellnummer', 'span2')}
@@ -3903,20 +3930,22 @@ Antworte NUR mit gültigem JSON, alle Werte als Strings in Anführungszeichen: {
     { const fs = cutFields(d.type); d.cut = (d.cut || []).filter(r => fs.some(k => r[k])); if (!d.cut.length) delete d.cut; }
     if (d.firm && S.lib.some(x => x.firm && nzc(x.firm) === nzc(d.firm) && x.id !== TW.editId)) { toast(`Artikelnummer ${d.firm} gibt es schon`); TW.step = 2; renderTW(); return; }
     let tool;
-    if (TW.editId) { tool = S.lib.find(x => x.id === TW.editId); Object.assign(tool, d, { id: tool.id, updatedAt: Date.now() }); if (TW.origType && TW.origType !== tool.type) S.items.forEach(i => { if (i.libId === tool.id) i.type = tool.type; }); }
+    let neuOld = '';
+    if (TW.editId) { tool = S.lib.find(x => x.id === TW.editId); neuOld = isNeu(tool.firm) && nzc(tool.firm) !== nzc(d.firm) ? tool.firm : ''; Object.assign(tool, d, { id: tool.id, updatedAt: Date.now() }); if (neuOld) neuKeep(tool, neuOld); if (TW.origType && TW.origType !== tool.type) S.items.forEach(i => { if (i.libId === tool.id) i.type = tool.type; }); }
     else { tool = { ...d, id: newId(), createdAt: Date.now() }; S.lib.push(tool); }
     { const s0 = tool.stock0; delete tool.stock0; tool.min = tool.min ? qtyNum(tool.min) : undefined; if (s0 !== undefined && s0 !== '' && !hasStock(tool)) book(tool, 'inv', qtyNum(s0), { note: 'ANFANGSBESTAND' }); }
     const cb = TW.onSave;
     closeToolWiz();
     if (cb) { save(); cb(tool); return; }
     if (andOrder) { save(); render(); boOpen(tool); return; }
-    commit(TW.editId ? (TW.origType && TW.origType !== tool.type ? `Gespeichert · jetzt ${tool.type}` : 'Gespeichert') : 'In Bibliothek gespeichert');
+    commit(neuOld && tool.firm ? `${neuOld} → ${tool.firm} · Etikett neu drucken` : TW.editId ? (TW.origType && TW.origType !== tool.type ? `Gespeichert · jetzt ${tool.type}` : 'Gespeichert') : 'In Bibliothek gespeichert');
   }
 
   // ---- events
   $('twBody').addEventListener('click', e => {
     const b = e.target.closest('[data-tw]'); if (!b) return;
     const a = b.dataset.tw, t = TW.t;
+    if (a === 'tmpnr') { e.preventDefault(); t.firm = nextNeu(); renderTW(); toast(`${t.firm} · bis BIOS eine Nummer vergibt`); return; }
     if (a === 'firmopen') { e.preventDefault(); if (confirm('Die Artikelnummer verbindet das Werkzeug mit BIOS. Wirklich ändern?')) { TW.firmOpen = true; renderTW(); } return; }
     if (a === 'type') {
       const changed = t.type !== b.dataset.type;
@@ -4877,12 +4906,37 @@ Antworte NUR mit JSON: {"map":{"feld":"Spaltenname"},"typ":"häufigster Werkzeug
   const KB_ALL = new Set(Object.values(KB_OK).flat());
   const kbFam = t => { const b = baseOf(t.type || 'SONSTIGES'); return KB_FAM[b] || b; };
   const kbWant = t => { const f = kbFam(t); if (f === 'BOHRER') return av(t, 'mat') === 'VHM' ? 'VHM BOHRER' : 'BOHRER'; return (KB_OK[f] || [])[0] || ''; };
-  const B_KIND = { bname: 'BEZEICHNUNG', bkb: 'KATEGORIE (KB)', bmk: 'HERSTELLER', bnr: 'ARTIKELNUMMER' };
+  const B_KIND = { bneu: 'ARTIKEL ANLEGEN', bname: 'BEZEICHNUNG', bkb: 'KATEGORIE (KB)', bmk: 'HERSTELLER', bnr: 'ARTIKELNUMMER' };
+  // Gruppen-Vorschlag (erste 4 Ziffern der BIOS-Nummer) je Werkzeugart
+  const NEU_GRP = { WENDEPLATTE: '2200', STECHPLATTE: '2200', GEWINDEPLATTE: '2200', HALTER: '2244', BOHRSTANGE: '2244', 'WP-BO': '2228 / 2230', ZENTRIERBOHRER: '2224', FRÄSER: '2234', REIBAHLE: '2237', GEWINDE: '2240', SENKER: '2233', SPANNZANGE: '2245', SPANNMITTEL: '2245' };
+  const neuGrp = t => { const f = kbFam(t); if (f === 'BOHRER') return av(t, 'mat') === 'VHM' || !av(t, 'mat') ? '2228 (VHM) / 2203 (HSS)' : '2203'; return NEU_GRP[f] || '2200'; };
+  function neuKeep(t, old) { (t.codes ||= []); if (!t.codes.some(c => nzc(c) === nzc(old))) t.codes.push(old); }
+  function neuCand(t) {   // passender Artikel im BIOS-Katalog (über Hersteller-Nr.)
+    const k = nzc(t.makerArt || ''); if (k.length < 4 || !CAT.rows.length) return null;
+    return CAT.rows.find(r => !catInLib(r.a) && nzc((r.b || []).join(' ')).includes(k)) || null;
+  }
+  function neuSet(t, nr) {
+    const f = BIOSP.DIG(nr); if (f.length < 8) { toast('BIOS-Nummer hat mindestens 8 Ziffern'); return false; }
+    if (S.lib.some(x => x !== t && x.firm && nzc(x.firm) === nzc(f))) { toast(`Artikelnummer ${f} gibt es schon`); return false; }
+    const old = t.firm; neuKeep(t, old); t.firm = f; t.updatedAt = Date.now(); save(); toast(`${old} → ${f} · Etikett neu drucken`); return true;
+  }
+  function neuFix() {   // nach dem Sync: gleiche NEU-Nummer auf zwei Geräten vergeben → jüngere Karte bekommt die nächste freie
+    const seen = new Map(), moved = [];
+    [...S.lib].filter(t => isNeu(t.firm)).sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0)).forEach(t => {
+      const k = nzc(t.firm); if (!seen.has(k)) { seen.set(k, t); return; }
+      const old = t.firm; t.firm = nextNeu(); moved.push(`${old} → ${t.firm}`);
+    });
+    if (moved.length) { save(); toast(`Doppelte NEU-Nummer: ${moved.join(', ')} · Etikett neu drucken`); }
+    return moved.length;
+  }
   function biosTasks() {
-    if (!CAT.rows.length) return [];
-    const out = [], idx = catIndex(), dn = (S.meta.evDone ||= {}), cts = CAT.ts || 0;
-    const add = (key, kind, t, text, copy) => out.push({ key, kind, t, text, copy: copy || '', done: (dn[key] || 0) > cts });
+    const out = [], dn = (S.meta.evDone ||= {}), cts = CAT.ts || 0;
+    const add = (key, kind, t, text, copy) => out.push({ key, kind, t, text, copy: copy || '', done: kind !== 'bneu' && (dn[key] || 0) > cts });
+    S.lib.filter(t => isNeu(t.firm)).forEach(t => add(`b:neu:${t.id}:${nzc(t.firm)}`, 'bneu', t, `${t.firm} · in BIOS anlegen, dann BIOS-Nummer eintragen · Gruppe ${neuGrp(t)}`, BIOSP.U(fullName(t))));
+    if (!CAT.rows.length) return out;
+    const idx = catIndex();
     S.lib.forEach(t => {
+      if (isNeu(t.firm)) return;
       const f = BIOSP.DIG(t.firm);
       if (!f) { add(`b:nr:${t.id}:-`, 'bnr', t, 'Ohne Artikelnummer – in BIOS anlegen, dann Nummer eintragen'); return; }
       const r = idx.get(f);
@@ -5052,14 +5106,24 @@ Antworte NUR mit JSON: {"map":{"feld":"Spaltenname"},"typ":"häufigster Werkzeug
     const st = t && hasStock(t) ? `Bestand jetzt ${t.stock}` : '';
     return `<div class="fb-row ${open ? '' : 'done'}">
       <input type="checkbox" class="bi-cb" data-fb="${esc(e.k)}" ${open ? '' : 'checked'} aria-label="in BIOS eingetragen">
-      <div class="fb-m">${e.nr ? `<button type="button" class="fb-nr" data-fbcopy="${e.nr}">${e.nr}</button>` : '<span class="fb-no">ohne Artikelnummer</span>'}
+      <div class="fb-m">${e.nr ? `<button type="button" class="fb-nr" data-fbcopy="${e.nr}">${e.nr}</button>` : t && isNeu(t.firm) ? `<span class="fb-no">${esc(String(t.firm).toUpperCase())} · erst in BIOS anlegen</span>` : '<span class="fb-no">ohne Artikelnummer</span>'}
         <div class="fb-t">${t ? esc(fullName(t)) : 'gelöschtes Werkzeug'}</div>
         <div class="fb-s">${parts}${open ? ` · seit ${fmtDs(e.from)}` : ''}</div></div>
       <div class="fb-q"><b class="${e.net < 0 ? 'neg' : e.net > 0 ? 'pos' : ''}">${fbSign(e.net)}</b>${st ? `<small>${st}</small>` : ''}</div></div>`;
   }
+  function fbNeuHTML() {
+    const L = S.lib.filter(t => isNeu(t.firm)); if (!L.length) return '';
+    const cp = (l, v) => v ? `<div class="fb-kv"><span>${l}</span><button type="button" class="fb-cp" data-fbcopy="${esc(v)}">${esc(v)}</button></div>` : '';
+    return `<div class="sec-h">NEU IN BIOS ANLEGEN · ${L.length}</div><div class="bi-list">${L.map(t => { const c = neuCand(t), nm = BIOSP.U(fullName(t));
+      return `<div class="fb-row fb-neu"><span class="fb-nb">NEU</span><div class="fb-m"><span class="fb-nr">${esc(String(t.firm).toUpperCase())}</span><div class="fb-t">${esc(fullName(t))}</div>
+        <div class="fb-kvs">${cp('Bezeichnung', nm)}${nm.length > 30 ? `<div class="fb-kv"><span></span><small>${nm.length} Zeichen · BEZ_1 max. 30</small></div>` : ''}${cp('KB', kbWant(t))}${cp('Hersteller', BIOSP.U(t.maker || ''))}${cp('Herst.-Nr.', t.makerArt || '')}<div class="fb-kv"><span>Gruppe</span><div><b>${neuGrp(t)}</b> <small>Vorschlag</small></div></div></div>
+        ${c ? `<div class="fb-cand">Im BIOS-Katalog gefunden: <b>${esc(c.a)}</b> · ${esc(catLine1(c))} <button type="button" class="btn sm" data-fbneu="${t.id}" data-nr="${esc(c.a)}">Übernehmen</button></div>` : ''}
+        <div class="fb-in"><input class="mono" data-fbnin="${t.id}" inputmode="numeric" autocomplete="off" placeholder="BIOS-Nr. eintragen"><button type="button" class="btn sm primary" data-fbneu="${t.id}">Übernehmen</button></div></div><span></span></div>`; }).join('')}</div>
+      <div class="hint">Nach dem Übernehmen scannt die alte NEU-Nummer weiter – Etikett trotzdem neu drucken.</div>`;
+  }
   function fbTaskHTML() {
     if (!CAT.rows.length) return `<div class="hint">Noch kein BIOS-Katalog geladen – Einstellungen → Excel ↑ Import mit dem BIOS-Excel. Dann erscheinen hier auch Bezeichnungen, die in BIOS geändert werden sollen.</div>`;
-    const all = biosTasks(), open = all.filter(x => !x.done), today = new Date().toDateString(), dn = evDone();
+    const all = biosTasks().filter(x => x.kind !== 'bneu'), open = all.filter(x => !x.done), today = new Date().toDateString(), dn = evDone();
     const done = all.filter(x => x.done && new Date(dn[x.key]).toDateString() === today);
     const row = (x, isOpen) => `<div class="fb-row ${isOpen ? '' : 'done'}">
       <input type="checkbox" class="bi-cb" data-fbt="${esc(x.key)}" ${isOpen ? '' : 'checked'} aria-label="in BIOS geändert">
@@ -5077,7 +5141,7 @@ Antworte NUR mit JSON: {"map":{"feld":"Spaltenname"},"typ":"häufigster Werkzeug
     $('biosBody').innerHTML = `
       <div class="hint">Alle Buchungen seit dem letzten Übertrag, pro Artikel zusammengefasst und nach Nummer sortiert. In BIOS eintragen, dann abhaken – abgehakte Zeilen kommen nicht wieder. Nummer antippen = kopieren.</div>
       <div class="row" style="gap:8px;flex-wrap:wrap"><button type="button" class="btn" data-fbx="print">Drucken</button>${open.length ? `<button type="button" class="btn" data-fbx="xls">Als Excel</button><button type="button" class="btn" data-fbx="all">Alle Buchungen abhaken</button>` : ''}<button type="button" class="btn" data-fbx="cmp">Mit BIOS-Excel abgleichen</button></div>
-      ${fbTaskHTML()}
+      ${fbNeuHTML()}${fbTaskHTML()}
       <div class="sec-h">BUCHUNGEN OFFEN · ${open.length}</div>
       <div class="bi-list">${open.map(e => fbRow(e, true)).join('') || '<div class="fb-empty">Alles in BIOS eingetragen.</div>'}</div>
       ${cmpHTML()}
@@ -5097,6 +5161,16 @@ Antworte NUR mit JSON: {"map":{"feld":"Spaltenname"},"typ":"häufigster Werkzeug
     .fb-q b.neg{color:var(--crit)}.fb-q b.pos{color:var(--ok)}
     .fb-q small{display:block;font-size:11px;color:var(--muted);font-family:var(--f-mono)}
     .fb-empty{padding:16px 12px;color:var(--muted);font-size:14px}
+    .fb-nb{font-family:var(--f-mono);font-size:10px;font-weight:700;letter-spacing:.06em;color:var(--warn);background:var(--warn-bg);border-radius:6px;padding:3px 0;text-align:center;margin-top:2px}
+    .fb-kvs{display:grid;gap:3px;margin-top:6px}
+    .fb-kv{display:grid;grid-template-columns:92px 1fr;gap:8px;align-items:baseline;font-size:12px}
+    .fb-kv>span{color:var(--muted);font-family:var(--f-mono);font-size:11px;text-transform:uppercase;letter-spacing:.04em}
+    .fb-kv b{font-family:var(--f-mono);font-size:13px}.fb-kv small{color:var(--muted);font-size:11px}
+    .fb-cp{all:unset;cursor:pointer;font-family:var(--f-mono);font-size:13px;font-weight:600;word-break:break-word;border-bottom:1px dashed var(--line)}
+    .fb-cp:hover{border-bottom-color:var(--fg)}.fb-cp:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+    .fb-cand{margin-top:8px;padding:8px 10px;border-radius:10px;background:var(--ok-bg);color:var(--ok);font-size:12px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+    .fb-cand b{font-family:var(--f-mono)}
+    .fb-in{display:flex;gap:6px;margin-top:8px}.fb-in input{flex:1;min-width:0}
     .fb-q small{text-transform:none}
     .fb-det summary{cursor:pointer;font-family:var(--f-mono);font-size:12px;font-weight:600;letter-spacing:.04em;padding:6px 0}
     .fb-det .bi-list{margin-top:6px}
@@ -5164,6 +5238,9 @@ Antworte NUR mit JSON: {"map":{"feld":"Spaltenname"},"typ":"häufigster Werkzeug
     if (e.target === $('biosSheet')) { $('biosSheet').hidden = true; render(); return; }
     const c = e.target.closest('[data-fbcopy]');
     if (c) { const v = c.dataset.fbcopy; (navigator.clipboard ? navigator.clipboard.writeText(v) : Promise.reject()).then(() => toast(v + ' kopiert'), () => toast(v)); return; }
+    const nb = e.target.closest('[data-fbneu]');
+    if (nb) { const t = S.lib.find(y => y.id === nb.dataset.fbneu); if (!t) return; const v = nb.dataset.nr || ($('biosBody').querySelector(`[data-fbnin="${t.id}"]`) || {}).value || '';
+      if (neuSet(t, v)) { biosRenderFb(); render(); } return; }
     const cs = e.target.closest('[data-cmpset]');
     if (cs) { const t = S.lib.find(y => y.id === cs.dataset.cmpset); if (!t) return; const v = Number(cs.dataset.v);
       try { const mv = book(t, 'inv', v, { note: 'ABGLEICH BIOS' }); mv.bios = Date.now(); } catch { return; } save(); biosRenderFb(); toast(`Bestand ${String(v).replace('.', ',')} übernommen`); return; }
@@ -5181,7 +5258,7 @@ Antworte NUR mit JSON: {"map":{"feld":"Spaltenname"},"typ":"häufigster Werkzeug
         const rows = fbGroups(true).map(g => ({ Artikelnummer: g.nr || '', Bezeichnung: g.t ? fullName(g.t) : '', Ausgabe: g.aus || '', Eingang: g.ein || '', Inventur: g.inv || '', 'Änderung': g.net, 'Bestand jetzt': g.t && hasStock(g.t) ? g.t.stock : '', 'Seit': fmtD(g.from) }));
         const wb = X.utils.book_new(), ws = X.utils.json_to_sheet(rows); ws['!cols'] = [{ wch: 14 }, { wch: 40 }, { wch: 9 }, { wch: 9 }, { wch: 9 }, { wch: 10 }, { wch: 13 }, { wch: 11 }];
         X.utils.book_append_sheet(wb, ws, 'Buchungen');
-        const tk = biosOpenTasks().map(x => ({ Artikelnummer: BIOSP.DIG(x.t.firm), Was: B_KIND[x.kind], Aenderung: x.text, Neu: x.copy || '', Kurz: x.copy2 || '' }));
+        const tk = biosOpenTasks().map(x => ({ Artikelnummer: isNeu(x.t.firm) ? x.t.firm : BIOSP.DIG(x.t.firm), Was: B_KIND[x.kind], Aenderung: x.text, Neu: x.copy || '', Kurz: x.copy2 || '' }));
         if (tk.length) { const w2 = X.utils.json_to_sheet(tk); w2['!cols'] = [{ wch: 14 }, { wch: 16 }, { wch: 70 }, { wch: 40 }, { wch: 30 }]; X.utils.book_append_sheet(wb, w2, 'Stammdaten'); } X.writeFile(wb, `fuer-bios-${new Date().toISOString().slice(0, 10)}.xlsx`); toast('Excel gespeichert'); })();
     }
   });
@@ -6117,7 +6194,7 @@ ${rows.map(r => `<tr><td class="n">${r.Datum} ${r.Zeit}</td><td>${r.Art}</td><td
     ord: [C('datum', 'Datum', 1, r => rpD(r.o.sentAt), 'n'), C('nr', 'Nr.', 1, r => r.o.nr || '', 'c'), C('wz', 'Werkzeug', 1, r => r.name, 'w'), C('artnr', 'Art.-Nr.', 1, r => r.i.firm || '', 'c'),
       C('hnr', 'Herst.-Nr.', 0, r => r.i.makerArt || '', 'c'), C('menge', 'Menge', 1, r => r.i.qty || '', 'n'), C('an', 'An', 0, r => r.o.to || ''), C('status', 'Status', 1, r => ordSt(r.i)),
       C('erhalten', 'Erhalten', 0, r => rpD(r.i.deliveredAt), 'n'), C('auftrag', 'Zeichnung', 0, r => r.i.dwg || '', 'c')],
-    bios: [C('was', 'Was', 1, r => r.kind === 'task' ? B_KIND[r.x.kind] : 'BUCHUNG'), C('artnr', 'Art.-Nr.', 1, r => BIOSP.DIG(r.t.firm) || '—', 'c nw'), C('wz', 'Werkzeug', 1, r => r.name, 'w'),
+    bios: [C('was', 'Was', 1, r => r.kind === 'task' ? B_KIND[r.x.kind] : 'BUCHUNG'), C('artnr', 'Art.-Nr.', 1, r => isNeu(r.t.firm) ? String(r.t.firm).toUpperCase() : (BIOSP.DIG(r.t.firm) || '—'), 'c nw'), C('wz', 'Werkzeug', 1, r => r.name, 'w'),
       C('aend', 'Änderung', 1, r => r.kind === 'task' ? r.x.text : [r.g.aus && `AUSGABE ${fbSign(r.g.aus)}`, r.g.ein && `EINGANG ${fbSign(r.g.ein)}`, r.g.inv && `INVENTUR ${fbSign(r.g.inv)}`].filter(Boolean).join(' · ')),
       C('neu', 'Neu für BIOS', 0, r => r.kind === 'task' ? (r.x.copy2 || r.x.copy || '') : '', 'c'), C('menge', 'Stück', 1, r => r.kind === 'buch' ? fbSign(r.g.net) : '', 'n'),
       C('bestand', 'Bestand jetzt', 1, r => r.kind === 'buch' && hasStock(r.t) ? r.t.stock : '', 'n'), C('loc', 'Lagerort', 0, r => U(r.t.loc || '')), C('seit', 'Seit', 0, r => r.kind === 'buch' ? rpD(r.g.from) : '', 'n'),
@@ -7557,7 +7634,7 @@ Antworte NUR mit JSON: {"map":["feld oder leer", ...]} – gleiche Reihenfolge u
   // =====================================================================
   const SB = { url: 'https://hmovohlcesuoplazunzt.supabase.co', key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhtb3ZvaGxjZXN1b3BsYXp1bnp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA5MjY3NzQsImV4cCI6MjEwNjUwMjc3NH0.5UbYDgmZn6DmojwurSyFSmTn2k0lprIyr751Hq8rXig' };
   const SK = { code: 'syncop_bestellliste_synccode', base: 'syncop_bestellliste_syncbase', dirty: 'syncop_bestellliste_syncdirty', last: 'syncop_bestellliste_synclast' };
-  const SY = { busy: false, applying: false, timer: null, conflict: null, msg: '', err: '' };
+  const SY = { busy: false, applying: false, timer: null, conflict: null, msg: '', err: '', errSince: 0, errShown: false, loaded: false };
   const syCode = () => lsGet(SK.code);
   const syHasData = () => S.lib.length || S.items.length || S.orders.length || (S.sets || []).length;
   const syRpc = async (fn, body) => {
@@ -7583,9 +7660,10 @@ Antworte NUR mit JSON: {"map":["feld oder leer", ...]} – gleiche Reihenfolge u
     const ts = await syRpc('bl_push', { p_code: syCode(), p_data: syPack(), p_base: base });
     return Number(ts);
   }
-  async function syncNow(manual) {
+  async function syncNow(manual, loud) {
     if (!syCode() || SY.busy || SY.conflict) return;
-    SY.busy = true; SY.err = ''; syStatus();
+    const wasErr = !!SY.err;
+    SY.busy = true; SY.err = ''; SY.loaded = false; syStatus(); if (manual || loud) syPill('busy', 'Synchronisiere …');
     try {
       const rem = await syRpc('bl_pull', { p_code: syCode() });
       const r = Array.isArray(rem) ? rem[0] : rem;
@@ -7598,15 +7676,50 @@ Antworte NUR mit JSON: {"map":["feld oder leer", ...]} – gleiche Reihenfolge u
         else { lsSet(SK.last, String(Date.now())); SY.msg = 'Alles aktuell'; }
       } else {
         const localEmpty = !syHasData();
-        if (!dirty || localEmpty) { syApply(r.data); lsSet(SK.base, String(r.ts)); lsSet(SK.dirty, ''); lsSet(SK.last, String(Date.now())); SY.msg = 'Daten aus der Cloud geladen'; }
+        if (!dirty || localEmpty) { syApply(r.data); lsSet(SK.base, String(r.ts)); lsSet(SK.dirty, ''); lsSet(SK.last, String(Date.now())); SY.msg = 'Daten aus der Cloud geladen'; SY.loaded = true; }
         else { SY.conflict = r; SY.msg = ''; }
       }
-    } catch (e) { SY.err = navigator.onLine ? 'Server nicht erreichbar' : 'Offline – wird später synchronisiert'; }
-    SY.busy = false; syStatus(); if (!$('syncSheet').hidden) renderSync();
-    if (!SY.err) { catSync(); if (isoMigrate(true)) render(); }
-    if (manual && SY.msg && !SY.conflict) toast(SY.msg);
+    } catch (e) { SY.err = navigator.onLine ? 'Cloud nicht erreichbar' : 'Offline – Sync folgt später'; }
+    SY.busy = false;
+    if (SY.err) { if (!SY.errSince) { SY.errSince = Date.now(); SY.errShown = false; } } else { SY.errSince = 0; SY.errShown = false; }
+    syStatus(); if (!$('syncSheet').hidden) renderSync();
+    if (!SY.err) { catSync(); const a = isoMigrate(true), b = neuFix(); if (a || b) render(); }
+    // Plakette: beim Start/Knopf immer, im Hintergrund nur bei neuen Daten, Fehler > 10 Min. oder wieder verbunden
+    const errLong = SY.err && Date.now() - SY.errSince > 10 * 60000 && !SY.errShown;
+    if (SY.conflict) syPill('warn', 'Sync: zwei Stände – bitte entscheiden', true);
+    else if (SY.err) { if (manual || loud || errLong) { SY.errShown = true; syPill('bad', SY.err + ' · Daten sind lokal gespeichert', true); } else syPill(); }
+    else if (wasErr) syPill('ok', 'Wieder verbunden ✓');
+    else if (SY.loaded) syPill('ok', 'Neue Daten geladen ✓');
+    else if (manual || loud) syPill('ok', SY.msg === 'Hochgeladen' ? 'Hochgeladen · alles synchron ✓' : 'Alles synchron ✓');
+    else syPill();
+  }
+  // ---- Sync-Plakette (kurz oben) + Punkt in der Kopfzeile
+  let syPillT = 0;
+  function syPill(kind, text, sticky) {
+    const el = $('syPill'); if (!el) return;
+    clearTimeout(syPillT);
+    if (!kind) { if (el.dataset.k === 'busy') el.classList.remove('on'); return; }
+    if ((kind === 'bad' || kind === 'warn') && KS.on && !accAdmin()) { el.classList.remove('on'); return; }   // Ausgabestation: Werker sehen keine roten Meldungen
+    el.dataset.k = kind; el.querySelector('span').textContent = text; el.querySelector('button').hidden = kind !== 'bad' && kind !== 'warn';
+    el.classList.add('on');
+    if (kind !== 'busy') syPillT = setTimeout(() => el.classList.remove('on'), sticky ? 12000 : 2600);
+  }
+  function syDotState() {
+    if (!syCode()) return ['off', 'Sync nicht eingerichtet'];
+    if (SY.conflict) return ['warn', 'Zwei Stände – in den Einstellungen entscheiden'];
+    if (SY.err) return ['bad', SY.err];
+    if (SY.busy) return ['ok', 'Synchronisiere …'];
+    const last = Number(lsGet(SK.last) || 0), ago = Date.now() - last;
+    if (lsGet(SK.dirty) === '1') return ['warn', 'Änderungen warten auf Upload'];
+    if (!last || ago > 60 * 60000) return ['warn', last ? `Letzter Sync vor ${Math.round(ago / 60000)} Min.` : 'Noch nie synchronisiert'];
+    return ['ok', `Synchron · vor ${Math.max(0, Math.round(ago / 60000))} Min.`];
+  }
+  function syDot() {
+    const [k, t] = syDotState(); let adm = false; try { adm = accAdmin(); } catch {}
+    ['syDot', 'ksSyDot'].forEach(id => { const d = $(id); if (!d) return; d.dataset.k = k; d.title = t; d.setAttribute('aria-label', 'Sync: ' + t); d.hidden = k === 'off' || (id === 'ksSyDot' && (k === 'bad' || k === 'warn') && !adm); });
   }
   function syStatus() {
+    syDot();
     const b = $('syncBtn'); if (!b) return;
     b.textContent = !syCode() ? 'Sync' : SY.busy ? 'Sync …' : SY.conflict ? 'Sync !' : SY.err ? 'Sync ✕' : lsGet(SK.dirty) === '1' ? 'Sync ↑' : 'Sync ✓';
   }
@@ -7658,6 +7771,12 @@ Antworte NUR mit JSON: {"map":["feld oder leer", ...]} – gleiche Reihenfolge u
   document.addEventListener('visibilitychange', () => { if (!document.hidden && syCode()) syncNow(false); });
   window.addEventListener('online', () => { if (syCode()) syncNow(false); });
   syStatus();
+  // beim Start und danach alle 5 Minuten (wichtig für die Ausgabestation, die nie in den Hintergrund geht)
+  if (syCode()) setTimeout(() => { if (!SY.busy && Date.now() - Number(lsGet(SK.last) || 0) > 4000) syncNow(false, true); }, 1200);
+  setInterval(() => { if (syCode() && !document.hidden && !SY.busy && !SY.conflict) syncNow(false); }, 5 * 60000);
+  setInterval(syDot, 60000);
+  $('syPill').addEventListener('click', e => { if (e.target.closest('button')) { $('syPill').classList.remove('on'); syncNow(true); return; } $('syPill').classList.remove('on'); });
+  ['syDot', 'ksSyDot'].forEach(id => { const d = $(id); if (d) d.addEventListener('click', e => { e.stopPropagation(); const [k, t] = syDotState(); if (KS.on && !accAdmin()) { syPill(k === 'ok' ? 'ok' : 'warn', t); return; } $('syncSheet').hidden = false; renderSync(); syncNow(true); }); });
 
   // =====================================================================
   // ZUGRIFF: Admin = alles · Werker = Ausgabe + was der Admin erlaubt (PIN, gilt auf allen Geräten per Sync)
@@ -7833,7 +7952,7 @@ Antworte NUR mit JSON: {"map":["feld oder leer", ...]} – gleiche Reihenfolge u
   const PROB = {
     problem: ['PROBLEM', 'crit', 1], minus: ['MEHR ALS BESTAND', 'crit', 2], leer: ['LEER', 'crit', 3], low: ['UNTER MIN', 'warn', 4],
     viel: ['UNGEWÖHNLICH VIEL', 'warn', 5], undo: ['STORNIERT', 'info', 6], unknown: ['CODE UNBEKANNT', 'info', 7], noname: ['OHNE NAME', 'info', 8],
-    bnr: ['BIOS · ARTIKELNUMMER', 'warn', 9], bname: ['BIOS · BEZEICHNUNG', 'info', 10], bkb: ['BIOS · KATEGORIE', 'info', 11], bmk: ['BIOS · HERSTELLER', 'info', 12] };
+    bneu: ['BIOS · ARTIKEL ANLEGEN', 'warn', 8], bnr: ['BIOS · ARTIKELNUMMER', 'warn', 9], bname: ['BIOS · BEZEICHNUNG', 'info', 10], bkb: ['BIOS · KATEGORIE', 'info', 11], bmk: ['BIOS · HERSTELLER', 'info', 12] };
   const PROB_REASONS = ['FACH LEER', 'BESTAND STIMMT NICHT', 'WERKZEUG DEFEKT', 'FALSCHES ETIKETT', 'SONSTIGES'];
   function logEv(o) {
     if (o.kind === 'unknown' && (S.evs || []).some(e => e.kind === 'unknown' && e.code === o.code && Date.now() - e.ts < 600000)) return;
