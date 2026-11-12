@@ -1661,6 +1661,9 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%;touch-action:manipulati
 .ivl-d{text-align:center;font-size:12px;font-weight:700}.ivl-d.z{color:var(--ok)}.ivl-d.p{color:var(--warn)}.ivl-d.m{color:var(--crit)}
 .ivl-ok{width:40px;height:40px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--ok);font-size:18px;font-weight:700;cursor:pointer}
 @media (max-width:420px){.ivl-r{grid-template-columns:1fr 34px 48px 36px 40px;gap:4px;padding-left:10px}}
+
+/* Bestelltext: Anrede/Name in normaler Schreibweise */
+#p_to,#p_name,#te_hello,#te_intro,#te_outro,#te_sign,#te_firma,#copyFallback{text-transform:none}
 </style>
 </head>
 <body>
@@ -2504,12 +2507,13 @@ window.addEventListener('load',ctFit);window.addEventListener('resize',ctFit);se
 
   // order: always the live list · reminder: the fixed set of overdue positions
   const sendItems = () => !S.send ? [] : S.send.mode === 'order' ? cartItems() : S.send.itemIds.map(id => S.items.find(i => i.id === id)).filter(Boolean);
-  const untilText = () => { const u = $('p_until').value; return u ? U(new Date(u + 'T12:00').toLocaleDateString('de-DE', { weekday:'long', day:'2-digit', month:'2-digit', year:'numeric' })) : ''; };
-  const refNrs = items => [...new Set(items.map(i => S.orders.find(o => o.id === i.orderId)).filter(Boolean).map(o => `${o.nr} VOM ${fmtD(o.sentAt)}`))];
+  const untilRaw = () => { const u = $('p_until').value; return u ? new Date(u + 'T12:00').toLocaleDateString('de-DE', { weekday:'long', day:'2-digit', month:'2-digit', year:'numeric' }) : ''; };
+  const untilText = () => U(untilRaw());
+  const refNrs = (items, low) => [...new Set(items.map(i => S.orders.find(o => o.id === i.orderId)).filter(Boolean).map(o => `${o.nr} ${low ? 'vom' : 'VOM'} ${fmtD(o.sentAt)}`))];
 
   function mailText() {
     const items = sendItems(), rem = S.send.mode === 'reminder';
-    const to = U($('p_to').value), name = U($('p_name').value), until = untilText();
+    const to = nameCase($('p_to').value), name = nameCase($('p_name').value), until = untilRaw();
     const blocks = items.map(i => {
       const L = [`▸ ${fullName(i)}`, `  MENGE: ${i.qty || '–'}`];
       if (attrsShown(i).length) L.push(`  DETAILS: ${attrsShown(i).join(' · ')}`);
@@ -2521,12 +2525,12 @@ window.addEventListener('load',ctFit);window.addEventListener('resize',ctFit);se
       return L.join('\n');
     });
     const head = rem
-      ? ['ERINNERUNG', '', to ? `HALLO ${to},` : 'HALLO,', '', `FOLGENDE POSITIONEN SIND NOCH NICHT DA (${refNrs(items).join(', ')}):`]
-      : [`BESTELLUNG ${S.send.nr} · ${fmtD(Date.now())}`, '', fillTpl(curTpl().hello, to, name), '', fillTpl(curTpl().intro, to, name), ...(until ? [`GEBRAUCHT BIS: ${until}`] : [])];
-    return [...head, '', blocks.join('\n\n'), '', ...(rem ? ['BITTE KURZ BESCHEID GEBEN. DANKE!', name] : [fillTpl(curTpl().outro, to, name), fillTpl(curTpl().sign, to, name)])].join('\n').trim() + '\n';
+      ? ['Erinnerung', '', to ? `Hallo ${to},` : 'Hallo,', '', `folgende Positionen sind noch nicht da (${refNrs(items, true).join(', ')}):`]
+      : [`Bestellung ${S.send.nr} · ${fmtD(Date.now())}`, '', fillTpl(curTpl().hello, to, name), '', fillTpl(curTpl().intro, to, name), ...(until ? [`Gebraucht bis: ${until}`] : [])];
+    return [...head, '', blocks.join('\n\n'), '', ...(rem ? ['Bitte kurz Bescheid geben. Danke!', name] : [fillTpl(curTpl().outro, to, name), fillTpl(curTpl().sign, to, name)])].join('\n').trim() + '\n';
   }
-  const subject = () => S.send.mode === 'reminder' ? `ERINNERUNG: WERKZEUG-BESTELLUNG ${refNrs(sendItems()).map(x => x.split(' ')[0]).join(', ')}` : `BESTELLUNG ${S.send.nr} · ${fmtD(Date.now())}`;
-  function renderPreview() { if (!$('preview').hidden) $('preview').textContent = `BETREFF: ${subject()}\n\n${mailText()}`; }
+  const subject = () => S.send.mode === 'reminder' ? `Erinnerung: Werkzeug-Bestellung ${refNrs(sendItems()).map(x => x.split(' ')[0]).join(', ')}` : `Bestellung ${S.send.nr} · ${fmtD(Date.now())}`;
+  function renderPreview() { if (!$('preview').hidden) $('preview').textContent = `Betreff: ${subject()}\n\n${mailText()}`; }
   $('previewBtn').onclick = () => { $('preview').hidden = !$('preview').hidden; renderPreview(); };
 
   function askConfirm(how) {
@@ -2593,16 +2597,16 @@ window.addEventListener('load',ctFit);window.addEventListener('resize',ctFit);se
     }).join('');
     $('sheet').innerHTML = `
       <div class="s-top"><span class="s-kind">${rem ? 'ERINNERUNG' : 'BESTELLUNG'}</span><span class="s-nr">${rem ? '' : esc(nr || '') + '<br>'}${fmtD(date)}</span></div>
-      <div class="s-hello">${rem ? (to ? `HALLO ${esc(to)},` : 'HALLO,') : esc(fillTpl(tp.hello, to, name))}</div>
-      <h2 class="${!rem && fillTpl(tp.intro, to, name).length > 22 ? 'long' : ''}">${rem ? 'NOCH NICHT GELIEFERT:' : esc(fillTpl(tp.intro, to, name))}</h2>
+      <div class="s-hello">${rem ? (to ? `HALLO ${esc(to)},` : 'HALLO,') : esc(fillTplU(tp.hello, to, name))}</div>
+      <h2 class="${!rem && fillTplU(tp.intro, to, name).length > 22 ? 'long' : ''}">${rem ? 'NOCH NICHT GELIEFERT:' : esc(fillTplU(tp.intro, to, name))}</h2>
       ${rem ? `<div class="s-ref">${esc(refNrs(items).join(' · '))}</div>` : ''}
       ${until && !rem ? `<div class="s-until">BIS ${esc(until)}</div>` : ''}
       <table>
         <thead><tr><th></th><th></th><th>BEZEICHNUNG</th><th>ARTIKELNUMMER</th><th>HERSTELLER</th><th>MENGE</th></tr></thead>
         <tbody>${rows}</tbody>
       </table>
-      <div class="s-thanks">${rem ? 'BITTE KURZ BESCHEID GEBEN. DANKE!' : esc(fillTpl(tp.outro, to, name)).replace(/\n/g, '<br>')}</div>
-      <div class="s-name">${rem ? (esc(name) || '&nbsp;') : (esc(fillTpl(tp.sign, to, name)).replace(/\n/g, '<br>') || '&nbsp;')}</div>`;
+      <div class="s-thanks">${rem ? 'BITTE KURZ BESCHEID GEBEN. DANKE!' : esc(fillTplU(tp.outro, to, name)).replace(/\n/g, '<br>')}</div>
+      <div class="s-name">${rem ? (esc(name) || '&nbsp;') : (esc(fillTplU(tp.sign, to, name)).replace(/\n/g, '<br>') || '&nbsp;')}</div>`;
     const doc = sheetDoc($('sheet').innerHTML, rem ? 'Erinnerung' : `Bestellung ${nr || ''}`);
     showDoc(doc, rem ? 'Erinnerung' : `Bestellung ${nr || ''}`, S.send ? 'zurueck-bestellt' : '');
   }
@@ -4315,21 +4319,34 @@ ${attrs}
   // MAIL-VORLAGEN
   // =====================================================================
   const TPL_DEF = [
-    { id: 'kurz',      name: 'Kurz',      hello: 'HALLO {AN},', intro: 'BITTE BESTELLEN:', outro: 'DANKE!', sign: '{VON}' },
-    { id: 'formell',   name: 'Formell',   hello: 'GUTEN TAG {AN},', intro: 'BITTE BESTELLEN SIE FOLGENDE POSITIONEN:', outro: 'VIELEN DANK UND FREUNDLICHE GRÜSSE', sign: '{VON}\n{TEL}' },
-    { id: 'lieferant', name: 'Lieferant', hello: 'SEHR GEEHRTE DAMEN UND HERREN,', intro: 'WIR BESTELLEN HIERMIT:', outro: 'BITTE UM AUFTRAGSBESTÄTIGUNG MIT LIEFERTERMIN.\nMIT FREUNDLICHEN GRÜSSEN', sign: '{VON}\n{FIRMA}\n{TEL}' },
+    { id: 'kurz',      name: 'Kurz',      hello: 'Hallo {AN},', intro: 'bitte bestellen:', outro: 'Danke!', sign: '{VON}' },
+    { id: 'formell',   name: 'Formell',   hello: 'Guten Tag {AN},', intro: 'bitte bestellen Sie folgende Positionen:', outro: 'Vielen Dank und freundliche Grüße', sign: '{VON}\n{TEL}' },
+    { id: 'lieferant', name: 'Lieferant', hello: 'Sehr geehrte Damen und Herren,', intro: 'wir bestellen hiermit:', outro: 'Bitte um Auftragsbestätigung mit Liefertermin.\nMit freundlichen Grüßen', sign: '{VON}\n{FIRMA}\n{TEL}' },
   ];
   const mailMeta = () => (S.meta.mail ||= { tpl: 'kurz', tel: '', firma: '', edits: {}, own: [] });
+  // Namen: komplett GROSS oder klein getippt → „Herr Müller“; gemischt bleibt, wie es ist
+  const nameCase = v => { v = String(v || '').trim(); if (!v || (v !== v.toUpperCase() && v !== v.toLowerCase())) return v; return v.toLowerCase().replace(/(^|[\s\-.])(\p{L})/gu, (m, a, b) => a + b.toUpperCase()); };
+  // früher wurden Texte GROSS gespeichert: was noch dem alten Standard entspricht, nimmt den neuen
+  function tplMigrate() {
+    const m = mailMeta(); if (m.caseV) return;
+    const old = { kurz: { hello: 'HALLO {AN},', intro: 'BITTE BESTELLEN:', outro: 'DANKE!', sign: '{VON}' }, formell: { hello: 'GUTEN TAG {AN},', intro: 'BITTE BESTELLEN SIE FOLGENDE POSITIONEN:', outro: 'VIELEN DANK UND FREUNDLICHE GRÜSSE', sign: '{VON}\n{TEL}' }, lieferant: { hello: 'SEHR GEEHRTE DAMEN UND HERREN,', intro: 'WIR BESTELLEN HIERMIT:', outro: 'BITTE UM AUFTRAGSBESTÄTIGUNG MIT LIEFERTERMIN.\nMIT FREUNDLICHEN GRÜSSEN', sign: '{VON}\n{FIRMA}\n{TEL}' } };
+    const all = Object.values(old), fix = (o, ref) => ['hello', 'intro', 'outro', 'sign'].forEach(k => { const hit = (ref ? [ref] : all).find(d => d[k] === o[k]); if (hit) { const nw = TPL_DEF.find(t => old[t.id] === hit); if (ref) delete o[k]; else if (nw) o[k] = nw[k]; } });
+    Object.entries(m.edits || {}).forEach(([id, e]) => { if (old[id]) fix(e, old[id]); if (!Object.keys(e).length) delete m.edits[id]; });
+    (m.own || []).forEach(o => fix(o, null));
+    if (m.firma && m.firma === m.firma.toUpperCase()) m.firma = nameCase(m.firma);
+    m.caseV = 1;
+  }
   const tplList = () => { const m = mailMeta(); return [...TPL_DEF.map(t => ({ ...t, ...(m.edits[t.id] || {}) })), ...(m.own || [])]; };
   const tplById = id => tplList().find(t => t.id === id) || tplList()[0];
   const curTpl = () => tplById(mailMeta().tpl);
   const fillTpl = (str, to, from) => {
     const m = mailMeta();
-    return U(String(str || '')
+    return String(str || '')
       .replace(/\{AN\}/gi, to || '').replace(/\{VON\}/gi, from || '')
-      .replace(/\{TEL\}/gi, m.tel ? 'TEL. ' + m.tel : '').replace(/\{FIRMA\}/gi, m.firma || ''))
+      .replace(/\{TEL\}/gi, m.tel ? 'Tel. ' + m.tel : '').replace(/\{FIRMA\}/gi, m.firma || '')
       .split('\n').map(x => x.replace(/\s+,/g, ',').replace(/\s{2,}/g, ' ').trim()).filter(Boolean).join('\n');
   };
+  const fillTplU = (a, b, c) => U(fillTpl(a, b, c));   // Bestellblatt / PDF bleiben in Großschrift
   function renderTplChips() {
     const html = tplList().map(t => `<button type="button" data-tpl="${esc(t.id)}" aria-pressed="${t.id === curTpl().id}">${esc(t.name)}</button>`).join('');
     ['tplChips', 'wzTplChips'].forEach(id => { const el = $(id); if (el) el.innerHTML = html; });
@@ -4368,9 +4385,9 @@ ${attrs}
   }
   function tplPreview() {
     const v = k => $('te_' + k)?.value || '';
-    const to = U($('p_to').value) || 'THOMAS', from = U($('p_name').value) || 'ROMA';
+    const to = nameCase($('p_to').value) || 'Thomas', from = nameCase($('p_name').value) || 'Roma';
     const m = mailMeta(), keep = { tel: m.tel, firma: m.firma };
-    m.tel = v('tel'); m.firma = U(v('firma'));
+    m.tel = v('tel'); m.firma = v('firma').trim();
     $('te_prev').textContent = [fillTpl(v('hello'), to, from), '', fillTpl(v('intro'), to, from), '', '▸ CNMG 120408-PM R0,8', '  MENGE: 10 STK', '', fillTpl(v('outro'), to, from), fillTpl(v('sign'), to, from)].join('\n');
     Object.assign(m, keep);
   }
@@ -4380,12 +4397,12 @@ ${attrs}
     const b = e.target.closest('[data-tple]'); if (!b) return;
     const m = mailMeta(), a = b.dataset.tple, v = k => $('te_' + k).value;
     if (a === 'pick') { openTplEditor(b.dataset.id); return; }
-    if (a === 'new') { const id = 'own_' + newId(); (m.own ||= []).push({ id, name: 'Eigene', hello: 'HALLO {AN},', intro: 'BITTE BESTELLEN:', outro: 'DANKE!', sign: '{VON}' }); save(); openTplEditor(id); return; }
+    if (a === 'new') { const id = 'own_' + newId(); (m.own ||= []).push({ id, name: 'Eigene', hello: 'Hallo {AN},', intro: 'bitte bestellen:', outro: 'Danke!', sign: '{VON}' }); save(); openTplEditor(id); return; }
     if (a === 'save') {
-      const data = { hello: U(v('hello')), intro: U(v('intro')), outro: U(v('outro')), sign: U(v('sign')) };
+      const tr = k => v(k).split('\n').map(x => x.trim()).join('\n').trim(), data = { hello: tr('hello'), intro: tr('intro'), outro: tr('outro'), sign: tr('sign') };
       const own = (m.own || []).find(x => x.id === tplEditId);
       if (own) Object.assign(own, data, { name: v('name').trim() || 'Eigene' }); else m.edits[tplEditId] = data;
-      m.tel = v('tel').trim(); m.firma = U(v('firma')); m.tpl = tplEditId;
+      m.tel = v('tel').trim(); m.firma = v('firma').trim(); m.tpl = tplEditId;
       save(); renderTplChips(); if (S.send) renderPreview(); $('tplSheet').hidden = true; toast('Vorlage gespeichert'); return;
     }
     if (a === 'reset') { delete m.edits[tplEditId]; save(); openTplEditor(tplEditId); toast('Standard wiederhergestellt'); return; }
@@ -5346,6 +5363,7 @@ Antworte NUR mit JSON: {"map":{"feld":"Spaltenname"},"typ":"häufigster Werkzeug
   }
   biosBtnSync();
   isoMigrate();
+  try { tplMigrate(); } catch {}
   ksDropPending();
 
 
@@ -5570,11 +5588,11 @@ Antworte NUR mit JSON: {"map":{"feld":"Spaltenname"},"typ":"häufigster Werkzeug
     toast('PDF wird erstellt …');
     const pages = await renderSheetPages(items, {
       kind: rem ? 'ERINNERUNG' : 'BESTELLUNG', nr: rem ? '' : (S.send?.nr || ''), date: fmtD(Date.now()),
-      hello: rem ? (to ? `HALLO ${to},` : 'HALLO,') : fillTpl(tp.hello, to, name),
-      intro: rem ? 'NOCH NICHT GELIEFERT:' : fillTpl(tp.intro, to, name),
+      hello: rem ? (to ? `HALLO ${to},` : 'HALLO,') : fillTplU(tp.hello, to, name),
+      intro: rem ? 'NOCH NICHT GELIEFERT:' : fillTplU(tp.intro, to, name),
       until: rem ? '' : untilText(),
-      outro: rem ? 'BITTE KURZ BESCHEID GEBEN. DANKE!' : fillTpl(tp.outro, to, name),
-      sign: rem ? name : fillTpl(tp.sign, to, name),
+      outro: rem ? 'BITTE KURZ BESCHEID GEBEN. DANKE!' : fillTplU(tp.outro, to, name),
+      sign: rem ? name : fillTplU(tp.sign, to, name),
     });
     const blob = await pagesToPdf(pages);
     const fname = `${rem ? 'Erinnerung' : 'Bestellung_' + (S.send?.nr || '')}.pdf`;
@@ -7847,7 +7865,7 @@ Antworte NUR mit JSON: {"map":["feld oder leer", ...]} – gleiche Reihenfolge u
     SY.busy = false;
     if (SY.err) { if (!SY.errSince) { SY.errSince = Date.now(); SY.errShown = false; } } else { SY.errSince = 0; SY.errShown = false; }
     syStatus(); if (!$('syncSheet').hidden) renderSync();
-    if (!SY.err) { catSync(); const a = isoMigrate(true), b = neuFix(); if (a || b) render(); }
+    if (!SY.err) { catSync(); const a = isoMigrate(true), b = neuFix(); try { tplMigrate(); } catch {} if (a || b) render(); }
     // Plakette: beim Start/Knopf immer, im Hintergrund nur bei neuen Daten, Fehler > 10 Min. oder wieder verbunden
     const errLong = SY.err && Date.now() - SY.errSince > 10 * 60000 && !SY.errShown;
     if (SY.conflict) syPill('warn', 'Sync: zwei Stände – bitte entscheiden', true);
