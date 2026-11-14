@@ -5503,8 +5503,11 @@ Antworte NUR mit JSON: {"map":{"feld":"Spaltenname"},"typ":"häufigster Werkzeug
     if (can('adm')) { const n = stNewList().length; if (n) r('acc', n, n === 1 ? 'Neue Karte von der Station' : 'Neue Karten von der Station', 'Lagerort, Bestand und Min ergänzen', 'data-home="stnew"'); }
     if (can('adm')) { const n = probOpenCount(); if (n) r('warn', n, n === 1 ? 'Auffälligkeit' : 'Auffälligkeiten', 'Leeres Fach, Meldungen, BIOS – letzte 7 Tage', 'data-pb="all"'); }
     if (late.length) r('crit', late.length, late.length === 1 ? 'Bestellung überfällig' : 'Bestellungen überfällig', 'Nachfragen oder als erhalten abhaken', 'data-home="wait"');
-    if (lowS.length) r('warn', lowS.length, 'Unter Mindestbestand', lowS.slice(0, 2).map(t => esc(shortName(t) || fullName(t))).join(' · ') + (lowS.length > 2 ? ' …' : ''), 'data-home="orderlow"');
-    if (cart.length) r('', cart.length, cart.length === 1 ? 'Position auf der Liste' : 'Positionen auf der Liste', oldCart.length ? 'Liegt ' + ageText(Math.max(...oldCart.map(i => days(i.createdAt)))).replace(/^S/, 's') + ' – noch nicht gesendet' : 'Noch nicht gesendet', 'data-home="send"');
+    { const lowA = lowStock(), busy = lowA.length - lowS.length;
+      if (lowA.length) r(lowS.length ? 'warn' : '', lowA.length, 'Unter Mindestbestand',
+        lowS.length ? lowS.slice(0, 2).map(t => esc(shortName(t) || fullName(t))).join(' · ') + (lowS.length > 2 ? ' …' : '') + (busy ? ` · ${busy} schon bestellt` : '') : (lowA.length === 1 ? 'Schon bestellt oder auf der Liste' : 'Alle schon bestellt oder auf der Liste'),
+        lowS.length ? 'data-home="orderlow"' : 'data-home="soon"'); }
+    if (cart.length) r('', cart.length, cart.length === 1 ? 'Position auf der Liste' : 'Positionen auf der Liste', oldCart.length ? (dd => `Liegt seit ${dd} ${dd === 1 ? 'Tag' : 'Tagen'} – noch nicht gesendet`)(Math.max(...oldCart.map(i => days(i.createdAt)))) : 'Noch nicht gesendet', 'data-home="send"');
     if (wait) r('', wait, wait === 1 ? 'Bestellung unterwegs' : 'Bestellungen unterwegs', 'Im Zeitplan', 'data-home="wait"');
     if (!rows.length) return `<div class="allgood"><svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><circle cx="11" cy="11" r="9" stroke="currentColor" stroke-width="1.6" fill="none"/><path class="draw" d="M7 11.5l2.6 2.5L15 8.5" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg><span><b>Alles erledigt</b><small>Nichts offen, nichts überfällig.</small></span></div>`;
     return `<div class="td-card"><div class="td-h"><b>Zu tun</b></div>${rows.join('')}</div>`;
