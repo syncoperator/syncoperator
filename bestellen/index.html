@@ -1785,6 +1785,17 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%;touch-action:manipulati
 .intro .mk{left:34.05%}
 @keyframes wmIn2{to{clip-path:inset(0 0 0 0)}}
 .intro .shn{clip-path:inset(0 0 36% 0)}
+
+.fullbar{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;background:var(--soft);margin:6px 0 2px;border-left:4px solid var(--muted)}
+.fullbar.p{border-left-color:var(--ink)}
+.fullbar .fb-t{flex:1;min-width:0}.fullbar b{display:block;font:600 13.5px var(--f-head);text-transform:none}.fullbar small{display:block;font-size:12.5px;color:var(--muted);text-transform:none}
+.fullbar em{font-style:normal;color:var(--fg);font-weight:600}
+.lr-miss{font-size:12px;color:var(--fg);font-weight:600;margin-top:3px;text-transform:none}.lr-miss.soft{color:var(--muted);font-weight:500}.lr-miss em{font-style:normal;color:var(--fg);font-weight:600}
+.lib-f{margin:8px 0 10px}
+.fs-r{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.9fr);align-items:center;gap:6px 10px;padding:4px 0}.fs-r>span{font-size:14px;text-transform:none}.fs-r .seg3{min-width:0}.fs-r .seg3 button{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media(max-width:560px){.fs-r{grid-template-columns:1fr}.fs-r>span{font-weight:600}}
+.seg3.sm button{min-height:34px;padding:4px 10px;font-size:12px}
+#twBody label.need input,#twBody .photo.need{box-shadow:0 0 0 2px var(--ink);border-radius:10px}
 </style>
 </head>
 <body>
@@ -1941,6 +1952,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%;touch-action:manipulati
 
     <div id="libHome" class="view">
       <input id="libQ" type="search" placeholder="Werkzeuge durchsuchen" style="background:var(--card)">
+      <div id="libF" class="aus-f lib-f"></div>
       <div id="libCats" class="view"></div>
     </div>
     <div id="libTypeView" class="view" hidden>
@@ -2039,6 +2051,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%;touch-action:manipulati
         <button type="button" class="btn" id="xlsIn">Excel ↑ Import</button>
         <button type="button" class="btn" id="impUndo" hidden>Import rückgängig</button>
         <input type="file" id="xlsFile" accept=".xlsx,.xls,.csv" hidden></div></div>
+      <div class="setg-sec setg-adm"><div class="sec-h">VOLLSTÄNDIGE KARTE</div><div id="fullBox" class="view" style="gap:6px"></div></div>
       <div class="setg-sec setg-adm"><div class="sec-h">BIOS</div><div class="row" style="gap:8px;flex-wrap:wrap"><button type="button" class="btn" id="biosBtn">Für BIOS</button></div></div>
       <div class="setg-sec setg-adm"><div class="sec-h">HANDY ↔ PC</div><div class="row"><button type="button" class="btn" id="syncBtn">Sync</button></div></div>
     </div>
@@ -2826,6 +2839,27 @@ window.addEventListener('resize',fit);window.addEventListener('load',fit);fit();
   const ordRd = o => (o && +o.rd) || remindDays();   // Erinnerungstage pro Bestellung (sonst Standard)
   const itRd = i => ordRd(S.orders.find(o => o.id === i.orderId) || S.orders.find(o => (o.itemIds || []).includes(i.id)));
   const overdue = () => S.items.filter(i => i.status === 'gesendet' && days(lastTouch(i)) >= itRd(i));
+  // ---------- Vollständige Karte: Regeln, Prüfung, Herkunft ----------
+  const FULL_F = [['firm', 'Artikelnummer', 'p'], ['loc', 'Lagerort', 'p'], ['stock', 'Bestand', 'p'], ['min', 'Mindestbestand', 'p'],
+    ['img', 'Foto', 'w'], ['specs', 'Maße / Angaben', 'w'], ['maker', 'Hersteller + Art.-Nr.', 'w'], ['cut', 'Schnittdaten', 'o']];
+  const fullRule = k => { const m = (S.meta && S.meta.full) || {}; return m[k] || (FULL_F.find(f => f[0] === k) || [])[2] || 'o'; };
+  const fullHas = (t, k) => k === 'firm' ? !!(t.firm && !isNeu(t.firm)) : k === 'loc' ? !!String(t.loc || '').trim() : k === 'stock' ? hasStock(t)
+    : k === 'min' ? String(t.min ?? '').trim() !== '' : k === 'img' ? !!t.img : k === 'specs' ? (specsOut(t).length + attrsShown(t).length) > 0
+    : k === 'maker' ? !!(t.maker && t.makerArt) : k === 'cut' ? !!(t.cut && t.cut.length) : true;
+  const fullMiss = (t, lvl) => FULL_F.filter(([k]) => (lvl ? fullRule(k) === lvl : fullRule(k) !== 'o') && !fullHas(t, k));
+  const isIncomplete = t => !t.stPending && fullMiss(t, 'p').length > 0;
+  const srcOf = t => t.src || (t.firm && !isNeu(t.firm) && (() => { try { return catIndex().has(BIOSP.DIG(t.firm)); } catch { return false; } })() ? 'bios' : 'manual');
+  const SRC_L = { bios: 'Aus BIOS übernommen', station: 'Von der Station', manual: 'Selbst angelegt' };
+  const stationWho = t => { const m = (S.moves || []).find(x => x.libId === t.id && x.who); return m ? m.who : ''; };
+  function fullBarHTML(t) {
+    const p = fullMiss(t, 'p'), w = fullMiss(t, 'w'); if (!p.length && !w.length) return '';
+    return `<div class="fullbar ${p.length ? 'p' : 'w'}"><span class="fb-t"><b>Fehlt noch</b><small>${[...p.map(f => `<em>${f[1]}</em>`), ...w.map(f => f[1])].join(' · ')}</small></span>${can('adm') ? `<button type="button" class="btn sm ${p.length ? 'primary' : ''}" data-ds="fill">Ergänzen</button>` : ''}</div>`;
+  }
+  function fullSettingsHTML() {
+    return FULL_F.map(([k, l]) => { const r = fullRule(k); return `<div class="fs-r"><span>${l}</span><div class="seg3 sm">${[['p', 'Pflicht'], ['w', 'Wünschenswert'], ['o', 'Aus']].map(([v, n]) => `<button type="button" data-full="${k}" data-v="${v}" aria-pressed="${r === v}">${n}</button>`).join('')}</div></div>`; }).join('')
+      + `<div class="hint">Pflicht = Karte gilt als unvollständig (Bibliothek „Unvollständig“, Start „Zu tun“). Wünschenswert = nur als Hinweis in der Karte. Eine Nummer NEU-… zählt als fehlende Artikelnummer.</div>`;
+  }
+
   const orderItems = o => o.itemIds.map(id => S.items.find(i => i.id === id)).filter(Boolean);
   const orderLate = o => orderItems(o).some(i => i.status === 'gesendet' && days(lastTouch(i)) >= itRd(i));
   let OF = 'all';   // Unterwegs-Filter: all | late | ok
@@ -3007,22 +3041,41 @@ window.addEventListener('resize',fit);window.addEventListener('load',fit);fit();
   const shy = ty => esc(ty).replace(/([A-ZÄÖÜ]{3,})(PLATTE|STAHL|STANGE|ZANGE|BUCHSE|MITTEL|BOHRER|FRÄSER|SENKER|BACKEN|KOPF|HALTER)(?![A-ZÄÖÜ])/g, '$1&shy;$2');
   const toolsOf = ty => S.lib.filter(t => (t.type || 'SONSTIGES') === ty);
 
-  function libRowHTML(t, showType) {
+  function libRowHTML(t, showType, mode) {
     const st = stats(t.id);
     const s = [showType && `<span>${esc(t.type || 'SONSTIGES')}</span>`, (t.uses || []).length && `<span>${t.uses.length} NOTIZ${t.uses.length > 1 ? 'EN' : ''}</span>`, ...attrsShown(t).map(x => `<span>${esc(x)}</span>`), ...specsOut(t).map(x => `<b>${esc(x)}</b>`), t.firm && `<span>ART.-NR. <b>${esc(t.firm)}</b></span>`, t.maker && `<span>${esc(t.maker)}</span>`].filter(Boolean).join('');
-    const flag = st.inCart ? 'AUF DER LISTE' : st.waiting ? 'UNTERWEGS' : '';
+    let flag = st.inCart ? 'AUF DER LISTE' : st.waiting ? 'UNTERWEGS' : '';
+    if (mode === 'inc') { const m = fullMiss(t, 'p'); flag = ''; var extra = `<div class="lr-miss">Fehlt: ${m.map(x => x[1]).join(' · ')}</div>`; }
+    else if (mode === 'station' || mode === 'bios' || mode === 'new') { const w = mode === 'station' ? stationWho(t) : ''; var extra = `<div class="lr-miss soft">${mode === 'new' ? SRC_L[srcOf(t)] + ' · ' : ''}${t.createdAt ? fmtD(t.createdAt) : 'Datum unbekannt'}${w ? ' · ' + esc(w) : ''}${isIncomplete(t) ? ' · <em>unvollständig</em>' : ''}</div>`; }
     return `<div class="lr" data-lt="open" data-id="${t.id}" role="button" tabindex="0">
       ${thumb(t.img, '', t)}
-      <div class="body"><div class="t">${esc(fullName(t))}</div>${s ? `<div class="s">${s}</div>` : ''}${flag ? `<div class="flag">${flag}</div>` : ''}</div>
+      <div class="body"><div class="t">${esc(fullName(t))}</div>${s ? `<div class="s">${s}</div>` : ''}${flag ? `<div class="flag">${flag}</div>` : ''}${typeof extra !== 'undefined' ? extra : ''}</div>
       <button type="button" class="plus" data-lt="order" data-id="${t.id}" aria-label="Bestellen">+</button>
     </div>`;
   }
 
   try { S.libZero = localStorage.getItem('cititool_lib_zero') === '1'; } catch {}
+  function libFiltHTML() {
+    if (!S.lib.length) return '';
+    const n = { inc: S.lib.filter(isIncomplete).length, bios: S.lib.filter(t => srcOf(t) === 'bios').length, station: S.lib.filter(t => srcOf(t) === 'station' && !t.stPending).length };
+    return [['', `Alle ${S.lib.filter(t => !t.stPending).length}`], ['inc', `Unvollständig ${n.inc}`], ['bios', `Aus BIOS ${n.bios}`], ['station', `Von der Station ${n.station}`], ['new', 'Zuletzt angelegt']]
+      .filter(([k]) => !k || k === 'new' || k === 'inc' || n[k]).map(([k, l]) => `<button type="button" data-libf="${k}" aria-pressed="${(S.libF || '') === k}">${l}</button>`).join('');
+  }
+  function libFlatHTML() {
+    const f = S.libF; let L = S.lib.filter(t => !t.stPending);
+    if (f === 'inc') L = L.filter(isIncomplete).sort((a, b) => fullMiss(b, 'p').length - fullMiss(a, 'p').length || (b.createdAt || 0) - (a.createdAt || 0));
+    else if (f === 'bios' || f === 'station') L = L.filter(t => srcOf(t) === f).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+    else if (f === 'new') L = L.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)).slice(0, 40);
+    if (!L.length) return f === 'inc' ? `<div class="allgood"><span><b>Alle Karten vollständig</b><small>Pflichtfelder sind überall ausgefüllt. Was als Pflicht gilt: Zahnrad → „Vollständige Karte“.</small></span></div>` : `<div class="empty"><b>Keine Karten</b></div>`;
+    const hint = { inc: 'Nur Pflichtfelder zählen. Einstellen: Zahnrad → „Vollständige Karte“.', station: 'An der Ausgabestation aus dem BIOS-Katalog genommen.', bios: 'Aus dem BIOS-Katalog übernommen.', new: 'Die 40 neuesten Karten.' }[f] || '';
+    return (hint ? `<div class="hint" style="margin:0 0 6px">${hint}</div>` : '') + L.map(t => libRowHTML(t, true, f)).join('');
+  }
   function renderLib() {
     const home = !S.libType;
     $('libHome').hidden = !home; $('libTypeView').hidden = home;
     if (home) {
+      $('libF').innerHTML = S.libQ ? '' : libFiltHTML();
+      if (S.libF && !S.libQ) { $('libCats').innerHTML = libFlatHTML(); return; }
       if (S.libQ) {
         const hits = S.lib.filter(t => match(hay(t), S.libQ));
         const by = {}; hits.forEach(t => (by[t.type || 'SONSTIGES'] ||= []).push(t));
@@ -3091,6 +3144,7 @@ window.addEventListener('resize',fit);window.addEventListener('load',fit);fit();
   $('libCats').addEventListener('click', libClick);
   $('libTypeView').addEventListener('click', libClick);
   [$('libCats'), $('ltList')].forEach(el => el.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.matches('.lr')) e.target.click(); }));
+  $('libF').addEventListener('click', e => { const b = e.target.closest('[data-libf]'); if (!b) return; S.libF = S.libF === b.dataset.libf ? '' : b.dataset.libf; renderLib(); });
   $('libQ').addEventListener('input', e => { S.libQ = U(e.target.value); renderLib(); });
   $('ltQ').addEventListener('input', e => { S.ltQ = U(e.target.value); renderLib(); });
 
@@ -3187,8 +3241,10 @@ window.addEventListener('resize',fit);window.addEventListener('load',fit);fit();
       <div class="ds-type"><span class="gi">${typeIcon(t.type || 'SONSTIGES')}</span>${esc(t.type || 'SONSTIGES')}</div>
       <h3 class="ds-name">${esc(fullName(t))}</h3>
       ${chips ? `<div class="chips">${chips}</div>` : ''}
+      ${fullBarHTML(t)}
       <dl class="ds-tab">
         ${row('ARTIKELNUMMER', t.firm)}${row('HERSTELLER', t.maker)}${row('HERST.-NR.', t.makerArt)}${row('STD.-MENGE', t.qty)}${row('MASCHINE', t.mach)}${row('NOTIZ', t.note)}
+        <dt>HERKUNFT</dt><dd>${SRC_L[srcOf(t)]}${t.createdAt ? ' · ' + fmtD(t.createdAt) : ''}${srcOf(t) === 'station' && stationWho(t) ? ' · ' + esc(stationWho(t)) : ''}</dd>
         <dt>BESTELLT</dt><dd>${st.count ? `${st.count}× · zuletzt ${fmtD(st.last)}` : 'noch nie'}${st.inCart ? ' · AUF DER LISTE' : st.waiting ? ' · UNTERWEGS' : ''}</dd>
       </dl>
       <div class="ds-stock ${stockCls(t)}"><div class="stk"><div><div class="l">BESTAND</div><div class="n">${hasStock(t) ? t.stock : '–'}</div></div>${hasStock(t) ? stockBar(t) : '<span class="hint" style="flex:1">noch nicht erfasst</span>'}<div style="text-align:right"><div class="l">MIN</div><div class="mono" style="font-weight:600">${minOf(t) || '–'}</div></div></div>
@@ -3219,6 +3275,9 @@ window.addEventListener('resize',fit);window.addEventListener('load',fit);fit();
     const a = b.dataset.ds;
     if (a === 'order') orderTool(t);
     if (a === 'edit') { closeDetail(); openToolWiz({ tool: t }); }
+    if (a === 'fill') { const miss = fullMiss(t).map(f => f[0]); closeDetail(); openToolWiz({ tool: t }); TW.step = miss[0] === 'specs' ? 1 : 2; renderTW();
+      const fk = { firm: 'firm', loc: 'loc', min: 'min', stock: 'stock0', maker: miss.includes('maker') ? (t.maker ? 'makerArt' : 'maker') : '' }; const first = miss.map(m => fk[m]).find(Boolean);
+      setTimeout(() => { const el = first && document.querySelector(`#twBody [data-twf="${first}"]`); if (el) { el.scrollIntoView({ block: 'center' }); el.focus({ preventScroll: true }); el.closest('label')?.classList.add('need'); } else if (miss.includes('img')) document.querySelector('#twBody .photo')?.classList.add('need'); }, 120); return; }
     if (a === 'retype') { closeDetail(); openToolWiz({ tool: t, retype: true }); }
     if (a === 'scan') { closeDetail(); scanTool({ tool: t }); }
     if (a === 'label') { closeDetail(); openLabels([t.id]); }
@@ -4151,7 +4210,7 @@ Antworte NUR mit gültigem JSON, alle Werte als Strings in Anführungszeichen: {
     let tool;
     let neuOld = '';
     if (TW.editId) { tool = S.lib.find(x => x.id === TW.editId); neuOld = isNeu(tool.firm) && nzc(tool.firm) !== nzc(d.firm) ? tool.firm : ''; Object.assign(tool, d, { id: tool.id, updatedAt: Date.now() }); delete tool.stNew; delete tool.stPending; if (neuOld) neuKeep(tool, neuOld); if (TW.origType && TW.origType !== tool.type) S.items.forEach(i => { if (i.libId === tool.id) i.type = tool.type; }); }
-    else { tool = { ...d, id: newId(), createdAt: Date.now() }; S.lib.push(tool); }
+    else { tool = { ...d, id: newId(), createdAt: Date.now(), src: TW.copy ? 'manual' : d.src || (TW.fromCat ? 'bios' : 'manual') }; S.lib.push(tool); }
     { const s0 = tool.stock0; delete tool.stock0; tool.min = tool.min ? qtyNum(tool.min) : undefined; if (s0 !== undefined && s0 !== '' && !hasStock(tool)) book(tool, 'inv', qtyNum(s0), { note: 'ANFANGSBESTAND' }); }
     const cb = TW.onSave;
     closeToolWiz();
@@ -4639,7 +4698,7 @@ ${attrs}
   function stNewSectionHTML() {
     const L = stNewList(); if (!L.length || !can('adm')) return '';
     return `<div class="lib-cat stn-sec" id="stnSec"><div class="sec-h">VON DER STATION · ${L.length}<span class="hint" style="margin-left:auto">Lagerort · Bestand · Min ergänzen</span></div>
-      <div class="hint" style="margin:-4px 0 8px">An der Ausgabestation aus dem BIOS-Katalog genommen. Antippen, ergänzen, speichern – dann verschwindet die Karte hier.</div>
+      <div class="hint" style="margin:-4px 0 8px">An der Ausgabestation aus dem BIOS-Katalog genommen. Antippen, ergänzen, speichern. Alle Karten von der Station findest du oben unter „Von der Station“.</div>
       ${L.map(t => libRowHTML(t, false)).join('')}</div>`;
   }
   function setsSectionHTML() {
@@ -5575,6 +5634,8 @@ Antworte NUR mit JSON: {"map":{"feld":"Spaltenname"},"typ":"häufigster Werkzeug
     const wait = open.length - late.length, rows = [];
     const r = (cls, n, t, s, attr) => rows.push(`<button type="button" class="td-r ${cls}" ${attr}><span class="td-n mono">${n}</span><span class="td-t"><b>${t}</b>${s ? `<small>${s}</small>` : ''}</span><span class="td-go">›</span></button>`);
     if (can('adm')) { const n = stNewList().length; if (n) r('acc', n, n === 1 ? 'Neue Karte von der Station' : 'Neue Karten von der Station', 'Lagerort, Bestand und Min ergänzen', 'data-home="stnew"'); }
+    if (can('adm')) { const L = S.lib.filter(t => isIncomplete(t) && !t.stNew), n = L.length; if (n) { const g = {}; L.forEach(t => fullMiss(t, 'p').forEach(f => g[f[1]] = (g[f[1]] || 0) + 1));
+      r('', n, n === 1 ? 'Karte unvollständig' : 'Karten unvollständig', 'Fehlt: ' + Object.entries(g).sort((a, b) => b[1] - a[1]).map(([l, c]) => `${c}× ${l}`).join(' · '), 'data-home="libinc"'); } }
     if (can('adm')) { const n = probOpenCount(); if (n) { const g = {}; probOpenList().forEach(p => { const l = ({ problem: 'Gemeldet', minus: 'Bestand', leer: 'Leer', low: 'Unter Min', viel: 'Entnahme', undo: 'Entnahme', noname: 'Ohne Namen', unknown: 'Codes' })[p.kind] || (/^b/.test(p.kind) ? 'BIOS' : 'Sonstiges'); g[l] = (g[l] || 0) + 1; });
       r('warn', n, n === 1 ? 'Auffälligkeit' : 'Auffälligkeiten', Object.entries(g).sort((a, b) => b[1] - a[1]).map(([l, c]) => `${c}× ${l}`).join(' · ') + ' – letzte 7 Tage', 'data-pb="all"'); } }
     if (late.length) r('crit', late.length, late.length === 1 ? 'Bestellung überfällig' : 'Bestellungen überfällig', 'Nachfragen oder als erhalten abhaken', 'data-home="late"');
@@ -5669,6 +5730,7 @@ Antworte NUR mit JSON: {"map":{"feld":"Spaltenname"},"typ":"häufigster Werkzeug
     if (a === 'scan') { scanTool(); return; }
     if (a === 'aus') { setView('aus'); return; }
     if (a === 'inv') { setView('aus'); ivOpen(); return; }
+    if (a === 'libinc') { S.libF = 'inc'; S.libQ = ''; S.libType = null; setView('lib'); renderLib(); return; }
     if (a === 'minlist' && can('order')) { S.minFocus = true; setView('orders'); render(); setTimeout(() => goTo($('minBlk')), 60); return; }
     if (a === 'minlist') { AU.filt = 'min'; AU.locF = ''; setView('aus'); setTimeout(() => $('ausFilt').scrollIntoView({ behavior: 'smooth', block: 'start' }), 60); return; }
     if (a === 'soon') { AU.filt = lowStock().length ? 'low' : 'soon'; setView('aus'); setTimeout(() => $('ausList').scrollIntoView({ behavior: 'smooth', block: 'start' }), 60); return; }
@@ -7852,6 +7914,8 @@ Antworte NUR mit JSON: {"map":["feld oder leer", ...]} – gleiche Reihenfolge u
   }
   matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', () => applyTheme());
   applyTheme();
+  function renderFullBox() { const el = $('fullBox'); if (el) el.innerHTML = fullSettingsHTML(); }
+  $('fullBox').addEventListener('click', e => { const b = e.target.closest('[data-full]'); if (!b) return; S.meta.full = { ...(S.meta.full || {}), [b.dataset.full]: b.dataset.v }; renderFullBox(); commit('Gespeichert · gilt auf allen Geräten'); });
   function renderLook() {
     const th = lsGet(THEME_K) || 'light', im = lsGet(INTRO_K) || 'day';
     const SUN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M4.6 4.6l1.4 1.4M18 18l1.4 1.4M2.5 12h2M19.5 12h2M4.6 19.4 6 18M18 6l1.4-1.4"/></svg>';
@@ -7989,7 +8053,7 @@ Antworte NUR mit JSON: {"map":["feld oder leer", ...]} – gleiche Reihenfolge u
       let back = false; try { const r = JSON.parse(localStorage.getItem('cititool_last_view') || 'null'); back = !!(r && r.v && r.v !== 'home' && Date.now() - r.ts < 8 * 3600e3); } catch {}
       introPlay({ quick: H.classList.contains('ln-quick'), launch: back ? false : undefined });
   } }
-  renderLook();
+  renderLook(); renderFullBox();
 
   // ---------- Plus-Menü ----------
   const pmToggle = open => { const m = $('plusMenu'), o = open ?? m.hidden; m.hidden = !o; $('plusBtn').setAttribute('aria-expanded', String(o)); };
@@ -8011,7 +8075,7 @@ Antworte NUR mit JSON: {"map":["feld oder leer", ...]} – gleiche Reihenfolge u
   $('setBtn').onclick = () => {
     const last = parseInt(lsGet(K.lastBackup) || '0', 10);
     $('setgBk').textContent = last ? `Letztes Backup: ${fmtD(last)} (${ageText(days(last)).toLowerCase()})` : 'Noch kein Backup gemacht.';
-    renderAcc(); biosBtnSync(); $('setgSheet').hidden = false;
+    renderAcc(); biosBtnSync(); $('setgSheet').hidden = false; renderFullBox();
   };
   $('setgClose').onclick = () => $('setgSheet').hidden = true;
   $('setgSheet').addEventListener('click', e => { if (e.target === $('setgSheet')) $('setgSheet').hidden = true; });
@@ -8122,6 +8186,7 @@ Antworte NUR mit JSON: {"map":["feld oder leer", ...]} – gleiche Reihenfolge u
     setView('orders'); render();
     setTimeout(() => goTo(f === 'cart' ? $('cart').closest('.card') : (h => h && h.classList.contains('sec-h') ? h : $('alarm'))($('alarm').previousElementSibling), f === 'cart'), 60);
   }
+
   // ---------- Bestellen: Block „Unter Mindestbestand“ ----------
   const minQty = x => x.qty || String(Math.max(minOf(x) * 2 - x.stock, 1));
   const waitOrderOf = t => S.orders.find(o => orderItems(o).some(i => i.libId === t.id && i.status === 'gesendet'));
@@ -8152,7 +8217,7 @@ Antworte NUR mit JSON: {"map":["feld oder leer", ...]} – gleiche Reihenfolge u
       const r = document.querySelector(`#waiting [data-oa="tog"][data-id="${o.id}"]`)?.closest('.ord'); if (r) { r.scrollIntoView({ behavior: 'smooth', block: 'start' }); r.classList.remove('mbf'); void r.offsetWidth; r.classList.add('mbf'); } return; }
   });
   // ---------- Version: Nummer anzeigen, neue Version erkennen ----------
-  const APP_VER = '2026.11.14-2';
+  const APP_VER = '2026.11.14-3';
   let verSeen = '';
   async function verCheck() {
     if (!/^https?:/.test(location.protocol)) return;
