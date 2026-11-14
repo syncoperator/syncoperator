@@ -5525,7 +5525,7 @@ Antworte NUR mit JSON: {"map":{"feld":"Spaltenname"},"typ":"häufigster Werkzeug
     { const lowA = lowStock(), busy = lowA.length - lowS.length;
       if (lowA.length) r(lowS.length ? 'warn' : '', lowA.length, 'Unter Mindestbestand',
         lowS.length ? lowS.slice(0, 2).map(t => esc(shortName(t) || fullName(t))).join(' · ') + (lowS.length > 2 ? ' …' : '') + (busy ? ` · ${busy} schon bestellt` : '') : (lowA.length === 1 ? 'Schon bestellt oder auf der Liste' : 'Alle schon bestellt oder auf der Liste'),
-        lowS.length ? 'data-home="orderlow"' : 'data-home="soon"'); }
+        'data-home="minlist"'); }
     if (cart.length) r('', cart.length, cart.length === 1 ? 'Position auf der Liste' : 'Positionen auf der Liste', oldCart.length ? (dd => `Liegt seit ${dd} ${dd === 1 ? 'Tag' : 'Tagen'} – noch nicht gesendet`)(Math.max(...oldCart.map(i => days(i.createdAt)))) : 'Noch nicht gesendet', 'data-home="send"');
     if (wait) r('', wait, wait === 1 ? 'Bestellung unterwegs' : 'Bestellungen unterwegs', 'Im Zeitplan', 'data-home="wait"');
     if (!rows.length) return `<div class="allgood"><svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><circle cx="11" cy="11" r="9" stroke="currentColor" stroke-width="1.6" fill="none"/><path class="draw" d="M7 11.5l2.6 2.5L15 8.5" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg><span><b>Alles erledigt</b><small>Nichts offen, nichts überfällig.</small></span></div>`;
@@ -5613,6 +5613,7 @@ Antworte NUR mit JSON: {"map":{"feld":"Spaltenname"},"typ":"häufigster Werkzeug
     if (a === 'scan') { scanTool(); return; }
     if (a === 'aus') { setView('aus'); return; }
     if (a === 'inv') { setView('aus'); ivOpen(); return; }
+    if (a === 'minlist') { AU.filt = 'min'; AU.locF = ''; setView('aus'); setTimeout(() => $('ausFilt').scrollIntoView({ behavior: 'smooth', block: 'start' }), 60); return; }
     if (a === 'soon') { AU.filt = lowStock().length ? 'low' : 'soon'; setView('aus'); setTimeout(() => $('ausList').scrollIntoView({ behavior: 'smooth', block: 'start' }), 60); return; }
     if (a === 'jr') { openJournal(); return; }
     if (a === 'orderlow') { lowStock().forEach(x => { const st = stats(x.id); if (!st.inCart && !st.waiting) addToCart(x, { qty: x.qty || String(Math.max(minOf(x) * 2 - x.stock, 1)) }); }); commit('Auf die Bestellliste gesetzt'); boOpen(); boGo('korb'); return; }
@@ -6223,9 +6224,11 @@ ${labelCSS(o)}
     const sw = shelfWarmer().length, soon = S.lib.filter(t => { const r = reach(t); return r && r.d <= 14; }).length;
     const attF = t => hasStock(t) && (stockCls(t) === 'low' || stockOf(t) <= 0 || (() => { const r = reach(t); return r && r.d <= 14; })());
     const attN = S.lib.filter(attF).length;
-    $('ausFilt').innerHTML = [['att', `Wichtig${attN ? ' ' + attN : ''}`], ['all', `Alle ${S.lib.length}`], ['low', 'Niedrig'], ['soon', `Bald leer${soon ? ' ' + soon : ''}`], ['idle', `Ladenhüter${sw ? ' ' + sw : ''}`], ['none', 'Offen']].map(([k, l]) => `<button type="button" data-au="filt" data-v="${k}" aria-pressed="${AU.filt === k}">${l}</button>`).join('');
+    const minN = lowStock().length;
+    $('ausFilt').innerHTML = [['att', `Wichtig${attN ? ' ' + attN : ''}`], ...(minN || AU.filt === 'min' ? [['min', `Unter Min ${minN}`]] : []), ['all', `Alle ${S.lib.length}`], ['low', 'Niedrig'], ['soon', `Bald leer${soon ? ' ' + soon : ''}`], ['idle', `Ladenhüter${sw ? ' ' + sw : ''}`], ['none', 'Offen']].map(([k, l]) => `<button type="button" data-au="filt" data-v="${k}" aria-pressed="${AU.filt === k}">${l}</button>`).join('');
     let ls = S.lib.slice();
     if (AU.filt === 'att' && !AU.locF) ls = ls.filter(attF);
+    if (AU.filt === 'min') { const ids = new Set(lowStock().map(t => t.id)); ls = ls.filter(t => ids.has(t.id)); }
     if (AU.filt === 'low') ls = ls.filter(t => stockCls(t) === 'low');
     if (AU.filt === 'none') ls = ls.filter(t => !hasStock(t));
     if (AU.filt === 'soon') ls = ls.filter(t => { const r = reach(t); return r && r.d <= 14; }).sort((a, b) => reach(a).d - reach(b).d);
@@ -6234,9 +6237,9 @@ ${labelCSS(o)}
     $('ausLocF').innerHTML = AU.locF ? `<div class="locf"><span>⌂ ${esc(AU.locF)} · ${ls.length} Werkzeuge</span><button type="button" data-au="locx" aria-label="Filter weg">×</button></div>` : '';
     ls.sort((a, b) => (hasStock(b) - hasStock(a)) || (stockCls(a) === 'low' ? -1 : 0) - (stockCls(b) === 'low' ? -1 : 0) || String(a.loc || '~').localeCompare(String(b.loc || '~')) || fullName(a).localeCompare(fullName(b)));
     const lowFree = low.filter(t => { const x = stats(t.id); return !x.inCart && !x.waiting; });
-    const attBtn = AU.filt === 'att' && lowFree.length && can('order') ? `<div class="att-bar"><span><b>${lowFree.length} unter Mindestbestand</b><small>noch nicht bestellt</small></span><button type="button" class="btn sm primary" data-au="orderlow">Auf die Bestellliste</button></div>` : '';
+    const attBtn = (AU.filt === 'att' || AU.filt === 'min') && lowFree.length && can('order') ? `<div class="att-bar"><span><b>${lowFree.length} unter Mindestbestand</b><small>noch nicht bestellt</small></span><button type="button" class="btn sm primary" data-au="orderlow">Auf die Bestellliste</button></div>` : '';
     $('ausList').innerHTML = attBtn + ls.map(t => { const mn = minOf(t), cap = Math.max(mn * 2, stockOf(t), 1);
-      return `<button type="button" class="al ${stockCls(t)}" data-au="pick" data-id="${t.id}">${thumb(t.img, '', t)}<span class="t"><b>${esc(fullName(t))}</b><small>${[t.loc && '⌂ ' + esc(t.loc), mn && 'MIN ' + mn, AU.filt === 'idle' ? idleDays(t) + ' T OHNE AUSGABE' : reachTxt(t)].filter(Boolean).join(' · ')}</small>${hasStock(t) ? `<span class="mb"><i style="width:${Math.max(3, Math.min(100, stockOf(t) / cap * 100))}%"></i></span>` : ''}</span><span class="s">${hasStock(t) ? t.stock : '–'}<small>${hasStock(t) ? 'STK' : ''}</small></span></button>`; }).join('')
+      return `<button type="button" class="al ${stockCls(t)}" data-au="pick" data-id="${t.id}">${thumb(t.img, '', t)}<span class="t"><b>${esc(fullName(t))}</b><small>${[t.loc && '⌂ ' + esc(t.loc), mn && 'MIN ' + mn, AU.filt === 'min' && (stats(t.id).waiting ? 'UNTERWEGS' : stats(t.id).inCart ? 'AUF DER LISTE' : 'NOCH NICHT BESTELLT'), AU.filt === 'idle' ? idleDays(t) + ' T OHNE AUSGABE' : reachTxt(t)].filter(Boolean).join(' · ')}</small>${hasStock(t) ? `<span class="mb"><i style="width:${Math.max(3, Math.min(100, stockOf(t) / cap * 100))}%"></i></span>` : ''}</span><span class="s">${hasStock(t) ? t.stock : '–'}<small>${hasStock(t) ? 'STK' : ''}</small></span></button>`; }).join('')
       || (AU.filt === 'att' && S.lib.length ? `<div class="allgood"><span><b>Nichts knapp</b><small>Kein Werkzeug leer oder unter Min. <button type="button" class="link" data-au="filt" data-v="all">Alle ${S.lib.length} zeigen</button></small></span></div>` : `<div class="empty"><b>${S.lib.length ? 'Nichts in diesem Filter' : 'Noch keine Werkzeuge'}</b></div>`);
     const mvAll = (S.moves || []).slice(-25).reverse(), mv = AU.logAll ? mvAll : mvAll.slice(0, 5);
     $('ausLog').innerHTML = mv.length ? mv.map((m, i) => { const t = S.lib.find(x => x.id === m.libId);
