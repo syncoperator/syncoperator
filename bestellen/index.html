@@ -1698,6 +1698,34 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%;touch-action:manipulati
 .tw-scan{background:var(--ink)!important;color:var(--on-ink)!important}
 .tw-scan span{opacity:.75}
 .ln-b:not(.main) .ic{background:var(--ink)!important;color:var(--on-ink)!important;box-shadow:none!important}
+
+/* ===== Übersichtlich (Test) ===== */
+.td-card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:6px 14px 4px;margin-bottom:14px}
+.td-h{padding:8px 0 4px}.td-h b{font:600 11px var(--f-mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.td-r{all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:12px;width:100%;padding:11px 0;border-top:1px solid var(--line)}
+.td-h+.td-r{border-top:0}
+.td-n{flex:none;min-width:34px;height:34px;padding:0 6px;box-sizing:border-box;border-radius:10px;display:grid;place-items:center;font-size:15px;font-weight:600;background:var(--soft);color:var(--fg)}
+.td-r.crit .td-n{background:var(--crit);color:#fff}.td-r.warn .td-n{background:var(--ink);color:var(--on-ink)}.td-r.acc .td-n{background:var(--ink);color:var(--on-ink)}
+.td-t{flex:1;min-width:0}.td-t b{display:block;font:600 14.5px/1.25 var(--f-head);text-transform:none}.td-t small{display:block;text-transform:none!important;letter-spacing:0!important;font-family:var(--f-body,inherit);font-size:12px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.td-go,.chev{flex:none;font-size:20px;color:var(--muted);transition:transform .2s}
+.hs-tog,.rp-set{all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:10px;width:100%;padding:13px 16px;margin:18px 0 10px;border-radius:14px;background:var(--card);border:1px solid var(--line)}
+.hs-tog b,.rp-set b{font:600 14px var(--f-head)}.hs-tog small,.rp-set small{flex:1;min-width:0;font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-transform:none}
+.hs-tog[aria-expanded="true"] .chev,.rp-set[aria-expanded="true"] .chev,.ox-h[aria-expanded="true"] .chev{transform:rotate(90deg)}
+.rp-set{margin:4px 0 12px}
+.ord.ox{padding-top:0;padding-bottom:0}
+.ord.ox .ox-h{all:unset;box-sizing:border-box;cursor:pointer;display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;width:100%;padding:14px 0}
+.ord.ox .ox-h .chev{margin-left:auto}
+.ord.ox.open{padding-bottom:12px}
+.ox-all{display:flex;justify-content:flex-end;margin:-4px 0 6px}
+.pick-hint{font-size:13px;color:var(--muted);padding:10px 2px}
+.lib-zero{margin:10px 0 4px}
+@media (max-width:560px){
+  .pb-r{display:grid;grid-template-columns:1fr auto auto;column-gap:8px;row-gap:5px;align-items:center}
+  .pb-r .pb-k{grid-column:1/-1;justify-self:start;width:auto;max-width:none}
+  .pb-r .pb-t{grid-column:1}
+}
+.nav .n.alert.calm{background:var(--ink);color:var(--on-ink)}
+.nav button[aria-pressed="true"] .n.alert.calm{background:var(--on-ink);color:var(--ink)}
 </style>
 </head>
 <body>
@@ -2392,6 +2420,10 @@ window.addEventListener('load',ctFit);window.addEventListener('resize',ctFit);se
       const hits = S.lib.filter(t => match(hay(t), q));
       if (!hits.length) { R.innerHTML = `<div class="empty"><b>Nichts gefunden</b><button type="button" class="link" data-pick="new">„${esc(q)}“ als neues Werkzeug anlegen</button></div>`; return; }
       groups = [['', hits]];
+    } else if (S.pickOpen && S.lib.some(t => t.id === S.pickOpen)) {
+      groups = [['', S.lib.filter(t => t.id === S.pickOpen)]];
+    } else if (!S.pickAll) {
+      R.innerHTML = `<div class="pick-hint">Suchwort eingeben – Treffer erscheinen hier. <button type="button" class="link" data-pick="all">Alle ${S.lib.length} zeigen</button></div>`; return;
     } else {
       const withLast = S.lib.map(t => [t, stats(t.id).last]);
       const recent = withLast.filter(x => x[1]).sort((a,b) => b[1]-a[1]).map(x => x[0]);
@@ -2430,6 +2462,7 @@ window.addEventListener('load',ctFit);window.addEventListener('resize',ctFit);se
   $('pickRes').addEventListener('click', e => {
     const b = e.target.closest('[data-pick]'); if (!b) return;
     if (b.dataset.pick === 'new') { $('goNewTool').click(); return; }
+    if (b.dataset.pick === 'all') { S.pickAll = true; renderPick(); return; }
     if (b.dataset.pick === 'more') { S.pickMore = S.pickMore || {}; S.pickMore[b.dataset.g] = !S.pickMore[b.dataset.g]; renderPick(); return; }
     const t = S.lib.find(x => x.id === b.dataset.id); if (!t) return;
     if (b.dataset.pick === 'toggle') {
@@ -2732,6 +2765,9 @@ window.addEventListener('resize',fit);window.addEventListener('load',fit);fit();
       <div class="timer ${late ? 'late' : w >= 60 ? 'mid' : ''}" style="--n:${rd};--w:${Math.max(4, w)}%"><span class="tk"></span><span class="fill"></span><span class="lbl">${late ? (since - rd ? `${since - rd} T ÜBERFÄLLIG` : 'HEUTE NACHFRAGEN') : `TAG ${since} VON ${rd}`}</span></div>
     </div>`;
   }
+  // Unterwegs: Bestellungen eingeklappt, Antippen klappt auf (gemerkt)
+  const OX = (() => { try { return new Set(JSON.parse(localStorage.getItem('cititool_ox') || '[]')); } catch { return new Set(); } })();
+  const oxSave = () => { try { localStorage.setItem('cititool_ox', JSON.stringify([...OX].slice(-30))); } catch {} };
   function orderBlock(o, inArchive) {
     const its = orderItems(o);
     const got = its.filter(i => i.status === 'geliefert').length;
@@ -2759,9 +2795,13 @@ window.addEventListener('resize',fit);window.addEventListener('load',fit);fit();
       : `${open.length ? `<button type="button" class="btn sm primary" data-oa="allgot" data-id="${o.id}">Alles erhalten</button>` : ''}
          ${open.length ? `<button type="button" class="btn sm" data-oa="remind" data-id="${o.id}">Erinnerung senden</button>` : ''}
          <span class="grow"></span><button type="button" class="btn ghost sm" data-oa="print" data-id="${o.id}">Drucken</button>`;
+    if (!inArchive) { const ox = OX.has(o.id);
+      return `<div class="ord ${cls} ox ${ox ? 'open' : ''}">
+      <button type="button" class="ord-h ox-h" data-oa="tog" data-id="${o.id}" aria-expanded="${ox}"><span class="nr">${esc(o.nr)}</span><span class="meta">${fmtD(o.sentAt)}${o.to ? ` · AN ${esc(o.to)}` : ''} · ${got}/${its.length} ERHALTEN</span>${statusChip}${rem}<span class="chev">›</span></button>
+      ${ox ? `${orderProg(o)}<div class="ol">${list}</div><div class="acts">${actions}</div>` : ''}
+    </div>`; }
     return `<div class="ord ${cls}">
       <div class="ord-h"><span class="nr">${esc(o.nr)}</span><span class="meta">${fmtD(o.sentAt)}${o.to ? ` · AN ${esc(o.to)}` : ''} · ${got}/${its.length} ERHALTEN</span>${statusChip}${rem}</div>
-      ${inArchive ? '' : orderProg(o)}
       <div class="ol">${list}</div>
       <div class="acts">${actions}</div>
     </div>`;
@@ -2776,6 +2816,7 @@ window.addEventListener('resize',fit);window.addEventListener('load',fit);fit();
     const b = e.target.closest('[data-oa]'); if (!b) return;
     const o = S.orders.find(x => x.id === b.dataset.id); if (!o) return;
     const act = b.dataset.oa, its = orderItems(o);
+    if (act === 'tog') { OX.has(o.id) ? OX.delete(o.id) : OX.add(o.id); oxSave(); render(); return; }
     if (act === 'allgot') { its.filter(i => i.status === 'gesendet').forEach(i => { i.status = 'geliefert'; i.deliveredAt = Date.now(); stockFromDelivery(i); }); commit(`${o.nr} komplett erhalten`); }
     if (act === 'remind') { setView('orders'); openSend('reminder', its.filter(i => i.status === 'gesendet').map(i => i.id), [o.id]); }
     if (act === 'print') printSheet(o);
@@ -2839,12 +2880,12 @@ window.addEventListener('resize',fit);window.addEventListener('load',fit);fit();
   });
   $('recvSheet').addEventListener('change', e => { if (e.target.id === 'rvRest') RV.rest = e.target.checked; });
   $('recvSheet').addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.id === 'rvQ') { e.preventDefault(); doRecv(); } });
-  $('waiting').addEventListener('click', onOrderClick);
+  $('waiting').addEventListener('click', e => { if (e.target.closest('[data-oxall]')) { const ords = S.orders.filter(o => orderItems(o).some(i => i.status === 'gesendet')); const all = ords.every(o => OX.has(o.id)); ords.forEach(o => all ? OX.delete(o.id) : OX.add(o.id)); oxSave(); render(); return; } onOrderClick(e); });
   $('archList').addEventListener('click', onOrderClick);
 
   function renderWaiting() {
     const ords = S.orders.filter(o => orderItems(o).some(i => i.status === 'gesendet')).sort((a,b) => a.sentAt - b.sentAt);
-    $('waiting').innerHTML = ords.length ? ords.map(o => orderBlock(o, false)).join('')
+    $('waiting').innerHTML = ords.length ? (ords.length > 1 ? `<div class="ox-all"><button type="button" class="link" data-oxall="1">${ords.every(o => OX.has(o.id)) ? 'Alle zuklappen' : 'Alle aufklappen'}</button></div>` : '') + ords.map(o => orderBlock(o, false)).join('')
       : `<div class="empty"><b>Nichts unterwegs</b>Gesendete Bestellungen warten hier, bis du sie als erhalten abhakst.</div>`;
   }
 
@@ -2905,6 +2946,7 @@ window.addEventListener('resize',fit);window.addEventListener('load',fit);fit();
     </div>`;
   }
 
+  try { S.libZero = localStorage.getItem('cititool_lib_zero') === '1'; } catch {}
   function renderLib() {
     const home = !S.libType;
     $('libHome').hidden = !home; $('libTypeView').hidden = home;
@@ -2919,13 +2961,17 @@ window.addEventListener('resize',fit);window.addEventListener('load',fit);fit();
           : `<div class="empty"><b>Keine Treffer${ch.length ? ' in der Bibliothek' : ''}</b><button type="button" class="link" data-lt="newq">„${esc(S.libQ)}“ als neues Werkzeug anlegen</button></div>`) + catHTML;
         return;
       }
-      $('libCats').innerHTML = stNewSectionHTML() + setsSectionHTML() + catList().map(c => `<div class="lib-cat"><div class="sec-h">${esc(c.t)}</div><div class="lib-tiles">${
+      const zeroN = catList().reduce((a, c) => a + c.types.filter(ty => !toolsOf(ty).length).length, 0), showZ = S.libZero || S.libEdit;
+      const setsH = setsSectionHTML(), setsTop = (S.sets || []).length;
+      $('libCats').innerHTML = stNewSectionHTML() + (setsTop ? setsH : '') + catList().map(c => ({ t: c.t, types: showZ ? c.types : c.types.filter(ty => toolsOf(ty).length) })).filter(c => c.types.length).map(c => `<div class="lib-cat"><div class="sec-h">${esc(c.t)}</div><div class="lib-tiles">${
         c.types.map(ty => { const n = toolsOf(ty).length, hot = toolsOf(ty).some(t => stats(t.id).inCart);
           return `<button type="button" class="lt-tile ${n ? '' : 'zero'}" data-lt="type" data-type="${esc(ty)}">
             ${hot ? '<span class="dot" title="auf der Liste"></span>' : ''}<span class="ct">${n || '–'}</span>
             <span class="ti">${typeIcon(ty)}</span><span class="nm">${shy(ty)}</span>
             ${S.libEdit && isCustomType(ty) ? `<span class="del" data-lt="deltype" data-type="${esc(ty)}" role="button" aria-label="Typ löschen">×</span>` : ''}</button>`; }).join('')
       }</div></div>`).join('') +
+      (zeroN ? `<div class="lib-zero"><button type="button" class="link" data-lt="zero">${showZ ? 'Leere Typen ausblenden' : `+ ${zeroN} weitere Typen (noch leer)`}</button></div>` : '') +
+      (setsTop ? '' : setsH) +
       (S.customTypes.length ? `<div class="lib-edit"><button type="button" class="link" data-lt="edit">${S.libEdit ? 'Fertig' : 'Eigene Typen bearbeiten'}</button></div>` : '');
       return;
     }
@@ -2963,6 +3009,7 @@ window.addEventListener('resize',fit);window.addEventListener('load',fit);fit();
     if (a === 'edit') { S.libEdit = !S.libEdit; renderLib(); return; }
     if (a === 'newq') { openToolWiz({ name: S.libQ }); return; }
     if (a === 'cat') { const r = catIndex().get(b.dataset.f); if (r) catOffer(r, x => openDetail(x.id)); return; }
+    if (a === 'zero') { S.libZero = !S.libZero; try { localStorage.setItem('cititool_lib_zero', S.libZero ? '1' : ''); } catch {} renderLib(); return; }
     if (a === 'new') { openToolWiz({ type: S.libType }); return; }
     if (a === 'filter') { const v = b.dataset.v; S.ltFilter = S.ltFilter.includes(v) ? S.ltFilter.filter(x => x !== v) : [...S.ltFilter, v]; renderLib(); return; }
     const t = S.lib.find(x => x.id === b.dataset.id); if (!t) return;
@@ -5446,6 +5493,22 @@ Antworte NUR mit JSON: {"map":{"feld":"Spaltenname"},"typ":"häufigster Werkzeug
       <div class="lg-ft"><button type="button" class="link" data-home="aus">Ausgabe öffnen →</button><button type="button" class="link" data-home="jr">Journal &amp; Export →</button></div>
     </div>`;
   }
+  let homeStat = false; try { homeStat = localStorage.getItem('cititool_home_stat') === '1'; } catch {}
+  // Start: kurze Liste „Was ist zu tun“ – jede Zeile führt an die richtige Stelle
+  function todoHTML(cart, oldCart, lowS, open) {
+    if (!S.lib.length) return '';
+    const late = open.filter(o => orderItems(o).some(i => i.status === 'gesendet' && days(lastTouch(i)) >= ordRd(o)));
+    const wait = open.length - late.length, rows = [];
+    const r = (cls, n, t, s, attr) => rows.push(`<button type="button" class="td-r ${cls}" ${attr}><span class="td-n mono">${n}</span><span class="td-t"><b>${t}</b>${s ? `<small>${s}</small>` : ''}</span><span class="td-go">›</span></button>`);
+    if (can('adm')) { const n = stNewList().length; if (n) r('acc', n, n === 1 ? 'Neue Karte von der Station' : 'Neue Karten von der Station', 'Lagerort, Bestand und Min ergänzen', 'data-home="stnew"'); }
+    if (can('adm')) { const n = probOpenCount(); if (n) r('warn', n, n === 1 ? 'Auffälligkeit' : 'Auffälligkeiten', 'Leeres Fach, Meldungen, BIOS – letzte 7 Tage', 'data-pb="all"'); }
+    if (late.length) r('crit', late.length, late.length === 1 ? 'Bestellung überfällig' : 'Bestellungen überfällig', 'Nachfragen oder als erhalten abhaken', 'data-home="wait"');
+    if (lowS.length) r('warn', lowS.length, 'Unter Mindestbestand', lowS.slice(0, 2).map(t => esc(shortName(t) || fullName(t))).join(' · ') + (lowS.length > 2 ? ' …' : ''), 'data-home="orderlow"');
+    if (cart.length) r('', cart.length, cart.length === 1 ? 'Position auf der Liste' : 'Positionen auf der Liste', oldCart.length ? 'Liegt ' + ageText(Math.max(...oldCart.map(i => days(i.createdAt)))).replace(/^S/, 's') + ' – noch nicht gesendet' : 'Noch nicht gesendet', 'data-home="send"');
+    if (wait) r('', wait, wait === 1 ? 'Bestellung unterwegs' : 'Bestellungen unterwegs', 'Im Zeitplan', 'data-home="wait"');
+    if (!rows.length) return `<div class="allgood"><svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><circle cx="11" cy="11" r="9" stroke="currentColor" stroke-width="1.6" fill="none"/><path class="draw" d="M7 11.5l2.6 2.5L15 8.5" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg><span><b>Alles erledigt</b><small>Nichts offen, nichts überfällig.</small></span></div>`;
+    return `<div class="td-card"><div class="td-h"><b>Zu tun</b></div>${rows.join('')}</div>`;
+  }
   function renderHome() {
     const cart = cartItems(), od = overdue(), rd = remindDays();
     // offene Bestellungen mit Fortschritt
@@ -5489,13 +5552,12 @@ Antworte NUR mit JSON: {"map":{"feld":"Spaltenname"},"typ":"häufigster Werkzeug
     const cnt = {}; S.items.forEach(i => { if (i.libId && i.status !== 'bedarf') cnt[i.libId] = (cnt[i.libId] || 0) + 1; });
     const top = Object.entries(cnt).map(([id, n]) => [S.lib.find(t => t.id === id), n]).filter(x => x[0]).sort((a, b) => b[1] - a[1]).slice(0, 5);
     const maxN = top.length ? top[0][1] : 1;
-    $('v_home').innerHTML = `${stNewHomeHTML()}${probCardHTML()}
+    $('v_home').innerHTML = `${todoHTML(cart, oldCart, lowS, open)}
       <div class="ord2 acc-order"><button type="button" class="ord2-b scan" data-home="bo"><span class="oi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M3 8V5.5A1.5 1.5 0 0 1 4.5 4H7M17 4h2.5A1.5 1.5 0 0 1 21 5.5V8M21 16v2.5a1.5 1.5 0 0 1-1.5 1.5H17M7 20H4.5A1.5 1.5 0 0 1 3 18.5V16"/><path d="M7 8v8M10 8v8M13 8v8M16.5 8v8" stroke-width="1.4"/></svg></span><b>Scannen &amp; bestellen</b><small>am Regal scannen</small></button><button type="button" class="ord2-b list" data-home="wizard"><span class="oi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11"/><path d="M4 6h.01M4 12h.01M4 18h.01" stroke-width="2.6"/></svg></span><b>Aus Liste bestellen</b><small>Schritt für Schritt</small></button></div>
       ${recent.length ? `<div class="sec-h acc-order">Schnell nachbestellen<span class="hint" style="margin-left:auto">${recent.length}${rcAll ? '' : ` · <span class="t-touch">wischen →</span><span class="t-pc">‹ › blättern</span>`}</span>${recent.length > 3 ? `<button type="button" class="rc-all" data-home="rcall" aria-pressed="${rcAll}">${rcAll ? 'Reihe' : 'Alle anzeigen'}</button>` : ''}</div><div class="rcw${rcAll ? ' all' : ''}"><button type="button" class="rc-nav prev" data-home="rcprev" aria-label="Zurück" tabindex="-1">‹</button><div class="recent">${recent.map(t => `<button type="button" class="rc ${stats(t.id).inCart || stats(t.id).waiting ? 'busy' : ''}" data-home="re" data-id="${t.id}">${thumb(t.img, '', t)}<span class="rb"><span class="rty">${esc(t.type || '')}</span><span class="rn">${esc(shortName(t) || fullName(t))}</span>${useBar(t)}</span><span class="rp">+</span></button>`).join('')}</div><button type="button" class="rc-nav next" data-home="rcnext" aria-label="Weiter" tabindex="-1">›</button></div>` : ''}
-      ${open.length ? `<div class="sec-h">Unterwegs · wartet auf Lieferung<button type="button" class="link" data-home="img" style="margin-left:auto">Als Bild ↗</button></div><div class="list">${open.map(o => orderBlock(o, false)).join('')}</div>` : ''}
-      ${status}
-      ${lagerPanel()}
-      ${top.length > 1 ? `<div class="sec-h">Am häufigsten bestellt</div><div class="freq">${top.map(([t, n]) => `<button type="button" class="fq" data-home="open" data-id="${t.id}"><span class="fn">${esc(fullName(t))}</span><span class="fb"><i style="width:${Math.max(8, n / maxN * 100)}%"></i></span><span class="fc mono">${n}×</span></button>`).join('')}</div>` : ''}
+      ${S.lib.length ? `<button type="button" class="hs-tog" data-home="stat" aria-expanded="${homeStat}"><b>Statistik</b><small>Ausgabe 7 Tage · Lager · häufig bestellt</small><span class="chev">›</span></button>
+      <div class="hs-body" ${homeStat ? '' : 'hidden'}>${probCardHTML()}${lagerPanel()}
+      ${top.length > 1 ? `<div class="sec-h">Am häufigsten bestellt</div><div class="freq">${top.map(([t, n]) => `<button type="button" class="fq" data-home="open" data-id="${t.id}"><span class="fn">${esc(fullName(t))}</span><span class="fb"><i style="width:${Math.max(8, n / maxN * 100)}%"></i></span><span class="fc mono">${n}×</span></button>`).join('')}</div>` : ''}</div>` : ''}
       ${!S.lib.length ? `<div class="empty"><b>Los geht's</b>Oben auf <b>+</b> tippen: Werkzeug anlegen, Etikett scannen oder bestellen. Backup / Excel über das Zahnrad.</div>` : ''}`;
     $('setDot').hidden = !backupDue();
     requestAnimationFrame(() => $('v_home').querySelectorAll('.recent').forEach(rcNav));
@@ -5532,6 +5594,7 @@ Antworte NUR mit JSON: {"map":{"feld":"Spaltenname"},"typ":"häufigster Werkzeug
     if (a === 'type') { S.libType = b.dataset.type; S.ltQ = ''; S.ltFilter = []; setView('lib'); return; }
     if (a === 'img') { statusImage(); return; }
     if (a === 'more') { S.homeAll = !S.homeAll; renderHome(); return; }
+    if (a === 'stat') { homeStat = !homeStat; try { localStorage.setItem('cititool_home_stat', homeStat ? '1' : ''); } catch {} renderHome(); return; }
     if (a === 'lib') { setView('lib'); return; }
     if (a === 'remind') { setView('orders'); setTimeout(() => $('alarmRemind')?.click(), 60); return; }
     if (a === 'send') { boOpen(); boGo('korb'); return; }
@@ -5994,7 +6057,7 @@ ${labelCSS(o)}
     const last = parseInt(lsGet(K.lastBackup) || '0', 10);
     const d = last ? days(last) : null;
     const show = backupDue();
-    el.hidden = !show;
+    el.hidden = true; return;
     if (show) el.innerHTML = `<svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v9m-4-4l4 4 4-4M4 15v2h12v-2" stroke="currentColor" stroke-width="1.7" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
       <span class="grow">${d === null ? 'Noch kein Backup gemacht' : `Letztes Backup vor ${d} Tagen`} – Daten liegen nur in diesem Browser.</span>
       <button type="button" class="btn sm" data-bk="1">Jetzt sichern</button>`;
@@ -6003,7 +6066,7 @@ ${labelCSS(o)}
   // =====================================================================
   // WERKZEUG-AUSGABE: Lagerbestand, Buchungen, Scanner
   // =====================================================================
-  const AU = { mode: 'aus', sel: null, q: '', qty: 1, mach: '', dwg: '', filt: 'all', unknown: '', assign: false, serial: false, batch: [], locF: '', who: lsGet('syncop_bestellliste_who') };
+  const AU = { mode: 'aus', sel: null, q: '', qty: 1, mach: '', dwg: '', filt: 'att', unknown: '', assign: false, serial: false, batch: [], locF: '', who: lsGet('syncop_bestellliste_who') };
   const DAYMS = 86400000;
   // Verbrauch der letzten 90 Tage → Tagesrate, Reichweite
   function usageRate(t) {
@@ -6132,8 +6195,11 @@ ${labelCSS(o)}
     const low = lowStock();
     $('ausLow').innerHTML = low.length ? `<div class="lowc"><div class="row"><b class="grow">${low.length} unter Mindestbestand</b><button type="button" class="btn sm primary" data-au="orderlow">Auf die Bestellliste</button></div><small>${low.slice(0, 4).map(t => esc(fullName(t)) + ' (' + t.stock + '/' + minOf(t) + ')').join(' · ')}${low.length > 4 ? ' …' : ''}</small></div>` : '';
     const sw = shelfWarmer().length, soon = S.lib.filter(t => { const r = reach(t); return r && r.d <= 14; }).length;
-    $('ausFilt').innerHTML = [['all', 'Alle'], ['low', 'Niedrig'], ['soon', `Bald leer${soon ? ' ' + soon : ''}`], ['idle', `Ladenhüter${sw ? ' ' + sw : ''}`], ['none', 'Offen']].map(([k, l]) => `<button type="button" data-au="filt" data-v="${k}" aria-pressed="${AU.filt === k}">${l}</button>`).join('');
+    const attF = t => hasStock(t) && (stockCls(t) === 'low' || stockOf(t) <= 0 || (() => { const r = reach(t); return r && r.d <= 14; })());
+    const attN = S.lib.filter(attF).length;
+    $('ausFilt').innerHTML = [['att', `Wichtig${attN ? ' ' + attN : ''}`], ['all', `Alle ${S.lib.length}`], ['low', 'Niedrig'], ['soon', `Bald leer${soon ? ' ' + soon : ''}`], ['idle', `Ladenhüter${sw ? ' ' + sw : ''}`], ['none', 'Offen']].map(([k, l]) => `<button type="button" data-au="filt" data-v="${k}" aria-pressed="${AU.filt === k}">${l}</button>`).join('');
     let ls = S.lib.slice();
+    if (AU.filt === 'att' && !AU.locF) ls = ls.filter(attF);
     if (AU.filt === 'low') ls = ls.filter(t => stockCls(t) === 'low');
     if (AU.filt === 'none') ls = ls.filter(t => !hasStock(t));
     if (AU.filt === 'soon') ls = ls.filter(t => { const r = reach(t); return r && r.d <= 14; }).sort((a, b) => reach(a).d - reach(b).d);
@@ -6142,12 +6208,13 @@ ${labelCSS(o)}
     $('ausLocF').innerHTML = AU.locF ? `<div class="locf"><span>⌂ ${esc(AU.locF)} · ${ls.length} Werkzeuge</span><button type="button" data-au="locx" aria-label="Filter weg">×</button></div>` : '';
     ls.sort((a, b) => (hasStock(b) - hasStock(a)) || (stockCls(a) === 'low' ? -1 : 0) - (stockCls(b) === 'low' ? -1 : 0) || String(a.loc || '~').localeCompare(String(b.loc || '~')) || fullName(a).localeCompare(fullName(b)));
     $('ausList').innerHTML = ls.map(t => { const mn = minOf(t), cap = Math.max(mn * 2, stockOf(t), 1);
-      return `<button type="button" class="al ${stockCls(t)}" data-au="pick" data-id="${t.id}">${thumb(t.img, '', t)}<span class="t"><b>${esc(fullName(t))}</b><small>${t.loc ? '⌂ ' + esc(t.loc) + ' · ' : ''}${mn ? 'MIN ' + mn : 'KEIN MIN'}${AU.filt === 'idle' ? ' · ' + idleDays(t) + ' T OHNE AUSGABE' : reachTxt(t) ? ' · ' + reachTxt(t) : ''}</small>${hasStock(t) ? `<span class="mb"><i style="width:${Math.max(3, Math.min(100, stockOf(t) / cap * 100))}%"></i></span>` : ''}</span><span class="s">${hasStock(t) ? t.stock : '–'}<small>${hasStock(t) ? 'STK' : 'OFFEN'}</small></span></button>`; }).join('')
-      || `<div class="empty"><b>${S.lib.length ? 'Nichts in diesem Filter' : 'Noch keine Werkzeuge'}</b></div>`;
-    const mv = (S.moves || []).slice(-25).reverse();
+      return `<button type="button" class="al ${stockCls(t)}" data-au="pick" data-id="${t.id}">${thumb(t.img, '', t)}<span class="t"><b>${esc(fullName(t))}</b><small>${[t.loc && '⌂ ' + esc(t.loc), mn && 'MIN ' + mn, AU.filt === 'idle' ? idleDays(t) + ' T OHNE AUSGABE' : reachTxt(t)].filter(Boolean).join(' · ')}</small>${hasStock(t) ? `<span class="mb"><i style="width:${Math.max(3, Math.min(100, stockOf(t) / cap * 100))}%"></i></span>` : ''}</span><span class="s">${hasStock(t) ? t.stock : '–'}<small>${hasStock(t) ? 'STK' : ''}</small></span></button>`; }).join('')
+      || (AU.filt === 'att' && S.lib.length ? `<div class="allgood"><span><b>Nichts knapp</b><small>Kein Werkzeug leer oder unter Min. <button type="button" class="link" data-au="filt" data-v="all">Alle ${S.lib.length} zeigen</button></small></span></div>` : `<div class="empty"><b>${S.lib.length ? 'Nichts in diesem Filter' : 'Noch keine Werkzeuge'}</b></div>`);
+    const mvAll = (S.moves || []).slice(-25).reverse(), mv = AU.logAll ? mvAll : mvAll.slice(0, 5);
     $('ausLog').innerHTML = mv.length ? mv.map((m, i) => { const t = S.lib.find(x => x.id === m.libId);
       return `<div class="lg"><span class="d ${m.kind}">${m.kind === 'inv' ? '=' + m.after : (m.qty > 0 ? '+' : '') + m.qty}</span><span class="t"><b>${esc(t ? fullName(t) : 'GELÖSCHT')}</b><small>${new Date(m.ts).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}${m.who ? ' · ' + esc(m.who) : ''}${m.mach ? ' · ' + esc(m.mach) : ''}${m.dwg ? ' · ' + esc(m.dwg) : ''}${m.note ? ' · ' + esc(m.note) : ''}${m.after === null ? ' · OHNE BESTAND' : ' · BESTAND ' + m.after}</small></span>${i === 0 && Date.now() - m.ts < 30 * 60000 ? `<button type="button" class="u" data-au="undo">Rückgängig</button>` : ''}</div>`; }).join('')
       : '<div class="hint" style="padding:8px 2px">Noch keine Buchungen. Scannen oder oben suchen.</div>';
+    if (mvAll.length > 5) $('ausLog').insertAdjacentHTML('beforeend', `<div class="lib-zero"><button type="button" class="link" data-au="logall">${AU.logAll ? 'Weniger zeigen' : `Alle ${mvAll.length} zeigen`}</button></div>`);
   }
   function batchAdd(t, n) {
     const e = AU.batch.find(x => x.id === t.id);
@@ -6201,6 +6268,7 @@ ${labelCSS(o)}
     if (a === 'mach') { AU.mach = AU.mach === b.dataset.v ? '' : b.dataset.v; renderAus(); return; }
     if (a === 'machnew') { const v = U(prompt('Maschine (z. B. WT-250 RO)') || ''); if (v) { (S.meta.machs ||= []).includes(v) || S.meta.machs.push(v); AU.mach = v; save(); renderAus(); } return; }
     if (a === 'filt') { AU.filt = b.dataset.v; renderAus(); return; }
+    if (a === 'logall') { AU.logAll = !AU.logAll; renderAus(); return; }
     if (a === 'go' && t) {
       const n = Math.max(0, parseInt($('auQty').value, 10) || 0); if (!n && AU.mode !== 'inv') { toast('Menge fehlt'); return; }
       if (AU.mode === 'aus' && hasStock(t) && n > t.stock) { if (!confirm(`Nur ${t.stock} im Bestand – trotzdem ${n} ausgeben?`)) return; }
@@ -6588,6 +6656,7 @@ setTimeout(run,1500); window.addEventListener('beforeprint',run);
     return `<div class="rp-bios"><span>BIOS: <b>${tk}</b> Stammdaten · <b>${bu}</b> Buchungen nicht übertragen · Katalog vom ${fmtD(CAT.ts)} (${CAT.rows.length} Artikel)</span><button type="button" class="btn sm" data-rp="type:bios" style="margin-left:auto">Liste / Drucken</button><button type="button" class="btn sm" data-biosopen="1">Abhaken</button></div>`;
   }
   $('v_rep').addEventListener('click', e => { if (e.target.closest('[data-biosopen]')) { biosRenderFb(); $('biosSheet').hidden = false; } });
+  let rpSetOpen = false; try { rpSetOpen = localStorage.getItem('cititool_rp_set') === '1'; } catch {}
   function renderRep() {
     const V = $('v_rep'); if (!V) return;
     if (RP.type === 'bios' && !can('adm')) RP.type = 'buch';
@@ -6612,12 +6681,13 @@ setTimeout(run,1500); window.addEventListener('beforeprint',run);
         <div class="rp-f3"><select id="rpTyp" aria-label="Typ"><option value="">ALLE TYPEN</option>${types.map(t => `<option ${RP.typ === t ? 'selected' : ''}>${esc(t)}</option>`).join('')}</select>
           <select id="rpLoc" aria-label="Lagerort"><option value="">ALLE LAGERORTE</option>${locs.map(t => `<option ${RP.loc === t ? 'selected' : ''}>${esc(t)}</option>`).join('')}</select>
           <input id="rpQ" type="search" placeholder="Suchen" value="${esc(RP.q)}" autocomplete="off"></div></div>
-      <div class="rp-sec"><div class="rp-h">SPALTEN <small>ANTIPPEN = DRUCKEN / NICHT DRUCKEN</small></div>
+      <button type="button" class="rp-set" data-rp="set:" aria-expanded="${rpSetOpen}"><b>Druckeinstellungen</b><small>${rpDefs().length} Spalten · ${RP.land ? 'Querformat' : 'Hochformat'}${RP.sums ? ' · Summe' : ''}${RP.photos ? ' · Fotos' : ''}</small><span class="chev">›</span></button>
+      ${rpSetOpen ? `<div class="rp-sec"><div class="rp-h">SPALTEN <small>ANTIPPEN = DRUCKEN / NICHT DRUCKEN</small></div>
         <div class="rp-cols">${RP_COLS[RP.type].map(c => `<button type="button" data-rp="col:${c.k}" aria-pressed="${rpColOn(c)}">${rpColOn(c) ? '✓ ' : ''}${esc(c.l)}</button>`).join('')}</div></div>
       <div class="rp-sec"><div class="rp-h">DRUCK</div>
         ${groups.length ? `<div class="rp-row"><span>GRUPPIEREN</span><div class="rp-chips">${groups.map(([k, l]) => ch('group', k, RP.group === k || (!groups.some(g => g[0] === RP.group) && !k), l)).join('')}</div></div>` : ''}
         <div class="rp-tg">${[['photos', 'Fotos'], ['sums', 'Summe'], ['land', 'Querformat']].map(([k, l]) => `<button type="button" data-rp="tog:${k}" aria-pressed="${!!RP[k]}"><i></i>${l}</button>`).join('')}</div>
-        <input id="rpTitle" class="rp-title" placeholder="TITEL: ${esc(rpTitle())}" value="${esc(RP.title)}" autocomplete="off"></div>
+        <input id="rpTitle" class="rp-title" placeholder="TITEL: ${esc(rpTitle())}" value="${esc(RP.title)}" autocomplete="off"></div>` : ''}
       <div class="rp-pvh"><b>VORSCHAU</b><span>${rows.length} ZEILEN · A4 ${RP.land ? 'QUER' : 'HOCH'}</span></div>
       <button type="button" class="rp-pv" data-rp="pdf:" aria-label="Druckansicht öffnen"><span id="rpPv"></span></button>
       <div class="lb-foot rp-foot"><button type="button" class="btn" data-rp="csv:">CSV</button><button type="button" class="btn" data-rp="xls:">Excel</button><span class="grow"></span><button type="button" class="btn primary" data-rp="pdf:">Drucken / PDF</button></div>`;
@@ -6626,6 +6696,7 @@ setTimeout(run,1500); window.addEventListener('beforeprint',run);
   $('v_rep').addEventListener('click', e => {
     const b = e.target.closest('[data-rp]'); if (!b) return; const [k, v] = b.dataset.rp.split(/:(.*)/s);
     if (k === 'pdf') { rpPrint(); return; } if (k === 'csv') { rpCSV(); return; } if (k === 'xls') { rpXLS(); return; }
+    if (k === 'set') { rpSetOpen = !rpSetOpen; try { localStorage.setItem('cititool_rp_set', rpSetOpen ? '1' : ''); } catch {} renderRep(); return; }
     if (k === 'type') { RP.type = v; RP.group = v === 'bios' ? 'bw' : ''; if (v === 'prob' || v === 'ord' || v === 'bios') RP.ost = ''; }
     else if (k === 'col') { const cur = rpDefs().map(c => c.k), on = cur.includes(v); if (on && cur.length <= 1) { toast('Mindestens eine Spalte'); return; } RP.cols[RP.type] = RP_COLS[RP.type].map(c => c.k).filter(x => x === v ? !on : cur.includes(x)); }
     else if (k === 'tog') RP[v] = !RP[v];
@@ -7860,7 +7931,7 @@ Antworte NUR mit JSON: {"map":["feld oder leer", ...]} – gleiche Reihenfolge u
   function render() {
     roleClasses();
     const cart = cartItems().length, od = overdue().length;
-    $('nv_orders').textContent = od ? String(od) : (cart || ''); $('nv_orders').classList.toggle('alert', !!od);
+    { const odO = new Set(overdue().map(i => i.orderId).filter(Boolean)).size || od; $('nv_orders').textContent = od ? String(odO) : (cart || ''); } $('nv_orders').classList.toggle('alert', !!od);
     $('nv_lib').textContent = S.lib.length || '';
     $('nv_arch').textContent = S.orders.length || '';
     $('dl_maker').innerHTML = [...new Set(S.lib.map(t => t.maker).filter(Boolean))].map(v => `<option value="${esc(v)}">`).join('');
@@ -7873,8 +7944,8 @@ Antworte NUR mit JSON: {"map":["feld oder leer", ...]} – gleiche Reihenfolge u
     if (S.view === 'rep') renderRep();
     if (S.view === 'prob') renderProb();
     navInd();
-    { const n = probOpenCount(); ['nv_prob', 'nv_more'].forEach(id => { const el = $(id); if (el) { el.textContent = n ? String(n) : ''; el.classList.toggle('alert', !!n); } }); }
-    const low = lowStock().length; $('nv_aus').textContent = low ? String(low) : ''; $('nv_aus').classList.toggle('alert', !!low);
+    { const n = probOpenCount(); ['nv_prob', 'nv_more'].forEach(id => { const el = $(id); if (el) { el.textContent = n ? String(n) : ''; el.classList.toggle('alert', !!n); el.classList.toggle('calm', !!n); } }); }
+    const low = lowStock().length; $('nv_aus').textContent = low ? String(low) : ''; $('nv_aus').classList.toggle('alert', !!low); $('nv_aus').classList.toggle('calm', !!low);
   }
 
   load();
