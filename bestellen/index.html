@@ -1732,6 +1732,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%;touch-action:manipulati
 
 .of-f{margin:0 0 10px}
 .uset.ulink{cursor:pointer;text-decoration:underline;text-underline-offset:2px;text-transform:none;font-family:var(--f-body);letter-spacing:0;font-size:11.5px;font-weight:600;color:var(--fg)}
+
 /* ===== Übersichtlich (Test) ===== */
 .td-card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:6px 14px 4px;margin-bottom:14px}
 .td-h{padding:8px 0 4px}.td-h b{font:600 11px var(--f-mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
@@ -1759,6 +1760,26 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%;touch-action:manipulati
 }
 .nav .n.alert.calm{background:var(--ink);color:var(--on-ink)}
 .nav button[aria-pressed="true"] .n.alert.calm{background:var(--on-ink);color:var(--ink)}
+/* ===== Bedienbarkeit: größere Ziele, lesbare Schrift ===== */
+.aus-f button{min-height:38px;padding:6px 14px;font-size:12.5px}
+.aus-f{flex-wrap:nowrap!important;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;margin-right:-16px;padding-right:16px}.aus-f::-webkit-scrollbar{display:none}.aus-f button{flex:none;white-space:nowrap}
+.view .link,.view button.link{min-height:40px;display:inline-flex;align-items:center;padding:0 6px;font-size:13px}
+.x-btn{min-width:40px;min-height:40px;display:grid;place-items:center}
+.r.cc{grid-template-columns:auto minmax(0,1fr) 76px 40px}
+.chk{width:36px;height:36px;border-radius:10px}
+.ol .chk{margin:-4px 0}
+.pg-n{min-height:40px;display:block;padding:8px 0}
+.view .sec-h{font-size:12px}
+.view .chip,.view .uset,.view .rty,.view .pb-k,.view .pg-when,.oprog,.oprog *{font-size:12px}
+.view [data-pg],.view [data-rp]{min-height:38px;font-size:12.5px}
+.td-h b{font-size:12px}
+.uset.ulink{font-size:12.5px!important;padding:8px 0;display:inline-block}
+#v_aus small,#v_rep small,#v_prob small,#v_lib small{font-size:12px}
+.rc-all{min-height:36px;font-size:12.5px}
+.mb-line{all:unset;box-sizing:border-box;cursor:pointer;display:flex;align-items:center;gap:12px;width:100%;padding:12px 14px;margin-bottom:14px;border-radius:14px;background:var(--card);border:1px solid var(--line);border-left:4px solid var(--ink)}
+.mb-n{flex:none;min-width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:var(--ink);color:var(--on-ink);font-size:15px;font-weight:600}
+.arch-m{margin-top:18px}
+.toast{bottom:calc(16px + env(safe-area-inset-bottom,0px));max-width:calc(100% - 32px);font-size:13.5px}
 </style>
 </head>
 <body>
@@ -2393,7 +2414,6 @@ window.addEventListener('load',ctFit);window.addEventListener('resize',ctFit);se
   document.querySelectorAll('.nav button[data-view]').forEach(b => b.onclick = () => {
     const v = b.dataset.view, from = S.view;
     if (v === 'aus' && from !== 'aus' && lowStock().length) { AU.filt = 'min'; AU.locF = ''; }
-    if (v === 'orders' && from !== 'orders' && overdue().length && can('order')) { goOrders('late'); return; }
     setView(v);
   });
   // ---------- Mehr-Menü (schmale Bildschirme) ----------
@@ -2846,10 +2866,10 @@ window.addEventListener('resize',fit);window.addEventListener('load',fit);fit();
       : `${open.length ? `<button type="button" class="btn sm primary" data-oa="allgot" data-id="${o.id}">Alles erhalten</button>` : ''}
          ${open.length ? `<button type="button" class="btn sm" data-oa="remind" data-id="${o.id}">Erinnerung senden</button>` : ''}
          <span class="grow"></span><button type="button" class="btn ghost sm" data-oa="print" data-id="${o.id}">Drucken</button>`;
-    if (!inArchive) { const ox = OX.has(o.id);
+    { const ox = OX.has(o.id);
       return `<div class="ord ${cls} ox ${ox ? 'open' : ''}">
       <button type="button" class="ord-h ox-h" data-oa="tog" data-id="${o.id}" aria-expanded="${ox}"><span class="nr">${esc(o.nr)}</span><span class="meta">${fmtD(o.sentAt)}${o.to ? ` · AN ${esc(o.to)}` : ''} · ${got}/${its.length} ERHALTEN</span>${statusChip}${rem}<span class="chev">›</span></button>
-      ${ox ? `${orderProg(o)}<div class="ol">${list}</div><div class="acts">${actions}</div>` : ''}
+      ${ox ? `${inArchive ? '' : orderProg(o)}<div class="ol">${list}</div><div class="acts">${actions}</div>` : ''}
     </div>`; }
     return `<div class="ord ${cls}">
       <div class="ord-h"><span class="nr">${esc(o.nr)}</span><span class="meta">${fmtD(o.sentAt)}${o.to ? ` · AN ${esc(o.to)}` : ''} · ${got}/${its.length} ERHALTEN</span>${statusChip}${rem}</div>
@@ -3235,7 +3255,9 @@ window.addEventListener('resize',fit);window.addEventListener('load',fit);fit();
   function renderArch() {
     let ords = S.orders.slice().sort((a,b) => b.sentAt - a.sentAt);
     if (S.archQ) ords = ords.filter(o => match([o.nr, o.to, fmtD(o.sentAt), ...orderItems(o).map(hay)].join(' ').toUpperCase(), S.archQ));
-    $('archList').innerHTML = ords.length ? ords.map(o => orderBlock(o, true)).join('')
+    let lastM = '';
+    $('archList').innerHTML = ords.length ? ords.map(o => { const m = new Date(o.sentAt).toLocaleDateString('de-DE', { month: 'long', year: 'numeric' });
+      const h = m !== lastM ? `<div class="sec-h arch-m">${m}<span class="hint" style="margin-left:auto">${ords.filter(x => new Date(x.sentAt).toLocaleDateString('de-DE', { month: 'long', year: 'numeric' }) === m).length}</span></div>` : ''; lastM = m; return h + orderBlock(o, true); }).join('')
       : `<div class="empty"><b>${S.orders.length ? 'Keine Treffer' : 'Noch keine Bestellungen'}</b>${S.orders.length ? 'Suchbegriff ändern.' : 'Jede gesendete Bestellung landet hier mit Nummer, Datum und Empfänger.'}</div>`;
   }
 
@@ -8092,7 +8114,6 @@ Antworte NUR mit JSON: {"map":["feld oder leer", ...]} – gleiche Reihenfolge u
   function goOrders(f) {   // f: 'late' | 'ok' | 'cart'
     if (!can('order')) return;
     OF = f === 'late' || f === 'ok' ? f : 'all';
-    if (f === 'late') S.orders.filter(o => orderItems(o).some(i => i.status === 'gesendet') && orderLate(o)).forEach(o => OX.add(o.id)), oxSave();
     setView('orders'); render();
     setTimeout(() => goTo(f === 'cart' ? $('cart').closest('.card') : (h => h && h.classList.contains('sec-h') ? h : $('alarm'))($('alarm').previousElementSibling), f === 'cart'), 60);
   }
@@ -8103,6 +8124,7 @@ Antworte NUR mit JSON: {"map":["feld oder leer", ...]} – gleiche Reihenfolge u
     const el = $('minBlk'); if (!el) return;
     const low = lowStock(), free = low.filter(t => { const x = stats(t.id); return !x.inCart && !x.waiting; });
     if (!low.length || (!free.length && !S.minFocus)) { el.innerHTML = ''; return; }
+    if (!S.minFocus) { el.innerHTML = `<button type="button" class="mb-line" data-mb="expand"><span class="mb-n mono">${low.length}</span><span class="mb-t"><b>Unter Mindestbestand</b><small>${free.length} noch nicht bestellt</small></span><span class="chev">›</span></button>`; return; }
     el.innerHTML = `<div class="card mb-card"><div class="mb-h"><b>Unter Mindestbestand</b><span class="mono">${low.length}</span>${S.minFocus ? `<button type="button" class="verx mb-x" data-mb="close" aria-label="Schließen">×</button>` : ''}</div>
       ${low.map(t => { const x = stats(t.id), o = x.waiting && waitOrderOf(t);
         const act = x.waiting ? `<button type="button" class="mb-st wait" data-mb="wait" data-id="${t.id}">Unterwegs${o ? ` · seit ${days(o.sentAt)} T` : ''} ›</button>`
@@ -8116,6 +8138,7 @@ Antworte NUR mit JSON: {"map":["feld oder leer", ...]} – gleiche Reihenfolge u
     const b = e.target.closest('[data-mb]'); if (!b) return;
     const a = b.dataset.mb, t = S.lib.find(x => x.id === b.dataset.id);
     if (a === 'close') { S.minFocus = false; renderMinBlk(); return; }
+    if (a === 'expand') { S.minFocus = true; renderMinBlk(); return; }
     if (a === 'add' && t) { S.minFocus = true; addToCart(t, { qty: minQty(t) }); return; }
     if (a === 'all') { S.minFocus = true; let n = 0; lowStock().forEach(x => { const st = stats(x.id); if (st.inCart || st.waiting) return; addToCart(x, { qty: minQty(x) }); n++; }); commit(`${n} auf die Liste gesetzt`); return; }
     if (a === 'cart' && t) { const it = cartItems().find(i => i.libId === t.id); const r = it && document.querySelector(`#cart .r[data-id="${it.id}"]`);
