@@ -1729,6 +1729,9 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%;touch-action:manipulati
 .mb-all{width:100%;margin-top:8px}.mb-done{font-size:13px;color:var(--muted);padding:6px 0 2px}
 @keyframes mbFlash{0%,60%{box-shadow:0 0 0 2px var(--ink)}100%{box-shadow:0 0 0 0 transparent}}
 .mbf{animation:mbFlash 1.6s ease-out}
+
+.of-f{margin:0 0 10px}
+.uset.ulink{cursor:pointer;text-decoration:underline;text-underline-offset:2px;text-transform:none;font-family:var(--f-body);letter-spacing:0;font-size:11.5px;font-weight:600;color:var(--fg)}
 /* ===== Übersichtlich (Test) ===== */
 .td-card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:6px 14px 4px;margin-bottom:14px}
 .td-h{padding:8px 0 4px}.td-h b{font:600 11px var(--f-mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
@@ -2378,7 +2381,7 @@ window.addEventListener('load',ctFit);window.addEventListener('resize',ctFit);se
   // ---------- nav ----------
   function setView(v) {
     if (!accView(v)) v = 'home';
-    if (v !== 'orders') S.minFocus = false;
+    if (v !== 'orders') { S.minFocus = false; OF = 'all'; }
     S.view = v; try { localStorage.setItem('cititool_last_view', JSON.stringify({ v, ts: Date.now() })); } catch {}
     document.querySelectorAll('.nav button[data-view]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.view === v)));
     ['home','aus','orders','lib','arch','rep','prob'].forEach(x => $('v_' + x).hidden = x !== v);
@@ -2387,7 +2390,12 @@ window.addEventListener('load',ctFit);window.addEventListener('resize',ctFit);se
     const sec = $('v_' + v); sec.classList.remove('enter'); void sec.offsetWidth; sec.classList.add('enter');
     render(); window.scrollTo(0, 0);
   }
-  document.querySelectorAll('.nav button[data-view]').forEach(b => b.onclick = () => setView(b.dataset.view));
+  document.querySelectorAll('.nav button[data-view]').forEach(b => b.onclick = () => {
+    const v = b.dataset.view, from = S.view;
+    if (v === 'aus' && from !== 'aus' && lowStock().length) { AU.filt = 'min'; AU.locF = ''; }
+    if (v === 'orders' && from !== 'orders' && overdue().length && can('order')) { goOrders('late'); return; }
+    setView(v);
+  });
   // ---------- Mehr-Menü (schmale Bildschirme) ----------
   const NAV_MORE = [['prob', 'Probleme', 'Auffälligkeiten · Fehler · erledigt'], ['rep', 'Bericht', 'Auswerten · drucken · Excel'], ['arch', 'Archiv', 'Alte Bestellungen']];
   const navIc = v => (document.querySelector(`.nav button[data-view="${v}"] .ni`) || {}).innerHTML || '';
@@ -2794,6 +2802,8 @@ window.addEventListener('resize',fit);window.addEventListener('load',fit);fit();
   const itRd = i => ordRd(S.orders.find(o => o.id === i.orderId) || S.orders.find(o => (o.itemIds || []).includes(i.id)));
   const overdue = () => S.items.filter(i => i.status === 'gesendet' && days(lastTouch(i)) >= itRd(i));
   const orderItems = o => o.itemIds.map(id => S.items.find(i => i.id === id)).filter(Boolean);
+  const orderLate = o => orderItems(o).some(i => i.status === 'gesendet' && days(lastTouch(i)) >= itRd(i));
+  let OF = 'all';   // Unterwegs-Filter: all | late | ok
 
   // Fortschritt einer offenen Bestellung: Segmente pro Position + Warte-Timer
   function orderProg(o) {
@@ -2921,12 +2931,17 @@ window.addEventListener('resize',fit);window.addEventListener('load',fit);fit();
   });
   $('recvSheet').addEventListener('change', e => { if (e.target.id === 'rvRest') RV.rest = e.target.checked; });
   $('recvSheet').addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.id === 'rvQ') { e.preventDefault(); doRecv(); } });
-  $('waiting').addEventListener('click', e => { if (e.target.closest('[data-oxall]')) { const ords = S.orders.filter(o => orderItems(o).some(i => i.status === 'gesendet')); const all = ords.every(o => OX.has(o.id)); ords.forEach(o => all ? OX.delete(o.id) : OX.add(o.id)); oxSave(); render(); return; } onOrderClick(e); });
+  $('waiting').addEventListener('click', e => { const ofb = e.target.closest('[data-of]'); if (ofb) { OF = ofb.dataset.of; renderWaiting(); return; }
+    if (e.target.closest('[data-oxall]')) { const ords = S.orders.filter(o => orderItems(o).some(i => i.status === 'gesendet')).filter(o => OF === 'late' ? orderLate(o) : OF === 'ok' ? !orderLate(o) : true); const all = ords.every(o => OX.has(o.id)); ords.forEach(o => all ? OX.delete(o.id) : OX.add(o.id)); oxSave(); render(); return; } onOrderClick(e); });
   $('archList').addEventListener('click', onOrderClick);
 
   function renderWaiting() {
-    const ords = S.orders.filter(o => orderItems(o).some(i => i.status === 'gesendet')).sort((a,b) => a.sentAt - b.sentAt);
-    $('waiting').innerHTML = ords.length ? (ords.length > 1 ? `<div class="ox-all"><button type="button" class="link" data-oxall="1">${ords.every(o => OX.has(o.id)) ? 'Alle zuklappen' : 'Alle aufklappen'}</button></div>` : '') + ords.map(o => orderBlock(o, false)).join('')
+    const ordsAll = S.orders.filter(o => orderItems(o).some(i => i.status === 'gesendet')).sort((a,b) => a.sentAt - b.sentAt);
+    const nLate = ordsAll.filter(orderLate).length, nOk = ordsAll.length - nLate;
+    if ((OF === 'late' && !nLate) || (OF === 'ok' && !nOk)) OF = 'all';
+    const ords = OF === 'late' ? ordsAll.filter(orderLate) : OF === 'ok' ? ordsAll.filter(o => !orderLate(o)) : ordsAll;
+    const ofChips = nLate && nOk ? `<div class="aus-f of-f">${[['all', `Alle ${ordsAll.length}`], ['late', `Überfällig ${nLate}`], ['ok', `Im Zeitplan ${nOk}`]].map(([k, l]) => `<button type="button" data-of="${k}" aria-pressed="${OF === k}">${l}</button>`).join('')}</div>` : '';
+    $('waiting').innerHTML = ords.length ? ofChips + (ords.length > 1 ? `<div class="ox-all"><button type="button" class="link" data-oxall="1">${ords.every(o => OX.has(o.id)) ? 'Alle zuklappen' : 'Alle aufklappen'}</button></div>` : '') + ords.map(o => orderBlock(o, false)).join('')
       : `<div class="empty"><b>Nichts unterwegs</b>Gesendete Bestellungen warten hier, bis du sie als erhalten abhakst.</div>`;
   }
 
@@ -5529,18 +5544,19 @@ Antworte NUR mit JSON: {"map":{"feld":"Spaltenname"},"typ":"häufigster Werkzeug
   // Start: kurze Liste „Was ist zu tun“ – jede Zeile führt an die richtige Stelle
   function todoHTML(cart, oldCart, lowS, open) {
     if (!S.lib.length) return '';
-    const late = open.filter(o => orderItems(o).some(i => i.status === 'gesendet' && days(lastTouch(i)) >= ordRd(o)));
+    const late = open.filter(orderLate);
     const wait = open.length - late.length, rows = [];
     const r = (cls, n, t, s, attr) => rows.push(`<button type="button" class="td-r ${cls}" ${attr}><span class="td-n mono">${n}</span><span class="td-t"><b>${t}</b>${s ? `<small>${s}</small>` : ''}</span><span class="td-go">›</span></button>`);
     if (can('adm')) { const n = stNewList().length; if (n) r('acc', n, n === 1 ? 'Neue Karte von der Station' : 'Neue Karten von der Station', 'Lagerort, Bestand und Min ergänzen', 'data-home="stnew"'); }
-    if (can('adm')) { const n = probOpenCount(); if (n) r('warn', n, n === 1 ? 'Auffälligkeit' : 'Auffälligkeiten', 'Leeres Fach, Meldungen, BIOS – letzte 7 Tage', 'data-pb="all"'); }
-    if (late.length) r('crit', late.length, late.length === 1 ? 'Bestellung überfällig' : 'Bestellungen überfällig', 'Nachfragen oder als erhalten abhaken', 'data-home="wait"');
+    if (can('adm')) { const n = probOpenCount(); if (n) { const g = {}; probOpenList().forEach(p => { const l = ({ problem: 'Gemeldet', minus: 'Bestand', leer: 'Leer', low: 'Unter Min', viel: 'Entnahme', undo: 'Entnahme', noname: 'Ohne Namen', unknown: 'Codes' })[p.kind] || (/^b/.test(p.kind) ? 'BIOS' : 'Sonstiges'); g[l] = (g[l] || 0) + 1; });
+      r('warn', n, n === 1 ? 'Auffälligkeit' : 'Auffälligkeiten', Object.entries(g).sort((a, b) => b[1] - a[1]).map(([l, c]) => `${c}× ${l}`).join(' · ') + ' – letzte 7 Tage', 'data-pb="all"'); } }
+    if (late.length) r('crit', late.length, late.length === 1 ? 'Bestellung überfällig' : 'Bestellungen überfällig', 'Nachfragen oder als erhalten abhaken', 'data-home="late"');
     { const lowA = lowStock(), busy = lowA.length - lowS.length;
       if (lowA.length) r(lowS.length ? 'warn' : '', lowA.length, 'Unter Mindestbestand',
         lowS.length ? lowS.slice(0, 2).map(t => esc(shortName(t) || fullName(t))).join(' · ') + (lowS.length > 2 ? ' …' : '') + (busy ? ` · ${busy} schon bestellt` : '') : (lowA.length === 1 ? 'Schon bestellt oder auf der Liste' : 'Alle schon bestellt oder auf der Liste'),
         'data-home="minlist"'); }
-    if (cart.length) r('', cart.length, cart.length === 1 ? 'Position auf der Liste' : 'Positionen auf der Liste', oldCart.length ? (dd => `Liegt seit ${dd} ${dd === 1 ? 'Tag' : 'Tagen'} – noch nicht gesendet`)(Math.max(...oldCart.map(i => days(i.createdAt)))) : 'Noch nicht gesendet', 'data-home="send"');
-    if (wait) r('', wait, wait === 1 ? 'Bestellung unterwegs' : 'Bestellungen unterwegs', 'Im Zeitplan', 'data-home="wait"');
+    if (cart.length) r('', cart.length, cart.length === 1 ? 'Position auf der Liste' : 'Positionen auf der Liste', oldCart.length ? (dd => `Liegt seit ${dd} ${dd === 1 ? 'Tag' : 'Tagen'} – noch nicht gesendet`)(Math.max(...oldCart.map(i => days(i.createdAt)))) : 'Noch nicht gesendet', 'data-home="tocart"');
+    if (wait) r('', wait, wait === 1 ? 'Bestellung unterwegs' : 'Bestellungen unterwegs', 'Im Zeitplan', 'data-home="ontime"');
     if (!rows.length) return `<div class="allgood"><svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true"><circle cx="11" cy="11" r="9" stroke="currentColor" stroke-width="1.6" fill="none"/><path class="draw" d="M7 11.5l2.6 2.5L15 8.5" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg><span><b>Alles erledigt</b><small>Nichts offen, nichts überfällig.</small></span></div>`;
     return `<div class="td-card"><div class="td-h"><b>Zu tun</b></div>${rows.join('')}</div>`;
   }
@@ -5580,8 +5596,8 @@ Antworte NUR mit JSON: {"map":{"feld":"Spaltenname"},"typ":"häufigster Werkzeug
       <div class="cab-leg"><span><i></i>OK</span><span><i class="c"></i>AUF LISTE</span><span><i class="w"></i>UNTERWEGS</span><span><i class="s"></i>BALD NACHBESTELLEN</span></div></div>` : '';
     const useBar = t => {
       const st = stats(t.id);
-      if (st.inCart) return `<span class="uset">AUF DER LISTE</span>`;
-      if (st.waiting) return `<span class="uset">UNTERWEGS</span>`;
+      if (st.inCart) return `<span class="uset ulink" data-home="rccart" data-id="${t.id}">Auf der Liste ›</span>`;
+      if (st.waiting) return `<span class="uset ulink" data-home="rcwait" data-id="${t.id}">Unterwegs ›</span>`;
       const d = sentDates(t.id); if (d.length < 2) return '';
       const avg = (d[d.length - 1] - d[0]) / (d.length - 1) / DAY; if (avg < 1) return '';
       const p = days(d[d.length - 1]) / avg, soon = p >= .85;
@@ -5626,7 +5642,7 @@ Antworte NUR mit JSON: {"map":{"feld":"Spaltenname"},"typ":"häufigster Werkzeug
     if (a === 'scan') { scanTool(); return; }
     if (a === 'aus') { setView('aus'); return; }
     if (a === 'inv') { setView('aus'); ivOpen(); return; }
-    if (a === 'minlist' && can('order')) { S.minFocus = true; setView('orders'); render(); setTimeout(() => { const el = $('minBlk'), nav = document.querySelector('.nav'); const off = nav && getComputedStyle(nav).position !== 'static' && nav.getBoundingClientRect().top < 200 ? nav.getBoundingClientRect().bottom + 12 : 12; window.scrollTo({ top: Math.max(0, el.getBoundingClientRect().top + scrollY - off), behavior: 'smooth' }); }, 60); return; }
+    if (a === 'minlist' && can('order')) { S.minFocus = true; setView('orders'); render(); setTimeout(() => goTo($('minBlk')), 60); return; }
     if (a === 'minlist') { AU.filt = 'min'; AU.locF = ''; setView('aus'); setTimeout(() => $('ausFilt').scrollIntoView({ behavior: 'smooth', block: 'start' }), 60); return; }
     if (a === 'soon') { AU.filt = lowStock().length ? 'low' : 'soon'; setView('aus'); setTimeout(() => $('ausList').scrollIntoView({ behavior: 'smooth', block: 'start' }), 60); return; }
     if (a === 'jr') { openJournal(); return; }
@@ -5638,9 +5654,12 @@ Antworte NUR mit JSON: {"map":{"feld":"Spaltenname"},"typ":"häufigster Werkzeug
     if (a === 'lib') { setView('lib'); return; }
     if (a === 'remind') { setView('orders'); setTimeout(() => $('alarmRemind')?.click(), 60); return; }
     if (a === 'send') { boOpen(); boGo('korb'); return; }
+    if (a === 'late' || a === 'ontime' || a === 'tocart') { goOrders(a === 'late' ? 'late' : a === 'ontime' ? 'ok' : 'cart'); return; }
     if (a === 'bo') { boOpen(); return; }
     if (a === 'backup') { $('exportBtn').click(); return; }
     const t = S.lib.find(x => x.id === b.dataset.id); if (!t) return;
+    if (a === 'rccart') { e.stopPropagation(); goOrders('cart'); setTimeout(() => { const it = cartItems().find(i => i.libId === t.id); const r = it && document.querySelector(`#cart .r[data-id="${it.id}"]`); if (r) goTo(r, true); }, 140); return; }
+    if (a === 'rcwait') { e.stopPropagation(); const o = waitOrderOf(t); if (o) { OX.add(o.id); oxSave(); } OF = 'all'; setView('orders'); render(); setTimeout(() => { const r = o && document.querySelector(`#waiting [data-oa="tog"][data-id="${o.id}"]`)?.closest('.ord'); goTo(r || $('waiting'), !!r); }, 60); return; }
     if (a === 're') { orderTool(t); return; }
     if (a === 'open') { setView('lib'); openDetail(t.id); return; }
   });
@@ -7972,7 +7991,8 @@ Antworte NUR mit JSON: {"map":["feld oder leer", ...]} – gleiche Reihenfolge u
   $('bkWarn').addEventListener('click', e => { if (e.target.closest('[data-bk]')) $('exportBtn').click(); });
 
   // ---------- render ----------
-  function probOpenCount() { try { return S.lib.length ? probs(Date.now() - 7 * DAY, Date.now() + 60000).filter(p => !p.done).length : 0; } catch { return 0; } }
+  function probOpenList() { try { return S.lib.length ? probs(Date.now() - 7 * DAY, Date.now() + 60000, true).filter(p => !p.done) : []; } catch { return []; } }
+  function probOpenCount() { return probOpenList().length; }
   function render() {
     roleClasses();
     const cart = cartItems().length, od = overdue().length;
@@ -8063,6 +8083,19 @@ Antworte NUR mit JSON: {"map":["feld oder leer", ...]} – gleiche Reihenfolge u
   let syPillT = 0;
 
 
+  function goTo(el, flash) {
+    if (!el) return; const nav = document.querySelector('.nav');
+    const off = nav && nav.getBoundingClientRect().top < 200 ? nav.getBoundingClientRect().bottom + 12 : 12;
+    window.scrollTo({ top: Math.max(0, el.getBoundingClientRect().top + scrollY - off), behavior: 'smooth' });
+    if (flash) { el.classList.remove('mbf'); void el.offsetWidth; el.classList.add('mbf'); }
+  }
+  function goOrders(f) {   // f: 'late' | 'ok' | 'cart'
+    if (!can('order')) return;
+    OF = f === 'late' || f === 'ok' ? f : 'all';
+    if (f === 'late') S.orders.filter(o => orderItems(o).some(i => i.status === 'gesendet') && orderLate(o)).forEach(o => OX.add(o.id)), oxSave();
+    setView('orders'); render();
+    setTimeout(() => goTo(f === 'cart' ? $('cart').closest('.card') : (h => h && h.classList.contains('sec-h') ? h : $('alarm'))($('alarm').previousElementSibling), f === 'cart'), 60);
+  }
   // ---------- Bestellen: Block „Unter Mindestbestand“ ----------
   const minQty = x => x.qty || String(Math.max(minOf(x) * 2 - x.stock, 1));
   const waitOrderOf = t => S.orders.find(o => orderItems(o).some(i => i.libId === t.id && i.status === 'gesendet'));
@@ -8425,7 +8458,7 @@ Antworte NUR mit JSON: {"map":["feld oder leer", ...]} – gleiche Reihenfolge u
     if (a === 'done') { evDone()[b.dataset.k] = Date.now(); commit('Als erledigt markiert'); return; }
     if (a === 'order') { const t = S.lib.find(x => x.id === b.dataset.id); if (t) addToCart(t, { qty: t.qty || String(Math.max(minOf(t) * 2 - t.stock, 1)) }); return; }
     if (a === 'who') { Object.assign(RP, { type: 'buch', per: '7', kind: 'aus', group: 'wer', mach: '', who: '' }); rpSave(); setView('rep'); return; }
-    if (a === 'all') { PG.st = 'open'; pgSave(); setView('prob'); return; }
+    if (a === 'all') { PG.st = 'open'; PG.per = '7'; PG.kind = ''; pgSave(); setView('prob'); return; }
   });
   // ---------- Seite „Probleme“: alle Auffälligkeiten, offen und erledigt ----------
   const PG_K = 'cititool_probpage';
