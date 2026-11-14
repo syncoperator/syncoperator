@@ -1718,6 +1718,17 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%;touch-action:manipulati
 .alarm.ub{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:14px;background:var(--card);border:1px solid var(--line);border-left:4px solid var(--crit);color:var(--fg);margin-bottom:10px}
 .alarm.ub .ub-t{flex:1;min-width:0}.alarm.ub b{display:block;font:600 14px var(--f-head);text-transform:none}.alarm.ub small{display:block;font-size:12px;color:var(--muted)}
 .alarm[hidden]{display:none}
+
+.mb-card{padding:14px 14px 10px;margin-bottom:14px;border-left:4px solid var(--ink)}
+.mb-h{display:flex;align-items:center;gap:8px;margin-bottom:4px}.mb-h b{font:600 15px var(--f-head)}.mb-h .mono{color:var(--muted);font-size:13px}.mb-x{margin-left:auto;color:var(--muted)}
+.mb-r{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--line)}
+.mb-h+.mb-r{border-top:0}
+.mb-t{flex:1;min-width:0}.mb-t b{display:block;font:600 13.5px/1.25 var(--f-head)}.mb-t small{display:block;font-size:12px;color:var(--muted);text-transform:none}
+.mb-st{all:unset;cursor:pointer;flex:none;font-size:12.5px;font-weight:600;text-transform:none;padding:7px 10px;border-radius:10px;background:var(--soft)}
+.mb-st.ok{color:var(--ok)}.mb-st.wait{color:var(--muted)}
+.mb-all{width:100%;margin-top:8px}.mb-done{font-size:13px;color:var(--muted);padding:6px 0 2px}
+@keyframes mbFlash{0%,60%{box-shadow:0 0 0 2px var(--ink)}100%{box-shadow:0 0 0 0 transparent}}
+.mbf{animation:mbFlash 1.6s ease-out}
 /* ===== Übersichtlich (Test) ===== */
 .td-card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:6px 14px 4px;margin-bottom:14px}
 .td-h{padding:8px 0 4px}.td-h b{font:600 11px var(--f-mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
@@ -1785,6 +1796,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%;touch-action:manipulati
       <button type="button" class="ord2-b list" id="wizStart"><span class="oi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11"/><path d="M4 6h.01M4 12h.01M4 18h.01" stroke-width="2.6"/></svg></span><b>Aus Liste bestellen</b><small>Schritt für Schritt</small></button>
     </div>
     <div id="bkWarn" class="bkwarn" hidden></div>
+    <div id="minBlk"></div>
     <div class="card step">
       <div class="step-h"><span class="no">1</span><h2>Zu bestellen <span class="mono" id="cartN" style="color:var(--muted);font-size:14px"></span></h2></div>
       <div id="cart" class="rows"></div>
@@ -2366,6 +2378,7 @@ window.addEventListener('load',ctFit);window.addEventListener('resize',ctFit);se
   // ---------- nav ----------
   function setView(v) {
     if (!accView(v)) v = 'home';
+    if (v !== 'orders') S.minFocus = false;
     S.view = v; try { localStorage.setItem('cititool_last_view', JSON.stringify({ v, ts: Date.now() })); } catch {}
     document.querySelectorAll('.nav button[data-view]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.view === v)));
     ['home','aus','orders','lib','arch','rep','prob'].forEach(x => $('v_' + x).hidden = x !== v);
@@ -5613,6 +5626,7 @@ Antworte NUR mit JSON: {"map":{"feld":"Spaltenname"},"typ":"häufigster Werkzeug
     if (a === 'scan') { scanTool(); return; }
     if (a === 'aus') { setView('aus'); return; }
     if (a === 'inv') { setView('aus'); ivOpen(); return; }
+    if (a === 'minlist' && can('order')) { S.minFocus = true; setView('orders'); render(); setTimeout(() => { const el = $('minBlk'), nav = document.querySelector('.nav'); const off = nav && getComputedStyle(nav).position !== 'static' && nav.getBoundingClientRect().top < 200 ? nav.getBoundingClientRect().bottom + 12 : 12; window.scrollTo({ top: Math.max(0, el.getBoundingClientRect().top + scrollY - off), behavior: 'smooth' }); }, 60); return; }
     if (a === 'minlist') { AU.filt = 'min'; AU.locF = ''; setView('aus'); setTimeout(() => $('ausFilt').scrollIntoView({ behavior: 'smooth', block: 'start' }), 60); return; }
     if (a === 'soon') { AU.filt = lowStock().length ? 'low' : 'soon'; setView('aus'); setTimeout(() => $('ausList').scrollIntoView({ behavior: 'smooth', block: 'start' }), 60); return; }
     if (a === 'jr') { openJournal(); return; }
@@ -7968,7 +7982,7 @@ Antworte NUR mit JSON: {"map":["feld oder leer", ...]} – gleiche Reihenfolge u
     $('dl_maker').innerHTML = [...new Set(S.lib.map(t => t.maker).filter(Boolean))].map(v => `<option value="${esc(v)}">`).join('');
     renderBackupWarn();
     if (S.view === 'home') renderHome();
-    if (S.view === 'orders') { renderAlarm(); renderPick(); renderCart(); renderWaiting(); }
+    if (S.view === 'orders') { renderAlarm(); renderMinBlk(); renderPick(); renderCart(); renderWaiting(); }
     if (S.view === 'lib') renderLib();
     if (S.view === 'arch') renderArch();
     if (S.view === 'aus') renderAus();
@@ -8048,6 +8062,34 @@ Antworte NUR mit JSON: {"map":["feld oder leer", ...]} – gleiche Reihenfolge u
   // ---- Sync-Plakette (kurz oben) + Punkt in der Kopfzeile
   let syPillT = 0;
 
+
+  // ---------- Bestellen: Block „Unter Mindestbestand“ ----------
+  const minQty = x => x.qty || String(Math.max(minOf(x) * 2 - x.stock, 1));
+  const waitOrderOf = t => S.orders.find(o => orderItems(o).some(i => i.libId === t.id && i.status === 'gesendet'));
+  function renderMinBlk() {
+    const el = $('minBlk'); if (!el) return;
+    const low = lowStock(), free = low.filter(t => { const x = stats(t.id); return !x.inCart && !x.waiting; });
+    if (!low.length || (!free.length && !S.minFocus)) { el.innerHTML = ''; return; }
+    el.innerHTML = `<div class="card mb-card"><div class="mb-h"><b>Unter Mindestbestand</b><span class="mono">${low.length}</span>${S.minFocus ? `<button type="button" class="verx mb-x" data-mb="close" aria-label="Schließen">×</button>` : ''}</div>
+      ${low.map(t => { const x = stats(t.id), o = x.waiting && waitOrderOf(t);
+        const act = x.waiting ? `<button type="button" class="mb-st wait" data-mb="wait" data-id="${t.id}">Unterwegs${o ? ` · seit ${days(o.sentAt)} T` : ''} ›</button>`
+          : x.inCart ? `<button type="button" class="mb-st ok" data-mb="cart" data-id="${t.id}">✓ Auf der Liste</button>`
+          : `<button type="button" class="btn sm primary" data-mb="add" data-id="${t.id}">+ Auf die Liste</button>`;
+        return `<div class="mb-r">${thumb(t.img, '', t)}<span class="mb-t"><b>${esc(fullName(t))}</b><small>Bestand ${t.stock} / Min ${minOf(t)}${t.loc ? ' · ⌂ ' + esc(t.loc) : ''}</small></span>${act}</div>`; }).join('')}
+      ${free.length > 1 ? `<button type="button" class="btn primary mb-all" data-mb="all">Alle ${free.length} auf die Liste</button>` : ''}
+      ${!free.length ? `<div class="mb-done">Alles bestellt oder auf der Liste.</div>` : ''}</div>`;
+  }
+  $('minBlk').addEventListener('click', e => {
+    const b = e.target.closest('[data-mb]'); if (!b) return;
+    const a = b.dataset.mb, t = S.lib.find(x => x.id === b.dataset.id);
+    if (a === 'close') { S.minFocus = false; renderMinBlk(); return; }
+    if (a === 'add' && t) { S.minFocus = true; addToCart(t, { qty: minQty(t) }); return; }
+    if (a === 'all') { S.minFocus = true; let n = 0; lowStock().forEach(x => { const st = stats(x.id); if (st.inCart || st.waiting) return; addToCart(x, { qty: minQty(x) }); n++; }); commit(`${n} auf die Liste gesetzt`); return; }
+    if (a === 'cart' && t) { const it = cartItems().find(i => i.libId === t.id); const r = it && document.querySelector(`#cart .r[data-id="${it.id}"]`);
+      if (r) { r.scrollIntoView({ behavior: 'smooth', block: 'center' }); r.classList.remove('mbf'); void r.offsetWidth; r.classList.add('mbf'); } return; }
+    if (a === 'wait' && t) { const o = waitOrderOf(t); if (!o) return; OX.add(o.id); oxSave(); renderWaiting();
+      const r = document.querySelector(`#waiting [data-oa="tog"][data-id="${o.id}"]`)?.closest('.ord'); if (r) { r.scrollIntoView({ behavior: 'smooth', block: 'start' }); r.classList.remove('mbf'); void r.offsetWidth; r.classList.add('mbf'); } return; }
+  });
   // ---------- Version: Nummer anzeigen, neue Version erkennen ----------
   const APP_VER = '2026.11.14-2';
   let verSeen = '';
