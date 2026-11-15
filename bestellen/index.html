@@ -1796,6 +1796,11 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%;touch-action:manipulati
 @media(max-width:560px){.fs-r{grid-template-columns:1fr}.fs-r>span{font-weight:600}}
 .seg3.sm button{min-height:34px;padding:4px 10px;font-size:12px}
 #twBody label.need input,#twBody .photo.need{box-shadow:0 0 0 2px var(--ink);border-radius:10px}
+
+.catpick{flex-wrap:wrap!important;overflow:visible!important;margin:4px 0 10px!important;padding-right:0!important}
+.catpick .cp-new{border-style:dashed!important}
+.lt-tile:has(.mv) .ct{visibility:hidden}
+.lt-tile .mv{position:absolute;right:8px;top:8px;font:600 11px var(--f-body);text-transform:none;padding:4px 8px;border-radius:8px;background:var(--ink);color:var(--on-ink)}
 </style>
 </head>
 <body>
@@ -2019,6 +2024,16 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%;touch-action:manipulati
     <h2 id="cfmT"></h2>
     <p class="lead" id="cfmX"></p>
     <div class="row"><button type="button" class="btn" id="cfmNo">Abbrechen</button><span class="grow"></span><button type="button" class="btn primary" id="cfmOk" style="background:var(--crit);border-color:var(--crit)">OK</button></div>
+  </div>
+</div>
+
+<div id="cpSheet" class="sheetbg" style="z-index:56" hidden>
+  <div class="helpsheet" role="dialog" aria-modal="true" aria-labelledby="cpT">
+    <h2 id="cpT">Bereich</h2>
+    <p class="lead">In welchem Bereich der Bibliothek soll der Typ stehen? Die Karten selbst ändern sich nicht.</p>
+    <div class="aus-f catpick wrap" id="cpBox"></div>
+    <div id="cpDel" style="margin-top:6px"></div>
+    <div class="row" style="margin-top:10px"><span class="grow"></span><button type="button" class="btn" id="cpClose">Schließen</button></div>
   </div>
 </div>
 
@@ -3021,20 +3036,24 @@ window.addEventListener('resize',fit);window.addEventListener('load',fit);fit();
     { t: 'Bohren & Fräsen', types: ['BOHRER', 'WP-BO', 'MULTIDRILL', 'ZENTRIERBOHRER', 'ANBOHRER', 'FRÄSER', 'REIBAHLE', 'GEWINDE', 'SENKER'] },
     { t: 'Spannmittel',     types: ['SPANNZANGE', 'ER-SPANNZANGE', 'FÜHRUNGSBUCHSE', 'WEICHE BACKEN', 'HARTE BACKEN', 'SPANNMITTEL'] },
   ];
+  const CAT_REST = 'Eigene & Sonstiges';
+  const ownCats = () => ((S.meta && S.meta.cats) || []).filter(Boolean);
+  const allCats = () => [...CATS.map(c => c.t), ...ownCats(), CAT_REST];
+  const catOfBase = base => { const c = CATS.find(c => c.types.includes(base)); return c ? c.t : CAT_REST; };
   const catOf = ty => {
-    const base = S.meta.types[ty]?.base || ty;
-    const c = CATS.find(c => c.types.includes(base));
-    return c ? c.t : 'Eigene & Sonstiges';
+    const own = S.meta.types[ty]?.cat;
+    if (own && isCustomType(ty) && allCats().includes(own)) return own;
+    return catOfBase(S.meta.types[ty]?.base || ty);
   };
   const catList = () => {
-    const out = CATS.map(c => ({ t: c.t, types: [...c.types] }));
-    const rest = { t: 'Eigene & Sonstiges', types: ['SONSTIGES'] };
+    const out = [...CATS.map(c => ({ t: c.t, types: [...c.types] })), ...ownCats().map(t => ({ t, types: [], own: true }))];
+    const rest = { t: CAT_REST, types: ['SONSTIGES'] };
     allTypes().forEach(ty => {
       if (CATS.some(c => c.types.includes(ty)) || ty === 'SONSTIGES') return;
       const cname = catOf(ty), c = out.find(x => x.t === cname) || rest;
       c.types.push(ty);
     });
-    return [...out, rest];
+    return [...out.filter(c => !c.own || c.types.length || S.libEdit), rest];
   };
   const isCustomType = ty => !BASE_TYPES.includes(ty);
   // soft hyphens at word joints: WENDE·PLATTE, STUFEN·BOHRER
@@ -3093,11 +3112,11 @@ window.addEventListener('resize',fit);window.addEventListener('load',fit);fit();
           return `<button type="button" class="lt-tile ${n ? '' : 'zero'}" data-lt="type" data-type="${esc(ty)}">
             ${hot ? '<span class="dot" title="auf der Liste"></span>' : ''}<span class="ct">${n || '–'}</span>
             <span class="ti">${typeIcon(ty)}</span><span class="nm">${shy(ty)}</span>
-            ${S.libEdit && isCustomType(ty) ? `<span class="del" data-lt="deltype" data-type="${esc(ty)}" role="button" aria-label="Typ löschen">×</span>` : ''}</button>`; }).join('')
+            ${S.libEdit && isCustomType(ty) ? `<span class="del" data-lt="deltype" data-type="${esc(ty)}" role="button" aria-label="Typ löschen">×</span><span class="mv" data-lt="mvtype" data-type="${esc(ty)}" role="button">Bereich ›</span>` : ''}</button>`; }).join('')
       }</div></div>`).join('') +
       (zeroN ? `<div class="lib-zero"><button type="button" class="link" data-lt="zero">${showZ ? 'Leere Typen ausblenden' : `+ ${zeroN} weitere Typen (noch leer)`}</button></div>` : '') +
       (setsTop ? '' : setsH) +
-      (S.customTypes.length ? `<div class="lib-edit"><button type="button" class="link" data-lt="edit">${S.libEdit ? 'Fertig' : 'Eigene Typen bearbeiten'}</button></div>` : '');
+      (S.customTypes.length ? `<div class="lib-edit"><button type="button" class="link" data-lt="edit">${S.libEdit ? 'Fertig' : 'Eigene Typen bearbeiten (Bereich, löschen)'}</button></div>` : '');
       return;
     }
     // ---- type page
@@ -3130,6 +3149,8 @@ window.addEventListener('resize',fit);window.addEventListener('load',fit);fit();
     const b = e.target.closest('[data-lt]'); if (!b) return;
     const a = b.dataset.lt;
     if (a === 'deltype') { e.stopPropagation(); askDeleteType(b.dataset.type); return; }
+    if (a === 'mvtype') { e.stopPropagation(); openCatPick(b.dataset.type); return; }
+    if (a === 'type' && S.libEdit && isCustomType(b.dataset.type)) { openCatPick(b.dataset.type); return; }
     if (a === 'type') { S.libType = b.dataset.type; S.ltQ = ''; $('ltQ').value = ''; S.ltFilter = []; renderLib(); window.scrollTo(0, 0); return; }
     if (a === 'edit') { S.libEdit = !S.libEdit; renderLib(); return; }
     if (a === 'newq') { openToolWiz({ name: S.libQ }); return; }
@@ -3299,6 +3320,35 @@ window.addEventListener('resize',fit);window.addEventListener('load',fit);fit();
   $('cfm').addEventListener('click', e => { if (e.target === $('cfm')) $('cfmNo').click(); });
   $('cfmOk').onclick = () => { $('cfm').hidden = true; const f = cfmOk; cfmOk = null; f && f(); };
 
+
+  // ---------- Bereiche (Kategorien) der Bibliothek ----------
+  function catPickHTML(sel, ns) {
+    const at = ns === 'tw' ? 'data-tw' : 'data-cp';
+    return allCats().map(c => `<button type="button" ${at}="catpick" data-v="${esc(c)}" aria-pressed="${c === sel}">${esc(c)}</button>`).join('')
+      + `<button type="button" ${at}="catnew" class="cp-new">+ Neuer Bereich</button>`;
+  }
+  function newCatAsk(done) {
+    const n = (prompt('Name für den neuen Bereich (z. B. Messmittel, Vorrichtungen):') || '').trim().replace(/\s+/g, ' ');
+    if (!n) return;
+    const nn = n.charAt(0).toUpperCase() + n.slice(1);
+    if (allCats().some(c => c.toLowerCase() === nn.toLowerCase())) { toast('Den Bereich gibt es schon'); done(allCats().find(c => c.toLowerCase() === nn.toLowerCase())); return; }
+    S.meta.cats = [...ownCats(), nn]; save(); done(nn);
+  }
+  let CP_TYPE = '';
+  function openCatPick(ty) {
+    CP_TYPE = ty; $('cpT').textContent = `Bereich für „${ty}“`;
+    $('cpBox').innerHTML = catPickHTML(catOf(ty), 'cp');
+    $('cpDel').innerHTML = ownCats().filter(c => !catList().find(x => x.t === c)?.types.filter(t => t !== ty).length).map(c => `<button type="button" class="link" data-cp="catdel" data-v="${esc(c)}">Bereich „${esc(c)}“ löschen</button>`).join(' ');
+    $('cpSheet').hidden = false;
+  }
+  $('cpSheet').addEventListener('click', e => {
+    if (e.target === $('cpSheet') || e.target.closest('#cpClose')) { $('cpSheet').hidden = true; return; }
+    const b = e.target.closest('[data-cp]'); if (!b) return; const a = b.dataset.cp, ty = CP_TYPE;
+    if (a === 'catpick') { const m = S.meta.types[ty] || (S.meta.types[ty] = { base: 'SONSTIGES' }); const c = b.dataset.v;
+      if (c === catOfBase(m.base)) delete m.cat; else m.cat = c; $('cpSheet').hidden = true; commit(`${ty} → ${c}`); return; }
+    if (a === 'catnew') { newCatAsk(n => { const m = S.meta.types[ty] || (S.meta.types[ty] = { base: 'SONSTIGES' }); m.cat = n; $('cpSheet').hidden = true; commit(`${ty} → ${n}`); }); return; }
+    if (a === 'catdel') { const c = b.dataset.v; Object.values(S.meta.types).forEach(m => { if (m && m.cat === c) delete m.cat; }); S.meta.cats = ownCats().filter(x => x !== c); openCatPick(ty); commit(`Bereich ${c} gelöscht`); return; }
+  });
   // ---- delete own type
   function askDeleteType(ty) {
     const n = toolsOf(ty).length;
@@ -3986,6 +4036,8 @@ window.addEventListener('resize',fit);window.addEventListener('load',fit);fit();
         <input id="twNewType" placeholder="z. B. Stufenbohrer, Anschlag, Ausdrehkopf">
         <div class="tw-al">Ähnlich wie <span class="hint">(gleiche Felder und Symbol)</span></div>
         <div class="types basepick">${BASE_TYPES.map(bt => `<button type="button" data-tw="basepick" data-v="${esc(bt)}" aria-pressed="${guess === bt}"><span class="ti">${typeIcon(bt)}</span>${esc(bt)}</button>`).join('')}</div>
+        <div class="tw-al">Bereich in der Bibliothek <span class="hint">(wo der Typ einsortiert wird)</span></div>
+        <div class="aus-f catpick" id="twCatPick">${catPickHTML(TW.newCat || catOfBase(guess), 'tw')}</div>
         <button type="button" class="btn primary" data-tw="newtype">Typ anlegen</button>
       </div>`;
   }
@@ -4244,15 +4296,18 @@ Antworte NUR mit gültigem JSON, alle Werte als Strings in Anführungszeichen: {
     }
     if (a === 'deltype') { e.stopPropagation(); askDeleteType(b.dataset.type); return; }
     if (a === 'typeedit') { TW.typeEdit = !TW.typeEdit; renderTW(); return; }
-    if (a === 'basepick') { TW.newBase = TW.newBase === b.dataset.v ? '' : b.dataset.v; b.parentElement.querySelectorAll('[data-tw="basepick"]').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.v === TW.newBase))); return; }
+    if (a === 'basepick') { TW.newBase = TW.newBase === b.dataset.v ? '' : b.dataset.v; b.parentElement.querySelectorAll('[data-tw="basepick"]').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.v === TW.newBase))); if (!TW.newCat && $('twCatPick')) $('twCatPick').innerHTML = catPickHTML(catOfBase(TW.newBase), 'tw'); return; }
+    if (a === 'catpick') { TW.newCat = b.dataset.v; $('twCatPick').innerHTML = catPickHTML(TW.newCat, 'tw'); return; }
+    if (a === 'catnew') { newCatAsk(n => { TW.newCat = n; $('twCatPick').innerHTML = catPickHTML(n, 'tw'); }); return; }
     if (a === 'newtype') {
       const v = U($('twNewType').value); if (!v) { toast('Name für den Typ fehlt'); $('twNewType').focus(); return; }
       if (allTypes().includes(v)) { toast('Den Typ gibt es schon'); return; }
       S.customTypes.push(v);
       S.meta.types[v] = { base: TW.newBase || FAM[iconKey({ type: v })] || 'SONSTIGES' };
+      if (TW.newCat && TW.newCat !== catOfBase(S.meta.types[v].base)) S.meta.types[v].cat = TW.newCat; TW.newCat = '';
       save();
       t.type = v; const p = profileOf(v); t.inName = { ...(p.inName || {}) }; TW.auto = !!p.auto; TW.step = 1; renderTW();
-      toast(`Typ ${v} angelegt – wie ${S.meta.types[v].base}`); return;
+      toast(`Typ ${v} angelegt – wie ${S.meta.types[v].base} · Bereich ${catOf(v)}`); return;
     }
     if (a === 'edittoggle') { TW.edit = !TW.edit; renderTW(); return; }
     if (a === 'cfopen') { TW.cfOpen = true; renderTW(); setTimeout(() => $('cfName')?.focus(), 30); return; }
@@ -8217,7 +8272,7 @@ Antworte NUR mit JSON: {"map":["feld oder leer", ...]} – gleiche Reihenfolge u
       const r = document.querySelector(`#waiting [data-oa="tog"][data-id="${o.id}"]`)?.closest('.ord'); if (r) { r.scrollIntoView({ behavior: 'smooth', block: 'start' }); r.classList.remove('mbf'); void r.offsetWidth; r.classList.add('mbf'); } return; }
   });
   // ---------- Version: Nummer anzeigen, neue Version erkennen ----------
-  const APP_VER = '2026.11.14-3';
+  const APP_VER = '2026.11.15-1';
   let verSeen = '';
   async function verCheck() {
     if (!/^https?:/.test(location.protocol)) return;
