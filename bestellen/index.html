@@ -1801,6 +1801,13 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%;touch-action:manipulati
 .catpick .cp-new{border-style:dashed!important}
 .lt-tile:has(.mv) .ct{visibility:hidden}
 .lt-tile .mv{position:absolute;right:8px;top:8px;font:600 11px var(--f-body);text-transform:none;padding:4px 8px;border-radius:8px;background:var(--ink);color:var(--on-ink)}
+
+html.kiosk .tour{z-index:1000}
+.ks-help .ks-hq{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--ink);color:var(--on-ink);font:700 13px var(--f-head);margin-right:8px}
+html.kiosk .tour-card{max-width:min(460px,calc(100vw - 32px))}
+html.kiosk .tour-card .tc-t,html.kiosk #tcT{font-size:22px}
+html.kiosk #tcX{font-size:16px;line-height:1.45}
+html.kiosk #tcNext,html.kiosk #tcBack{min-height:48px;font-size:16px}
 </style>
 </head>
 <body>
@@ -2104,7 +2111,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%;touch-action:manipulati
   </div>
 </div>
 <div id="kiosk" class="ks" hidden>
-  <header class="ks-h"><span class="ks-br"><svg viewBox="0 0 160 186" aria-hidden="true" id="ksLogo"></svg>CITITOOL · WERKZEUGAUSGABE<button type="button" class="sydot" id="ksSyDot" hidden aria-label="Sync-Status"></button></span><span class="ks-clock mono" id="ksClock"></span><button type="button" class="ks-pbtn" data-ks="kpOpen"><span class="ks-pbi" id="ksPbi"></span>Problem melden</button><button type="button" class="ks-lock" data-ks="lock" aria-label="Ausgabestation beenden"></button></header>
+  <header class="ks-h"><span class="ks-br"><svg viewBox="0 0 160 186" aria-hidden="true" id="ksLogo"></svg>CITITOOL · WERKZEUGAUSGABE<button type="button" class="sydot" id="ksSyDot" hidden aria-label="Sync-Status"></button></span><span class="ks-clock mono" id="ksClock"></span><button type="button" class="ks-pbtn ks-help" data-ks="tour"><span class="ks-hq">?</span>So geht’s</button><button type="button" class="ks-pbtn" data-ks="kpOpen"><span class="ks-pbi" id="ksPbi"></span>Problem melden</button><button type="button" class="ks-lock" data-ks="lock" aria-label="Ausgabestation beenden"></button></header>
   <div class="ruler ks-ruler"></div>
   <main class="ks-main">
     <section class="ks-cam" id="ksCam"><video id="ksVideo" playsinline muted autoplay></video><div class="ks-frame"></div><div class="ks-cammsg" id="ksCamMsg"></div><button type="button" class="ks-flip" data-ks="flip" aria-label="Kamera wechseln"></button></section>
@@ -3789,13 +3796,30 @@ window.addEventListener('resize',fit);window.addEventListener('load',fit);fit();
     ]},
   ];
 
+
+  // ---- Tour Ausgabestation (läuft auf der Station, bucht nichts)
+  const ksDemoTool = () => { try { return ksTop()[0] || S.lib.find(t => !t.stPending); } catch { return S.lib[0]; } };
+  const ksDemo = () => { const t = ksDemoTool(); if (!t) return; if (KS.step !== 'tool' || KS.t !== t.id) { KS.t = t.id; KS.step = 'tool'; KS.mode = 'aus'; KS.n = 1; KS.who = ''; KS.mach = ''; KS.q = ''; KS.done = null; } ksRender(); };
+  const ksIdle = () => { if (KS.step !== 'idle') ksReset(); else ksRender(); };
+  TOURS.push({ id: 'station', ks: true, title: 'Ausgabestation', desc: 'So nimmst du ein Werkzeug', icon: 'BOHR', steps: [
+    { pre: ksIdle, sel: null, ill: 'hello', t: 'So geht’s', x: 'Werkzeug nehmen dauert 10 Sekunden: scannen, Anzahl, Name, „Entnehmen“. Diese Tour bucht nichts – einfach durchtippen.' },
+    { pre: ksIdle, sel: '#ksCam', ill: 'scan', t: '1. Etikett scannen', x: 'Den QR-Code oder Strichcode vom Etikett vor die Kamera halten. Ein Piepton – das Werkzeug ist da.' },
+    { pre: ksIdle, sel: '.ks-search', ill: 'search', t: 'Kein Etikett?', x: 'Hier suchen: z. B. „CNMG“, „Ø8“ oder die Artikelnummer. Gibt es noch keine Karte, steht es unter „Aus BIOS-Katalog“ – geht trotzdem.' },
+    { pre: ksIdle, sel: '.ks-tiles', alt: '#ksPanel', ill: 'cart', t: 'Oft genommen', x: 'Die häufigsten Werkzeuge stehen direkt hier. Antippen statt scannen.' },
+    { pre: ksDemo, sel: '.ks-qty', alt: '#ksPanel', ill: 'check', t: '2. Wie viele?', x: 'Anzahl antippen. Mehr als 10? Mit − und + einstellen.' },
+    { pre: ksDemo, sel: '.ks-chips', alt: '#ksPanel', ill: 'hello', t: '3. Wer nimmt?', x: 'Deinen Namen antippen. Beim ersten Mal unter „Dein Name“ eintippen – danach steht er hier. Maschine antippen, wenn du weißt, wofür.' },
+    { pre: ksDemo, sel: '.ks-b.go', alt: '.ks-foot', ill: 'save', t: '4. Entnehmen', x: '„Entnehmen“ drücken – fertig, der Bestand stimmt. Vertippt? 15 Sekunden lang geht „Rückgängig“.' },
+    { pre: ksDemo, sel: '.ks-prob', alt: '.ks-pbtn', ill: 'bell', t: 'Etwas stimmt nicht?', x: 'Fach leer, falsches Etikett, Werkzeug defekt: „Problem mit diesem Werkzeug“ oder oben „Problem melden“. Der Admin sieht es sofort.' },
+    { pre: ksIdle, sel: null, ill: 'arch', t: 'Zurückgeben', x: 'Falsch genommen oder nicht gebraucht? Werkzeug scannen, oben „Zurückgeben“ wählen, Entnahme und Zustand: Neu, Benutzt oder Defekt. Neue Teile zurück ins Fach.' },
+    { pre: ksIdle, sel: '.ks-help', alt: null, ill: 'check', t: 'Fertig', x: 'Die Tour kannst du jederzeit oben über „So geht’s“ wieder starten.' },
+  ]});
   // ---- help sheet
   function openHelp(first) {
     $('helpTitle').textContent = first ? 'Willkommen' : 'Hilfe';
     $('helpLead').textContent = first ? 'Neu hier? Starte die kurze Tour – oder gleich den Bestell-Assistenten.' : 'Wähle eine kurze Tour. Jede dauert unter einer Minute.';
     $('helpList').innerHTML =
       `<button type="button" class="hitem prim" data-help="wiz"><span class="hi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8l1.5 1.5L12 7M8 13l1.5 1.5L12 12M14 8.5h2.5M14 13.5h2.5M8 18h8"/></svg></span><span><b>Bestell-Assistent</b><small>Schritt für Schritt bestellen</small></span><span class="n">4 SCHRITTE</span></button>` +
-      TOURS.map(t => `<button type="button" class="hitem" data-help="${t.id}"><span class="hi">${ICON[t.icon]}</span><span><b>${esc(t.title)}</b><small>${esc(t.desc)}</small></span><span class="n">${t.steps.length} BILDER</span></button>`).join('');
+      TOURS.filter(t => !t.ks).map(t => `<button type="button" class="hitem" data-help="${t.id}"><span class="hi">${ICON[t.icon]}</span><span><b>${esc(t.title)}</b><small>${esc(t.desc)}</small></span><span class="n">${t.steps.length} BILDER</span></button>`).join('');
     $('help').hidden = false;
   }
   function closeHelp() { $('help').hidden = true; lsSet('syncop_bestellliste_help_seen', '1'); }
@@ -3811,14 +3835,16 @@ window.addEventListener('resize',fit);window.addEventListener('load',fit);fit();
   // ---- spotlight tour
   const T = { tour: null, k: 0 };
   function startTour(id) { T.tour = TOURS.find(t => t.id === id); T.k = 0; $('tour').hidden = false; showTourStep(); }
-  function endTour() { $('tour').hidden = true; T.tour = null; }
+  function endTour() { const tr = T.tour; $('tour').hidden = true; T.tour = null; if (tr && tr.ks && KS.on) { ksReset(); lsSet('cititool_kstour_seen', '1'); } }
   function tourTarget(st) {
     for (const s of [st.sel, st.alt]) { if (!s) continue; const el = document.querySelector(s); if (el && el.offsetParent !== null && el.getBoundingClientRect().height > 0) return el; }
     return null;
   }
   function showTourStep() {
     const tr = T.tour, st = tr.steps[T.k];
-    if (S.view !== st.v) setView(st.v);
+    if (st.v && S.view !== st.v) setView(st.v);
+    if (st.pre) { try { st.pre(); } catch {} }
+    if (KS.on) KS.act = Date.now();
     $('tcIll').innerHTML = ILL[st.ill] || '';
     $('tcK').textContent = `${tr.title.toUpperCase()} · ${T.k + 1}/${tr.steps.length}`;
     $('tcT').textContent = st.t; $('tcX').textContent = st.x;
@@ -8272,7 +8298,7 @@ Antworte NUR mit JSON: {"map":["feld oder leer", ...]} – gleiche Reihenfolge u
       const r = document.querySelector(`#waiting [data-oa="tog"][data-id="${o.id}"]`)?.closest('.ord'); if (r) { r.scrollIntoView({ behavior: 'smooth', block: 'start' }); r.classList.remove('mbf'); void r.offsetWidth; r.classList.add('mbf'); } return; }
   });
   // ---------- Version: Nummer anzeigen, neue Version erkennen ----------
-  const APP_VER = '2026.11.15-1';
+  const APP_VER = '2026.11.15-2';
   let verSeen = '';
   async function verCheck() {
     if (!/^https?:/.test(location.protocol)) return;
@@ -8686,6 +8712,7 @@ Antworte NUR mit JSON: {"map":["feld oder leer", ...]} – gleiche Reihenfolge u
     document.querySelectorAll('.sheetbg').forEach(s => { if (s.id !== 'accPad') s.hidden = true; });
     $('kiosk').hidden = false; document.body.style.overflow = 'hidden';
     ksReset(); ksClock(); ksCamStart(); ksWake();
+    if (!lsGet('cititool_kstour_seen')) setTimeout(() => { if (KS.on && !T.tour) { lsSet('cititool_kstour_seen', '1'); startTour('station'); } }, 900);
     if (fromUser) { try { document.documentElement.requestFullscreen && document.documentElement.requestFullscreen().catch(() => {}); } catch {} }
   }
   function kioskExit() {
@@ -8940,6 +8967,7 @@ Antworte NUR mit JSON: {"map":["feld oder leer", ...]} – gleiche Reihenfolge u
     KS.act = Date.now();
     const b = e.target.closest('[data-ks]'); if (!b) return;
     const a = b.dataset.ks, t = ksTool();
+    if (a === 'tour') { startTour('station'); return; }
     if (a === 'kpOpen') { kpOpen(b.dataset.id || (KS.step === 'tool' ? KS.t : null)); return; }
     if (a === 'pick') { const x = S.lib.find(y => y.id === b.dataset.id); if (x) ksPick(x); return; }
     if (a === 'cat') { const r = CAT.rows.find(y => y.a === b.dataset.f); if (r) ksPickCat(r); return; }
@@ -8998,7 +9026,7 @@ Antworte NUR mit JSON: {"map":["feld oder leer", ...]} – gleiche Reihenfolge u
   setInterval(() => {
     if (!KS.on) return; ksClock();
     if (KP.open && !KP.ok && Date.now() - KS.act > 90000) kpClose();
-    if (KS.step === 'tool' && !KP.open && Date.now() - KS.act > 60000) ksReset();
+    if (KS.step === 'tool' && !KP.open && !T.tour && Date.now() - KS.act > 60000) ksReset();
     if (KS.step === 'idle' && KS.q && Date.now() - KS.act > 45000) { KS.q = ''; ksRender(); }
   }, 5000);
   document.addEventListener('visibilitychange', () => { if (!KS.on) return; if (document.hidden) ksCamStop(); else { ksCamStart(); ksWake(); } });
