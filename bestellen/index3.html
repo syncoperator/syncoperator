@@ -753,6 +753,23 @@ input.mono{font-family:var(--f-mono)}
 .hitem.prim .hi{background:var(--on-ink);color:var(--ink);border-color:transparent}
 
 /* ===== Tour ===== */
+/* Guided tours v2 — precise spotlight, readable micro-lessons */
+.tour-card{width:min(390px,calc(100vw - 24px));padding:16px;gap:10px;border:1px solid var(--line);border-radius:20px;max-height:calc(100dvh - 24px);overflow-y:auto;overscroll-behavior:contain}
+.tc-ill{height:66px;background:var(--acc-soft);color:var(--acc);border-radius:12px}
+.tc-ill svg{height:64px;max-width:100%}
+.tc-headline{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.tc-count{font:600 11px var(--f-mono);color:var(--muted);white-space:nowrap}
+.tour-card h3{font-size:19px;letter-spacing:0;line-height:1.2}
+.tour-card p{font-size:13.5px;line-height:1.55;color:var(--fg)}
+.tc-tip{background:var(--bg);border-left:3px solid var(--acc);border-radius:5px;padding:9px 10px;font-size:12px;line-height:1.5;text-transform:none}
+.tc-safety{font:600 10px var(--f-mono);color:var(--muted);letter-spacing:.07em}
+.tc-dots{gap:5px;justify-content:center}.tc-dots i{flex:1;max-width:48px;height:4px;border-radius:9px}.tc-dots i.on{width:auto;background:var(--acc)}
+.tour-spot{box-shadow:0 0 0 9999px rgba(10,10,12,.5),0 0 0 3px var(--acc) inset,0 0 0 3px var(--acc)}
+.tour-spot.none{box-shadow:0 0 0 9999px rgba(10,10,12,.5)}
+.tc-finished .tc-ill{background:var(--ok-bg);color:var(--ok)}
+.tc-finished .at-controls{display:none}
+@media(max-width:520px){.tour-card{width:calc(100vw - 24px);padding:12px;gap:7px}.tour-card h3{font-size:17px}.tc-ill{height:48px}.tc-ill svg{height:46px}.tc-tip{font-size:11.5px;padding:7px 9px}.tour-card p{font-size:12.5px}.tour-card .btn.sm{font-size:12px;padding:7px 9px}.tour-card .at-speed{font-size:11px}}
+
 .tour{position:fixed;inset:0;z-index:50}
 .tour-spot{position:fixed;border-radius:12px;box-shadow:0 0 0 9999px rgba(10,10,12,.62),0 0 0 3px var(--on-ink) inset;pointer-events:none;transition:all .28s ease}
 .tour-spot.none{box-shadow:0 0 0 9999px rgba(10,10,12,.62)}
@@ -2166,7 +2183,7 @@ html.kiosk .coach{display:none}
 <div id="help" class="sheetbg" hidden>
   <div class="helpsheet" role="dialog" aria-modal="true" aria-labelledby="helpTitle">
     <div class="row"><h2 id="helpTitle" class="grow">Hilfe</h2><button type="button" class="x-btn" id="helpClose" aria-label="Schließen"><svg width="22" height="22" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button></div>
-    <p class="lead" id="helpLead">Wähle eine Tour. Sie läuft automatisch ab und kann jederzeit pausiert werden.</p>
+    <p class="lead" id="helpLead">Wähle ein Thema. CITITOOL zeigt dir die wichtigsten Stellen automatisch – ohne echte Buchungen.</p>
     <div id="helpList" class="rows"></div>
   </div>
 </div>
@@ -2177,17 +2194,17 @@ html.kiosk .coach{display:none}
   <div id="tourSpot" class="tour-spot"></div>
   <div id="tourCard" class="tour-card" role="dialog" aria-live="polite">
     <div class="tc-ill" id="tcIll"></div>
-    <div class="tc-k" id="tcK"></div>
+    <div class="tc-headline"><div class="tc-k" id="tcK"></div><span class="tc-count" id="tcCount"></span></div>
     <h3 id="tcT"></h3>
-    <p id="tcX"></p>
+    <p id="tcX"></p><div id="tcTip" class="tc-tip" hidden></div><div class="tc-safety">DEMO · KEINE BUCHUNG</div>
     <div class="tc-dots" id="tcDots"></div>
     <div class="at-progress" aria-hidden="true"><i id="atProgress"></i></div>
     <div class="at-controls">
       <button type="button" class="btn sm" id="atPause" aria-pressed="false">Ⅱ Pause</button>
-      <label class="at-speed">Tempo <select id="atSpeed" aria-label="Tour-Geschwindigkeit"><option value="6500">Langsam</option><option value="4500" selected>Normal</option><option value="2700">Schnell</option></select></label>
+      <label class="at-speed">Tempo <select id="atSpeed" aria-label="Tour-Geschwindigkeit"><option value="11500">Langsam</option><option value="8500" selected>Normal</option><option value="5200">Schnell</option></select></label>
     </div>
     <div class="row" style="flex-wrap:nowrap">
-      <button type="button" class="btn ghost sm" id="tcSkip" style="padding-left:0">Beenden</button><span class="grow"></span>
+      <button type="button" class="btn ghost sm" id="tcSkip" style="padding-left:0">Schließen</button><span class="grow"></span>
       <button type="button" class="btn sm" id="tcBack">Zurück</button>
       <button type="button" class="btn primary sm" id="tcNext">Weiter</button>
     </div>
@@ -3762,29 +3779,30 @@ window.addEventListener('resize',fit);window.addEventListener('load',fit);fit();
     bell:   svgI(200, 84, `<path d="M84 56V40a16 16 0 0 1 32 0v16l6 6H78z"/><path d="M95 66a5 5 0 0 0 10 0"/><path d="M130 26l8-6M70 26l-8-6"/>`),
     arch:   svgI(200, 84, `<rect x="56" y="18" width="88" height="16" rx="3"/><path d="M62 34v32h76V34"/><path d="M88 46h24"/>`),
   };
+  // Geführte, automatisch ablaufende Erklärungen. Keine echte Buchung wird ausgelöst.
   const TOURS = [
-    { id: 'aus', title: 'Ausgabe', desc: 'Werkzeug ausgeben, Zugang, Inventur', icon: 'BOHR', steps: [
-      { v: 'aus', sel: '.mq-main', ill: 'scan', t: 'Werkzeug ausgeben', x: 'Antippen, Etikett scannen, Menge und Name – fertig.' },
-      { v: 'aus', sel: '[data-mq="ein"]', ill: 'truck', t: 'Zugang buchen', x: 'Lieferung da? Hier einbuchen.' },
-      { v: 'aus', sel: '[data-mq="inv"]', ill: 'check', t: 'Inventur', x: 'Zahl eintippen, OK – nächstes Werkzeug.' },
-      { v: 'aus', sel: '#ausFilt', ill: 'chart', t: 'Was ist knapp?', x: 'Filter oben: „Wichtig“ zeigt nur, was leer oder knapp ist.' },
+    { id: 'aus', title: 'Werkzeugausgabe', desc: 'Entnehmen, Zugang und Inventur verstehen', icon: 'BOHR', steps: [
+      { v: 'aus', sel: '.mq-main', ill: 'scan', t: 'Werkzeug entnehmen', x: 'Über „Ausgeben“ startest du eine Entnahme. Danach scannst oder suchst du das Werkzeug, gibst die Menge an und ordnest die Ausgabe einer Person zu.', tip: 'Erst beim Bestätigen einer echten Ausgabe wird der Bestand verändert.' },
+      { v: 'aus', sel: '[data-mq="ein"]', ill: 'truck', t: 'Lieferung einbuchen', x: 'Mit „Zugang“ erfasst du neue Ware. Wähle das Werkzeug und trage die tatsächlich gelieferte Menge ein.', tip: 'Nicht mit „Ausgeben“ verwechseln: Zugang erhöht den Bestand.' },
+      { v: 'aus', sel: '[data-mq="inv"]', ill: 'check', t: 'Bestand kontrollieren', x: 'Bei der Inventur vergleichst du die gezählten Werkzeuge mit dem angezeigten Bestand und erfasst Abweichungen.', tip: 'Zuerst am Regal zählen, dann den Wert übernehmen.' },
+      { v: 'aus', sel: '#ausFilt', ill: 'chart', t: 'Engpässe erkennen', x: 'Hier filterst du die Anzeige. „Wichtig“ hilft dir, Werkzeuge mit niedrigem oder fehlendem Bestand schneller zu finden.', tip: 'Der Filter ändert nur die Anzeige – keine Bestände.' },
     ]},
-    { id: 'order', perm: 'order', title: 'Bestellen', desc: 'Auf die Liste, senden, Lieferung', icon: 'HALTER', steps: [
-      { v: 'home', sel: '.td-card', alt: '.allgood', ill: 'check', t: 'Zu tun', x: 'Was heute ansteht. Antippen führt direkt hin.' },
-      { v: 'orders', sel: '#boStart', ill: 'scan', t: 'Auf die Liste', x: 'Am Regal scannen – Werkzeug ist auf der Bestellliste.' },
-      { v: 'orders', sel: '#sendOpen', alt: '#cart', ill: 'send', t: 'Liste senden', x: 'Prüfen, dann „Bestellung senden“ – per E-Mail oder PDF.' },
-      { v: 'orders', sel: '#waiting .ord', alt: '#waiting', ill: 'truck', t: 'Lieferung abhaken', x: 'Ware da? Bestellung antippen und abhaken – der Bestand stimmt dann.' },
+    { id: 'order', perm: 'order', title: 'Bestellungen', desc: 'Vom Bedarf bis zum Wareneingang', icon: 'HALTER', steps: [
+      { v: 'home', sel: '.td-card', alt: '.allgood', ill: 'check', t: 'Offene Aufgaben sehen', x: 'Auf der Startseite erkennst du, was als Nächstes erledigt werden sollte. Die Kacheln führen zu den passenden Bereichen.', tip: 'Hier verschaffst du dir zuerst einen Überblick.' },
+      { v: 'orders', sel: '#boStart', ill: 'scan', t: 'Werkzeug vormerken', x: 'Am Regal kannst du ein Etikett scannen oder ein Werkzeug auswählen. Es wird der Bestellliste hinzugefügt.', tip: 'Die Bestellliste ist zunächst nur ein Entwurf.' },
+      { v: 'orders', sel: '#sendOpen', alt: '#cart', ill: 'send', t: 'Bestellung prüfen und senden', x: 'Kontrolliere Artikel, Menge und Empfänger. Erst danach kannst du die Bestellung als E-Mail, PDF oder über die angebotene Versandfunktion weitergeben.', tip: 'Dieser Rundgang versendet selbstverständlich nichts.' },
+      { v: 'orders', sel: '#waiting .ord', alt: '#waiting', ill: 'truck', t: 'Lieferung nachverfolgen', x: 'Versendete Bestellungen findest du unter den offenen Lieferungen. Wenn Ware eintrifft, kontrollierst und bestätigst du die gelieferten Positionen.', tip: 'Nur tatsächlich eingetroffene Mengen abhaken.' },
     ]},
-    { id: 'lib', perm: 'adm', title: 'Werkzeug anlegen', desc: 'Neue Karte, fehlende Angaben, Etikett', icon: 'FRAES', steps: [
-      { v: 'lib', sel: '#toolWizStart', ill: 'photo', t: 'Neues Werkzeug', x: 'Antippen. Etikett fotografieren – die KI füllt aus.' },
-      { v: 'lib', sel: '#libF', alt: '#libQ', ill: 'check', t: 'Was fehlt noch?', x: '„Unvollständig“ zeigt Karten mit fehlenden Angaben.' },
-      { v: 'lib', pre: () => { if (S.libF) { S.libF = ''; renderLib(); } }, sel: '#libCats .lib-cat', alt: '#libCats', ill: 'types', t: 'Werkzeug finden', x: 'Typ antippen – alle Werkzeuge mit Lagerort und Bestand.' },
-      { v: 'lib', sel: '#plusBtn', ill: 'label', t: 'Etikett drucken', x: '+ oben → „Etiketten drucken“.' },
+    { id: 'lib', perm: 'adm', title: 'Werkzeugverwaltung', desc: 'Anlegen, finden und kennzeichnen', icon: 'FRAES', steps: [
+      { v: 'lib', sel: '#toolWizStart', ill: 'photo', t: 'Werkzeug neu anlegen', x: 'Der Assistent führt durch die neue Werkzeugkarte. Wenn verfügbar, kann ein Foto vom Etikett dabei helfen, die Angaben zu übernehmen.', tip: 'Erkannte Angaben vor dem Speichern immer kontrollieren.' },
+      { v: 'lib', sel: '#libF', alt: '#libQ', ill: 'check', t: 'Fehlende Angaben finden', x: 'Mit dem Filter „Unvollständig“ kannst du Werkzeugkarten aufspüren, denen noch wichtige Informationen fehlen.', tip: 'Bestehende Einträge werden durch das Filtern nicht verändert.' },
+      { v: 'lib', pre: () => { if (S.libF) { S.libF = ''; renderLib(); } }, sel: '#libCats .lib-cat', alt: '#libCats', ill: 'types', t: 'Werkzeuge durchsuchen', x: 'Wähle einen Werkzeugtyp. Du siehst zugehörige Artikel, Bestände und – soweit gepflegt – die Lagerorte.', tip: 'Du kannst außerdem die Suche verwenden.' },
+      { v: 'lib', sel: '#plusBtn', ill: 'label', t: 'Etiketten vorbereiten', x: 'Über das Plus-Menü erreichst du den Etikettendruck. Damit lassen sich Werkzeuge später bequem per Scan wiederfinden.', tip: 'Vor dem Drucken das richtige Werkzeug auswählen.' },
     ]},
-    { id: 'bios', perm: 'adm', title: 'Für BIOS', desc: 'Was in BIOS eingetragen werden muss', icon: 'ETC', steps: [
-      { v: 'rep', pre: () => { if (RP.type !== 'bios') { RP.type = 'bios'; renderRep(); } }, sel: '[data-rp="type:bios"]', ill: 'arch', t: 'Was fehlt in BIOS', x: '„Für BIOS“ zeigt alle Buchungen, die noch nicht in BIOS stehen.' },
-      { v: 'rep', sel: '.rp-pv', alt: '#v_rep', ill: 'send', t: 'Eintragen', x: 'Drucken oder Excel – dann in BIOS eintragen.' },
-      { v: 'rep', sel: '#setBtn', ill: 'check', t: 'Abhaken', x: 'Eingetragen? Zahnrad → BIOS → Zeile abhaken.' },
+    { id: 'bios', perm: 'adm', title: 'BIOS-Abgleich', desc: 'Fehlende Buchungen sicher nachtragen', icon: 'ETC', steps: [
+      { v: 'rep', pre: () => { if (RP.type !== 'bios') { RP.type = 'bios'; renderRep(); } }, sel: '[data-rp="type:bios"]', ill: 'arch', t: 'BIOS-Buchungen filtern', x: 'Im Bericht „Für BIOS“ werden die Buchungen angezeigt, die noch im externen System nachgetragen werden müssen.', tip: 'Zuerst den Bericht und den Zeitraum kontrollieren.' },
+      { v: 'rep', sel: '.rp-pv', alt: '#v_rep', ill: 'send', t: 'Daten übernehmen', x: 'Nutze die Druck- oder Exportfunktion, um die Angaben zum Eintragen in BIOS bereitzustellen.', tip: 'Ein Export allein markiert noch nichts als erledigt.' },
+      { v: 'rep', sel: '#setBtn', ill: 'check', t: 'Abgleich abschließen', x: 'Erst wenn du die Daten tatsächlich in BIOS eingetragen hast, kannst du sie in den Einstellungen als erledigt kennzeichnen.', tip: 'Nie vor dem tatsächlichen BIOS-Eintrag abhaken.' },
     ]},
   ];
   const tourOk = t => !t.ks && (!t.perm || can(t.perm));
@@ -3801,11 +3819,11 @@ window.addEventListener('resize',fit);window.addEventListener('load',fit);fit();
   const ksDemo = () => { const t = ksDemoTool(); if (!t) return; if (KS.step !== 'tool' || KS.t !== t.id) { KS.t = t.id; KS.step = 'tool'; KS.mode = 'aus'; KS.n = 1; KS.who = ''; KS.mach = ''; KS.q = ''; KS.done = null; } ksRender(); };
   const ksIdle = () => { if (KS.step !== 'idle') ksReset(); else ksRender(); };
   TOURS.push({ id: 'station', ks: true, title: 'Ausgabestation', desc: 'So nimmst du ein Werkzeug', icon: 'BOHR', steps: [
-    { pre: ksIdle, sel: '#ksCam', ill: 'scan', t: 'Scannen', x: 'Etikett vor die Kamera halten.' },
-    { pre: ksIdle, sel: '.ks-search', ill: 'search', t: 'Kein Etikett?', x: 'Hier suchen.' },
-    { pre: ksDemo, sel: '.ks-qty', alt: '#ksPanel', ill: 'check', t: 'Wie viele?', x: 'Anzahl antippen.' },
-    { pre: ksDemo, sel: '.ks-chips', alt: '#ksPanel', ill: 'hello', t: 'Wer?', x: 'Deinen Namen antippen.' },
-    { pre: ksDemo, sel: '.ks-b.go', alt: '.ks-foot', ill: 'save', t: 'Entnehmen', x: 'Name gewählt? „Entnehmen“ drücken – fertig. 15 s lang „Rückgängig“.' },
+    { pre: ksIdle, sel: '#ksCam', ill: 'scan', t: 'Etikett scannen', x: 'Halte das Etikett vor die Kamera. Die Station erkennt so, welches Werkzeug du entnehmen möchtest.', tip: 'Im Rundgang wird kein Scan gespeichert.' },
+    { pre: ksIdle, sel: '.ks-search', ill: 'search', t: 'Alternativ: Werkzeug suchen', x: 'Falls das Etikett beschädigt ist, findest du das Werkzeug auch über die Suche.', tip: 'Achte auf die richtige Bezeichnung.' },
+    { pre: ksDemo, sel: '.ks-qty', alt: '#ksPanel', ill: 'check', t: 'Menge auswählen', x: 'Auf dem Werkzeugbildschirm bestimmst du, wie viele Stück du entnehmen möchtest.', tip: 'Nicht mehr entnehmen als tatsächlich benötigt.' },
+    { pre: ksDemo, sel: '.ks-chips', alt: '#ksPanel', ill: 'hello', t: 'Person zuordnen', x: 'Wähle die Person, die das Werkzeug erhält. So bleibt die Entnahme nachvollziehbar.', tip: 'Falschen Namen vor dem Abschluss korrigieren.' },
+    { pre: ksDemo, sel: '.ks-b.go', alt: '.ks-foot', ill: 'save', t: 'Entnahme bestätigen', x: 'Nach Prüfung der Angaben wird die Entnahme über „Entnehmen“ bestätigt. Anschließend steht kurz „Rückgängig“ zur Verfügung.', tip: 'Während dieses Rundgangs wird nichts gebucht.' },
   ]});
 
   // ---------- einmalige Hinweise beim ersten Öffnen eines Bereichs ----------
@@ -3824,10 +3842,10 @@ window.addEventListener('resize',fit);window.addEventListener('load',fit);fit();
   // ---- help sheet
   function openHelp(first) {
     $('helpTitle').textContent = first ? 'Willkommen' : 'Hilfe';
-    $('helpLead').textContent = first ? 'Neu hier? Starte die kurze Tour – oder gleich den Bestell-Assistenten.' : 'Wähle eine Tour. Sie läuft automatisch ab und kann jederzeit pausiert werden.';
+    $('helpLead').textContent = first ? 'Neu hier? Starte die kurze Tour – oder gleich den Bestell-Assistenten.' : 'Wähle ein Thema. CITITOOL zeigt dir die wichtigsten Stellen automatisch – ohne echte Buchungen.';
     $('helpList').innerHTML =
       `<button type="button" class="hitem prim" data-help="wiz"><span class="hi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8l1.5 1.5L12 7M8 13l1.5 1.5L12 12M14 8.5h2.5M14 13.5h2.5M8 18h8"/></svg></span><span><b>Bestell-Assistent</b><small>Schritt für Schritt bestellen</small></span><span class="n">4 SCHRITTE</span></button>` +
-      TOURS.filter(tourOk).map(t => `<button type="button" class="hitem" data-help="${t.id}"><span class="hi">${ICON[t.icon]}</span><span><b>${esc(t.title)}</b><small>${esc(t.desc)}</small></span><span class="n">${t.steps.length} SCHRITTE</span></button>`).join('');
+      TOURS.filter(tourOk).map(t => `<button type="button" class="hitem" data-help="${t.id}"><span class="hi">${ICON[t.icon]}</span><span><b>${esc(t.title)}</b><small>${esc(t.desc)}</small></span><span class="n">${t.steps.length} STATIONEN</span></button>`).join('');
     $('help').hidden = false;
   }
   function closeHelp() { $('help').hidden = true; lsSet('syncop_bestellliste_help_seen', '1'); }
@@ -3843,7 +3861,7 @@ window.addEventListener('resize',fit);window.addEventListener('load',fit);fit();
   // ---- spotlight tour
   // Automatische Demo-Tour: keine Arbeits- oder Speicheraktionen ausführen.
   const T = { tour: null, k: 0, re: 0, auto: 0, tick: 0, paused: false,
-    remaining: 0, started: 0, duration: 4500, snapshot: null };
+    remaining: 0, started: 0, duration: 8500, snapshot: null, complete: false };
   const tourClock = () => performance.now();
   function tourClearTimers() {
     clearTimeout(T.auto); clearTimeout(T.re); clearInterval(T.tick);
@@ -3856,12 +3874,12 @@ window.addEventListener('resize',fit);window.addEventListener('load',fit);fit();
   }
   function tourSchedule(ms) {
     clearTimeout(T.auto); clearInterval(T.tick);
-    if (!T.tour || T.paused) return;
+    if (!T.tour || T.paused || T.complete) return;
     T.remaining = Math.max(0, ms); T.started = tourClock();
     T.tick = setInterval(tourProgress, 90);
     T.auto = setTimeout(() => {
-      if (!T.tour || T.paused) return;
-      if (T.k >= T.tour.steps.length - 1) endTour();
+      if (!T.tour || T.paused || T.complete) return;
+      if (T.k >= T.tour.steps.length - 1) tourComplete();
       else { T.k++; showTourStep(); }
     }, T.remaining);
     tourProgress();
@@ -3883,11 +3901,12 @@ window.addEventListener('resize',fit);window.addEventListener('load',fit);fit();
     if (T.tour) endTour();
     T.snapshot = { view: S.view, scroll: window.scrollY, libF: S.libF,
       repType: RP.type, lastView: localStorage.getItem('cititool_last_view') };
-    T.tour = tr; T.k = 0; T.paused = false;
-    T.duration = Number($('atSpeed').value) || 4500;
+    T.tour = tr; T.k = 0; T.paused = false; T.complete = false;
+    T.duration = Number($('atSpeed').value) || 8500;
     $('atPause').textContent = 'Ⅱ Pause';
     $('atPause').setAttribute('aria-pressed', 'false');
     $('tour').hidden = false;
+    $('atPause').hidden = false; $('atSpeed').parentElement.hidden = false;
     try { $('coach').hidden = true; } catch {}
     showTourStep();
   }
@@ -3899,7 +3918,7 @@ window.addEventListener('resize',fit);window.addEventListener('load',fit);fit();
   function endTour() {
     const tr = T.tour, snapshot = T.snapshot;
     tourClearTimers();
-    $('tour').hidden = true; T.tour = null; T.snapshot = null;
+    $('tour').hidden = true; T.tour = null; T.snapshot = null; T.complete = false;
     T.paused = false; $('atProgress').style.width = '0%';
     if (tr && tr.ks && KS.on) {
       ksReset(); lsSet('cititool_kstour_seen', '1');
@@ -3925,19 +3944,40 @@ window.addEventListener('resize',fit);window.addEventListener('load',fit);fit();
     if (KS.on) KS.act = Date.now();
     $('tcIll').innerHTML = ILL[st.ill] || '';
     $('tcK').textContent = tr.title.toUpperCase();
+    $('tcCount').textContent = (T.k + 1) + ' / ' + tr.steps.length;
+    $('tcTip').hidden = !st.tip; $('tcTip').textContent = st.tip ? 'WICHTIG · ' + st.tip : '';
+    $('tourCard').classList.remove('tc-finished');
     $('tcT').textContent = st.t; $('tcX').textContent = st.x;
     $('tcDots').innerHTML = tr.steps.map((_, n) => `<i class="${n === T.k ? 'on' : ''}"></i>`).join('');
     $('tcBack').hidden = T.k === 0;
-    $('tcNext').textContent = T.k === tr.steps.length - 1 ? 'Fertig' : 'Weiter';
+    $('tcNext').textContent = T.k === tr.steps.length - 1 ? 'Abschließen' : 'Weiter';
     const el = tourTarget(st);
     if (el) tourScroll(el);
     requestAnimationFrame(() => requestAnimationFrame(placeTour));
     clearTimeout(T.re); T.re = setTimeout(() => { const e2 = tourTarget(st); if (e2 && T.tour && T.tour.steps[T.k] === st) { tourScroll(e2); placeTour(); } }, 320);
-    T.duration = Number($('atSpeed').value) || 4500;
+    T.duration = Number($('atSpeed').value) || 8500;
     T.remaining = T.duration;
     $('atProgress').style.width = '0%';
     clearTimeout(T.auto); clearInterval(T.tick);
     if (!T.paused) tourSchedule(T.duration);
+  }
+  function tourComplete() {
+    if (!T.tour || T.complete) return;
+    tourClearTimers(); T.complete = true; T.paused = true;
+    $('tourSpot').className = 'tour-spot none';
+    $('tourSpot').style.width = '0px'; $('tourSpot').style.height = '0px';
+    $('tourCard').classList.add('tc-finished');
+    $('tcIll').innerHTML = ILL.check;
+    $('tcK').textContent = 'TOUR ABGESCHLOSSEN';
+    $('tcCount').textContent = T.tour.steps.length + ' / ' + T.tour.steps.length;
+    $('tcT').textContent = 'Jetzt kennst du den Ablauf';
+    $('tcX').textContent = 'Du hast die wichtigsten Funktionen von „' + T.tour.title + '“ gesehen. Du kannst den Rundgang jederzeit unter Hilfe wiederholen.';
+    $('tcTip').hidden = false; $('tcTip').textContent = 'Es wurden keine Werkzeuge entnommen, Bestellungen versendet oder Daten gespeichert.';
+    $('atProgress').style.width = '100%';
+    $('atPause').hidden = true; $('atSpeed').parentElement.hidden = true;
+    $('tcBack').hidden = true; $('tcNext').textContent = 'Zurück zur Arbeit';
+    const c = $('tourCard'); c.style.left = Math.max(16, (innerWidth - c.offsetWidth) / 2) + 'px';
+    c.style.top = Math.max(12, (innerHeight - c.offsetHeight) / 2) + 'px';
   }
   // Oberkante, unter der nichts verdeckt ist (feste Leiste oben)
   function tourTopSafe() {
@@ -3955,7 +3995,7 @@ window.addEventListener('resize',fit);window.addEventListener('load',fit);fit();
     if (r.top < safe || r.bottom > vh - 12 || (fitsBelow && r.bottom + ch + 30 > vh) || r.top > vh * 0.45) window.scrollTo({ top: Math.max(0, scrollY + r.top - want), behavior: 'instant' });
   }
   function placeTour() {
-    if (!T.tour) return;
+    if (!T.tour || T.complete) return;
     const el = tourTarget(T.tour.steps[T.k]), spot = $('tourSpot'), card = $('tourCard');
     const vw = window.innerWidth, vh = window.innerHeight, cw = card.offsetWidth, ch = card.offsetHeight, pad = 6, gap = 12;
     if (!el) {
@@ -3972,23 +4012,23 @@ window.addEventListener('resize',fit);window.addEventListener('load',fit);fit();
     spot.className = 'tour-spot';
     Object.assign(spot.style, { left: Math.max(4, r.left - pad) + 'px', top: top + 'px', width: Math.min(vw - 8, r.width + pad * 2) + 'px', height: Math.max(0, bottom - top) + 'px' });
     const cx = Math.min(Math.max(16, r.left + r.width / 2 - cw / 2), vw - cw - 16);
-    Object.assign(card.style, { left: cx + 'px', top: Math.max(12, cy) + 'px' });
+    Object.assign(card.style, { left: cx + 'px', top: Math.max(12, Math.min(cy, vh - ch - 12)) + 'px' });
   }
-  $('tcNext').onclick = () => { if (!T.tour) return; if (T.k >= T.tour.steps.length - 1) { endTour(); return; } T.k++; showTourStep(); };
-  $('tcBack').onclick = () => { if (T.tour && T.k > 0) { T.k--; showTourStep(); } };
+  $('tcNext').onclick = () => { if (!T.tour) return; if (T.complete) { endTour(); return; } if (T.k >= T.tour.steps.length - 1) { tourComplete(); return; } T.k++; showTourStep(); };
+  $('tcBack').onclick = () => { if (T.tour && !T.complete && T.k > 0) { T.k--; showTourStep(); } };
   $('tcSkip').onclick = endTour;
   $('atPause').onclick = () => tourPause(!T.paused);
   $('atSpeed').onchange = () => {
     if (!T.tour) return;
-    const oldDuration = T.duration || 4500;
+    const oldDuration = T.duration || 8500;
     const rem = T.paused ? T.remaining : Math.max(0, T.remaining - (tourClock() - T.started));
     const ratio = rem / oldDuration;
-    T.duration = Number($('atSpeed').value) || 4500;
+    T.duration = Number($('atSpeed').value) || 8500;
     T.remaining = Math.max(0, T.duration * ratio);
     if (T.paused) tourProgress(); else tourSchedule(T.remaining);
   };
   document.addEventListener('visibilitychange', () => {
-    if (T.tour && document.hidden && !T.paused) tourPause(true);
+    if (T.tour && !T.complete && document.hidden && !T.paused) tourPause(true);
   });
   window.addEventListener('resize', () => { if (T.tour) placeTour(); });
   window.addEventListener('scroll', () => { if (T.tour) placeTour(); }, { passive: true });
