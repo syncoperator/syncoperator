@@ -3752,24 +3752,24 @@ window.addEventListener('resize',fit);window.addEventListener('load',fit);fit();
       { v: 'aus', sel: '.mq-main', ill: 'scan', t: 'Werkzeug ausgeben', x: 'Antippen, Etikett scannen, Menge und Name – fertig.' },
       { v: 'aus', sel: '[data-mq="ein"]', ill: 'truck', t: 'Zugang buchen', x: 'Lieferung da? Hier einbuchen.' },
       { v: 'aus', sel: '[data-mq="inv"]', ill: 'check', t: 'Inventur', x: 'Zahl eintippen, OK – nächstes Werkzeug.' },
-      { v: 'aus', sel: '#ausFilt', ill: 'chart', t: 'Was ist knapp?', x: '„Wichtig“ zeigt nur, was leer oder knapp ist.' },
+      { v: 'aus', sel: '#ausFilt', ill: 'chart', t: 'Was ist knapp?', x: 'Filter oben: „Wichtig“ zeigt nur, was leer oder knapp ist.' },
     ]},
     { id: 'order', perm: 'order', title: 'Bestellen', desc: 'Auf die Liste, senden, Lieferung', icon: 'HALTER', steps: [
       { v: 'home', sel: '.td-card', alt: '.allgood', ill: 'check', t: 'Zu tun', x: 'Was heute ansteht. Antippen führt direkt hin.' },
       { v: 'orders', sel: '#boStart', ill: 'scan', t: 'Auf die Liste', x: 'Am Regal scannen – Werkzeug ist auf der Bestellliste.' },
       { v: 'orders', sel: '#sendOpen', alt: '#cart', ill: 'send', t: 'Liste senden', x: 'Prüfen, dann „Bestellung senden“ – per E-Mail oder PDF.' },
-      { v: 'orders', sel: '#waiting', alt: '#alarm', ill: 'truck', t: 'Lieferung abhaken', x: 'Ware da? Bestellung antippen, abhaken – Bestand stimmt.' },
+      { v: 'orders', sel: '#waiting .ord', alt: '#waiting', ill: 'truck', t: 'Lieferung abhaken', x: 'Ware da? Bestellung antippen und abhaken – der Bestand stimmt dann.' },
     ]},
     { id: 'lib', perm: 'adm', title: 'Werkzeug anlegen', desc: 'Neue Karte, fehlende Angaben, Etikett', icon: 'FRAES', steps: [
       { v: 'lib', sel: '#toolWizStart', ill: 'photo', t: 'Neues Werkzeug', x: 'Antippen. Etikett fotografieren – die KI füllt aus.' },
       { v: 'lib', sel: '#libF', alt: '#libQ', ill: 'check', t: 'Was fehlt noch?', x: '„Unvollständig“ zeigt Karten mit fehlenden Angaben.' },
-      { v: 'lib', sel: '#libCats', ill: 'types', t: 'Werkzeug finden', x: 'Typ antippen – alle Werkzeuge mit Bestand.' },
+      { v: 'lib', pre: () => { if (S.libF) { S.libF = ''; renderLib(); } }, sel: '#libCats .lib-cat', alt: '#libCats', ill: 'types', t: 'Werkzeug finden', x: 'Typ antippen – alle Werkzeuge mit Lagerort und Bestand.' },
       { v: 'lib', sel: '#plusBtn', ill: 'label', t: 'Etikett drucken', x: '+ oben → „Etiketten drucken“.' },
     ]},
     { id: 'bios', perm: 'adm', title: 'Für BIOS', desc: 'Was in BIOS eingetragen werden muss', icon: 'ETC', steps: [
       { v: 'rep', pre: () => { if (RP.type !== 'bios') { RP.type = 'bios'; renderRep(); } }, sel: '[data-rp="type:bios"]', ill: 'arch', t: 'Was fehlt in BIOS', x: '„Für BIOS“ zeigt alle Buchungen, die noch nicht in BIOS stehen.' },
       { v: 'rep', sel: '.rp-pv', alt: '#v_rep', ill: 'send', t: 'Eintragen', x: 'Drucken oder Excel – dann in BIOS eintragen.' },
-      { v: 'rep', sel: '#setBtn', ill: 'check', t: 'Abhaken', x: 'Zahnrad → BIOS: erledigte Zeilen abhaken, NEU-Nummern ersetzen.' },
+      { v: 'rep', sel: '#setBtn', ill: 'check', t: 'Abhaken', x: 'Eingetragen? Zahnrad → BIOS → Zeile abhaken.' },
     ]},
   ];
   const tourOk = t => !t.ks && (!t.perm || can(t.perm));
@@ -3790,7 +3790,7 @@ window.addEventListener('resize',fit);window.addEventListener('load',fit);fit();
     { pre: ksIdle, sel: '.ks-search', ill: 'search', t: 'Kein Etikett?', x: 'Hier suchen.' },
     { pre: ksDemo, sel: '.ks-qty', alt: '#ksPanel', ill: 'check', t: 'Wie viele?', x: 'Anzahl antippen.' },
     { pre: ksDemo, sel: '.ks-chips', alt: '#ksPanel', ill: 'hello', t: 'Wer?', x: 'Deinen Namen antippen.' },
-    { pre: ksDemo, sel: '.ks-b.go', alt: '.ks-foot', ill: 'save', t: 'Entnehmen', x: 'Drücken – fertig. 15 s lang „Rückgängig“.' },
+    { pre: ksDemo, sel: '.ks-b.go', alt: '.ks-foot', ill: 'save', t: 'Entnehmen', x: 'Name gewählt? „Entnehmen“ drücken – fertig. 15 s lang „Rückgängig“.' },
   ]});
 
   // ---------- einmalige Hinweise beim ersten Öffnen eines Bereichs ----------
@@ -3826,9 +3826,9 @@ window.addEventListener('resize',fit);window.addEventListener('load',fit);fit();
   });
 
   // ---- spotlight tour
-  const T = { tour: null, k: 0 };
+  const T = { tour: null, k: 0, re: 0 };
   function startTour(id) { T.tour = TOURS.find(t => t.id === id); T.k = 0; $('tour').hidden = false; try { $('coach').hidden = true; } catch {} showTourStep(); }
-  function endTour() { const tr = T.tour; $('tour').hidden = true; T.tour = null; if (tr && tr.ks && KS.on) { ksReset(); lsSet('cititool_kstour_seen', '1'); } }
+  function endTour() { const tr = T.tour; $('tour').hidden = true; T.tour = null; if (tr && tr.ks && KS.on) { ksReset(); lsSet('cititool_kstour_seen', '1'); try { $('kiosk').scrollTop = 0; document.querySelectorAll('#kiosk *').forEach(x => { if (x.scrollTop) x.scrollTop = 0; }); } catch {} } }
   function tourTarget(st) {
     for (const s of [st.sel, st.alt]) { if (!s) continue; const el = document.querySelector(s); if (el && el.offsetParent !== null && el.getBoundingClientRect().height > 0) return el; }
     return null;
@@ -3845,8 +3845,24 @@ window.addEventListener('resize',fit);window.addEventListener('load',fit);fit();
     $('tcBack').hidden = T.k === 0;
     $('tcNext').textContent = T.k === tr.steps.length - 1 ? 'Fertig' : 'Weiter';
     const el = tourTarget(st);
-    if (el) el.scrollIntoView({ block: 'center', behavior: 'auto' });
+    if (el) tourScroll(el);
     requestAnimationFrame(() => requestAnimationFrame(placeTour));
+    clearTimeout(T.re); T.re = setTimeout(() => { const e2 = tourTarget(st); if (e2 && T.tour && T.tour.steps[T.k] === st) { tourScroll(e2); placeTour(); } }, 320);
+  }
+  // Oberkante, unter der nichts verdeckt ist (feste Leiste oben)
+  function tourTopSafe() {
+    let y = 8; if (KS.on) return y;
+    const nav = document.querySelector('.nav.seven'); if (nav && getComputedStyle(nav).position === 'sticky') { const nb = nav.getBoundingClientRect(); if (nb.top < 120) y = Math.max(y, nb.bottom + 8); }
+    return y;
+  }
+  // Ziel so scrollen, dass es oben steht und die Karte darunter Platz hat
+  function tourScroll(el) {
+    if (el.closest('#kiosk')) { el.scrollIntoView({ block: 'center', behavior: 'instant' }); return; }
+    if (getComputedStyle(el).position === 'fixed') return;
+    const r = el.getBoundingClientRect(), safe = tourTopSafe(), vh = window.innerHeight, ch = $('tourCard').offsetHeight || 220;
+    const fitsBelow = r.height + ch + 40 <= vh - safe;
+    const want = fitsBelow ? safe + 6 : safe + 6;
+    if (r.top < safe || r.bottom > vh - 12 || (fitsBelow && r.bottom + ch + 30 > vh) || r.top > vh * 0.45) window.scrollTo({ top: Math.max(0, scrollY + r.top - want), behavior: 'instant' });
   }
   function placeTour() {
     if (!T.tour) return;
@@ -3857,20 +3873,22 @@ window.addEventListener('resize',fit);window.addEventListener('load',fit);fit();
       Object.assign(card.style, { left: Math.max(16, (vw - cw) / 2) + 'px', top: Math.max(16, (vh - ch) / 2) + 'px' });
       return;
     }
-    const r = el.getBoundingClientRect();
-    const top = Math.max(4, r.top - pad), bottom = Math.min(vh - 4, r.bottom + pad);
+    const r = el.getBoundingClientRect(), safe = el.closest('#kiosk') || getComputedStyle(el).position === 'fixed' || r.top < 80 && r.bottom < 120 ? 4 : tourTopSafe() - 4;
+    let top = Math.max(safe, r.top - pad), bottom = Math.min(vh - 4, r.bottom + pad);
+    let cy;
+    if (bottom + gap + ch <= vh - 12) cy = bottom + gap;                       // Karte unter dem Ziel
+    else if (top - gap - ch >= Math.max(12, safe)) cy = top - gap - ch;          // Karte über dem Ziel
+    else { cy = vh - ch - 12; bottom = Math.max(top + 48, cy - gap); }           // großes Ziel: nur oberen Teil zeigen
     spot.className = 'tour-spot';
-    Object.assign(spot.style, { left: Math.max(4, r.left - pad) + 'px', top: top + 'px', width: Math.min(vw - 8, r.width + pad * 2) + 'px', height: (bottom - top) + 'px' });
-    let cy = bottom + gap;
-    if (cy + ch > vh - 12) cy = top - gap - ch;
-    if (cy < 12) cy = Math.max(12, vh - ch - 12);
+    Object.assign(spot.style, { left: Math.max(4, r.left - pad) + 'px', top: top + 'px', width: Math.min(vw - 8, r.width + pad * 2) + 'px', height: Math.max(0, bottom - top) + 'px' });
     const cx = Math.min(Math.max(16, r.left + r.width / 2 - cw / 2), vw - cw - 16);
-    Object.assign(card.style, { left: cx + 'px', top: cy + 'px' });
+    Object.assign(card.style, { left: cx + 'px', top: Math.max(12, cy) + 'px' });
   }
-  $('tcNext').onclick = () => { if (!T.tour) return; if (T.k >= T.tour.steps.length - 1) { endTour(); toast('Tour beendet'); return; } T.k++; showTourStep(); };
+  $('tcNext').onclick = () => { if (!T.tour) return; if (T.k >= T.tour.steps.length - 1) { endTour(); return; } T.k++; showTourStep(); };
   $('tcBack').onclick = () => { if (T.tour && T.k > 0) { T.k--; showTourStep(); } };
   $('tcSkip').onclick = endTour;
   window.addEventListener('resize', () => { if (T.tour) placeTour(); });
+  window.addEventListener('scroll', () => { if (T.tour) placeTour(); }, { passive: true });
   document.addEventListener('keydown', e => {
     if ($('tour').hidden) return;
     if (e.key === 'Escape') endTour(); else if (e.key === 'ArrowRight') $('tcNext').click(); else if (e.key === 'ArrowLeft') $('tcBack').click();
@@ -8291,7 +8309,7 @@ Antworte NUR mit JSON: {"map":["feld oder leer", ...]} – gleiche Reihenfolge u
       const r = document.querySelector(`#waiting [data-oa="tog"][data-id="${o.id}"]`)?.closest('.ord'); if (r) { r.scrollIntoView({ behavior: 'smooth', block: 'start' }); r.classList.remove('mbf'); void r.offsetWidth; r.classList.add('mbf'); } return; }
   });
   // ---------- Version: Nummer anzeigen, neue Version erkennen ----------
-  const APP_VER = '2026.11.16-1';
+  const APP_VER = '2026.11.16-2';
   let verSeen = '';
   async function verCheck() {
     if (!/^https?:/.test(location.protocol)) return;
