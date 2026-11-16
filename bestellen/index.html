@@ -1808,6 +1808,11 @@ html.kiosk .tour-card{max-width:min(460px,calc(100vw - 32px))}
 html.kiosk .tour-card .tc-t,html.kiosk #tcT{font-size:22px}
 html.kiosk #tcX{font-size:16px;line-height:1.45}
 html.kiosk #tcNext,html.kiosk #tcBack{min-height:48px;font-size:16px}
+
+.coach{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:45;width:min(520px,calc(100% - 24px));box-sizing:border-box;display:flex;align-items:center;gap:12px;padding:12px 12px 12px 16px;border-radius:16px;background:var(--ink);color:var(--on-ink);box-shadow:0 10px 30px rgba(0,0,0,.25);font-size:14px;line-height:1.4;text-transform:none}
+.coach[hidden]{display:none}.coach span{flex:1}.coach .btn.primary{background:var(--on-ink);color:var(--ink);min-width:56px}
+html.kiosk .coach{display:none}
+.tc-ill{height:56px!important}.tc-ill svg{height:44px!important}
 </style>
 </head>
 <body>
@@ -2157,6 +2162,7 @@ html.kiosk #tcNext,html.kiosk #tcBack{min-height:48px;font-size:16px}
 </div>
 
 <!-- ================= TOUR ================= -->
+<div id="coach" class="coach" role="status" hidden><span id="coachX"></span><button type="button" class="btn sm primary" id="coachOk">OK</button></div>
 <div id="tour" class="tour" hidden>
   <div id="tourSpot" class="tour-spot"></div>
   <div id="tourCard" class="tour-card" role="dialog" aria-live="polite">
@@ -2450,6 +2456,7 @@ window.addEventListener('load',ctFit);window.addEventListener('resize',ctFit);se
     if (v !== 'aus') camStop();
     const sec = $('v_' + v); sec.classList.remove('enter'); void sec.offsetWidth; sec.classList.add('enter');
     render(); window.scrollTo(0, 0);
+    try { coachShow(v); } catch {}
   }
   document.querySelectorAll('.nav button[data-view]').forEach(b => b.onclick = () => {
     const v = b.dataset.view, from = S.view;
@@ -2590,7 +2597,7 @@ window.addEventListener('load',ctFit);window.addEventListener('resize',ctFit);se
     $('cartN').textContent = items.length ? `· ${items.length}` : '';
     $('sendOpen').hidden = !items.length || (!$('sendbox').hidden && S.send?.mode === 'order');
     if (!items.length && S.send?.mode === 'order') { S.send = null; $('sendbox').hidden = true; }
-    if (!items.length) { $('cart').innerHTML = `<div class="empty"><b>Liste ist leer</b>Unten Werkzeug suchen und „+ Bestellen“ tippen.</div>`; return; }
+    if (!items.length) { $('cart').innerHTML = `<div class="empty"><b>Noch leer</b>Oben „Scannen &amp; bestellen“ oder bei einem Werkzeug + antippen.</div>`; return; }
     $('cart').innerHTML = items.map(i => S.editCart === i.id ? cartEditHTML(i) : cartRowHTML(i)).join('');
     const newest = items.reduce((a, b) => (b.createdAt > (a?.createdAt || 0) ? b : a), null);
     if (newest && Date.now() - newest.createdAt < 1500) $('cart').querySelector(`[data-id="${newest.id}"]`)?.classList.add('flash');
@@ -3741,85 +3748,71 @@ window.addEventListener('resize',fit);window.addEventListener('load',fit);fit();
     arch:   svgI(200, 84, `<rect x="56" y="18" width="88" height="16" rx="3"/><path d="M62 34v32h76V34"/><path d="M88 46h24"/>`),
   };
   const TOURS = [
-    { id: 'start', title: 'Erste Schritte', desc: 'Was die App kann – in 7 Bildern', icon: 'C', steps: [
-      { v: 'home', sel: null, ill: 'hello', t: 'Willkommen', x: 'Werkzeug bestellen, ausgeben und im Lager führen – alles in einer App, auch am Handy an der Maschine.' },
-      { v: 'home', sel: '.nav', ill: 'nav', t: 'Die Bereiche', x: 'Start, Ausgabe, Bestellen, Bibliothek. Unter „Mehr“: Probleme, Bericht und Archiv. Am Tablet stehen alle nebeneinander.' },
-      { v: 'home', sel: '#plusBtn', ill: 'wiz', t: 'Das Plus', x: 'Oben das schwarze +: Ausgabe scannen, KI-Werkstatt, neue Bestellung, Werkzeug anlegen (mit Etikett-Foto), Etiketten drucken, Status als Bild.' },
-      { v: 'home', sel: '.recent', alt: '.nav', ill: 'cart', t: 'Schnell nachbestellen', x: 'Nach links wischen (am PC: Pfeile ‹ ›, Mausrad oder ziehen). „Alle anzeigen“ zeigt alle als Raster. + antippen = sofort auf die Bestellliste. Rote Linie = bald nachbestellen.' },
-      { v: 'home', sel: '.lg-card', alt: '.nav', ill: 'chart', t: 'Lager auf einen Blick', x: 'Heute und 7 Tage ausgegeben, was bald leer ist, Verbrauch der letzten 14 Tage und die letzten Bewegungen.' },
-      { v: 'home', sel: '#plusBtn', ill: 'wiz', t: 'Bestellen', x: '„Aus Liste bestellen“: der Assistent führt in 4 Schritten durch die ganze Bestellung. „Scannen & bestellen“ = direkt am Regal.' },
-      { v: 'home', sel: '#setBtn', ill: 'backup', t: 'Daten & Backup', x: 'Zahnrad: Backup speichern/laden, Excel und Sync zwischen Handy und PC.' },
+    { id: 'aus', title: 'Ausgabe', desc: 'Werkzeug ausgeben, Zugang, Inventur', icon: 'BOHR', steps: [
+      { v: 'aus', sel: '.mq-main', ill: 'scan', t: 'Werkzeug ausgeben', x: 'Antippen, Etikett scannen, Menge und Name – fertig.' },
+      { v: 'aus', sel: '[data-mq="ein"]', ill: 'truck', t: 'Zugang buchen', x: 'Lieferung da? Hier einbuchen.' },
+      { v: 'aus', sel: '[data-mq="inv"]', ill: 'check', t: 'Inventur', x: 'Zahl eintippen, OK – nächstes Werkzeug.' },
+      { v: 'aus', sel: '#ausFilt', ill: 'chart', t: 'Was ist knapp?', x: '„Wichtig“ zeigt nur, was leer oder knapp ist.' },
     ]},
-    { id: 'aus', title: 'Ausgabe & Scanner', desc: 'Entnehmen, Zugang, Inventur, Korb', icon: 'BOHR', steps: [
-      { v: 'aus', sel: '.mq-main', ill: 'scan', t: 'Ausgeben in 4 Schritten', x: 'Scannen → Menge → Wer → Maschine. Große Knöpfe, ein Schritt pro Bildschirm. Der QR auf dem Etikett öffnet das direkt mit diesem Werkzeug.' },
-      { v: 'aus', sel: '.mq-row', ill: 'scan', t: 'Zugang & Inventur', x: 'Zugang: Lieferung einbuchen. Inventur: ein Werkzeug pro Bildschirm – nach rechts wischen +1, nach links −1, „Weiter“ speichert. Sortiert nach Lagerort.' },
-      { v: 'aus', sel: '.aus-modes', ill: 'scan', t: 'Direkt buchen', x: 'Ausgabe (−) nimmt aus dem Lager, Zugang (+) bucht ein, Inventur (=) setzt den gezählten Bestand.' },
-      { v: 'aus', sel: '#camBtn', ill: 'scan', t: 'Scannen', x: 'Kamera auf Strichcode oder QR. Geht mit unseren Etiketten und mit Codes vom Hersteller (einmal zuordnen).' },
-      { v: 'aus', sel: '#ausQ', ill: 'search', t: 'Handscanner & Suche', x: 'Ein USB-Handscanner tippt hier hinein. Oder Nummer / Name eingeben.' },
-      { v: 'aus', sel: '#ausSer', alt: '.aus-modes', ill: 'cart', t: 'Serienscan', x: 'Einschalten, mehrere Werkzeuge nacheinander scannen – alles landet im Korb. Am Ende einmal „Alle ausgeben“ mit Maschine und Name.' },
-      { v: 'aus', sel: '#ausFilt', ill: 'chart', t: 'Lager', x: 'Niedrig, Bald leer (Prognose aus dem Verbrauch), Ladenhüter (180 Tage nicht ausgegeben), Offen (noch nicht gezählt).' },
-      { v: 'aus', sel: '#ausLog', ill: 'arch', t: 'Journal', x: 'Jede Buchung mit Zeit, Name und Maschine. „Journal & Export“: Auswertung, CSV, Excel, PDF.' },
+    { id: 'order', perm: 'order', title: 'Bestellen', desc: 'Auf die Liste, senden, Lieferung', icon: 'HALTER', steps: [
+      { v: 'home', sel: '.td-card', alt: '.allgood', ill: 'check', t: 'Zu tun', x: 'Was heute ansteht. Antippen führt direkt hin.' },
+      { v: 'orders', sel: '#boStart', ill: 'scan', t: 'Auf die Liste', x: 'Am Regal scannen – Werkzeug ist auf der Bestellliste.' },
+      { v: 'orders', sel: '#sendOpen', alt: '#cart', ill: 'send', t: 'Liste senden', x: 'Prüfen, dann „Bestellung senden“ – per E-Mail oder PDF.' },
+      { v: 'orders', sel: '#waiting', alt: '#alarm', ill: 'truck', t: 'Lieferung abhaken', x: 'Ware da? Bestellung antippen, abhaken – Bestand stimmt.' },
     ]},
-    { id: 'lib', title: 'Werkzeug anlegen', desc: 'Neues Werkzeug in die Bibliothek', icon: 'FRAES', steps: [
-      { v: 'lib', sel: '#toolWizStart', ill: 'types', t: 'Neues Werkzeug', x: 'Der Werkzeug-Assistent fragt nur, was zum Typ passt: beim Bohrer Ø, Bohrtiefe und Kühlung, beim Halter nicht.' },
-      { v: 'lib', sel: '#toolWizStart', ill: 'photo', t: 'Etikett fotografieren', x: 'Foto von der Schachtel – die KI füllt Typ, Bezeichnung, Hersteller, Sorte und Maße aus. Danach nur prüfen.' },
-      { v: 'lib', sel: null, ill: 'specs', t: 'Name automatisch', x: 'Typ + Bezeichnung + Maße, z. B. STECHSTAHL HSA 1212R B2. Häkchen = Maß steht im Namen.' },
-      { v: 'lib', sel: null, ill: 'photo', t: 'Nummern, Lager, Foto', x: 'Artikelnummer, Hersteller, Lagerort und Mindestbestand. Foto vom Etikett – oder leer lassen, dann kommt ein Symbol.' },
-      { v: 'lib', sel: '#libCats', ill: 'types', t: 'Nach Typ', x: 'Die Bibliothek ist nach Gruppen sortiert. Typ antippen – Liste mit Filtern und „Etiketten“ für alle.' },
-      { v: 'lib', sel: '#libQ', ill: 'search', t: 'Finden', x: 'Name, Ø, Radius, IK oder Nummer – über alle Typen.' },
-      { v: 'lib', sel: '#libCats', ill: 'save', t: 'Werkzeug-Karte', x: 'Antippen: Bestand, Schnittdaten, Strichcode und QR, Bestellen, Ändern, Etikett drucken.' },
+    { id: 'lib', perm: 'adm', title: 'Werkzeug anlegen', desc: 'Neue Karte, fehlende Angaben, Etikett', icon: 'FRAES', steps: [
+      { v: 'lib', sel: '#toolWizStart', ill: 'photo', t: 'Neues Werkzeug', x: 'Antippen. Etikett fotografieren – die KI füllt aus.' },
+      { v: 'lib', sel: '#libF', alt: '#libQ', ill: 'check', t: 'Was fehlt noch?', x: '„Unvollständig“ zeigt Karten mit fehlenden Angaben.' },
+      { v: 'lib', sel: '#libCats', ill: 'types', t: 'Werkzeug finden', x: 'Typ antippen – alle Werkzeuge mit Bestand.' },
+      { v: 'lib', sel: '#plusBtn', ill: 'label', t: 'Etikett drucken', x: '+ oben → „Etiketten drucken“.' },
     ]},
-    { id: 'labels', title: 'Etiketten & Codes', desc: 'Strichcode, QR, A4 zum Ausschneiden', icon: 'S', steps: [
-      { v: 'home', sel: '#plusBtn', ill: 'label', t: 'Etiketten drucken', x: 'Plus → „Etiketten drucken“: mehrere Werkzeuge, Sets oder Lagerorte wählen, Anzahl pro Stück.' },
-      { v: 'home', sel: null, ill: 'label', t: 'Größe & Inhalt', x: 'Klein, Mittel, Groß. Strichcode, QR und Symbol einzeln an/aus. A4 zum Ausschneiden oder Etikettendrucker.' },
-      { v: 'home', sel: null, ill: 'scan', t: 'Was die Codes tun', x: 'Werkzeug-QR öffnet die Karte, Set-QR legt den ganzen Rüstsatz in den Korb, Fach-QR zeigt, was im Fach liegt.' },
-      { v: 'home', sel: null, ill: 'check', t: 'Schneiden', x: 'Gestrichelte Linien = Schnitt. Die Striche am Rand zeigen, wo das Lineal hin muss. Drucken mit 100 %.' },
-    ]},
-    { id: 'ki', title: 'KI-Werkstatt', desc: 'NC-Programm, Zeichnung, Katalog, BIOS', icon: 'C', steps: [
-      { v: 'home', sel: '#plusBtn', ill: 'wiz', t: 'KI-Werkstatt', x: 'Plus → „KI-Werkstatt“. Alles, wobei die KI hilft, an einem Ort. Braucht Internet.' },
-      { v: 'home', sel: null, ill: 'types', t: 'Rüstsatz aus Programm', x: 'NC-Programm laden oder CitiTool-Projekt wählen: T-Aufrufe werden erkannt, mit der Bibliothek abgeglichen, Bohrtiefe geprüft. Ergebnis als Set, Rüstblatt oder Programm mit Kommentaren.' },
-      { v: 'home', sel: null, ill: 'photo', t: 'Zeichnung & Fotos', x: 'Foto der Zeichnung → Bearbeitungen und Werkzeuge. Foto mit vielen Etiketten oder Katalog-PDF → mehrere Werkzeuge auf einmal anlegen.' },
-      { v: 'home', sel: null, ill: 'search', t: 'Berater & ISO', x: 'Aufgabe beschreiben → passendes Werkzeug aus deinem Lager. ISO-Code (CNMG, PCLNR, 16ER) wird Feld für Feld erklärt – auch offline.' },
-      { v: 'home', sel: null, ill: 'arch', t: 'BIOS', x: 'Excel/CSV aus BIOS importieren (KI erkennt die Spalten, inkl. Bestand und Lagerort) und Artikel/Buchungen in der BIOS-Spaltenform exportieren.' },
-    ]},
-    { id: 'order', title: 'Bestellen & senden', desc: 'Liste, senden, Lieferung', icon: 'HALTER', steps: [
-      { v: 'orders', sel: '#pickQ', ill: 'search', t: 'Suchen', x: 'Name, Ø, Radius oder Nummer eintippen. Dann „+ Bestellen“.' },
-      { v: 'orders', sel: '#cart', ill: 'cart', t: 'Die Liste', x: 'Hier steht alles, was bestellt werden soll. Menge und Zeichnung direkt ändern.' },
-      { v: 'orders', sel: '#sendOpen', alt: '#cart', ill: 'send', t: 'Senden', x: '„Bestellung senden“: per E-Mail, PDF mit Fotos, ausdrucken oder Text kopieren.' },
-      { v: 'orders', sel: '#waiting', ill: 'truck', t: 'Unterwegs', x: 'Angekommen? Kästchen antippen – die Menge wird automatisch im Lager eingebucht.' },
-      { v: 'orders', sel: '#alarm', ill: 'bell', t: 'Erinnerung', x: 'Fehlt nach ein paar Tagen noch etwas, erscheint oben „Erinnerung senden“.' },
-    ]},
-    { id: 'arch', title: 'Archiv & Backup', desc: 'Alte Bestellungen und Sicherung', icon: 'ETC', steps: [
-      { v: 'arch', sel: '#archQ', ill: 'arch', t: 'Archiv', x: 'Alle Bestellungen mit Nummer und Datum. Suchen nach Nummer, Werkzeug oder Name.' },
-      { v: 'arch', sel: '#archList', ill: 'send', t: 'Nochmal', x: 'Nochmal drucken, erneut bestellen oder eine Erinnerung schicken.' },
-      { v: 'arch', sel: '#setBtn', ill: 'backup', t: 'Daten & Backup', x: 'Zahnrad oben rechts: Backup speichern/laden, Excel und Sync.' },
+    { id: 'bios', perm: 'adm', title: 'Für BIOS', desc: 'Was in BIOS eingetragen werden muss', icon: 'ETC', steps: [
+      { v: 'rep', pre: () => { if (RP.type !== 'bios') { RP.type = 'bios'; renderRep(); } }, sel: '[data-rp="type:bios"]', ill: 'arch', t: 'Was fehlt in BIOS', x: '„Für BIOS“ zeigt alle Buchungen, die noch nicht in BIOS stehen.' },
+      { v: 'rep', sel: '.rp-pv', alt: '#v_rep', ill: 'send', t: 'Eintragen', x: 'Drucken oder Excel – dann in BIOS eintragen.' },
+      { v: 'rep', sel: '#setBtn', ill: 'check', t: 'Abhaken', x: 'Zahnrad → BIOS: erledigte Zeilen abhaken, NEU-Nummern ersetzen.' },
     ]},
   ];
-
+  const tourOk = t => !t.ks && (!t.perm || can(t.perm));
+  // erster Start: kurze Tour passend zu den Rechten
+  function startFirstTour() {
+    const base = TOURS.find(t => t.id === (can('order') ? 'order' : 'aus'));
+    const has = q => q && document.querySelector(q);
+    const steps = [...base.steps.filter(st => !(st.v === 'home' && S.view === 'home' && !has(st.sel) && !has(st.alt))), { v: base.steps[0].v, sel: '#helpBtn', ill: 'hello', t: 'Mehr Hilfe', x: 'Weitere kurze Touren: ? oben rechts.' }];
+    T.tour = { id: 'first', title: 'Los geht’s', steps }; T.k = 0; $('tour').hidden = false; showTourStep();
+  }
 
   // ---- Tour Ausgabestation (läuft auf der Station, bucht nichts)
   const ksDemoTool = () => { try { return ksTop()[0] || S.lib.find(t => !t.stPending); } catch { return S.lib[0]; } };
   const ksDemo = () => { const t = ksDemoTool(); if (!t) return; if (KS.step !== 'tool' || KS.t !== t.id) { KS.t = t.id; KS.step = 'tool'; KS.mode = 'aus'; KS.n = 1; KS.who = ''; KS.mach = ''; KS.q = ''; KS.done = null; } ksRender(); };
   const ksIdle = () => { if (KS.step !== 'idle') ksReset(); else ksRender(); };
   TOURS.push({ id: 'station', ks: true, title: 'Ausgabestation', desc: 'So nimmst du ein Werkzeug', icon: 'BOHR', steps: [
-    { pre: ksIdle, sel: null, ill: 'hello', t: 'So geht’s', x: 'Werkzeug nehmen dauert 10 Sekunden: scannen, Anzahl, Name, „Entnehmen“. Diese Tour bucht nichts – einfach durchtippen.' },
-    { pre: ksIdle, sel: '#ksCam', ill: 'scan', t: '1. Etikett scannen', x: 'Den QR-Code oder Strichcode vom Etikett vor die Kamera halten. Ein Piepton – das Werkzeug ist da.' },
-    { pre: ksIdle, sel: '.ks-search', ill: 'search', t: 'Kein Etikett?', x: 'Hier suchen: z. B. „CNMG“, „Ø8“ oder die Artikelnummer. Gibt es noch keine Karte, steht es unter „Aus BIOS-Katalog“ – geht trotzdem.' },
-    { pre: ksIdle, sel: '.ks-tiles', alt: '#ksPanel', ill: 'cart', t: 'Oft genommen', x: 'Die häufigsten Werkzeuge stehen direkt hier. Antippen statt scannen.' },
-    { pre: ksDemo, sel: '.ks-qty', alt: '#ksPanel', ill: 'check', t: '2. Wie viele?', x: 'Anzahl antippen. Mehr als 10? Mit − und + einstellen.' },
-    { pre: ksDemo, sel: '.ks-chips', alt: '#ksPanel', ill: 'hello', t: '3. Wer nimmt?', x: 'Deinen Namen antippen. Beim ersten Mal unter „Dein Name“ eintippen – danach steht er hier. Maschine antippen, wenn du weißt, wofür.' },
-    { pre: ksDemo, sel: '.ks-b.go', alt: '.ks-foot', ill: 'save', t: '4. Entnehmen', x: '„Entnehmen“ drücken – fertig, der Bestand stimmt. Vertippt? 15 Sekunden lang geht „Rückgängig“.' },
-    { pre: ksDemo, sel: '.ks-prob', alt: '.ks-pbtn', ill: 'bell', t: 'Etwas stimmt nicht?', x: 'Fach leer, falsches Etikett, Werkzeug defekt: „Problem mit diesem Werkzeug“ oder oben „Problem melden“. Der Admin sieht es sofort.' },
-    { pre: ksIdle, sel: null, ill: 'arch', t: 'Zurückgeben', x: 'Falsch genommen oder nicht gebraucht? Werkzeug scannen, oben „Zurückgeben“ wählen, Entnahme und Zustand: Neu, Benutzt oder Defekt. Neue Teile zurück ins Fach.' },
-    { pre: ksIdle, sel: '.ks-help', alt: null, ill: 'check', t: 'Fertig', x: 'Die Tour kannst du jederzeit oben über „So geht’s“ wieder starten.' },
+    { pre: ksIdle, sel: '#ksCam', ill: 'scan', t: 'Scannen', x: 'Etikett vor die Kamera halten.' },
+    { pre: ksIdle, sel: '.ks-search', ill: 'search', t: 'Kein Etikett?', x: 'Hier suchen.' },
+    { pre: ksDemo, sel: '.ks-qty', alt: '#ksPanel', ill: 'check', t: 'Wie viele?', x: 'Anzahl antippen.' },
+    { pre: ksDemo, sel: '.ks-chips', alt: '#ksPanel', ill: 'hello', t: 'Wer?', x: 'Deinen Namen antippen.' },
+    { pre: ksDemo, sel: '.ks-b.go', alt: '.ks-foot', ill: 'save', t: 'Entnehmen', x: 'Drücken – fertig. 15 s lang „Rückgängig“.' },
   ]});
+
+  // ---------- einmalige Hinweise beim ersten Öffnen eines Bereichs ----------
+  const COACH = { orders: 'Hier landet alles, was bestellt werden soll. „Bestellung senden“ schickt die Liste.',
+    aus: 'Werkzeug nehmen: „Ausgeben“ antippen. „Wichtig“ zeigt, was knapp ist.',
+    lib: 'Alle Werkzeuge nach Typ. „Neues Werkzeug“ zum Anlegen.',
+    prob: 'Meldungen von der Station. Erledigt? Haken setzen.',
+    rep: 'Bericht und Zeitraum wählen – drucken oder Excel.',
+    arch: 'Alle gesendeten Bestellungen. Antippen zum Öffnen.' };
+  function coachShow(v) {
+    const el = $('coach'); if (!el) return;
+    if (!COACH[v] || KS.on || T.tour || !lsGet('syncop_bestellliste_help_seen') || lsGet('cititool_coach_' + v)) { el.hidden = true; return; }
+    $('coachX').textContent = COACH[v]; el.dataset.v = v; el.hidden = false;
+  }
+  $('coachOk').onclick = () => { const v = $('coach').dataset.v; if (v) lsSet('cititool_coach_' + v, '1'); $('coach').hidden = true; };
   // ---- help sheet
   function openHelp(first) {
     $('helpTitle').textContent = first ? 'Willkommen' : 'Hilfe';
     $('helpLead').textContent = first ? 'Neu hier? Starte die kurze Tour – oder gleich den Bestell-Assistenten.' : 'Wähle eine kurze Tour. Jede dauert unter einer Minute.';
     $('helpList').innerHTML =
       `<button type="button" class="hitem prim" data-help="wiz"><span class="hi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8l1.5 1.5L12 7M8 13l1.5 1.5L12 12M14 8.5h2.5M14 13.5h2.5M8 18h8"/></svg></span><span><b>Bestell-Assistent</b><small>Schritt für Schritt bestellen</small></span><span class="n">4 SCHRITTE</span></button>` +
-      TOURS.filter(t => !t.ks).map(t => `<button type="button" class="hitem" data-help="${t.id}"><span class="hi">${ICON[t.icon]}</span><span><b>${esc(t.title)}</b><small>${esc(t.desc)}</small></span><span class="n">${t.steps.length} BILDER</span></button>`).join('');
+      TOURS.filter(tourOk).map(t => `<button type="button" class="hitem" data-help="${t.id}"><span class="hi">${ICON[t.icon]}</span><span><b>${esc(t.title)}</b><small>${esc(t.desc)}</small></span><span class="n">${t.steps.length} BILDER</span></button>`).join('');
     $('help').hidden = false;
   }
   function closeHelp() { $('help').hidden = true; lsSet('syncop_bestellliste_help_seen', '1'); }
@@ -3834,7 +3827,7 @@ window.addEventListener('resize',fit);window.addEventListener('load',fit);fit();
 
   // ---- spotlight tour
   const T = { tour: null, k: 0 };
-  function startTour(id) { T.tour = TOURS.find(t => t.id === id); T.k = 0; $('tour').hidden = false; showTourStep(); }
+  function startTour(id) { T.tour = TOURS.find(t => t.id === id); T.k = 0; $('tour').hidden = false; try { $('coach').hidden = true; } catch {} showTourStep(); }
   function endTour() { const tr = T.tour; $('tour').hidden = true; T.tour = null; if (tr && tr.ks && KS.on) { ksReset(); lsSet('cititool_kstour_seen', '1'); } }
   function tourTarget(st) {
     for (const s of [st.sel, st.alt]) { if (!s) continue; const el = document.querySelector(s); if (el && el.offsetParent !== null && el.getBoundingClientRect().height > 0) return el; }
@@ -3846,7 +3839,7 @@ window.addEventListener('resize',fit);window.addEventListener('load',fit);fit();
     if (st.pre) { try { st.pre(); } catch {} }
     if (KS.on) KS.act = Date.now();
     $('tcIll').innerHTML = ILL[st.ill] || '';
-    $('tcK').textContent = `${tr.title.toUpperCase()} · ${T.k + 1}/${tr.steps.length}`;
+    $('tcK').textContent = tr.title.toUpperCase();
     $('tcT').textContent = st.t; $('tcX').textContent = st.x;
     $('tcDots').innerHTML = tr.steps.map((_, n) => `<i class="${n === T.k ? 'on' : ''}"></i>`).join('');
     $('tcBack').hidden = T.k === 0;
@@ -3874,8 +3867,8 @@ window.addEventListener('resize',fit);window.addEventListener('load',fit);fit();
     const cx = Math.min(Math.max(16, r.left + r.width / 2 - cw / 2), vw - cw - 16);
     Object.assign(card.style, { left: cx + 'px', top: cy + 'px' });
   }
-  $('tcNext').onclick = () => { if (T.k >= T.tour.steps.length - 1) { endTour(); toast('Tour beendet'); return; } T.k++; showTourStep(); };
-  $('tcBack').onclick = () => { if (T.k > 0) { T.k--; showTourStep(); } };
+  $('tcNext').onclick = () => { if (!T.tour) return; if (T.k >= T.tour.steps.length - 1) { endTour(); toast('Tour beendet'); return; } T.k++; showTourStep(); };
+  $('tcBack').onclick = () => { if (T.tour && T.k > 0) { T.k--; showTourStep(); } };
   $('tcSkip').onclick = endTour;
   window.addEventListener('resize', () => { if (T.tour) placeTour(); });
   document.addEventListener('keydown', e => {
@@ -8298,7 +8291,7 @@ Antworte NUR mit JSON: {"map":["feld oder leer", ...]} – gleiche Reihenfolge u
       const r = document.querySelector(`#waiting [data-oa="tog"][data-id="${o.id}"]`)?.closest('.ord'); if (r) { r.scrollIntoView({ behavior: 'smooth', block: 'start' }); r.classList.remove('mbf'); void r.offsetWidth; r.classList.add('mbf'); } return; }
   });
   // ---------- Version: Nummer anzeigen, neue Version erkennen ----------
-  const APP_VER = '2026.11.15-2';
+  const APP_VER = '2026.11.16-1';
   let verSeen = '';
   async function verCheck() {
     if (!/^https?:/.test(location.protocol)) return;
@@ -9038,7 +9031,7 @@ Antworte NUR mit JSON: {"map":["feld oder leer", ...]} – gleiche Reihenfolge u
   updateStatus();
   renderTplChips();
   $('toolWizIco').innerHTML = ICON.BOHR;
-  if (!lsGet('syncop_bestellliste_help_seen')) setTimeout(() => openHelp(true), 400);
+  if (!lsGet('syncop_bestellliste_help_seen') && !KS.on) setTimeout(() => { if (KS.on || T.tour) return; lsSet('syncop_bestellliste_help_seen', '1'); startFirstTour(); }, 700);
   setInterval(() => { if (!S.send && !S.pickOpen && !S.editCart) render(); }, 30 * 60 * 1000);
   // offline app (only on https, e.g. GitHub Pages)
   if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) { navigator.serviceWorker.register('bestellliste-sw.js', { updateViaCache: 'none' }).then(r => r.update()).catch(() => {});
