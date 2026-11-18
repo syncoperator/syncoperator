@@ -1642,6 +1642,39 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%;touch-action:manipulati
 @keyframes sySpin{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion:reduce){.sydot::before,.sypill i{animation:none!important}.sypill{transition:opacity .2s}}
 
+/* Bibliothek → Bestand */
+.lib-tab{grid-template-columns:1fr 1fr;margin:0 0 12px}
+.bst-info{display:flex;flex-wrap:wrap;gap:4px 14px;align-items:center;font-size:13px;color:var(--muted);margin:0 0 10px}
+.bst-info b{color:var(--fg);font-family:var(--f-mono);font-weight:600}
+.bst-demo{flex-basis:100%;display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:12px;background:var(--warn-bg);color:var(--warn);font-size:13px;line-height:1.4}
+.bst-demo b{font-family:var(--f-mono);font-weight:700;letter-spacing:.06em;color:var(--warn)}
+.bst-demo span{color:var(--fg)}
+.bst-tools{display:flex;gap:8px 12px;align-items:center;flex-wrap:wrap;margin:8px 0}
+.bst-tools select{flex:1 1 180px;max-width:340px;min-width:0}
+.bst-tools .lt-sort{margin:0}
+.bst-act{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 10px}
+.bst-act:empty{display:none}
+.bst-list{border:1px solid var(--line);border-radius:12px;background:var(--card);overflow:hidden}
+.bst-gh{padding:7px 12px;font-family:var(--f-mono);font-size:12px;font-weight:600;letter-spacing:.04em;color:var(--muted);background:var(--soft);border-top:1px solid var(--line)}
+.bst-gh:first-child{border-top:0}
+.bst-r{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;padding:10px 12px;border-top:1px solid var(--line);cursor:pointer;align-items:center;min-height:52px}
+.bst-list>.bst-r:first-child{border-top:0}
+.bst-r:hover{background:var(--soft)}
+.bst-r:focus-visible{outline:2px solid var(--acc);outline-offset:-2px}
+.bst-t{font-weight:600;font-size:14px;word-break:break-word}
+.bst-r.cat .bst-t{font-weight:500;color:var(--muted)}
+.bst-s{font-size:12px;color:var(--muted);margin-top:2px;word-break:break-word}
+.bst-s .mono{color:var(--fg);font-weight:500}
+.bst-s em{font-style:normal;font-weight:600;color:var(--acc)}
+.bst-s .w{color:var(--crit);font-weight:600}.bst-s .l{color:var(--warn);font-weight:600}
+.bst-q{display:flex;gap:12px;text-align:right}
+.bst-q span{display:grid;min-width:40px}
+.bst-q small{font-family:var(--f-mono);font-size:11px;color:var(--muted);letter-spacing:.06em}
+.bst-q b{font-family:var(--f-mono);font-size:17px;font-weight:600}
+.bst-r.diff .bst-q b.bi,.bst-r.noapp .bst-q b.bi{color:var(--crit)}
+.bst-r.ok .bst-q b.bi{color:var(--ok)}
+.bst-more{display:block;margin:10px auto 0}
+.bst-n{margin-top:8px}
 /* Station: Katalog + Admin-Hinweis */
 .ks-catic{display:grid;place-items:center;font:700 11px var(--f-mono);letter-spacing:.06em;color:var(--muted);background:var(--bg);border:1px dashed var(--line)}
 .ks-row.cat{border-style:dashed}
@@ -1993,6 +2026,16 @@ body.touring{padding-bottom:70vh}
 
   <!-- ================= BIBLIOTHEK ================= -->
   <section id="v_lib" class="view" hidden>
+    <div class="seg3 lib-tab" id="libTab" role="group" aria-label="Ansicht"><button type="button" data-libtab="w" aria-pressed="true">Werkzeuge</button><button type="button" data-libtab="b" aria-pressed="false">Bestand</button></div>
+    <div id="libBest" class="view" hidden>
+      <div id="bstInfo" class="bst-info"></div>
+      <input id="bstQ" type="search" placeholder="Nummer, Name oder Lagerort" style="background:var(--card)" autocomplete="off">
+      <div id="bstF" class="aus-f lib-f"></div>
+      <div class="bst-tools"><select id="bstLoc" aria-label="Lagerort"></select><div class="lt-sort types" id="bstSort"><span>SORTIEREN</span><button type="button" data-bsort="loc">Lagerort</button><button type="button" data-bsort="name">Name</button><button type="button" data-bsort="stock">Bestand</button></div></div>
+      <div id="bstAct" class="bst-act"></div>
+      <div id="bstList"></div>
+      <input type="file" id="bstFile" accept=".xlsx,.xls,.csv" hidden>
+    </div>
     <button type="button" class="wizstart" id="toolWizStart"><span class="wsi" id="toolWizIco"></span><span><b>Neues Werkzeug</b><small>Werkzeug-Assistent · fragt nur, was zum Typ passt</small></span><span class="arr" aria-hidden="true">→</span></button>
 
 
@@ -3138,6 +3181,10 @@ window.addEventListener('resize',fit);window.addEventListener('load',fit);fit();
     return (hint ? `<div class="hint" style="margin:0 0 6px">${hint}</div>` : '') + L.map(t => libRowHTML(t, true, f)).join('');
   }
   function renderLib() {
+    const bst = S.libTab === 'b';
+    $('libTab').querySelectorAll('[data-libtab]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.libtab === (bst ? 'b' : 'w'))));
+    $('libBest').hidden = !bst; $('toolWizStart').hidden = bst;
+    if (bst) { $('libHome').hidden = true; $('libTypeView').hidden = true; bstRender(); return; }
     const home = !S.libType;
     $('libHome').hidden = !home; $('libTypeView').hidden = home;
     if (home) {
@@ -3831,7 +3878,7 @@ window.addEventListener('resize',fit);window.addEventListener('load',fit);fit();
   // ---------- einmalige Hinweise beim ersten Öffnen eines Bereichs ----------
   const COACH = { orders: 'Hier landet alles, was bestellt werden soll. „Bestellung senden“ schickt die Liste.',
     aus: 'Werkzeug nehmen: „Ausgeben“ antippen. „Wichtig“ zeigt, was knapp ist.',
-    lib: 'Alle Werkzeuge nach Typ. „Neues Werkzeug“ zum Anlegen.',
+    lib: 'Alle Werkzeuge nach Typ. „Neues Werkzeug“ zum Anlegen. „Bestand“ zeigt App- und BIOS-Bestand nebeneinander.',
     prob: 'Meldungen von der Station. Erledigt? Haken setzen.',
     rep: 'Bericht und Zeitraum wählen – drucken oder Excel.',
     arch: 'Alle gesendeten Bestellungen. Antippen zum Öffnen.' };
@@ -3901,8 +3948,9 @@ window.addEventListener('resize',fit);window.addEventListener('load',fit);fit();
   function beginTour(tr) {
     if (!tr || !tr.steps || !tr.steps.length) return;
     if (T.tour) endTour();
-    T.snapshot = { view: S.view, scroll: window.scrollY, libF: S.libF,
+    T.snapshot = { view: S.view, scroll: window.scrollY, libF: S.libF, libTab: S.libTab,
       repType: RP.type, lastView: localStorage.getItem('cititool_last_view') };
+    if (S.libTab === 'b') { S.libTab = 'w'; renderLib(); }
     T.tour = tr; T.k = 0; T.paused = false; T.complete = false;
     T.duration = Number($('atSpeed').value) || 8500;
     $('atPause').textContent = 'Ⅱ Pause';
@@ -3927,7 +3975,7 @@ window.addEventListener('resize',fit);window.addEventListener('load',fit);fit();
       try { $('kiosk').scrollTop = 0; document.querySelectorAll('#kiosk *').forEach(x => { if (x.scrollTop) x.scrollTop = 0; }); } catch {}
     } else if (snapshot) {
       // Nur die für die Demonstration veränderten UI-Zustände zurücksetzen.
-      if (S.libF !== snapshot.libF) { S.libF = snapshot.libF; renderLib(); }
+      if (S.libF !== snapshot.libF || S.libTab !== snapshot.libTab) { S.libF = snapshot.libF; S.libTab = snapshot.libTab; renderLib(); }
       if (RP.type !== snapshot.repType) { RP.type = snapshot.repType; renderRep(); }
       if (S.view !== snapshot.view) setView(snapshot.view);
       if (snapshot.lastView === null) localStorage.removeItem('cititool_last_view');
@@ -5364,15 +5412,17 @@ Antworte NUR mit JSON: {"map":{"feld":"Spaltenname"},"typ":"häufigster Werkzeug
   // Abweichungen erscheinen als BIOS-Aufgabe (Probleme → BIOS, Für BIOS, Bericht).
   // =====================================================================
   const CAT_K = 'syncop_bestellliste_cat_v1';
-  const CAT = (() => { try { return { ts: 0, file: '', rows: [], base: 0, dirty: 0, ...(JSON.parse(lsGet(CAT_K) || 'null') || {}) }; } catch { return { ts: 0, file: '', rows: [], base: 0, dirty: 0 }; } })();
+  const CAT = (() => { try { return { ts: 0, sts: 0, sv: 0, demo: 0, file: '', rows: [], base: 0, dirty: 0, ...(JSON.parse(lsGet(CAT_K) || 'null') || {}) }; } catch { return { ts: 0, sts: 0, sv: 0, file: '', rows: [], base: 0, dirty: 0 }; } })();
+  const numOk = v => typeof v === 'number' && isFinite(v);   // r.s = Bestand in BIOS, r.o = Lagerort in BIOS, CAT.sts = Stand des BIOS-Bestands
+  const catSv = () => CAT.sv || CAT.ts || 0;
   let catIdx = null;
   const catIndex = () => { if (!catIdx) { catIdx = new Map(); CAT.rows.forEach(r => catIdx.set(r.a, r)); } return catIdx; };
   const catRowObj = r => { const o = { ARTNR: r.a, KB: r.k || '', ZN: r.z || '' }; (r.b || []).forEach((v, i) => { o['BEZ_' + (i + 1)] = v; }); return o; };
   const catParsed = r => r.p || (r.p = BIOSP.parseRow(catRowObj(r)));
-  const catPack = () => ({ app: 'bestellliste', kind: 'katalog', version: 3, lib: [], items: [], orders: [], ts: CAT.ts, file: CAT.file, rows: CAT.rows.map(({ p, ...r }) => r) });
+  const catPack = () => ({ app: 'bestellliste', kind: 'katalog', version: 3, lib: [], items: [], orders: [], ts: CAT.ts, sts: CAT.sts || 0, sv: catSv(), demo: CAT.demo ? 1 : 0, file: CAT.file, rows: CAT.rows.map(({ p, ...r }) => r) });
   function catSave() {
     catIdx = null;
-    const ok = lsSet(CAT_K, JSON.stringify({ ts: CAT.ts, file: CAT.file, base: CAT.base || 0, dirty: CAT.dirty || 0, rows: CAT.rows.map(({ p, ...r }) => r) }));
+    const ok = lsSet(CAT_K, JSON.stringify({ ts: CAT.ts, sts: CAT.sts || 0, sv: catSv(), demo: CAT.demo ? 1 : 0, file: CAT.file, base: CAT.base || 0, dirty: CAT.dirty || 0, rows: CAT.rows.map(({ p, ...r }) => r) }));
     if (!ok) toast('Katalog zu groß für den Speicher');
     return ok;
   }
@@ -5395,9 +5445,10 @@ Antworte NUR mit JSON: {"map":{"feld":"Spaltenname"},"typ":"häufigster Werkzeug
     }
     return out;
   }
-  function catTool(r) {
+  function catTool(r, pre) {
     const t = JSON.parse(JSON.stringify(catParsed(r).t));
     t.firm = r.a; t.bios = (r.b || []).join(' | ');
+    if (pre) { if (r.o && !t.loc) t.loc = BIOSP.U(r.o); if (numOk(r.s)) t.stock0 = String(r.s); }   // Lagerort + Bestand aus BIOS vorschlagen
     if (!t.codes || !t.codes.length) delete t.codes;
     Object.keys(t).forEach(k => { if (t[k] === '') delete t[k]; });
     return t;
@@ -5408,7 +5459,7 @@ Antworte NUR mit JSON: {"map":{"feld":"Spaltenname"},"typ":"häufigster Werkzeug
     if (!can('adm')) { toast('Im BIOS-Katalog, aber noch nicht in der Bibliothek – Admin übernimmt'); return false; }
     const p = catParsed(r);
     askConfirmBox('Aus BIOS-Katalog übernehmen?', `${r.a} · ${(r.b || []).slice(0, 2).join(' · ')}\nWird angelegt als: ${fullName(p.t)}`, 'Übernehmen', () => {
-      openToolWiz({ tool: catTool(r), fromCat: true, onSave: t => { commit('Aus BIOS übernommen'); if (then) setTimeout(() => then(t), 60); } });
+      openToolWiz({ tool: catTool(r, true), fromCat: true, onSave: t => { commit('Aus BIOS übernommen'); if (then) setTimeout(() => then(t), 60); } });
     });
     return true;
   }
@@ -5420,13 +5471,13 @@ Antworte NUR mit JSON: {"map":{"feld":"Spaltenname"},"typ":"häufigster Werkzeug
     try {
       const code = c + '::katalog';
       const rem = await syRpc('bl_pull', { p_code: code }); const r = Array.isArray(rem) ? rem[0] : rem;
-      const remTs = r && r.data ? Number(r.data.ts || 0) : 0;
-      if (CAT.dirty && CAT.rows.length && CAT.ts >= remTs) {
+      const remTs = r && r.data ? Number(r.data.sv || r.data.ts || 0) : 0;
+      if (CAT.dirty && CAT.rows.length && catSv() >= remTs) {
         const ts = Number(await syRpc('bl_push', { p_code: code, p_data: catPack(), p_base: r && r.data ? Number(r.ts) : 0 }));
         if (ts > 0) { CAT.base = ts; CAT.dirty = 0; catSave(); }
-      } else if (r && r.data && Array.isArray(r.data.rows) && remTs > (CAT.ts || 0)) {
-        CAT.ts = remTs; CAT.file = r.data.file || ''; CAT.rows = r.data.rows; CAT.base = Number(r.ts); CAT.dirty = 0; catSave();
-        toast(`BIOS-Katalog aktualisiert · ${CAT.rows.length} Artikel`); render();
+      } else if (r && r.data && Array.isArray(r.data.rows) && remTs > catSv()) {
+        CAT.ts = Number(r.data.ts || 0) || remTs; CAT.sts = Number(r.data.sts || 0); CAT.demo = r.data.demo ? 1 : 0; CAT.sv = remTs; CAT.file = r.data.file || ''; CAT.rows = r.data.rows; CAT.base = Number(r.ts); CAT.dirty = 0; catSave();
+        const na = fbAuto(true); toast(`BIOS-Katalog aktualisiert · ${CAT.rows.length} Artikel${na ? ` · ${na} Buchungen abgehakt (BIOS stimmt)` : ''}`); render();
       }
     } catch {}
     CSY.busy = false;
@@ -5533,9 +5584,12 @@ Antworte NUR mit JSON: {"map":{"feld":"Spaltenname"},"typ":"häufigster Werkzeug
     const B = rows.filter(r => String(r.ARTNR ?? '').trim()).map(r => P.parseRow(r));
     const idx = P.buildIndex(B);
     BI.on = true; BI.B = B; BI.idx = idx; BI.file = file; BI.norm = true;
+    BI.R = rows.filter(r => String(r.ARTNR ?? '').trim());
+    { const hs = Object.keys(rows[0] || {}).filter(h => !/^(ARTNR|KB|ZN|BEZ_?\d+)$/i.test(h) && !/bestell|std|vpe|verpack|mindest|melde|^min/.test(norm(h)));
+      BI.stH = cmpHead(hs, CMP_ST); BI.locH = cmpHead(hs, CMP_LOC); }
     const old = catIndex();
     BI.diff = old.size ? { add: B.filter(b => !old.has(b.firm)).length, del: [...old.keys()].filter(k => !idx.has(k)).length, chg: B.filter(b => old.has(b.firm) && catLine1(old.get(b.firm)) !== P.U(b.L[0])).length } : null;
-    BI.unused = biosUnused(); BI.mig = BI.unused.length > 0;
+    BI.unused = biosUnused(); BI.mig = BI.unused.length > 0; BI.demo = /demo/i.test(file || '');
     const unusedIds = new Set(BI.unused.map(t => t.id));
     const taken = new Set();
     const rowsC = S.lib.filter(c => !unusedIds.has(c.id)).map(c => ({ c, st: '', b: null, cands: [] }));
@@ -5574,10 +5628,12 @@ Antworte NUR mit JSON: {"map":{"feld":"Spaltenname"},"typ":"häufigster Werkzeug
     const quiet = BI.cards.length - show.length;
     $('impBody').innerHTML = `
       <div class="hint">${esc(BI.file)} · ${BI.B.length} Artikel. Der Excel wird zum <b>BIOS-Katalog</b> – in die Bibliothek kommt ein Artikel erst beim ersten Scan oder über die Suche. Ein neuer Excel ersetzt den Katalog komplett.</div>
+      <div class="hint">${BI.stH ? `Bestand aus Spalte „${esc(BI.stH)}“${BI.locH ? `, Lagerort aus „${esc(BI.locH)}“` : ''} – zu sehen unter Bibliothek → Bestand.` : `Keine Bestand-Spalte im Excel${CAT.sts ? ' – der bisherige BIOS-Bestand bleibt' : ''}. Mit Spalte „Bestand“ (und „Lagerort“) zeigt Bibliothek → Bestand auch den BIOS-Bestand.`}</div>
       <div class="bi-tiles"><div class="bi-tile"><b>${BI.B.length}</b><span>im Katalog${zubN ? ` · davon ${zubN} Zubehör` : ''}</span></div><div class="bi-tile"><b>${linked}/${BI.cards.length}</b><span>deine Karten verbunden</span></div><div class="bi-tile"><b>${BI.diff ? `+${BI.diff.add} / −${BI.diff.del}` : 'neu'}</b><span>${BI.diff ? `ggü. altem Katalog · ${BI.diff.chg} Bezeichnungen geändert` : 'erster Katalog'}</span></div></div>
       ${show.length ? `<div class="sec-h">DEINE KARTEN</div><div class="bi-list">${show.map(biCardRow).join('')}</div>` : ''}${quiet ? `<div class="hint">${quiet} weitere Karten: Nummer passt, nichts zu ändern.</div>` : ''}
       <div class="sec-h">OPTIONEN</div>
       ${BI.unused.length ? `<label class="bi-opt"><input type="checkbox" class="bi-cb" data-bi-o="mig" ${BI.mig ? 'checked' : ''}><span>${BI.unused.length} unbenutzte BIOS-Karten aus der Bibliothek entfernen<small>Vom früheren Import: ohne Foto, Bestand, Buchung und Änderung. Sie bleiben im Katalog und kommen beim ersten Scan wieder.</small></span></label>` : ''}
+      ${BI.stH ? `<label class="bi-opt"><input type="checkbox" class="bi-cb" data-bi-o="demo" ${BI.demo ? 'checked' : ''}><span>Demo-Daten: Bestand und Lagerort sind erfunden<small>Nur zum Ausprobieren. „Für BIOS“ hakt dann nichts automatisch ab, Bestand zeigt überall „DEMO“. Der echte BIOS-Excel ersetzt die Demo-Daten später.</small></span></label>` : ''}
       <label class="bi-opt"><input type="checkbox" class="bi-cb" data-bi-o="norm" ${BI.norm ? 'checked' : ''}><span>Artikelnummern ohne Leerzeichen<small>„220 050 20 90“ → „2200502090“, wie in BIOS</small></span></label>
       <button type="button" class="btn primary big" data-bi-go="1">Katalog übernehmen</button>
       <div class="hint">Vorher wird automatisch gesichert · Rückgängig: Einstellungen → Excel → „Import rückgängig“.</div>`;
@@ -5585,8 +5641,13 @@ Antworte NUR mit JSON: {"map":{"feld":"Spaltenname"},"typ":"häufigster Werkzeug
   function biosApply() {
     if (!undoSnap('BIOS-Katalog ' + BI.file)) { toast('Sicherung fehlgeschlagen – erst „Backup speichern“'); return; }
     const now = Date.now(); let up = 0, rm = 0;
-    CAT.rows = BI.B.map(b => ({ a: b.firm, k: b.kb, z: '', b: b.L })); CAT.ts = now; CAT.file = BI.file; CAT.dirty = 1;
+    const oldR = catIndex();
+    CAT.rows = BI.B.map(b => ({ a: b.firm, k: b.kb, z: '', b: b.L })); CAT.ts = now; CAT.sv = now; CAT.file = BI.file; CAT.dirty = 1;
     BI.B.forEach((b, i) => { if (b.zn) CAT.rows[i].z = b.zn; });
+    if (BI.stH || BI.locH) BI.B.forEach((b, i) => { const raw = BI.R[i] || {}, v = BI.stH ? cmpNum(raw[BI.stH]) : NaN, o = BI.locH ? String(raw[BI.locH] ?? '').trim() : '';
+      if (!isNaN(v)) CAT.rows[i].s = v; if (o) CAT.rows[i].o = o; });
+    if (BI.stH) { CAT.sts = now; CAT.demo = BI.demo ? 1 : 0; }
+    else CAT.rows.forEach(r => { const o = oldR.get(r.a); if (o) { if (numOk(o.s)) r.s = o.s; if (o.o && !r.o) r.o = o.o; } });   // ohne Bestand-Spalte: alten BIOS-Bestand behalten
     if (!catSave()) return;
     if (BI.mig) { const ids = new Set(BI.unused.map(t => t.id)); rm = S.lib.length; S.lib = S.lib.filter(t => !ids.has(t.id)); rm -= S.lib.length; }
     BI.cards.forEach(r => {
@@ -5600,7 +5661,8 @@ Antworte NUR mit JSON: {"map":{"feld":"Spaltenname"},"typ":"häufigster Werkzeug
       }
     });
     BI.on = false; $('impSheet').hidden = true;
-    commit(`Katalog: ${CAT.rows.length} Artikel · ${up} Karten verbunden${rm ? ` · ${rm} unbenutzte entfernt` : ''}`);
+    const na = fbAuto(true);
+    commit(`Katalog: ${CAT.rows.length} Artikel · ${up} Karten verbunden${rm ? ` · ${rm} unbenutzte entfernt` : ''}${na ? ` · ${na} Buchungen abgehakt (BIOS stimmt)` : ''}`);
     catSync();
   }
   $('impSheet').addEventListener('change', e => {
@@ -5628,7 +5690,7 @@ Antworte NUR mit JSON: {"map":{"feld":"Spaltenname"},"typ":"häufigster Werkzeug
       if (!g.has(k)) g.set(k, { k, nr, t, aus: 0, ein: 0, inv: 0, rueck: 0, net: 0, from: m.ts, ids: [], at: m.bios || 0 });
       const e = g.get(k); const q = Number(m.qty) || 0;
       if (m.kind === 'aus') e.aus += q; else if (m.kind === 'ein') e.ein += q; else if (m.kind === 'rueck') e.rueck += q; else e.inv += q;
-      e.net += q; e.from = Math.min(e.from, m.ts); e.ids.push(m.id);
+      e.net += q; e.from = Math.min(e.from, m.ts); e.ids.push(m.id); if (m.biosAuto) e.auto = 1;
     });
     return [...g.values()].sort((a, b) => (!a.nr) - (!b.nr) || a.nr.localeCompare(b.nr) || String(a.t ? a.t.name : '').localeCompare(String(b.t ? b.t.name : '')));
   }
@@ -5642,7 +5704,7 @@ Antworte NUR mit JSON: {"map":{"feld":"Spaltenname"},"typ":"häufigster Werkzeug
       <input type="checkbox" class="bi-cb" data-fb="${esc(e.k)}" ${open ? '' : 'checked'} aria-label="in BIOS eingetragen">
       <div class="fb-m">${e.nr ? `<button type="button" class="fb-nr" data-fbcopy="${e.nr}">${e.nr}</button>` : t && isNeu(t.firm) ? `<span class="fb-no">${esc(String(t.firm).toUpperCase())} · erst in BIOS anlegen</span>` : '<span class="fb-no">ohne Artikelnummer</span>'}
         <div class="fb-t">${t ? esc(fullName(t)) : 'gelöschtes Werkzeug'}</div>
-        <div class="fb-s">${parts}${open ? ` · seit ${fmtDs(e.from)}` : ''}</div></div>
+        <div class="fb-s">${parts}${open ? ` · seit ${fmtDs(e.from)}` : e.auto ? ' · <b>automatisch: BIOS-Bestand stimmt</b>' : ''}</div></div>
       <div class="fb-q"><b class="${e.net < 0 ? 'neg' : e.net > 0 ? 'pos' : ''}">${fbSign(e.net)}</b>${st ? `<small>${st}</small>` : ''}</div></div>`;
   }
   function fbNeuHTML() {
@@ -5728,6 +5790,7 @@ Antworte NUR mit JSON: {"map":{"feld":"Spaltenname"},"typ":"häufigster Werkzeug
       const rows = X.utils.sheet_to_json(ws, { defval: '', raw: false }); if (!rows.length) { toast('Keine Zeilen gefunden'); return; }
       const heads = Object.keys(rows[0]);
       FB.cmp = { file: f.name, rows, heads, nr: cmpHead(heads, CMP_NR), st: cmpHead(heads, CMP_ST), loc: cmpHead(heads, CMP_LOC) };
+      if (FB.cmp.nr && FB.cmp.st && CAT.rows.length) { const k = catStockApply(rows, FB.cmp.nr, FB.cmp.st, FB.cmp.loc, /demo/i.test(f.name)); const na = k > 0 ? fbAuto(true) : 0; if (k > 0) toast(`BIOS-Bestand für ${k} Artikel übernommen${na ? ` · ${na} Buchungen abgehakt (BIOS stimmt)` : ''}`); }
       biosRenderFb(); setTimeout(() => { const el = $('fbCmp'); if (el) el.scrollIntoView({ block: 'start', behavior: 'smooth' }); }, 60);
     } catch { toast('Datei konnte nicht gelesen werden'); }
   }
@@ -5757,7 +5820,7 @@ Antworte NUR mit JSON: {"map":{"feld":"Spaltenname"},"typ":"häufigster Werkzeug
     const row = (x, kind) => `<div class="fb-row" style="grid-template-columns:1fr auto">
       <div class="fb-m"><button type="button" class="fb-nr" data-fbcopy="${x.nr}">${x.nr}</button><div class="fb-t">${esc(fullName(x.t))}</div>
         <div class="fb-s">${kind === 'later' ? `Noch nicht übertragen: ${fbSign(x.open)} – nach dem Eintragen passt es.` : kind === 'diff' ? (x.app == null ? 'In der App ohne Bestandsführung.' : `Unterschied ${fbSign(Math.round((x.app - x.bios) * 1000) / 1000)}${x.open ? ` · davon offen ${fbSign(x.open)}` : ''}`) : ''}${x.loc && x.t.loc && U(x.loc) !== U(x.t.loc) ? ` · Lagerort BIOS ${esc(x.loc)}, App ${esc(x.t.loc)}` : ''}</div>
-        ${kind === 'diff' && can('adm') ? `<button type="button" class="btn sm" style="margin-top:6px" data-cmpset="${x.t.id}" data-v="${x.bios}">BIOS-Wert ${fmt(x.bios)} in App übernehmen</button>` : ''}</div>
+        ${kind === 'diff' && can('adm') && !/demo/i.test(c.file) ? `<button type="button" class="btn sm" style="margin-top:6px" data-cmpset="${x.t.id}" data-v="${x.bios}">BIOS-Wert ${fmt(x.bios)} in App übernehmen</button>` : ''}</div>
       <div class="fb-q"><small>APP</small><b>${fmt(x.app)}</b><small>BIOS ${fmt(x.bios)}</small></div></div>`;
     const sec = (arr, title, kind, open) => arr.length ? `<details class="fb-det" ${open ? 'open' : ''}><summary>${title} · ${arr.length}</summary><div class="bi-list">${arr.map(x => row(x, kind)).join('')}</div></details>` : '';
     return head + `<div class="bi-tiles"><div class="bi-tile"><b style="color:${R.diff.length ? 'var(--crit)' : 'var(--ok)'}">${R.diff.length}</b><span>Abweichungen</span></div><div class="bi-tile"><b>${R.later.length}</b><span>passt nach Übertrag</span></div><div class="bi-tile"><b>${R.ok.length}</b><span>stimmt</span></div></div>`
@@ -5802,9 +5865,168 @@ Antworte NUR mit JSON: {"map":{"feld":"Spaltenname"},"typ":"häufigster Werkzeug
     if (e.target.dataset.fbt) { evDone()[e.target.dataset.fbt] = e.target.checked ? Date.now() : -Date.now(); save(); biosRenderFb(); return; }
     const k = e.target.dataset.fb; if (!k) return;
     if (e.target.checked) { const g = fbGroups(true).find(x => x.k === k); if (g) { const now = Date.now(), ids = new Set(g.ids); S.moves.forEach(m => { if (ids.has(m.id)) m.bios = now; }); } }
-    else { const g = fbGroups(false).find(x => x.k === k); if (g) { const ids = new Set(g.ids); S.moves.forEach(m => { if (ids.has(m.id)) delete m.bios; }); } }
+    else { const g = fbGroups(false).find(x => x.k === k); if (g) { const ids = new Set(g.ids); S.moves.forEach(m => { if (ids.has(m.id)) { delete m.bios; delete m.biosAuto; } }); } }
     save(); biosRenderFb();
   });
+  // =====================================================================
+  // BESTAND: Karten + BIOS-Katalog in einer Liste · App-Bestand neben BIOS-Bestand
+  // Inventur direkt von hier (Lagerort / nur Abweichungen) – nur Artikel mit Karte.
+  // =====================================================================
+  function catStockApply(rows, nrH, stH, locH, demo) {   // Bestandsliste aus BIOS → Katalog (r.s / r.o)
+    if (!CAT.rows.length) return -1;
+    const idx = catIndex(), acc = new Map();
+    rows.forEach(x => { const nr = String(x[nrH] ?? '').replace(/\D/g, ''); if (!idx.has(nr)) return;
+      const v = cmpNum(x[stH]), e = acc.get(nr) || { v: 0, any: false, o: '' }; if (!isNaN(v)) { e.v += v; e.any = true; } if (locH && x[locH]) e.o = String(x[locH]).trim(); acc.set(nr, e); });
+    if (!acc.size) return 0;
+    CAT.rows.forEach(r => { const e = acc.get(r.a); if (!e) { delete r.s; return; } if (e.any) r.s = Math.round(e.v * 1000) / 1000; else delete r.s; if (e.o) r.o = e.o; });
+    CAT.sts = Date.now(); CAT.sv = CAT.sts; CAT.demo = demo ? 1 : 0; CAT.dirty = 1; catSave(); catSync();
+    return acc.size;
+  }
+  // Für BIOS automatisch abhaken: BIOS-Bestand (neuer als alle offenen Buchungen) = App-Bestand → schon in BIOS eingetragen
+  function fbAuto(quiet) {
+    if (CAT.demo || !CAT.sts || !CAT.rows.length || !(S.moves || []).length) return 0;   // Demo-Bestand: nie automatisch abhaken
+    const idx = catIndex(), byId = new Map(S.moves.map(m => [m.id, m])), now = Date.now(); let n = 0;
+    fbGroups(true).forEach(g => {
+      if (!g.nr || !g.t || !hasStock(g.t)) return; const r = idx.get(g.nr); if (!r || !numOk(r.s)) return;
+      const ms = g.ids.map(id => byId.get(id)).filter(Boolean); if (!ms.length || ms.some(m => m.ts > CAT.sts)) return;
+      if (Math.round((g.t.stock - r.s) * 1000) !== 0) return;
+      ms.forEach(m => { m.bios = now; m.biosAuto = 1; }); n++;
+    });
+    if (n) { save(); try { biosBtnSync(); } catch {} if (!quiet) toast(`${n} Buchungen abgehakt – BIOS-Bestand stimmt`); }
+    return n;
+  }
+  const BST = { f: '', q: '', loc: '', sort: 'loc', n: 120 };
+  try { Object.assign(BST, JSON.parse(lsGet('cititool_bst') || '{}'), { q: '', n: 120 }); } catch {}
+  const bstSave = () => { try { lsSet('cititool_bst', JSON.stringify({ f: BST.f, loc: BST.loc, sort: BST.sort })); } catch {} };
+  try { S.libTab = localStorage.getItem('cititool_lib_tab') === 'b' ? 'b' : 'w'; } catch { S.libTab = 'w'; }
+  const bstFmt = v => v == null ? '–' : String(v).replace('.', ',');
+  function bstRows() {
+    const idx = catIndex(), open = new Map(), seen = new Set(), out = [];
+    fbGroups(true).forEach(g => { if (g.nr) open.set(g.nr, (open.get(g.nr) || 0) + g.net); });
+    S.lib.forEach(t => {
+      if (t.stPending) return;
+      const nr = BIOSP.DIG(t.firm || ''), r = nr.length >= 6 ? idx.get(nr) : null; if (r) seen.add(r.a);
+      const app = hasStock(t) ? t.stock : null, bios = r && numOk(r.s) ? r.s : null, op = r ? (open.get(nr) || 0) : 0;
+      let st = '';
+      if (bios !== null) { if (app === null) st = bios ? 'noapp' : ''; else { const d = Math.round((app - bios) * 1000) / 1000; st = d === 0 ? 'ok' : (op && d === op) ? 'later' : 'diff'; } }
+      const min = minOf(t);
+      out.push({ t, r, nr: isNeu(t.firm) ? String(t.firm).toUpperCase() : nr, name: fullName(t), loc: U(t.loc || '') || (r && r.o ? U(r.o) : ''), app, bios, op, st, min, low: app !== null && min > 0 && app <= min });
+    });
+    CAT.rows.forEach(r => { if (seen.has(r.a)) return;
+      out.push({ t: null, r, nr: r.a, name: catLine1(r) || r.a, sub: BIOSP.U((r.b || [])[1] || ''), loc: r.o ? U(r.o) : '', app: null, bios: numOk(r.s) ? r.s : null, op: 0, st: '', min: 0, low: false }); });
+    return out;
+  }
+  const BST_F = [['', 'Alle'], ['card', 'Mit Karte'], ['cat', 'Nur Katalog'], ['st', 'Mit Bestand'], ['low', 'Unter Min'], ['diff', 'Abweichung']];
+  const bstIs = (x, f) => !f ? true : f === 'card' ? !!x.t : f === 'cat' ? !x.t : f === 'st' ? (x.app || 0) > 0 || (x.bios || 0) > 0 : f === 'low' ? x.low : f === 'diff' ? x.st === 'diff' || x.st === 'noapp' : true;
+  function bstView() {
+    const all = bstRows();
+    const ws = BST.q ? BIOSP.U(BST.q).split(' ').filter(Boolean) : [];
+    let L = all.filter(x => bstIs(x, BST.f));
+    if (BST.loc) L = L.filter(x => (x.loc || '–') === BST.loc);
+    if (ws.length) L = L.filter(x => { const h = BIOSP.U([x.nr, x.name, x.sub, x.loc, x.r ? (x.r.b || []).join(' ') : '', x.t ? x.t.makerArt || '' : ''].join(' ')).replace(/,/g, '.'); return ws.every(w => h.includes(w.replace(/,/g, '.'))); });
+    const cmpN = (a, b) => a.name.localeCompare(b.name, 'de');
+    const srt = { loc: (a, b) => (!a.loc) - (!b.loc) || a.loc.localeCompare(b.loc, 'de', { numeric: true }) || (!a.t) - (!b.t) || cmpN(a, b),
+      name: (a, b) => (!a.t) - (!b.t) || cmpN(a, b),
+      stock: (a, b) => Math.max(b.app ?? -1e9, b.bios ?? -1e9) - Math.max(a.app ?? -1e9, a.bios ?? -1e9) || cmpN(a, b) };
+    L.sort(srt[BST.sort] || srt.loc);
+    return { all, L };
+  }
+  function bstRowHTML(x) {
+    const notes = [];
+    if (x.st === 'diff') notes.push(`<span class="w">Unterschied ${fbSign(Math.round(((x.app ?? 0) - x.bios) * 1000) / 1000)}${x.op ? ` · offen ${fbSign(x.op)}` : ''}</span>`);
+    else if (x.st === 'later') notes.push(`<span class="l">Passt nach Übertrag (${fbSign(x.op)} offen)</span>`);
+    else if (x.st === 'noapp') notes.push('<span class="w">In der App noch nicht gezählt</span>');
+    if (x.low) notes.push(`<span class="l">unter Min ${x.min}</span>`);
+    if (x.t && x.r && x.r.o && x.t.loc && U(x.r.o) !== U(x.t.loc)) notes.push(`BIOS-Ort ${esc(U(x.r.o))}`);
+    return `<div class="bst-r ${x.t ? '' : 'cat'} ${x.st}" role="button" tabindex="0" ${x.t ? `data-bst="card" data-id="${x.t.id}"` : `data-bst="cat" data-f="${x.r.a}"`}>
+      <div class="bst-m"><div class="bst-t">${esc(x.name)}</div><div class="bst-s"><span class="mono">${esc(x.nr || 'ohne Nr.')}</span>${x.loc ? ` · ⌂ ${esc(x.loc)}` : ''}${x.t ? '' : ` · <em>nur Katalog${can('adm') ? ' · übernehmen ›' : ''}</em>`}${notes.length ? ' · ' + notes.join(' · ') : ''}</div></div>
+      <div class="bst-q"><span><small>APP</small><b>${x.t ? bstFmt(x.app) : '–'}</b></span><span><small>BIOS</small><b class="bi">${bstFmt(x.bios)}</b></span></div></div>`;
+  }
+  function bstRender() {
+    const { all, L } = bstView(), adm = can('adm'), has = CAT.rows.length > 0;
+    const cnt = {}; BST_F.forEach(([k]) => { cnt[k] = all.filter(x => bstIs(x, k)).length; });
+    if (BST.f && !cnt[BST.f]) { BST.f = ''; return bstRender(); }
+    $('bstInfo').innerHTML = (has && CAT.demo && CAT.sts ? '<div class="bst-demo"><b>DEMO</b><span>BIOS-Bestand und Lagerort sind erfunden – nur zum Ausprobieren. „Für BIOS“ hakt nichts automatisch ab. Echten BIOS-Excel laden, dann verschwindet der Hinweis.</span></div>' : '') + (has
+      ? `<span>Katalog vom <b>${fmtD(CAT.ts)}</b> · ${CAT.rows.length} Artikel</span><span>${CAT.sts ? `BIOS-Bestand${CAT.demo ? ' (DEMO)' : ''} Stand <b>${fmtD(CAT.sts)}</b>` : 'Noch kein BIOS-Bestand'}</span>${adm ? `<button type="button" class="link" data-bst="load">${CAT.sts ? 'BIOS-Excel neu laden' : 'BIOS-Bestand laden'}</button>` : ''}`
+      : `<span>Noch kein BIOS-Katalog – hier steht nur der App-Bestand.</span>${adm ? '<button type="button" class="link" data-bst="load">BIOS-Excel laden</button>' : ''}`);
+    $('bstF').innerHTML = BST_F.filter(([k]) => !k || k === BST.f || (cnt[k] && (k !== 'cat' || has) && (k !== 'diff' || CAT.sts))).map(([k, l]) => `<button type="button" data-bstf="${k}" aria-pressed="${BST.f === k}">${l} ${cnt[k]}</button>`).join('');
+    const locs = [...new Set(all.map(x => x.loc || '–'))].sort((a, b) => (a === '–') - (b === '–') || a.localeCompare(b, 'de', { numeric: true }));
+    if (BST.loc && !locs.includes(BST.loc)) BST.loc = '';
+    $('bstLoc').innerHTML = `<option value="">Alle Lagerorte</option>${locs.map(l => `<option value="${esc(l)}" ${BST.loc === l ? 'selected' : ''}>${l === '–' ? 'Ohne Lagerort' : esc(l)}</option>`).join('')}`;
+    $('bstSort').querySelectorAll('[data-bsort]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.bsort === BST.sort)));
+    const locCards = BST.loc ? all.filter(x => x.t && (x.loc || '–') === BST.loc).length : 0, diffN = all.filter(x => x.t && (x.st === 'diff' || x.st === 'noapp')).length;
+    $('bstAct').innerHTML = (L.length ? `<button type="button" class="btn sm" data-bst="print">Drucken</button><button type="button" class="btn sm" data-bst="xls">Excel</button>` : '')
+      + (adm && locCards ? `<button type="button" class="btn sm primary" data-bst="invloc">Diesen Lagerort zählen · ${locCards}</button>` : '')
+      + (adm && diffN ? `<button type="button" class="btn sm" data-bst="invdiff">Nur Abweichungen zählen · ${diffN}</button>` : '');
+    const show = L.slice(0, BST.n); let last = null, h = '';
+    show.forEach(x => { if (BST.sort === 'loc' && !BST.loc) { const g = x.loc || 'OHNE LAGERORT'; if (g !== last) { last = g; h += `<div class="bst-gh">⌂ ${esc(g)}</div>`; } } h += bstRowHTML(x); });
+    $('bstList').innerHTML = L.length ? `<div class="bst-list">${h}</div>${L.length > show.length ? `<button type="button" class="btn bst-more" data-bst="more">Weitere ${Math.min(300, L.length - show.length)} zeigen · ${L.length - show.length} übrig</button>` : ''}<div class="hint bst-n">${L.length} ${L.length === 1 ? 'Artikel' : 'Artikel'}${BST.f === 'cat' || (!BST.f && has) ? ' · Artikel „nur Katalog“ werden bei der Inventur übersprungen' : ''}</div>`
+      : `<div class="empty"><b>Keine Artikel</b>${BST.q || BST.f || BST.loc ? 'Suche oder Filter ändern.' : ''}</div>`;
+  }
+  function bstInv(kind) {
+    if (!can('adm')) { accDeny(); return; }
+    const { all } = bstView();
+    const ids = new Set(all.filter(x => x.t && (kind === 'loc' ? (x.loc || '–') === BST.loc : x.st === 'diff' || x.st === 'noapp')).map(x => x.t.id));
+    if (!ids.size) { toast('Keine Werkzeuge mit Karte in dieser Auswahl'); return; }
+    ivOpen(); ivStart(t => ids.has(t.id), kind === 'loc' ? 'Lagerort ' + (BST.loc === '–' ? 'ohne' : BST.loc) : 'Abweichung zu BIOS');
+  }
+  const bstDiffIds = () => new Set(bstRows().filter(x => x.t && (x.st === 'diff' || x.st === 'noapp')).map(x => x.t.id));
+  function bstPrint() {
+    const { L } = bstView(); if (!L.length) { toast('Keine Daten'); return; }
+    const now = new Date(), title = (CAT.demo && CAT.sts ? 'DEMO · ' : '') + 'BESTAND' + (BST.loc ? ' · ' + (BST.loc === '–' ? 'OHNE LAGERORT' : BST.loc) : '');
+    const flt = [BST_F.find(f => f[0] === BST.f)[1].toUpperCase(), BST.q ? 'SUCHE „' + BST.q + '“' : '', CAT.sts ? (CAT.demo ? 'BIOS-BESTAND ERFUNDEN (DEMO) ' : 'BIOS-BESTAND STAND ') + fmtD(CAT.sts) : 'OHNE BIOS-BESTAND'].filter(Boolean).join(' · ');
+    let last = null;
+    const body = L.map(x => { let g = ''; if (BST.sort === 'loc' && !BST.loc) { const k = x.loc || 'OHNE LAGERORT'; if (k !== last) { last = k; g = `<tr class="gh"><td colspan="7">⌂ ${esc(k)}</td></tr>`; } }
+      const d = x.t && x.app !== null && x.bios !== null ? Math.round((x.app - x.bios) * 1000) / 1000 : null;
+      return g + `<tr><td class="c">${esc(x.nr || '')}</td><td class="w">${esc(x.name)}${x.t ? '' : ' <small>(NUR KATALOG)</small>'}</td><td class="nw">${esc(x.loc || '')}</td><td class="n">${x.t ? bstFmt(x.app) : ''}</td><td class="n">${x.bios == null ? '' : bstFmt(x.bios)}</td><td class="n">${d ? fbSign(d) : ''}</td><td class="box"><span></span></td></tr>`; }).join('');
+    const kp = [[L.length, 'ARTIKEL'], [L.filter(x => x.t).length, 'MIT KARTE'], [L.filter(x => x.st === 'diff' || x.st === 'noapp').length, 'ABWEICHUNG'], [L.filter(x => x.low).length, 'UNTER MIN']];
+    const html = `<div class="pg"><div class="hd"><span class="br"><svg viewBox="0 0 160 186"><path fill="currentColor" d="${CT_MARK[0]}"/><path fill="currentColor" d="${CT_MARK[1]}"/><path fill="currentColor" d="${CT_MARK[2]}"/></svg>WERKZEUGAUSGABE</span><span class="dt">ERSTELLT ${fmtD(now)} ${rpT(now)}${lsGet(K.name) ? '<br>' + esc(U(lsGet(K.name))) : ''}</span></div>
+      <h1>${esc(title)}</h1><div class="sub">${esc(flt)}</div><div class="kp">${kp.map(([v, l]) => `<div><b>${v}</b><small>${l}</small></div>`).join('')}</div>
+      <table><thead><tr><th>ART.-NR.</th><th>BEZEICHNUNG</th><th>LAGERORT</th><th class="n">APP</th><th class="n">BIOS</th><th class="n">DIFF.</th><th>GEZÄHLT</th></tr></thead><tbody>${body}</tbody></table>
+      <div class="ft"><span>WERKZEUGAUSGABE · ${esc(title)}</span><span>${L.length} ZEILEN</span></div></div>`;
+    rpPrint({ html, title, land: false, ret: 'bestand' });
+  }
+  async function bstXLS() {
+    const { L } = bstView(); if (!L.length) { toast('Keine Daten'); return; }
+    let X; try { X = await loadXLSX(); } catch { toast('Excel braucht Internet (einmalig)'); return; }
+    const rows = L.map(x => ({ Artikelnummer: x.nr || '', Bezeichnung: x.name, Lagerort: x.loc || '', Karte: x.t ? 'ja' : 'nur Katalog', 'Bestand App': x.t && x.app !== null ? x.app : '', [CAT.demo ? 'Bestand BIOS (DEMO)' : 'Bestand BIOS']: x.bios ?? '', 'Unterschied': x.t && x.app !== null && x.bios !== null ? Math.round((x.app - x.bios) * 1000) / 1000 : '', Min: x.min || '', Status: { diff: 'Abweichung', noapp: 'in App nicht gezählt', later: 'passt nach Übertrag', ok: 'stimmt' }[x.st] || '' }));
+    const ws = X.utils.json_to_sheet(rows); ws['!cols'] = [{ wch: 14 }, { wch: 42 }, { wch: 18 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 7 }, { wch: 20 }];
+    const wb = X.utils.book_new(); X.utils.book_append_sheet(wb, ws, 'Bestand'); X.writeFile(wb, `bestand${CAT.demo && CAT.sts ? '-DEMO' : ''}-${new Date().toISOString().slice(0, 10)}.xlsx`); toast('Excel gespeichert');
+  }
+  async function bstLoad(f) {
+    let X; try { X = await loadXLSX(); } catch { toast('Excel braucht Internet (einmalig)'); return; }
+    try {
+      const wb = X.read(await f.arrayBuffer(), { type: 'array' }), ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = X.utils.sheet_to_json(ws, { defval: '', raw: false }); if (!rows.length) { toast('Keine Zeilen gefunden'); return; }
+      const heads = Object.keys(rows[0]);
+      if (heads.includes('ARTNR') && heads.some(h => /^BEZ_?1$/i.test(h))) { biosOpen(rows, f.name); return; }
+      const nr = cmpHead(heads, CMP_NR), st = cmpHead(heads.filter(h => !/bestell|std|vpe|verpack|mindest|melde|^min/.test(norm(h))), CMP_ST), loc = cmpHead(heads, CMP_LOC);
+      if (!nr || !st) { toast('Keine Spalten „Artikelnummer“ und „Bestand“ gefunden'); return; }
+      const k = catStockApply(rows, nr, st, loc, /demo/i.test(f.name));
+      if (k < 0) { toast('Erst den BIOS-Katalog laden (BIOS-Excel mit ARTNR, BEZ_1)'); return; }
+      if (!k) { toast('Keine Artikelnummer aus der Datei steht im Katalog'); return; }
+      const na = fbAuto(true); toast(`BIOS-Bestand für ${k} Artikel übernommen${na ? ` · ${na} Buchungen abgehakt (BIOS stimmt)` : ''}`); render();
+    } catch { toast('Datei konnte nicht gelesen werden'); }
+  }
+  function libTabSet(v) { S.libTab = v; try { localStorage.setItem('cititool_lib_tab', v === 'b' ? 'b' : ''); } catch {} }
+  $('libTab').addEventListener('click', e => { const b = e.target.closest('[data-libtab]'); if (!b) return; libTabSet(b.dataset.libtab); if (b.dataset.libtab === 'w') S.libType = S.libType || null; renderLib(); window.scrollTo(0, 0); });
+  $('bstQ').addEventListener('input', e => { BST.q = e.target.value.trim(); BST.n = 120; bstRender(); });
+  $('bstLoc').addEventListener('change', e => { BST.loc = e.target.value; BST.n = 120; bstSave(); bstRender(); });
+  $('bstFile').addEventListener('change', e => { const f = e.target.files[0]; e.target.value = ''; if (f) bstLoad(f); });
+  $('libBest').addEventListener('click', e => {
+    const fb = e.target.closest('[data-bstf]'); if (fb) { BST.f = BST.f === fb.dataset.bstf ? '' : fb.dataset.bstf; BST.n = 120; bstSave(); bstRender(); return; }
+    const so = e.target.closest('[data-bsort]'); if (so) { BST.sort = so.dataset.bsort; bstSave(); bstRender(); return; }
+    const b = e.target.closest('[data-bst]'); if (!b) return; const a = b.dataset.bst;
+    if (a === 'card') { openDetail(b.dataset.id); return; }
+    if (a === 'cat') { const r = catIndex().get(b.dataset.f); if (r) catOffer(r, x => { bstRender(); openDetail(x.id); }); return; }
+    if (a === 'more') { BST.n += 300; bstRender(); return; }
+    if (a === 'load') { $('bstFile').click(); return; }
+    if (a === 'print') { bstPrint(); return; }
+    if (a === 'xls') { bstXLS(); return; }
+    if (a === 'invloc') { bstInv('loc'); return; }
+    if (a === 'invdiff') { bstInv('diff'); return; }
+  });
+  $('libBest').addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.matches('.bst-r')) e.target.click(); });
   // Bestehende Karten einmalig angleichen (mit Rückgängig), danach still nach jedem Sync
   function isoMigrate(quiet) {
     try {
@@ -5875,6 +6097,7 @@ Antworte NUR mit JSON: {"map":{"feld":"Spaltenname"},"typ":"häufigster Werkzeug
       r('', n, n === 1 ? 'Karte unvollständig' : 'Karten unvollständig', 'Fehlt: ' + Object.entries(g).sort((a, b) => b[1] - a[1]).map(([l, c]) => `${c}× ${l}`).join(' · '), 'data-home="libinc"'); } }
     if (can('adm')) { const n = probOpenCount(); if (n) { const g = {}; probOpenList().forEach(p => { const l = ({ problem: 'Gemeldet', minus: 'Bestand', leer: 'Leer', low: 'Unter Min', viel: 'Entnahme', undo: 'Entnahme', noname: 'Ohne Namen', unknown: 'Codes' })[p.kind] || (/^b/.test(p.kind) ? 'BIOS' : 'Sonstiges'); g[l] = (g[l] || 0) + 1; });
       r('warn', n, n === 1 ? 'Auffälligkeit' : 'Auffälligkeiten', Object.entries(g).sort((a, b) => b[1] - a[1]).map(([l, c]) => `${c}× ${l}`).join(' · ') + ' – letzte 7 Tage', 'data-pb="all"'); } }
+    if (can('adm') && CAT.rows.length) { const d = days(Math.max(CAT.ts || 0, CAT.sts || 0)); if (d >= 7) r('', d, 'BIOS-Katalog veraltet', `Seit ${d} Tagen nicht aktualisiert – neuen BIOS-Excel laden`, 'data-home="catold"'); }
     if (late.length) r('crit', late.length, late.length === 1 ? 'Bestellung überfällig' : 'Bestellungen überfällig', 'Nachfragen oder als erhalten abhaken', 'data-home="late"');
     { const lowA = lowStock(), busy = lowA.length - lowS.length;
       if (lowA.length) r(lowS.length ? 'warn' : '', lowA.length, 'Unter Mindestbestand',
@@ -5957,7 +6180,7 @@ Antworte NUR mit JSON: {"map":{"feld":"Spaltenname"},"typ":"häufigster Werkzeug
     if (e.target.closest('[data-got],[data-oa]')) { onOrderClick(e); return; }
     const b = e.target.closest('[data-home]'); if (!b) return;
     const a = b.dataset.home;
-    if (a === 'stnew') { S.libType = ''; S.libQ = ''; setView('lib'); setTimeout(() => { const el = $('stnSec'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 80); return; }
+    if (a === 'stnew') { S.libTab = 'w'; S.libType = ''; S.libQ = ''; setView('lib'); setTimeout(() => { const el = $('stnSec'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 80); return; }
     if (a === 'rcall') { rcAll = !rcAll; try { localStorage.setItem('cititool_rc_all', rcAll ? '1' : ''); } catch {} render(); return; }
     if (a === 'rcprev' || a === 'rcnext') { const r = b.parentElement.querySelector('.recent'); if (r) r.scrollBy({ left: (a === 'rcnext' ? 1 : -1) * r.clientWidth * .85, behavior: 'smooth' }); return; }
     if (a === 'cart' || a === 'wait') { setView('orders'); if (a === 'wait') setTimeout(() => $('waiting').scrollIntoView({ behavior: 'smooth', block: 'start' }), 60); return; }
@@ -5967,13 +6190,14 @@ Antworte NUR mit JSON: {"map":{"feld":"Spaltenname"},"typ":"häufigster Werkzeug
     if (a === 'scan') { scanTool(); return; }
     if (a === 'aus') { setView('aus'); return; }
     if (a === 'inv') { setView('aus'); ivOpen(); return; }
-    if (a === 'libinc') { S.libF = 'inc'; S.libQ = ''; S.libType = null; setView('lib'); renderLib(); return; }
+    if (a === 'catold') { $('xlsFile').click(); return; }
+    if (a === 'libinc') { S.libTab = 'w'; S.libF = 'inc'; S.libQ = ''; S.libType = null; setView('lib'); renderLib(); return; }
     if (a === 'minlist' && can('order')) { S.minFocus = true; setView('orders'); render(); setTimeout(() => goTo($('minBlk')), 60); return; }
     if (a === 'minlist') { AU.filt = 'min'; AU.locF = ''; setView('aus'); setTimeout(() => $('ausFilt').scrollIntoView({ behavior: 'smooth', block: 'start' }), 60); return; }
     if (a === 'soon') { AU.filt = lowStock().length ? 'low' : 'soon'; setView('aus'); setTimeout(() => $('ausList').scrollIntoView({ behavior: 'smooth', block: 'start' }), 60); return; }
     if (a === 'jr') { openJournal(); return; }
     if (a === 'orderlow') { lowStock().forEach(x => { const st = stats(x.id); if (!st.inCart && !st.waiting) addToCart(x, { qty: x.qty || String(Math.max(minOf(x) * 2 - x.stock, 1)) }); }); commit('Auf die Bestellliste gesetzt'); boOpen(); boGo('korb'); return; }
-    if (a === 'type') { S.libType = b.dataset.type; S.ltQ = ''; S.ltFilter = []; setView('lib'); return; }
+    if (a === 'type') { S.libTab = 'w'; S.libType = b.dataset.type; S.ltQ = ''; S.ltFilter = []; setView('lib'); return; }
     if (a === 'img') { statusImage(); return; }
     if (a === 'more') { S.homeAll = !S.homeAll; renderHome(); return; }
     if (a === 'stat') { homeStat = !homeStat; try { localStorage.setItem('cititool_home_stat', homeStat ? '1' : ''); } catch {} renderHome(); return; }
@@ -6351,6 +6575,7 @@ ${labelCSS(o)}
   function openFromHash() {
     if (location.hash === '#bestellen') { if ($('bo').hidden) boOpen(null, true); return; }
     if (location.hash === '#bericht') { history.replaceState(null, '', location.pathname); setView('rep'); return; }
+    if (location.hash === '#bestand') { history.replaceState(null, '', location.pathname); S.libTab = 'b'; setView('lib'); return; }
     if (!$('bo').hidden) boClose(true);
     if (location.hash === '#etiketten') { if ($('lblSheet').hidden) openLabels(null, true); return; }
     if (!$('lblSheet').hidden) closeLabels(true);
@@ -6974,16 +7199,17 @@ tr.sum td{border-top:1.5px solid #000;border-bottom:0;font:700 8.4pt "JetBrains 
     const fit = () => { const w = sr.querySelector('.wrap'), pg = sr.querySelector('.pg'); if (!w || !pg || !host.clientWidth) return; const k = host.clientWidth / pg.offsetWidth; w.style.transform = `scale(${k})`; host.style.height = Math.round(pg.offsetHeight * k) + 'px'; };
     fit(); requestAnimationFrame(fit); setTimeout(fit, 300);
   }
-  function rpPrint() {
-    const doc = `<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(rpTitle())}</title>
+  function rpPrint(o) {   // o = { html, title, land } für eigene Listen (z. B. Bestand)
+    const pTitle = o ? o.title : rpTitle(), pLand = o ? !!o.land : !!RP.land;
+    const doc = `<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(pTitle)}</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap">
-<style>html{background:#E6E7EA}body{margin:0;padding:12px}${RP_CSS}@page{size:A4 ${RP.land ? 'landscape' : 'portrait'};margin:10mm}
+<style>html{background:#E6E7EA}body{margin:0;padding:12px}${RP_CSS}@page{size:A4 ${pLand ? 'landscape' : 'portrait'};margin:10mm}
 .pp{margin:0 auto 16px}.pp .bl{display:block;margin-top:.8mm;font-weight:700;color:#000}
 .cont{display:flex;justify-content:space-between;align-items:baseline;margin:3.5mm 0 2.5mm;font:700 11pt "Instrument Sans",sans-serif;letter-spacing:.02em}.cont small{font:500 7.4pt "JetBrains Mono",monospace;color:#444;letter-spacing:.06em}
 .pp table{table-layout:fixed}
-@media print{.pg{width:${RP.land ? 273 : 186}mm!important;margin:0 auto!important;padding:0!important}.pp{break-after:page;page-break-after:always}.pp:last-child{break-after:auto;page-break-after:auto}}</style></head><body>${rpParts().html}
+@media print{.pg{width:${pLand ? 273 : 186}mm!important;margin:0 auto!important;padding:0!important}.pp{break-after:page;page-break-after:always}.pp:last-child{break-after:auto;page-break-after:auto}}</style></head><body>${o ? o.html : rpParts().html}
 <script>(function(){
-var LAND=${RP.land ? 1 : 0}, MM=96/25.4, W=LAND?273:186, H=(LAND?190:277)*MM*0.94, done=false;
+var LAND=${pLand ? 1 : 0}, MM=96/25.4, W=LAND?273:186, H=(LAND?190:277)*MM*0.94, done=false;
 function run(){
   if(done)return; var src=document.querySelector('.pg'); if(!src)return; done=true;
   var hd=src.querySelector('.hd'), h1=src.querySelector('h1'), sub=src.querySelector('.sub'), kp=src.querySelector('.kp'), ft=src.querySelector('.ft'), tbl=src.querySelector('table');
@@ -7032,7 +7258,7 @@ var go=function(){setTimeout(run,30)};
 if(document.fonts&&document.fonts.ready)document.fonts.ready.then(go);else go();
 setTimeout(run,1500); window.addEventListener('beforeprint',run);
 })();<\/script></body></html>`;
-    showDoc(doc, rpTitle().charAt(0) + rpTitle().slice(1).toLowerCase(), 'bericht');
+    showDoc(doc, pTitle.charAt(0) + pTitle.slice(1).toLowerCase(), o && o.ret ? o.ret : 'bericht');
   }
   const rpTable = () => { const { rows, defs } = rpParts(); return { head: defs.filter(c => c.cls !== 'box').map(c => c.l), rows: rows.map(r => defs.filter(c => c.cls !== 'box').map(c => c.get(r) ?? '')) }; };
   const rpFile = ext => `${rpTitle().toLowerCase().replace(/[^a-zäöüß0-9]+/g, '-')}-${new Date().toISOString().slice(0, 10)}.${ext}`;
@@ -8039,6 +8265,7 @@ Antworte NUR mit JSON: {"map":["feld oder leer", ...]} – gleiche Reihenfolge u
           <button type="button" class="iv-sc main" data-iv="all"><span class="mi">${IC_SWIPE}</span><span><b>Alles zählen</b><small>NACH LAGERORT SORTIERT</small></span><span class="n">${S.lib.length}</span></button>
           ${old && old !== S.lib.length ? `<button type="button" class="iv-sc" data-iv="old"><span class="mi">⏱</span><span><b>Lange nicht gezählt</b><small>ÄLTER ALS 90 TAGE</small></span><span class="n">${old}</span></button>` : ''}
           ${open ? `<button type="button" class="iv-sc" data-iv="open"><span class="mi">?</span><span><b>Bestand noch offen</b><small>NOCH NIE GEZÄHLT</small></span><span class="n">${open}</span></button>` : ''}
+          ${(() => { const n = CAT.sts ? bstDiffIds().size : 0; return n ? `<button type="button" class="iv-sc" data-iv="bdiff"><span class="mi" style="color:var(--crit)">≠</span><span><b>Abweichung zu BIOS</b><small>${CAT.demo ? 'DEMO-BESTAND' : 'BIOS-BESTAND'} ${fmtD(CAT.sts)}</small></span><span class="n">${n}</span></button>` : ''; })()}
           ${lowStock().length ? `<button type="button" class="iv-sc" data-iv="low"><span class="mi" style="color:var(--crit)">!</span><span><b>Unter Minimum</b><small>KURZ NACHZÄHLEN</small></span><span class="n">${lowStock().length}</span></button>` : ''}
         </div>
         ${locs.length ? `<div class="mw-sec">NACH LAGERORT</div><div class="iv-scope">${locs.map(l => `<button type="button" class="iv-sc" data-iv="loc" data-v="${esc(l)}"><span class="mi">${IC_HOME.replace('viewBox', 'style="width:20px;height:20px" viewBox')}</span><span><b>${esc(l)}</b></span><span class="n">${S.lib.filter(t => U(t.loc || '') === l).length}</span></button>`).join('')}</div>` : ''}
@@ -8110,6 +8337,7 @@ Antworte NUR mit JSON: {"map":["feld oder leer", ...]} – gleiche Reihenfolge u
     if (a === 'all') return ivStart(() => true, 'Alle Werkzeuge');
     if (a === 'old') return ivStart(t => !t.invAt || Date.now() - t.invAt > 90 * DAYMS, 'Lange nicht gezählt');
     if (a === 'open') return ivStart(t => !hasStock(t), 'Bestand offen');
+    if (a === 'bdiff') { const ids = bstDiffIds(); return ivStart(t => ids.has(t.id), 'Abweichung zu BIOS'); }
     if (a === 'low') return ivStart(t => hasStock(t) && minOf(t) > 0 && t.stock <= minOf(t), 'Unter Minimum');
     if (a === 'loc') return ivStart(t => U(t.loc || '') === b.dataset.v, '⌂ ' + b.dataset.v);
     const t = ivTool();
@@ -8307,7 +8535,7 @@ Antworte NUR mit JSON: {"map":["feld oder leer", ...]} – gleiche Reihenfolge u
     if (a === 'order') openWizard();
     if (a === 'tool') openToolWiz();
     if (a === 'scan') scanTool();
-    if (a === 'find') { S.libType = ''; setView('lib'); setTimeout(() => $('libQ').focus(), 80); }
+    if (a === 'find') { S.libTab = 'w'; S.libType = ''; setView('lib'); setTimeout(() => $('libQ').focus(), 80); }
     if (a === 'set') { const st = { id: newId(), name: 'NEUES SET', items: [] }; (S.sets ||= []).push(st); save(); setView('lib'); openSet(st.id); setTimeout(() => $('setName')?.select(), 50); }
     if (a === 'img') statusImage();
     if (a === 'labels') openLabels([]);
@@ -8459,7 +8687,7 @@ Antworte NUR mit JSON: {"map":["feld oder leer", ...]} – gleiche Reihenfolge u
       const r = document.querySelector(`#waiting [data-oa="tog"][data-id="${o.id}"]`)?.closest('.ord'); if (r) { r.scrollIntoView({ behavior: 'smooth', block: 'start' }); r.classList.remove('mbf'); void r.offsetWidth; r.classList.add('mbf'); } return; }
   });
   // ---------- Version: Nummer anzeigen, neue Version erkennen ----------
-  const APP_VER = '2026.11.16-4';
+  const APP_VER = '2026.11.18-2';
   let verSeen = '';
   async function verCheck() {
     if (!/^https?:/.test(location.protocol)) return;
