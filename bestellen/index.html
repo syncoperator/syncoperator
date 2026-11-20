@@ -6003,7 +6003,7 @@ Antworte NUR mit JSON: {"map":{"feld":"Spaltenname"},"typ":"häufigster Werkzeug
       + (adm && locCards ? `<button type="button" class="btn sm primary" data-bst="invloc">Diesen Lagerort zählen · ${locCards}</button>` : '')
       + (adm && diffN ? `<button type="button" class="btn sm" data-bst="invdiff">Nur Abweichungen zählen · ${diffN}</button>` : '');
     $('bstCols').hidden = !BST.colOpen || !L.length;
-    $('bstCols').innerHTML = `<div class="rp-h">SPALTEN FÜR DRUCK UND EXCEL <small>ANTIPPEN = AN / AUS</small></div><div class="rp-cols">${BST_COLS.filter(c => !c.time || bstTime()).map(c => `<button type="button" data-bcol="${c.k}" aria-pressed="${bstColOn(c)}" ${c.fix || bstNoBios(c) ? 'disabled' : ''} ${bstNoBios(c) ? 'title="Noch kein BIOS-Bestand geladen"' : ''}>${bstColOn(c) ? '✓ ' : ''}${esc(c.k === 'date' ? (BST.sort === 'new' ? 'Angelegt' : 'Gezählt am') : c.l)}</button>`).join('')}</div>`;
+    $('bstCols').innerHTML = `<div class="rp-h">SPALTEN FÜR DRUCK UND EXCEL <small>ANTIPPEN = AN / AUS</small></div><div class="rp-cols">${BST_COLS.filter(c => !c.time || bstTime()).map(c => `<button type="button" data-bcol="${c.k}" aria-pressed="${bstColOn(c)}" ${c.fix ? 'disabled' : ''} ${bstNoBios(c) ? 'title="Noch kein BIOS-Bestand – Spalte bleibt leer"' : ''}>${bstColOn(c) ? '✓ ' : ''}${esc(c.k === 'date' ? (BST.sort === 'new' ? 'Angelegt' : 'Gezählt am') : c.l)}</button>`).join('')}</div>${CAT.sts ? '' : '<div class="hint" style="margin-top:6px">BIOS und Diff. bleiben leer, solange kein BIOS-Bestand geladen ist – z. B. zum Ausfüllen von Hand.</div>'}`;
     $('libBest').classList.toggle('nobios', !bstColOn(BST_COLS.find(c => c.k === 'bios'))); $('libBest').classList.toggle('noapp', !bstColOn(BST_COLS.find(c => c.k === 'app')));
     const show = L.slice(0, BST.n); let last = null, h = '';
     show.forEach(x => { if (BST.sort === 'loc' && !BST.loc) { const g = x.loc || 'OHNE LAGERORT'; if (g !== last) { last = g; h += `<div class="bst-gh">⌂ ${esc(g)}</div>`; } }
@@ -6036,7 +6036,8 @@ Antworte NUR mit JSON: {"map":{"feld":"Spaltenname"},"typ":"häufigster Werkzeug
     { k: 'box', l: 'Zählfeld', h: 'GEZÄHLT', cls: 'box', p: () => '<span></span>', x: null },
   ];
   const bstNoBios = c => (c.k === 'bios' || c.k === 'diff') && !CAT.sts;   // ohne BIOS-Bestand: Spalten wären leer
-  const bstColOn = c => c.fix || (!bstNoBios(c) && (!c.time || bstTime()) && (BST.cols && c.k in BST.cols ? BST.cols[c.k] : !c.def0));
+  const bstColKey = c => bstNoBios(c) ? c.k + '0' : c.k;   // ohne BIOS-Bestand eigene Wahl (Standard: aus), damit leere Spalten nicht von selbst erscheinen
+  const bstColOn = c => c.fix || ((!c.time || bstTime()) && (BST.cols && bstColKey(c) in BST.cols ? BST.cols[bstColKey(c)] : !c.def0 && !bstNoBios(c)));
   const bstCols = () => BST_COLS.filter(bstColOn);
   const bstColH = c => c.k === 'date' ? (BST.sort === 'new' ? 'ANGELEGT' : 'GEZÄHLT AM') : c.k === 'box' && bstTime() ? 'KONTROLLE' : c.h;
   function bstPrint() {
@@ -6087,7 +6088,7 @@ Antworte NUR mit JSON: {"map":{"feld":"Spaltenname"},"typ":"häufigster Werkzeug
   $('libBest').addEventListener('click', e => {
     const fb = e.target.closest('[data-bstf]'); if (fb) { BST.f = BST.f === fb.dataset.bstf ? '' : fb.dataset.bstf; BST.n = 120; bstSave(); bstRender(); return; }
     const so = e.target.closest('[data-bsort]'); if (so) { BST.sort = so.dataset.bsort; BST.n = 120; bstSave(); bstRender(); return; }
-    const bc = e.target.closest('[data-bcol]'); if (bc && !bc.disabled) { const c = BST_COLS.find(x => x.k === bc.dataset.bcol); BST.cols = { ...(BST.cols || {}), [c.k]: !bstColOn(c) }; bstSave(); bstRender(); return; }
+    const bc = e.target.closest('[data-bcol]'); if (bc && !bc.disabled) { const c = BST_COLS.find(x => x.k === bc.dataset.bcol); BST.cols = { ...(BST.cols || {}), [bstColKey(c)]: !bstColOn(c) }; bstSave(); bstRender(); return; }
     const rg = e.target.closest('[data-brng]'); if (rg) { BST.rng = rg.dataset.brng; BST.n = 120; bstSave(); bstRender(); return; }
     const b = e.target.closest('[data-bst]'); if (!b) return; const a = b.dataset.bst;
     if (a === 'card') { openDetail(b.dataset.id); return; }
@@ -8788,7 +8789,7 @@ Antworte NUR mit JSON: {"map":["feld oder leer", ...]} – gleiche Reihenfolge u
       const r = document.querySelector(`#waiting [data-oa="tog"][data-id="${o.id}"]`)?.closest('.ord'); if (r) { r.scrollIntoView({ behavior: 'smooth', block: 'start' }); r.classList.remove('mbf'); void r.offsetWidth; r.classList.add('mbf'); } return; }
   });
   // ---------- Version: Nummer anzeigen, neue Version erkennen ----------
-  const APP_VER = '2026.11.20-5';
+  const APP_VER = '2026.11.20-6';
   let verSeen = '';
   async function verCheck() {
     if (!/^https?:/.test(location.protocol)) return;
