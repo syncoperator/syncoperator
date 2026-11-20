@@ -6003,7 +6003,7 @@ Antworte NUR mit JSON: {"map":{"feld":"Spaltenname"},"typ":"häufigster Werkzeug
       + (adm && locCards ? `<button type="button" class="btn sm primary" data-bst="invloc">Diesen Lagerort zählen · ${locCards}</button>` : '')
       + (adm && diffN ? `<button type="button" class="btn sm" data-bst="invdiff">Nur Abweichungen zählen · ${diffN}</button>` : '');
     $('bstCols').hidden = !BST.colOpen || !L.length;
-    $('bstCols').innerHTML = `<div class="rp-h">SPALTEN FÜR DRUCK UND EXCEL <small>ANTIPPEN = AN / AUS</small></div><div class="rp-cols">${BST_COLS.filter(c => !c.time || bstTime()).map(c => `<button type="button" data-bcol="${c.k}" aria-pressed="${bstColOn(c)}" ${c.fix ? 'disabled' : ''}>${bstColOn(c) ? '✓ ' : ''}${esc(c.k === 'date' ? (BST.sort === 'new' ? 'Angelegt' : 'Gezählt am') : c.l)}</button>`).join('')}</div>`;
+    $('bstCols').innerHTML = `<div class="rp-h">SPALTEN FÜR DRUCK UND EXCEL <small>ANTIPPEN = AN / AUS</small></div><div class="rp-cols">${BST_COLS.filter(c => !c.time || bstTime()).map(c => `<button type="button" data-bcol="${c.k}" aria-pressed="${bstColOn(c)}" ${c.fix || bstNoBios(c) ? 'disabled' : ''} ${bstNoBios(c) ? 'title="Noch kein BIOS-Bestand geladen"' : ''}>${bstColOn(c) ? '✓ ' : ''}${esc(c.k === 'date' ? (BST.sort === 'new' ? 'Angelegt' : 'Gezählt am') : c.l)}</button>`).join('')}</div>`;
     $('libBest').classList.toggle('nobios', !bstColOn(BST_COLS.find(c => c.k === 'bios'))); $('libBest').classList.toggle('noapp', !bstColOn(BST_COLS.find(c => c.k === 'app')));
     const show = L.slice(0, BST.n); let last = null, h = '';
     show.forEach(x => { if (BST.sort === 'loc' && !BST.loc) { const g = x.loc || 'OHNE LAGERORT'; if (g !== last) { last = g; h += `<div class="bst-gh">⌂ ${esc(g)}</div>`; } }
@@ -6035,7 +6035,8 @@ Antworte NUR mit JSON: {"map":{"feld":"Spaltenname"},"typ":"häufigster Werkzeug
     { k: 'date', l: 'Datum', h: 'DATUM', cls: 'nw', time: 1, p: x => bstTs(x) ? fmtDs(bstTs(x)) + ' ' + rpT(bstTs(x)) : '–', x: x => bstTs(x) ? fmtD(bstTs(x)) + ' ' + rpT(bstTs(x)) : '' },
     { k: 'box', l: 'Zählfeld', h: 'GEZÄHLT', cls: 'box', p: () => '<span></span>', x: null },
   ];
-  const bstColOn = c => c.fix || ((!c.time || bstTime()) && (BST.cols && c.k in BST.cols ? BST.cols[c.k] : !c.def0));
+  const bstNoBios = c => (c.k === 'bios' || c.k === 'diff') && !CAT.sts;   // ohne BIOS-Bestand: Spalten wären leer
+  const bstColOn = c => c.fix || (!bstNoBios(c) && (!c.time || bstTime()) && (BST.cols && c.k in BST.cols ? BST.cols[c.k] : !c.def0));
   const bstCols = () => BST_COLS.filter(bstColOn);
   const bstColH = c => c.k === 'date' ? (BST.sort === 'new' ? 'ANGELEGT' : 'GEZÄHLT AM') : c.k === 'box' && bstTime() ? 'KONTROLLE' : c.h;
   function bstPrint() {
@@ -7228,6 +7229,7 @@ ${rows.map(r => `<tr><td class="n">${r.Datum} ${r.Zeit}</td><td>${r.Art}</td><td
     return f;
   }
   const RP_CSS = `*{box-sizing:border-box}
+html,body{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 .pg{width:210mm;min-height:297mm;margin:0 auto;background:#fff;color:#000;padding:12mm 12mm 14mm;font-family:"Instrument Sans",system-ui,sans-serif;text-transform:uppercase;box-shadow:0 2px 14px rgba(0,0,0,.12)}
 .pg.land{width:297mm;min-height:210mm}
 .hd{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2.5px solid #000;padding-bottom:2.6mm}
@@ -7241,7 +7243,8 @@ table{width:100%;border-collapse:collapse;font-size:8.4pt}thead{display:table-he
 th{text-align:left;font:600 6.6pt "JetBrains Mono",monospace;letter-spacing:.06em;border-bottom:1.5px solid #000;padding:1.8mm 1.4mm;white-space:nowrap;vertical-align:bottom}
 td{padding:1.5mm 1.4mm;border-bottom:.2mm solid #d6d6d6;vertical-align:top;overflow-wrap:anywhere}
 th.n,td.n{text-align:right;white-space:nowrap}td.n{font-family:"JetBrains Mono",monospace}
-td.c{font-family:"JetBrains Mono",monospace;font-size:7.6pt}
+td.c{font-family:"JetBrains Mono",monospace;font-size:7.6pt;white-space:nowrap;overflow-wrap:normal}
+th.n,td.n{min-width:11mm}td.w{width:auto}
 td.nw{white-space:nowrap}
 td.w{font-weight:600;min-width:34mm}
 td.box{width:18mm}td.box span{display:block;height:5.5mm;border:.3mm solid #000;border-radius:1mm}
@@ -8785,7 +8788,7 @@ Antworte NUR mit JSON: {"map":["feld oder leer", ...]} – gleiche Reihenfolge u
       const r = document.querySelector(`#waiting [data-oa="tog"][data-id="${o.id}"]`)?.closest('.ord'); if (r) { r.scrollIntoView({ behavior: 'smooth', block: 'start' }); r.classList.remove('mbf'); void r.offsetWidth; r.classList.add('mbf'); } return; }
   });
   // ---------- Version: Nummer anzeigen, neue Version erkennen ----------
-  const APP_VER = '2026.11.20-4';
+  const APP_VER = '2026.11.20-5';
   let verSeen = '';
   async function verCheck() {
     if (!/^https?:/.test(location.protocol)) return;
