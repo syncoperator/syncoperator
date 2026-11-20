@@ -244,6 +244,7 @@ input.mono{font-family:var(--f-mono)}
 .rc .uset{font-family:var(--f-mono);font-size:11px;letter-spacing:.06em;color:var(--muted);text-transform:uppercase}
 .rc .uset.soon{color:var(--crit);font-weight:600}
 .foot{display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+.toast{display:flex;gap:12px;align-items:center}.toast[hidden]{display:none}.toast-a{background:none;border:0;color:#ff8a4c;font:inherit;font-weight:700;padding:6px 2px;cursor:pointer;white-space:nowrap}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--on-ink);padding:10px 16px;border-radius:10px;font-size:13px;font-weight:600;box-shadow:var(--shadow);max-width:calc(100% - 32px);z-index:60}
 .lightbox{position:fixed;inset:0;background:rgba(10,11,13,.96);display:flex;align-items:center;justify-content:center;padding:max(16px,env(safe-area-inset-top)) 12px max(16px,env(safe-area-inset-bottom));z-index:95;touch-action:none;overflow:hidden}
 .lightbox img{display:block;max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain;border-radius:12px;background:#fff;transform-origin:center center;will-change:transform;user-select:none;-webkit-user-drag:none}
@@ -1649,6 +1650,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%;touch-action:manipulati
 .bst-demo{flex-basis:100%;display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:12px;background:var(--warn-bg);color:var(--warn);font-size:13px;line-height:1.4}
 .bst-demo b{font-family:var(--f-mono);font-weight:700;letter-spacing:.06em;color:var(--warn)}
 .bst-demo span{color:var(--fg)}
+.lib-ts{display:grid;gap:8px;margin:0 0 10px}
 .bst-tools{display:flex;gap:8px 12px;align-items:center;flex-wrap:wrap;margin:8px 0}
 .bst-tools select{flex:1 1 180px;max-width:340px;min-width:0}
 .bst-tools .lt-sort{margin:0}
@@ -2031,7 +2033,7 @@ body.touring{padding-bottom:70vh}
       <div id="bstInfo" class="bst-info"></div>
       <input id="bstQ" type="search" placeholder="Nummer, Name oder Lagerort" style="background:var(--card)" autocomplete="off">
       <div id="bstF" class="aus-f lib-f"></div>
-      <div class="bst-tools"><select id="bstLoc" aria-label="Lagerort"></select><div class="lt-sort types" id="bstSort"><span>SORTIEREN</span><button type="button" data-bsort="loc">Lagerort</button><button type="button" data-bsort="name">Name</button><button type="button" data-bsort="stock">Bestand</button></div></div>
+      <div class="bst-tools"><select id="bstLoc" aria-label="Lagerort"></select><div class="lt-sort types" id="bstSort"><span>SORTIEREN</span><button type="button" data-bsort="loc">Lagerort</button><button type="button" data-bsort="name">Name</button><button type="button" data-bsort="stock">Bestand</button><button type="button" data-bsort="new">Neu angelegt</button><button type="button" data-bsort="cnt">Zuletzt gezählt</button></div></div>
       <div id="bstAct" class="bst-act"></div>
       <div id="bstList"></div>
       <input type="file" id="bstFile" accept=".xlsx,.xls,.csv" hidden>
@@ -2322,6 +2324,15 @@ window.addEventListener('load',ctFit);window.addEventListener('resize',ctFit);se
   const fmtD = ts => ts ? new Date(ts).toLocaleDateString('de-DE', { day:'2-digit', month:'2-digit', year:'numeric' }) : '';
   const fmtDs = ts => ts ? new Date(ts).toLocaleDateString('de-DE', { day:'2-digit', month:'2-digit' }) : '';
   const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  const idTs = id => { const n = parseInt(String(id || '').slice(0, 8), 36); return n > 1.5e12 && n < Date.now() + 864e5 ? n : 0; };
+  const tCreated = t => t.createdAt || idTs(t.id);   // alte Karten ohne createdAt: Zeit steckt in der ID
+  const relTs = ts => { if (!ts) return ''; const d = new Date(ts), now = new Date(), d0 = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime(), tm = d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+    return ts >= d0 ? 'heute ' + tm : ts >= d0 - 864e5 ? 'gestern ' + tm : fmtDs(ts) + (d.getFullYear() !== now.getFullYear() ? '.' + d.getFullYear() : ''); };
+  function toastAct(msg, label, fn) {   // Hinweis mit Knopf (z. B. Rückgängig)
+    const t = $('toast'); t.innerHTML = `<span>${esc(msg)}</span><button type="button" class="toast-a">${esc(label)}</button>`; t.hidden = false;
+    t.querySelector('.toast-a').onclick = () => { t.hidden = true; clearTimeout(toast._t); fn(); };
+    clearTimeout(toast._t); toast._t = setTimeout(() => t.hidden = true, 7000);
+  }
   const toast = msg => { const t = $('toast'); t.textContent = msg; t.hidden = false; clearTimeout(toast._t); toast._t = setTimeout(() => t.hidden = true, 2400); };
   // Handy: Hintergrund beim Öffnen von Fenstern fest halten und danach an dieselbe Stelle zurück (iOS springt sonst)
   if (matchMedia('(pointer:coarse)').matches) {
@@ -3156,7 +3167,8 @@ window.addEventListener('resize',fit);window.addEventListener('load',fit);fit();
     const s = [showType && `<span>${esc(t.type || 'SONSTIGES')}</span>`, (t.uses || []).length && `<span>${t.uses.length} NOTIZ${t.uses.length > 1 ? 'EN' : ''}</span>`, ...attrsShown(t).map(x => `<span>${esc(x)}</span>`), ...specsOut(t).map(x => `<b>${esc(x)}</b>`), t.firm && `<span>ART.-NR. <b>${esc(t.firm)}</b></span>`, t.maker && `<span>${esc(t.maker)}</span>`].filter(Boolean).join('');
     let flag = st.inCart ? 'AUF DER LISTE' : st.waiting ? 'UNTERWEGS' : '';
     if (mode === 'inc') { const m = fullMiss(t, 'p'); flag = ''; var extra = `<div class="lr-miss">Fehlt: ${m.map(x => x[1]).join(' · ')}</div>`; }
-    else if (mode === 'station' || mode === 'bios' || mode === 'new') { const w = mode === 'station' ? stationWho(t) : ''; var extra = `<div class="lr-miss soft">${mode === 'new' ? SRC_L[srcOf(t)] + ' · ' : ''}${t.createdAt ? fmtD(t.createdAt) : 'Datum unbekannt'}${w ? ' · ' + esc(w) : ''}${isIncomplete(t) ? ' · <em>unvollständig</em>' : ''}</div>`; }
+    else if (mode === 'cnt') { flag = ''; var extra = `<div class="lr-miss soft">${t.invAt ? `Gezählt ${relTs(t.invAt)}` : 'Noch nie gezählt'}${hasStock(t) ? ` · Bestand ${t.stock}` : ''}${t.loc ? ` · ⌂ ${esc(U(t.loc))}` : ''}</div>`; }
+    else if (mode === 'station' || mode === 'bios' || mode === 'new') { const w = mode === 'station' ? stationWho(t) : ''; var extra = `<div class="lr-miss soft">${mode === 'new' ? SRC_L[srcOf(t)] + ' · angelegt ' : ''}${tCreated(t) ? (mode === 'new' ? relTs(tCreated(t)) : fmtD(tCreated(t))) : 'Datum unbekannt'}${w ? ' · ' + esc(w) : ''}${isIncomplete(t) ? ' · <em>unvollständig</em>' : ''}</div>`; }
     return `<div class="lr" data-lt="open" data-id="${t.id}" role="button" tabindex="0">
       ${thumb(t.img, '', t)}
       <div class="body"><div class="t">${esc(fullName(t))}</div>${s ? `<div class="s">${s}</div>` : ''}${flag ? `<div class="flag">${flag}</div>` : ''}${typeof extra !== 'undefined' ? extra : ''}</div>
@@ -3165,19 +3177,30 @@ window.addEventListener('resize',fit);window.addEventListener('load',fit);fit();
   }
 
   try { S.libZero = localStorage.getItem('cititool_lib_zero') === '1'; } catch {}
+  S.libTS = { ord: 'd', rng: '' }; try { Object.assign(S.libTS, JSON.parse(localStorage.getItem('cititool_lib_ts') || '{}')); } catch {}
   function libFiltHTML() {
     if (!S.lib.length) return '';
     const n = { inc: S.lib.filter(isIncomplete).length, bios: S.lib.filter(t => srcOf(t) === 'bios').length, station: S.lib.filter(t => srcOf(t) === 'station' && !t.stPending).length };
-    return [['', `Alle ${S.lib.filter(t => !t.stPending).length}`], ['inc', `Unvollständig ${n.inc}`], ['bios', `Aus BIOS ${n.bios}`], ['station', `Von der Station ${n.station}`], ['new', 'Zuletzt angelegt']]
-      .filter(([k]) => !k || k === 'new' || k === 'inc' || n[k]).map(([k, l]) => `<button type="button" data-libf="${k}" aria-pressed="${(S.libF || '') === k}">${l}</button>`).join('');
+    return [['', `Alle ${S.lib.filter(t => !t.stPending).length}`], ['inc', `Unvollständig ${n.inc}`], ['bios', `Aus BIOS ${n.bios}`], ['station', `Von der Station ${n.station}`], ['new', 'Zuletzt angelegt'], ['cnt', 'Zuletzt gezählt']]
+      .filter(([k]) => !k || k === 'new' || k === 'cnt' || k === 'inc' || n[k]).map(([k, l]) => `<button type="button" data-libf="${k}" aria-pressed="${(S.libF || '') === k}">${l}</button>`).join('');
   }
   function libFlatHTML() {
     const f = S.libF; let L = S.lib.filter(t => !t.stPending);
     if (f === 'inc') L = L.filter(isIncomplete).sort((a, b) => fullMiss(b, 'p').length - fullMiss(a, 'p').length || (b.createdAt || 0) - (a.createdAt || 0));
     else if (f === 'bios' || f === 'station') L = L.filter(t => srcOf(t) === f).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-    else if (f === 'new') L = L.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)).slice(0, 40);
+    else if (f === 'new' || f === 'cnt') {
+      const ts = f === 'new' ? tCreated : (t => t.invAt || 0), now = new Date(), d0 = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+      const from = S.libTS.rng === 'd' ? d0 : S.libTS.rng === 'w' ? d0 - 6 * 864e5 : 0;
+      if (from) L = L.filter(t => ts(t) >= from);
+      L.sort((a, b) => S.libTS.ord === 'a' ? ts(a) - ts(b) : ts(b) - ts(a));
+      const tb = `<div class="lib-ts"><div class="lt-sort types"><span>REIHENFOLGE</span>${[['d', f === 'new' ? 'Neueste zuerst' : 'Zuletzt gezählt'], ['a', f === 'new' ? 'Älteste zuerst' : 'Lange nicht gezählt']].map(([v, l]) => `<button type="button" data-lts="ord" data-v="${v}" aria-pressed="${S.libTS.ord === v}">${l}</button>`).join('')}</div>
+        <div class="lt-sort types"><span>ZEITRAUM</span>${[['', 'Alle'], ['d', 'Heute'], ['w', '7 Tage']].map(([v, l]) => `<button type="button" data-lts="rng" data-v="${v}" aria-pressed="${S.libTS.rng === v}">${l}</button>`).join('')}</div></div>`;
+      if (!L.length) return tb + `<div class="empty"><b>${f === 'new' ? 'Keine neuen Karten' : 'Nichts gezählt'}</b>${S.libTS.rng ? 'Im gewählten Zeitraum.' : ''}</div>`;
+      const more = L.length > 300; L = L.slice(0, 300);
+      return tb + `<div class="hint" style="margin:0 0 6px">${L.length}${more ? '+' : ''} ${L.length === 1 ? 'Karte' : 'Karten'}${f === 'cnt' ? ' · gezählt über Inventur' : ''}</div>` + L.map(t => libRowHTML(t, true, f)).join('');
+    }
     if (!L.length) return f === 'inc' ? `<div class="allgood"><span><b>Alle Karten vollständig</b><small>Pflichtfelder sind überall ausgefüllt. Was als Pflicht gilt: Zahnrad → „Vollständige Karte“.</small></span></div>` : `<div class="empty"><b>Keine Karten</b></div>`;
-    const hint = { inc: 'Nur Pflichtfelder zählen. Einstellen: Zahnrad → „Vollständige Karte“.', station: 'An der Ausgabestation aus dem BIOS-Katalog genommen.', bios: 'Aus dem BIOS-Katalog übernommen.', new: 'Die 40 neuesten Karten.' }[f] || '';
+    const hint = { inc: 'Nur Pflichtfelder zählen. Einstellen: Zahnrad → „Vollständige Karte“.', station: 'An der Ausgabestation aus dem BIOS-Katalog genommen.', bios: 'Aus dem BIOS-Katalog übernommen.' }[f] || '';
     return (hint ? `<div class="hint" style="margin:0 0 6px">${hint}</div>` : '') + L.map(t => libRowHTML(t, true, f)).join('');
   }
   function renderLib() {
@@ -3241,6 +3264,7 @@ window.addEventListener('resize',fit);window.addEventListener('load',fit);fit();
 
   function libClick(e) {
     if (e.target.closest('[data-zoom]')) return;
+    const lts = e.target.closest('[data-lts]'); if (lts) { S.libTS[lts.dataset.lts] = lts.dataset.v; try { localStorage.setItem('cititool_lib_ts', JSON.stringify(S.libTS)); } catch {} renderLib(); return; }
     const b = e.target.closest('[data-lt]'); if (!b) return;
     const a = b.dataset.lt;
     if (a === 'deltype') { e.stopPropagation(); askDeleteType(b.dataset.type); return; }
@@ -3399,7 +3423,7 @@ window.addEventListener('resize',fit);window.addEventListener('load',fit);fit();
     if (a === 'label') { closeDetail(); openLabels([t.id]); }
     if (a === 'iso') { closeDetail(); KI.iso = t.name; openKI('iso'); }
     if (a === 'aus' || a === 'ein') { closeDetail(); setView('aus'); mwOpen(a, t); }
-    if (a === 'inv') { if (!can('adm')) { accDeny(); return; } closeDetail(); setView('aus'); $('iv').hidden = false; document.body.style.overflow = 'hidden'; ivStart(x => x.id === t.id, fullName(t)); }
+    if (a === 'inv') { if (!can('adm')) { accDeny(); return; } closeDetail(); IV.ret = { card: t.id, single: true }; $('iv').hidden = false; document.body.style.overflow = 'hidden'; ivStart(x => x.id === t.id, fullName(t)); }
     if (a === 'copy') { closeDetail(); openToolWiz({ tool: t, copy: true }); }
     if (a === 'del') askConfirmBox('Werkzeug löschen?', `„${fullName(t)}“ wird aus der Bibliothek gelöscht. Alte Bestellungen bleiben im Archiv.`, 'Löschen', () => {
       S.lib = S.lib.filter(x => x.id !== t.id); closeDetail(); commit('Aus Bibliothek gelöscht');
@@ -5927,12 +5951,16 @@ Antworte NUR mit JSON: {"map":{"feld":"Spaltenname"},"typ":"häufigster Werkzeug
     const cmpN = (a, b) => a.name.localeCompare(b.name, 'de');
     const srt = { loc: (a, b) => (!a.loc) - (!b.loc) || a.loc.localeCompare(b.loc, 'de', { numeric: true }) || (!a.t) - (!b.t) || cmpN(a, b),
       name: (a, b) => (!a.t) - (!b.t) || cmpN(a, b),
-      stock: (a, b) => Math.max(b.app ?? -1e9, b.bios ?? -1e9) - Math.max(a.app ?? -1e9, a.bios ?? -1e9) || cmpN(a, b) };
+      stock: (a, b) => Math.max(b.app ?? -1e9, b.bios ?? -1e9) - Math.max(a.app ?? -1e9, a.bios ?? -1e9) || cmpN(a, b),
+      new: (a, b) => (b.t ? tCreated(b.t) : 0) - (a.t ? tCreated(a.t) : 0) || (!a.t) - (!b.t) || cmpN(a, b),
+      cnt: (a, b) => (b.t ? b.t.invAt || 0 : -1) - (a.t ? a.t.invAt || 0 : -1) || cmpN(a, b) };
     L.sort(srt[BST.sort] || srt.loc);
     return { all, L };
   }
   function bstRowHTML(x) {
     const notes = [];
+    if (x.t && BST.sort === 'new') notes.push(tCreated(x.t) ? 'angelegt ' + relTs(tCreated(x.t)) : 'Datum unbekannt');
+    if (x.t && BST.sort === 'cnt') notes.push(x.t.invAt ? 'gezählt ' + relTs(x.t.invAt) : 'nie gezählt');
     if (x.st === 'diff') notes.push(`<span class="w">Unterschied ${fbSign(Math.round(((x.app ?? 0) - x.bios) * 1000) / 1000)}${x.op ? ` · offen ${fbSign(x.op)}` : ''}</span>`);
     else if (x.st === 'later') notes.push(`<span class="l">Passt nach Übertrag (${fbSign(x.op)} offen)</span>`);
     else if (x.st === 'noapp') notes.push('<span class="w">In der App noch nicht gezählt</span>');
@@ -8200,7 +8228,7 @@ Antworte NUR mit JSON: {"map":["feld oder leer", ...]} – gleiche Reihenfolge u
   function ivCommit(t, n) {
     const s = ivSoll(t); IV.cnt[t.id] = n;
     if (s === null || n !== s) book(t, 'inv', n, { batch: IV.bid, who: AU.who, note: 'INVENTUR' });
-    t.invAt = Date.now(); IV.done[t.id] = { from: s, to: n }; save(); ivRunSave();
+    const inv0 = IV.done[t.id] ? IV.done[t.id].inv0 : (t.invAt || 0); t.invAt = Date.now(); IV.done[t.id] = { from: s, to: n, inv0 }; save(); ivRunSave();
   }
   function ivJump(raw) {   // Etikett scannen → zu diesem Werkzeug springen
     const t = findByCode(raw); if (!t) { beep(true); toast('Code unbekannt'); return; }
@@ -8226,7 +8254,7 @@ Antworte NUR mit JSON: {"map":["feld oder leer", ...]} – gleiche Reihenfolge u
   }
   const ivPadHTML = () => `<div class="iv-pad" role="group" aria-label="Ziffernblock">${['1', '2', '3', '4', '5', '6', '7', '8', '9'].map(d => `<button type="button" data-ivk="${d}">${d}</button>`).join('')}<button type="button" data-ivk="bs" aria-label="Löschen">⌫</button><button type="button" data-ivk="0">0</button><button type="button" class="ok" data-ivk="ok">OK</button></div>`;
   const IC_SCAN_S = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M3 8V5.5A1.5 1.5 0 0 1 4.5 4H7M17 4h2.5A1.5 1.5 0 0 1 21 5.5V8M21 16v2.5a1.5 1.5 0 0 1-1.5 1.5H17M7 20H4.5A1.5 1.5 0 0 1 3 18.5V16M7 8v8M10.5 8v8M14 8v8M17 8v8"/></svg>';
-  function ivOpen() { if (!can('adm')) { accDeny(); return; } IV.phase = 'scope'; $('iv').hidden = false; document.body.style.overflow = 'hidden'; ivRender(); }
+  function ivOpen() { if (!can('adm')) { accDeny(); return; } IV.ret = null; IV.phase = 'scope'; $('iv').hidden = false; document.body.style.overflow = 'hidden'; ivRender(); }
   function ivClose() { if (IV.phase === 'count') ivRunSave(); $('iv').hidden = true; document.body.style.overflow = ''; render(); }
   function ivStart(filter, label) {
     IV.list = S.lib.filter(filter).sort((a, b) => locKey(a).localeCompare(locKey(b)) || fullName(a).localeCompare(fullName(b))).map(t => t.id);
@@ -8244,9 +8272,27 @@ Antworte NUR mit JSON: {"map":["feld oder leer", ...]} – gleiche Reihenfolge u
     $('ivDiff').innerHTML = s === null ? `<span class="n">NEU ERFASST</span>` : d === 0 ? `<span>✓ PASST</span>` : `<span class="${d > 0 ? 'p' : 'm'}">${d > 0 ? '+' : ''}${d} ZUM BESTAND</span>`;
     const g = $('ivGo'); if (g) g.innerHTML = s !== null && d === 0 ? `✓ Stimmt<small>Bestand ${n} · weiter</small>` : `Weiter<small>Bestand = ${n}</small>`;
   }
+  function ivUndoBatch(bid, done) {
+    for (let i = S.moves.length - 1; i >= 0; i--) { const mv = S.moves[i]; if (mv.batch !== bid) continue; const x = S.lib.find(y => y.id === mv.libId); if (x && mv.after !== null) x.stock = mv.after - mv.qty; S.moves.splice(i, 1); }
+    Object.entries(done).forEach(([id, v]) => { const x = S.lib.find(y => y.id === id); if (!x) return; if (v.from === null) delete x.stock; if ('inv0' in v) { if (v.inv0) x.invAt = v.inv0; else delete x.invAt; } });
+    save();
+  }
+  function ivReturn() {   // Inventur aus der Karte: ohne Zusammenfassung zurück zur Karte
+    const r = IV.ret; IV.ret = null; const bid = IV.bid, done = { ...IV.done }, d = Object.values(done)[0];
+    IV.phase = ''; ivRunClear(); $('iv').hidden = true; document.body.style.overflow = ''; render();
+    const t = S.lib.find(x => x.id === r.card); if (t) openDetail(t.id);
+    if (!d) return;
+    if (d.from !== null && d.from === d.to) { toast(`Bestand ${d.to} bestätigt`); return; }
+    toastAct(d.from === null ? `Bestand ${d.to} erfasst` : `Bestand ${d.to} gespeichert (vorher ${d.from})`, 'Rückgängig', () => {
+      ivUndoBatch(bid, done); render(); if (t && detailId === t.id) openDetail(t.id); toast('Zurückgenommen'); });
+  }
+  function ivTakeEnt() {   // getippte Zahl übernehmen, egal ob danach OK, „Weiter“, ± oder „Beenden“ kommt
+    if (IV.ent === '') return false; const t = ivTool(); const v = +IV.ent; IV.ent = '';
+    if (!t || isNaN(v)) return false; IV.cnt[t.id] = Math.max(0, v); return true;
+  }
   function ivNext(skip) {
     const t = ivTool(); if (!t) return;
-    if (!skip) ivCommit(t, ivCnt(t));
+    if (skip) IV.ent = ''; else { ivTakeEnt(); ivCommit(t, ivCnt(t)); }
     IV.ent = ''; IV.i++; if (IV.i >= IV.list.length) { IV.phase = 'sum'; ivRunClear(); } else ivRunSave();
     ivRender(skip ? 0 : 1);
   }
@@ -8274,6 +8320,7 @@ Antworte NUR mit JSON: {"map":["feld oder leer", ...]} – gleiche Reihenfolge u
       return;
     }
     if (IV.phase === 'sum') {
+      if (IV.ret && IV.ret.single) { ivReturn(); return; }
       const ds = Object.entries(IV.done), diff = ds.filter(([, v]) => v.from === null || v.from !== v.to);
       $('ivTop').innerHTML = `<div class="mw-in"><div class="mw-h"><span class="mw-mode inv">INVENTUR =</span><span class="sp"></span><button type="button" class="mw-x" data-iv="close" aria-label="Schließen">${IC_X}</button></div><h2 class="mw-title">Fertig gezählt</h2><div class="mw-prog"><i class="on"></i></div></div>`;
       $('ivBody').innerHTML = `<div class="mw-in"><div class="mw-done" style="padding-top:8px"><div class="mw-ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div><p>${esc(IV.label || '')}</p></div>
@@ -8325,11 +8372,12 @@ Antworte NUR mit JSON: {"map":["feld oder leer", ...]} – gleiche Reihenfolge u
   $('iv').addEventListener('click', e => {
     const kb = e.target.closest('[data-ivk]'); if (kb) { ivKey(kb.dataset.ivk); return; }
     const b = e.target.closest('[data-iv]'); if (!b || b.disabled) return; const a = b.dataset.iv;
+    if (a === 'close' && IV.ret && IV.ret.single) { const r = IV.ret; IV.ret = null; IV.phase = ''; ivRunClear(); ivClose(); openDetail(r.card); return; }
     if (a === 'close') { if (IV.phase === 'count') { ivRunSave(); toast('Inventur pausiert · unter Inventur fortsetzen'); } ivClose(); return; }
     if (a === 'view') { IV.view = b.dataset.v; lsSet(IV_VIEW, IV.view); ivRender(); return; }
     if (a === 'resume') return ivResume();
     if (a === 'drop') { if (!confirm('Pausierte Inventur verwerfen? Schon Gezähltes bleibt gebucht.')) return; ivRunClear(); ivRender(); return; }
-    if (a === 'finish') { IV.phase = 'sum'; ivRunClear(); ivRender(); return; }
+    if (a === 'finish') { const ft = ivTool(); if (ft && ivTakeEnt()) ivCommit(ft, ivCnt(ft)); IV.phase = 'sum'; ivRunClear(); ivRender(); return; }
     if (a === 'scan') { camStart(raw => { document.body.style.overflow = 'hidden'; ivJump(raw); }, 'INVENTUR · SPRINGEN'); return; }
     if (a === 'pad') { if (IV.swiped) return; IV.pad = !IV.pad; ivRender(0); return; }
     if (a === 'row') { IV.i = +b.dataset.j; IV.ent = ''; ivRender(0); return; }
@@ -8341,14 +8389,12 @@ Antworte NUR mit JSON: {"map":["feld oder leer", ...]} – gleiche Reihenfolge u
     if (a === 'low') return ivStart(t => hasStock(t) && minOf(t) > 0 && t.stock <= minOf(t), 'Unter Minimum');
     if (a === 'loc') return ivStart(t => U(t.loc || '') === b.dataset.v, '⌂ ' + b.dataset.v);
     const t = ivTool();
-    if (a === 'inc' && t) return ivSet(ivCnt(t) + 1, true);
-    if (a === 'dec' && t) return ivSet(ivCnt(t) - 1, true);
+    if ((a === 'inc' || a === 'dec') && t) { ivTakeEnt(); $('ivNum')?.classList.remove('ent'); return ivSet(ivCnt(t) + (a === 'inc' ? 1 : -1), true); }
     if (a === 'next') return ivNext(false);
     if (a === 'skip') return ivNext(true);
     if (a === 'prev') { IV.i = Math.max(0, IV.i - 1); ivRender(0); return; }
     if (a === 'undoall') { if (!confirm('Alle Änderungen dieser Inventur zurücknehmen?')) return;
-      for (let i = S.moves.length - 1; i >= 0; i--) { const mv = S.moves[i]; if (mv.batch !== IV.bid) continue; const x = S.lib.find(y => y.id === mv.libId); if (x && mv.after !== null) x.stock = mv.after - mv.qty; S.moves.splice(i, 1); }
-      Object.entries(IV.done).forEach(([id, v]) => { if (v.from === null) { const x = S.lib.find(y => y.id === id); if (x) delete x.stock; } });
+      ivUndoBatch(IV.bid, IV.done);
       IV.done = {}; save(); toast('Inventur zurückgenommen'); ivClose(); return; }
   });
   const IVK = { buf: '', t0: 0, last: 0 };
@@ -8369,8 +8415,8 @@ Antworte NUR mit JSON: {"map":["feld oder leer", ...]} – gleiche Reihenfolge u
       if (e.key === 'ArrowUp') { e.preventDefault(); IV.i = Math.max(0, IV.i - 1); IV.ent = ''; ivRender(0); }
       return;
     }
-    if (e.key === 'ArrowRight') { e.preventDefault(); IV.ent = ''; const t = ivTool(); t && ivSet(ivCnt(t) + 1, true); }
-    if (e.key === 'ArrowLeft') { e.preventDefault(); IV.ent = ''; const t = ivTool(); t && ivSet(ivCnt(t) - 1, true); }
+    if (e.key === 'ArrowRight') { e.preventDefault(); ivTakeEnt(); $('ivNum')?.classList.remove('ent'); const t = ivTool(); t && ivSet(ivCnt(t) + 1, true); }
+    if (e.key === 'ArrowLeft') { e.preventDefault(); ivTakeEnt(); $('ivNum')?.classList.remove('ent'); const t = ivTool(); t && ivSet(ivCnt(t) - 1, true); }
   });
   $('v_aus').addEventListener('click', e => { const b = e.target.closest('[data-mq]'); if (!b) return; const a = b.dataset.mq; if (a === 'inv') ivOpen(); else mwOpen(a); });
 
@@ -8687,7 +8733,7 @@ Antworte NUR mit JSON: {"map":["feld oder leer", ...]} – gleiche Reihenfolge u
       const r = document.querySelector(`#waiting [data-oa="tog"][data-id="${o.id}"]`)?.closest('.ord'); if (r) { r.scrollIntoView({ behavior: 'smooth', block: 'start' }); r.classList.remove('mbf'); void r.offsetWidth; r.classList.add('mbf'); } return; }
   });
   // ---------- Version: Nummer anzeigen, neue Version erkennen ----------
-  const APP_VER = '2026.11.18-2';
+  const APP_VER = '2026.11.20-2';
   let verSeen = '';
   async function verCheck() {
     if (!/^https?:/.test(location.protocol)) return;
