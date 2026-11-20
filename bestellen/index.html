@@ -2033,7 +2033,7 @@ body.touring{padding-bottom:70vh}
       <div id="bstInfo" class="bst-info"></div>
       <input id="bstQ" type="search" placeholder="Nummer, Name oder Lagerort" style="background:var(--card)" autocomplete="off">
       <div id="bstF" class="aus-f lib-f"></div>
-      <div class="bst-tools"><select id="bstLoc" aria-label="Lagerort"></select><div class="lt-sort types" id="bstSort"><span>SORTIEREN</span><button type="button" data-bsort="loc">Lagerort</button><button type="button" data-bsort="name">Name</button><button type="button" data-bsort="stock">Bestand</button><button type="button" data-bsort="new">Neu angelegt</button><button type="button" data-bsort="cnt">Zuletzt gezählt</button></div></div>
+      <div class="bst-tools"><select id="bstLoc" aria-label="Lagerort"></select><div class="lt-sort types" id="bstSort"><span>SORTIEREN</span><button type="button" data-bsort="loc">Lagerort</button><button type="button" data-bsort="name">Name</button><button type="button" data-bsort="stock">Bestand</button><button type="button" data-bsort="new">Neu angelegt</button><button type="button" data-bsort="cnt">Zuletzt gezählt</button></div><div class="lt-sort types" id="bstRng" hidden></div></div>
       <div id="bstAct" class="bst-act"></div>
       <div id="bstList"></div>
       <input type="file" id="bstFile" accept=".xlsx,.xls,.csv" hidden>
@@ -5919,9 +5919,9 @@ Antworte NUR mit JSON: {"map":{"feld":"Spaltenname"},"typ":"häufigster Werkzeug
     if (n) { save(); try { biosBtnSync(); } catch {} if (!quiet) toast(`${n} Buchungen abgehakt – BIOS-Bestand stimmt`); }
     return n;
   }
-  const BST = { f: '', q: '', loc: '', sort: 'loc', n: 120 };
+  const BST = { f: '', q: '', loc: '', sort: 'loc', rng: '', n: 120 };
   try { Object.assign(BST, JSON.parse(lsGet('cititool_bst') || '{}'), { q: '', n: 120 }); } catch {}
-  const bstSave = () => { try { lsSet('cititool_bst', JSON.stringify({ f: BST.f, loc: BST.loc, sort: BST.sort })); } catch {} };
+  const bstSave = () => { try { lsSet('cititool_bst', JSON.stringify({ f: BST.f, loc: BST.loc, sort: BST.sort, rng: BST.rng })); } catch {} };
   try { S.libTab = localStorage.getItem('cititool_lib_tab') === 'b' ? 'b' : 'w'; } catch { S.libTab = 'w'; }
   const bstFmt = v => v == null ? '–' : String(v).replace('.', ',');
   function bstRows() {
@@ -5942,6 +5942,11 @@ Antworte NUR mit JSON: {"map":{"feld":"Spaltenname"},"typ":"häufigster Werkzeug
   }
   const BST_F = [['', 'Alle'], ['card', 'Mit Karte'], ['cat', 'Nur Katalog'], ['st', 'Mit Bestand'], ['low', 'Unter Min'], ['diff', 'Abweichung']];
   const bstIs = (x, f) => !f ? true : f === 'card' ? !!x.t : f === 'cat' ? !x.t : f === 'st' ? (x.app || 0) > 0 || (x.bios || 0) > 0 : f === 'low' ? x.low : f === 'diff' ? x.st === 'diff' || x.st === 'noapp' : true;
+  const bstDayLbl = ts => { if (!ts) return BST.sort === 'new' ? 'DATUM UNBEKANNT' : 'NOCH NIE GEZÄHLT'; const d0 = bstDay0(); return ts >= d0 ? 'HEUTE · ' + fmtDs(ts) : ts >= d0 - 864e5 ? 'GESTERN · ' + fmtDs(ts) : new Date(ts).toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric' }).toUpperCase(); };
+  const bstTime = () => BST.sort === 'new' || BST.sort === 'cnt';
+  const bstTs = x => !x.t ? 0 : BST.sort === 'new' ? tCreated(x.t) : (x.t.invAt || 0);
+  const bstDay0 = () => { const n = new Date(); return new Date(n.getFullYear(), n.getMonth(), n.getDate()).getTime(); };
+  const BST_RNG = [['', 'Alle'], ['d', 'Heute'], ['w', '7 Tage'], ['m', '30 Tage']];
   function bstView() {
     const all = bstRows();
     const ws = BST.q ? BIOSP.U(BST.q).split(' ').filter(Boolean) : [];
@@ -5954,6 +5959,11 @@ Antworte NUR mit JSON: {"map":{"feld":"Spaltenname"},"typ":"häufigster Werkzeug
       stock: (a, b) => Math.max(b.app ?? -1e9, b.bios ?? -1e9) - Math.max(a.app ?? -1e9, a.bios ?? -1e9) || cmpN(a, b),
       new: (a, b) => (b.t ? tCreated(b.t) : 0) - (a.t ? tCreated(a.t) : 0) || (!a.t) - (!b.t) || cmpN(a, b),
       cnt: (a, b) => (b.t ? b.t.invAt || 0 : -1) - (a.t ? a.t.invAt || 0 : -1) || cmpN(a, b) };
+    if (bstTime()) {   // Zeit-Sortierung: nur Karten (Katalog hat kein Datum), optional Zeitraum
+      L = L.filter(x => x.t);
+      const from = { d: bstDay0(), w: bstDay0() - 6 * 864e5, m: bstDay0() - 29 * 864e5 }[BST.rng] || 0;
+      if (from) L = L.filter(x => bstTs(x) >= from);
+    }
     L.sort(srt[BST.sort] || srt.loc);
     return { all, L };
   }
@@ -5982,12 +5992,16 @@ Antworte NUR mit JSON: {"map":{"feld":"Spaltenname"},"typ":"häufigster Werkzeug
     if (BST.loc && !locs.includes(BST.loc)) BST.loc = '';
     $('bstLoc').innerHTML = `<option value="">Alle Lagerorte</option>${locs.map(l => `<option value="${esc(l)}" ${BST.loc === l ? 'selected' : ''}>${l === '–' ? 'Ohne Lagerort' : esc(l)}</option>`).join('')}`;
     $('bstSort').querySelectorAll('[data-bsort]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.bsort === BST.sort)));
+    $('bstRng').hidden = !bstTime();
+    $('bstRng').innerHTML = `<span>ZEITRAUM</span>${BST_RNG.map(([v, l]) => `<button type="button" data-brng="${v}" aria-pressed="${BST.rng === v}">${l}</button>`).join('')}`;
     const locCards = BST.loc ? all.filter(x => x.t && (x.loc || '–') === BST.loc).length : 0, diffN = all.filter(x => x.t && (x.st === 'diff' || x.st === 'noapp')).length;
     $('bstAct').innerHTML = (L.length ? `<button type="button" class="btn sm" data-bst="print">Drucken</button><button type="button" class="btn sm" data-bst="xls">Excel</button>` : '')
       + (adm && locCards ? `<button type="button" class="btn sm primary" data-bst="invloc">Diesen Lagerort zählen · ${locCards}</button>` : '')
       + (adm && diffN ? `<button type="button" class="btn sm" data-bst="invdiff">Nur Abweichungen zählen · ${diffN}</button>` : '');
     const show = L.slice(0, BST.n); let last = null, h = '';
-    show.forEach(x => { if (BST.sort === 'loc' && !BST.loc) { const g = x.loc || 'OHNE LAGERORT'; if (g !== last) { last = g; h += `<div class="bst-gh">⌂ ${esc(g)}</div>`; } } h += bstRowHTML(x); });
+    show.forEach(x => { if (BST.sort === 'loc' && !BST.loc) { const g = x.loc || 'OHNE LAGERORT'; if (g !== last) { last = g; h += `<div class="bst-gh">⌂ ${esc(g)}</div>`; } }
+      else if (bstTime()) { const g = bstDayLbl(bstTs(x)); if (g !== last) { last = g; h += `<div class="bst-gh">${esc(g)}</div>`; } }
+      h += bstRowHTML(x); });
     $('bstList').innerHTML = L.length ? `<div class="bst-list">${h}</div>${L.length > show.length ? `<button type="button" class="btn bst-more" data-bst="more">Weitere ${Math.min(300, L.length - show.length)} zeigen · ${L.length - show.length} übrig</button>` : ''}<div class="hint bst-n">${L.length} ${L.length === 1 ? 'Artikel' : 'Artikel'}${BST.f === 'cat' || (!BST.f && has) ? ' · Artikel „nur Katalog“ werden bei der Inventur übersprungen' : ''}</div>`
       : `<div class="empty"><b>Keine Artikel</b>${BST.q || BST.f || BST.loc ? 'Suche oder Filter ändern.' : ''}</div>`;
   }
@@ -6001,25 +6015,30 @@ Antworte NUR mit JSON: {"map":{"feld":"Spaltenname"},"typ":"häufigster Werkzeug
   const bstDiffIds = () => new Set(bstRows().filter(x => x.t && (x.st === 'diff' || x.st === 'noapp')).map(x => x.t.id));
   function bstPrint() {
     const { L } = bstView(); if (!L.length) { toast('Keine Daten'); return; }
-    const now = new Date(), title = (CAT.demo && CAT.sts ? 'DEMO · ' : '') + 'BESTAND' + (BST.loc ? ' · ' + (BST.loc === '–' ? 'OHNE LAGERORT' : BST.loc) : '');
+    const tm = bstTime(), rngL = { '': '', d: 'HEUTE', w: '7 TAGE', m: '30 TAGE' }[BST.rng || ''];
+    const now = new Date(), title = (CAT.demo && CAT.sts ? 'DEMO · ' : '') + 'BESTAND' + (tm ? ' · ' + (BST.sort === 'new' ? 'ANGELEGT' : 'GEZÄHLT') + (rngL ? ' ' + rngL : '') : '') + (BST.loc ? ' · ' + (BST.loc === '–' ? 'OHNE LAGERORT' : BST.loc) : '');
     const flt = [BST_F.find(f => f[0] === BST.f)[1].toUpperCase(), BST.q ? 'SUCHE „' + BST.q + '“' : '', CAT.sts ? (CAT.demo ? 'BIOS-BESTAND ERFUNDEN (DEMO) ' : 'BIOS-BESTAND STAND ') + fmtD(CAT.sts) : 'OHNE BIOS-BESTAND'].filter(Boolean).join(' · ');
     let last = null;
-    const body = L.map(x => { let g = ''; if (BST.sort === 'loc' && !BST.loc) { const k = x.loc || 'OHNE LAGERORT'; if (k !== last) { last = k; g = `<tr class="gh"><td colspan="7">⌂ ${esc(k)}</td></tr>`; } }
+    const nc = tm ? 8 : 7;
+    const body = L.map(x => { let g = ''; if (BST.sort === 'loc' && !BST.loc) { const k = x.loc || 'OHNE LAGERORT'; if (k !== last) { last = k; g = `<tr class="gh"><td colspan="${nc}">⌂ ${esc(k)}</td></tr>`; } }
+      else if (tm) { const k = bstDayLbl(bstTs(x)); if (k !== last) { last = k; g = `<tr class="gh"><td colspan="${nc}">${esc(k)}</td></tr>`; } }
+      const tcell = tm ? `<td class="nw">${bstTs(x) ? fmtDs(bstTs(x)) + ' ' + rpT(bstTs(x)) : '–'}</td>` : '';
       const d = x.t && x.app !== null && x.bios !== null ? Math.round((x.app - x.bios) * 1000) / 1000 : null;
-      return g + `<tr><td class="c">${esc(x.nr || '')}</td><td class="w">${esc(x.name)}${x.t ? '' : ' <small>(NUR KATALOG)</small>'}</td><td class="nw">${esc(x.loc || '')}</td><td class="n">${x.t ? bstFmt(x.app) : ''}</td><td class="n">${x.bios == null ? '' : bstFmt(x.bios)}</td><td class="n">${d ? fbSign(d) : ''}</td><td class="box"><span></span></td></tr>`; }).join('');
+      return g + `<tr><td class="c">${esc(x.nr || '')}</td><td class="w">${esc(x.name)}${x.t ? '' : ' <small>(NUR KATALOG)</small>'}</td><td class="nw">${esc(x.loc || '')}</td><td class="n">${x.t ? bstFmt(x.app) : ''}</td><td class="n">${x.bios == null ? '' : bstFmt(x.bios)}</td><td class="n">${d ? fbSign(d) : ''}</td>${tcell}<td class="box"><span></span></td></tr>`; }).join('');
     const kp = [[L.length, 'ARTIKEL'], [L.filter(x => x.t).length, 'MIT KARTE'], [L.filter(x => x.st === 'diff' || x.st === 'noapp').length, 'ABWEICHUNG'], [L.filter(x => x.low).length, 'UNTER MIN']];
     const html = `<div class="pg"><div class="hd"><span class="br"><svg viewBox="0 0 160 186"><path fill="currentColor" d="${CT_MARK[0]}"/><path fill="currentColor" d="${CT_MARK[1]}"/><path fill="currentColor" d="${CT_MARK[2]}"/></svg>WERKZEUGAUSGABE</span><span class="dt">ERSTELLT ${fmtD(now)} ${rpT(now)}${lsGet(K.name) ? '<br>' + esc(U(lsGet(K.name))) : ''}</span></div>
       <h1>${esc(title)}</h1><div class="sub">${esc(flt)}</div><div class="kp">${kp.map(([v, l]) => `<div><b>${v}</b><small>${l}</small></div>`).join('')}</div>
-      <table><thead><tr><th>ART.-NR.</th><th>BEZEICHNUNG</th><th>LAGERORT</th><th class="n">APP</th><th class="n">BIOS</th><th class="n">DIFF.</th><th>GEZÄHLT</th></tr></thead><tbody>${body}</tbody></table>
+      <table><thead><tr><th>ART.-NR.</th><th>BEZEICHNUNG</th><th>LAGERORT</th><th class="n">APP</th><th class="n">BIOS</th><th class="n">DIFF.</th>${tm ? `<th>${BST.sort === 'new' ? 'ANGELEGT' : 'GEZÄHLT AM'}</th><th>KONTROLLE</th>` : '<th>GEZÄHLT</th>'}</tr></thead><tbody>${body}<tr class="sig"><td colspan="${nc}" style="border:0;padding:26px 0 0"><div style="display:flex;gap:24px;font-size:8pt;letter-spacing:.06em;color:#555"><div style="flex:1;border-top:1px solid #111;padding-top:3px">GEZÄHLT VON</div><div style="flex:1;border-top:1px solid #111;padding-top:3px">IN BIOS ERFASST AM</div><div style="flex:1;border-top:1px solid #111;padding-top:3px">UNTERSCHRIFT</div></div></td></tr></tbody></table>
       <div class="ft"><span>WERKZEUGAUSGABE · ${esc(title)}</span><span>${L.length} ZEILEN</span></div></div>`;
     rpPrint({ html, title, land: false, ret: 'bestand' });
   }
   async function bstXLS() {
     const { L } = bstView(); if (!L.length) { toast('Keine Daten'); return; }
     let X; try { X = await loadXLSX(); } catch { toast('Excel braucht Internet (einmalig)'); return; }
-    const rows = L.map(x => ({ Artikelnummer: x.nr || '', Bezeichnung: x.name, Lagerort: x.loc || '', Karte: x.t ? 'ja' : 'nur Katalog', 'Bestand App': x.t && x.app !== null ? x.app : '', [CAT.demo ? 'Bestand BIOS (DEMO)' : 'Bestand BIOS']: x.bios ?? '', 'Unterschied': x.t && x.app !== null && x.bios !== null ? Math.round((x.app - x.bios) * 1000) / 1000 : '', Min: x.min || '', Status: { diff: 'Abweichung', noapp: 'in App nicht gezählt', later: 'passt nach Übertrag', ok: 'stimmt' }[x.st] || '' }));
-    const ws = X.utils.json_to_sheet(rows); ws['!cols'] = [{ wch: 14 }, { wch: 42 }, { wch: 18 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 7 }, { wch: 20 }];
-    const wb = X.utils.book_new(); X.utils.book_append_sheet(wb, ws, 'Bestand'); X.writeFile(wb, `bestand${CAT.demo && CAT.sts ? '-DEMO' : ''}-${new Date().toISOString().slice(0, 10)}.xlsx`); toast('Excel gespeichert');
+    const tm = bstTime(), tH = BST.sort === 'new' ? 'Angelegt' : 'Gezählt am';
+    const rows = L.map(x => ({ ...(tm ? { [tH]: bstTs(x) ? fmtD(bstTs(x)) + ' ' + rpT(bstTs(x)) : '' } : {}), Artikelnummer: x.nr || '', Bezeichnung: x.name, Lagerort: x.loc || '', Karte: x.t ? 'ja' : 'nur Katalog', 'Bestand App': x.t && x.app !== null ? x.app : '', [CAT.demo ? 'Bestand BIOS (DEMO)' : 'Bestand BIOS']: x.bios ?? '', 'Unterschied': x.t && x.app !== null && x.bios !== null ? Math.round((x.app - x.bios) * 1000) / 1000 : '', Min: x.min || '', Status: { diff: 'Abweichung', noapp: 'in App nicht gezählt', later: 'passt nach Übertrag', ok: 'stimmt' }[x.st] || '' }));
+    const ws = X.utils.json_to_sheet(rows); ws['!cols'] = [...(tm ? [{ wch: 18 }] : []), { wch: 14 }, { wch: 42 }, { wch: 18 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 7 }, { wch: 20 }];
+    const wb = X.utils.book_new(); X.utils.book_append_sheet(wb, ws, 'Bestand'); X.writeFile(wb, `bestand${tm ? (BST.sort === 'new' ? '-angelegt' : '-gezaehlt') + (BST.rng ? '-' + { d: 'heute', w: '7tage', m: '30tage' }[BST.rng] : '') : ''}${CAT.demo && CAT.sts ? '-DEMO' : ''}-${new Date().toISOString().slice(0, 10)}.xlsx`); toast('Excel gespeichert');
   }
   async function bstLoad(f) {
     let X; try { X = await loadXLSX(); } catch { toast('Excel braucht Internet (einmalig)'); return; }
@@ -6043,7 +6062,8 @@ Antworte NUR mit JSON: {"map":{"feld":"Spaltenname"},"typ":"häufigster Werkzeug
   $('bstFile').addEventListener('change', e => { const f = e.target.files[0]; e.target.value = ''; if (f) bstLoad(f); });
   $('libBest').addEventListener('click', e => {
     const fb = e.target.closest('[data-bstf]'); if (fb) { BST.f = BST.f === fb.dataset.bstf ? '' : fb.dataset.bstf; BST.n = 120; bstSave(); bstRender(); return; }
-    const so = e.target.closest('[data-bsort]'); if (so) { BST.sort = so.dataset.bsort; bstSave(); bstRender(); return; }
+    const so = e.target.closest('[data-bsort]'); if (so) { BST.sort = so.dataset.bsort; BST.n = 120; bstSave(); bstRender(); return; }
+    const rg = e.target.closest('[data-brng]'); if (rg) { BST.rng = rg.dataset.brng; BST.n = 120; bstSave(); bstRender(); return; }
     const b = e.target.closest('[data-bst]'); if (!b) return; const a = b.dataset.bst;
     if (a === 'card') { openDetail(b.dataset.id); return; }
     if (a === 'cat') { const r = catIndex().get(b.dataset.f); if (r) catOffer(r, x => { bstRender(); openDetail(x.id); }); return; }
@@ -8733,7 +8753,7 @@ Antworte NUR mit JSON: {"map":["feld oder leer", ...]} – gleiche Reihenfolge u
       const r = document.querySelector(`#waiting [data-oa="tog"][data-id="${o.id}"]`)?.closest('.ord'); if (r) { r.scrollIntoView({ behavior: 'smooth', block: 'start' }); r.classList.remove('mbf'); void r.offsetWidth; r.classList.add('mbf'); } return; }
   });
   // ---------- Version: Nummer anzeigen, neue Version erkennen ----------
-  const APP_VER = '2026.11.20-2';
+  const APP_VER = '2026.11.20-3';
   let verSeen = '';
   async function verCheck() {
     if (!/^https?:/.test(location.protocol)) return;
