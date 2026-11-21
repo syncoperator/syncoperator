@@ -1643,10 +1643,14 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%;touch-action:manipulati
 @keyframes sySpin{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion:reduce){.sydot::before,.sypill i{animation:none!important}.sypill{transition:opacity .2s}}
 
-/* Test-Datenbank-Hinweis */
-.env-badge{display:inline-block;vertical-align:middle;margin-left:8px;padding:3px 8px 2px;border-radius:6px;font:700 12px/1.2 var(--f-mono);letter-spacing:.12em;color:#111;background:repeating-linear-gradient(-45deg,#F59E0B 0 8px,#FCD34D 8px 16px);border:1.5px solid #111}
-.ks-env{display:none}body.env-test .ks-env{display:inline-block}
-body.env-test::before{content:"";position:fixed;left:0;right:0;top:0;height:5px;z-index:70;background:repeating-linear-gradient(-45deg,#F59E0B 0 10px,#111 10px 20px);pointer-events:none}
+/* Test-Datenbank-Hinweis: ruhig, in Markenfarbe */
+.env-badge{display:inline-flex;align-items:center;gap:5px;vertical-align:middle;margin-left:10px;padding:3px 8px;border-radius:999px;font:600 11px/1 var(--f-mono);letter-spacing:.14em;color:var(--acc);border:1.5px solid var(--acc);background:transparent}
+.env-badge::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--acc)}
+.ks-env{display:none}body.env-test .ks-env{display:inline-flex}
+.envbar{display:none;align-items:center;justify-content:center;gap:8px;padding:5px 12px;margin:0 0 6px;border-radius:999px;background:var(--fg);color:var(--bg);font:500 11px/1.3 var(--f-mono);letter-spacing:.05em;white-space:nowrap;overflow:hidden}
+.envbar span{overflow:hidden;text-overflow:ellipsis}
+.envbar b{color:var(--acc);font-weight:700;letter-spacing:.14em}
+body.env-test .envbar{display:flex}
 .sy-add{display:grid;grid-template-columns:140px 1fr;gap:14px;align-items:center;padding:12px}
 .sy-qr svg{width:140px;height:140px;display:block;background:#fff;border-radius:8px}
 @media (max-width:420px){.sy-add{grid-template-columns:1fr}.sy-qr{justify-self:center}}
@@ -1899,6 +1903,7 @@ body.touring{padding-bottom:70vh}
 <div id="intro" class="intro" aria-hidden="true"></div>
 
 <div class="wrap">
+  <div class="envbar" role="note"><b>●</b><span>Testdatenbank · nicht für den Betrieb</span></div>
   <div id="verBar" class="verbar" hidden><span><b>Neue Version verfügbar</b><small>Kurz neu laden – Daten bleiben erhalten</small></span><button type="button" class="btn sm primary" id="verGo">Neu laden</button><button type="button" class="verx" id="verX" aria-label="Später">×</button></div>
 <div class="sypill" id="syPill" role="status" aria-live="polite"><i></i><span></span><button type="button" hidden>Erneut</button></div>
   <header class="top-row">
@@ -6056,6 +6061,8 @@ Antworte NUR mit JSON: {"map":{"feld":"Spaltenname"},"typ":"häufigster Werkzeug
   function bstPrint() {
     const { L } = bstView(); if (!L.length) { toast('Keine Daten'); return; }
     const tm = bstTime(), rngL = { '': '', d: 'HEUTE', w: '7 TAGE', m: '30 TAGE' }[BST.rng || ''], cols = bstCols(), nc = cols.length;
+    const MMW = { nr: 22, name: 62, loc: 22, card: 15, app: 12, bios: 12, diff: 13, min: 11, status: 24, date: 24, box: 18 };   // grobe Breite je Spalte (mm)
+    const land = cols.reduce((a, c) => a + (MMW[c.k] || 15), 0) > 184;   // passt nicht hochkant → quer
     const now = new Date(), title = (CAT.demo && CAT.sts ? 'DEMO · ' : '') + 'BESTAND' + (tm ? ' · ' + (BST.sort === 'new' ? 'ANGELEGT' : 'GEZÄHLT') + (rngL ? ' ' + rngL : '') : '') + (BST.loc ? ' · ' + (BST.loc === '–' ? 'OHNE LAGERORT' : BST.loc) : '');
     const flt = [BST_F.find(f => f[0] === BST.f)[1].toUpperCase(), BST.q ? 'SUCHE „' + BST.q + '“' : '', CAT.sts ? (CAT.demo ? 'BIOS-BESTAND ERFUNDEN (DEMO) ' : 'BIOS-BESTAND STAND ') + fmtD(CAT.sts) : 'OHNE BIOS-BESTAND'].filter(Boolean).join(' · ');
     let last = null;
@@ -6063,11 +6070,11 @@ Antworte NUR mit JSON: {"map":{"feld":"Spaltenname"},"typ":"häufigster Werkzeug
       else if (tm) { const k = bstDayLbl(bstTs(x)); if (k !== last) { last = k; g = `<tr class="gh"><td colspan="${nc}">${esc(k)}</td></tr>`; } }
       return g + `<tr>${cols.map(c => `<td class="${c.cls}">${c.p(x)}</td>`).join('')}</tr>`; }).join('');
     const kp = [[L.length, 'ARTIKEL'], [L.filter(x => x.t).length, 'MIT KARTE'], [L.filter(x => x.st === 'diff' || x.st === 'noapp').length, 'ABWEICHUNG'], [L.filter(x => x.low).length, 'UNTER MIN']];
-    const html = `<div class="pg"><div class="hd"><span class="br"><svg viewBox="0 0 160 186"><path fill="currentColor" d="${CT_MARK[0]}"/><path fill="currentColor" d="${CT_MARK[1]}"/><path fill="currentColor" d="${CT_MARK[2]}"/></svg>WERKZEUGAUSGABE</span><span class="dt">ERSTELLT ${fmtD(now)} ${rpT(now)}${lsGet(K.name) ? '<br>' + esc(U(lsGet(K.name))) : ''}</span></div>
+    const html = `<div class="pg${land ? ' land' : ''}"><div class="hd"><span class="br"><svg viewBox="0 0 160 186"><path fill="currentColor" d="${CT_MARK[0]}"/><path fill="currentColor" d="${CT_MARK[1]}"/><path fill="currentColor" d="${CT_MARK[2]}"/></svg>WERKZEUGAUSGABE</span><span class="dt">ERSTELLT ${fmtD(now)} ${rpT(now)}${lsGet(K.name) ? '<br>' + esc(U(lsGet(K.name))) : ''}</span></div>
       <h1>${esc(title)}</h1><div class="sub">${esc(flt)}</div><div class="kp">${kp.map(([v, l]) => `<div><b>${v}</b><small>${l}</small></div>`).join('')}</div>
       <table><thead><tr>${cols.map(c => `<th${c.cls === 'n' ? ' class="n"' : ''}>${bstColH(c)}</th>`).join('')}</tr></thead><tbody>${body}<tr class="sig"><td colspan="${nc}" style="border:0;padding:26px 0 0"><div style="display:flex;gap:24px;font-size:8pt;letter-spacing:.06em;color:#555"><div style="flex:1;border-top:1px solid #111;padding-top:3px">GEZÄHLT VON</div><div style="flex:1;border-top:1px solid #111;padding-top:3px">IN BIOS ERFASST AM</div><div style="flex:1;border-top:1px solid #111;padding-top:3px">UNTERSCHRIFT</div></div></td></tr></tbody></table>
       <div class="ft"><span>WERKZEUGAUSGABE · ${esc(title)}</span><span>${L.length} ZEILEN</span></div></div>`;
-    rpPrint({ html, title, land: nc > 8, ret: 'bestand' });
+    rpPrint({ html, title, land, ret: 'bestand' });
   }
   async function bstXLS() {
     const { L } = bstView(); if (!L.length) { toast('Keine Daten'); return; }
@@ -8812,7 +8819,7 @@ Antworte NUR mit JSON: {"map":["feld oder leer", ...]} – gleiche Reihenfolge u
       const r = document.querySelector(`#waiting [data-oa="tog"][data-id="${o.id}"]`)?.closest('.ord'); if (r) { r.scrollIntoView({ behavior: 'smooth', block: 'start' }); r.classList.remove('mbf'); void r.offsetWidth; r.classList.add('mbf'); } return; }
   });
   // ---------- Version: Nummer anzeigen, neue Version erkennen ----------
-  const APP_VER = '2026.11.21-1';
+  const APP_VER = '2026.11.21-2';
   let verSeen = '';
   async function verCheck() {
     if (!/^https?:/.test(location.protocol)) return;
