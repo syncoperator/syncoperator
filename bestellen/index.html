@@ -1673,6 +1673,23 @@ body.env-test .envbar{display:flex}
   .ks-h{align-items:center}.ks-h > *{align-self:center;margin-top:0;margin-bottom:0}
 }
 @media (max-width:360px){.ks-h .ks-prob{width:46px;padding:0;justify-content:center}.ks-h .ks-prob .ks-pt2{display:none}}
+/* Etikett-Suche */
+.ls-w{position:relative;display:block}
+.ls-w.on > input{padding-right:52px}
+.ls-cam{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:42px;height:42px;border-radius:12px;border:0;background:var(--soft);color:var(--fg);display:grid;place-items:center;cursor:pointer}
+.ls-cam:active{transform:translateY(-50%) scale(.94)}
+.ks-search{position:relative}.ks-search .ls-cam{right:8px;width:48px;height:48px}.ks-search:has(.ls-cam) input{padding-right:62px}
+.ls-sheet{z-index:57}.ls-sheet.ks-on{z-index:1600}
+.ls-busy{display:grid;justify-items:center;gap:10px;padding:10px 0;text-align:center}
+.ls-busy img{width:140px;height:140px;object-fit:cover;border-radius:12px}
+.ls-head{display:flex;gap:12px;align-items:center}.ls-head img{width:64px;height:64px;object-fit:cover;border-radius:10px;flex:none}
+.ls-head div{display:grid;gap:2px}.ls-head b{font-size:15px;word-break:break-word}
+.ls-list{display:grid;gap:6px}
+.ls-r{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--fg);font:inherit;cursor:pointer}
+.ls-rm{display:grid;gap:2px;flex:1;min-width:0}.ls-rm b{font-size:14px;word-break:break-word}.ls-rm small{font-size:12px;color:var(--muted)}
+.ls-why{color:var(--ok)!important}.ls-why .w{color:var(--crit)}
+.ls-go{font-size:22px;color:var(--muted)}
+.ls-opts{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
 /* Bibliothek → Bestand */
 .lib-tab{grid-template-columns:1fr 1fr;margin:0 0 12px}
 .bst-info{display:flex;flex-wrap:wrap;gap:4px 14px;align-items:center;font-size:13px;color:var(--muted);margin:0 0 10px}
@@ -2188,6 +2205,7 @@ body.touring{padding-bottom:70vh}
         <button type="button" class="btn" id="impUndo" hidden>Import rückgängig</button>
         <input type="file" id="xlsFile" accept=".xlsx,.xls,.csv" hidden></div></div>
       <div class="setg-sec setg-adm"><div class="sec-h">VOLLSTÄNDIGE KARTE</div><div id="fullBox" class="view" style="gap:6px"></div></div>
+      <div class="setg-sec setg-adm"><div class="sec-h">ETIKETT-SUCHE (FOTO)</div><div id="lsBox" class="view" style="gap:8px"></div></div>
       <div class="setg-sec setg-adm"><div class="sec-h">BIOS</div><div class="row" style="gap:8px;flex-wrap:wrap"><button type="button" class="btn" id="biosBtn">Für BIOS</button></div></div>
       <div class="setg-sec setg-adm"><div class="sec-h">HANDY ↔ PC</div><div class="row"><button type="button" class="btn" id="syncBtn">Sync</button></div></div>
     </div>
@@ -6980,6 +6998,167 @@ ${labelCSS(o)}
     if (viaScan) beep(true);
     renderAus(); return false;
   }
+  // =====================================================================
+  // ETIKETT-SUCHE (Foto): Etikett fotografieren → passende Karte finden
+  // 1) Strichcode/QR direkt auf dem Gerät (kostenlos) · 2) sonst KI liest den Text · 3) Vergleich mit der Bibliothek
+  // Bestätigte Treffer merken sich Strichcode und Hersteller-Nr. (t.codes) → nächstes Mal ohne KI.
+  // =====================================================================
+  const LS = { ctx: '', busy: null, res: null, abort: null, code: '' };
+  const lsOpt = () => S.meta.opts || (S.meta.opts = {});
+  const lsMode = () => lsOpt().lblSearch || 'adm';
+  const lsOn = ctx => { const m = lsMode(); if (m === 'off') return false; if (ctx === 'ks') return !!lsOpt().lblSearchKs; return m === 'all' || can('adm'); };
+  const LS_ICON = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8.5A1.5 1.5 0 0 1 5.5 7h2l1.4-2h6.2L16.5 7h2A1.5 1.5 0 0 1 20 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 17.5z"/><circle cx="12" cy="13" r="3.4"/></svg>';
+  const lsBtn = ctx => lsOn(ctx) ? `<button type="button" class="ls-cam" data-lscan="${ctx}" aria-label="Etikett fotografieren und suchen" title="Etikett fotografieren und suchen">${LS_ICON}</button>` : '';
+  function lsMount() {
+    [['ausQ', 'aus'], ['libQ', 'lib'], ['bstQ', 'bst'], ['pickQ', 'pick']].forEach(([id, ctx]) => {
+      const i = $(id); if (!i || (i.parentNode && i.parentNode.classList.contains('ls-w'))) return;
+      const w = document.createElement('span'); w.className = 'ls-w'; i.parentNode.insertBefore(w, i); w.appendChild(i);
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'ls-cam'; b.dataset.lscan = ctx; b.setAttribute('aria-label', 'Etikett fotografieren und suchen'); b.title = 'Etikett fotografieren und suchen'; b.innerHTML = LS_ICON; w.appendChild(b);
+    });
+    if (!$('lsFile')) { const f = document.createElement('input'); f.type = 'file'; f.id = 'lsFile'; f.accept = 'image/*'; f.setAttribute('capture', 'environment'); f.hidden = true; document.body.appendChild(f);
+      f.addEventListener('change', e => { const file = e.target.files[0]; e.target.value = ''; if (file) lsRun(file); }); }
+    lsSync();
+  }
+  function lsSync() { document.querySelectorAll('.ls-w > .ls-cam').forEach(b => { const on = lsOn(b.dataset.lscan); b.hidden = !on; b.parentNode.classList.toggle('on', on); }); }
+  document.addEventListener('click', e => { const b = e.target.closest('[data-lscan]'); if (!b) return; e.preventDefault(); LS.ctx = b.dataset.lscan; $('lsFile').click(); });
+  // Strichcode/QR aus dem Foto (Android: eingebaut, iPhone: ZXing)
+  async function lsBarcode(file) {
+    try {
+      if ('BarcodeDetector' in window) { const bmp = await createImageBitmap(file); const r = await new BarcodeDetector().detect(bmp); if (r && r[0]) return String(r[0].rawValue || '').trim(); return ''; }
+      if (!window.ZXing) { try { await loadScript('https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js'); } catch { await loadScript('https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js'); } }
+      const url = URL.createObjectURL(file);
+      try { const res = await new ZXing.BrowserMultiFormatReader().decodeFromImageUrl(url); return res && res.getText ? String(res.getText()).trim() : ''; } finally { URL.revokeObjectURL(url); }
+    } catch { return ''; }
+  }
+  const LS_PROMPT = `Foto eines Etiketts auf einer Werkzeugverpackung (Wendeplatte, Stechplatte, Bohrer, Fräser …). Lies nur ab, was aufgedruckt ist.
+Antworte NUR mit JSON: {"name":"","maker":"","makerArt":"","grade":"","ean":"","text":""}
+- "name": Bezeichnung wie aufgedruckt, Großbuchstaben, z. B. "DCMT 11T304-FM", "CNMG 120408-PM", "SA24-1502N-T1".
+- "grade": Sorte/Schneidstoff, z. B. "HC7820", "4325", "PR930". Nicht mit dem Spanformer verwechseln (der steht in name nach dem Bindestrich).
+- "makerArt": Bestell-/Artikelnummer des Herstellers, nur wenn eine eigene Nummer aufgedruckt ist.
+- "ean": Ziffern unter einem Strichcode, falls lesbar. "maker": Herstellername, falls aufgedruckt.
+- "text": übrige lesbare Zeilen kurz, mit | getrennt. Unbekanntes leer lassen.`;
+  const lsNz = v => U(v || '').replace(/[\s\-.\/,_()]/g, '');
+  function lsParse(j) {
+    const name = U(j.name || '').trim(), m = name.match(/([A-Z]{4})\s*-?\s*(\d{2}[0-9T]\d{3})/);
+    const iso = m ? m[1] + m[2] : '', isoTxt = m ? m[1] + ' ' + m[2] : '';
+    let cb = ''; if (m) { const rest = name.slice(name.indexOf(m[0]) + m[0].length).match(/^[\s\-]*([A-Z0-9]{1,6})/); if (rest && /[A-Z]/.test(rest[1]) && lsNz(rest[1]) !== lsNz(j.grade)) cb = rest[1]; }
+    return { name, iso, isoTxt, cb, grade: lsNz(j.grade), gradeTxt: U(j.grade || '').trim(), mart: lsNz(j.makerArt), ean: lsNz(j.ean) };
+  }
+  function lsMatch(j) {
+    const P = lsParse(j), out = [];
+    S.lib.forEach(t => {
+      if (t.stPending) return;
+      const hay = lsNz([fullName(t), t.name, t.grade, t.bios, t.makerArt].join(' ')), codes = (t.codes || []).map(lsNz).concat(lsNz(t.makerArt)).filter(Boolean);
+      let sc = 0; const ok = [], diff = [];
+      if ((P.mart.length >= 5 && codes.includes(P.mart)) || (P.ean.length >= 8 && codes.includes(P.ean))) { sc = 100; ok.push('Artikel-Nr.'); }
+      else if (P.iso) {
+        const at = hay.indexOf(P.iso); if (at < 0) return;
+        sc = 55; ok.push(P.isoTxt);
+        const after = hay.slice(at + P.iso.length, at + P.iso.length + 6);
+        if (P.cb) { if (after.startsWith(lsNz(P.cb))) { sc += 20; ok.push('-' + P.cb); } else if (/^[A-Z]/.test(after) && !(P.grade && after.startsWith(P.grade))) { sc -= 10; diff.push('anderer Spanformer'); } }
+        if (P.grade) { if (hay.includes(P.grade)) { sc += 25; ok.push(P.gradeTxt); } else if (t.grade && lsNz(t.grade) !== P.grade) { sc -= 25; diff.push('Sorte ' + U(t.grade)); } else diff.push('Sorte nicht in der Karte'); }
+      } else {
+        const ws = P.name.split(/\s+/).map(lsNz).filter(w => w.length >= 3); if (!ws.length) return;
+        const hit = ws.filter(w => hay.includes(w)).length; if (hit / ws.length < 0.7) return;
+        sc = 40 + Math.round(30 * hit / ws.length); ok.push(P.name);
+        if (P.grade) { if (hay.includes(P.grade)) { sc += 25; ok.push(P.gradeTxt); } else diff.push('Sorte ?'); }
+      }
+      if (sc >= 45) out.push({ t, sc, ok, diff });
+    });
+    out.sort((a, b) => b.sc - a.sc);
+    const best = out[0] && out[0].sc >= 95 && !(out[1] && out[1].sc >= 95) ? out[0] : null;
+    let cat = [];
+    if (!out.length && CAT.rows.length) {
+      const qs = [[P.isoTxt || P.name, P.cb, P.gradeTxt], [P.isoTxt || P.name, P.cb], [P.isoTxt || P.name]].map(a => a.filter(Boolean).join(' ').trim()).filter(Boolean);
+      for (const q of qs) { cat = catSearch(q.replace(/-/g, ' '), 6); if (cat.length) break; }
+    }
+    return { P, list: out.slice(0, 8), best, cat };
+  }
+  function lsLearn(t) {   // Strichcode und Hersteller-Nr. an der Karte merken
+    const add = [LS.code, LS.res && LS.res.j && LS.res.j.makerArt, LS.res && LS.res.j && LS.res.j.ean].map(v => String(v || '').trim()).filter(v => v.length >= 5);
+    if (!add.length) return; const have = new Set((t.codes || []).map(lsNz).concat(lsNz(t.firm), lsNz(t.makerArt)));
+    const nu = add.filter(v => !have.has(lsNz(v))); if (!nu.length) return;
+    t.codes = [...(t.codes || []), ...nu]; save();
+  }
+  function lsAct(t) {
+    const ctx = LS.ctx; lsClose();
+    if (ctx === 'ks') { ksPick(t, true); return; }
+    if (ctx === 'aus') { if (S.view !== 'aus') setView('aus'); ausSelect(t, true); return; }
+    if (ctx === 'pick') { const q = $('pickQ'); if (q) { q.value = t.firm || fullName(t); q.dispatchEvent(new Event('input', { bubbles: true })); q.focus(); } return; }
+    openDetail(t.id);
+  }
+  function lsClose() { if (LS.abort) try { LS.abort.abort(); } catch {} LS.abort = null; LS.busy = null; $('lsSheet').hidden = true; }
+  async function lsRun(file) {
+    let big, thumb;
+    try { [big, thumb] = await Promise.all([imgToJpeg(file, 1280, 0.82), imgToJpeg(file, 320, 0.7)]); } catch { toast('Bild konnte nicht gelesen werden'); return; }
+    LS.res = null; LS.code = ''; LS.busy = { img: thumb, t0: Date.now(), msg: 'Suche Strichcode …' }; lsRender();
+    const code = await lsBarcode(file);
+    if (code) {
+      LS.code = code;
+      const t = findByCode(code);
+      if (t) { lsLearn(t); lsAct(t); toast('Gefunden über Strichcode'); return; }
+      if (/#[at]=|#s=|#l=/.test(code) && LS.ctx === 'aus') { lsClose(); ausCode(code, true); return; }
+    }
+    if (!navigator.onLine) { LS.busy = null; LS.res = { err: 'Offline – Etikett lesen geht nur mit Internet', thumb }; lsRender(); return; }
+    LS.busy.msg = 'Lese Etikett …'; lsRender();
+    const ac = new AbortController(); LS.abort = ac;
+    const tick = setInterval(() => { const el = $('lsT'); if (el && LS.busy) el.textContent = Math.round((Date.now() - LS.busy.t0) / 1000) + ' s'; }, 1000);
+    try {
+      const txt = await aiCall([{ role: 'user', content: [{ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: big.split(',')[1] } }, { type: 'text', text: LS_PROMPT }] }], 500,
+        info => { if (LS.busy) { LS.busy.msg = info; lsRender(); } }, { timeout: 40000, signal: ac.signal, tries: 2 });
+      clearInterval(tick); LS.abort = null;
+      const j = aiJSON(txt); if (!j.name && !j.makerArt && !j.ean) throw new Error('KEIN_JSON');
+      const m = lsMatch(j); LS.busy = null; LS.res = { j, m, thumb };
+      if (m.best) { const t = m.best.t; lsLearn(t); lsAct(t); toast('Gefunden: ' + fullName(t).slice(0, 40)); return; }
+      lsRender();
+    } catch (e) {
+      clearInterval(tick); LS.abort = null; if ($('lsSheet').hidden) return;
+      const msg = String(e.message || '');
+      if (msg === 'ABBRUCH') return;
+      LS.busy = null; LS.res = { thumb, err: msg === 'KEIN_JSON' || e instanceof SyntaxError ? 'Nichts erkannt – näher ran, Etikett gerade und scharf' : msg === 'ZEIT' ? 'Keine Antwort – Netz prüfen und nochmal' : /überlastet|overload|503|529|429/i.test(msg) ? 'KI gerade ausgelastet – gleich nochmal' : /credit|balance|402|billing/i.test(msg) ? 'KI-Guthaben aufgebraucht – Admin Bescheid sagen' : 'Etikett lesen fehlgeschlagen: ' + msg.slice(0, 60) };
+      lsRender();
+    }
+  }
+  function lsRowHTML(x, i) {
+    const t = x.t;
+    return `<button type="button" class="ls-r" data-lsi="${i}"><span class="ls-rm"><b>${esc(fullName(t))}</b><small>${esc(t.firm || 'ohne Nr.')}${t.loc ? ' · ⌂ ' + esc(U(t.loc)) : ''}${hasStock(t) ? ' · Bestand ' + t.stock : ''}</small>
+      <small class="ls-why">${x.ok.map(v => '✓ ' + esc(v)).join(' ')}${x.diff.length ? ' <span class="w">' + x.diff.map(v => '≠ ' + esc(v)).join(' ') + '</span>' : ''}</small></span><span class="ls-go">›</span></button>`;
+  }
+  function lsRender() {
+    const el = $('lsBody'); $('lsSheet').hidden = false; $('lsSheet').classList.toggle('ks-on', LS.ctx === 'ks');
+    if (LS.busy) { el.innerHTML = `<div class="ls-busy">${LS.busy.img ? `<img src="${LS.busy.img}" alt="">` : ''}<div class="tw-spin"></div><b>${esc(LS.busy.msg)}</b><span class="hint mono" id="lsT">0 s</span></div><button type="button" class="btn" data-ls="x" style="width:100%">Abbrechen</button>`; return; }
+    const R = LS.res || {};
+    if (R.err) { el.innerHTML = `<div class="ls-head">${R.thumb ? `<img src="${R.thumb}" alt="">` : ''}<p class="hint"><b>${esc(R.err)}</b></p></div><div class="row" style="gap:8px"><button type="button" class="btn primary" data-ls="again">Nochmal fotografieren</button><button type="button" class="btn" data-ls="x">Schließen</button></div>`; return; }
+    const { j, m } = R, P = m.P;
+    const seen = [P.isoTxt ? P.isoTxt + (P.cb ? '-' + P.cb : '') : P.name, P.gradeTxt, j.maker ? U(j.maker) : '', LS.code ? 'Code ' + LS.code : ''].filter(Boolean).join(' · ');
+    el.innerHTML = `<div class="ls-head">${R.thumb ? `<img src="${R.thumb}" alt="">` : ''}<div><small class="hint">ERKANNT</small><b class="mono">${esc(seen || '–')}</b></div></div>
+      ${m.list.length ? `<div class="rp-h">${m.list.length === 1 ? 'PASST AM BESTEN' : 'ÄHNLICHE KARTEN – BITTE WÄHLEN'}</div><div class="ls-list">${m.list.map(lsRowHTML).join('')}</div>`
+        : `<p class="hint"><b>Keine passende Karte in der Bibliothek.</b></p>`}
+      ${m.cat.length ? `<div class="rp-h">IM BIOS-KATALOG</div><div class="ls-list">${m.cat.map((r, i) => `<button type="button" class="ls-r" data-lsc="${i}"><span class="ls-rm"><b>${esc(catLine1(r) || r.a)}</b><small>${esc(r.a)} · nur Katalog${can('adm') ? ' · übernehmen' : ''}</small></span><span class="ls-go">›</span></button>`).join('')}</div>` : ''}
+      <div class="row" style="gap:8px;flex-wrap:wrap"><button type="button" class="btn" data-ls="text">Als Suchtext übernehmen</button>${can('adm') && LS.ctx !== 'ks' ? '<button type="button" class="btn" data-ls="new">Neue Karte anlegen</button>' : ''}<button type="button" class="btn" data-ls="again">Nochmal</button></div>`;
+  }
+  function lsQueryEl() { return { aus: $('ausQ'), lib: $('libQ'), bst: $('bstQ'), pick: $('pickQ'), ks: $('ksQ') }[LS.ctx]; }
+  document.body.insertAdjacentHTML('beforeend', `<div id="lsSheet" class="sheetbg ls-sheet" hidden><div class="helpsheet" role="dialog" aria-modal="true" aria-labelledby="lsTi"><div class="row" style="justify-content:space-between;align-items:center"><h2 id="lsTi" style="margin:0">Etikett suchen</h2><button type="button" class="link" data-ls="x">Schließen</button></div><div id="lsBody" class="view" style="gap:10px"></div></div></div>`);
+  $('lsSheet').addEventListener('click', e => {
+    if (e.target === $('lsSheet')) { lsClose(); return; }
+    const r = e.target.closest('[data-lsi]'); if (r) { const x = LS.res.m.list[+r.dataset.lsi]; if (x) { lsLearn(x.t); lsAct(x.t); } return; }
+    const c = e.target.closest('[data-lsc]'); if (c) { const row = LS.res.m.cat[+c.dataset.lsc]; if (!row) return; if (!can('adm')) { toast('Übernehmen kann nur der Admin'); return; } const ctx = LS.ctx; lsClose(); catOffer(row, x => { LS.ctx = ctx; lsLearn(x); lsAct(x); }); return; }
+    const b = e.target.closest('[data-ls]'); if (!b) return; const a = b.dataset.ls;
+    if (a === 'x') { lsClose(); return; }
+    if (a === 'again') { lsClose(); $('lsFile').click(); return; }
+    if (a === 'text') { const q = lsQueryEl(), P = LS.res && LS.res.m ? LS.res.m.P : null, v = P ? [P.isoTxt || P.name, P.cb, P.gradeTxt].filter(Boolean).join(' ') : ''; lsClose();
+      if (LS.ctx === 'ks') { KS.q = v; ksRender(); return; }
+      if (q) { q.value = v; q.dispatchEvent(new Event('input', { bubbles: true })); q.focus(); } return; }
+    if (a === 'new') { const R = LS.res; lsClose(); openToolWiz({}); try { twApplyScan({ name: R.j.name, maker: R.j.maker, makerArt: R.j.makerArt, grade: R.j.grade }, R.thumb); } catch {} return; }
+  });
+  // Einstellungen
+  function lsSettingsHTML() {
+    const m = lsMode(), o = (v, l) => `<button type="button" data-lso="${v}" aria-pressed="${m === v}">${l}</button>`;
+    return `<p class="hint" style="margin:0">Kamera-Knopf 📷 neben den Suchfeldern: Etikett fotografieren → passende Karte wird gefunden. Strichcodes gehen ohne KI, Text liest die KI (ca. 0,5 Cent pro Foto).</p>
+      <div class="seg3">${o('off', 'Aus')}${o('adm', 'Nur Admin')}${o('all', 'Alle')}</div>
+      <label class="eb-o"><input type="checkbox" data-lso="ks" ${lsOpt().lblSearchKs ? 'checked' : ''} ${m === 'off' ? 'disabled' : ''}><span><b>Auch an der Ausgabestation</b><small>Aus lassen, damit niemand aus Versehen die KI nutzt</small></span></label>`;
+  }
+  function renderLsBox() { const el = $('lsBox'); if (el) el.innerHTML = lsSettingsHTML(); }
   let audioCtx = null;
   function beep(bad) { try { audioCtx ||= new (window.AudioContext || window.webkitAudioContext)(); const o = audioCtx.createOscillator(), g = audioCtx.createGain();
     o.frequency.value = bad ? 320 : 1250; g.gain.value = .12; o.connect(g); g.connect(audioCtx.destination); o.start(); o.stop(audioCtx.currentTime + (bad ? .25 : .09)); } catch {} }
@@ -8519,7 +8698,10 @@ Antworte NUR mit JSON: {"map":["feld oder leer", ...]} – gleiche Reihenfolge u
   }
   matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', () => applyTheme());
   applyTheme();
-  function renderFullBox() { const el = $('fullBox'); if (el) el.innerHTML = fullSettingsHTML(); }
+  function renderFullBox() { const el = $('fullBox'); if (el) el.innerHTML = fullSettingsHTML(); try { renderLsBox(); } catch {} }
+  $('lsBox').addEventListener('click', e => { const b = e.target.closest('[data-lso]'); if (!b || b.disabled) return; const o = lsOpt();
+    if (b.dataset.lso === 'ks') o.lblSearchKs = b.checked; else o.lblSearch = b.dataset.lso;
+    save(); renderLsBox(); lsSync(); try { if (KS.on) ksRender(); } catch {} });
   $('fullBox').addEventListener('click', e => { const b = e.target.closest('[data-full]'); if (!b) return; S.meta.full = { ...(S.meta.full || {}), [b.dataset.full]: b.dataset.v }; renderFullBox(); commit('Gespeichert · gilt auf allen Geräten'); });
   function renderLook() {
     const th = lsGet(THEME_K) || 'light', im = lsGet(INTRO_K) || 'day';
@@ -8690,7 +8872,7 @@ Antworte NUR mit JSON: {"map":["feld oder leer", ...]} – gleiche Reihenfolge u
   function probOpenList() { try { return S.lib.length ? probs(Date.now() - 7 * DAY, Date.now() + 60000, true).filter(p => !p.done) : []; } catch { return []; } }
   function probOpenCount() { return probOpenList().length; }
   function render() {
-    roleClasses(); try { envBadge(); } catch {}
+    roleClasses(); try { envBadge(); lsSync(); } catch {}
     const cart = cartItems().length, od = overdue().length;
     { const odO = new Set(overdue().map(i => i.orderId).filter(Boolean)).size || od; $('nv_orders').textContent = od ? String(odO) : (cart || ''); } $('nv_orders').classList.toggle('alert', !!od);
     $('nv_lib').textContent = S.lib.length || '';
@@ -8832,7 +9014,7 @@ Antworte NUR mit JSON: {"map":["feld oder leer", ...]} – gleiche Reihenfolge u
       const r = document.querySelector(`#waiting [data-oa="tog"][data-id="${o.id}"]`)?.closest('.ord'); if (r) { r.scrollIntoView({ behavior: 'smooth', block: 'start' }); r.classList.remove('mbf'); void r.offsetWidth; r.classList.add('mbf'); } return; }
   });
   // ---------- Version: Nummer anzeigen, neue Version erkennen ----------
-  const APP_VER = '2026.11.21-4';
+  const APP_VER = '2026.11.23-1';
   let verSeen = '';
   async function verCheck() {
     if (!/^https?:/.test(location.protocol)) return;
@@ -9085,7 +9267,7 @@ Antworte NUR mit JSON: {"map":["feld oder leer", ...]} – gleiche Reihenfolge u
   });
   document.addEventListener('visibilitychange', () => { if (!document.hidden && syCode()) syncNow(false); });
   window.addEventListener('online', () => { if (syCode()) syncNow(false); });
-  syStatus(); envBadge(); setTimeout(syJoinFromHash, 600);
+  syStatus(); envBadge(); try { lsMount(); } catch {} setTimeout(syJoinFromHash, 600);
   window.addEventListener('hashchange', syJoinFromHash);
   // beim Start und danach alle 5 Minuten (wichtig für die Ausgabestation, die nie in den Hintergrund geht)
   if (syCode()) setTimeout(() => { if (!SY.busy && Date.now() - Number(lsGet(SK.last) || 0) > 4000) syncNow(false, true); }, 1200);
@@ -9540,7 +9722,7 @@ Antworte NUR mit JSON: {"map":["feld oder leer", ...]} – gleiche Reihenfolge u
       const cats = q && q.length >= 3 ? catSearch(q, 6) : [];
       const catHTML = cats.length ? `<div class="ks-sub">Aus BIOS-Katalog</div><div class="ks-list">${cats.map(r => { const p = catParsed(r); return `<button type="button" class="ks-row cat" data-ks="cat" data-f="${r.a}"><span class="th ks-catic">BIOS</span><span class="nm"><small>${esc(p.t.type || '')} · ${r.a}</small><b>${esc(fullName(p.t))}</b></span></button>`; }).join('')}</div>` : '';
       P.innerHTML = `<h1 class="ks-t">Werkzeug scannen</h1><p class="ks-s">QR-Code vom Etikett vor die Kamera halten</p>
-        <div class="ks-search"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><input id="ksQ" type="search" autocomplete="off" placeholder="Oder suchen: CNMG, Ø8, Artikelnummer" value="${esc(KS.q || '')}"></div>
+        <div class="ks-search"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><input id="ksQ" type="search" autocomplete="off" placeholder="Oder suchen: CNMG, Ø8, Artikelnummer" value="${esc(KS.q || '')}">${lsBtn('ks')}</div>
         ${q ? (hits.length ? `<div class="ks-list">${hits.map(t => `<button type="button" class="ks-row" data-ks="pick" data-id="${t.id}">${thumb(t.img, '', t)}<span class="nm"><small>${esc(t.type || '')}${t.loc ? ' · ' + esc(U(t.loc)) : ''}</small><b>${esc(shortName(t) || fullName(t))}</b></span>${ksStock(t)}</button>`).join('')}</div>${catHTML}` : catHTML || `<p class="ks-empty">Nichts gefunden zu „${esc(KS.q)}“</p>`)
           : top.length ? `<div class="ks-sub">Oft genommen</div><div class="ks-tiles">${top.map(t => `<button type="button" class="ks-tile" data-ks="pick" data-id="${t.id}">${thumb(t.img, '', t)}<b>${esc(shortName(t) || fullName(t))}</b>${hasStock(t) ? `<small class="mono ${stockCls(t)}">${t.stock} STK</small>` : ''}</button>`).join('')}</div>` : ''}`;
       return;
