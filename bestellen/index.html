@@ -3498,9 +3498,7 @@ window.addEventListener('resize',fit);window.addEventListener('load',fit);fit();
     const a = b.dataset.ds;
     if (a === 'order') orderTool(t);
     if (a === 'edit') { closeDetail(); openToolWiz({ tool: t }); }
-    if (a === 'fill') { const miss = fullMiss(t).map(f => f[0]); closeDetail(); openToolWiz({ tool: t }); TW.step = miss[0] === 'specs' ? 1 : 2; renderTW();
-      const fk = { firm: 'firm', loc: 'loc', min: 'min', stock: 'stock0', maker: miss.includes('maker') ? (t.maker ? 'makerArt' : 'maker') : '' }; const first = miss.map(m => fk[m]).find(Boolean);
-      setTimeout(() => { const el = first && document.querySelector(`#twBody [data-twf="${first}"]`); if (el) { el.scrollIntoView({ block: 'center' }); el.focus({ preventScroll: true }); el.closest('label')?.classList.add('need'); } else if (miss.includes('img')) document.querySelector('#twBody .photo')?.classList.add('need'); }, 120); return; }
+    if (a === 'fill') { closeDetail(); cardFill(t); return; }
     if (a === 'retype') { closeDetail(); openToolWiz({ tool: t, retype: true }); }
     if (a === 'scan') { closeDetail(); scanTool({ tool: t }); }
     if (a === 'label') { closeDetail(); openLabels([t.id]); }
@@ -4317,6 +4315,12 @@ window.addEventListener('resize',fit);window.addEventListener('load',fit);fit();
     { t: 'Prüfen & speichern',    s: 'So erscheint es in der Liste und auf dem Bestellzettel.' },
   ];
 
+  // Karte ergänzen: Assistent öffnet direkt beim ersten fehlenden Feld (onSave optional, z. B. zurück zu „Für BIOS“)
+  function cardFill(t, onSave) {
+    const miss = fullMiss(t).map(f => f[0]); openToolWiz({ tool: t, onSave }); TW.step = miss[0] === 'specs' ? 1 : 2; renderTW();
+    const fk = { firm: 'firm', loc: 'loc', min: 'min', stock: 'stock0', maker: miss.includes('maker') ? (t.maker ? 'makerArt' : 'maker') : '' }; const first = miss.map(m => fk[m]).find(Boolean);
+    setTimeout(() => { const el = first && document.querySelector(`#twBody [data-twf="${first}"]`); if (el) { el.scrollIntoView({ block: 'center' }); el.focus({ preventScroll: true }); el.closest('label')?.classList.add('need'); } else if (miss.includes('img')) document.querySelector('#twBody .photo')?.classList.add('need'); }, 120);
+  }
   function openToolWiz(opts = {}) {
     if (!can('adm')) { accDeny(); return; }
     const src = opts.tool ? JSON.parse(JSON.stringify(opts.tool)) : {};
@@ -4338,6 +4342,7 @@ window.addEventListener('resize',fit);window.addEventListener('load',fit);fit();
   }
   function closeToolWiz() {
     $('twiz').hidden = true;
+    if (TW.backBios) { TW.backBios = false; setTimeout(() => { try { biosRenderFb(); $('biosSheet').hidden = false; } catch {} }, 0); }
     if ($('wiz').hidden && $('bo').hidden && $('mw').hidden) document.body.style.overflow = '';
   }
   $('twClose').onclick = closeToolWiz;
@@ -5638,7 +5643,7 @@ Antworte NUR mit JSON: {"map":{"feld":"Spaltenname"},"typ":"häufigster Werkzeug
       const kb = BIOSP.U(r.k), fam = kbFam(t), ok = KB_OK[fam];
       if (ok && kb && !ok.includes(kb) && (KB_ALL.has(kb) || BIOSP.BRANDS.includes(kb))) add(`b:kb:${t.id}:${kbWant(t)}`, 'bkb', t, `KB „${kb}“ → „${kbWant(t)}“`, kbWant(t));
       const mk = BIOSP.U(t.maker).split(' ')[0];
-      if (mk && mk.length > 2 && !BIOSP.U(r.b.join(' ') + ' ' + r.k).includes(mk)) add(`b:mk:${t.id}:${mk}`, 'bmk', t, `Hersteller „${BIOSP.U(t.maker)}“ fehlt in BIOS`, BIOSP.U(t.maker));
+      if (mk && mk.length > 2 && !BIOSP.U(r.b.join(' ') + ' ' + r.k).includes(mk)) add(`b:mk:${t.id}:${mk}`, 'bmk', t, `In BIOS ergänzen: Hersteller „${BIOSP.U(t.maker)}“ (steht in der Karte, fehlt in BIOS)`, BIOSP.U(t.maker));
       const lc = (S.meta.locChg || {})[t.id], tl = BIOSP.U(t.loc || '').trim(), ro = BIOSP.U(r.o || '').trim();
       if (lc && BIOSP.U(lc.to || '').trim() === tl && ro !== tl) { const key = `b:loc:${t.id}:${tl || '-'}`;
         out.push({ key, kind: 'bloc', t, text: `Lagerort „${ro || BIOSP.U(lc.from || '') || '–'}“ → „${tl || 'leer'}“`, copy: tl, done: (dn[key] || 0) > (ro ? Math.max(cts, CAT.sts || 0) : 0) }); }
@@ -5835,7 +5840,7 @@ Antworte NUR mit JSON: {"map":{"feld":"Spaltenname"},"typ":"häufigster Werkzeug
       <input type="checkbox" class="bi-cb" data-fbt="${esc(x.key)}" ${isOpen ? '' : 'checked'} aria-label="in BIOS geändert">
       <div class="fb-m">${BIOSP.DIG(x.t.firm) ? `<button type="button" class="fb-nr" data-fbcopy="${BIOSP.DIG(x.t.firm)}">${BIOSP.DIG(x.t.firm)}</button>` : '<span class="fb-no">ohne Artikelnummer</span>'}
         <div class="fb-t">${B_KIND[x.kind]}</div><div class="fb-s">${esc(x.text)}</div>
-        ${x.copy ? `<button type="button" class="link" data-fbcopy="${esc(x.copy)}" style="margin-top:4px">Neu kopieren</button>` : ''}${x.copy2 ? ` · <button type="button" class="link" data-fbcopy="${esc(x.copy2)}">Kurz kopieren</button>` : ''}</div><span></span></div>`;
+        <div class="fb-lk">${x.copy ? `<button type="button" class="link" data-fbcopy="${esc(x.copy)}">${x.kind === 'bmk' ? 'Hersteller kopieren' : 'Neu kopieren'}</button>` : ''}${x.copy2 ? `<button type="button" class="link" data-fbcopy="${esc(x.copy2)}">Kurz kopieren</button>` : ''}<button type="button" class="link" data-fbcard="${x.t.id}">Karte öffnen ›</button></div></div><span></span></div>`;
     return `<div class="sec-h">STAMMDATEN ÄNDERN · ${open.length}</div>
       <div class="bi-list">${open.map(x => row(x, true)).join('') || '<div class="fb-empty">Bezeichnungen, Kategorien und Hersteller stimmen mit BIOS überein.</div>'}</div>
       ${done.length ? `<div class="hint">Heute geändert: ${done.length} · <button type="button" class="link" data-fbx="tdone">anzeigen</button></div>${FB.tdone ? `<div class="bi-list">${done.map(x => row(x, false)).join('')}</div>` : ''}` : ''}
@@ -5847,7 +5852,47 @@ Antworte NUR mit JSON: {"map":{"feld":"Spaltenname"},"typ":"häufigster Werkzeug
   const fbSaveF = () => { try { localStorage.setItem(FBF_K, JSON.stringify({ f: FB.f, kind: FB.kind, age: FB.age, sort: FB.sort })); } catch {} };
   const fbCls = e => e.nr ? 'ok' : e.t && isNeu(e.t.firm) ? 'neu' : 'nonr';
   const fbQOk = t => { const q = U(FB.q || '').trim(); return !q || (t && (match(hay(t), q) || String(t.firm || '').replace(/\D/g, '').includes(q))); };
-  const FB_F = [['all', 'Alle'], ['ok', 'Direkt eintragbar'], ['nonr', 'Ohne Artikel-Nr.'], ['neu', 'NEU anlegen'], ['stamm', 'Stammdaten'], ['diff', 'Abweichungen']];
+  const FB_F = [['all', 'Alle'], ['ok', 'Direkt eintragbar'], ['nonr', 'Ohne Artikel-Nr.'], ['neu', 'NEU anlegen'], ['stamm', 'Stammdaten'], ['inc', 'Unvollständige Karte'], ['diff', 'Abweichungen']];
+  // ---------- Unvollständige Karten (Regeln wie ⚙ „Vollständige Karte“) mit Schnell-Ergänzen ----------
+  const fbIncList = () => S.lib.filter(t => isIncomplete(t) && fbQOk(t)).sort((a, b) => fullMiss(b, 'p').length - fullMiss(a, 'p').length || fullName(a).localeCompare(fullName(b)));
+  const fbTop = k => { const c = new Map(); S.lib.forEach(t => { const v = String(t[k] || '').trim(); if (v) c.set(v, (c.get(v) || 0) + 1); }); return [...c.entries()].sort((a, b) => b[1] - a[1]).map(x => x[0]); };
+  function fbBiosOf(t) {   // was BIOS zu dieser Nummer weiß: Hersteller, Lagerort
+    try { const f = BIOSP.DIG(t.firm); const r = f && catIndex().get(f); if (!r) return {};
+      const txt = BIOSP.U((r.b || []).join(' ') + ' ' + (r.k || '')); const mk = (BIOSP.BRANDS || []).find(b => txt.includes(b));
+      return { maker: mk || '', loc: BIOSP.U(r.o || '').trim() }; } catch { return {}; }
+  }
+  function fbIncHTML() {
+    const L = fbIncList(); FB.incIds = L.map(t => t.id);
+    if (!L.length) return `<div class="sec-h">UNVOLLSTÄNDIGE KARTEN · 0</div><div class="fb-empty">Alle Karten vollständig${FB.q ? ' (für diese Suche)' : ''}.</div>`;
+    const mks = fbTop('maker').slice(0, 6), locs = fbTop('loc').slice(0, 6), shown = L.slice(0, FB.incN || 60);
+    const row = t => { const p = fullMiss(t, 'p'), w = fullMiss(t, 'w'), bi = fbBiosOf(t), qm = !String(t.maker || '').trim() && (p.concat(w).some(f => f[0] === 'maker')), ql = p.concat(w).some(f => f[0] === 'loc');
+      const quick = (k, sug, bv, ph) => `<div class="fb-qf"><span class="fb-ql">${k === 'maker' ? 'HERSTELLER' : 'LAGERORT'}</span>${bv ? `<button type="button" class="fb-qc bios" data-fbq="${k}" data-id="${t.id}" data-v="${esc(bv)}">Aus BIOS: ${esc(bv)}</button>` : ''}${sug.filter(v => U(v) !== U(bv)).slice(0, 4).map(v => `<button type="button" class="fb-qc" data-fbq="${k}" data-id="${t.id}" data-v="${esc(v)}">${esc(v)}</button>`).join('')}
+        <span class="fb-qi"><input data-fbqin="${k}" data-id="${t.id}" placeholder="${ph}" autocomplete="off"><button type="button" class="btn sm" data-fbq="${k}" data-id="${t.id}">OK</button></span></div>`;
+      return `<div class="fb-row inc"><span></span><div class="fb-m">${BIOSP.DIG(t.firm) ? `<button type="button" class="fb-nr" data-fbcopy="${BIOSP.DIG(t.firm)}">${BIOSP.DIG(t.firm)}</button>` : '<span class="fb-no">ohne Artikelnummer</span>'}
+        <div class="fb-t">${esc(fullName(t))}</div><div class="fb-s"><span class="w">Fehlt: ${p.map(f => f[1]).join(' · ')}</span>${w.length ? ` <span class="soft">· wünschenswert: ${w.map(f => f[1]).join(' · ')}</span>` : ''}</div>
+        ${qm ? quick('maker', mks, bi.maker, 'Hersteller') : ''}${ql ? quick('loc', locs, bi.loc, 'Lagerort') : ''}
+        <button type="button" class="btn sm primary fb-go" data-fbfill="${t.id}">Karte ergänzen ›</button></div></div>`; };
+    return `<div class="sec-h">UNVOLLSTÄNDIGE KARTEN · ${L.length}</div><div class="hint">Was Pflicht ist, stellst du in ⚙ → „Vollständige Karte“ ein. Hersteller und Lagerort gehen direkt hier, alles andere über „Ergänzen“.</div>
+      <div class="bi-list">${shown.map(row).join('')}</div>${L.length > shown.length ? `<button type="button" class="btn" data-fbx="incmore">Weitere ${Math.min(60, L.length - shown.length)} zeigen</button>` : ''}`;
+  }
+  function fbQuickSet(k, id, v) {
+    const t = S.lib.find(x => x.id === id); v = String(v || '').trim(); if (!t || !v) { toast(k === 'maker' ? 'Hersteller eingeben' : 'Lagerort eingeben'); return; }
+    if (k === 'maker') { const ex = fbTop('maker').find(m => U(m) === U(v)); t.maker = ex || v; }
+    else { const nz = x => U(x).replace(/[\s\-.\/_]/g, ''), ex = fbTop('loc').find(l => nz(l) === nz(v)); t.loc = ex || U(v); }
+    t.updatedAt = Date.now(); save(); biosRenderFb(); render();
+    toast(`${k === 'maker' ? 'Hersteller' : 'Lagerort'} gespeichert${isIncomplete(t) ? '' : ' · Karte vollständig'}`);
+  }
+  function fbFill(id) {
+    const t = S.lib.find(x => x.id === id); if (!t) return; const order = (FB.incIds || []).slice();
+    $('biosSheet').hidden = true;
+    cardFill(t, tool => {
+      render(); biosRenderFb(); $('biosSheet').hidden = false;
+      const nx = order.slice(order.indexOf(tool.id) + 1).map(i => S.lib.find(x => x.id === i)).find(x => x && isIncomplete(x));
+      if (nx) toastAct(isIncomplete(tool) ? 'Gespeichert · noch nicht vollständig' : 'Gespeichert · vollständig', 'Nächste ›', () => fbFill(nx.id));
+      else toast(isIncomplete(tool) ? 'Gespeichert · noch nicht vollständig' : 'Gespeichert · vollständig');
+    });
+    TW.backBios = true;
+  }
   const FB_KIND = [['', 'Alle Arten'], ['aus', 'Ausgabe'], ['ein', 'Eingang'], ['inv', 'Inventur'], ['rueck', 'Rückgabe']];
   const FB_AGE = [['', 'Egal wann'], ['today', 'Heute'], ['week', 'Diese Woche'], ['old', 'Älter als 1 Woche']];
   function fbPass(e, f, kind, age) {   // gemeinsamer Filter: Für BIOS + Bericht
@@ -5882,7 +5927,8 @@ Antworte NUR mit JSON: {"map":{"feld":"Spaltenname"},"typ":"häufigster Werkzeug
   }
   function fbFilterHTML(open) {
     const neuN = S.lib.filter(t => isNeu(t.firm)).length, stN = fbStammOpen().length, R = FB.cmp && FB.cmp.nr && FB.cmp.st ? cmpResult() : null;
-    const n = { all: open.length + neuN + stN, ok: open.filter(e => fbCls(e) === 'ok').length, nonr: open.filter(e => fbCls(e) === 'nonr').length, neu: neuN, stamm: stN, diff: R ? R.diff.length : '' };
+    const incN = S.lib.filter(t => isIncomplete(t)).length;
+    const n = { inc: incN, all: open.length + neuN + stN, ok: open.filter(e => fbCls(e) === 'ok').length, nonr: open.filter(e => fbCls(e) === 'nonr').length, neu: neuN, stamm: stN, diff: R ? R.diff.length : '' };
     const bu = ['all', 'ok', 'nonr', 'neu'].includes(FB.f);
     return `<div class="fb-flt"><div class="fb-chips">${FB_F.map(([k, l]) => `<button type="button" data-fbf="f:${k}" aria-pressed="${FB.f === k}">${l}${n[k] !== '' ? ` <b>${n[k]}</b>` : ''}</button>`).join('')}</div>
       <input id="fbQ" type="search" autocomplete="off" placeholder="Suchen: Nummer, Bezeichnung" value="${esc(FB.q || '')}">
@@ -5894,13 +5940,13 @@ Antworte NUR mit JSON: {"map":{"feld":"Spaltenname"},"typ":"häufigster Werkzeug
     const all = fbGroups(true), today = new Date().toDateString(), open = fbBu(all), F = FB.f; FB.candN = 0;
     const done = fbGroups(false).filter(e => new Date(e.at).toDateString() === today && fbQOk(e.t));
     const fl = FB.f !== 'all' || FB.kind || FB.age || FB.q;
-    const show = { neu: F === 'all' || F === 'neu', stamm: F === 'all' || F === 'stamm', bu: F !== 'stamm' && F !== 'diff', cmp: F === 'all' || F === 'diff', done: F === 'all' || F === 'ok' };
+    const show = { neu: F === 'all' || F === 'neu', stamm: F === 'all' || F === 'stamm', inc: F === 'inc', bu: !['stamm', 'diff', 'inc'].includes(F), cmp: F === 'all' || F === 'diff', done: F === 'all' || F === 'ok' };
     const fae = document.activeElement && document.activeElement.id === 'fbQ' ? document.activeElement.selectionStart : null;
     $('biosBody').innerHTML = `
       <div class="hint">Alle Buchungen seit dem letzten Übertrag, pro Artikel zusammengefasst und nach Nummer sortiert. In BIOS eintragen, dann abhaken – abgehakte Zeilen kommen nicht wieder. Nummer antippen = kopieren.</div>
       ${fbFilterHTML(all)}
       <div class="row" style="gap:8px;flex-wrap:wrap"><button type="button" class="btn" data-fbx="print">Drucken</button>${open.length ? `<button type="button" class="btn" data-fbx="xls">Als Excel</button><button type="button" class="btn" data-fbx="all">${fl ? 'Angezeigte abhaken' : 'Alle Buchungen abhaken'}</button>` : ''}<button type="button" class="btn" data-fbx="cmp">Mit BIOS-Excel abgleichen</button></div>
-      ${show.neu ? fbNeuHTML() : ''}${show.stamm ? fbTaskHTML() : ''}
+      ${show.neu ? fbNeuHTML() : ''}${show.stamm ? fbTaskHTML() : ''}${show.inc ? fbIncHTML() : ''}
       ${show.bu ? `<div class="sec-h">BUCHUNGEN OFFEN · ${open.length}${fl && open.length !== all.length ? ` von ${all.length}` : ''}</div>
       <div class="bi-list">${open.map(e => fbRow(e, true)).join('') || `<div class="fb-empty">${all.length ? 'Nichts für diesen Filter.' : 'Alles in BIOS eingetragen.'}</div>`}</div>` : ''}
       ${show.cmp ? (FB.cmp ? cmpHTML() : F === 'diff' ? `<div class="hint">Abweichungen zeigt der Abgleich mit einer BIOS-Bestandsliste (Excel).</div><button type="button" class="btn primary" data-fbx="cmp">BIOS-Excel wählen</button>` : '') : ''}
@@ -5910,6 +5956,14 @@ Antworte NUR mit JSON: {"map":{"feld":"Spaltenname"},"typ":"häufigster Werkzeug
     biosBtnSync();
   }
   if (!document.getElementById('fbCss')) document.head.insertAdjacentHTML('beforeend', `<style id="fbCss">
+    .fb-row.inc{grid-template-columns:1fr!important}.fb-row.inc > span:first-child{display:none}.fb-row.inc .fb-go{margin-top:10px;width:100%}
+    .fb-s .w{color:var(--crit)}.fb-s .soft{opacity:.7}
+    .fb-qf{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:8px}
+    .fb-ql{font:600 10px var(--f-mono,monospace);letter-spacing:.08em;opacity:.6;width:100%}
+    .fb-qc{border:1px solid var(--line);background:var(--card);color:var(--fg);border-radius:999px;padding:6px 10px;font:600 12px inherit;cursor:pointer}
+    .fb-qc.bios{border-color:var(--accent,#C2410C);color:var(--accent,#C2410C)}
+    .fb-qi{display:flex;gap:6px;flex:1 1 180px}#biosBody .fb-qi input{flex:1;min-width:0;width:auto!important;padding:7px 10px;font-size:14px}
+    .fb-lk{display:flex;gap:14px;flex-wrap:wrap;margin-top:4px}
     .fb-flt{display:grid;gap:8px;margin:4px 0 2px}
     .fb-chips{display:flex;gap:6px;flex-wrap:wrap}.fb-chips::-webkit-scrollbar{display:none}
     .fb-chips button{flex:none;border:1px solid var(--line);background:var(--card);color:var(--fg);border-radius:999px;padding:7px 12px;font:600 13px var(--f-body,inherit);white-space:nowrap;cursor:pointer}
@@ -6014,6 +6068,9 @@ Antworte NUR mit JSON: {"map":{"feld":"Spaltenname"},"typ":"häufigster Werkzeug
     const cs = e.target.closest('[data-cmpset]');
     if (cs) { const t = S.lib.find(y => y.id === cs.dataset.cmpset); if (!t) return; const v = Number(cs.dataset.v);
       try { const mv = book(t, 'inv', v, { note: 'ABGLEICH BIOS' }); mv.bios = Date.now(); } catch { return; } save(); biosRenderFb(); toast(`Bestand ${String(v).replace('.', ',')} übernommen`); return; }
+    const fq = e.target.closest('[data-fbq]');
+    if (fq) { const v = fq.dataset.v != null ? fq.dataset.v : (fq.parentNode.querySelector('[data-fbqin]') || {}).value; fbQuickSet(fq.dataset.fbq, fq.dataset.id, v); return; }
+    const fi = e.target.closest('[data-fbfill]'); if (fi) { fbFill(fi.dataset.fbfill); return; }
     const ff = e.target.closest('[data-fbf]');
     if (ff) { const [k, v] = ff.dataset.fbf.split(':'); FB[k] = v; fbSaveF(); biosRenderFb(); return; }
     const fn = e.target.closest('[data-fbnr]');
@@ -6026,6 +6083,7 @@ Antworte NUR mit JSON: {"map":{"feld":"Spaltenname"},"typ":"häufigster Werkzeug
       const open = fbBu(fbGroups(true)); if (!open.length) return; if (!confirm(`${open.length} Artikel als „in BIOS eingetragen“ abhaken?`)) return;
       const now = Date.now(), ids = new Set(open.flatMap(g => g.ids)); (S.moves || []).forEach(m => { if (ids.has(m.id)) m.bios = now; });
       save(); biosRenderFb(); toast(`${open.length} abgehakt`);
+    } else if (x.dataset.fbx === 'incmore') { FB.incN = (FB.incN || 60) + 60; biosRenderFb();
     } else if (x.dataset.fbx === 'print') { Object.assign(RP, { type: 'bios', group: 'bw', ost: '', typ: '', loc: '', q: '', title: '' }); rpSave();
       const fl = FB.f !== 'all' || FB.kind || FB.age || FB.q;
       FB.psel = fl ? { tasks: FB.f === 'all' ? 'all' : FB.f === 'stamm' ? 'stamm' : FB.f === 'neu' ? 'neu' : '', keys: new Set(FB.f === 'stamm' || FB.f === 'diff' ? [] : fbBu(fbGroups(true)).map(g => g.k)) } : null;
@@ -6044,7 +6102,8 @@ Antworte NUR mit JSON: {"map":{"feld":"Spaltenname"},"typ":"häufigster Werkzeug
     }
   });
   $('biosSheet').addEventListener('input', e => { if (e.target.id === 'fbQ') { FB.q = e.target.value; biosRenderFb(); } });
-  $('biosSheet').addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.dataset && e.target.dataset.fbnrin) { e.preventDefault(); const b = e.target.parentNode.querySelector('[data-fbnr]'); if (b) b.click(); } });
+  $('biosSheet').addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.dataset && e.target.dataset.fbqin) { e.preventDefault(); fbQuickSet(e.target.dataset.fbqin, e.target.dataset.id, e.target.value); return; }
+    if (e.key === 'Enter' && e.target.dataset && e.target.dataset.fbnrin) { e.preventDefault(); const b = e.target.parentNode.querySelector('[data-fbnr]'); if (b) b.click(); } });
   $('biosSheet').addEventListener('change', e => {
     if (e.target.id === 'fbFile') { const f = e.target.files[0]; e.target.value = ''; if (f) cmpLoad(f); return; }
     if (e.target.dataset.cmpcol) { FB.cmp[e.target.dataset.cmpcol] = e.target.value; biosRenderFb(); return; }
@@ -9240,7 +9299,7 @@ Antworte NUR mit JSON: {"map":["feld oder leer", ...]} – gleiche Reihenfolge u
       const r = document.querySelector(`#waiting [data-oa="tog"][data-id="${o.id}"]`)?.closest('.ord'); if (r) { r.scrollIntoView({ behavior: 'smooth', block: 'start' }); r.classList.remove('mbf'); void r.offsetWidth; r.classList.add('mbf'); } return; }
   });
   // ---------- Version: Nummer anzeigen, neue Version erkennen ----------
-  const APP_VER = '2026.11.23-5';
+  const APP_VER = '2026.11.23-6';
   let verSeen = '';
   async function verCheck() {
     if (!/^https?:/.test(location.protocol)) return;
