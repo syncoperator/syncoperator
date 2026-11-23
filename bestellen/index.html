@@ -1673,6 +1673,23 @@ body.env-test .envbar{display:flex}
   .ks-h{align-items:center}.ks-h > *{align-self:center;margin-top:0;margin-bottom:0}
 }
 @media (max-width:360px){.ks-h .ks-prob{width:46px;padding:0;justify-content:center}.ks-h .ks-prob .ks-pt2{display:none}}
+/* Auswählen */
+.sel-e{display:flex;gap:8px}.sel-e:empty{display:none}
+.sel-r{position:relative;padding-left:46px!important}
+.sel-cb{position:absolute;left:12px;top:50%;transform:translateY(-50%);width:24px;height:24px;border-radius:7px;border:2px solid var(--line-strong,#9a9a9a);background:var(--card)}
+.sel-y{outline:2px solid var(--accent,#C2410C);outline-offset:-2px}
+.sel-y .sel-cb{background:var(--accent,#C2410C);border-color:var(--accent,#C2410C)}
+.sel-y .sel-cb::after{content:'';position:absolute;left:6px;top:1px;width:7px;height:13px;border:solid #fff;border-width:0 3px 3px 0;transform:rotate(45deg)}
+.sel-r .plus{display:none}.sel-no{opacity:.45}
+body.sel-on{padding-bottom:130px}
+.sel-bar{position:fixed;left:0;right:0;bottom:0;z-index:58;padding:10px 14px calc(10px + env(safe-area-inset-bottom));background:var(--card);border-top:1px solid var(--line);box-shadow:0 -8px 24px rgba(0,0,0,.08)}
+.sel-in{max-width:720px;margin:0 auto;display:grid;gap:8px}.sel-top{display:flex;gap:14px;align-items:center}.sel-top b{flex:1}
+.sel-bar .btn{width:100%}
+.sel-lrow{display:grid;grid-template-columns:1fr auto;gap:8px}.sel-lrow input{min-width:0;text-transform:uppercase}
+.sel-chips{display:flex;flex-wrap:wrap;gap:6px}.sel-chips button{border:1px solid var(--line);background:var(--card);color:var(--fg);border-radius:999px;padding:6px 11px;font:600 13px var(--f-mono,monospace);cursor:pointer}.sel-chips small{opacity:.55;margin-left:2px}
+.sel-warn{padding:9px 12px;border-radius:10px;background:#FFF4E5;color:#7A3A00;font-size:13px}
+#selSheet{z-index:59}
+body.sel-on #toast{bottom:calc(140px + env(safe-area-inset-bottom))!important}
 /* Etikett-Suche */
 .ls-w{position:relative;display:block}
 .ls-w.on > input{padding-right:52px}
@@ -2104,6 +2121,7 @@ body.touring{padding-bottom:70vh}
       <input id="ltQ" type="search" placeholder="Suchen" style="background:var(--card)">
       <div id="ltFilters" class="types"></div>
       <div class="lt-sort types" id="ltSort"><span>SORTIEREN</span><button type="button" data-sort="size">Größe</button><button type="button" data-sort="name">Name</button><button type="button" data-sort="recent">Zuletzt bestellt</button></div>
+      <div id="ltSelE" class="sel-e"></div>
       <div id="ltList" class="rows"></div>
     </div>
   </section>
@@ -2527,7 +2545,12 @@ window.addEventListener('load',ctFit);window.addEventListener('resize',ctFit);se
     });
     S.lib.forEach(t => { if (t.type) t.type = U(t.type); if (t.type === 'STECHEN') t.type = 'STECHPLATTE'; });
     S.customTypes = S.customTypes.filter(t => t !== 'STECHEN');
+    if (!S.meta.seedSP) {   // Schneidplatten: drei Untertypen, Felder wie Wendeplatte
+      SEED_SP.forEach(v => { if (!S.customTypes.includes(v)) S.customTypes.push(v); const m = S.meta.types[v] || (S.meta.types[v] = {}); m.base = m.base || 'WENDEPLATTE'; m.cat = 'Schneidplatten'; });
+      S.meta.seedSP = 1;
+    }
   }
+  const SEED_SP = ['SCHNEIDEINSÄTZE', 'DREHBOHRER WENDEPLATTEN', 'WP-BO WENDEPLATTEN'];
   // ---------- photos: IndexedDB (localStorage only keeps the data, not the pictures) ----------
   const IDB = { db: null, saved: {} };
   const idbOpen = () => new Promise(res => {
@@ -3225,8 +3248,9 @@ window.addEventListener('resize',fit);window.addEventListener('load',fit);fit();
     if (mode === 'inc') { const m = fullMiss(t, 'p'); flag = ''; var extra = `<div class="lr-miss">Fehlt: ${m.map(x => x[1]).join(' · ')}</div>`; }
     else if (mode === 'cnt') { flag = ''; var extra = `<div class="lr-miss soft">${t.invAt ? `Gezählt ${relTs(t.invAt)}` : 'Noch nie gezählt'}${hasStock(t) ? ` · Bestand ${t.stock}` : ''}${t.loc ? ` · ⌂ ${esc(U(t.loc))}` : ''}</div>`; }
     else if (mode === 'station' || mode === 'bios' || mode === 'new') { const w = mode === 'station' ? stationWho(t) : ''; var extra = `<div class="lr-miss soft">${mode === 'new' ? SRC_L[srcOf(t)] + ' · angelegt ' : ''}${tCreated(t) ? (mode === 'new' ? relTs(tCreated(t)) : fmtD(tCreated(t))) : 'Datum unbekannt'}${w ? ' · ' + esc(w) : ''}${isIncomplete(t) ? ' · <em>unvollständig</em>' : ''}</div>`; }
-    return `<div class="lr" data-lt="open" data-id="${t.id}" role="button" tabindex="0">
-      ${thumb(t.img, '', t)}
+    const sl = SEL.on && SEL.ctx === 'lt';
+    return `<div class="lr ${sl ? 'sel-r' : ''} ${sl && SEL.ids.has(t.id) ? 'sel-y' : ''}" data-lt="open" data-id="${t.id}" role="button" tabindex="0">
+      ${sl ? '<span class="sel-cb" aria-hidden="true"></span>' : ''}${thumb(t.img, '', t)}
       <div class="body"><div class="t">${esc(fullName(t))}</div>${s ? `<div class="s">${s}</div>` : ''}${flag ? `<div class="flag">${flag}</div>` : ''}${typeof extra !== 'undefined' ? extra : ''}</div>
       <button type="button" class="plus" data-lt="order" data-id="${t.id}" aria-label="Bestellen">+</button>
     </div>`;
@@ -3279,9 +3303,9 @@ window.addEventListener('resize',fit);window.addEventListener('load',fit);fit();
           : `<div class="empty"><b>Keine Treffer${ch.length ? ' in der Bibliothek' : ''}</b><button type="button" class="link" data-lt="newq">„${esc(S.libQ)}“ als neues Werkzeug anlegen</button></div>`) + catHTML;
         return;
       }
-      const zeroN = catList().reduce((a, c) => a + c.types.filter(ty => !toolsOf(ty).length).length, 0), showZ = S.libZero || S.libEdit;
+      const zeroN = catList().reduce((a, c) => a + c.types.filter(ty => !toolsOf(ty).length && !SEED_SP.includes(ty)).length, 0), showZ = S.libZero || S.libEdit;
       const setsH = setsSectionHTML(), setsTop = (S.sets || []).length;
-      $('libCats').innerHTML = stNewSectionHTML() + (setsTop ? setsH : '') + catList().map(c => ({ t: c.t, types: showZ ? c.types : c.types.filter(ty => toolsOf(ty).length) })).filter(c => c.types.length).map(c => `<div class="lib-cat"><div class="sec-h">${esc(c.t)}</div><div class="lib-tiles">${
+      $('libCats').innerHTML = stNewSectionHTML() + (setsTop ? setsH : '') + catList().map(c => ({ t: c.t, types: showZ ? c.types : c.types.filter(ty => toolsOf(ty).length || SEED_SP.includes(ty)) })).filter(c => c.types.length).map(c => `<div class="lib-cat"><div class="sec-h">${esc(c.t)}</div><div class="lib-tiles">${
         c.types.map(ty => { const n = toolsOf(ty).length, hot = toolsOf(ty).some(t => stats(t.id).inCart);
           return `<button type="button" class="lt-tile ${n ? '' : 'zero'}" data-lt="type" data-type="${esc(ty)}">
             ${hot ? '<span class="dot" title="auf der Liste"></span>' : ''}<span class="ct">${n || '–'}</span>
@@ -3313,12 +3337,15 @@ window.addEventListener('resize',fit);window.addEventListener('load',fit);fit();
       recent: (a, b) => stats(b.id).last - stats(a.id).last || a.name.localeCompare(b.name),
     };
     rows.sort(sorters[S.ltSort || 'size']);
+    SEL.vis = rows.map(t => t.id);
+    $('ltSelE').innerHTML = can('adm') && all.length && !SEL.on ? `<button type="button" class="btn sm" data-sel="start" data-ctx="lt">Auswählen · Lagerort / Typ</button>` : '';
     $('ltList').innerHTML = rows.length ? rows.map(t => libRowHTML(t, false)).join('')
       : all.length ? `<div class="empty"><b>Keine Treffer</b>Suche oder Filter ändern.</div>`
       : `<div class="empty"><b>Noch keine ${esc(ty)}</b><button type="button" class="btn primary" data-lt="new" style="margin-top:10px">+ Erstes anlegen</button></div>`;
   }
 
   function libClick(e) {
+    if (SEL.on && SEL.ctx === 'lt') { const r = e.target.closest('.lr[data-id]'); if (r) { e.preventDefault(); selToggle(r.dataset.id); return; } }
     if (e.target.closest('[data-zoom]')) return;
     const lts = e.target.closest('[data-lts]'); if (lts) { S.libTS[lts.dataset.lts] = lts.dataset.v; try { localStorage.setItem('cititool_lib_ts', JSON.stringify(S.libTS)); } catch {} renderLib(); return; }
     const b = e.target.closest('[data-lt]'); if (!b) return;
@@ -5571,7 +5598,7 @@ Antworte NUR mit JSON: {"map":{"feld":"Spaltenname"},"typ":"häufigster Werkzeug
   const KB_ALL = new Set(Object.values(KB_OK).flat());
   const kbFam = t => { const b = baseOf(t.type || 'SONSTIGES'); return KB_FAM[b] || b; };
   const kbWant = t => { const f = kbFam(t); if (f === 'BOHRER') return av(t, 'mat') === 'VHM' ? 'VHM BOHRER' : 'BOHRER'; return (KB_OK[f] || [])[0] || ''; };
-  const B_KIND = { bneu: 'ARTIKEL ANLEGEN', bname: 'BEZEICHNUNG', bkb: 'KATEGORIE (KB)', bmk: 'HERSTELLER', bnr: 'ARTIKELNUMMER' };
+  const B_KIND = { bneu: 'ARTIKEL ANLEGEN', bname: 'BEZEICHNUNG', bkb: 'KATEGORIE (KB)', bmk: 'HERSTELLER', bnr: 'ARTIKELNUMMER', bloc: 'LAGERORT' };
   // Gruppen-Vorschlag (erste 4 Ziffern der BIOS-Nummer) je Werkzeugart
   const NEU_GRP = { WENDEPLATTE: '2200', STECHPLATTE: '2200', GEWINDEPLATTE: '2200', HALTER: '2244', BOHRSTANGE: '2244', 'WP-BO': '2228 / 2230', ZENTRIERBOHRER: '2224', FRÄSER: '2234', REIBAHLE: '2237', GEWINDE: '2240', SENKER: '2233', SPANNZANGE: '2245', SPANNMITTEL: '2245' };
   const neuGrp = t => { const f = kbFam(t); if (f === 'BOHRER') return av(t, 'mat') === 'VHM' || !av(t, 'mat') ? '2228 (VHM) / 2203 (HSS)' : '2203'; return NEU_GRP[f] || '2200'; };
@@ -5612,6 +5639,9 @@ Antworte NUR mit JSON: {"map":{"feld":"Spaltenname"},"typ":"häufigster Werkzeug
       if (ok && kb && !ok.includes(kb) && (KB_ALL.has(kb) || BIOSP.BRANDS.includes(kb))) add(`b:kb:${t.id}:${kbWant(t)}`, 'bkb', t, `KB „${kb}“ → „${kbWant(t)}“`, kbWant(t));
       const mk = BIOSP.U(t.maker).split(' ')[0];
       if (mk && mk.length > 2 && !BIOSP.U(r.b.join(' ') + ' ' + r.k).includes(mk)) add(`b:mk:${t.id}:${mk}`, 'bmk', t, `Hersteller „${BIOSP.U(t.maker)}“ fehlt in BIOS`, BIOSP.U(t.maker));
+      const lc = (S.meta.locChg || {})[t.id], tl = BIOSP.U(t.loc || '').trim(), ro = BIOSP.U(r.o || '').trim();
+      if (lc && BIOSP.U(lc.to || '').trim() === tl && ro !== tl) { const key = `b:loc:${t.id}:${tl || '-'}`;
+        out.push({ key, kind: 'bloc', t, text: `Lagerort „${ro || BIOSP.U(lc.from || '') || '–'}“ → „${tl || 'leer'}“`, copy: tl, done: (dn[key] || 0) > (ro ? Math.max(cts, CAT.sts || 0) : 0) }); }
     });
     return out;
   }
@@ -6109,12 +6139,15 @@ Antworte NUR mit JSON: {"map":{"feld":"Spaltenname"},"typ":"häufigster Werkzeug
     else if (x.st === 'noapp') notes.push('<span class="w">In der App noch nicht gezählt</span>');
     if (x.low) notes.push(`<span class="l">unter Min ${x.min}</span>`);
     if (x.t && x.r && x.r.o && x.t.loc && U(x.r.o) !== U(x.t.loc)) notes.push(`BIOS-Ort ${esc(U(x.r.o))}`);
-    return `<div class="bst-r ${x.t ? '' : 'cat'} ${x.st}" role="button" tabindex="0" ${x.t ? `data-bst="card" data-id="${x.t.id}"` : `data-bst="cat" data-f="${x.r.a}"`}>
+    const sl = SEL.on && SEL.ctx === 'bst';
+    return `<div class="bst-r ${x.t ? '' : 'cat'} ${x.st} ${sl ? (x.t ? 'sel-r' : 'sel-no') : ''} ${sl && x.t && SEL.ids.has(x.t.id) ? 'sel-y' : ''}" role="button" tabindex="0" ${x.t ? `data-bst="card" data-id="${x.t.id}"` : `data-bst="cat" data-f="${x.r.a}"`}>
+      ${sl && x.t ? '<span class="sel-cb" aria-hidden="true"></span>' : ''}
       <div class="bst-m"><div class="bst-t">${esc(x.name)}</div><div class="bst-s"><span class="mono">${esc(x.nr || 'ohne Nr.')}</span>${x.loc ? ` · ⌂ ${esc(x.loc)}` : ''}${x.t ? '' : ` · <em>nur Katalog${can('adm') ? ' · übernehmen ›' : ''}</em>`}${notes.length ? ' · ' + notes.join(' · ') : ''}</div></div>
       <div class="bst-q"><span><small>APP</small><b>${x.t ? bstFmt(x.app) : '–'}</b></span><span><small>BIOS</small><b class="bi">${bstFmt(x.bios)}</b></span></div></div>`;
   }
   function bstRender() {
     const { all, L } = bstView(), adm = can('adm'), has = CAT.rows.length > 0;
+    SEL.visB = L.filter(x => x.t).map(x => x.t.id);
     const cnt = {}; BST_F.forEach(([k]) => { cnt[k] = all.filter(x => bstIs(x, k)).length; });
     if (BST.f && !cnt[BST.f]) { BST.f = ''; return bstRender(); }
     $('bstInfo').innerHTML = (has && CAT.demo && CAT.sts ? '<div class="bst-demo"><b>DEMO</b><span>BIOS-Bestand und Lagerort sind erfunden – nur zum Ausprobieren. „Für BIOS“ hakt nichts automatisch ab. Echten BIOS-Excel laden, dann verschwindet der Hinweis.</span></div>' : '') + (has
@@ -6129,6 +6162,7 @@ Antworte NUR mit JSON: {"map":{"feld":"Spaltenname"},"typ":"häufigster Werkzeug
     $('bstRng').innerHTML = `<span>ZEITRAUM</span>${BST_RNG.map(([v, l]) => `<button type="button" data-brng="${v}" aria-pressed="${BST.rng === v}">${l}</button>`).join('')}`;
     const locCards = BST.loc ? all.filter(x => x.t && (x.loc || '–') === BST.loc).length : 0, diffN = all.filter(x => x.t && (x.st === 'diff' || x.st === 'noapp')).length;
     $('bstAct').innerHTML = (L.length ? `<button type="button" class="btn sm" data-bst="print">Drucken</button><button type="button" class="btn sm" data-bst="xls">Excel</button><button type="button" class="btn sm" data-bst="cols" aria-expanded="${BST.colOpen}">Spalten · ${bstCols().length} ${BST.colOpen ? '▴' : '▾'}</button>` : '')
+      + (adm && SEL.visB.length && !SEL.on ? `<button type="button" class="btn sm" data-sel="start" data-ctx="bst">Auswählen · Lagerort</button>` : '')
       + (adm && locCards ? `<button type="button" class="btn sm primary" data-bst="invloc">Diesen Lagerort zählen · ${locCards}</button>` : '')
       + (adm && diffN ? `<button type="button" class="btn sm" data-bst="invdiff">Nur Abweichungen zählen · ${diffN}</button>` : '');
     $('bstCols').hidden = !BST.colOpen || !L.length;
@@ -6140,6 +6174,112 @@ Antworte NUR mit JSON: {"map":{"feld":"Spaltenname"},"typ":"häufigster Werkzeug
       h += bstRowHTML(x); });
     $('bstList').innerHTML = L.length ? `<div class="bst-list">${h}</div>${L.length > show.length ? `<button type="button" class="btn bst-more" data-bst="more">Weitere ${Math.min(300, L.length - show.length)} zeigen · ${L.length - show.length} übrig</button>` : ''}<div class="hint bst-n">${L.length} ${L.length === 1 ? 'Artikel' : 'Artikel'}${BST.f === 'cat' || (!BST.f && has) ? ' · Artikel „nur Katalog“ werden bei der Inventur übersprungen' : ''}</div>`
       : `<div class="empty"><b>Keine Artikel</b>${BST.q || BST.f || BST.loc ? 'Suche oder Filter ändern.' : ''}</div>`;
+  }
+  // =====================================================================
+  // AUSWÄHLEN: mehrere Karten markieren → Lagerort setzen / entfernen, Typ ändern (nur Admin)
+  // Bibliothek-Typseite (ctx 'lt') und Bestand (ctx 'bst'). Rückgängig per Toast.
+  // Geänderte Lagerorte mit BIOS-Nummer → Aufgabe „Lagerort“ in „Für BIOS“ (S.meta.locChg).
+  // =====================================================================
+  const SEL = { on: false, ctx: '', ids: new Set(), vis: [], visB: [] };
+  const selVis = () => SEL.ctx === 'bst' ? SEL.visB : SEL.vis;
+  function selStart(ctx) { if (!can('adm')) { accDeny(); return; } SEL.on = true; SEL.ctx = ctx; SEL.ids = new Set(); selRefresh(); }
+  function selEnd() { if (!SEL.on) return; SEL.on = false; SEL.ids = new Set(); selRefresh(); }
+  function selRefresh() {
+    document.body.classList.toggle('sel-on', SEL.on);
+    if (SEL.ctx === 'bst') bstRender(); else renderLib();
+    selBar();
+  }
+  function selToggle(id) { SEL.ids.has(id) ? SEL.ids.delete(id) : SEL.ids.add(id); selRefresh(); }
+  function selBar() {
+    const b = $('selBar'); if (!SEL.on) { b.hidden = true; return; }
+    const n = SEL.ids.size, vis = selVis(), allIn = vis.length && vis.every(id => SEL.ids.has(id));
+    b.hidden = false;
+    b.innerHTML = `<div class="sel-in"><div class="sel-top"><b>${n} ausgewählt</b>${vis.length ? `<button type="button" class="link" data-sel="${allIn ? 'none' : 'all'}">${allIn ? 'Keine' : `Alle angezeigten (${vis.length})`}</button>` : ''}<button type="button" class="link" data-sel="end">Fertig</button></div>
+      <button type="button" class="btn primary" data-sel="open" ${n ? '' : 'disabled'}>Lagerort / Typ ändern${n ? ' · ' + n : ''}</button></div>`;
+  }
+  const selLocs = () => { const c = new Map(); S.lib.forEach(t => { const l = U(t.loc || '').trim(); if (l) c.set(l, (c.get(l) || 0) + 1); });
+    try { CAT.rows.forEach(r => { const l = U(r.o || '').trim(); if (l && !c.has(l)) c.set(l, 0); }); } catch {}
+    return [...c.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'de', { numeric: true })); };
+  const selNzL = v => U(v || '').replace(/[\s\-.\/_]/g, '');
+  function selSheet() {
+    const L = S.lib.filter(t => SEL.ids.has(t.id)); if (!L.length) return;
+    const cur = new Map(); L.forEach(t => { const l = U(t.loc || '').trim() || '–'; cur.set(l, (cur.get(l) || 0) + 1); });
+    const curArr = [...cur.entries()].sort((a, b) => b[1] - a[1]), differ = curArr.filter(([l]) => l !== '–').length > 1;
+    const locs = selLocs(), withNr = L.filter(t => fbKey(t)).length, tys = L.map(t => t.type || 'SONSTIGES');
+    const typesAll = allTypes(), sch = catList().find(c => c.t === 'Schneidplatten'), schT = sch ? sch.types : [];
+    $('selBody').innerHTML = `
+      <div class="hint"><b>${L.length} Karten</b> · jetzt: ${curArr.map(([l, n]) => `${l === '–' ? 'ohne Lagerort' : esc(l)} ×${n}`).join(' · ')}</div>
+      ${differ ? `<div class="sel-warn">Die Karten liegen an verschiedenen Orten – alle bekommen den neuen Lagerort.</div>` : ''}
+      <div class="rp-h">NEUER LAGERORT</div>
+      <div class="sel-lrow"><input id="selLoc" list="selLocList" autocomplete="off" autocapitalize="characters" placeholder="z. B. S3-B2"><button type="button" class="btn" data-selx="scan" aria-label="Lagerort scannen">Scannen</button></div>
+      <datalist id="selLocList">${locs.map(([l]) => `<option value="${esc(l)}">`).join('')}</datalist>
+      ${locs.length ? `<div class="sel-chips">${locs.slice(0, 10).map(([l, n]) => `<button type="button" data-selloc="${esc(l)}">${esc(l)}${n ? ` <small>${n}</small>` : ''}</button>`).join('')}</div>` : ''}
+      <div id="selHint" class="hint"></div>
+      <div class="rp-h">TYP <small>(optional)</small></div>
+      <select id="selType"><option value="">– Typ nicht ändern –</option>
+        ${schT.length ? `<optgroup label="Schneidplatten">${schT.map(t => `<option value="${esc(t)}">${esc(t)}</option>`).join('')}</optgroup>` : ''}
+        <optgroup label="Alle Typen">${typesAll.filter(t => !schT.includes(t)).map(t => `<option value="${esc(t)}">${esc(t)}</option>`).join('')}</optgroup></select>
+      ${new Set(tys).size > 1 ? `<div class="hint">Jetzt gemischt: ${[...new Set(tys)].map(esc).join(', ')}</div>` : ''}
+      ${withNr ? `<label class="eb-o"><input type="checkbox" id="selBios" checked><span><b>In „Für BIOS“ vormerken</b><small>${withNr} mit BIOS-Nummer – Aufgabe „Lagerort ändern“ zum Abhaken</small></span></label>` : ''}
+      <div class="row" style="gap:8px;flex-wrap:wrap"><button type="button" class="btn primary" data-selx="save">Speichern</button><button type="button" class="btn" data-selx="rm">Lagerort entfernen</button><button type="button" class="btn" data-selx="x">Abbrechen</button></div>`;
+    $('selSheet').hidden = false; setTimeout(() => { const i = $('selLoc'); if (i && !matchMedia('(pointer:coarse)').matches) i.focus(); }, 60);
+  }
+  function selLocHint() {
+    const el = $('selHint'), v = U($('selLoc').value).trim(); if (!el) return;
+    const ex = v ? selLocs().find(([l]) => l !== v && selNzL(l) === selNzL(v)) : null;
+    el.innerHTML = ex ? `Es gibt schon <b>${esc(ex[0])}</b> – wird so geschrieben, damit es keine zwei Schreibweisen gibt.` : v && !selLocs().some(([l]) => l === v) ? `Neuer Lagerort <b>${esc(v)}</b>` : '';
+  }
+  function selApply(mode) {
+    const L = S.lib.filter(t => SEL.ids.has(t.id)); if (!L.length) return;
+    let loc = null;
+    if (mode === 'rm') loc = '';
+    else { const v = U($('selLoc').value).trim().replace(/\s+/g, ' '); if (v) { const ex = selLocs().find(([l]) => selNzL(l) === selNzL(v)); loc = ex ? ex[0] : v; } }
+    const type = mode === 'rm' ? '' : $('selType').value, bios = !!($('selBios') && $('selBios').checked);
+    if (loc === null && !type) { toast('Lagerort eingeben oder Typ wählen'); $('selLoc').focus(); return; }
+    if (mode === 'rm' && !confirm(`Lagerort bei ${L.length} Karten entfernen?`)) return;
+    const lc = (S.meta.locChg ||= {}), prev = L.map(t => ({ id: t.id, loc: t.loc, type: t.type, inName: t.inName, lc: lc[t.id] }));
+    let nl = 0, nt = 0;
+    L.forEach(t => {
+      let ch = false;
+      if (loc !== null && U(t.loc || '').trim() !== loc) { const old = U(t.loc || '').trim(); if (loc) t.loc = loc; else delete t.loc; nl++; ch = true;
+        if (bios && fbKey(t)) { const p = lc[t.id]; lc[t.id] = { from: p ? p.from : old, to: loc, ts: Date.now() }; if (U(lc[t.id].from) === loc) delete lc[t.id]; } }
+      if (type && t.type !== type) { t.type = type; nt++; ch = true; }
+      if (ch) t.updatedAt = Date.now();
+    });
+    $('selSheet').hidden = true;
+    if (!nl && !nt) { toast('Nichts geändert – war schon so'); return; }
+    save(); SEL.on = false; SEL.ids = new Set(); document.body.classList.remove('sel-on'); render(); selBar();
+    const msg = [nl && (loc ? `${nl} → ⌂ ${loc}` : `${nl} ohne Lagerort`), nt && `${nt} → ${type}`].filter(Boolean).join(' · ');
+    toastAct(msg, 'Rückgängig', () => {
+      prev.forEach(p => { const t = S.lib.find(x => x.id === p.id); if (!t) return; if (p.loc) t.loc = p.loc; else delete t.loc; t.type = p.type; if (p.lc) lc[t.id] = p.lc; else delete lc[t.id]; t.updatedAt = Date.now(); });
+      save(); render(); toast('Zurückgenommen');
+    });
+  }
+  document.body.insertAdjacentHTML('beforeend', `<div id="selBar" class="sel-bar" hidden></div>
+    <div id="selSheet" class="sheetbg" hidden><div class="helpsheet" role="dialog" aria-modal="true" aria-labelledby="selTi"><div class="row" style="justify-content:space-between;align-items:center"><h2 id="selTi" style="margin:0">Lagerort / Typ</h2><button type="button" class="link" data-selx="x">Schließen</button></div><div id="selBody" class="view" style="gap:10px"></div></div></div>`);
+  document.addEventListener('click', e => {
+    const b = e.target.closest('[data-sel]'); if (!b) return; const a = b.dataset.sel;
+    if (a === 'start') { selStart(b.dataset.ctx); return; }
+    if (a === 'end') { selEnd(); return; }
+    if (a === 'all') { selVis().forEach(id => SEL.ids.add(id)); selRefresh(); return; }
+    if (a === 'none') { SEL.ids = new Set(); selRefresh(); return; }
+    if (a === 'open') { selSheet(); return; }
+  });
+  $('selSheet').addEventListener('click', e => {
+    if (e.target === $('selSheet')) { $('selSheet').hidden = true; return; }
+    const l = e.target.closest('[data-selloc]'); if (l) { $('selLoc').value = l.dataset.selloc; selLocHint(); return; }
+    const b = e.target.closest('[data-selx]'); if (!b) return; const a = b.dataset.selx;
+    if (a === 'x') { $('selSheet').hidden = true; return; }
+    if (a === 'save') { selApply('save'); return; }
+    if (a === 'rm') { selApply('rm'); return; }
+    if (a === 'scan') { camStart(raw => { const m = String(raw).match(/#l=([^&]+)/); const v = m ? decodeURIComponent(m[1]) : String(raw); $('selLoc').value = U(v).trim(); selLocHint(); document.body.style.overflow = 'hidden'; }, 'LAGERORT SCANNEN'); return; }
+  });
+  $('selSheet').addEventListener('input', e => { if (e.target.id === 'selLoc') selLocHint(); });
+  $('selSheet').addEventListener('keydown', e => { if (e.target.id === 'selLoc' && e.key === 'Enter') { e.preventDefault(); selApply('save'); } });
+  function selGuard() {   // Auswahl beenden, wenn die Ansicht wechselt
+    if (!SEL.on) return;
+    const ok = S.view === 'lib' && (SEL.ctx === 'bst' ? S.libTab === 'b' : S.libTab !== 'b' && !!S.libType);
+    if (!ok) { SEL.on = false; SEL.ids = new Set(); document.body.classList.remove('sel-on'); selBar(); }
   }
   function bstInv(kind) {
     if (!can('adm')) { accDeny(); return; }
@@ -6222,6 +6362,7 @@ Antworte NUR mit JSON: {"map":{"feld":"Spaltenname"},"typ":"häufigster Werkzeug
     const bc = e.target.closest('[data-bcol]'); if (bc && !bc.disabled) { const c = BST_COLS.find(x => x.k === bc.dataset.bcol); BST.cols = { ...(BST.cols || {}), [bstColKey(c)]: !bstColOn(c) }; bstSave(); bstRender(); return; }
     const rg = e.target.closest('[data-brng]'); if (rg) { BST.rng = rg.dataset.brng; BST.n = 120; bstSave(); bstRender(); return; }
     const b = e.target.closest('[data-bst]'); if (!b) return; const a = b.dataset.bst;
+    if (SEL.on && SEL.ctx === 'bst') { if (a === 'card') selToggle(b.dataset.id); else if (a === 'cat') toast('Nur Katalog – erst als Karte übernehmen'); if (a === 'card' || a === 'cat') return; }
     if (a === 'card') { openDetail(b.dataset.id); return; }
     if (a === 'cat') { const r = catIndex().get(b.dataset.f); if (r) catOffer(r, x => { bstRender(); openDetail(x.id); }); return; }
     if (a === 'more') { BST.n += 300; bstRender(); return; }
@@ -8957,7 +9098,7 @@ Antworte NUR mit JSON: {"map":["feld oder leer", ...]} – gleiche Reihenfolge u
   function probOpenList() { try { return S.lib.length ? probs(Date.now() - 7 * DAY, Date.now() + 60000, true).filter(p => !p.done) : []; } catch { return []; } }
   function probOpenCount() { return probOpenList().length; }
   function render() {
-    roleClasses(); try { envBadge(); lsSync(); } catch {}
+    roleClasses(); try { envBadge(); lsSync(); selGuard(); } catch {}
     const cart = cartItems().length, od = overdue().length;
     { const odO = new Set(overdue().map(i => i.orderId).filter(Boolean)).size || od; $('nv_orders').textContent = od ? String(odO) : (cart || ''); } $('nv_orders').classList.toggle('alert', !!od);
     $('nv_lib').textContent = S.lib.length || '';
@@ -9099,7 +9240,7 @@ Antworte NUR mit JSON: {"map":["feld oder leer", ...]} – gleiche Reihenfolge u
       const r = document.querySelector(`#waiting [data-oa="tog"][data-id="${o.id}"]`)?.closest('.ord'); if (r) { r.scrollIntoView({ behavior: 'smooth', block: 'start' }); r.classList.remove('mbf'); void r.offsetWidth; r.classList.add('mbf'); } return; }
   });
   // ---------- Version: Nummer anzeigen, neue Version erkennen ----------
-  const APP_VER = '2026.11.23-4';
+  const APP_VER = '2026.11.23-5';
   let verSeen = '';
   async function verCheck() {
     if (!/^https?:/.test(location.protocol)) return;
@@ -9535,7 +9676,7 @@ Antworte NUR mit JSON: {"map":["feld oder leer", ...]} – gleiche Reihenfolge u
   const PROB = {
     problem: ['PROBLEM', 'crit', 1], minus: ['MEHR ALS BESTAND', 'crit', 2], leer: ['LEER', 'crit', 3], low: ['UNTER MIN', 'warn', 4],
     viel: ['UNGEWÖHNLICH VIEL', 'warn', 5], undo: ['STORNIERT', 'info', 6], unknown: ['CODE UNBEKANNT', 'info', 7], noname: ['OHNE NAME', 'info', 8],
-    bneu: ['BIOS · ARTIKEL ANLEGEN', 'warn', 8], bnr: ['BIOS · ARTIKELNUMMER', 'warn', 9], bname: ['BIOS · BEZEICHNUNG', 'info', 10], bkb: ['BIOS · KATEGORIE', 'info', 11], bmk: ['BIOS · HERSTELLER', 'info', 12] };
+    bneu: ['BIOS · ARTIKEL ANLEGEN', 'warn', 8], bnr: ['BIOS · ARTIKELNUMMER', 'warn', 9], bname: ['BIOS · BEZEICHNUNG', 'info', 10], bkb: ['BIOS · KATEGORIE', 'info', 11], bmk: ['BIOS · HERSTELLER', 'info', 12], bloc: ['BIOS · LAGERORT', 'info', 13] };
   const PROB_REASONS = ['FACH LEER', 'BESTAND STIMMT NICHT', 'WERKZEUG DEFEKT', 'FALSCHES ETIKETT', 'SONSTIGES'];
   function logEv(o) {
     if (o.kind === 'unknown' && (S.evs || []).some(e => e.kind === 'unknown' && e.code === o.code && Date.now() - e.ts < 600000)) return;
@@ -9605,7 +9746,7 @@ Antworte NUR mit JSON: {"map":["feld oder leer", ...]} – gleiche Reihenfolge u
   const pgSave = () => lsSet(PG_K, JSON.stringify(PG));
   const PG_PER = [['7', '7 Tage'], ['30', '30 Tage'], ['90', '90 Tage'], ['365', '1 Jahr']];
   const PG_KIND = [['', 'Alle'], ['mel', 'Gemeldet'], ['best', 'Bestand'], ['ent', 'Entnahme'], ['code', 'Codes'], ['bios', 'BIOS']];
-  const pgGrp = k => ({ problem: 'mel', minus: 'best', leer: 'best', low: 'best', viel: 'ent', undo: 'ent', noname: 'ent', unknown: 'code', bnr: 'bios', bname: 'bios', bkb: 'bios', bmk: 'bios' })[k];
+  const pgGrp = k => ({ problem: 'mel', minus: 'best', leer: 'best', low: 'best', viel: 'ent', undo: 'ent', noname: 'ent', unknown: 'code', bnr: 'bios', bname: 'bios', bkb: 'bios', bmk: 'bios', bloc: 'bios' })[k];
   const fmtDT = ts => ts ? new Date(ts).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(',', '') : '';
   function renderProb() {
     const V = $('v_prob'); if (!V) return;
