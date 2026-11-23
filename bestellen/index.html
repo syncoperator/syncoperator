@@ -5820,11 +5820,15 @@ Antworte NUR mit JSON: {"map":{"feld":"Spaltenname"},"typ":"häufigster Werkzeug
   const FB_F = [['all', 'Alle'], ['ok', 'Direkt eintragbar'], ['nonr', 'Ohne Artikel-Nr.'], ['neu', 'NEU anlegen'], ['stamm', 'Stammdaten'], ['diff', 'Abweichungen']];
   const FB_KIND = [['', 'Alle Arten'], ['aus', 'Ausgabe'], ['ein', 'Eingang'], ['inv', 'Inventur'], ['rueck', 'Rückgabe']];
   const FB_AGE = [['', 'Egal wann'], ['today', 'Heute'], ['week', 'Diese Woche'], ['old', 'Älter als 1 Woche']];
-  function fbBu(open) {
+  function fbPass(e, f, kind, age) {   // gemeinsamer Filter: Für BIOS + Bericht
     const d0 = new Date().setHours(0, 0, 0, 0), wk = Date.now() - 7 * 864e5;
-    let L = open.filter(e => FB.f === 'all' || fbCls(e) === FB.f);
-    if (FB.kind) L = L.filter(e => e.kinds.has(FB.kind));
-    if (FB.age === 'today') L = L.filter(e => e.to >= d0); else if (FB.age === 'week') L = L.filter(e => e.to >= wk); else if (FB.age === 'old') L = L.filter(e => e.from < wk);
+    if (f && f !== 'all' && fbCls(e) !== f) return false;
+    if (kind && !e.kinds.has(kind)) return false;
+    if (age === 'today') return e.to >= d0; if (age === 'week') return e.to >= wk; if (age === 'old') return e.from < wk;
+    return true;
+  }
+  function fbBu(open) {
+    let L = open.filter(e => fbPass(e, FB.f, FB.kind, FB.age));
     L = L.filter(e => fbQOk(e.t) || (FB.q && e.nr.includes(FB.q.trim())));
     if (FB.sort === 'date') L = L.slice().sort((a, b) => a.from - b.from);
     else if (FB.sort === 'qty') L = L.slice().sort((a, b) => Math.abs(b.net) - Math.abs(a.net) || (Math.abs(b.aus) + Math.abs(b.ein) + Math.abs(b.inv)) - (Math.abs(a.aus) + Math.abs(a.ein) + Math.abs(a.inv)));
@@ -7464,8 +7468,9 @@ ${rows.map(r => `<tr><td class="n">${r.Datum} ${r.Zeit}</td><td>${r.Art}</td><td
     }
     if (RP.type === 'bios') {
       const ps = FB.psel;
-      const tk = RP.ost === 'buch' ? [] : biosOpenTasks().filter(x => !ps || (ps.tasks === 'all' ? fbQOk(x.t) : ps.tasks === 'stamm' ? x.kind !== 'bneu' && fbQOk(x.t) : ps.tasks === 'neu' ? x.kind === 'bneu' && fbQOk(x.t) : false)).map(x => ({ kind: 'task', x, t: x.t, name: fullName(x.t) }));
-      const bu = RP.ost === 'stamm' ? [] : fbGroups(true).filter(g => !ps || ps.keys.has(g.k)).map(g => ({ kind: 'buch', g, t: g.t || { name: 'GELÖSCHT' }, name: g.t ? fullName(g.t) : 'GELÖSCHT' }));
+      const o = RP.ost || '';
+      const tk = (o && o !== 'stamm' && o !== 'neu') ? [] : biosOpenTasks().filter(x => o !== 'neu' || x.kind === 'bneu').filter(x => !ps || (ps.tasks === 'all' ? fbQOk(x.t) : ps.tasks === 'stamm' ? x.kind !== 'bneu' && fbQOk(x.t) : ps.tasks === 'neu' ? x.kind === 'bneu' && fbQOk(x.t) : false)).map(x => ({ kind: 'task', x, t: x.t, name: fullName(x.t) }));
+      const bu = o === 'stamm' ? [] : fbGroups(true).filter(g => ps ? ps.keys.has(g.k) : fbPass(g, ['ok', 'nonr', 'neu'].includes(o) ? o : '', RP.bk || '', RP.ba || '')).map(g => ({ kind: 'buch', g, t: g.t || { name: 'GELÖSCHT' }, name: g.t ? fullName(g.t) : 'GELÖSCHT' }));
       return [...tk, ...bu].filter(r => rpToolOk(r.t));
     }
     if (RP.type === 'prob') return probs(a, b).map(p => ({ p, t: p.t || { name: '' }, name: probName(p), m: { ts: p.ts, who: p.who } }))
@@ -7515,7 +7520,9 @@ ${rows.map(r => `<tr><td class="n">${r.Datum} ${r.Zeit}</td><td>${r.Art}</td><td
     if (RP.type === 'best' && RP.stk) f.push(RP.stk === 'low' ? 'UNTER MIN' : 'MIT BESTAND');
     if (RP.type === 'ord' && RP.ost) f.push(RP.ost === 'open' ? 'UNTERWEGS' : 'GELIEFERT');
     if (RP.type === 'prob' && RP.ost) f.push(RP.ost === 'open' ? 'OFFEN' : 'ERLEDIGT');
-    if (RP.type === 'bios' && RP.ost) f.push(RP.ost === 'stamm' ? 'NUR STAMMDATEN' : 'NUR BUCHUNGEN');
+    if (RP.type === 'bios' && RP.ost) f.push({ stamm: 'NUR STAMMDATEN', buch: 'NUR BUCHUNGEN', ok: 'DIREKT EINTRAGBAR', nonr: 'OHNE ARTIKEL-NR.', neu: 'NEU ANLEGEN' }[RP.ost] || '');
+    if (RP.type === 'bios' && RP.ost !== 'stamm' && RP.bk) f.push(U((FB_KIND.find(x => x[0] === RP.bk) || [])[1] || ''));
+    if (RP.type === 'bios' && RP.ost !== 'stamm' && RP.ba) f.push(U((FB_AGE.find(x => x[0] === RP.ba) || [])[1] || ''));
     return f;
   }
   const RP_CSS = `*{box-sizing:border-box}
@@ -7656,7 +7663,7 @@ setTimeout(run,1500); window.addEventListener('beforeprint',run);
     const moves = S.moves || [], machs = [...new Set(moves.map(m => m.mach).filter(Boolean))], ppl = [...new Set(moves.map(m => m.who).filter(Boolean))];
     const types = [...new Set(S.lib.map(t => t.type || 'SONSTIGES'))].sort(), locs = [...new Set(S.lib.map(t => U(t.loc)).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'de', { numeric: true }));
     const mv = RP.type === 'buch' || RP.type === 'verb', groups = RP_GROUPS[RP.type] || [];
-    const nf = [RP.typ, RP.loc, RP.q, mv && RP.mach, mv && RP.who].filter(Boolean).length;
+    const nf = [RP.typ, RP.loc, RP.q, mv && RP.mach, mv && RP.who, RP.type === 'bios' && RP.ost !== 'stamm' && RP.bk, RP.type === 'bios' && RP.ost !== 'stamm' && RP.ba].filter(Boolean).length;
     const { rows } = rpParts();
     V.innerHTML = `${repBiosHTML()}
       <div class="rp-types">${RP_TYPES.filter(([k]) => k !== 'bios' || can('adm')).map(([k, l, s]) => `<button type="button" data-rp="type:${k}" aria-pressed="${RP.type === k}"><span class="ic">${RPI[k]}</span><b>${l}</b><small>${s}</small></button>`).join('')}</div>
@@ -7669,7 +7676,8 @@ setTimeout(run,1500); window.addEventListener('beforeprint',run);
         ${RP.type === 'best' ? `<div class="rp-chips">${[['', 'Alle'], ['low', 'Unter Min'], ['has', 'Mit Bestand']].map(([k, l]) => ch('stk', k, RP.stk === k, l)).join('')}</div>` : ''}
         ${RP.type === 'ord' ? `<div class="rp-chips">${[['', 'Alle'], ['open', 'Unterwegs'], ['got', 'Geliefert']].map(([k, l]) => ch('ost', k, RP.ost === k, l)).join('')}</div>` : ''}
         ${RP.type === 'prob' ? `<div class="rp-chips">${[['', 'Alle'], ['open', 'Offen'], ['done', 'Erledigt']].map(([k, l]) => ch('ost', k, RP.ost === k, l)).join('')}</div>` : ''}
-        ${RP.type === 'bios' ? `<div class="rp-chips">${[['', 'Alles'], ['stamm', 'Stammdaten'], ['buch', 'Buchungen']].map(([k, l]) => ch('ost', k, RP.ost === k, l)).join('')}</div>${CAT.rows.length ? '' : '<div class="hint">Noch kein BIOS-Katalog geladen – Stammdaten-Punkte erscheinen nach dem Import des BIOS-Excels.</div>'}` : ''}
+        ${RP.type === 'bios' ? `<div class="rp-chips">${[['', 'Alles'], ['stamm', 'Stammdaten'], ['buch', 'Buchungen'], ['ok', 'Direkt eintragbar'], ['nonr', 'Ohne Artikel-Nr.'], ['neu', 'NEU anlegen']].map(([k, l]) => ch('ost', k, RP.ost === k, l)).join('')}</div>
+          ${RP.ost !== 'stamm' ? `<div class="rp-chips">${FB_KIND.map(([k, l]) => ch('bk', k, (RP.bk || '') === k, l)).join('')}</div><div class="rp-chips">${FB_AGE.map(([k, l]) => ch('ba', k, (RP.ba || '') === k, l)).join('')}</div>` : ''}${CAT.rows.length ? '' : '<div class="hint">Noch kein BIOS-Katalog geladen – Stammdaten-Punkte erscheinen nach dem Import des BIOS-Excels.</div>'}` : ''}
         ${mv && machs.length ? `<div class="rp-chips">${ch('mach', '', !RP.mach, 'Alle Maschinen')}${machs.map(m => ch('mach', m, RP.mach === m, esc(m))).join('')}</div>` : ''}
         ${mv && ppl.length ? `<div class="rp-chips">${ch('who', '', !RP.who, 'Alle Personen')}${ppl.map(m => ch('who', m, RP.who === m, esc(m))).join('')}</div>` : ''}
         <div class="rp-f3"><select id="rpTyp" aria-label="Typ"><option value="">ALLE TYPEN</option>${types.map(t => `<option ${RP.typ === t ? 'selected' : ''}>${esc(t)}</option>`).join('')}</select>
@@ -7694,7 +7702,7 @@ setTimeout(run,1500); window.addEventListener('beforeprint',run);
     if (k === 'type') { RP.type = v; RP.group = v === 'bios' ? 'bw' : ''; if (v === 'prob' || v === 'ord' || v === 'bios') RP.ost = ''; }
     else if (k === 'col') { const cur = rpDefs().map(c => c.k), on = cur.includes(v); if (on && cur.length <= 1) { toast('Mindestens eine Spalte'); return; } RP.cols[RP.type] = RP_COLS[RP.type].map(c => c.k).filter(x => x === v ? !on : cur.includes(x)); if (RP.type === 'best') { RP.colsOff = (RP.colsOff || []).filter(x => x !== v); if (on) RP.colsOff.push(v); } }
     else if (k === 'tog') RP[v] = !RP[v];
-    else if (k === 'reset') { RP.typ = ''; RP.loc = ''; RP.q = ''; RP.mach = ''; RP.who = ''; }
+    else if (k === 'reset') { RP.typ = ''; RP.loc = ''; RP.q = ''; RP.mach = ''; RP.who = ''; RP.bk = ''; RP.ba = ''; }
     else RP[k] = v;
     rpSave(); renderRep();
   });
@@ -9091,7 +9099,7 @@ Antworte NUR mit JSON: {"map":["feld oder leer", ...]} – gleiche Reihenfolge u
       const r = document.querySelector(`#waiting [data-oa="tog"][data-id="${o.id}"]`)?.closest('.ord'); if (r) { r.scrollIntoView({ behavior: 'smooth', block: 'start' }); r.classList.remove('mbf'); void r.offsetWidth; r.classList.add('mbf'); } return; }
   });
   // ---------- Version: Nummer anzeigen, neue Version erkennen ----------
-  const APP_VER = '2026.11.23-3';
+  const APP_VER = '2026.11.23-4';
   let verSeen = '';
   async function verCheck() {
     if (!/^https?:/.test(location.protocol)) return;
