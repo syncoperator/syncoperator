@@ -2665,8 +2665,11 @@ window.addEventListener('load',ctFit);window.addEventListener('resize',ctFit);se
   }
   const cartItems = () => S.items.filter(i => i.status === 'bedarf').sort((a,b) => a.createdAt - b.createdAt);
 
-  const hay = t => [t.name, String(t.name || '').replace(/\s+/g, ''), t.type, ...specs(t), ...SPEC_KEYS.map(k => t[k]), ...Object.values(t.attrs || {}).flat(), ...(t.uses || []).flatMap(u => [u.wst, u.text]), t.firm, t.maker, t.makerArt, t.mach, t.note, t.dwg].join(' ').toUpperCase().replace(/,/g,'.');
-  const match = (h, q) => q.split(/\s+/).filter(Boolean).every(w => h.includes(w.replace(/,/g,'.')));
+  const hay = t => [t.name, String(t.name || '').replace(/\s+/g, ''), fullName(t), t.type, ...specs(t), ...SPEC_KEYS.map(k => t[k]), ...Object.values(t.attrs || {}).flat(), ...(t.uses || []).flatMap(u => [u.wst, u.text]), t.firm, t.maker, t.makerArt, t.mach, t.note, t.dwg].join(' ').toUpperCase().replace(/,/g,'.');
+  // Suche: Wort direkt ODER ohne Leerzeichen/Bindestriche/Punkte (z. B. „M662BCR20L26RVBX“ findet „M662BCR20L26R VBX“)
+  const qCmp = s => String(s).replace(/[\s\-.\/_]/g, '');
+  const qHit = (h, w, c) => { w = w.replace(/,/g, '.'); if (h.includes(w)) return true; const wc = qCmp(w); return wc.length >= 4 && (c.v ??= qCmp(h)).includes(wc); };
+  const match = (h, q) => { const c = {}; return q.split(/\s+/).filter(Boolean).every(w => qHit(h, w, c)); };
   const stats = libId => { const its = S.items.filter(i => i.libId === libId); return { count: its.length, last: Math.max(0, ...its.map(i => i.createdAt || 0)), inCart: its.some(i => i.status === 'bedarf'), waiting: its.some(i => i.status === 'gesendet') }; };
 
   function renderPick() {
@@ -5518,7 +5521,7 @@ Antworte NUR mit JSON: {"map":{"feld":"Spaltenname"},"typ":"häufigster Werkzeug
     for (const r of CAT.rows) {
       if (catInLib(r.a)) continue;
       const p = catParsed(r), hay = (r.a + ' ' + BIOSP.U(fullName(p.t)) + ' ' + BIOSP.U(r.b.join(' '))).replace(/,/g, '.');
-      if (ws.every(w => hay.includes(w.replace(/,/g, '.')))) { out.push(r); if (out.length >= max) break; }
+      const c = {}; if (ws.every(w => qHit(hay, w, c))) { out.push(r); if (out.length >= max) break; }
     }
     return out;
   }
@@ -6005,7 +6008,7 @@ Antworte NUR mit JSON: {"map":{"feld":"Spaltenname"},"typ":"häufigster Werkzeug
     const ws = BST.q ? BIOSP.U(BST.q).split(' ').filter(Boolean) : [];
     let L = all.filter(x => bstIs(x, BST.f));
     if (BST.loc) L = L.filter(x => (x.loc || '–') === BST.loc);
-    if (ws.length) L = L.filter(x => { const h = BIOSP.U([x.nr, x.name, x.sub, x.loc, x.r ? (x.r.b || []).join(' ') : '', x.t ? x.t.makerArt || '' : ''].join(' ')).replace(/,/g, '.'); return ws.every(w => h.includes(w.replace(/,/g, '.'))); });
+    if (ws.length) L = L.filter(x => { const h = BIOSP.U([x.nr, x.name, x.sub, x.loc, x.r ? (x.r.b || []).join(' ') : '', x.t ? x.t.makerArt || '' : ''].join(' ')).replace(/,/g, '.'); const c = {}; return ws.every(w => qHit(h, w, c)); });
     const cmpN = (a, b) => a.name.localeCompare(b.name, 'de');
     const srt = { loc: (a, b) => (!a.loc) - (!b.loc) || a.loc.localeCompare(b.loc, 'de', { numeric: true }) || (!a.t) - (!b.t) || cmpN(a, b),
       name: (a, b) => (!a.t) - (!b.t) || cmpN(a, b),
@@ -9014,7 +9017,7 @@ Antworte NUR mit JSON: {"map":["feld oder leer", ...]} – gleiche Reihenfolge u
       const r = document.querySelector(`#waiting [data-oa="tog"][data-id="${o.id}"]`)?.closest('.ord'); if (r) { r.scrollIntoView({ behavior: 'smooth', block: 'start' }); r.classList.remove('mbf'); void r.offsetWidth; r.classList.add('mbf'); } return; }
   });
   // ---------- Version: Nummer anzeigen, neue Version erkennen ----------
-  const APP_VER = '2026.11.23-1';
+  const APP_VER = '2026.11.23-2';
   let verSeen = '';
   async function verCheck() {
     if (!/^https?:/.test(location.protocol)) return;
