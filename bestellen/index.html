@@ -1735,6 +1735,10 @@ body.env-test .envbar{display:flex}
 .cb-cd{white-space:nowrap}
 .cb-swipe{font-size:11.5px;color:var(--muted);text-align:center;margin-top:4px}
 @media (min-width:700px){.cb-swipe{display:none}}
+.cp-o{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.cp-o button{display:grid;justify-items:center;gap:4px;padding:16px 8px;border:1.5px solid var(--line);border-radius:14px;background:var(--card);color:var(--fg);font:inherit;cursor:pointer}
+.cp-o button b{font-size:15px;text-transform:none;letter-spacing:0}.cp-o button small{font-size:11px;color:var(--accent,#C2410C);font-weight:700}
+.cp-o button.sug{border-color:var(--ink,#111)}
 /* Schnellbericht */
 .rp-wz{display:flex;align-items:center;gap:12px;width:100%;padding:13px 14px;border:0;border-radius:16px;background:var(--ink,#111);color:var(--on-ink,#fff);font:inherit;text-align:left;cursor:pointer}
 .rp-wz span:nth-child(2){display:grid;gap:1px;flex:1}.rp-wz b{font-size:16px}.rp-wz small{font-size:12px;opacity:.7;text-transform:none;letter-spacing:0}
@@ -6670,24 +6674,38 @@ Antworte NUR mit JSON: {"map":{"feld":"Spaltenname"},"typ":"häufigster Werkzeug
     const d = cabAll().find(x => x.L === CB.dr); if (d && cabCur() && d.c !== cabCur().id) cabSetCur(d.c);
     H.innerHTML = d ? cabDrawerHTML(d) : cabFrontHTML();
   }
-  function cabPrint(Ls) {
+  function cabPrint(Ls, land) {
     const D = cabAll().filter(d => Ls.includes(d.L)), cells = cabCells(); if (!D.length) return;
-    const css = `<style>.cbp{width:273mm;margin:0 auto 16px;background:#fff;padding:0;font-family:"Instrument Sans",Arial,sans-serif;color:#000}
-.cbp-h{display:flex;align-items:center;gap:5mm;border-bottom:.6mm solid #000;padding-bottom:3mm;margin-bottom:3mm}.cbp-h .qr{width:24mm;height:24mm}
-.cbp-L{font:700 30pt "JetBrains Mono",monospace;border:.6mm solid #000;border-radius:2mm;padding:0 4mm}.cbp-t{flex:1}.cbp-t b{display:block;font-size:17pt}.cbp-t small{font:500 8pt "JetBrains Mono",monospace;color:#333;letter-spacing:.05em}
-.cbp-s{font:700 7pt "JetBrains Mono",monospace;letter-spacing:.3em;text-align:center;color:#333;margin:1mm 0}.cbp-s.v{border:.4mm solid #000;padding:1mm}
-.cbp-g{display:grid;gap:0;border:.5mm solid #000}.cbp-c{border-right:.3mm solid #000;border-bottom:.3mm solid #000;padding:1.6mm 2mm;min-height:22mm;display:flex;flex-direction:column;gap:.6mm;overflow:hidden}
-.cbp-c .k{font:700 7.5pt "JetBrains Mono",monospace}.cbp-c b{font-size:9pt;line-height:1.15}.cbp-c .n{font:600 7.5pt "JetBrains Mono",monospace}.cbp-c .s{margin-top:auto;font:600 7.5pt "JetBrains Mono",monospace}.cbp-c.e .s{color:#777}
-.cbp-f{display:flex;justify-content:space-between;font:500 7pt "JetBrains Mono",monospace;color:#444;margin-top:2mm}
+    const W = land ? 273 : 186, Hh = land ? 134 : 222;   // nutzbare Breite / Höhe für das Raster (mm)
+    const css = `<style>.cbp{width:${W}mm;margin:0 auto 16px;background:#fff;padding:0;font-family:"Instrument Sans",Arial,sans-serif;color:#000}
+.cbp-h{display:flex;align-items:center;gap:4mm;border-bottom:.6mm solid #000;padding-bottom:2.5mm;margin-bottom:2mm}.cbp-h .qr{width:${land ? 22 : 20}mm;height:${land ? 22 : 20}mm;flex:none}
+.cbp-L{font:700 26pt "JetBrains Mono",monospace;border:.6mm solid #000;border-radius:2mm;padding:0 3.5mm;flex:none}.cbp-t{flex:1;min-width:0}.cbp-t b{display:block;font-size:15pt}.cbp-t small{font:500 7pt "JetBrains Mono",monospace;color:#333;letter-spacing:.04em}
+.cbp-s{font:700 6.5pt "JetBrains Mono",monospace;letter-spacing:.3em;text-align:center;color:#333;margin:.8mm 0}.cbp-s.v{border:.4mm solid #000;padding:.8mm}
+.cbp-g{display:grid;gap:0;border:.5mm solid #000}
+.cbp-c{border-right:.3mm solid #000;border-bottom:.3mm solid #000;padding:1mm 1.3mm;display:flex;flex-direction:column;gap:.4mm;overflow:hidden;min-width:0}
+.cbp-c .k{font:700 6pt "JetBrains Mono",monospace}.cbp-c b{line-height:1.12;font-weight:700;word-break:break-word;hyphens:auto}.cbp-c .n{font-family:"JetBrains Mono",monospace;font-weight:600;word-break:break-all}
+.cbp-c .s{margin-top:auto;font:600 6pt "JetBrains Mono",monospace}.cbp-c.e .s{color:#777}
+.cbp-f{display:flex;justify-content:space-between;font:500 6.5pt "JetBrains Mono",monospace;color:#444;margin-top:1.5mm}
 @media print{html,body{background:#fff!important;padding:0!important}.cbp{margin:0 auto;page-break-after:always;break-after:page}.cbp:last-child{page-break-after:auto;break-after:auto}}</style>`;
     const today = new Date().toLocaleDateString('de-DE');
-    const pages = D.map(d => { let g = ''; for (let r = d.rows; r >= 1; r--) for (let c = 1; c <= d.cols; c++) { const code = `${d.L}-${c}-${r}`, L = cells[code];
-        g += L ? `<div class="cbp-c" style="border-right-width:${c === d.cols ? 0 : .3}mm"><span class="k">${code}</span>${L.map(t => `<b>${esc(fullName(t))}</b><span class="n">${esc(t.firm || '')}</span>`).join('')}<span class="s">${hasStock(L[0]) ? 'Bestand ' + L[0].stock + (L[0].min ? ' · Min ' + L[0].min : '') : ''}</span></div>`
-          : `<div class="cbp-c e" style="border-right-width:${c === d.cols ? 0 : .3}mm"><span class="k">${code}</span><span class="s">frei</span></div>`; }
+    const pages = D.map(d => {
+      const cw = W / d.cols, ch = Hh / d.rows;   // Zellgröße in mm → Schrift passt sich an
+      const fs = Math.max(4.6, Math.min(9, cw * 0.27, ch * 0.32)), fn = Math.max(4.2, fs - 1.2);
+      let g = ''; for (let r = d.rows; r >= 1; r--) for (let c = 1; c <= d.cols; c++) { const code = `${d.L}-${c}-${r}`, L = cells[code], br = `border-right-width:${c === d.cols ? 0 : .3}mm;height:${ch.toFixed(1)}mm`;
+        g += L ? `<div class="cbp-c" style="${br}"><span class="k">${code}</span>${L.map(t => `<b style="font-size:${fs.toFixed(1)}pt">${esc(fullName(t))}</b>${t.firm ? `<span class="n" style="font-size:${fn.toFixed(1)}pt">${esc(t.firm)}</span>` : ''}`).join('')}<span class="s">${hasStock(L[0]) ? 'Bestand ' + L[0].stock + (L[0].min ? ' · Min ' + L[0].min : '') : ''}</span></div>`
+          : `<div class="cbp-c e" style="${br}"><span class="k">${code}</span><span class="s">frei</span></div>`; }
       return `<div class="cbp"><div class="cbp-h">${qrSVG(location.href.split('#')[0] + '#cab=' + d.L)}<span class="cbp-L">${d.L}</span><span class="cbp-t"><b>Schublade ${d.L} · ${esc(d.name || '')}</b><small>${d.cols} SPALTEN × ${d.rows} REIHEN · STAND ${today} · QR SCANNEN = SCHUBLADE ÖFFNEN</small></span></div>
-        <div class="cbp-s">HINTEN</div><div class="cbp-g" style="grid-template-columns:repeat(${d.cols},1fr)">${g}</div><div class="cbp-s v">VORNE · GRIFF</div>
+        <div class="cbp-s">HINTEN</div><div class="cbp-g" style="grid-template-columns:repeat(${d.cols},minmax(0,1fr))">${g}</div><div class="cbp-s v">VORNE · GRIFF</div>
         <div class="cbp-f"><span>WERKZEUGAUSGABE · SCHRANK</span><span>ZELLE = SCHUBLADE-SPALTE-REIHE</span></div></div>`; }).join('');
-    rpPrint({ html: css + pages, title: D.length === 1 ? `Schublade ${D[0].L}` : 'Schrank', land: true });
+    rpPrint({ html: css + pages, title: D.length === 1 ? `Schublade ${D[0].L}` : 'Schrank', land: !!land });
+  }
+  function cabPrintAsk(what) {   // Hoch / Quer wählen
+    const last = (() => { try { return localStorage.getItem('cititool_cab_pr') || 'q'; } catch { return 'q'; } })();
+    const d = what === 'all' ? null : cabAll().find(x => x.L === what), sug = d ? (d.cols > d.rows * 1.2 ? 'q' : 'h') : last;
+    const el = $('cabPr'); el.hidden = false; el.classList.toggle('ks-on', CB.ctx === 'ks');
+    $('cabPrB').innerHTML = `<div class="row" style="justify-content:space-between;align-items:center"><h2 style="margin:0">${d ? 'Schublade ' + d.L + ' drucken' : 'Alle Schubladen drucken'}</h2><button type="button" class="link" data-cp="x:">Abbrechen</button></div>
+      <div class="cp-o">${[['h', 'Hochformat', '<rect x="7" y="3" width="10" height="18" rx="1.5"/>'], ['q', 'Querformat', '<rect x="3" y="7" width="18" height="10" rx="1.5"/>']].map(([k, l, r]) => `<button type="button" data-cp="${k}:${what}" class="${k === sug ? 'sug' : ''}"><svg viewBox="0 0 24 24" width="44" height="44" fill="none" stroke="currentColor" stroke-width="1.6">${r}</svg><b>${l}</b>${k === sug ? '<small>empfohlen</small>' : '<small>&nbsp;</small>'}</button>`).join('')}</div>
+      <div class="hint">Schrift passt sich der Zellgröße an, damit alles auf eine Seite passt.</div>`;
   }
   function cabClick(e) {
     const b = e.target.closest('[data-cb]'); if (!b) return; const [k, ...rest] = b.dataset.cb.split(':'), v = rest.join(':');
@@ -6722,8 +6740,8 @@ Antworte NUR mit JSON: {"map":{"feld":"Spaltenname"},"typ":"häufigster Werkzeug
       const free = cabFreeL(); if (free.length < 5) { toast('Nicht genug freie Buchstaben'); return; }
       [['Bohrer VHM 3–6', 4, 3, 1], ['Bohrer VHM 6–12', 4, 3, 1], ['Wendeplatten Drehen', 6, 7, 1], ['Stechen / Gewinde', 6, 5, 1], ['Bohrstangen / Halter', 4, 2, 2]].forEach(([name, cols, rows, h], i) => S.meta.cab.push({ L: free[i], c: c.id, name, cols, rows, h }));
       save(); cabRender(); toast('5 Schubladen angelegt – Namen und Raster über „Raster“ anpassen'); return; }
-    if (k === 'print') { cabPrint([v]); return; }
-    if (k === 'printall') { cabPrint(cabList().map(d => d.L)); return; }
+    if (k === 'print') { cabPrintAsk(v); return; }
+    if (k === 'printall') { cabPrintAsk('all'); return; }
     if (k === 'pick') { CB.pick = CB.pick === v ? '' : v; cabRender(); return; }
     if (k === 'unpick') { CB.pick = ''; cabRender(); return; }
     if (k === 'cell') { const list = cabCells()[v];
@@ -6735,6 +6753,7 @@ Antworte NUR mit JSON: {"map":{"feld":"Spaltenname"},"typ":"häufigster Werkzeug
   }
   function cabMount() {
     document.body.insertAdjacentHTML('beforeend', `<div id="cabSheet" class="sheetbg pagey cb-sheet" hidden><div class="helpsheet" role="dialog" aria-modal="true" aria-label="Schrank"><div id="cabBody" class="cb-in"></div></div></div>
+      <div id="cabPr" class="sheetbg cb-cellsheet" hidden><div class="helpsheet" role="dialog" aria-modal="true"><div id="cabPrB" class="view" style="gap:12px"></div></div></div>
       <div id="cabCell" class="sheetbg cb-cellsheet" hidden><div class="helpsheet" role="dialog" aria-modal="true"><div id="cabCellB" class="view" style="gap:10px"></div></div></div>`);
     [$('cabBody'), $('libCab')].forEach(h => {
       h.addEventListener('click', cabClick);
@@ -6755,6 +6774,10 @@ Antworte NUR mit JSON: {"map":{"feld":"Spaltenname"},"typ":"häufigster Werkzeug
       if (k === 'put' && t) { cabSet(t, code); $('cabCell').hidden = true; cabRender(); render(); return; }
     });
     $('cabCell').addEventListener('input', e => { if (e.target.id === 'ccQ') cabCcList(); });
+    $('cabPr').addEventListener('click', e => { if (e.target === $('cabPr')) { $('cabPr').hidden = true; return; }
+      const b = e.target.closest('[data-cp]'); if (!b) return; const [k, w] = b.dataset.cp.split(':'); $('cabPr').hidden = true; if (k === 'x') return;
+      try { localStorage.setItem('cititool_cab_pr', k); } catch {}
+      cabPrint(w === 'all' ? cabList().map(d => d.L) : [w], k === 'q'); });
     document.addEventListener('click', e => { const b = e.target.closest('[data-cabopen]'); if (!b) return; e.preventDefault(); if (!cabAll().length) { toast('Noch kein Schrank eingerichtet – Bibliothek → Schrank'); return; } cabOpen(b.dataset.cabopen, ''); });
   }
   function bstInv(kind) {
@@ -9912,7 +9935,7 @@ Antworte NUR mit JSON: {"map":["feld oder leer", ...]} – gleiche Reihenfolge u
       const r = document.querySelector(`#waiting [data-oa="tog"][data-id="${o.id}"]`)?.closest('.ord'); if (r) { r.scrollIntoView({ behavior: 'smooth', block: 'start' }); r.classList.remove('mbf'); void r.offsetWidth; r.classList.add('mbf'); } return; }
   });
   // ---------- Version: Nummer anzeigen, neue Version erkennen ----------
-  const APP_VER = '2026.11.28-2';
+  const APP_VER = '2026.11.28-3';
   let verSeen = '';
   async function verCheck() {
     if (!/^https?:/.test(location.protocol)) return;
